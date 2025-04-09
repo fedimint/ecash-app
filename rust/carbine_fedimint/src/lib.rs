@@ -1,5 +1,5 @@
-mod frb_generated; /* AUTO INJECTED BY flutter_rust_bridge. This line may not be accurate, and you can change it according to your needs. */
 mod db;
+mod frb_generated; /* AUTO INJECTED BY flutter_rust_bridge. This line may not be accurate, and you can change it according to your needs. */
 
 use std::{str::FromStr, sync::Arc};
 
@@ -43,7 +43,6 @@ pub async fn join_federation(invite_code: String) -> anyhow::Result<JoinFederati
 async fn client_join(invite_code: InviteCode) -> anyhow::Result<ClientHandleArc> {
     let connector = Connector::default();
     let client_config = connector.download_from_invite_code(&invite_code).await?;
-    // TODO: Use rocksdb?
     let database: Database = Redb::open("fedimint.redb")?.into();
     let mut client_builder = Client::builder(database).await?;
     let mut modules = ClientModuleInitRegistry::new();
