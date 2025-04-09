@@ -1,4 +1,8 @@
+import 'dart:ffi';
+
 import 'package:flutter/material.dart';
+
+final dylib = DynamicLibrary.open("target-nix/release/libcarbine_fedimint.so");
 
 void main() {
   runApp(MyApp());

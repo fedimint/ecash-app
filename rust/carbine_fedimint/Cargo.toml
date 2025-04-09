@@ -3,6 +3,9 @@ name = "carbine_fedimint"
 version = "0.1.0"
 edition = "2021"
 
+[lib]
+crate-type = ["cdylib"]
+
 [dependencies]
 anyhow = "1.0.97"
 async-trait = "0.1.88"
@@ -14,7 +17,7 @@ fedimint-ln-client = "0.6.1"
 fedimint-lnv2-client = "0.6.1"
 fedimint-mint-client = "0.6.1"
 fedimint-wallet-client = "0.6.1"
-flutter_rust_bridge = "2.9.0"
+flutter_rust_bridge = "=2.9.0"
 futures-util = "0.3.30"
 redb = "2.4.0"
 serde = { version = "1.0.219", features = ["derive"] }
