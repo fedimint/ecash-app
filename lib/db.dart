@@ -4,13 +4,23 @@
 // ignore_for_file: invalid_use_of_internal_member, unused_import, unnecessary_import
 
 import 'frb_generated.dart';
+import 'lib.dart';
 import 'package:flutter_rust_bridge/flutter_rust_bridge_for_generated.dart';
 
-// These types are ignored because they are neither used by any `pub` functions nor (for structs and enums) marked `#[frb(unignore)]`: `RedbTransaction`
-// These function are ignored because they are on traits that is not defined in current crate (put an empty `#[frb]` on it to unignore): `begin_transaction`, `checkpoint`, `commit_tx`, `fmt`, `fmt`, `raw_find_by_prefix_sorted_descending`, `raw_find_by_prefix`, `raw_find_by_range`, `raw_get_bytes`, `raw_insert_bytes`, `raw_remove_by_prefix`, `raw_remove_entry`, `rollback_tx_to_savepoint`, `set_tx_savepoint`
+// These types are ignored because they are neither used by any `pub` functions nor (for structs and enums) marked `#[frb(unignore)]`: `DbKeyPrefix`, `FederationConfigKeyPrefix`, `FederationConfigKey`
+// These function are ignored because they are on traits that is not defined in current crate (put an empty `#[frb]` on it to unignore): `assert_receiver_is_total_eq`, `assert_receiver_is_total_eq`, `clone`, `clone`, `clone`, `cmp`, `consensus_decode_partial_from_finite_reader`, `consensus_decode_partial_from_finite_reader`, `consensus_decode_partial_from_finite_reader`, `consensus_encode`, `consensus_encode`, `consensus_encode`, `eq`, `eq`, `fmt`, `fmt`, `fmt`, `fmt`, `hash`, `partial_cmp`
 
-// Rust type: RustOpaqueMoi<flutter_rust_bridge::for_generated::RustAutoOpaqueInner<Redb>>
-abstract class Redb implements RustOpaqueInterface {
-  static Future<Redb> open({required String name}) =>
-      RustLib.instance.api.crateDbRedbOpen(name: name);
+// Rust type: RustOpaqueMoi<flutter_rust_bridge::for_generated::RustAutoOpaqueInner<FederationConfig>>
+abstract class FederationConfig implements RustOpaqueInterface {
+  Connector get connector;
+
+  String get federationName;
+
+  InviteCode get inviteCode;
+
+  set connector(Connector connector);
+
+  set federationName(String federationName);
+
+  set inviteCode(InviteCode inviteCode);
 }

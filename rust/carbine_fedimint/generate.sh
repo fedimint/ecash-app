@@ -1,4 +1,4 @@
 #!/bin/bash
 
-cargo build --release
+cargo build
 flutter_rust_bridge_codegen generate --rust-input=crate --rust-root=./ --dart-output=../../lib/

@@ -4,33 +4,16 @@
 // ignore_for_file: invalid_use_of_internal_member, unused_import, unnecessary_import
 
 import 'frb_generated.dart';
+import 'multimint.dart';
 import 'package:flutter_rust_bridge/flutter_rust_bridge_for_generated.dart';
 
-// These functions are ignored because they are not marked as `pub`: `client_join`, `load_or_generate_mnemonic`
+Future<Multimint> initMultimint() => RustLib.instance.api.crateInitMultimint();
 
-Future<JoinFederation> joinFederation({required String inviteCode}) =>
-    RustLib.instance.api.crateJoinFederation(inviteCode: inviteCode);
+// Rust type: RustOpaqueMoi<flutter_rust_bridge::for_generated::RustAutoOpaqueInner<Connector>>
+abstract class Connector implements RustOpaqueInterface {}
 
-class JoinFederation {
-  final String name;
-  final String federationId;
-  final BigInt balance;
+// Rust type: RustOpaqueMoi<flutter_rust_bridge::for_generated::RustAutoOpaqueInner<FederationId>>
+abstract class FederationId implements RustOpaqueInterface {}
 
-  const JoinFederation({
-    required this.name,
-    required this.federationId,
-    required this.balance,
-  });
-
-  @override
-  int get hashCode => name.hashCode ^ federationId.hashCode ^ balance.hashCode;
-
-  @override
-  bool operator ==(Object other) =>
-      identical(this, other) ||
-      other is JoinFederation &&
-          runtimeType == other.runtimeType &&
-          name == other.name &&
-          federationId == other.federationId &&
-          balance == other.balance;
-}
+// Rust type: RustOpaqueMoi<flutter_rust_bridge::for_generated::RustAutoOpaqueInner<InviteCode>>
+abstract class InviteCode implements RustOpaqueInterface {}
