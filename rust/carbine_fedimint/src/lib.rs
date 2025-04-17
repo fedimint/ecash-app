@@ -7,9 +7,7 @@ use db::Redb;
 use fedimint_api_client::api::net::Connector;
 use fedimint_bip39::{Bip39RootSecretStrategy, Mnemonic};
 use fedimint_client::{
-    module::init::ClientModuleInitRegistry,
-    secret::{get_default_client_secret, RootSecretStrategy},
-    Client, ClientHandleArc,
+    module_init::ClientModuleInitRegistry, secret::{get_default_client_secret, RootSecretStrategy}, Client, ClientHandleArc
 };
 use fedimint_core::{db::Database, invite_code::InviteCode, secp256k1::rand::thread_rng};
 use fedimint_ln_client::LightningClientInit;

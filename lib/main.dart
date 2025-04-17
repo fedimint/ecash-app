@@ -1,10 +1,8 @@
-//import 'dart:ffi';
-
+import 'frb_generated.dart';
 import 'package:flutter/material.dart';
 
-//final dylib = DynamicLibrary.open("target-nix/release/libcarbine_fedimint.so");
-
-void main() {
+void main() async {
+  await RustLib.init();
   runApp(MyApp());
 }
 
@@ -29,11 +27,28 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
-  bool hasJoinedMint = false; // Toggle this to false to test the join screen
+  bool hasJoinedMint = false;
   bool isDrawerOpen = false;
 
   List<String> joinedFederations = ['Fedimint Alpha', 'Fedimint Beta'];
   int balanceInSats = 42000;
+
+  // New state for input handling
+  bool showTextField = false;
+  final TextEditingController _controller = TextEditingController();
+
+  Future<void> _joinFederation(String code) async {
+    print("Joining federation...");
+    try {
+      await RustLib.instance.api.crateJoinFederation(inviteCode: code);
+      setState(() {
+        hasJoinedMint = true;
+      });
+      print("Successfully joined federation");
+    } catch (e) {
+      print("Failed to join federation: $e");
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -44,13 +59,41 @@ class _HomeScreenState extends State<HomeScreen> {
 
   Widget buildJoinScreen() {
     return Center(
-      child: ElevatedButton(
-        onPressed: () {
-          setState(() {
-            hasJoinedMint = true;
-          });
-        },
-        child: Text('Join Federation'),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          if (showTextField) ...[
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 32.0),
+              child: TextField(
+                controller: _controller,
+                decoration: InputDecoration(
+                  labelText: 'Enter Federation Code',
+                  border: OutlineInputBorder(),
+                ),
+              ),
+            ),
+            SizedBox(height: 20),
+            ElevatedButton(
+              onPressed: () {
+                final code = _controller.text.trim();
+                print(code);
+                if (code.isNotEmpty) {
+                  _joinFederation(code);
+                }
+              },
+              child: Text('Submit Code'),
+            ),
+          ] else
+            ElevatedButton(
+              onPressed: () {
+                setState(() {
+                  showTextField = true;
+                });
+              },
+              child: Text('Join Federation'),
+            ),
+        ],
       ),
     );
   }
@@ -58,7 +101,6 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget buildMainScreen() {
     return Row(
       children: [
-        // Navigation Drawer (collapsible)
         AnimatedContainer(
           duration: Duration(milliseconds: 300),
           width: isDrawerOpen ? 200 : 60,
@@ -81,7 +123,6 @@ class _HomeScreenState extends State<HomeScreen> {
             ],
           ),
         ),
-        // Main content area
         Expanded(
           child: Center(
             child: Column(
@@ -118,4 +159,5 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 }
+
 
