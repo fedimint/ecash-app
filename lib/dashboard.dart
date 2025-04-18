@@ -4,18 +4,35 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 
-class Dashboard extends StatelessWidget {
-  final FederationSelector federation;
+class Dashboard extends StatefulWidget {
+  final FederationSelector fed;
 
-  const Dashboard({super.key, required this.federation});
+  const Dashboard({super.key, required this.fed});
 
-  Future<BigInt> _getFederationBalance() async {
-    final bal = await balance(federationId: federation.federationId);
-    return bal;
+  @override
+  State<Dashboard> createState() => _DashboardState();
+}
+
+class _DashboardState extends State<Dashboard> {
+  BigInt? balanceMsats;
+  bool isLoadingBalance = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadBalance();
+  }
+
+  Future<void> _loadBalance() async {
+    final bal = await balance(federationId: widget.fed.federationId);
+    setState(() {
+      balanceMsats = bal;
+      isLoadingBalance = false;
+    });
   }
 
   Future<(String, OperationId)> _getInvoice(BigInt amount) async {
-    final r = await receive(federationId: federation.federationId, amountMsats: amount);
+    final r = await receive(federationId: widget.fed.federationId, amountMsats: amount);
     return r;
   }
 
@@ -138,7 +155,7 @@ class Dashboard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final name = federation.federationName;
+    final name = widget.fed.federationName;
 
     return SingleChildScrollView(
       padding: const EdgeInsets.all(24),
@@ -155,44 +172,34 @@ class Dashboard extends StatelessWidget {
           ),
           const SizedBox(height: 32),
 
-          FutureBuilder<BigInt>(
-            future: _getFederationBalance(),
-            builder: (context, snapshot) {
-              if (snapshot.connectionState == ConnectionState.waiting) {
-                return const CircularProgressIndicator();
-              } else if (snapshot.hasError) {
-                return Text('Error: ${snapshot.error}');
-              }
-
-              final balance = snapshot.data ?? 0;
-
-              return Card(
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(16),
+          if (isLoadingBalance)
+            const CircularProgressIndicator()
+          else
+            Card(
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(16),
+              ),
+              elevation: 4,
+              child: Padding(
+                padding: const EdgeInsets.symmetric(vertical: 32, horizontal: 24),
+                child: Column(
+                  children: [
+                    const Text(
+                      'Balance',
+                      style: TextStyle(fontSize: 20, color: Colors.grey),
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      '${balanceMsats ?? 0} msats',
+                      style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                            color: Theme.of(context).colorScheme.primary,
+                            fontWeight: FontWeight.w600,
+                          ),
+                    ),
+                  ],
                 ),
-                elevation: 4,
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 32, horizontal: 24),
-                  child: Column(
-                    children: [
-                      const Text(
-                        'Balance',
-                        style: TextStyle(fontSize: 20, color: Colors.grey),
-                      ),
-                      const SizedBox(height: 8),
-                      Text(
-                        '$balance msats',
-                        style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                              color: Theme.of(context).colorScheme.primary,
-                              fontWeight: FontWeight.w600,
-                            ),
-                      ),
-                    ],
-                  ),
-                ),
-              );
-            },
-          ),
+              ),
+            ),
 
           const SizedBox(height: 48),
 
@@ -229,7 +236,7 @@ class Dashboard extends StatelessWidget {
                   : Column(
                       children: [
                         ElevatedButton.icon(
-                          onPressed: () => print("Receive tapped"),
+                          onPressed: () => _showReceiveDialog(context),
                           icon: const Icon(Icons.download),
                           label: const Text("Receive"),
                           style: ElevatedButton.styleFrom(

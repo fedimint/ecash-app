@@ -75,7 +75,7 @@ class _MyAppState extends State<MyApp> {
               ),
             )
           : Dashboard(
-              federation: _selectedFederation!,
+              fed: _selectedFederation!,
             ),
       ),
     );
