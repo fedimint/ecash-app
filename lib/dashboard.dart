@@ -77,6 +77,7 @@ class _DashboardState extends State<Dashboard> {
   void _showQRCodeDialog(BuildContext context, BigInt amount) {
     showDialog(
       context: context,
+      barrierDismissible: false,
       builder: (BuildContext dialogContext) {
         return Dialog(
           child: FutureBuilder<(String, OperationId)>(
@@ -106,51 +107,84 @@ class _DashboardState extends State<Dashboard> {
                 );
               }
 
-              final data = snapshot.data!;
+              final (invoice, opId) = snapshot.data!;
 
-              return Padding(
-                padding: const EdgeInsets.all(16),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    QrImageView(
-                      data: data.$1,
-                      version: QrVersions.auto,
-                      size: 200,
-                    ),
-                    const SizedBox(height: 16),
-                    Text(
-                      data.$1,
-                      style: const TextStyle(fontSize: 12),
-                      textAlign: TextAlign.center,
-                    ),
-                    const SizedBox(height: 16),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+              // Start background task when QR is displayed
+              _waitForPayment(context, opId);
+
+              return Stack(
+                children: [
+                  Padding(
+                    padding: const EdgeInsets.all(16),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
                       children: [
-                        TextButton(
-                          child: const Text("Copy"),
-                          onPressed: () async {
-                            await Clipboard.setData(ClipboardData(text: data.$1));
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(content: Text("Copied to clipboard")),
-                            );
-                          },
+                        QrImageView(
+                          data: invoice,
+                          version: QrVersions.auto,
+                          size: 200,
                         ),
-                        TextButton(
-                          onPressed: () => Navigator.pop(context),
-                          child: const Text("Close"),
+                        const SizedBox(height: 16),
+                        Text(
+                          invoice,
+                          style: const TextStyle(fontSize: 12),
+                          textAlign: TextAlign.center,
+                        ),
+                        const SizedBox(height: 16),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                          children: [
+                            TextButton(
+                              child: const Text("Copy"),
+                              onPressed: () async {
+                                await Clipboard.setData(ClipboardData(text: invoice));
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  const SnackBar(content: Text("Copied to clipboard")),
+                                );
+                              },
+                            ),
+                            TextButton(
+                              onPressed: () => Navigator.pop(context),
+                              child: const Text("Close"),
+                            ),
+                          ],
                         ),
                       ],
                     ),
-                  ],
-                ),
+                  ),
+                  // Spinner overlay (non-interfering)
+                  Positioned.fill(
+                    child: IgnorePointer(
+                      ignoring: true,
+                      child: Container(
+                        color: Colors.black.withOpacity(0.3),
+                        child: const Center(child: CircularProgressIndicator()),
+                      ),
+                    ),
+                  ),
+                ],
               );
             },
           ),
         );
       },
     );
+  }
+
+  void _waitForPayment(BuildContext context, OperationId opId) async {
+    await awaitReceive(federationId: widget.fed.federationId, operationId: opId);
+
+    // Pop all dialogs
+    Navigator.of(context, rootNavigator: true).popUntil((route) => route.isFirst);
+
+    // TODO: Check state, verify success
+    // Show success message
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text("Payment Success")),
+    );
+
+    // Refresh the balance
+    _loadBalance();
   }
 
   @override
