@@ -58,7 +58,7 @@ pub async fn federations() -> Vec<FederationSelector> {
 }
 
 #[frb]
-pub async fn balance(federation_id: &FederationId) -> Amount {
+pub async fn balance(federation_id: &FederationId) -> u64 {
     let multimint = get_multimint().await;
     let mm = multimint.read().await;
     mm.balance(federation_id).await
@@ -279,12 +279,12 @@ impl Multimint {
             .await
     }
 
-    pub async fn balance(&self, federation_id: &FederationId) -> Amount {
+    pub async fn balance(&self, federation_id: &FederationId) -> u64 {
         let client = self
             .clients
             .get(federation_id)
             .expect("No federation exists");
-        client.get_balance().await
+        client.get_balance().await.msats
     }
 
     pub async fn receive(

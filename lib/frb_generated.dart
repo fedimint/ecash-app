@@ -131,7 +131,7 @@ abstract class RustLibApi extends BaseApi {
     required OperationId operationId,
   });
 
-  Future<Amount> crateMultimintBalance({
+  Future<BigInt> crateMultimintBalance({
     required Multimint that,
     required FederationId federationId,
   });
@@ -169,7 +169,7 @@ abstract class RustLibApi extends BaseApi {
     required OperationId operationId,
   });
 
-  Future<Amount> crateBalance({required FederationId federationId});
+  Future<BigInt> crateBalance({required FederationId federationId});
 
   Future<List<FederationSelector>> crateFederations();
 
@@ -713,7 +713,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   );
 
   @override
-  Future<Amount> crateMultimintBalance({
+  Future<BigInt> crateMultimintBalance({
     required Multimint that,
     required FederationId federationId,
   }) {
@@ -737,8 +737,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           );
         },
         codec: SseCodec(
-          decodeSuccessData:
-              sse_decode_Auto_Owned_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerAmount,
+          decodeSuccessData: sse_decode_u_64,
           decodeErrorData: null,
         ),
         constMeta: kCrateMultimintBalanceConstMeta,
@@ -1028,7 +1027,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   );
 
   @override
-  Future<Amount> crateBalance({required FederationId federationId}) {
+  Future<BigInt> crateBalance({required FederationId federationId}) {
     return handler.executeNormal(
       NormalTask(
         callFfi: (port_) {
@@ -1045,8 +1044,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           );
         },
         codec: SseCodec(
-          decodeSuccessData:
-              sse_decode_Auto_Owned_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerAmount,
+          decodeSuccessData: sse_decode_u_64,
           decodeErrorData: null,
         ),
         constMeta: kCrateBalanceConstMeta,
@@ -1578,6 +1576,12 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   }
 
   @protected
+  BigInt dco_decode_u_64(dynamic raw) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    return dcoDecodeU64(raw);
+  }
+
+  @protected
   int dco_decode_u_8(dynamic raw) {
     // Codec=Dco (DartCObject based), see doc to use other codecs
     return raw as int;
@@ -1971,6 +1975,12 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           deserializer,
         );
     return (var_field0, var_field1);
+  }
+
+  @protected
+  BigInt sse_decode_u_64(SseDeserializer deserializer) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    return deserializer.buffer.getBigUint64();
   }
 
   @protected
@@ -2409,6 +2419,12 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   }
 
   @protected
+  void sse_encode_u_64(BigInt self, SseSerializer serializer) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    serializer.buffer.putBigUint64(self);
+  }
+
+  @protected
   void sse_encode_u_8(int self, SseSerializer serializer) {
     // Codec=Sse (Serialization based), see doc to use other codecs
     serializer.buffer.putUint8(self);
@@ -2714,7 +2730,7 @@ class MultimintImpl extends RustOpaque implements Multimint {
     operationId: operationId,
   );
 
-  Future<Amount> balance({required FederationId federationId}) => RustLib
+  Future<BigInt> balance({required FederationId federationId}) => RustLib
       .instance
       .api
       .crateMultimintBalance(that: this, federationId: federationId);

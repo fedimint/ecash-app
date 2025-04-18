@@ -4,10 +4,12 @@ import 'package:flutter/material.dart';
 
 class FederationSidebar extends StatelessWidget {
   final Future<List<FederationSelector>> federationsFuture;
+  final void Function(FederationSelector) onFederationSelected;
 
   const FederationSidebar({
     super.key,
     required this.federationsFuture,
+    required this.onFederationSelected,
   });
 
   @override
@@ -36,6 +38,7 @@ class FederationSidebar extends StatelessWidget {
                 title: Text(selector.federationName),
                 onTap: () {
                   Navigator.of(context).pop();
+                  onFederationSelected(selector);
                   print('Selected federation: $selector');
                 },
               )),

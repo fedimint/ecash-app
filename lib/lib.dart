@@ -15,7 +15,7 @@ Future<FederationSelector> joinFederation({required String inviteCode}) =>
 Future<List<FederationSelector>> federations() =>
     RustLib.instance.api.crateFederations();
 
-Future<Amount> balance({required FederationId federationId}) =>
+Future<BigInt> balance({required FederationId federationId}) =>
     RustLib.instance.api.crateBalance(federationId: federationId);
 
 Future<(String, OperationId)> receive({
@@ -91,7 +91,7 @@ abstract class Multimint implements RustOpaqueInterface {
     required OperationId operationId,
   });
 
-  Future<Amount> balance({required FederationId federationId});
+  Future<BigInt> balance({required FederationId federationId});
 
   Future<List<FederationSelector>> federations();
 

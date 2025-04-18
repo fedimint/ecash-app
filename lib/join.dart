@@ -4,8 +4,7 @@ import 'package:flutter/services.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
 
 class JoinFederationPage extends StatefulWidget {
-  const JoinFederationPage({super.key, required this.onFederationJoined});
-  final VoidCallback onFederationJoined;
+  const JoinFederationPage({super.key});
 
   @override
   State<JoinFederationPage> createState() => _JoinFederationPageState();
@@ -33,8 +32,7 @@ class _JoinFederationPageState extends State<JoinFederationPage> {
       print('Pasted from clipboard: $text');
       final selector = await joinFederation(inviteCode: text);
       print('Selector: $selector');
-      widget.onFederationJoined();
-      Navigator.pop(context);
+      Navigator.pop(context, selector);
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text("Clipboard is empty")),

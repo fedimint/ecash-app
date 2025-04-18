@@ -1,3 +1,4 @@
+import 'package:carbine/dashboard.dart';
 import 'package:carbine/frb_generated.dart';
 import 'package:carbine/join.dart';
 import 'package:carbine/lib.dart';
@@ -21,6 +22,7 @@ class MyApp extends StatefulWidget {
 class _MyAppState extends State<MyApp> {
   late Future<List<FederationSelector>> _federationFuture;
   int _refreshTrigger = 0;
+  FederationSelector? _selectedFederation;
 
   @override
   void initState() {
@@ -28,11 +30,29 @@ class _MyAppState extends State<MyApp> {
     _refreshFederations();
   }
 
+  void _setSelectedFederation(FederationSelector fed) {
+    setState(() {
+      _selectedFederation = fed;
+    });
+  }
+
   void _refreshFederations() {
     setState(() {
       _federationFuture = federations();
       _refreshTrigger++;
     });
+  }
+
+  void _onJoinFederationPressed(BuildContext context) async {
+    final result = await Navigator.push<FederationSelector>(
+      context,
+      MaterialPageRoute(builder: (context) => const JoinFederationPage())
+    );
+
+    if (result != null) {
+      _setSelectedFederation(result);
+      _refreshFederations();
+    }
   }
 
   @override
@@ -43,20 +63,20 @@ class _MyAppState extends State<MyApp> {
         drawer: FederationSidebar(
           key: ValueKey(_refreshTrigger),
           federationsFuture: _federationFuture,
+          onFederationSelected: _setSelectedFederation,
         ),
-        body: Builder(
-          builder: (context) => Center(
-            child: ElevatedButton(
-              onPressed: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (context) => JoinFederationPage(onFederationJoined: _refreshFederations,)),
-                );
-              },
-              child: const Text('Join Federation'),
+        body: _selectedFederation == null
+          ? Builder(
+              builder: (context) => Center(
+                child: ElevatedButton(
+                  onPressed: () => _onJoinFederationPressed(context),
+                  child: const Text('Join Federation'),
+                ),
+              ),
+            )
+          : Dashboard(
+              federation: _selectedFederation!,
             ),
-          ),
-        ),
       ),
     );
   }
