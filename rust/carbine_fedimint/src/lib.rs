@@ -67,11 +67,11 @@ pub async fn balance(federation_id: &FederationId) -> u64 {
 #[frb]
 pub async fn receive(
     federation_id: &FederationId,
-    amount: Amount,
+    amount_msats: u64,
 ) -> anyhow::Result<(String, OperationId)> {
     let multimint = get_multimint().await;
     let mm = multimint.read().await;
-    mm.receive(federation_id, amount).await
+    mm.receive(federation_id, amount_msats).await
 }
 
 #[frb]
@@ -290,8 +290,9 @@ impl Multimint {
     pub async fn receive(
         &self,
         federation_id: &FederationId,
-        amount: Amount,
+        amount_msats: u64,
     ) -> anyhow::Result<(String, OperationId)> {
+        let amount = Amount::from_msats(amount_msats);
         let client = self
             .clients
             .get(federation_id)

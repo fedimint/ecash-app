@@ -20,10 +20,10 @@ Future<BigInt> balance({required FederationId federationId}) =>
 
 Future<(String, OperationId)> receive({
   required FederationId federationId,
-  required Amount amount,
+  required BigInt amountMsats,
 }) => RustLib.instance.api.crateReceive(
   federationId: federationId,
-  amount: amount,
+  amountMsats: amountMsats,
 );
 
 Future<OperationId> send({
@@ -49,9 +49,6 @@ Future<FinalReceiveOperationState> awaitReceive({
   federationId: federationId,
   operationId: operationId,
 );
-
-// Rust type: RustOpaqueMoi<flutter_rust_bridge::for_generated::RustAutoOpaqueInner<Amount>>
-abstract class Amount implements RustOpaqueInterface {}
 
 // Rust type: RustOpaqueMoi<flutter_rust_bridge::for_generated::RustAutoOpaqueInner<Connector>>
 abstract class Connector implements RustOpaqueInterface {}
@@ -103,7 +100,7 @@ abstract class Multimint implements RustOpaqueInterface {
 
   Future<(String, OperationId)> receive({
     required FederationId federationId,
-    required Amount amount,
+    required BigInt amountMsats,
   });
 
   Future<OperationId> send({

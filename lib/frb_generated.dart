@@ -150,7 +150,7 @@ abstract class RustLibApi extends BaseApi {
   Future<(String, OperationId)> crateMultimintReceive({
     required Multimint that,
     required FederationId federationId,
-    required Amount amount,
+    required BigInt amountMsats,
   });
 
   Future<OperationId> crateMultimintSend({
@@ -177,19 +177,13 @@ abstract class RustLibApi extends BaseApi {
 
   Future<(String, OperationId)> crateReceive({
     required FederationId federationId,
-    required Amount amount,
+    required BigInt amountMsats,
   });
 
   Future<OperationId> crateSend({
     required FederationId federationId,
     required String invoice,
   });
-
-  RustArcIncrementStrongCountFnType get rust_arc_increment_strong_count_Amount;
-
-  RustArcDecrementStrongCountFnType get rust_arc_decrement_strong_count_Amount;
-
-  CrossPlatformFinalizerArg get rust_arc_decrement_strong_count_AmountPtr;
 
   RustArcIncrementStrongCountFnType
   get rust_arc_increment_strong_count_Connector;
@@ -859,7 +853,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   Future<(String, OperationId)> crateMultimintReceive({
     required Multimint that,
     required FederationId federationId,
-    required Amount amount,
+    required BigInt amountMsats,
   }) {
     return handler.executeNormal(
       NormalTask(
@@ -873,10 +867,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
             federationId,
             serializer,
           );
-          sse_encode_Auto_Owned_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerAmount(
-            amount,
-            serializer,
-          );
+          sse_encode_u_64(amountMsats, serializer);
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
@@ -890,7 +881,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           decodeErrorData: sse_decode_AnyhowException,
         ),
         constMeta: kCrateMultimintReceiveConstMeta,
-        argValues: [that, federationId, amount],
+        argValues: [that, federationId, amountMsats],
         apiImpl: this,
       ),
     );
@@ -898,7 +889,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
 
   TaskConstMeta get kCrateMultimintReceiveConstMeta => const TaskConstMeta(
     debugName: "Multimint_receive",
-    argNames: ["that", "federationId", "amount"],
+    argNames: ["that", "federationId", "amountMsats"],
   );
 
   @override
@@ -1119,7 +1110,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   @override
   Future<(String, OperationId)> crateReceive({
     required FederationId federationId,
-    required Amount amount,
+    required BigInt amountMsats,
   }) {
     return handler.executeNormal(
       NormalTask(
@@ -1129,10 +1120,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
             federationId,
             serializer,
           );
-          sse_encode_Auto_Owned_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerAmount(
-            amount,
-            serializer,
-          );
+          sse_encode_u_64(amountMsats, serializer);
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
@@ -1146,7 +1134,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           decodeErrorData: sse_decode_AnyhowException,
         ),
         constMeta: kCrateReceiveConstMeta,
-        argValues: [federationId, amount],
+        argValues: [federationId, amountMsats],
         apiImpl: this,
       ),
     );
@@ -1154,7 +1142,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
 
   TaskConstMeta get kCrateReceiveConstMeta => const TaskConstMeta(
     debugName: "receive",
-    argNames: ["federationId", "amount"],
+    argNames: ["federationId", "amountMsats"],
   );
 
   @override
@@ -1194,14 +1182,6 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
     debugName: "send",
     argNames: ["federationId", "invoice"],
   );
-
-  RustArcIncrementStrongCountFnType
-  get rust_arc_increment_strong_count_Amount =>
-      wire.rust_arc_increment_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerAmount;
-
-  RustArcDecrementStrongCountFnType
-  get rust_arc_decrement_strong_count_Amount =>
-      wire.rust_arc_decrement_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerAmount;
 
   RustArcIncrementStrongCountFnType
   get rust_arc_increment_strong_count_Connector =>
@@ -1279,15 +1259,6 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   AnyhowException dco_decode_AnyhowException(dynamic raw) {
     // Codec=Dco (DartCObject based), see doc to use other codecs
     return AnyhowException(raw as String);
-  }
-
-  @protected
-  Amount
-  dco_decode_Auto_Owned_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerAmount(
-    dynamic raw,
-  ) {
-    // Codec=Dco (DartCObject based), see doc to use other codecs
-    return AmountImpl.frbInternalDcoDecode(raw as List<dynamic>);
   }
 
   @protected
@@ -1436,15 +1407,6 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   ) {
     // Codec=Dco (DartCObject based), see doc to use other codecs
     return MultimintImpl.frbInternalDcoDecode(raw as List<dynamic>);
-  }
-
-  @protected
-  Amount
-  dco_decode_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerAmount(
-    dynamic raw,
-  ) {
-    // Codec=Dco (DartCObject based), see doc to use other codecs
-    return AmountImpl.frbInternalDcoDecode(raw as List<dynamic>);
   }
 
   @protected
@@ -1604,18 +1566,6 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
     // Codec=Sse (Serialization based), see doc to use other codecs
     var inner = sse_decode_String(deserializer);
     return AnyhowException(inner);
-  }
-
-  @protected
-  Amount
-  sse_decode_Auto_Owned_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerAmount(
-    SseDeserializer deserializer,
-  ) {
-    // Codec=Sse (Serialization based), see doc to use other codecs
-    return AmountImpl.frbInternalSseDecode(
-      sse_decode_usize(deserializer),
-      sse_decode_i_32(deserializer),
-    );
   }
 
   @protected
@@ -1805,18 +1755,6 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   ) {
     // Codec=Sse (Serialization based), see doc to use other codecs
     return MultimintImpl.frbInternalSseDecode(
-      sse_decode_usize(deserializer),
-      sse_decode_i_32(deserializer),
-    );
-  }
-
-  @protected
-  Amount
-  sse_decode_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerAmount(
-    SseDeserializer deserializer,
-  ) {
-    // Codec=Sse (Serialization based), see doc to use other codecs
-    return AmountImpl.frbInternalSseDecode(
       sse_decode_usize(deserializer),
       sse_decode_i_32(deserializer),
     );
@@ -2019,19 +1957,6 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   ) {
     // Codec=Sse (Serialization based), see doc to use other codecs
     sse_encode_String(self.message, serializer);
-  }
-
-  @protected
-  void
-  sse_encode_Auto_Owned_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerAmount(
-    Amount self,
-    SseSerializer serializer,
-  ) {
-    // Codec=Sse (Serialization based), see doc to use other codecs
-    sse_encode_usize(
-      (self as AmountImpl).frbInternalSseEncode(move: true),
-      serializer,
-    );
   }
 
   @protected
@@ -2244,19 +2169,6 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
 
   @protected
   void
-  sse_encode_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerAmount(
-    Amount self,
-    SseSerializer serializer,
-  ) {
-    // Codec=Sse (Serialization based), see doc to use other codecs
-    sse_encode_usize(
-      (self as AmountImpl).frbInternalSseEncode(move: null),
-      serializer,
-    );
-  }
-
-  @protected
-  void
   sse_encode_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerConnector(
     Connector self,
     SseSerializer serializer,
@@ -2452,26 +2364,6 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
     // Codec=Sse (Serialization based), see doc to use other codecs
     serializer.buffer.putUint8(self ? 1 : 0);
   }
-}
-
-@sealed
-class AmountImpl extends RustOpaque implements Amount {
-  // Not to be used by end users
-  AmountImpl.frbInternalDcoDecode(List<dynamic> wire)
-    : super.frbInternalDcoDecode(wire, _kStaticData);
-
-  // Not to be used by end users
-  AmountImpl.frbInternalSseDecode(BigInt ptr, int externalSizeOnNative)
-    : super.frbInternalSseDecode(ptr, externalSizeOnNative, _kStaticData);
-
-  static final _kStaticData = RustArcStaticData(
-    rustArcIncrementStrongCount:
-        RustLib.instance.api.rust_arc_increment_strong_count_Amount,
-    rustArcDecrementStrongCount:
-        RustLib.instance.api.rust_arc_decrement_strong_count_Amount,
-    rustArcDecrementStrongCountPtr:
-        RustLib.instance.api.rust_arc_decrement_strong_count_AmountPtr,
-  );
 }
 
 @sealed
@@ -2746,11 +2638,11 @@ class MultimintImpl extends RustOpaque implements Multimint {
 
   Future<(String, OperationId)> receive({
     required FederationId federationId,
-    required Amount amount,
+    required BigInt amountMsats,
   }) => RustLib.instance.api.crateMultimintReceive(
     that: this,
     federationId: federationId,
-    amount: amount,
+    amountMsats: amountMsats,
   );
 
   Future<OperationId> send({
