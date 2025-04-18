@@ -1,5 +1,7 @@
 import 'package:carbine/frb_generated.dart';
+import 'package:carbine/join.dart';
 import 'package:carbine/lib.dart';
+import 'package:carbine/sidebar.dart';
 
 import 'package:flutter/material.dart';
 
@@ -17,25 +19,20 @@ class MyApp extends StatefulWidget {
 }
 
 class _MyAppState extends State<MyApp> {
+  late Future<List<FederationSelector>> _federationFuture;
+  int _refreshTrigger = 0;
 
   @override
   void initState() {
     super.initState();
-    _initMultimint();
+    _refreshFederations();
   }
 
-  Future<void> _initMultimint() async {
-    try {
-      print("Initializing multimint...");
-      final feds = await federations();
-      print(feds);
-    } catch (e) {
-      print('Failed to initialize Multimint: $e');
-    }
-  }
-
-  void _onJoinFederationPressed() {
-    print("Join Federation button pressed");
+  void _refreshFederations() {
+    setState(() {
+      _federationFuture = federations();
+      _refreshTrigger++;
+    });
   }
 
   @override
@@ -43,11 +40,22 @@ class _MyAppState extends State<MyApp> {
     return MaterialApp(
       home: Scaffold(
         appBar: AppBar(title: const Text('Multimint App')),
-        body: Center(
-          child: ElevatedButton(
-                  onPressed: _onJoinFederationPressed,
-                  child: const Text('Join Federation'),
-                ),
+        drawer: FederationSidebar(
+          key: ValueKey(_refreshTrigger),
+          federationsFuture: _federationFuture,
+        ),
+        body: Builder(
+          builder: (context) => Center(
+            child: ElevatedButton(
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => JoinFederationPage(onFederationJoined: _refreshFederations,)),
+                );
+              },
+              child: const Text('Join Federation'),
+            ),
+          ),
         ),
       ),
     );

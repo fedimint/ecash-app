@@ -10,6 +10,7 @@ dependencies:
   flutter:
     sdk: flutter
   flutter_rust_bridge: 2.9.0
+  mobile_scanner: ^3.5.1
 
 dev_dependencies:
   flutter_test:

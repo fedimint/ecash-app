@@ -60,7 +60,15 @@ abstract class Connector implements RustOpaqueInterface {}
 abstract class FederationId implements RustOpaqueInterface {}
 
 // Rust type: RustOpaqueMoi<flutter_rust_bridge::for_generated::RustAutoOpaqueInner<FederationSelector>>
-abstract class FederationSelector implements RustOpaqueInterface {}
+abstract class FederationSelector implements RustOpaqueInterface {
+  FederationId get federationId;
+
+  String get federationName;
+
+  set federationId(FederationId federationId);
+
+  set federationName(String federationName);
+}
 
 // Rust type: RustOpaqueMoi<flutter_rust_bridge::for_generated::RustAutoOpaqueInner<FinalReceiveOperationState>>
 abstract class FinalReceiveOperationState implements RustOpaqueInterface {}

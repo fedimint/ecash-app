@@ -106,9 +106,9 @@ pub async fn await_receive(
 
 
 #[derive(Clone, Eq, PartialEq, Serialize)]
-struct FederationSelector {
-    federation_name: String,
-    federation_id: FederationId,
+pub struct FederationSelector {
+    pub federation_name: String,
+    pub federation_id: FederationId,
 }
 
 impl Display for FederationSelector {
