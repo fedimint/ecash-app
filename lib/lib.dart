@@ -4,10 +4,54 @@
 // ignore_for_file: invalid_use_of_internal_member, unused_import, unnecessary_import
 
 import 'frb_generated.dart';
-import 'multimint.dart';
 import 'package:flutter_rust_bridge/flutter_rust_bridge_for_generated.dart';
 
-Future<Multimint> initMultimint() => RustLib.instance.api.crateInitMultimint();
+// These functions are ignored because they are not marked as `pub`: `build_client`, `derive_federation_secret`, `get_client_database`, `get_multimint`, `has_federation`, `init_global`, `load_clients`
+// These function are ignored because they are on traits that is not defined in current crate (put an empty `#[frb]` on it to unignore): `assert_receiver_is_total_eq`, `clone`, `eq`, `fmt`
+
+Future<FederationSelector> joinFederation({required String inviteCode}) =>
+    RustLib.instance.api.crateJoinFederation(inviteCode: inviteCode);
+
+Future<List<FederationSelector>> federations() =>
+    RustLib.instance.api.crateFederations();
+
+Future<Amount> balance({required FederationId federationId}) =>
+    RustLib.instance.api.crateBalance(federationId: federationId);
+
+Future<(String, OperationId)> receive({
+  required FederationId federationId,
+  required Amount amount,
+}) => RustLib.instance.api.crateReceive(
+  federationId: federationId,
+  amount: amount,
+);
+
+Future<OperationId> send({
+  required FederationId federationId,
+  required String invoice,
+}) => RustLib.instance.api.crateSend(
+  federationId: federationId,
+  invoice: invoice,
+);
+
+Future<FinalSendOperationState> awaitSend({
+  required FederationId federationId,
+  required OperationId operationId,
+}) => RustLib.instance.api.crateAwaitSend(
+  federationId: federationId,
+  operationId: operationId,
+);
+
+Future<FinalReceiveOperationState> awaitReceive({
+  required FederationId federationId,
+  required OperationId operationId,
+}) => RustLib.instance.api.crateAwaitReceive(
+  federationId: federationId,
+  operationId: operationId,
+);
+
+// Rust type: RustOpaqueMoi<flutter_rust_bridge::for_generated::RustAutoOpaqueInner<Amount>>
+abstract class Amount implements RustOpaqueInterface {}
 
 // Rust type: RustOpaqueMoi<flutter_rust_bridge::for_generated::RustAutoOpaqueInner<Connector>>
 abstract class Connector implements RustOpaqueInterface {}
@@ -15,5 +59,50 @@ abstract class Connector implements RustOpaqueInterface {}
 // Rust type: RustOpaqueMoi<flutter_rust_bridge::for_generated::RustAutoOpaqueInner<FederationId>>
 abstract class FederationId implements RustOpaqueInterface {}
 
+// Rust type: RustOpaqueMoi<flutter_rust_bridge::for_generated::RustAutoOpaqueInner<FederationSelector>>
+abstract class FederationSelector implements RustOpaqueInterface {}
+
+// Rust type: RustOpaqueMoi<flutter_rust_bridge::for_generated::RustAutoOpaqueInner<FinalReceiveOperationState>>
+abstract class FinalReceiveOperationState implements RustOpaqueInterface {}
+
+// Rust type: RustOpaqueMoi<flutter_rust_bridge::for_generated::RustAutoOpaqueInner<FinalSendOperationState>>
+abstract class FinalSendOperationState implements RustOpaqueInterface {}
+
 // Rust type: RustOpaqueMoi<flutter_rust_bridge::for_generated::RustAutoOpaqueInner<InviteCode>>
 abstract class InviteCode implements RustOpaqueInterface {}
+
+// Rust type: RustOpaqueMoi<flutter_rust_bridge::for_generated::RustAutoOpaqueInner<Multimint>>
+abstract class Multimint implements RustOpaqueInterface {
+  Future<FinalReceiveOperationState> awaitReceive({
+    required FederationId federationId,
+    required OperationId operationId,
+  });
+
+  Future<FinalSendOperationState> awaitSend({
+    required FederationId federationId,
+    required OperationId operationId,
+  });
+
+  Future<Amount> balance({required FederationId federationId});
+
+  Future<List<FederationSelector>> federations();
+
+  Future<FederationSelector> joinFederation({required String inviteCode});
+
+  // HINT: Make it `#[frb(sync)]` to let it become the default constructor of Dart class.
+  static Future<Multimint> newInstance() =>
+      RustLib.instance.api.crateMultimintNew();
+
+  Future<(String, OperationId)> receive({
+    required FederationId federationId,
+    required Amount amount,
+  });
+
+  Future<OperationId> send({
+    required FederationId federationId,
+    required String invoice,
+  });
+}
+
+// Rust type: RustOpaqueMoi<flutter_rust_bridge::for_generated::RustAutoOpaqueInner<OperationId>>
+abstract class OperationId implements RustOpaqueInterface {}

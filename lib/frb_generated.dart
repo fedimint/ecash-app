@@ -10,7 +10,6 @@ import 'frb_generated.dart';
 import 'frb_generated.io.dart'
     if (dart.library.js_interop) 'frb_generated.web.dart';
 import 'lib.dart';
-import 'multimint.dart';
 import 'package:flutter_rust_bridge/flutter_rust_bridge_for_generated.dart';
 
 /// Main entrypoint of the Rust API
@@ -64,7 +63,7 @@ class RustLib extends BaseEntrypoint<RustLibApi, RustLibApiImpl, RustLibWire> {
   String get codegenVersion => '2.9.0';
 
   @override
-  int get rustContentHash => 905917004;
+  int get rustContentHash => -162772731;
 
   static const kDefaultExternalLibraryLoaderConfig =
       ExternalLibraryLoaderConfig(
@@ -102,47 +101,71 @@ abstract class RustLibApi extends BaseApi {
     required InviteCode inviteCode,
   });
 
-  Future<FinalReceiveOperationState> crateMultimintMultimintAwaitReceive({
+  Future<FinalReceiveOperationState> crateMultimintAwaitReceive({
     required Multimint that,
     required FederationId federationId,
     required OperationId operationId,
   });
 
-  Future<FinalSendOperationState> crateMultimintMultimintAwaitSend({
+  Future<FinalSendOperationState> crateMultimintAwaitSend({
     required Multimint that,
     required FederationId federationId,
     required OperationId operationId,
   });
 
-  Future<Amount> crateMultimintMultimintBalance({
+  Future<Amount> crateMultimintBalance({
     required Multimint that,
     required FederationId federationId,
   });
 
-  Future<List<FederationSelector>> crateMultimintMultimintFederations({
+  Future<List<FederationSelector>> crateMultimintFederations({
     required Multimint that,
   });
 
-  Future<FederationSelector> crateMultimintMultimintJoinFederation({
+  Future<FederationSelector> crateMultimintJoinFederation({
     required Multimint that,
     required String inviteCode,
   });
 
-  Future<Multimint> crateMultimintMultimintNew();
+  Future<Multimint> crateMultimintNew();
 
-  Future<(String, OperationId)> crateMultimintMultimintReceive({
+  Future<(String, OperationId)> crateMultimintReceive({
     required Multimint that,
     required FederationId federationId,
     required Amount amount,
   });
 
-  Future<OperationId> crateMultimintMultimintSend({
+  Future<OperationId> crateMultimintSend({
     required Multimint that,
     required FederationId federationId,
     required String invoice,
   });
 
-  Future<Multimint> crateInitMultimint();
+  Future<FinalReceiveOperationState> crateAwaitReceive({
+    required FederationId federationId,
+    required OperationId operationId,
+  });
+
+  Future<FinalSendOperationState> crateAwaitSend({
+    required FederationId federationId,
+    required OperationId operationId,
+  });
+
+  Future<Amount> crateBalance({required FederationId federationId});
+
+  Future<List<FederationSelector>> crateFederations();
+
+  Future<FederationSelector> crateJoinFederation({required String inviteCode});
+
+  Future<(String, OperationId)> crateReceive({
+    required FederationId federationId,
+    required Amount amount,
+  });
+
+  Future<OperationId> crateSend({
+    required FederationId federationId,
+    required String invoice,
+  });
 
   RustArcIncrementStrongCountFnType get rust_arc_increment_strong_count_Amount;
 
@@ -442,7 +465,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
       );
 
   @override
-  Future<FinalReceiveOperationState> crateMultimintMultimintAwaitReceive({
+  Future<FinalReceiveOperationState> crateMultimintAwaitReceive({
     required Multimint that,
     required FederationId federationId,
     required OperationId operationId,
@@ -475,21 +498,20 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
               sse_decode_Auto_Owned_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerFinalReceiveOperationState,
           decodeErrorData: sse_decode_AnyhowException,
         ),
-        constMeta: kCrateMultimintMultimintAwaitReceiveConstMeta,
+        constMeta: kCrateMultimintAwaitReceiveConstMeta,
         argValues: [that, federationId, operationId],
         apiImpl: this,
       ),
     );
   }
 
-  TaskConstMeta get kCrateMultimintMultimintAwaitReceiveConstMeta =>
-      const TaskConstMeta(
-        debugName: "Multimint_await_receive",
-        argNames: ["that", "federationId", "operationId"],
-      );
+  TaskConstMeta get kCrateMultimintAwaitReceiveConstMeta => const TaskConstMeta(
+    debugName: "Multimint_await_receive",
+    argNames: ["that", "federationId", "operationId"],
+  );
 
   @override
-  Future<FinalSendOperationState> crateMultimintMultimintAwaitSend({
+  Future<FinalSendOperationState> crateMultimintAwaitSend({
     required Multimint that,
     required FederationId federationId,
     required OperationId operationId,
@@ -522,21 +544,20 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
               sse_decode_Auto_Owned_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerFinalSendOperationState,
           decodeErrorData: sse_decode_AnyhowException,
         ),
-        constMeta: kCrateMultimintMultimintAwaitSendConstMeta,
+        constMeta: kCrateMultimintAwaitSendConstMeta,
         argValues: [that, federationId, operationId],
         apiImpl: this,
       ),
     );
   }
 
-  TaskConstMeta get kCrateMultimintMultimintAwaitSendConstMeta =>
-      const TaskConstMeta(
-        debugName: "Multimint_await_send",
-        argNames: ["that", "federationId", "operationId"],
-      );
+  TaskConstMeta get kCrateMultimintAwaitSendConstMeta => const TaskConstMeta(
+    debugName: "Multimint_await_send",
+    argNames: ["that", "federationId", "operationId"],
+  );
 
   @override
-  Future<Amount> crateMultimintMultimintBalance({
+  Future<Amount> crateMultimintBalance({
     required Multimint that,
     required FederationId federationId,
   }) {
@@ -564,21 +585,20 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
               sse_decode_Auto_Owned_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerAmount,
           decodeErrorData: null,
         ),
-        constMeta: kCrateMultimintMultimintBalanceConstMeta,
+        constMeta: kCrateMultimintBalanceConstMeta,
         argValues: [that, federationId],
         apiImpl: this,
       ),
     );
   }
 
-  TaskConstMeta get kCrateMultimintMultimintBalanceConstMeta =>
-      const TaskConstMeta(
-        debugName: "Multimint_balance",
-        argNames: ["that", "federationId"],
-      );
+  TaskConstMeta get kCrateMultimintBalanceConstMeta => const TaskConstMeta(
+    debugName: "Multimint_balance",
+    argNames: ["that", "federationId"],
+  );
 
   @override
-  Future<List<FederationSelector>> crateMultimintMultimintFederations({
+  Future<List<FederationSelector>> crateMultimintFederations({
     required Multimint that,
   }) {
     return handler.executeNormal(
@@ -601,21 +621,20 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
               sse_decode_list_Auto_Owned_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerFederationSelector,
           decodeErrorData: null,
         ),
-        constMeta: kCrateMultimintMultimintFederationsConstMeta,
+        constMeta: kCrateMultimintFederationsConstMeta,
         argValues: [that],
         apiImpl: this,
       ),
     );
   }
 
-  TaskConstMeta get kCrateMultimintMultimintFederationsConstMeta =>
-      const TaskConstMeta(
-        debugName: "Multimint_federations",
-        argNames: ["that"],
-      );
+  TaskConstMeta get kCrateMultimintFederationsConstMeta => const TaskConstMeta(
+    debugName: "Multimint_federations",
+    argNames: ["that"],
+  );
 
   @override
-  Future<FederationSelector> crateMultimintMultimintJoinFederation({
+  Future<FederationSelector> crateMultimintJoinFederation({
     required Multimint that,
     required String inviteCode,
   }) {
@@ -640,21 +659,21 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
               sse_decode_Auto_Owned_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerFederationSelector,
           decodeErrorData: sse_decode_AnyhowException,
         ),
-        constMeta: kCrateMultimintMultimintJoinFederationConstMeta,
+        constMeta: kCrateMultimintJoinFederationConstMeta,
         argValues: [that, inviteCode],
         apiImpl: this,
       ),
     );
   }
 
-  TaskConstMeta get kCrateMultimintMultimintJoinFederationConstMeta =>
+  TaskConstMeta get kCrateMultimintJoinFederationConstMeta =>
       const TaskConstMeta(
         debugName: "Multimint_join_federation",
         argNames: ["that", "inviteCode"],
       );
 
   @override
-  Future<Multimint> crateMultimintMultimintNew() {
+  Future<Multimint> crateMultimintNew() {
     return handler.executeNormal(
       NormalTask(
         callFfi: (port_) {
@@ -671,18 +690,18 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
               sse_decode_Auto_Owned_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerMultimint,
           decodeErrorData: sse_decode_AnyhowException,
         ),
-        constMeta: kCrateMultimintMultimintNewConstMeta,
+        constMeta: kCrateMultimintNewConstMeta,
         argValues: [],
         apiImpl: this,
       ),
     );
   }
 
-  TaskConstMeta get kCrateMultimintMultimintNewConstMeta =>
+  TaskConstMeta get kCrateMultimintNewConstMeta =>
       const TaskConstMeta(debugName: "Multimint_new", argNames: []);
 
   @override
-  Future<(String, OperationId)> crateMultimintMultimintReceive({
+  Future<(String, OperationId)> crateMultimintReceive({
     required Multimint that,
     required FederationId federationId,
     required Amount amount,
@@ -715,21 +734,20 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
               sse_decode_record_string_auto_owned_rust_opaque_flutter_rust_bridgefor_generated_rust_auto_opaque_inner_operation_id,
           decodeErrorData: sse_decode_AnyhowException,
         ),
-        constMeta: kCrateMultimintMultimintReceiveConstMeta,
+        constMeta: kCrateMultimintReceiveConstMeta,
         argValues: [that, federationId, amount],
         apiImpl: this,
       ),
     );
   }
 
-  TaskConstMeta get kCrateMultimintMultimintReceiveConstMeta =>
-      const TaskConstMeta(
-        debugName: "Multimint_receive",
-        argNames: ["that", "federationId", "amount"],
-      );
+  TaskConstMeta get kCrateMultimintReceiveConstMeta => const TaskConstMeta(
+    debugName: "Multimint_receive",
+    argNames: ["that", "federationId", "amount"],
+  );
 
   @override
-  Future<OperationId> crateMultimintMultimintSend({
+  Future<OperationId> crateMultimintSend({
     required Multimint that,
     required FederationId federationId,
     required String invoice,
@@ -759,25 +777,35 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
               sse_decode_Auto_Owned_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerOperationId,
           decodeErrorData: sse_decode_AnyhowException,
         ),
-        constMeta: kCrateMultimintMultimintSendConstMeta,
+        constMeta: kCrateMultimintSendConstMeta,
         argValues: [that, federationId, invoice],
         apiImpl: this,
       ),
     );
   }
 
-  TaskConstMeta get kCrateMultimintMultimintSendConstMeta =>
-      const TaskConstMeta(
-        debugName: "Multimint_send",
-        argNames: ["that", "federationId", "invoice"],
-      );
+  TaskConstMeta get kCrateMultimintSendConstMeta => const TaskConstMeta(
+    debugName: "Multimint_send",
+    argNames: ["that", "federationId", "invoice"],
+  );
 
   @override
-  Future<Multimint> crateInitMultimint() {
+  Future<FinalReceiveOperationState> crateAwaitReceive({
+    required FederationId federationId,
+    required OperationId operationId,
+  }) {
     return handler.executeNormal(
       NormalTask(
         callFfi: (port_) {
           final serializer = SseSerializer(generalizedFrbRustBinding);
+          sse_encode_Auto_Ref_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerFederationId(
+            federationId,
+            serializer,
+          );
+          sse_encode_Auto_Owned_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerOperationId(
+            operationId,
+            serializer,
+          );
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
@@ -787,18 +815,231 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
         },
         codec: SseCodec(
           decodeSuccessData:
-              sse_decode_Auto_Owned_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerMultimint,
+              sse_decode_Auto_Owned_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerFinalReceiveOperationState,
           decodeErrorData: sse_decode_AnyhowException,
         ),
-        constMeta: kCrateInitMultimintConstMeta,
+        constMeta: kCrateAwaitReceiveConstMeta,
+        argValues: [federationId, operationId],
+        apiImpl: this,
+      ),
+    );
+  }
+
+  TaskConstMeta get kCrateAwaitReceiveConstMeta => const TaskConstMeta(
+    debugName: "await_receive",
+    argNames: ["federationId", "operationId"],
+  );
+
+  @override
+  Future<FinalSendOperationState> crateAwaitSend({
+    required FederationId federationId,
+    required OperationId operationId,
+  }) {
+    return handler.executeNormal(
+      NormalTask(
+        callFfi: (port_) {
+          final serializer = SseSerializer(generalizedFrbRustBinding);
+          sse_encode_Auto_Ref_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerFederationId(
+            federationId,
+            serializer,
+          );
+          sse_encode_Auto_Owned_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerOperationId(
+            operationId,
+            serializer,
+          );
+          pdeCallFfi(
+            generalizedFrbRustBinding,
+            serializer,
+            funcId: 16,
+            port: port_,
+          );
+        },
+        codec: SseCodec(
+          decodeSuccessData:
+              sse_decode_Auto_Owned_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerFinalSendOperationState,
+          decodeErrorData: sse_decode_AnyhowException,
+        ),
+        constMeta: kCrateAwaitSendConstMeta,
+        argValues: [federationId, operationId],
+        apiImpl: this,
+      ),
+    );
+  }
+
+  TaskConstMeta get kCrateAwaitSendConstMeta => const TaskConstMeta(
+    debugName: "await_send",
+    argNames: ["federationId", "operationId"],
+  );
+
+  @override
+  Future<Amount> crateBalance({required FederationId federationId}) {
+    return handler.executeNormal(
+      NormalTask(
+        callFfi: (port_) {
+          final serializer = SseSerializer(generalizedFrbRustBinding);
+          sse_encode_Auto_Ref_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerFederationId(
+            federationId,
+            serializer,
+          );
+          pdeCallFfi(
+            generalizedFrbRustBinding,
+            serializer,
+            funcId: 17,
+            port: port_,
+          );
+        },
+        codec: SseCodec(
+          decodeSuccessData:
+              sse_decode_Auto_Owned_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerAmount,
+          decodeErrorData: null,
+        ),
+        constMeta: kCrateBalanceConstMeta,
+        argValues: [federationId],
+        apiImpl: this,
+      ),
+    );
+  }
+
+  TaskConstMeta get kCrateBalanceConstMeta =>
+      const TaskConstMeta(debugName: "balance", argNames: ["federationId"]);
+
+  @override
+  Future<List<FederationSelector>> crateFederations() {
+    return handler.executeNormal(
+      NormalTask(
+        callFfi: (port_) {
+          final serializer = SseSerializer(generalizedFrbRustBinding);
+          pdeCallFfi(
+            generalizedFrbRustBinding,
+            serializer,
+            funcId: 18,
+            port: port_,
+          );
+        },
+        codec: SseCodec(
+          decodeSuccessData:
+              sse_decode_list_Auto_Owned_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerFederationSelector,
+          decodeErrorData: null,
+        ),
+        constMeta: kCrateFederationsConstMeta,
         argValues: [],
         apiImpl: this,
       ),
     );
   }
 
-  TaskConstMeta get kCrateInitMultimintConstMeta =>
-      const TaskConstMeta(debugName: "init_multimint", argNames: []);
+  TaskConstMeta get kCrateFederationsConstMeta =>
+      const TaskConstMeta(debugName: "federations", argNames: []);
+
+  @override
+  Future<FederationSelector> crateJoinFederation({required String inviteCode}) {
+    return handler.executeNormal(
+      NormalTask(
+        callFfi: (port_) {
+          final serializer = SseSerializer(generalizedFrbRustBinding);
+          sse_encode_String(inviteCode, serializer);
+          pdeCallFfi(
+            generalizedFrbRustBinding,
+            serializer,
+            funcId: 19,
+            port: port_,
+          );
+        },
+        codec: SseCodec(
+          decodeSuccessData:
+              sse_decode_Auto_Owned_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerFederationSelector,
+          decodeErrorData: sse_decode_AnyhowException,
+        ),
+        constMeta: kCrateJoinFederationConstMeta,
+        argValues: [inviteCode],
+        apiImpl: this,
+      ),
+    );
+  }
+
+  TaskConstMeta get kCrateJoinFederationConstMeta => const TaskConstMeta(
+    debugName: "join_federation",
+    argNames: ["inviteCode"],
+  );
+
+  @override
+  Future<(String, OperationId)> crateReceive({
+    required FederationId federationId,
+    required Amount amount,
+  }) {
+    return handler.executeNormal(
+      NormalTask(
+        callFfi: (port_) {
+          final serializer = SseSerializer(generalizedFrbRustBinding);
+          sse_encode_Auto_Ref_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerFederationId(
+            federationId,
+            serializer,
+          );
+          sse_encode_Auto_Owned_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerAmount(
+            amount,
+            serializer,
+          );
+          pdeCallFfi(
+            generalizedFrbRustBinding,
+            serializer,
+            funcId: 20,
+            port: port_,
+          );
+        },
+        codec: SseCodec(
+          decodeSuccessData:
+              sse_decode_record_string_auto_owned_rust_opaque_flutter_rust_bridgefor_generated_rust_auto_opaque_inner_operation_id,
+          decodeErrorData: sse_decode_AnyhowException,
+        ),
+        constMeta: kCrateReceiveConstMeta,
+        argValues: [federationId, amount],
+        apiImpl: this,
+      ),
+    );
+  }
+
+  TaskConstMeta get kCrateReceiveConstMeta => const TaskConstMeta(
+    debugName: "receive",
+    argNames: ["federationId", "amount"],
+  );
+
+  @override
+  Future<OperationId> crateSend({
+    required FederationId federationId,
+    required String invoice,
+  }) {
+    return handler.executeNormal(
+      NormalTask(
+        callFfi: (port_) {
+          final serializer = SseSerializer(generalizedFrbRustBinding);
+          sse_encode_Auto_Ref_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerFederationId(
+            federationId,
+            serializer,
+          );
+          sse_encode_String(invoice, serializer);
+          pdeCallFfi(
+            generalizedFrbRustBinding,
+            serializer,
+            funcId: 21,
+            port: port_,
+          );
+        },
+        codec: SseCodec(
+          decodeSuccessData:
+              sse_decode_Auto_Owned_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerOperationId,
+          decodeErrorData: sse_decode_AnyhowException,
+        ),
+        constMeta: kCrateSendConstMeta,
+        argValues: [federationId, invoice],
+        apiImpl: this,
+      ),
+    );
+  }
+
+  TaskConstMeta get kCrateSendConstMeta => const TaskConstMeta(
+    debugName: "send",
+    argNames: ["federationId", "invoice"],
+  );
 
   RustArcIncrementStrongCountFnType
   get rust_arc_increment_strong_count_Amount =>
@@ -2182,7 +2423,7 @@ class MultimintImpl extends RustOpaque implements Multimint {
   Future<FinalReceiveOperationState> awaitReceive({
     required FederationId federationId,
     required OperationId operationId,
-  }) => RustLib.instance.api.crateMultimintMultimintAwaitReceive(
+  }) => RustLib.instance.api.crateMultimintAwaitReceive(
     that: this,
     federationId: federationId,
     operationId: operationId,
@@ -2191,7 +2432,7 @@ class MultimintImpl extends RustOpaque implements Multimint {
   Future<FinalSendOperationState> awaitSend({
     required FederationId federationId,
     required OperationId operationId,
-  }) => RustLib.instance.api.crateMultimintMultimintAwaitSend(
+  }) => RustLib.instance.api.crateMultimintAwaitSend(
     that: this,
     federationId: federationId,
     operationId: operationId,
@@ -2200,13 +2441,13 @@ class MultimintImpl extends RustOpaque implements Multimint {
   Future<Amount> balance({required FederationId federationId}) => RustLib
       .instance
       .api
-      .crateMultimintMultimintBalance(that: this, federationId: federationId);
+      .crateMultimintBalance(that: this, federationId: federationId);
 
   Future<List<FederationSelector>> federations() =>
-      RustLib.instance.api.crateMultimintMultimintFederations(that: this);
+      RustLib.instance.api.crateMultimintFederations(that: this);
 
   Future<FederationSelector> joinFederation({required String inviteCode}) =>
-      RustLib.instance.api.crateMultimintMultimintJoinFederation(
+      RustLib.instance.api.crateMultimintJoinFederation(
         that: this,
         inviteCode: inviteCode,
       );
@@ -2214,7 +2455,7 @@ class MultimintImpl extends RustOpaque implements Multimint {
   Future<(String, OperationId)> receive({
     required FederationId federationId,
     required Amount amount,
-  }) => RustLib.instance.api.crateMultimintMultimintReceive(
+  }) => RustLib.instance.api.crateMultimintReceive(
     that: this,
     federationId: federationId,
     amount: amount,
@@ -2223,7 +2464,7 @@ class MultimintImpl extends RustOpaque implements Multimint {
   Future<OperationId> send({
     required FederationId federationId,
     required String invoice,
-  }) => RustLib.instance.api.crateMultimintMultimintSend(
+  }) => RustLib.instance.api.crateMultimintSend(
     that: this,
     federationId: federationId,
     invoice: invoice,

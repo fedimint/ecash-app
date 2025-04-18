@@ -1,6 +1,5 @@
 import 'package:carbine/frb_generated.dart';
 import 'package:carbine/lib.dart';
-import 'package:carbine/multimint.dart';
 
 import 'package:flutter/material.dart';
 
@@ -18,7 +17,6 @@ class MyApp extends StatefulWidget {
 }
 
 class _MyAppState extends State<MyApp> {
-  Multimint? multimint;
 
   @override
   void initState() {
@@ -29,11 +27,8 @@ class _MyAppState extends State<MyApp> {
   Future<void> _initMultimint() async {
     try {
       print("Initializing multimint...");
-      final instance = await initMultimint();
-      print("Initialized multimint!");
-      setState(() {
-        multimint = instance;
-      });
+      final feds = await federations();
+      print(feds);
     } catch (e) {
       print('Failed to initialize Multimint: $e');
     }
@@ -49,9 +44,7 @@ class _MyAppState extends State<MyApp> {
       home: Scaffold(
         appBar: AppBar(title: const Text('Multimint App')),
         body: Center(
-          child: multimint == null
-              ? const CircularProgressIndicator()
-              : ElevatedButton(
+          child: ElevatedButton(
                   onPressed: _onJoinFederationPressed,
                   child: const Text('Join Federation'),
                 ),
