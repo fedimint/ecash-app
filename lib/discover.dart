@@ -2,7 +2,8 @@ import 'package:carbine/lib.dart';
 import 'package:flutter/material.dart';
 
 class Discover extends StatefulWidget {
-  const Discover({super.key});
+  final void Function(FederationSelector fed) onJoin;
+  const Discover({super.key, required this.onJoin});
 
   @override
   State<Discover> createState() => _Discover();
@@ -27,7 +28,7 @@ class _Discover extends State<Discover> {
         } else if (snapshot.hasError) {
           return Center(child: Text("Error: ${snapshot.error}"));
         } else if (!snapshot.hasData || snapshot.data!.isEmpty) {
-          return const Center(child: Text("No federations found."));
+          return const Center(child: Text("No public federations available to join"));
         }
 
         final federations = snapshot.data!;
@@ -79,11 +80,23 @@ class _Discover extends State<Discover> {
                 ],
               ),
               trailing: ElevatedButton(
-                onPressed: () {
+                onPressed: () async {
                   // Handle join logic
                   ScaffoldMessenger.of(context).showSnackBar(
                     SnackBar(content: Text("Joining ${federation.federationName}...")),
                   );
+
+                  try {
+                    final fed = await joinFederation(inviteCode: federation.inviteCodes.first);
+                    widget.onJoin(fed);
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(content: Text("Joined ${federation.federationName}")),
+                    );
+                  } catch (e) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(content: Text("Could not join federation")),
+                    );
+                  }
                 },
                 child: const Text("Join"),
               ),

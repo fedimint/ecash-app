@@ -40,6 +40,11 @@ class _MyAppState extends State<MyApp> {
     _refreshFederations();
   }
 
+  void _onJoinPressed(FederationSelector fed) {
+    _setSelectedFederation(fed);
+    _refreshFederations();
+  }
+
   void _setSelectedFederation(FederationSelector fed) {
     setState(() {
       _selectedFederation = fed;
@@ -90,7 +95,7 @@ class _MyAppState extends State<MyApp> {
             onFederationSelected: _setSelectedFederation,
           ),
           body: _selectedFederation == null
-                ? const Discover()
+                ? Discover(onJoin: _onJoinPressed)
                 : Dashboard(fed: _selectedFederation!),
           bottomNavigationBar: BottomNavigationBar(
             currentIndex: _currentIndex,

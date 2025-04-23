@@ -124,7 +124,11 @@ pub async fn list_federations_from_nostr(force_update: bool) -> Vec<PublicFedera
     if mm.public_federations.is_empty() || force_update {
         mm.update_federations_from_nostr().await;
     }
-    mm.public_federations.clone()
+    mm.public_federations
+        .clone()
+        .into_iter()
+        .filter(|pub_fed| !mm.clients.contains_key(&pub_fed.federation_id))
+        .collect()
 }
 
 #[derive(Clone, Eq, PartialEq, Serialize, Debug)]
@@ -283,7 +287,8 @@ impl Multimint {
                                 });
                                 let picture = json.get("picture").map(|val| {
                                     SafeUrl::parse(val.as_str().expect("Could not parse as str"))
-                                        .expect("Could not parse as SafeUrl").to_string()
+                                        .expect("Could not parse as SafeUrl")
+                                        .to_string()
                                 });
                                 (federation_name, about, picture)
                             }
