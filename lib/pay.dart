@@ -27,6 +27,8 @@ class _PayState extends State<Pay> {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text("Payment Success")),
         );
+
+        Navigator.pop(context);
       }
     } catch (e) {
       if (context.mounted) {

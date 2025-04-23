@@ -55,7 +55,7 @@ class _ScanQRPageState extends State<ScanQRPage> {
           final fedId = currFed.federationId;
           final bal = await balance(federationId: fedId);
           if (currFed.network == paymentPreview.network && bal > paymentPreview.amount) {
-            Navigator.push(
+            await Navigator.push(
               context,
               MaterialPageRoute(
                 builder: (context) => Pay(
@@ -64,6 +64,7 @@ class _ScanQRPageState extends State<ScanQRPage> {
                 ),
               ),
             );
+            Navigator.pop(context, currFed);
             return;
           }
         }
