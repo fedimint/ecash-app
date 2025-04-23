@@ -3,14 +3,14 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
 
-class JoinFederationPage extends StatefulWidget {
-  const JoinFederationPage({super.key});
+class ScanQRPage extends StatefulWidget {
+  const ScanQRPage({super.key});
 
   @override
-  State<JoinFederationPage> createState() => _JoinFederationPageState();
+  State<ScanQRPage> createState() => _ScanQRPageState();
 }
 
-class _JoinFederationPageState extends State<JoinFederationPage> {
+class _ScanQRPageState extends State<ScanQRPage> {
   bool _scanned = false;
   
   void _onQRCodeScanned(String code) {
@@ -20,7 +20,7 @@ class _JoinFederationPageState extends State<JoinFederationPage> {
     });
 
     print('QR code scanned: $code');
-    // Replace with logic to handle scanned code
+    // TODO: Replace with logic to handle scanned code
     Navigator.pop(context);
   }
 
@@ -43,7 +43,7 @@ class _JoinFederationPageState extends State<JoinFederationPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text("Join Federation")),
+      appBar: AppBar(title: const Text("Scan")),
       body: Column(
         children: [
           Expanded(

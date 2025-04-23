@@ -1,7 +1,7 @@
 import 'package:carbine/dashboard.dart';
 import 'package:carbine/discover.dart';
 import 'package:carbine/frb_generated.dart';
-import 'package:carbine/join.dart';
+import 'package:carbine/scan.dart';
 import 'package:carbine/lib.dart';
 import 'package:carbine/sidebar.dart';
 import 'package:flutter/material.dart';
@@ -61,7 +61,7 @@ class _MyAppState extends State<MyApp> {
   void _onScanPressed(BuildContext context) async {
     final result = await Navigator.push<FederationSelector>(
       context,
-      MaterialPageRoute(builder: (context) => const JoinFederationPage()),
+      MaterialPageRoute(builder: (context) => const ScanQRPage()),
     );
 
     if (result != null) {
