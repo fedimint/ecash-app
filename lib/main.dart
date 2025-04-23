@@ -64,13 +64,14 @@ class _MyAppState extends State<MyApp> {
     }
   }
 
-  void _onNavBarTapped(int index, BuildContext context) {
+  void _onNavBarTapped(int index, BuildContext context) async {
     setState(() {
       _currentIndex = index;
     });
 
     if (index == 0) {
       // Discover tapped
+      await listFederationsFromNostr(forceUpdate: false);
       debugPrint("Discover pressed");
     } else if (index == 1) {
       // Scan tapped

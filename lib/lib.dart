@@ -6,8 +6,8 @@
 import 'frb_generated.dart';
 import 'package:flutter_rust_bridge/flutter_rust_bridge_for_generated.dart';
 
-// These functions are ignored because they are not marked as `pub`: `build_client`, `derive_federation_secret`, `get_client_database`, `get_multimint`, `has_federation`, `init_global`, `load_clients`
-// These function are ignored because they are on traits that is not defined in current crate (put an empty `#[frb]` on it to unignore): `assert_receiver_is_total_eq`, `clone`, `eq`, `fmt`
+// These functions are ignored because they are not marked as `pub`: `add_relay`, `build_client`, `create_nostr_client`, `derive_federation_secret`, `get_client_database`, `get_multimint`, `has_federation`, `init_global`, `load_clients`
+// These function are ignored because they are on traits that is not defined in current crate (put an empty `#[frb]` on it to unignore): `assert_receiver_is_total_eq`, `assert_receiver_is_total_eq`, `clone`, `clone`, `eq`, `eq`, `fmt`, `fmt`
 
 Future<FederationSelector> joinFederation({required String inviteCode}) =>
     RustLib.instance.api.crateJoinFederation(inviteCode: inviteCode);
@@ -48,6 +48,12 @@ Future<FinalReceiveOperationState> awaitReceive({
 }) => RustLib.instance.api.crateAwaitReceive(
   federationId: federationId,
   operationId: operationId,
+);
+
+Future<List<PublicFederation>> listFederationsFromNostr({
+  required bool forceUpdate,
+}) => RustLib.instance.api.crateListFederationsFromNostr(
+  forceUpdate: forceUpdate,
 );
 
 // Rust type: RustOpaqueMoi<flutter_rust_bridge::for_generated::RustAutoOpaqueInner<Connector>>
@@ -107,7 +113,46 @@ abstract class Multimint implements RustOpaqueInterface {
     required FederationId federationId,
     required String invoice,
   });
+
+  Future<void> updateFederationsFromNostr();
 }
+
+// Rust type: RustOpaqueMoi<flutter_rust_bridge::for_generated::RustAutoOpaqueInner<Network>>
+abstract class Network implements RustOpaqueInterface {}
 
 // Rust type: RustOpaqueMoi<flutter_rust_bridge::for_generated::RustAutoOpaqueInner<OperationId>>
 abstract class OperationId implements RustOpaqueInterface {}
+
+// Rust type: RustOpaqueMoi<flutter_rust_bridge::for_generated::RustAutoOpaqueInner<PublicFederation>>
+abstract class PublicFederation implements RustOpaqueInterface {
+  String? get about;
+
+  FederationId get federationId;
+
+  String get federationName;
+
+  List<String> get inviteCodes;
+
+  List<String> get modules;
+
+  Network get network;
+
+  SafeUrl? get picture;
+
+  set about(String? about);
+
+  set federationId(FederationId federationId);
+
+  set federationName(String federationName);
+
+  set inviteCodes(List<String> inviteCodes);
+
+  set modules(List<String> modules);
+
+  set network(Network network);
+
+  set picture(SafeUrl? picture);
+}
+
+// Rust type: RustOpaqueMoi<flutter_rust_bridge::for_generated::RustAutoOpaqueInner<SafeUrl>>
+abstract class SafeUrl implements RustOpaqueInterface {}

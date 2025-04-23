@@ -1,9 +1,9 @@
-mod frb_generated; /* AUTO INJECTED BY flutter_rust_bridge. This line may not be accurate, and you can change it according to your needs. */
 mod db;
+mod frb_generated; /* AUTO INJECTED BY flutter_rust_bridge. This line may not be accurate, and you can change it according to your needs. */
 use flutter_rust_bridge::frb;
 use tokio::sync::{OnceCell, RwLock};
 
-use std::{collections::BTreeMap, fmt::Display, str::FromStr, sync::Arc};
+use std::{collections::BTreeMap, fmt::Display, str::FromStr, sync::Arc, time::Duration};
 
 use anyhow::bail;
 use fedimint_api_client::api::net::Connector;
@@ -12,12 +12,15 @@ use fedimint_client::{
     module_init::ClientModuleInitRegistry, secret::RootSecretStrategy, Client, ClientHandleArc,
     OperationId,
 };
+use fedimint_core::util::FmtCompact;
 use fedimint_core::{
+    bitcoin::Network,
     config::FederationId,
     db::{Database, IDatabaseTransactionOpsCoreTyped},
     encoding::Encodable,
     invite_code::InviteCode,
     secp256k1::rand::thread_rng,
+    util::SafeUrl,
     Amount,
 };
 use fedimint_derive_secret::{ChildId, DerivableSecret};
@@ -33,10 +36,23 @@ use serde::Serialize;
 
 use crate::db::{FederationConfig, FederationConfigKey, FederationConfigKeyPrefix};
 
+pub const DEFAULT_RELAYS: &[&str] = &[
+    "wss://relay.nostr.band",
+    "wss://nostr-pub.wellorder.net",
+    "wss://relay.plebstr.com",
+    "wss://relayer.fiatjaf.com",
+    "wss://nostr-01.bolt.observer",
+    "wss://nostr.bitcoiner.social",
+    "wss://relay.nostr.info",
+    "wss://relay.damus.io",
+];
+
 static MULTIMINT: OnceCell<Arc<RwLock<Multimint>>> = OnceCell::const_new();
 
 async fn init_global() -> Arc<RwLock<Multimint>> {
-    Arc::new(RwLock::new(Multimint::new().await.expect("Could not create multimint")))
+    Arc::new(RwLock::new(
+        Multimint::new().await.expect("Could not create multimint"),
+    ))
 }
 
 async fn get_multimint() -> Arc<RwLock<Multimint>> {
@@ -75,10 +91,7 @@ pub async fn receive(
 }
 
 #[frb]
-pub async fn send(
-    federation_id: &FederationId,
-    invoice: String,
-) -> anyhow::Result<OperationId> {
+pub async fn send(federation_id: &FederationId, invoice: String) -> anyhow::Result<OperationId> {
     let multimint = get_multimint().await;
     let mm = multimint.read().await;
     mm.send(federation_id, invoice).await
@@ -104,6 +117,26 @@ pub async fn await_receive(
     mm.await_receive(federation_id, operation_id).await
 }
 
+#[frb]
+pub async fn list_federations_from_nostr(force_update: bool) -> Vec<PublicFederation> {
+    let multimint = get_multimint().await;
+    let mut mm = multimint.write().await;
+    if mm.public_federations.is_empty() || force_update {
+        mm.update_federations_from_nostr().await;
+    }
+    mm.public_federations.clone()
+}
+
+#[derive(Clone, Eq, PartialEq, Serialize, Debug)]
+pub struct PublicFederation {
+    pub federation_name: String,
+    pub federation_id: FederationId,
+    pub invite_codes: Vec<String>,
+    pub about: Option<String>,
+    pub picture: Option<SafeUrl>,
+    pub modules: Vec<String>,
+    pub network: Network,
+}
 
 #[derive(Clone, Eq, PartialEq, Serialize)]
 pub struct FederationSelector {
@@ -122,6 +155,8 @@ pub struct Multimint {
     mnemonic: Mnemonic,
     modules: ClientModuleInitRegistry,
     clients: BTreeMap<FederationId, ClientHandleArc>,
+    nostr_client: nostr_sdk::Client,
+    public_federations: Vec<PublicFederation>,
 }
 
 impl Multimint {
@@ -150,6 +185,8 @@ impl Multimint {
             mnemonic,
             modules,
             clients: BTreeMap::new(),
+            nostr_client: Multimint::create_nostr_client().await,
+            public_federations: vec![],
         };
         multimint.load_clients().await?;
         Ok(multimint)
@@ -170,6 +207,136 @@ impl Multimint {
         }
 
         Ok(())
+    }
+
+    async fn create_nostr_client() -> nostr_sdk::Client {
+        let keys = nostr_sdk::Keys::generate();
+        let client = nostr_sdk::Client::builder().signer(keys).build();
+        for relay in DEFAULT_RELAYS {
+            Multimint::add_relay(&client, relay).await;
+        }
+        client
+    }
+
+    async fn add_relay(client: &nostr_sdk::Client, relay: &str) {
+        if let Err(err) = client.add_relay(relay).await {
+            println!("Could not add relay {}: {}", relay, err.fmt_compact());
+        }
+    }
+
+    pub async fn update_federations_from_nostr(&mut self) {
+        self.nostr_client.connect().await;
+
+        let filter = nostr_sdk::Filter::new().kind(nostr_sdk::Kind::from(38173));
+        match self
+            .nostr_client
+            .fetch_events(filter, Duration::from_secs(3))
+            .await
+        {
+            Ok(events) => {
+                let all_events = events.to_vec();
+                let events = all_events
+                    .iter()
+                    .filter_map(|event| {
+                        // TODO: This is horrible code, it needs to be cleaned up so that it never crashes, only filters events that are not valid
+                        println!("Mapping event: {event:?}");
+
+                        let tags = event.tags.clone();
+                        let n_tag = tags.find(nostr_sdk::TagKind::SingleLetter(
+                            nostr_sdk::SingleLetterTag::lowercase(nostr_sdk::Alphabet::N),
+                        ));
+                        if n_tag.is_none() {
+                            return None;
+                        }
+                        let network_str = n_tag.unwrap().content();
+                        if network_str.is_none() {
+                            return None;
+                        }
+                        let network = if network_str.unwrap() == "mainnet" {
+                            Network::Bitcoin
+                        } else {
+                            Network::from_str(network_str.unwrap())
+                                .expect("Network parsing should succeed")
+                        };
+                        if network == Network::Regtest {
+                            println!("Skipping regtest federation...");
+                            return None;
+                        }
+
+                        let json: Result<serde_json::Value, serde_json::Error> =
+                            serde_json::from_str(&event.content);
+                        let (federation_name, about, picture) = match json {
+                            Ok(json) => {
+                                let federation_name = json.get("name");
+                                let federation_name = match federation_name {
+                                    Some(name) => name
+                                        .as_str()
+                                        .expect("Could not parse federation name as str")
+                                        .to_string(),
+                                    None => json
+                                        .get("federation_name")
+                                        .expect("federation name and name do not exist")
+                                        .as_str()
+                                        .expect("Could not parse as str")
+                                        .to_string(),
+                                };
+                                let about = json.get("about").map(|val| {
+                                    val.as_str().expect("Could not parse as str").to_string()
+                                });
+                                let picture = json.get("picture").map(|val| {
+                                    SafeUrl::parse(val.as_str().expect("Could not parse as str"))
+                                        .expect("Could not parse as SafeUrl")
+                                });
+                                (federation_name, about, picture)
+                            }
+                            Err(_) => {
+                                let federation_name = event.content.to_string();
+                                (federation_name, None, None)
+                            }
+                        };
+
+                        let d_tag = tags.identifier().expect("should be present");
+                        let federation_id = FederationId::from_str(d_tag).expect("Should parse");
+                        let u_tag = tags.find(nostr_sdk::TagKind::SingleLetter(
+                            nostr_sdk::SingleLetterTag::lowercase(nostr_sdk::Alphabet::U),
+                        ));
+                        let invite_codes = match u_tag {
+                            Some(u_tag) => {
+                                let invite_code =
+                                    u_tag.content().expect("u tag not present").to_string();
+                                vec![invite_code]
+                            }
+                            None => {
+                                return None;
+                            }
+                        };
+                        let modules = tags
+                            .find(nostr_sdk::TagKind::custom("modules".to_string()))
+                            .expect("Modules should be present")
+                            .content()
+                            .expect("Content should be present")
+                            .split(",")
+                            .map(|m| m.to_string())
+                            .collect::<Vec<_>>();
+
+                        Some(PublicFederation {
+                            federation_name: federation_name.to_string(),
+                            federation_id,
+                            invite_codes,
+                            about,
+                            picture,
+                            modules,
+                            network,
+                        })
+                    })
+                    .collect::<Vec<_>>();
+
+                self.public_federations = events;
+            }
+            Err(e) => {
+                println!("Failed to fetch events from nostr: {e}");
+            }
+        }
     }
 
     // TODO: Implement recovery
