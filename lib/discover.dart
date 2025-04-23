@@ -1,4 +1,3 @@
-
 import 'package:carbine/lib.dart';
 import 'package:flutter/material.dart';
 
@@ -38,13 +37,32 @@ class _Discover extends State<Discover> {
             final federation = federations[index];
             return ListTile(
               contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-              leading: federation.picture != null
-                  ? CircleAvatar(
-                      backgroundImage: NetworkImage(federation.picture!),
-                    )
-                  : const CircleAvatar(
-                      child: Icon(Icons.image_not_supported),
-                    ),
+              leading: CircleAvatar(
+                backgroundColor: Colors.transparent,
+                child: ClipOval(
+                  child: federation.picture != null && federation.picture!.isNotEmpty
+                      ? Image.network(
+                          federation.picture!,
+                          width: 40,
+                          height: 40,
+                          fit: BoxFit.cover,
+                          errorBuilder: (context, error, stackTrace) {
+                            return Image.asset(
+                              'assets/images/fedimint.png',
+                              width: 40,
+                              height: 40,
+                              fit: BoxFit.cover,
+                            );
+                          },
+                        )
+                      : Image.asset(
+                          'assets/images/fedimint.png',
+                          width: 40,
+                          height: 40,
+                          fit: BoxFit.cover,
+                        ),
+                ),
+              ),
               title: Text(federation.federationName),
               subtitle: Text("Network: ${federation.network}"),
               trailing: ElevatedButton(
