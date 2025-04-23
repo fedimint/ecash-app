@@ -96,7 +96,7 @@ class _MyAppState extends State<MyApp> {
           ),
           body: _selectedFederation == null
                 ? Discover(onJoin: _onJoinPressed)
-                : Dashboard(fed: _selectedFederation!),
+                : Dashboard(key: ValueKey(_selectedFederation!.federationId), fed: _selectedFederation!),
           bottomNavigationBar: BottomNavigationBar(
             currentIndex: _currentIndex,
             onTap: (index) => _onNavBarTapped(index, innerContext),
