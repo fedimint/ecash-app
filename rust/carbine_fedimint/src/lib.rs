@@ -24,14 +24,14 @@ use fedimint_core::{
     Amount,
 };
 use fedimint_derive_secret::{ChildId, DerivableSecret};
-use fedimint_ln_client::LightningClientInit;
+use fedimint_ln_client::{InternalPayState, LightningClientInit, LightningClientModule, LnPayState, LnReceiveState};
 use fedimint_lnv2_client::{FinalReceiveOperationState, FinalSendOperationState};
 use fedimint_lnv2_common::Bolt11InvoiceDescription;
 use fedimint_mint_client::MintClientInit;
 use fedimint_rocksdb::RocksDb;
 use fedimint_wallet_client::WalletClientInit;
 use futures_util::StreamExt;
-use lightning_invoice::Bolt11Invoice;
+use lightning_invoice::{Bolt11Invoice, Description};
 use serde::Serialize;
 
 use crate::db::{FederationConfig, FederationConfigKey, FederationConfigKeyPrefix};
@@ -46,6 +46,8 @@ pub const DEFAULT_RELAYS: &[&str] = &[
     "wss://relay.nostr.info",
     "wss://relay.damus.io",
 ];
+
+const DEFAULT_EXPIRY_TIME_SECS: u32 = 86400;
 
 static MULTIMINT: OnceCell<Arc<RwLock<Multimint>>> = OnceCell::const_new();
 
@@ -493,8 +495,16 @@ impl Multimint {
             .clients
             .get(federation_id)
             .expect("No federation exists");
+
+        if let Ok((invoice, operation_id)) = Self::receive_lnv2(client, amount).await {
+            return Ok((invoice, operation_id));
+        }
+
+        Self::receive_lnv1(client, amount).await
+    }
+
+    async fn receive_lnv2(client: &ClientHandleArc, amount: Amount) -> anyhow::Result<(String, OperationId)> {
         let lnv2 = client.get_first_module::<fedimint_lnv2_client::LightningClientModule>()?;
-        const DEFAULT_EXPIRY_TIME_SECS: u32 = 86400;
         let (invoice, operation_id) = lnv2
             .receive(
                 amount,
@@ -504,7 +514,15 @@ impl Multimint {
                 ().into(),
             )
             .await?;
+        Ok((invoice.to_string(), operation_id))
+    }
 
+    async fn receive_lnv1(client: &ClientHandleArc, amount: Amount) -> anyhow::Result<(String, OperationId)> {
+        let lnv1 = client.get_first_module::<LightningClientModule>()?;
+        // TODO: Replace with custom gateway selection
+        let gateway = lnv1.get_gateway(None, false).await?;
+        let desc = Description::new(String::new())?;
+        let (operation_id, invoice, _) = lnv1.create_bolt11_invoice(amount, lightning_invoice::Bolt11InvoiceDescription::Direct(&desc), Some(DEFAULT_EXPIRY_TIME_SECS as u64), (), gateway).await?;
         Ok((invoice.to_string(), operation_id))
     }
 
@@ -517,10 +535,32 @@ impl Multimint {
             .clients
             .get(federation_id)
             .expect("No federation exists");
-        let lnv2 = client.get_first_module::<fedimint_lnv2_client::LightningClientModule>()?;
         let invoice = Bolt11Invoice::from_str(&invoice)?;
+
+        println!("Attempting to pay using LNv2...");
+        if let Ok(lnv2_operation_id) = Self::pay_lnv2(client, invoice.clone()).await {
+            println!("Successfully initated LNv2 payment");
+            return Ok(lnv2_operation_id);
+        }
+
+        println!("Attempting to pay using LNv1...");
+        let operation_id = Self::pay_lnv1(client, invoice).await?;
+        println!("Successfully initiated LNv1 payment");
+        Ok(operation_id)
+    }
+
+    async fn pay_lnv2(client: &ClientHandleArc, invoice: Bolt11Invoice) -> anyhow::Result<OperationId> {
+        let lnv2 = client.get_first_module::<fedimint_lnv2_client::LightningClientModule>()?;
         let operation_id = lnv2.send(invoice, None, ().into()).await?;
         Ok(operation_id)
+    }
+
+    async fn pay_lnv1(client: &ClientHandleArc, invoice: Bolt11Invoice) -> anyhow::Result<OperationId> {
+        let lnv1 = client.get_first_module::<LightningClientModule>()?;
+        // TODO: Replace with custom gateway selection
+        let gateway = lnv1.get_gateway(None, false).await?;
+        let outgoing_lightning_payment = lnv1.pay_bolt11_invoice(gateway, invoice, ()).await?;
+        Ok(outgoing_lightning_payment.payment_type.operation_id())
     }
 
     pub async fn await_send(
@@ -532,10 +572,51 @@ impl Multimint {
             .clients
             .get(federation_id)
             .expect("No federation exists");
+        if let Ok(lnv2_final_state) = Self::await_send_lnv2(client, operation_id).await {
+            return Ok(lnv2_final_state);
+        }
+
+        let lnv1_final_state = Self::await_send_lnv1(client, operation_id).await?;
+        Ok(lnv1_final_state)
+    }
+
+    async fn await_send_lnv2(client: &ClientHandleArc, operation_id: OperationId) -> anyhow::Result<FinalSendOperationState> {
         let lnv2 = client.get_first_module::<fedimint_lnv2_client::LightningClientModule>()?;
         let final_state = lnv2.await_final_send_operation_state(operation_id).await?;
-
         Ok(final_state)
+    }
+
+    async fn await_send_lnv1(client: &ClientHandleArc, operation_id: OperationId) -> anyhow::Result<FinalSendOperationState> {
+        let lnv1 = client.get_first_module::<LightningClientModule>()?;
+        // First check if its an internal payment
+        if let Ok(updates) = lnv1.subscribe_internal_pay(operation_id).await {
+            let mut stream = updates.into_stream();
+            while let Some(update) = stream.next().await {
+                match update {
+                    InternalPayState::Preimage(_) => return Ok(FinalSendOperationState::Success),
+                    InternalPayState::RefundSuccess { out_points: _, error: _ } => return Ok(FinalSendOperationState::Refunded),
+                    InternalPayState::FundingFailed { error: _ } | InternalPayState::RefundError { error_message: _, error: _ } | InternalPayState::UnexpectedError(_) => {
+                        return Ok(FinalSendOperationState::Failure);
+                    }
+                    _ => {}
+                }
+            }
+        }
+
+        // If internal fails, check if its an external payment
+        if let Ok(updates) = lnv1.subscribe_ln_pay(operation_id).await {
+            let mut stream = updates.into_stream();
+            while let Some(update) = stream.next().await {
+                match update {
+                    LnPayState::Success { preimage: _ } => return Ok(FinalSendOperationState::Success),
+                    LnPayState::Refunded { gateway_error: _ } => return Ok(FinalSendOperationState::Refunded),
+                    LnPayState::UnexpectedError { error_message: _ } => return Ok(FinalSendOperationState::Failure),
+                    _ => {}
+                }
+            }
+        }
+
+        Ok(FinalSendOperationState::Failure)
     }
 
     pub async fn await_receive(
@@ -547,10 +628,36 @@ impl Multimint {
             .clients
             .get(federation_id)
             .expect("No federation exists");
+        if let Ok(lnv2_final_state) = Self::await_receive_lnv2(client, operation_id).await {
+            return Ok(lnv2_final_state);
+        }
+
+        Self::await_receive_lnv1(client, operation_id).await
+    }
+
+    async fn await_receive_lnv2(client: &ClientHandleArc, operation_id: OperationId) -> anyhow::Result<FinalReceiveOperationState> {
         let lnv2 = client.get_first_module::<fedimint_lnv2_client::LightningClientModule>()?;
         let final_state = lnv2
             .await_final_receive_operation_state(operation_id)
             .await?;
         Ok(final_state)
+    }
+
+    async fn await_receive_lnv1(client: &ClientHandleArc, operation_id: OperationId) -> anyhow::Result<FinalReceiveOperationState> {
+        let lnv1 = client.get_first_module::<LightningClientModule>()?;
+        let mut updates = lnv1.subscribe_ln_receive(operation_id).await?.into_stream();
+        while let Some(update) = updates.next().await {
+            match update {
+                LnReceiveState::Claimed => {
+                    return Ok(FinalReceiveOperationState::Claimed);
+                }
+                LnReceiveState::Canceled{ reason: _ } => {
+                    return Ok(FinalReceiveOperationState::Failure);
+                }
+                _ => {}
+            }
+        }
+
+        Ok(FinalReceiveOperationState::Failure)
     }
 }
