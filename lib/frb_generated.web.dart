@@ -263,6 +263,9 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   String? dco_decode_opt_String(dynamic raw);
 
   @protected
+  PaymentPreview dco_decode_payment_preview(dynamic raw);
+
+  @protected
   (String, OperationId)
   dco_decode_record_string_auto_owned_rust_opaque_flutter_rust_bridgefor_generated_rust_auto_opaque_inner_operation_id(
     dynamic raw,
@@ -483,6 +486,9 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
 
   @protected
   String? sse_decode_opt_String(SseDeserializer deserializer);
+
+  @protected
+  PaymentPreview sse_decode_payment_preview(SseDeserializer deserializer);
 
   @protected
   (String, OperationId)
@@ -745,6 +751,12 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
 
   @protected
   void sse_encode_opt_String(String? self, SseSerializer serializer);
+
+  @protected
+  void sse_encode_payment_preview(
+    PaymentPreview self,
+    SseSerializer serializer,
+  );
 
   @protected
   void

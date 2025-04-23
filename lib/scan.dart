@@ -4,7 +4,8 @@ import 'package:flutter/services.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
 
 class ScanQRPage extends StatefulWidget {
-  const ScanQRPage({super.key});
+  final FederationSelector? selectedFed;
+  const ScanQRPage({super.key, this.selectedFed});
 
   @override
   State<ScanQRPage> createState() => _ScanQRPageState();
@@ -28,15 +29,38 @@ class _ScanQRPageState extends State<ScanQRPage> {
     final clipboardData = await Clipboard.getData('text/plain');
     final text = clipboardData?.text ?? '';
 
-    if (text.isNotEmpty) {
+    if (text.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Clipboard is empty")),
+      );
+
+      return;
+    }
+
+    if (text.startsWith("fed")) {
       print('Pasted from clipboard: $text');
       final selector = await joinFederation(inviteCode: text);
       print('Selector: $selector');
       Navigator.pop(context, selector);
+    } else if (text.startsWith("ln")) {
+      final paymentPreview = await parseInvoice(bolt11: text);
+      if (widget.selectedFed != null) {
+        print('Pay invoice with selected fed ${widget.selectedFed!.federationName}');
+      } else {
+        // find federation that can pay invoice
+        final feds = await federations();
+        for (int i = 0; i < feds.length; i++) {
+          final currFed = feds[i];
+          final fedId = currFed.federationId;
+          final bal = await balance(federationId: fedId);
+          if (currFed.network == paymentPreview.network && bal > paymentPreview.amount) {
+            print('Using federation ${currFed.federationName}');
+          }
+        }
+      }
+      print('Lightning Invoice detected: $text');
     } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Clipboard is empty")),
-      );
+      print('Unknown text');
     }
   }
 

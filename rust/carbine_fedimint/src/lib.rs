@@ -131,6 +131,22 @@ pub async fn list_federations_from_nostr(force_update: bool) -> Vec<PublicFedera
         .collect()
 }
 
+#[frb]
+pub async fn parse_invoice(bolt11: String) -> anyhow::Result<PaymentPreview> {
+    let invoice = Bolt11Invoice::from_str(&bolt11)?;
+    let amount = invoice.amount_milli_satoshis().expect("No amount specified");
+    let payment_hash = invoice.payment_hash().consensus_encode_to_hex();
+    let network = invoice.network().to_string();
+    Ok(PaymentPreview { amount, payment_hash, network })
+}
+
+#[derive(Clone, Eq, PartialEq, Serialize, Debug)]
+pub struct PaymentPreview {
+    amount: u64,
+    payment_hash: String,
+    network: String,
+}
+
 #[derive(Clone, Eq, PartialEq, Serialize, Debug)]
 pub struct PublicFederation {
     pub federation_name: String,
@@ -146,6 +162,7 @@ pub struct PublicFederation {
 pub struct FederationSelector {
     pub federation_name: String,
     pub federation_id: FederationId,
+    pub network: String,
 }
 
 impl Display for FederationSelector {
@@ -366,12 +383,16 @@ impl Multimint {
             .federation_name()
             .expect("No federation name")
             .to_owned();
+
+        let wallet = client.get_first_module::<fedimint_wallet_client::WalletClientModule>()?;
+        let network = wallet.get_network().to_string();
         let federation_config = FederationConfig {
             invite_code,
             connector: Connector::default(),
             federation_name: federation_name.clone(),
+            network: network.clone(),
         };
-
+        
         self.clients.insert(federation_id, client);
 
         let mut dbtx = self.db.begin_transaction().await;
@@ -382,9 +403,11 @@ impl Multimint {
         .await;
         dbtx.commit_tx().await;
 
+
         Ok(FederationSelector {
             federation_name,
             federation_id,
+            network,
         })
     }
 
@@ -445,6 +468,7 @@ impl Multimint {
             .map(|(id, config)| FederationSelector {
                 federation_name: config.federation_name,
                 federation_id: id.id,
+                network: config.network,
             })
             .collect::<Vec<_>>()
             .await

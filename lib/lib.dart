@@ -7,7 +7,7 @@ import 'frb_generated.dart';
 import 'package:flutter_rust_bridge/flutter_rust_bridge_for_generated.dart';
 
 // These functions are ignored because they are not marked as `pub`: `add_relay`, `build_client`, `create_nostr_client`, `derive_federation_secret`, `get_client_database`, `get_multimint`, `has_federation`, `init_global`, `load_clients`
-// These function are ignored because they are on traits that is not defined in current crate (put an empty `#[frb]` on it to unignore): `assert_receiver_is_total_eq`, `assert_receiver_is_total_eq`, `clone`, `clone`, `eq`, `eq`, `fmt`, `fmt`
+// These function are ignored because they are on traits that is not defined in current crate (put an empty `#[frb]` on it to unignore): `assert_receiver_is_total_eq`, `assert_receiver_is_total_eq`, `assert_receiver_is_total_eq`, `clone`, `clone`, `clone`, `eq`, `eq`, `eq`, `fmt`, `fmt`, `fmt`
 
 Future<FederationSelector> joinFederation({required String inviteCode}) =>
     RustLib.instance.api.crateJoinFederation(inviteCode: inviteCode);
@@ -56,6 +56,9 @@ Future<List<PublicFederation>> listFederationsFromNostr({
   forceUpdate: forceUpdate,
 );
 
+Future<PaymentPreview> parseInvoice({required String bolt11}) =>
+    RustLib.instance.api.crateParseInvoice(bolt11: bolt11);
+
 // Rust type: RustOpaqueMoi<flutter_rust_bridge::for_generated::RustAutoOpaqueInner<Connector>>
 abstract class Connector implements RustOpaqueInterface {}
 
@@ -68,9 +71,13 @@ abstract class FederationSelector implements RustOpaqueInterface {
 
   String get federationName;
 
+  String get network;
+
   set federationId(FederationId federationId);
 
   set federationName(String federationName);
+
+  set network(String network);
 }
 
 // Rust type: RustOpaqueMoi<flutter_rust_bridge::for_generated::RustAutoOpaqueInner<FinalReceiveOperationState>>
@@ -149,4 +156,28 @@ abstract class PublicFederation implements RustOpaqueInterface {
   set network(String network);
 
   set picture(String? picture);
+}
+
+class PaymentPreview {
+  final BigInt amount;
+  final String paymentHash;
+  final String network;
+
+  const PaymentPreview({
+    required this.amount,
+    required this.paymentHash,
+    required this.network,
+  });
+
+  @override
+  int get hashCode => amount.hashCode ^ paymentHash.hashCode ^ network.hashCode;
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is PaymentPreview &&
+          runtimeType == other.runtimeType &&
+          amount == other.amount &&
+          paymentHash == other.paymentHash &&
+          network == other.network;
 }

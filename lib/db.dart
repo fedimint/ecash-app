@@ -18,9 +18,13 @@ abstract class FederationConfig implements RustOpaqueInterface {
 
   InviteCode get inviteCode;
 
+  String get network;
+
   set connector(Connector connector);
 
   set federationName(String federationName);
 
   set inviteCode(InviteCode inviteCode);
+
+  set network(String network);
 }
