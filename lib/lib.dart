@@ -117,9 +117,6 @@ abstract class Multimint implements RustOpaqueInterface {
   Future<void> updateFederationsFromNostr();
 }
 
-// Rust type: RustOpaqueMoi<flutter_rust_bridge::for_generated::RustAutoOpaqueInner<Network>>
-abstract class Network implements RustOpaqueInterface {}
-
 // Rust type: RustOpaqueMoi<flutter_rust_bridge::for_generated::RustAutoOpaqueInner<OperationId>>
 abstract class OperationId implements RustOpaqueInterface {}
 
@@ -135,9 +132,9 @@ abstract class PublicFederation implements RustOpaqueInterface {
 
   List<String> get modules;
 
-  Network get network;
+  String get network;
 
-  SafeUrl? get picture;
+  String? get picture;
 
   set about(String? about);
 
@@ -149,10 +146,7 @@ abstract class PublicFederation implements RustOpaqueInterface {
 
   set modules(List<String> modules);
 
-  set network(Network network);
+  set network(String network);
 
-  set picture(SafeUrl? picture);
+  set picture(String? picture);
 }
-
-// Rust type: RustOpaqueMoi<flutter_rust_bridge::for_generated::RustAutoOpaqueInner<SafeUrl>>
-abstract class SafeUrl implements RustOpaqueInterface {}

@@ -1,4 +1,5 @@
 import 'package:carbine/dashboard.dart';
+import 'package:carbine/discover.dart';
 import 'package:carbine/frb_generated.dart';
 import 'package:carbine/join.dart';
 import 'package:carbine/lib.dart';
@@ -67,14 +68,10 @@ class _MyAppState extends State<MyApp> {
   void _onNavBarTapped(int index, BuildContext context) async {
     setState(() {
       _currentIndex = index;
+      _selectedFederation = null;
     });
 
-    if (index == 0) {
-      // Discover tapped
-      await listFederationsFromNostr(forceUpdate: false);
-      debugPrint("Discover pressed");
-    } else if (index == 1) {
-      // Scan tapped
+    if (index == 1) {
       _onScanPressed(context);
     }
   }
@@ -91,10 +88,8 @@ class _MyAppState extends State<MyApp> {
             onFederationSelected: _setSelectedFederation,
           ),
           body: _selectedFederation == null
-              ? const Center(
-                  child: Text("No federation selected"),
-                )
-              : Dashboard(fed: _selectedFederation!),
+                ? const Discover()
+                : Dashboard(fed: _selectedFederation!),
           bottomNavigationBar: BottomNavigationBar(
             currentIndex: _currentIndex,
             onTap: (index) => _onNavBarTapped(index, innerContext),

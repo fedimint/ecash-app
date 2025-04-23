@@ -133,9 +133,9 @@ pub struct PublicFederation {
     pub federation_id: FederationId,
     pub invite_codes: Vec<String>,
     pub about: Option<String>,
-    pub picture: Option<SafeUrl>,
+    pub picture: Option<String>,
     pub modules: Vec<String>,
-    pub network: Network,
+    pub network: String,
 }
 
 #[derive(Clone, Eq, PartialEq, Serialize)]
@@ -239,8 +239,6 @@ impl Multimint {
                     .iter()
                     .filter_map(|event| {
                         // TODO: This is horrible code, it needs to be cleaned up so that it never crashes, only filters events that are not valid
-                        println!("Mapping event: {event:?}");
-
                         let tags = event.tags.clone();
                         let n_tag = tags.find(nostr_sdk::TagKind::SingleLetter(
                             nostr_sdk::SingleLetterTag::lowercase(nostr_sdk::Alphabet::N),
@@ -285,7 +283,7 @@ impl Multimint {
                                 });
                                 let picture = json.get("picture").map(|val| {
                                     SafeUrl::parse(val.as_str().expect("Could not parse as str"))
-                                        .expect("Could not parse as SafeUrl")
+                                        .expect("Could not parse as SafeUrl").to_string()
                                 });
                                 (federation_name, about, picture)
                             }
@@ -326,11 +324,12 @@ impl Multimint {
                             about,
                             picture,
                             modules,
-                            network,
+                            network: network.to_string(),
                         })
                     })
                     .collect::<Vec<_>>();
 
+                println!("Public Federations: {events:?}");
                 self.public_federations = events;
             }
             Err(e) => {
