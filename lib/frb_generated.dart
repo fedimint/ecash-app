@@ -2380,12 +2380,13 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   PaymentPreview dco_decode_payment_preview(dynamic raw) {
     // Codec=Dco (DartCObject based), see doc to use other codecs
     final arr = raw as List<dynamic>;
-    if (arr.length != 3)
-      throw Exception('unexpected arr length: expect 3 but see ${arr.length}');
+    if (arr.length != 4)
+      throw Exception('unexpected arr length: expect 4 but see ${arr.length}');
     return PaymentPreview(
       amount: dco_decode_u_64(arr[0]),
       paymentHash: dco_decode_String(arr[1]),
       network: dco_decode_String(arr[2]),
+      invoice: dco_decode_String(arr[3]),
     );
   }
 
@@ -2873,10 +2874,12 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
     var var_amount = sse_decode_u_64(deserializer);
     var var_paymentHash = sse_decode_String(deserializer);
     var var_network = sse_decode_String(deserializer);
+    var var_invoice = sse_decode_String(deserializer);
     return PaymentPreview(
       amount: var_amount,
       paymentHash: var_paymentHash,
       network: var_network,
+      invoice: var_invoice,
     );
   }
 
@@ -3391,6 +3394,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
     sse_encode_u_64(self.amount, serializer);
     sse_encode_String(self.paymentHash, serializer);
     sse_encode_String(self.network, serializer);
+    sse_encode_String(self.invoice, serializer);
   }
 
   @protected

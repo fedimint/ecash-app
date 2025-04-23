@@ -137,7 +137,7 @@ pub async fn parse_invoice(bolt11: String) -> anyhow::Result<PaymentPreview> {
     let amount = invoice.amount_milli_satoshis().expect("No amount specified");
     let payment_hash = invoice.payment_hash().consensus_encode_to_hex();
     let network = invoice.network().to_string();
-    Ok(PaymentPreview { amount, payment_hash, network })
+    Ok(PaymentPreview { amount, payment_hash, network, invoice: bolt11 })
 }
 
 #[derive(Clone, Eq, PartialEq, Serialize, Debug)]
@@ -145,6 +145,7 @@ pub struct PaymentPreview {
     amount: u64,
     payment_hash: String,
     network: String,
+    invoice: String,
 }
 
 #[derive(Clone, Eq, PartialEq, Serialize, Debug)]

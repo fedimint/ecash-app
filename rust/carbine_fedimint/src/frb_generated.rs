@@ -2764,10 +2764,12 @@ impl SseDecode for crate::PaymentPreview {
         let mut var_amount = <u64>::sse_decode(deserializer);
         let mut var_paymentHash = <String>::sse_decode(deserializer);
         let mut var_network = <String>::sse_decode(deserializer);
+        let mut var_invoice = <String>::sse_decode(deserializer);
         return crate::PaymentPreview {
             amount: var_amount,
             payment_hash: var_paymentHash,
             network: var_network,
+            invoice: var_invoice,
         };
     }
 }
@@ -3170,6 +3172,7 @@ impl flutter_rust_bridge::IntoDart for crate::PaymentPreview {
             self.amount.into_into_dart().into_dart(),
             self.payment_hash.into_into_dart().into_dart(),
             self.network.into_into_dart().into_dart(),
+            self.invoice.into_into_dart().into_dart(),
         ]
         .into_dart()
     }
@@ -3452,6 +3455,7 @@ impl SseEncode for crate::PaymentPreview {
         <u64>::sse_encode(self.amount, serializer);
         <String>::sse_encode(self.payment_hash, serializer);
         <String>::sse_encode(self.network, serializer);
+        <String>::sse_encode(self.invoice, serializer);
     }
 }
 

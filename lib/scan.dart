@@ -1,4 +1,5 @@
 import 'package:carbine/lib.dart';
+import 'package:carbine/pay.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
@@ -54,11 +55,19 @@ class _ScanQRPageState extends State<ScanQRPage> {
           final fedId = currFed.federationId;
           final bal = await balance(federationId: fedId);
           if (currFed.network == paymentPreview.network && bal > paymentPreview.amount) {
-            print('Using federation ${currFed.federationName}');
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => Pay(
+                  fed: currFed,
+                  paymentPreview: paymentPreview,
+                ),
+              ),
+            );
+            return;
           }
         }
       }
-      print('Lightning Invoice detected: $text');
     } else {
       print('Unknown text');
     }

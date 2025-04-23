@@ -162,15 +162,21 @@ class PaymentPreview {
   final BigInt amount;
   final String paymentHash;
   final String network;
+  final String invoice;
 
   const PaymentPreview({
     required this.amount,
     required this.paymentHash,
     required this.network,
+    required this.invoice,
   });
 
   @override
-  int get hashCode => amount.hashCode ^ paymentHash.hashCode ^ network.hashCode;
+  int get hashCode =>
+      amount.hashCode ^
+      paymentHash.hashCode ^
+      network.hashCode ^
+      invoice.hashCode;
 
   @override
   bool operator ==(Object other) =>
@@ -179,5 +185,6 @@ class PaymentPreview {
           runtimeType == other.runtimeType &&
           amount == other.amount &&
           paymentHash == other.paymentHash &&
-          network == other.network;
+          network == other.network &&
+          invoice == other.invoice;
 }
