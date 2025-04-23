@@ -68,7 +68,9 @@ class _MyAppState extends State<MyApp> {
   void _onNavBarTapped(int index, BuildContext context) async {
     setState(() {
       _currentIndex = index;
-      _selectedFederation = null;
+      if (index == 0) {
+        _selectedFederation = null;
+      }
     });
 
     if (index == 1) {

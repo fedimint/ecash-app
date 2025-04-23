@@ -64,7 +64,20 @@ class _Discover extends State<Discover> {
                 ),
               ),
               title: Text(federation.federationName),
-              subtitle: Text("Network: ${federation.network}"),
+              subtitle: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text("Network: ${federation.network}"),
+                  if (federation.about != null && federation.about!.isNotEmpty)
+                    Padding(
+                      padding: const EdgeInsets.only(top: 4.0),
+                      child: Text(
+                        federation.about!,
+                        style: TextStyle(color: Colors.grey[700], fontSize: 12),
+                      ),
+                    ),
+                ],
+              ),
               trailing: ElevatedButton(
                 onPressed: () {
                   // Handle join logic
