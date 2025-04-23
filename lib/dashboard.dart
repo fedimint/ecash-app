@@ -1,5 +1,6 @@
 
 import 'package:carbine/lib.dart';
+import 'package:carbine/scan.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:qr_flutter/qr_flutter.dart';
@@ -187,6 +188,11 @@ class _DashboardState extends State<Dashboard> {
     _loadBalance();
   }
 
+  void _onSendPressed() async {
+    await Navigator.push(context, MaterialPageRoute(builder: (context) => ScanQRPage(selectedFed: widget.fed)));
+    _loadBalance();
+  }
+
   @override
   Widget build(BuildContext context) {
     final name = widget.fed.federationName;
@@ -257,7 +263,7 @@ class _DashboardState extends State<Dashboard> {
                         const SizedBox(width: 16),
                         Expanded(
                           child: ElevatedButton.icon(
-                            onPressed: () => print("Send tapped"),
+                            onPressed: _onSendPressed,
                             icon: const Icon(Icons.upload),
                             label: const Text("Send"),
                             style: ElevatedButton.styleFrom(

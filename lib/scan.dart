@@ -38,15 +38,36 @@ class _ScanQRPageState extends State<ScanQRPage> {
       return;
     }
 
-    if (text.startsWith("fed")) {
-      print('Pasted from clipboard: $text');
+    if (text.startsWith("fed") && widget.selectedFed == null) {
       final selector = await joinFederation(inviteCode: text);
-      print('Selector: $selector');
       Navigator.pop(context, selector);
     } else if (text.startsWith("ln")) {
       final paymentPreview = await parseInvoice(bolt11: text);
       if (widget.selectedFed != null) {
-        print('Pay invoice with selected fed ${widget.selectedFed!.federationName}');
+        if (widget.selectedFed!.network != paymentPreview.network) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text("Cannot pay invoice from different network.")),
+          );
+          return;
+        }
+        final bal = await balance(federationId: widget.selectedFed!.federationId);
+        if (bal < paymentPreview.amount) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text("This federation does not have enough funds to pay this invoice")),
+          );
+          return;
+        }
+
+        await Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => Pay(
+                  fed: widget.selectedFed!,
+                  paymentPreview: paymentPreview,
+                ),
+              ),
+            );
+        Navigator.pop(context, widget.selectedFed!);
       } else {
         // find federation that can pay invoice
         final feds = await federations();

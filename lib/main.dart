@@ -67,6 +67,8 @@ class _MyAppState extends State<MyApp> {
     if (result != null) {
       _setSelectedFederation(result);
       _refreshFederations();
+    } else {
+      print('Result is null, not updating federations');
     }
   }
 
