@@ -1,10 +1,9 @@
 mod db;
 mod frb_generated; use fedimint_core::config::ClientConfig;
 use fedimint_core::secp256k1::rand::seq::SliceRandom;
-use fedimint_core::secp256k1::PublicKey;
 use fedimint_core::task::TaskGroup;
-use fedimint_core::{hex, PeerId};
-use fedimint_meta_client::common::{MetaKey, DEFAULT_META_KEY};
+use fedimint_core::hex;
+use fedimint_meta_client::common::DEFAULT_META_KEY;
 use fedimint_meta_client::MetaClientInit;
 /* AUTO INJECTED BY flutter_rust_bridge. This line may not be accurate, and you can change it according to your needs. */
 use flutter_rust_bridge::frb;

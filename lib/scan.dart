@@ -98,7 +98,7 @@ class _ScanQRPageState extends State<ScanQRPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text("Scan")),
+      appBar: AppBar(),
       body: Column(
         children: [
           Expanded(

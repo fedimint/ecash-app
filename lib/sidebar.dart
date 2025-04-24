@@ -40,16 +40,6 @@ class FederationSidebar extends StatelessWidget {
                   style: TextStyle(color: Colors.white, fontSize: 18),
                 ),
               ),
-              /*
-              ...federations!.map((selector) => ListTile(
-                title: Text(selector.federationName),
-                onTap: () {
-                  Navigator.of(context).pop();
-                  onFederationSelected(selector);
-                  print('Selected federation: $selector');
-                },
-              )),
-              */
               ...federations!.map((selector) => FederationListItem(
                 fed: selector,
                 onTap: () {
@@ -79,11 +69,35 @@ class FederationListItem extends StatefulWidget {
 class _FederationListItemState extends State<FederationListItem> {
   BigInt? balanceMsats;
   bool isLoading = true;
+  String? federationImageUrl;
 
   @override
   void initState() {
     super.initState();
-    _loadBalance();
+    _initializeData();
+  }
+
+  Future<void> _initializeData() async {
+    await Future.wait([
+      _loadBalance(),
+      _loadFederationMeta(),
+    ]);
+    setState(() {
+      isLoading = false;
+    });
+  }
+
+  Future<void> _loadFederationMeta() async {
+    try {
+        final meta = await getFederationMeta(federationId: widget.fed.federationId);
+        if (meta.picture != null && meta.picture!.isNotEmpty) {
+          setState(() {
+            federationImageUrl = meta.picture;
+          });
+        }
+    } catch (e) {
+      print('Failed to load federation metadata: $e');
+    }
   }
 
   Future<void> _loadBalance() async {
@@ -103,6 +117,18 @@ class _FederationListItemState extends State<FederationListItem> {
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
         child: Row(
           children: [
+            CircleAvatar(
+              radius: 24,
+              backgroundImage: federationImageUrl != null
+                  ? NetworkImage(federationImageUrl!)
+                  : const AssetImage('assets/images/fedimint.png') as ImageProvider,
+              onBackgroundImageError: (_, __) {
+                setState(() {
+                  federationImageUrl = null;
+                });
+              },
+            ),
+            const SizedBox(width: 16),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -123,9 +149,8 @@ class _FederationListItemState extends State<FederationListItem> {
             ),
             IconButton(
               icon: const Icon(Icons.qr_code),
-              onPressed: () async {
+              onPressed: () {
                 print('QR code pressed for ${widget.fed.federationName}');
-                await getFederationMeta(federationId: widget.fed.federationId);
               },
             ),
           ],
