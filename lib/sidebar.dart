@@ -117,14 +117,15 @@ class _FederationListItemState extends State<FederationListItem> {
                         ? 'Loading...'
                         : '${balanceMsats ?? 'Unavailable'} msats',
                   ),
-                  Text(numGuardians == BigInt.one ? '1 guardian' : '${numGuardians} guardians'),
+                  Text(numGuardians == BigInt.one ? '1 guardian' : '$numGuardians guardians'),
                 ],
               ),
             ),
             IconButton(
               icon: const Icon(Icons.qr_code),
-              onPressed: () {
+              onPressed: () async {
                 print('QR code pressed for ${widget.fed.federationName}');
+                await getFederationMeta(federationId: widget.fed.federationId);
               },
             ),
           ],

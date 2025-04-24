@@ -796,6 +796,7 @@ dependencies = [
  "fedimint-ln-common",
  "fedimint-lnv2-client",
  "fedimint-lnv2-common",
+ "fedimint-meta-client",
  "fedimint-mint-client",
  "fedimint-rocksdb",
  "fedimint-wallet-client",
@@ -1860,6 +1861,44 @@ checksum = "cb8036fe7d5289f9158f725fd68db28b97835a30d730fe4b5361a2ffd840afe4"
 dependencies = [
  "anyhow",
  "tracing-subscriber",
+]
+
+[[package]]
+name = "fedimint-meta-client"
+version = "0.7.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "45b4db29e517a46e00cc25beedf1836910729f93aca30da460f50b7889be6fb9"
+dependencies = [
+ "anyhow",
+ "async-trait",
+ "erased-serde 0.4.6",
+ "fedimint-api-client",
+ "fedimint-client-module",
+ "fedimint-core",
+ "fedimint-logging",
+ "fedimint-meta-common",
+ "serde",
+ "serde_json",
+ "strum",
+ "strum_macros",
+ "thiserror 2.0.12",
+ "tracing",
+]
+
+[[package]]
+name = "fedimint-meta-common"
+version = "0.7.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "2ef4e7c47dddd5b97d4753df50e0be47cff4ccd16cdaa4e3935018b861f80461"
+dependencies = [
+ "anyhow",
+ "fedimint-core",
+ "fedimint-logging",
+ "hex",
+ "serde",
+ "serde_json",
+ "thiserror 2.0.12",
+ "tracing",
 ]
 
 [[package]]

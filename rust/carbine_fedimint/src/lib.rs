@@ -3,7 +3,9 @@ mod frb_generated; use fedimint_core::config::ClientConfig;
 use fedimint_core::secp256k1::rand::seq::SliceRandom;
 use fedimint_core::secp256k1::PublicKey;
 use fedimint_core::task::TaskGroup;
-use fedimint_core::PeerId;
+use fedimint_core::{hex, PeerId};
+use fedimint_meta_client::common::{MetaKey, DEFAULT_META_KEY};
+use fedimint_meta_client::MetaClientInit;
 /* AUTO INJECTED BY flutter_rust_bridge. This line may not be accurate, and you can change it according to your needs. */
 use flutter_rust_bridge::frb;
 use tokio::sync::{OnceCell, RwLock};
@@ -145,6 +147,15 @@ pub async fn parse_invoice(bolt11: String) -> anyhow::Result<PaymentPreview> {
     let payment_hash = invoice.payment_hash().consensus_encode_to_hex();
     let network = invoice.network().to_string();
     Ok(PaymentPreview { amount, payment_hash, network, invoice: bolt11 })
+}
+
+#[frb]
+pub async fn get_federation_meta(
+    federation_id: &FederationId,
+) -> anyhow::Result<FederationMeta> {
+    let multimint = get_multimint().await;
+    let mm = multimint.read().await;
+    mm.get_federation_meta(federation_id).await
 }
 
 #[derive(Clone, Eq, PartialEq, Serialize, Debug)]
@@ -306,6 +317,12 @@ pub struct Multimint {
     task_group: TaskGroup,
 }
 
+#[derive(Debug, Serialize)]
+pub struct FederationMeta {
+    picture: Option<String>,
+    welcome: Option<String>,
+}
+
 impl Multimint {
     pub async fn new() -> anyhow::Result<Self> {
         // TODO: Need android-safe path here
@@ -326,6 +343,7 @@ impl Multimint {
         modules.attach(MintClientInit);
         modules.attach(WalletClientInit::default());
         modules.attach(fedimint_lnv2_client::LightningClientInit::default());
+        modules.attach(MetaClientInit);
 
         let mut multimint = Self {
             db,
@@ -406,6 +424,44 @@ impl Multimint {
                 println!("Failed to fetch events from nostr: {e}");
             }
         }
+    }
+
+    async fn get_federation_meta(&self, federation_id: &FederationId) -> anyhow::Result<FederationMeta> {
+        let client = self
+            .clients
+            .get(federation_id)
+            .expect("No federation exists");
+        let meta = client.get_first_module::<fedimint_meta_client::MetaClientModule>()?;
+        let consensus = meta.get_consensus_value(DEFAULT_META_KEY).await?;
+        match consensus {
+            Some(value) => {
+                let val = serde_json::to_value(value).expect("cant fail");
+                let val = val.get("value").ok_or(anyhow!("value not present"))?.as_str().ok_or(anyhow!("value was not a string"))?;
+                let str = hex::decode(val)?;
+                let json = String::from_utf8(str)?;
+                let meta: serde_json::Value = serde_json::from_str(&json)?;
+                let welcome = if let Some(welcome) = meta.get("welcome_message") {
+                    welcome.as_str().map(|s| s.to_string())
+                } else {
+                    None
+                };
+                let picture = if let Some(picture) = meta.get("fedi:federation_icon_url") {
+                    let url_str = picture.as_str().ok_or(anyhow!("icon url is not a string"))?;
+                    // Verify that it is a url
+                    Some(SafeUrl::parse(url_str)?.to_string())
+                } else {
+                    None
+                };
+
+                return Ok(FederationMeta {
+                    picture,
+                    welcome,
+                });
+            }
+            None => {}
+        }
+
+        Ok(FederationMeta { picture: None, welcome: None })
     }
 
     // TODO: Implement recovery

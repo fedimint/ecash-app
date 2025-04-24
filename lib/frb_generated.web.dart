@@ -258,6 +258,9 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   bool dco_decode_bool(dynamic raw);
 
   @protected
+  FederationMeta dco_decode_federation_meta(dynamic raw);
+
+  @protected
   List<FederationSelector>
   dco_decode_list_Auto_Owned_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerFederationSelector(
     dynamic raw,
@@ -493,6 +496,9 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
 
   @protected
   bool sse_decode_bool(SseDeserializer deserializer);
+
+  @protected
+  FederationMeta sse_decode_federation_meta(SseDeserializer deserializer);
 
   @protected
   List<FederationSelector>
@@ -767,6 +773,12 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
 
   @protected
   void sse_encode_bool(bool self, SseSerializer serializer);
+
+  @protected
+  void sse_encode_federation_meta(
+    FederationMeta self,
+    SseSerializer serializer,
+  );
 
   @protected
   void
