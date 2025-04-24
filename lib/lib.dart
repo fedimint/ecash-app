@@ -6,7 +6,7 @@
 import 'frb_generated.dart';
 import 'package:flutter_rust_bridge/flutter_rust_bridge_for_generated.dart';
 
-// These functions are ignored because they are not marked as `pub`: `add_relay`, `await_receive_lnv1`, `await_receive_lnv2`, `await_send_lnv1`, `await_send_lnv2`, `build_client`, `create_nostr_client`, `derive_federation_secret`, `get_client_database`, `get_multimint`, `has_federation`, `init_global`, `load_clients`, `pay_lnv1`, `pay_lnv2`, `receive_lnv1`, `receive_lnv2`
+// These functions are ignored because they are not marked as `pub`: `add_relay`, `await_receive_lnv1`, `await_receive_lnv2`, `await_send_lnv1`, `await_send_lnv2`, `build_client`, `create_nostr_client`, `derive_federation_secret`, `get_client_database`, `get_multimint`, `has_federation`, `init_global`, `lnv1_select_gateway`, `lnv1_update_gateway_cache`, `load_clients`, `pay_lnv1`, `pay_lnv2`, `receive_lnv1`, `receive_lnv2`
 // These function are ignored because they are on traits that is not defined in current crate (put an empty `#[frb]` on it to unignore): `assert_receiver_is_total_eq`, `assert_receiver_is_total_eq`, `assert_receiver_is_total_eq`, `clone`, `clone`, `clone`, `eq`, `eq`, `eq`, `fmt`, `fmt`, `fmt`
 
 Future<FederationSelector> joinFederation({required String inviteCode}) =>

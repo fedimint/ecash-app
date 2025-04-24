@@ -1,5 +1,7 @@
 mod db;
-mod frb_generated; /* AUTO INJECTED BY flutter_rust_bridge. This line may not be accurate, and you can change it according to your needs. */
+mod frb_generated; use fedimint_core::secp256k1::rand::seq::SliceRandom;
+use fedimint_core::task::TaskGroup;
+/* AUTO INJECTED BY flutter_rust_bridge. This line may not be accurate, and you can change it according to your needs. */
 use flutter_rust_bridge::frb;
 use tokio::sync::{OnceCell, RwLock};
 
@@ -181,6 +183,7 @@ pub struct Multimint {
     clients: BTreeMap<FederationId, ClientHandleArc>,
     nostr_client: nostr_sdk::Client,
     public_federations: Vec<PublicFederation>,
+    task_group: TaskGroup,
 }
 
 impl Multimint {
@@ -211,6 +214,7 @@ impl Multimint {
             clients: BTreeMap::new(),
             nostr_client: Multimint::create_nostr_client().await,
             public_federations: vec![],
+            task_group: TaskGroup::new(),
         };
         multimint.load_clients().await?;
         Ok(multimint)
@@ -434,7 +438,7 @@ impl Multimint {
         client_builder.with_module_inits(self.modules.clone());
         client_builder.with_primary_module_kind(fedimint_mint_client::KIND);
 
-        if Client::is_initialized(client_builder.db_no_decoders()).await {
+        let client = if Client::is_initialized(client_builder.db_no_decoders()).await {
             client_builder.open(secret).await
         } else {
             let client_config = connector.download_from_invite_code(&invite_code).await?;
@@ -442,7 +446,10 @@ impl Multimint {
                 .join(secret, client_config.clone(), invite_code.api_secret())
                 .await
         }
-        .map(Arc::new)
+        .map(Arc::new)?;
+
+        self.lnv1_update_gateway_cache(&client).await?;
+        Ok(client)
     }
 
     fn get_client_database(&self, federation_id: &FederationId) -> Database {
@@ -519,8 +526,7 @@ impl Multimint {
 
     async fn receive_lnv1(client: &ClientHandleArc, amount: Amount) -> anyhow::Result<(String, OperationId)> {
         let lnv1 = client.get_first_module::<LightningClientModule>()?;
-        // TODO: Replace with custom gateway selection
-        let gateway = lnv1.get_gateway(None, false).await?;
+        let gateway = Self::lnv1_select_gateway(client).await;
         let desc = Description::new(String::new())?;
         let (operation_id, invoice, _) = lnv1.create_bolt11_invoice(amount, lightning_invoice::Bolt11InvoiceDescription::Direct(&desc), Some(DEFAULT_EXPIRY_TIME_SECS as u64), (), gateway).await?;
         Ok((invoice.to_string(), operation_id))
@@ -557,8 +563,7 @@ impl Multimint {
 
     async fn pay_lnv1(client: &ClientHandleArc, invoice: Bolt11Invoice) -> anyhow::Result<OperationId> {
         let lnv1 = client.get_first_module::<LightningClientModule>()?;
-        // TODO: Replace with custom gateway selection
-        let gateway = lnv1.get_gateway(None, false).await?;
+        let gateway = Self::lnv1_select_gateway(client).await;
         let outgoing_lightning_payment = lnv1.pay_bolt11_invoice(gateway, invoice, ()).await?;
         Ok(outgoing_lightning_payment.payment_type.operation_id())
     }
@@ -659,5 +664,34 @@ impl Multimint {
         }
 
         Ok(FinalReceiveOperationState::Failure)
+    }
+
+    async fn lnv1_update_gateway_cache(&self, client: &ClientHandleArc) -> anyhow::Result<()> {
+        let lnv1_client = client.clone();
+        self.task_group.spawn_cancellable("update gateway cache", async move {
+            let lnv1 = lnv1_client.get_first_module::<LightningClientModule>().expect("LNv1 should be present");
+            match lnv1.update_gateway_cache().await {
+                Ok(_) => println!("Updated gateway cache"),
+                Err(e) => println!("Could not update gateway cache {e}"),
+            }
+
+            lnv1.update_gateway_cache_continuously(|gateway| async { gateway }).await
+        });
+        Ok(())
+    }
+
+    async fn lnv1_select_gateway(client: &ClientHandleArc) -> Option<fedimint_ln_common::LightningGateway> {
+        let lnv1 = client.get_first_module::<LightningClientModule>().ok()?;
+        let gateways = lnv1.list_gateways().await;
+
+        if gateways.len() == 0 {
+            return None;
+        }
+
+        if let Some(vetted) = gateways.iter().find(|gateway| gateway.vetted) {
+            return Some(vetted.info.clone());
+        }
+
+        gateways.choose(&mut thread_rng()).map(|gateway| gateway.info.clone())
     }
 }

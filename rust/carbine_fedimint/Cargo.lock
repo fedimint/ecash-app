@@ -793,6 +793,7 @@ dependencies = [
  "fedimint-core",
  "fedimint-derive-secret",
  "fedimint-ln-client",
+ "fedimint-ln-common",
  "fedimint-lnv2-client",
  "fedimint-lnv2-common",
  "fedimint-mint-client",
