@@ -298,6 +298,7 @@ pub struct FederationSelector {
     pub federation_id: FederationId,
     pub network: String,
     pub num_peers: usize,
+    pub invite_code: String,
 }
 
 impl Display for FederationSelector {
@@ -466,9 +467,9 @@ impl Multimint {
     // TODO: Implement recovery
     pub async fn join_federation(
         &mut self,
-        invite_code: String,
+        invite: String,
     ) -> anyhow::Result<FederationSelector> {
-        let invite_code = InviteCode::from_str(&invite_code)?;
+        let invite_code = InviteCode::from_str(&invite)?;
         let federation_id = invite_code.federation_id();
         if self.has_federation(&federation_id).await {
             bail!("Already joined federation")
@@ -512,6 +513,7 @@ impl Multimint {
             federation_id,
             network,
             num_peers: client_config.global.api_endpoints.len(),
+            invite_code: invite,
         })
     }
 
@@ -577,6 +579,7 @@ impl Multimint {
                 federation_id: id.id,
                 network: config.network,
                 num_peers: config.client_config.global.api_endpoints.len(),
+                invite_code: config.invite_code.to_string(),
             })
             .collect::<Vec<_>>()
             .await

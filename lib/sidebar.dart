@@ -1,4 +1,5 @@
 
+import 'package:carbine/fed_preview.dart';
 import 'package:carbine/lib.dart';
 import 'package:flutter/material.dart';
 
@@ -70,6 +71,7 @@ class _FederationListItemState extends State<FederationListItem> {
   BigInt? balanceMsats;
   bool isLoading = true;
   String? federationImageUrl;
+  String? welcomeMessage;
 
   @override
   void initState() {
@@ -93,6 +95,11 @@ class _FederationListItemState extends State<FederationListItem> {
         if (meta.picture != null && meta.picture!.isNotEmpty) {
           setState(() {
             federationImageUrl = meta.picture;
+          });
+        }
+        if (meta.welcome != null && meta.welcome!.isNotEmpty) {
+          setState(() {
+            welcomeMessage = meta.welcome;
           });
         }
     } catch (e) {
@@ -150,7 +157,30 @@ class _FederationListItemState extends State<FederationListItem> {
             IconButton(
               icon: const Icon(Icons.qr_code),
               onPressed: () {
-                print('QR code pressed for ${widget.fed.federationName}');
+                showModalBottomSheet(
+                  context: context,
+                  isScrollControlled: true,
+                  shape: const RoundedRectangleBorder(
+                    borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+                  ),
+                  builder: (_) => Padding(
+                    padding: EdgeInsets.only(
+                      bottom: MediaQuery.of(context).viewInsets.bottom,
+                    ),
+                    child: Container(
+                      decoration: const BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+                      ),
+                      child: FederationPreview(
+                        federationName: widget.fed.federationName,
+                        inviteCode: widget.fed.inviteCode,
+                        welcomeMessage: welcomeMessage,
+                        imageUrl: federationImageUrl,
+                      ),
+                    ),
+                  ),
+                );
               },
             ),
           ],

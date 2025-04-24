@@ -78,6 +78,8 @@ abstract class FederationSelector implements RustOpaqueInterface {
 
   String get federationName;
 
+  String get inviteCode;
+
   String get network;
 
   BigInt get numPeers;
@@ -85,6 +87,8 @@ abstract class FederationSelector implements RustOpaqueInterface {
   set federationId(FederationId federationId);
 
   set federationName(String federationName);
+
+  set inviteCode(String inviteCode);
 
   set network(String network);
 
@@ -116,7 +120,7 @@ abstract class Multimint implements RustOpaqueInterface {
 
   Future<List<FederationSelector>> federations();
 
-  Future<FederationSelector> joinFederation({required String inviteCode});
+  Future<FederationSelector> joinFederation({required String invite});
 
   // HINT: Make it `#[frb(sync)]` to let it become the default constructor of Dart class.
   static Future<Multimint> newInstance() =>
