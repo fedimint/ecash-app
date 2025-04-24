@@ -1,13 +1,16 @@
 mod db;
-mod frb_generated; use fedimint_core::secp256k1::rand::seq::SliceRandom;
+mod frb_generated; use fedimint_core::config::ClientConfig;
+use fedimint_core::secp256k1::rand::seq::SliceRandom;
+use fedimint_core::secp256k1::PublicKey;
 use fedimint_core::task::TaskGroup;
+use fedimint_core::PeerId;
 /* AUTO INJECTED BY flutter_rust_bridge. This line may not be accurate, and you can change it according to your needs. */
 use flutter_rust_bridge::frb;
 use tokio::sync::{OnceCell, RwLock};
 
 use std::{collections::BTreeMap, fmt::Display, str::FromStr, sync::Arc, time::Duration};
 
-use anyhow::bail;
+use anyhow::{anyhow, bail};
 use fedimint_api_client::api::net::Connector;
 use fedimint_bip39::{Bip39RootSecretStrategy, Mnemonic};
 use fedimint_client::{
@@ -163,11 +166,128 @@ pub struct PublicFederation {
     pub network: String,
 }
 
+impl TryFrom<nostr_sdk::Event> for PublicFederation {
+    type Error = anyhow::Error;
+
+    fn try_from(event: nostr_sdk::Event) -> Result<Self, Self::Error> {
+        let tags = event.tags;
+        let network = Self::parse_network(&tags)?;
+        let (federation_name, about, picture) = Self::parse_content(event.content)?;
+        let federation_id = Self::parse_federation_id(&tags)?;
+        let invite_codes = Self::parse_invite_codes(&tags)?;
+        let modules = Self::parse_modules(&tags)?;
+        Ok(PublicFederation {
+            federation_name,
+            federation_id,
+            invite_codes,
+            about,
+            picture,
+            modules,
+            network: network.to_string(),
+        })
+    }
+}
+
+impl PublicFederation {
+    fn parse_network(tags: &nostr_sdk::Tags) -> anyhow::Result<Network> {
+        let n_tag = tags.find(nostr_sdk::TagKind::SingleLetter(
+            nostr_sdk::SingleLetterTag::lowercase(nostr_sdk::Alphabet::N),
+        )).ok_or(anyhow::anyhow!("n_tag not present"))?;
+        let network = n_tag.content().ok_or(anyhow::anyhow!("n_tag has no content"))?;
+        match network {
+            "mainnet" => Ok(Network::Bitcoin),
+            network_str => {
+                let network = Network::from_str(network_str)?;
+                Ok(network)
+            }
+        }
+    }
+
+    fn parse_content(content: String) -> anyhow::Result<(String, Option<String>, Option<String>)> {
+        let json: Result<serde_json::Value, serde_json::Error> = serde_json::from_str(&content);
+        match json {
+            Ok(json) => {
+                let federation_name = Self::parse_federation_name(&json)?;
+                let about = json.get("about").map(|val| {
+                    val.as_str().expect("about is not a string").to_string()
+                });
+
+                let picture = Self::parse_picture(&json);
+                Ok((federation_name, about, picture))
+            }
+            Err(_) => {
+                // Just interpret the entire content as the federation name
+                Ok((content, None, None))
+            }
+        }
+    }
+
+    fn parse_federation_name(json: &serde_json::Value) -> anyhow::Result<String> {
+        // First try to parse using the "name" key
+        let federation_name = json.get("name");
+        match federation_name {
+            Some(name) => {
+                Ok(name.as_str().ok_or(anyhow!("name is not a string"))?.to_string())
+            }
+            None => {
+                // Try to parse using "federation_name" key
+                let federation_name = json.get("federation_name").ok_or(anyhow!("Could not get federation name"))?;
+                Ok(federation_name.as_str().ok_or(anyhow!("federation name is not a string"))?.to_string())
+            }
+        }
+    }
+
+    fn parse_picture(json: &serde_json::Value) -> Option<String> {
+        let picture = json.get("picture");
+        match picture {
+            Some(picture) => {
+                match picture.as_str() {
+                    Some(pic_url) => {
+                        // Verify that the picture is a URL
+                        let safe_url = SafeUrl::parse(pic_url).ok()?;
+                        return Some(safe_url.to_string());
+                    }
+                    None => {},
+                }
+            }
+            None => {}
+        }
+        None
+    }
+
+    fn parse_federation_id(tags: &nostr_sdk::Tags) -> anyhow::Result<FederationId> {
+        let d_tag = tags.identifier().ok_or(anyhow!("d_tag is not present"))?;
+        let federation_id = FederationId::from_str(d_tag)?;
+        Ok(federation_id)
+    }
+
+    fn parse_invite_codes(tags: &nostr_sdk::Tags) -> anyhow::Result<Vec<String>> {
+        let u_tag = tags.find(nostr_sdk::TagKind::SingleLetter(
+            nostr_sdk::SingleLetterTag::lowercase(nostr_sdk::Alphabet::U),
+        )).ok_or(anyhow!("u_tag does not exist"))?;
+        let invite = u_tag.content().ok_or(anyhow!("No content for u_tag"))?.to_string();
+        Ok(vec![invite])
+    }
+
+    fn parse_modules(tags: &nostr_sdk::Tags) -> anyhow::Result<Vec<String>> {
+        let modules = tags
+            .find(nostr_sdk::TagKind::custom("modules".to_string()))
+            .ok_or(anyhow!("No modules tag"))?
+            .content()
+            .ok_or(anyhow!("modules should have content"))?
+            .split(",")
+            .map(|m| m.to_string())
+            .collect::<Vec<_>>();
+        Ok(modules)
+    }
+}
+
 #[derive(Clone, Eq, PartialEq, Serialize)]
 pub struct FederationSelector {
     pub federation_name: String,
     pub federation_id: FederationId,
     pub network: String,
+    pub num_peers: usize,
 }
 
 impl Display for FederationSelector {
@@ -266,95 +386,16 @@ impl Multimint {
                 let events = all_events
                     .iter()
                     .filter_map(|event| {
-                        // TODO: This is horrible code, it needs to be cleaned up so that it never crashes, only filters events that are not valid
-                        let tags = event.tags.clone();
-                        let n_tag = tags.find(nostr_sdk::TagKind::SingleLetter(
-                            nostr_sdk::SingleLetterTag::lowercase(nostr_sdk::Alphabet::N),
-                        ));
-                        if n_tag.is_none() {
-                            return None;
-                        }
-                        let network_str = n_tag.unwrap().content();
-                        if network_str.is_none() {
-                            return None;
-                        }
-                        let network = if network_str.unwrap() == "mainnet" {
-                            Network::Bitcoin
-                        } else {
-                            Network::from_str(network_str.unwrap())
-                                .expect("Network parsing should succeed")
-                        };
-                        if network == Network::Regtest {
-                            println!("Skipping regtest federation...");
-                            return None;
-                        }
 
-                        let json: Result<serde_json::Value, serde_json::Error> =
-                            serde_json::from_str(&event.content);
-                        let (federation_name, about, picture) = match json {
-                            Ok(json) => {
-                                let federation_name = json.get("name");
-                                let federation_name = match federation_name {
-                                    Some(name) => name
-                                        .as_str()
-                                        .expect("Could not parse federation name as str")
-                                        .to_string(),
-                                    None => json
-                                        .get("federation_name")
-                                        .expect("federation name and name do not exist")
-                                        .as_str()
-                                        .expect("Could not parse as str")
-                                        .to_string(),
-                                };
-                                let about = json.get("about").map(|val| {
-                                    val.as_str().expect("Could not parse as str").to_string()
-                                });
-                                let picture = json.get("picture").map(|val| {
-                                    SafeUrl::parse(val.as_str().expect("Could not parse as str"))
-                                        .expect("Could not parse as SafeUrl")
-                                        .to_string()
-                                });
-                                (federation_name, about, picture)
-                            }
-                            Err(_) => {
-                                let federation_name = event.content.to_string();
-                                (federation_name, None, None)
-                            }
-                        };
-
-                        let d_tag = tags.identifier().expect("should be present");
-                        let federation_id = FederationId::from_str(d_tag).expect("Should parse");
-                        let u_tag = tags.find(nostr_sdk::TagKind::SingleLetter(
-                            nostr_sdk::SingleLetterTag::lowercase(nostr_sdk::Alphabet::U),
-                        ));
-                        let invite_codes = match u_tag {
-                            Some(u_tag) => {
-                                let invite_code =
-                                    u_tag.content().expect("u tag not present").to_string();
-                                vec![invite_code]
-                            }
-                            None => {
+                        match PublicFederation::parse_network(&event.tags) {
+                            Ok(network) if network == Network::Regtest => {
+                                // Skip over regtest advertisements
                                 return None;
                             }
-                        };
-                        let modules = tags
-                            .find(nostr_sdk::TagKind::custom("modules".to_string()))
-                            .expect("Modules should be present")
-                            .content()
-                            .expect("Content should be present")
-                            .split(",")
-                            .map(|m| m.to_string())
-                            .collect::<Vec<_>>();
+                            _ => {},
+                        }
 
-                        Some(PublicFederation {
-                            federation_name: federation_name.to_string(),
-                            federation_id,
-                            invite_codes,
-                            about,
-                            picture,
-                            modules,
-                            network: network.to_string(),
-                        })
+                        PublicFederation::try_from(event.clone()).ok()
                     })
                     .collect::<Vec<_>>();
 
@@ -398,6 +439,7 @@ impl Multimint {
             connector: Connector::default(),
             federation_name: federation_name.clone(),
             network: network.clone(),
+            client_config: client_config.clone(),
         };
         
         self.clients.insert(federation_id, client);
@@ -410,11 +452,11 @@ impl Multimint {
         .await;
         dbtx.commit_tx().await;
 
-
         Ok(FederationSelector {
             federation_name,
             federation_id,
             network,
+            num_peers: client_config.global.api_endpoints.len(),
         })
     }
 
@@ -479,6 +521,7 @@ impl Multimint {
                 federation_name: config.federation_name,
                 federation_id: id.id,
                 network: config.network,
+                num_peers: config.client_config.global.api_endpoints.len(),
             })
             .collect::<Vec<_>>()
             .await

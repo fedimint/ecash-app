@@ -90,7 +90,7 @@ class _MyAppState extends State<MyApp> {
     return MaterialApp(
       home: Builder(
         builder: (innerContext) => Scaffold(
-          appBar: AppBar(title: const Text('Multimint App')),
+          appBar: AppBar(),
           drawer: FederationSidebar(
             key: ValueKey(_refreshTrigger),
             federationsFuture: _federationFuture,

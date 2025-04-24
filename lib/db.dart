@@ -12,6 +12,8 @@ import 'package:flutter_rust_bridge/flutter_rust_bridge_for_generated.dart';
 
 // Rust type: RustOpaqueMoi<flutter_rust_bridge::for_generated::RustAutoOpaqueInner<FederationConfig>>
 abstract class FederationConfig implements RustOpaqueInterface {
+  ClientConfig get clientConfig;
+
   Connector get connector;
 
   String get federationName;
@@ -19,6 +21,8 @@ abstract class FederationConfig implements RustOpaqueInterface {
   InviteCode get inviteCode;
 
   String get network;
+
+  set clientConfig(ClientConfig clientConfig);
 
   set connector(Connector connector);
 

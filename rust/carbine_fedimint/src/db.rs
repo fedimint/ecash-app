@@ -1,6 +1,6 @@
 use fedimint_api_client::api::net::Connector;
 use fedimint_core::{
-    config::FederationId,
+    config::{ClientConfig, FederationId},
     encoding::{Decodable, Encodable},
     impl_db_lookup, impl_db_record,
     invite_code::InviteCode,
@@ -25,6 +25,7 @@ pub(crate) struct FederationConfig {
     pub connector: Connector,
     pub federation_name: String,
     pub network: String,
+    pub client_config: ClientConfig,
 }
 
 #[derive(Debug, Encodable, Decodable)]
