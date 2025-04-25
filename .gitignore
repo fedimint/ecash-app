@@ -47,3 +47,5 @@ app.*.map.json
 **/target-nix
 **/target
 **/*.so
+**/*.db/
+**/*.lock
