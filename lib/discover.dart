@@ -1,3 +1,4 @@
+import 'package:carbine/fed_preview.dart';
 import 'package:carbine/lib.dart';
 import 'package:flutter/material.dart';
 
@@ -81,22 +82,36 @@ class _Discover extends State<Discover> {
               ),
               trailing: ElevatedButton(
                 onPressed: () async {
-                  // Handle join logic
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text("Joining ${federation.federationName}...")),
+                  final fed = await showModalBottomSheet(
+                    context: context,
+                    isScrollControlled: true,
+                    shape: const RoundedRectangleBorder(
+                      borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+                    ),
+                    builder: (_) => Padding(
+                      padding: EdgeInsets.only(
+                        bottom: MediaQuery.of(context).viewInsets.bottom,
+                      ),
+                      child: Container(
+                        decoration: const BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+                        ),
+                        child: FederationPreview(
+                          federationName: federation.federationName,
+                          inviteCode: federation.inviteCodes.first,
+                          welcomeMessage: federation.about,
+                          imageUrl: federation.picture,
+                          joinable: true,
+                        ),
+                      ),
+                    ),
                   );
-
-                  try {
-                    final fed = await joinFederation(inviteCode: federation.inviteCodes.first);
-                    widget.onJoin(fed);
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(content: Text("Joined ${federation.federationName}")),
-                    );
-                  } catch (e) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(content: Text("Could not join federation")),
-                    );
-                  }
+                  await Future.delayed(const Duration(milliseconds: 400));
+                  widget.onJoin(fed);
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text("Joined ${fed.federationName}")),
+                  );
                 },
                 child: const Text("Join"),
               ),

@@ -177,6 +177,7 @@ class _FederationListItemState extends State<FederationListItem> {
                         inviteCode: widget.fed.inviteCode,
                         welcomeMessage: welcomeMessage,
                         imageUrl: federationImageUrl,
+                        joinable: false,
                       ),
                     ),
                   ),

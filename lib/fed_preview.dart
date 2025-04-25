@@ -1,12 +1,14 @@
+import 'package:carbine/lib.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 
-class FederationPreview extends StatelessWidget {
+class FederationPreview extends StatefulWidget {
   final String federationName;
   final String inviteCode;
   final String? welcomeMessage;
   final String? imageUrl;
+  final bool joinable;
 
   const FederationPreview({
     super.key,
@@ -14,7 +16,39 @@ class FederationPreview extends StatelessWidget {
     required this.inviteCode,
     this.welcomeMessage,
     this.imageUrl,
+    required this.joinable,
   });
+
+  @override
+  State<FederationPreview> createState() => _FederationPreviewState();
+}
+
+class _FederationPreviewState extends State<FederationPreview> {
+  bool isJoining = false; 
+
+  Future<void> _onButtonPressed() async {
+    if (widget.joinable) {
+      setState(() {
+        isJoining = true;
+      });
+      try {
+        final fed = await joinFederation(inviteCode: widget.inviteCode);
+        print('Successfully joined federation');
+        if (mounted) {
+          Navigator.of(context).pop(fed);
+        }
+      } catch (e) {
+        print('Could not join federation $e');
+        setState(() {
+          isJoining = false;
+        });
+      }
+    } else {
+      // TODO: show toast here
+      Clipboard.setData(ClipboardData(text: widget.inviteCode));
+      print('Invite code copied');
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -37,58 +71,64 @@ class FederationPreview extends StatelessWidget {
                 borderRadius: BorderRadius.circular(2.5),
               ),
             ),
-            if (imageUrl != null)
-              ClipRRect(
-                borderRadius: BorderRadius.circular(16),
-                child: Image.network(
-                  imageUrl!,
-                  height: 150,
-                  fit: BoxFit.cover,
-                ),
-              ),
+            ClipRRect(
+              borderRadius: BorderRadius.circular(16),
+              child: widget.imageUrl != null
+                  ? Image.network(
+                      widget.imageUrl!,
+                      height: 150,
+                      fit: BoxFit.cover,
+                      errorBuilder: (context, error, stackTrace) {
+                        return Image.asset(
+                          'assets/images/fedimint.png',
+                          height: 150,
+                          fit: BoxFit.cover,
+                        );
+                      },
+                    )
+                  : Image.asset(
+                      'assets/images/fedimint.png',
+                      height: 150,
+                      fit: BoxFit.cover,
+                    ),
+            ),
             const SizedBox(height: 16),
             Text(
-              federationName,
+              widget.federationName,
               style: theme.textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.bold),
               textAlign: TextAlign.center,
             ),
-            if (welcomeMessage != null) ...[
+            if (widget.welcomeMessage != null) ...[
               const SizedBox(height: 12),
               Text(
-                welcomeMessage!,
+                widget.welcomeMessage!,
                 style: theme.textTheme.bodyMedium,
                 textAlign: TextAlign.center,
               ),
             ],
             const SizedBox(height: 24),
             QrImageView(
-              data: inviteCode,
+              data: widget.inviteCode,
               version: QrVersions.auto,
               size: 200.0,
               backgroundColor: Colors.white,
             ),
             const SizedBox(height: 16),
             SelectableText(
-              inviteCode,
+              widget.inviteCode,
               style: theme.textTheme.bodyLarge?.copyWith(fontWeight: FontWeight.w500),
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: 8),
-            ElevatedButton.icon(
-              onPressed: () {
-                Clipboard.setData(ClipboardData(text: inviteCode));
-                // TODO: This does not appear to work, perhaps use FlutterToast
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(content: Text("Invite code copied")),
-                );
-              },
-              icon: const Icon(Icons.copy),
-              label: const Text("Copy Invite Code"),
-              style: ElevatedButton.styleFrom(
-                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-              ),
-            ),
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton(
+                onPressed: _onButtonPressed,
+                child: isJoining 
+                  ? const CircularProgressIndicator(color: Colors.white)
+                  : Text(widget.joinable ? "Join Federation" : "Copy Invite Code")
+              )
+            )
           ],
         ),
       ),

@@ -42,7 +42,7 @@ class _MyAppState extends State<MyApp> {
 
   void _onJoinPressed(FederationSelector fed) {
     _setSelectedFederation(fed);
-    _refreshFederations();
+    _refreshFederations(); 
   }
 
   void _setSelectedFederation(FederationSelector fed) {
