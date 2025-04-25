@@ -1,8 +1,10 @@
 mod db;
-mod frb_generated; use fedimint_core::config::ClientConfig;
+mod frb_generated;
+use fedimint_core::config::ClientConfig;
+use fedimint_core::db::mem_impl::MemDatabase;
+use fedimint_core::hex;
 use fedimint_core::secp256k1::rand::seq::SliceRandom;
 use fedimint_core::task::TaskGroup;
-use fedimint_core::hex;
 use fedimint_meta_client::common::DEFAULT_META_KEY;
 use fedimint_meta_client::MetaClientInit;
 /* AUTO INJECTED BY flutter_rust_bridge. This line may not be accurate, and you can change it according to your needs. */
@@ -30,7 +32,9 @@ use fedimint_core::{
     Amount,
 };
 use fedimint_derive_secret::{ChildId, DerivableSecret};
-use fedimint_ln_client::{InternalPayState, LightningClientInit, LightningClientModule, LnPayState, LnReceiveState};
+use fedimint_ln_client::{
+    InternalPayState, LightningClientInit, LightningClientModule, LnPayState, LnReceiveState,
+};
 use fedimint_lnv2_client::{FinalReceiveOperationState, FinalSendOperationState};
 use fedimint_lnv2_common::Bolt11InvoiceDescription;
 use fedimint_mint_client::MintClientInit;
@@ -142,19 +146,26 @@ pub async fn list_federations_from_nostr(force_update: bool) -> Vec<PublicFedera
 #[frb]
 pub async fn parse_invoice(bolt11: String) -> anyhow::Result<PaymentPreview> {
     let invoice = Bolt11Invoice::from_str(&bolt11)?;
-    let amount = invoice.amount_milli_satoshis().expect("No amount specified");
+    let amount = invoice
+        .amount_milli_satoshis()
+        .expect("No amount specified");
     let payment_hash = invoice.payment_hash().consensus_encode_to_hex();
     let network = invoice.network().to_string();
-    Ok(PaymentPreview { amount, payment_hash, network, invoice: bolt11 })
+    Ok(PaymentPreview {
+        amount,
+        payment_hash,
+        network,
+        invoice: bolt11,
+    })
 }
 
 #[frb]
 pub async fn get_federation_meta(
-    federation_id: &FederationId,
-) -> anyhow::Result<FederationMeta> {
+    invite_code: String,
+) -> anyhow::Result<(FederationMeta, FederationSelector)> {
     let multimint = get_multimint().await;
     let mm = multimint.read().await;
-    mm.get_federation_meta(federation_id).await
+    mm.get_federation_meta(invite_code).await
 }
 
 #[derive(Clone, Eq, PartialEq, Serialize, Debug)]
@@ -200,10 +211,14 @@ impl TryFrom<nostr_sdk::Event> for PublicFederation {
 
 impl PublicFederation {
     fn parse_network(tags: &nostr_sdk::Tags) -> anyhow::Result<Network> {
-        let n_tag = tags.find(nostr_sdk::TagKind::SingleLetter(
-            nostr_sdk::SingleLetterTag::lowercase(nostr_sdk::Alphabet::N),
-        )).ok_or(anyhow::anyhow!("n_tag not present"))?;
-        let network = n_tag.content().ok_or(anyhow::anyhow!("n_tag has no content"))?;
+        let n_tag = tags
+            .find(nostr_sdk::TagKind::SingleLetter(
+                nostr_sdk::SingleLetterTag::lowercase(nostr_sdk::Alphabet::N),
+            ))
+            .ok_or(anyhow::anyhow!("n_tag not present"))?;
+        let network = n_tag
+            .content()
+            .ok_or(anyhow::anyhow!("n_tag has no content"))?;
         match network {
             "mainnet" => Ok(Network::Bitcoin),
             network_str => {
@@ -218,9 +233,9 @@ impl PublicFederation {
         match json {
             Ok(json) => {
                 let federation_name = Self::parse_federation_name(&json)?;
-                let about = json.get("about").map(|val| {
-                    val.as_str().expect("about is not a string").to_string()
-                });
+                let about = json
+                    .get("about")
+                    .map(|val| val.as_str().expect("about is not a string").to_string());
 
                 let picture = Self::parse_picture(&json);
                 Ok((federation_name, about, picture))
@@ -236,13 +251,19 @@ impl PublicFederation {
         // First try to parse using the "name" key
         let federation_name = json.get("name");
         match federation_name {
-            Some(name) => {
-                Ok(name.as_str().ok_or(anyhow!("name is not a string"))?.to_string())
-            }
+            Some(name) => Ok(name
+                .as_str()
+                .ok_or(anyhow!("name is not a string"))?
+                .to_string()),
             None => {
                 // Try to parse using "federation_name" key
-                let federation_name = json.get("federation_name").ok_or(anyhow!("Could not get federation name"))?;
-                Ok(federation_name.as_str().ok_or(anyhow!("federation name is not a string"))?.to_string())
+                let federation_name = json
+                    .get("federation_name")
+                    .ok_or(anyhow!("Could not get federation name"))?;
+                Ok(federation_name
+                    .as_str()
+                    .ok_or(anyhow!("federation name is not a string"))?
+                    .to_string())
             }
         }
     }
@@ -257,7 +278,7 @@ impl PublicFederation {
                         let safe_url = SafeUrl::parse(pic_url).ok()?;
                         return Some(safe_url.to_string());
                     }
-                    None => {},
+                    None => {}
                 }
             }
             None => {}
@@ -272,10 +293,15 @@ impl PublicFederation {
     }
 
     fn parse_invite_codes(tags: &nostr_sdk::Tags) -> anyhow::Result<Vec<String>> {
-        let u_tag = tags.find(nostr_sdk::TagKind::SingleLetter(
-            nostr_sdk::SingleLetterTag::lowercase(nostr_sdk::Alphabet::U),
-        )).ok_or(anyhow!("u_tag does not exist"))?;
-        let invite = u_tag.content().ok_or(anyhow!("No content for u_tag"))?.to_string();
+        let u_tag = tags
+            .find(nostr_sdk::TagKind::SingleLetter(
+                nostr_sdk::SingleLetterTag::lowercase(nostr_sdk::Alphabet::U),
+            ))
+            .ok_or(anyhow!("u_tag does not exist"))?;
+        let invite = u_tag
+            .content()
+            .ok_or(anyhow!("No content for u_tag"))?
+            .to_string();
         Ok(vec![invite])
     }
 
@@ -292,7 +318,7 @@ impl PublicFederation {
     }
 }
 
-#[derive(Clone, Eq, PartialEq, Serialize)]
+#[derive(Clone, Eq, PartialEq, Serialize, Debug)]
 pub struct FederationSelector {
     pub federation_name: String,
     pub federation_id: FederationId,
@@ -367,7 +393,7 @@ impl Multimint {
             .await;
         for (id, config) in configs {
             let client = self
-                .build_client(&id.id, &config.invite_code, config.connector)
+                .build_client(&id.id, &config.invite_code, config.connector, false)
                 .await?;
             self.clients.insert(id.id, client);
         }
@@ -404,13 +430,12 @@ impl Multimint {
                 let events = all_events
                     .iter()
                     .filter_map(|event| {
-
                         match PublicFederation::parse_network(&event.tags) {
                             Ok(network) if network == Network::Regtest => {
                                 // Skip over regtest advertisements
                                 return None;
                             }
-                            _ => {},
+                            _ => {}
                         }
 
                         PublicFederation::try_from(event.clone()).ok()
@@ -426,17 +451,43 @@ impl Multimint {
         }
     }
 
-    async fn get_federation_meta(&self, federation_id: &FederationId) -> anyhow::Result<FederationMeta> {
-        let client = self
-            .clients
-            .get(federation_id)
-            .expect("No federation exists");
+    async fn get_federation_meta(
+        &self,
+        invite: String,
+    ) -> anyhow::Result<(FederationMeta, FederationSelector)> {
+        // Sometimes we want to get the federation meta before we've joined (i.e to show a preview).
+        // In this case, we create a temprorary client and retrieve all the data
+        let invite_code = InviteCode::from_str(&invite)?;
+        let federation_id = invite_code.federation_id();
+        let client = if let Some(client) = self.clients.get(&federation_id) {
+            client
+        } else {
+            &self
+                .build_client(&federation_id, &invite_code, Connector::Tcp, true)
+                .await?
+        };
+
+        let config = client.config().await;
+        let wallet = client.get_first_module::<fedimint_wallet_client::WalletClientModule>()?;
+        let network = wallet.get_network().to_string();
+        let selector = FederationSelector {
+            federation_name: config.global.federation_name().unwrap_or("").to_string(),
+            federation_id,
+            network,
+            num_peers: config.global.api_endpoints.len(),
+            invite_code: invite_code.to_string(),
+        };
+
         let meta = client.get_first_module::<fedimint_meta_client::MetaClientModule>()?;
         let consensus = meta.get_consensus_value(DEFAULT_META_KEY).await?;
         match consensus {
             Some(value) => {
                 let val = serde_json::to_value(value).expect("cant fail");
-                let val = val.get("value").ok_or(anyhow!("value not present"))?.as_str().ok_or(anyhow!("value was not a string"))?;
+                let val = val
+                    .get("value")
+                    .ok_or(anyhow!("value not present"))?
+                    .as_str()
+                    .ok_or(anyhow!("value was not a string"))?;
                 let str = hex::decode(val)?;
                 let json = String::from_utf8(str)?;
                 let meta: serde_json::Value = serde_json::from_str(&json)?;
@@ -446,29 +497,31 @@ impl Multimint {
                     None
                 };
                 let picture = if let Some(picture) = meta.get("fedi:federation_icon_url") {
-                    let url_str = picture.as_str().ok_or(anyhow!("icon url is not a string"))?;
+                    let url_str = picture
+                        .as_str()
+                        .ok_or(anyhow!("icon url is not a string"))?;
                     // Verify that it is a url
                     Some(SafeUrl::parse(url_str)?.to_string())
                 } else {
                     None
                 };
 
-                return Ok(FederationMeta {
-                    picture,
-                    welcome,
-                });
+                return Ok((FederationMeta { picture, welcome }, selector));
             }
             None => {}
         }
 
-        Ok(FederationMeta { picture: None, welcome: None })
+        Ok((
+            FederationMeta {
+                picture: None,
+                welcome: None,
+            },
+            selector,
+        ))
     }
 
     // TODO: Implement recovery
-    pub async fn join_federation(
-        &mut self,
-        invite: String,
-    ) -> anyhow::Result<FederationSelector> {
+    pub async fn join_federation(&mut self, invite: String) -> anyhow::Result<FederationSelector> {
         let invite_code = InviteCode::from_str(&invite)?;
         let federation_id = invite_code.federation_id();
         if self.has_federation(&federation_id).await {
@@ -476,7 +529,7 @@ impl Multimint {
         }
 
         let client = self
-            .build_client(&federation_id, &invite_code, Connector::Tcp)
+            .build_client(&federation_id, &invite_code, Connector::Tcp, false)
             .await?;
 
         let client_config = Connector::default()
@@ -497,7 +550,7 @@ impl Multimint {
             network: network.clone(),
             client_config: client_config.clone(),
         };
-        
+
         self.clients.insert(federation_id, client);
 
         let mut dbtx = self.db.begin_transaction().await;
@@ -529,8 +582,13 @@ impl Multimint {
         federation_id: &FederationId,
         invite_code: &InviteCode,
         connector: Connector,
+        is_temporary: bool,
     ) -> anyhow::Result<ClientHandleArc> {
-        let client_db = self.get_client_database(&federation_id);
+        let client_db = if is_temporary {
+            MemDatabase::new().into()
+        } else {
+            self.get_client_database(&federation_id)
+        };
         let secret = Self::derive_federation_secret(&self.mnemonic, &federation_id);
 
         let mut client_builder = Client::builder(client_db).await?;
@@ -611,7 +669,10 @@ impl Multimint {
         Self::receive_lnv1(client, amount).await
     }
 
-    async fn receive_lnv2(client: &ClientHandleArc, amount: Amount) -> anyhow::Result<(String, OperationId)> {
+    async fn receive_lnv2(
+        client: &ClientHandleArc,
+        amount: Amount,
+    ) -> anyhow::Result<(String, OperationId)> {
         let lnv2 = client.get_first_module::<fedimint_lnv2_client::LightningClientModule>()?;
         let (invoice, operation_id) = lnv2
             .receive(
@@ -625,11 +686,22 @@ impl Multimint {
         Ok((invoice.to_string(), operation_id))
     }
 
-    async fn receive_lnv1(client: &ClientHandleArc, amount: Amount) -> anyhow::Result<(String, OperationId)> {
+    async fn receive_lnv1(
+        client: &ClientHandleArc,
+        amount: Amount,
+    ) -> anyhow::Result<(String, OperationId)> {
         let lnv1 = client.get_first_module::<LightningClientModule>()?;
         let gateway = Self::lnv1_select_gateway(client).await;
         let desc = Description::new(String::new())?;
-        let (operation_id, invoice, _) = lnv1.create_bolt11_invoice(amount, lightning_invoice::Bolt11InvoiceDescription::Direct(&desc), Some(DEFAULT_EXPIRY_TIME_SECS as u64), (), gateway).await?;
+        let (operation_id, invoice, _) = lnv1
+            .create_bolt11_invoice(
+                amount,
+                lightning_invoice::Bolt11InvoiceDescription::Direct(&desc),
+                Some(DEFAULT_EXPIRY_TIME_SECS as u64),
+                (),
+                gateway,
+            )
+            .await?;
         Ok((invoice.to_string(), operation_id))
     }
 
@@ -656,13 +728,19 @@ impl Multimint {
         Ok(operation_id)
     }
 
-    async fn pay_lnv2(client: &ClientHandleArc, invoice: Bolt11Invoice) -> anyhow::Result<OperationId> {
+    async fn pay_lnv2(
+        client: &ClientHandleArc,
+        invoice: Bolt11Invoice,
+    ) -> anyhow::Result<OperationId> {
         let lnv2 = client.get_first_module::<fedimint_lnv2_client::LightningClientModule>()?;
         let operation_id = lnv2.send(invoice, None, ().into()).await?;
         Ok(operation_id)
     }
 
-    async fn pay_lnv1(client: &ClientHandleArc, invoice: Bolt11Invoice) -> anyhow::Result<OperationId> {
+    async fn pay_lnv1(
+        client: &ClientHandleArc,
+        invoice: Bolt11Invoice,
+    ) -> anyhow::Result<OperationId> {
         let lnv1 = client.get_first_module::<LightningClientModule>()?;
         let gateway = Self::lnv1_select_gateway(client).await;
         let outgoing_lightning_payment = lnv1.pay_bolt11_invoice(gateway, invoice, ()).await?;
@@ -686,13 +764,19 @@ impl Multimint {
         Ok(lnv1_final_state)
     }
 
-    async fn await_send_lnv2(client: &ClientHandleArc, operation_id: OperationId) -> anyhow::Result<FinalSendOperationState> {
+    async fn await_send_lnv2(
+        client: &ClientHandleArc,
+        operation_id: OperationId,
+    ) -> anyhow::Result<FinalSendOperationState> {
         let lnv2 = client.get_first_module::<fedimint_lnv2_client::LightningClientModule>()?;
         let final_state = lnv2.await_final_send_operation_state(operation_id).await?;
         Ok(final_state)
     }
 
-    async fn await_send_lnv1(client: &ClientHandleArc, operation_id: OperationId) -> anyhow::Result<FinalSendOperationState> {
+    async fn await_send_lnv1(
+        client: &ClientHandleArc,
+        operation_id: OperationId,
+    ) -> anyhow::Result<FinalSendOperationState> {
         let lnv1 = client.get_first_module::<LightningClientModule>()?;
         // First check if its an internal payment
         if let Ok(updates) = lnv1.subscribe_internal_pay(operation_id).await {
@@ -700,8 +784,16 @@ impl Multimint {
             while let Some(update) = stream.next().await {
                 match update {
                     InternalPayState::Preimage(_) => return Ok(FinalSendOperationState::Success),
-                    InternalPayState::RefundSuccess { out_points: _, error: _ } => return Ok(FinalSendOperationState::Refunded),
-                    InternalPayState::FundingFailed { error: _ } | InternalPayState::RefundError { error_message: _, error: _ } | InternalPayState::UnexpectedError(_) => {
+                    InternalPayState::RefundSuccess {
+                        out_points: _,
+                        error: _,
+                    } => return Ok(FinalSendOperationState::Refunded),
+                    InternalPayState::FundingFailed { error: _ }
+                    | InternalPayState::RefundError {
+                        error_message: _,
+                        error: _,
+                    }
+                    | InternalPayState::UnexpectedError(_) => {
                         return Ok(FinalSendOperationState::Failure);
                     }
                     _ => {}
@@ -714,9 +806,15 @@ impl Multimint {
             let mut stream = updates.into_stream();
             while let Some(update) = stream.next().await {
                 match update {
-                    LnPayState::Success { preimage: _ } => return Ok(FinalSendOperationState::Success),
-                    LnPayState::Refunded { gateway_error: _ } => return Ok(FinalSendOperationState::Refunded),
-                    LnPayState::UnexpectedError { error_message: _ } => return Ok(FinalSendOperationState::Failure),
+                    LnPayState::Success { preimage: _ } => {
+                        return Ok(FinalSendOperationState::Success)
+                    }
+                    LnPayState::Refunded { gateway_error: _ } => {
+                        return Ok(FinalSendOperationState::Refunded)
+                    }
+                    LnPayState::UnexpectedError { error_message: _ } => {
+                        return Ok(FinalSendOperationState::Failure)
+                    }
                     _ => {}
                 }
             }
@@ -741,7 +839,10 @@ impl Multimint {
         Self::await_receive_lnv1(client, operation_id).await
     }
 
-    async fn await_receive_lnv2(client: &ClientHandleArc, operation_id: OperationId) -> anyhow::Result<FinalReceiveOperationState> {
+    async fn await_receive_lnv2(
+        client: &ClientHandleArc,
+        operation_id: OperationId,
+    ) -> anyhow::Result<FinalReceiveOperationState> {
         let lnv2 = client.get_first_module::<fedimint_lnv2_client::LightningClientModule>()?;
         let final_state = lnv2
             .await_final_receive_operation_state(operation_id)
@@ -749,7 +850,10 @@ impl Multimint {
         Ok(final_state)
     }
 
-    async fn await_receive_lnv1(client: &ClientHandleArc, operation_id: OperationId) -> anyhow::Result<FinalReceiveOperationState> {
+    async fn await_receive_lnv1(
+        client: &ClientHandleArc,
+        operation_id: OperationId,
+    ) -> anyhow::Result<FinalReceiveOperationState> {
         let lnv1 = client.get_first_module::<LightningClientModule>()?;
         let mut updates = lnv1.subscribe_ln_receive(operation_id).await?.into_stream();
         while let Some(update) = updates.next().await {
@@ -757,7 +861,7 @@ impl Multimint {
                 LnReceiveState::Claimed => {
                     return Ok(FinalReceiveOperationState::Claimed);
                 }
-                LnReceiveState::Canceled{ reason: _ } => {
+                LnReceiveState::Canceled { reason: _ } => {
                     return Ok(FinalReceiveOperationState::Failure);
                 }
                 _ => {}
@@ -769,19 +873,25 @@ impl Multimint {
 
     async fn lnv1_update_gateway_cache(&self, client: &ClientHandleArc) -> anyhow::Result<()> {
         let lnv1_client = client.clone();
-        self.task_group.spawn_cancellable("update gateway cache", async move {
-            let lnv1 = lnv1_client.get_first_module::<LightningClientModule>().expect("LNv1 should be present");
-            match lnv1.update_gateway_cache().await {
-                Ok(_) => println!("Updated gateway cache"),
-                Err(e) => println!("Could not update gateway cache {e}"),
-            }
+        self.task_group
+            .spawn_cancellable("update gateway cache", async move {
+                let lnv1 = lnv1_client
+                    .get_first_module::<LightningClientModule>()
+                    .expect("LNv1 should be present");
+                match lnv1.update_gateway_cache().await {
+                    Ok(_) => println!("Updated gateway cache"),
+                    Err(e) => println!("Could not update gateway cache {e}"),
+                }
 
-            lnv1.update_gateway_cache_continuously(|gateway| async { gateway }).await
-        });
+                lnv1.update_gateway_cache_continuously(|gateway| async { gateway })
+                    .await
+            });
         Ok(())
     }
 
-    async fn lnv1_select_gateway(client: &ClientHandleArc) -> Option<fedimint_ln_common::LightningGateway> {
+    async fn lnv1_select_gateway(
+        client: &ClientHandleArc,
+    ) -> Option<fedimint_ln_common::LightningGateway> {
         let lnv1 = client.get_first_module::<LightningClientModule>().ok()?;
         let gateways = lnv1.list_gateways().await;
 
@@ -793,6 +903,8 @@ impl Multimint {
             return Some(vetted.info.clone());
         }
 
-        gateways.choose(&mut thread_rng()).map(|gateway| gateway.info.clone())
+        gateways
+            .choose(&mut thread_rng())
+            .map(|gateway| gateway.info.clone())
     }
 }

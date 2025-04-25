@@ -1,3 +1,4 @@
+import 'package:carbine/fed_preview.dart';
 import 'package:carbine/lib.dart';
 import 'package:carbine/pay.dart';
 import 'package:flutter/material.dart';
@@ -38,9 +39,36 @@ class _ScanQRPageState extends State<ScanQRPage> {
       return;
     }
 
-    if (text.startsWith("fed") && widget.selectedFed == null) {
-      final selector = await joinFederation(inviteCode: text);
-      Navigator.pop(context, selector);
+    if (text.startsWith("fed") && !text.startsWith("fedimint") && widget.selectedFed == null) {
+      final meta = await getFederationMeta(inviteCode: text);
+      final fed = await showModalBottomSheet(
+        context: context,
+        isScrollControlled: true,
+        shape: const RoundedRectangleBorder(
+          borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+        ),
+        builder: (_) => Padding(
+          padding: EdgeInsets.only(
+            bottom: MediaQuery.of(context).viewInsets.bottom,
+          ),
+          child: Container(
+            decoration: const BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+            ),
+            child: FederationPreview(
+              federationName: meta.$2.federationName,
+              inviteCode: meta.$2.inviteCode,
+              welcomeMessage: meta.$1.welcome,
+              imageUrl: meta.$1.picture,
+              joinable: true,
+            ),
+          ),
+        ),
+      );
+
+      await Future.delayed(const Duration(milliseconds: 400));
+      Navigator.pop(context, fed);
     } else if (text.startsWith("ln")) {
       final paymentPreview = await parseInvoice(bolt11: text);
       if (widget.selectedFed != null) {

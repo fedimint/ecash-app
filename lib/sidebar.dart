@@ -91,15 +91,15 @@ class _FederationListItemState extends State<FederationListItem> {
 
   Future<void> _loadFederationMeta() async {
     try {
-        final meta = await getFederationMeta(federationId: widget.fed.federationId);
-        if (meta.picture != null && meta.picture!.isNotEmpty) {
+        final meta = await getFederationMeta(inviteCode: widget.fed.inviteCode);
+        if (meta.$1.picture != null && meta.$1.picture!.isNotEmpty) {
           setState(() {
-            federationImageUrl = meta.picture;
+            federationImageUrl = meta.$1.picture;
           });
         }
-        if (meta.welcome != null && meta.welcome!.isNotEmpty) {
+        if (meta.$1.welcome != null && meta.$1.welcome!.isNotEmpty) {
           setState(() {
-            welcomeMessage = meta.welcome;
+            welcomeMessage = meta.$1.welcome;
           });
         }
     } catch (e) {

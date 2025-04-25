@@ -2520,34 +2520,12 @@ fn wire__crate__get_federation_meta_impl(
             };
             let mut deserializer =
                 flutter_rust_bridge::for_generated::SseDeserializer::new(message);
-            let api_federation_id = <RustOpaqueMoi<
-                flutter_rust_bridge::for_generated::RustAutoOpaqueInner<FederationId>,
-            >>::sse_decode(&mut deserializer);
+            let api_invite_code = <String>::sse_decode(&mut deserializer);
             deserializer.end();
             move |context| async move {
                 transform_result_sse::<_, flutter_rust_bridge::for_generated::anyhow::Error>(
                     (move || async move {
-                        let mut api_federation_id_guard = None;
-                        let decode_indices_ =
-                            flutter_rust_bridge::for_generated::lockable_compute_decode_order(
-                                vec![flutter_rust_bridge::for_generated::LockableOrderInfo::new(
-                                    &api_federation_id,
-                                    0,
-                                    false,
-                                )],
-                            );
-                        for i in decode_indices_ {
-                            match i {
-                                0 => {
-                                    api_federation_id_guard =
-                                        Some(api_federation_id.lockable_decode_async_ref().await)
-                                }
-                                _ => unreachable!(),
-                            }
-                        }
-                        let api_federation_id_guard = api_federation_id_guard.unwrap();
-                        let output_ok =
-                            crate::get_federation_meta(&*api_federation_id_guard).await?;
+                        let output_ok = crate::get_federation_meta(api_invite_code).await?;
                         Ok(output_ok)
                     })()
                     .await,
@@ -3153,6 +3131,15 @@ impl SseDecode for crate::PaymentPreview {
             network: var_network,
             invoice: var_invoice,
         };
+    }
+}
+
+impl SseDecode for (crate::FederationMeta, FederationSelector) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
+        let mut var_field0 = <crate::FederationMeta>::sse_decode(deserializer);
+        let mut var_field1 = <FederationSelector>::sse_decode(deserializer);
+        return (var_field0, var_field1);
     }
 }
 
@@ -3926,6 +3913,14 @@ impl SseEncode for crate::PaymentPreview {
         <String>::sse_encode(self.payment_hash, serializer);
         <String>::sse_encode(self.network, serializer);
         <String>::sse_encode(self.invoice, serializer);
+    }
+}
+
+impl SseEncode for (crate::FederationMeta, FederationSelector) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
+        <crate::FederationMeta>::sse_encode(self.0, serializer);
+        <FederationSelector>::sse_encode(self.1, serializer);
     }
 }
 

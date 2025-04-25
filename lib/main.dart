@@ -67,6 +67,9 @@ class _MyAppState extends State<MyApp> {
     if (result != null) {
       _setSelectedFederation(result);
       _refreshFederations();
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text("Joined ${result.federationName}")),
+      );
     } else {
       print('Result is null, not updating federations');
     }

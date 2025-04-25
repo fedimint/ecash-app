@@ -285,8 +285,8 @@ abstract class RustLibApi extends BaseApi {
 
   Future<List<FederationSelector>> crateFederations();
 
-  Future<FederationMeta> crateGetFederationMeta({
-    required FederationId federationId,
+  Future<(FederationMeta, FederationSelector)> crateGetFederationMeta({
+    required String inviteCode,
   });
 
   Future<FederationSelector> crateJoinFederation({required String inviteCode});
@@ -2036,17 +2036,14 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
       const TaskConstMeta(debugName: "federations", argNames: []);
 
   @override
-  Future<FederationMeta> crateGetFederationMeta({
-    required FederationId federationId,
+  Future<(FederationMeta, FederationSelector)> crateGetFederationMeta({
+    required String inviteCode,
   }) {
     return handler.executeNormal(
       NormalTask(
         callFfi: (port_) {
           final serializer = SseSerializer(generalizedFrbRustBinding);
-          sse_encode_Auto_Ref_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerFederationId(
-            federationId,
-            serializer,
-          );
+          sse_encode_String(inviteCode, serializer);
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
@@ -2055,11 +2052,12 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           );
         },
         codec: SseCodec(
-          decodeSuccessData: sse_decode_federation_meta,
+          decodeSuccessData:
+              sse_decode_record_federation_meta_auto_owned_rust_opaque_flutter_rust_bridgefor_generated_rust_auto_opaque_inner_federation_selector,
           decodeErrorData: sse_decode_AnyhowException,
         ),
         constMeta: kCrateGetFederationMetaConstMeta,
-        argValues: [federationId],
+        argValues: [inviteCode],
         apiImpl: this,
       ),
     );
@@ -2067,7 +2065,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
 
   TaskConstMeta get kCrateGetFederationMetaConstMeta => const TaskConstMeta(
     debugName: "get_federation_meta",
-    argNames: ["federationId"],
+    argNames: ["inviteCode"],
   );
 
   @override
@@ -2703,6 +2701,24 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   }
 
   @protected
+  (FederationMeta, FederationSelector)
+  dco_decode_record_federation_meta_auto_owned_rust_opaque_flutter_rust_bridgefor_generated_rust_auto_opaque_inner_federation_selector(
+    dynamic raw,
+  ) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    final arr = raw as List<dynamic>;
+    if (arr.length != 2) {
+      throw Exception('Expected 2 elements, got ${arr.length}');
+    }
+    return (
+      dco_decode_federation_meta(arr[0]),
+      dco_decode_Auto_Owned_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerFederationSelector(
+        arr[1],
+      ),
+    );
+  }
+
+  @protected
   (String, OperationId)
   dco_decode_record_string_auto_owned_rust_opaque_flutter_rust_bridgefor_generated_rust_auto_opaque_inner_operation_id(
     dynamic raw,
@@ -3225,6 +3241,20 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
       network: var_network,
       invoice: var_invoice,
     );
+  }
+
+  @protected
+  (FederationMeta, FederationSelector)
+  sse_decode_record_federation_meta_auto_owned_rust_opaque_flutter_rust_bridgefor_generated_rust_auto_opaque_inner_federation_selector(
+    SseDeserializer deserializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    var var_field0 = sse_decode_federation_meta(deserializer);
+    var var_field1 =
+        sse_decode_Auto_Owned_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerFederationSelector(
+          deserializer,
+        );
+    return (var_field0, var_field1);
   }
 
   @protected
@@ -3775,6 +3805,20 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
     sse_encode_String(self.paymentHash, serializer);
     sse_encode_String(self.network, serializer);
     sse_encode_String(self.invoice, serializer);
+  }
+
+  @protected
+  void
+  sse_encode_record_federation_meta_auto_owned_rust_opaque_flutter_rust_bridgefor_generated_rust_auto_opaque_inner_federation_selector(
+    (FederationMeta, FederationSelector) self,
+    SseSerializer serializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    sse_encode_federation_meta(self.$1, serializer);
+    sse_encode_Auto_Owned_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerFederationSelector(
+      self.$2,
+      serializer,
+    );
   }
 
   @protected
