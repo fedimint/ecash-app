@@ -2,6 +2,7 @@ import 'package:carbine/lib.dart';
 import 'package:carbine/receive.dart';
 import 'package:carbine/scan.dart';
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 
 class Dashboard extends StatefulWidget {
   final FederationSelector fed;
@@ -44,6 +45,17 @@ class _DashboardState extends State<Dashboard> {
     _loadBalance();
   }
 
+  String formatSats(BigInt? msats) {
+    if (msats == null) return '0.00 sats';
+    final sats = msats.toDouble() / 1000;
+
+    final formatter = NumberFormat('#,##0.00', 'en_US');
+    var formatted = formatter.format(sats);
+    formatted = formatted.replaceAll(',', ' ');
+
+    return '$formatted sats';
+  }
+
   @override
   Widget build(BuildContext context) {
     final name = widget.fed.federationName;
@@ -54,47 +66,45 @@ class _DashboardState extends State<Dashboard> {
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
           const SizedBox(height: 32),
-          Text(
-            name,
-            style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                  fontWeight: FontWeight.bold,
-                ),
-            textAlign: TextAlign.center,
+          ShaderMask(
+            shaderCallback: (bounds) => LinearGradient(
+              colors: [Theme.of(context).colorScheme.primary, Theme.of(context).colorScheme.secondary],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+            ).createShader(Rect.fromLTWH(0, 0, bounds.width, bounds.height)),
+            child: Text(
+              name.toUpperCase(),
+              style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+                    fontWeight: FontWeight.w900,
+                    letterSpacing: 2,
+                    color: Colors.white, // Important: ShaderMask overrides this.
+                    shadows: [
+                      Shadow(
+                        blurRadius: 10,
+                        color: Theme.of(context).colorScheme.primary.withOpacity(0.5),
+                        offset: const Offset(0, 2),
+                      ),
+                    ],
+                  ),
+              textAlign: TextAlign.center,
+            ),
           ),
-          const SizedBox(height: 32),
+          const SizedBox(height: 48),
 
           if (isLoadingBalance)
             const CircularProgressIndicator()
           else
-            Card(
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(16),
-              ),
-              elevation: 4,
-              child: Padding(
-                padding: const EdgeInsets.symmetric(vertical: 32, horizontal: 24),
-                child: Column(
-                  children: [
-                    const Text(
-                      'Balance',
-                      style: TextStyle(fontSize: 20, color: Colors.grey),
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      '${balanceMsats ?? 0} msats',
-                      style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                            color: Theme.of(context).colorScheme.primary,
-                            fontWeight: FontWeight.w600,
-                          ),
-                    ),
-                  ],
-                ),
-              ),
+            Text(
+              formatSats(balanceMsats),
+              style: Theme.of(context).textTheme.displayLarge?.copyWith(
+                    color: Theme.of(context).colorScheme.primary,
+                    fontWeight: FontWeight.bold,
+                  ),
+              textAlign: TextAlign.center,
             ),
 
-          const SizedBox(height: 24),
+          const SizedBox(height: 48),
 
-          // New: SegmentedButton with icons
           SegmentedButton<PaymentType>(
             segments: const [
               ButtonSegment(
@@ -147,7 +157,7 @@ class _DashboardState extends State<Dashboard> {
               shadowColor: MaterialStateProperty.all(Colors.black.withOpacity(0.2)),
               elevation: MaterialStateProperty.resolveWith<double>((states) {
                 if (states.contains(MaterialState.selected)) {
-                  return 6; // higher elevation when selected
+                  return 6;
                 }
                 return 0;
               }),
@@ -214,3 +224,5 @@ class _DashboardState extends State<Dashboard> {
     );
   }
 }
+
+

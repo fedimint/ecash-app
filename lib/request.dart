@@ -47,7 +47,7 @@ class _RequestState extends State<Request> {
     if (_received) {
       return SafeArea(
         child: Scaffold(
-          body: const Success(),
+          body: const Success(message: 'Payment Received!'),
         )
       );
     }

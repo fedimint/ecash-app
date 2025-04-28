@@ -1,6 +1,6 @@
 import 'package:carbine/fed_preview.dart';
 import 'package:carbine/lib.dart';
-import 'package:carbine/pay.dart';
+import 'package:carbine/pay_preview.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
@@ -86,37 +86,35 @@ class _ScanQRPageState extends State<ScanQRPage> {
           return;
         }
 
-        await Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (context) => Pay(
-                  fed: widget.selectedFed!,
-                  paymentPreview: paymentPreview,
-                ),
-              ),
-            );
-        Navigator.pop(context, widget.selectedFed!);
+        showModalBottomSheet(
+          context: context,
+          isScrollControlled: true,
+          builder: (context) => SizedBox(
+            height: MediaQuery.of(context).size.height,
+            child: PaymentPreviewWidget(fed: widget.selectedFed!, paymentPreview: paymentPreview),
+          ),
+        );
       } else {
         // find federation that can pay invoice
+        /*
         final feds = await federations();
         for (int i = 0; i < feds.length; i++) {
           final currFed = feds[i];
           final fedId = currFed.federationId;
           final bal = await balance(federationId: fedId);
           if (currFed.network == paymentPreview.network && bal > paymentPreview.amount) {
-            await Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (context) => Pay(
-                  fed: currFed,
-                  paymentPreview: paymentPreview,
-                ),
+            showModalBottomSheet(
+              context: context,
+              isScrollControlled: true,
+              builder: (context) => SizedBox(
+                height: MediaQuery.of(context).size.height,
+                child: PaymentPreviewWidget(fed: widget.selectedFed!, paymentPreview: paymentPreview),
               ),
             );
-            Navigator.pop(context, currFed);
             return;
           }
         }
+        */
       }
     } else {
       print('Unknown text');

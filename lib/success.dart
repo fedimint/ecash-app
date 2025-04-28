@@ -2,7 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 
 class Success extends StatelessWidget {
-  const Success({super.key});
+  final String message;
+  const Success({super.key, required this.message});
 
   @override
   Widget build(BuildContext context) {
@@ -38,8 +39,8 @@ class Success extends StatelessWidget {
             const SizedBox(height: 24),
 
             // "Payment Received!" Text
-            const Text(
-              'Payment Received!',
+            Text(
+              message,
               style: TextStyle(
                 fontSize: 28,
                 fontWeight: FontWeight.bold,
@@ -48,15 +49,6 @@ class Success extends StatelessWidget {
             ),
 
             const SizedBox(height: 12),
-
-            // Optional softer secondary text
-            Text(
-              'Thank you for your payment',
-              style: TextStyle(
-                fontSize: 18,
-                color: Colors.black54,
-              ),
-            ),
           ],
         ),
       ),
