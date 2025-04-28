@@ -12,9 +12,13 @@ class Dashboard extends StatefulWidget {
   State<Dashboard> createState() => _DashboardState();
 }
 
+enum PaymentType { lightning, onchain, ecash }
+
 class _DashboardState extends State<Dashboard> {
   BigInt? balanceMsats;
   bool isLoadingBalance = true;
+
+  PaymentType _selectedPaymentType = PaymentType.lightning;
 
   @override
   void initState() {
@@ -88,6 +92,68 @@ class _DashboardState extends State<Dashboard> {
               ),
             ),
 
+          const SizedBox(height: 24),
+
+          // New: SegmentedButton with icons
+          SegmentedButton<PaymentType>(
+            segments: const [
+              ButtonSegment(
+                value: PaymentType.lightning,
+                label: Text('Lightning'),
+                icon: Icon(Icons.flash_on),
+              ),
+              ButtonSegment(
+                value: PaymentType.onchain,
+                label: Text('Onchain'),
+                icon: Icon(Icons.link),
+              ),
+              ButtonSegment(
+                value: PaymentType.ecash,
+                label: Text('Ecash'),
+                icon: Icon(Icons.currency_bitcoin),
+              ),
+            ],
+            selected: {_selectedPaymentType},
+            onSelectionChanged: (newSelection) {
+              setState(() {
+                _selectedPaymentType = newSelection.first;
+              });
+            },
+            style: ButtonStyle(
+              padding: MaterialStateProperty.all(const EdgeInsets.symmetric(vertical: 20, horizontal: 24)),
+              shape: MaterialStateProperty.all(
+                RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(40),
+                ),
+              ),
+              textStyle: MaterialStateProperty.all(
+                const TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+              ),
+              backgroundColor: MaterialStateProperty.resolveWith((states) {
+                if (states.contains(MaterialState.selected)) {
+                  return Theme.of(context).colorScheme.primary;
+                }
+                return Theme.of(context).colorScheme.surfaceVariant;
+              }),
+              foregroundColor: MaterialStateProperty.resolveWith((states) {
+                if (states.contains(MaterialState.selected)) {
+                  return Colors.white;
+                }
+                return Colors.black87;
+              }),
+              side: MaterialStateProperty.all(
+                const BorderSide(color: Colors.transparent),
+              ),
+              shadowColor: MaterialStateProperty.all(Colors.black.withOpacity(0.2)),
+              elevation: MaterialStateProperty.resolveWith<double>((states) {
+                if (states.contains(MaterialState.selected)) {
+                  return 6; // higher elevation when selected
+                }
+                return 0;
+              }),
+            ),
+          ),
+
           const SizedBox(height: 48),
 
           LayoutBuilder(
@@ -132,7 +198,7 @@ class _DashboardState extends State<Dashboard> {
                         ),
                         const SizedBox(height: 16),
                         ElevatedButton.icon(
-                          onPressed: () => print("Send tapped"),
+                          onPressed: _onSendPressed,
                           icon: const Icon(Icons.upload),
                           label: const Text("Send"),
                           style: ElevatedButton.styleFrom(
