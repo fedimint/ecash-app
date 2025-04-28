@@ -12,6 +12,9 @@ dependencies:
   flutter_rust_bridge: 2.9.0
   mobile_scanner: ^3.5.1
   qr_flutter: ^4.1.0
+  intl: ^0.18.1
+  numpad_layout: ^0.0.3
+  flutter_animate: ^4.5.2
 
 dev_dependencies:
   flutter_test:

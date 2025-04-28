@@ -1,9 +1,7 @@
-
 import 'package:carbine/lib.dart';
+import 'package:carbine/receive.dart';
 import 'package:carbine/scan.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
-import 'package:qr_flutter/qr_flutter.dart';
 
 class Dashboard extends StatefulWidget {
   final FederationSelector fed;
@@ -32,164 +30,13 @@ class _DashboardState extends State<Dashboard> {
     });
   }
 
-  Future<(String, OperationId)> _getInvoice(BigInt amount) async {
-    final r = await receive(federationId: widget.fed.federationId, amountMsats: amount);
-    return r;
-  }
-
-  void _showReceiveDialog(BuildContext context) {
-    final amountController = TextEditingController();
-
-    showDialog(
-      context: context,
-      builder: (BuildContext dialogContext) {
-        return AlertDialog(
-          title: const Text("Receive Amount"),
-          content: TextField(
-            controller: amountController,
-            keyboardType: TextInputType.number,
-            decoration: const InputDecoration(
-              labelText: "Amount (msats)",
-              border: OutlineInputBorder(),
-            ),
-          ),
-          actions: [
-            TextButton(
-              child: const Text("Cancel"),
-              onPressed: () => Navigator.pop(dialogContext),
-            ),
-            ElevatedButton(
-              child: const Text("Generate QR"),
-              onPressed: () {
-                final amountText = amountController.text;
-                final amount = BigInt.tryParse(amountText);
-                if (amount != null) {
-                  Navigator.pop(dialogContext);
-                  _showQRCodeDialog(context, amount);
-                }
-              },
-            ),
-          ],
-        );
-      },
-    );
-  }
-
-  void _showQRCodeDialog(BuildContext context, BigInt amount) {
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (BuildContext dialogContext) {
-        return Dialog(
-          child: FutureBuilder<(String, OperationId)>(
-            future: _getInvoice(amount),
-            builder: (context, snapshot) {
-              if (snapshot.connectionState == ConnectionState.waiting) {
-                return const SizedBox(
-                  height: 200,
-                  width: 200,
-                  child: Center(child: CircularProgressIndicator()),
-                );
-              } else if (snapshot.hasError) {
-                return Padding(
-                  padding: const EdgeInsets.all(16),
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      const Text("Error generating QR code"),
-                      const SizedBox(height: 8),
-                      Text('${snapshot.error}'),
-                      TextButton(
-                        onPressed: () => Navigator.pop(context),
-                        child: const Text("Close"),
-                      )
-                    ],
-                  ),
-                );
-              }
-
-              final (invoice, opId) = snapshot.data!;
-
-              // Start background task when QR is displayed
-              _waitForPayment(context, opId);
-
-              return Stack(
-                children: [
-                  Padding(
-                    padding: const EdgeInsets.all(16),
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        QrImageView(
-                          data: invoice,
-                          version: QrVersions.auto,
-                          size: 200,
-                        ),
-                        const SizedBox(height: 16),
-                        Text(
-                          invoice,
-                          style: const TextStyle(fontSize: 12),
-                          textAlign: TextAlign.center,
-                        ),
-                        const SizedBox(height: 16),
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                          children: [
-                            TextButton(
-                              child: const Text("Copy"),
-                              onPressed: () async {
-                                await Clipboard.setData(ClipboardData(text: invoice));
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  const SnackBar(content: Text("Copied to clipboard")),
-                                );
-                              },
-                            ),
-                            TextButton(
-                              onPressed: () => Navigator.pop(context),
-                              child: const Text("Close"),
-                            ),
-                          ],
-                        ),
-                      ],
-                    ),
-                  ),
-                  // Spinner overlay (non-interfering)
-                  Positioned.fill(
-                    child: IgnorePointer(
-                      ignoring: true,
-                      child: Container(
-                        color: Colors.black.withOpacity(0.3),
-                        child: const Center(child: CircularProgressIndicator()),
-                      ),
-                    ),
-                  ),
-                ],
-              );
-            },
-          ),
-        );
-      },
-    );
-  }
-
-  void _waitForPayment(BuildContext context, OperationId opId) async {
-    await awaitReceive(federationId: widget.fed.federationId, operationId: opId);
-
-    // Pop all dialogs
-    Navigator.of(context, rootNavigator: true).popUntil((route) => route.isFirst);
-
-    // TODO: Check state, verify success
-    // Show success message
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text("Payment Success")),
-    );
-
-    // Refresh the balance
+  void _onSendPressed() async {
+    await Navigator.push(context, MaterialPageRoute(builder: (context) => ScanQRPage(selectedFed: widget.fed)));
     _loadBalance();
   }
 
-  void _onSendPressed() async {
-    await Navigator.push(context, MaterialPageRoute(builder: (context) => ScanQRPage(selectedFed: widget.fed)));
+  void _onReceivePressed() async {
+    await Navigator.push(context, MaterialPageRoute(builder: (context) => Receive(fed: widget.fed)));
     _loadBalance();
   }
 
@@ -252,7 +99,7 @@ class _DashboardState extends State<Dashboard> {
                       children: [
                         Expanded(
                           child: ElevatedButton.icon(
-                            onPressed: () => _showReceiveDialog(context),
+                            onPressed: _onReceivePressed,
                             icon: const Icon(Icons.download),
                             label: const Text("Receive"),
                             style: ElevatedButton.styleFrom(
@@ -276,7 +123,7 @@ class _DashboardState extends State<Dashboard> {
                   : Column(
                       children: [
                         ElevatedButton.icon(
-                          onPressed: () => _showReceiveDialog(context),
+                          onPressed: _onReceivePressed,
                           icon: const Icon(Icons.download),
                           label: const Text("Receive"),
                           style: ElevatedButton.styleFrom(
