@@ -24,6 +24,8 @@ class _RequestState extends State<Request> {
     _waitForPayment();
   }
 
+  // TODO: This needs to be called in an background thread not tied to the widget
+  // otherwise, set_operation_outcome will not be called and it wont show up in the transaction list
   void _waitForPayment() async {
     await awaitReceive(federationId: widget.fed.federationId, operationId: widget.operationId);
     setState(() {

@@ -1,5 +1,6 @@
 mod db;
 mod frb_generated;
+use fedimint_client::oplog::OperationLog;
 use fedimint_core::config::ClientConfig;
 use fedimint_core::db::mem_impl::MemDatabase;
 use fedimint_core::hex;
@@ -39,7 +40,7 @@ use fedimint_ln_client::{
 };
 use fedimint_lnv2_client::{
     FinalReceiveOperationState, FinalSendOperationState, LightningOperationMeta,
-    ReceiveOperationMeta,
+    ReceiveOperationState, SendOperationState,
 };
 use fedimint_lnv2_common::Bolt11InvoiceDescription;
 use fedimint_mint_client::MintClientInit;
@@ -776,12 +777,13 @@ impl Multimint {
             .clients
             .get(federation_id)
             .expect("No federation exists");
-        if let Ok(lnv2_final_state) = Self::await_send_lnv2(client, operation_id).await {
-            return Ok(lnv2_final_state);
-        }
 
-        let lnv1_final_state = Self::await_send_lnv1(client, operation_id).await?;
-        Ok(lnv1_final_state)
+        let send_state = match Self::await_send_lnv2(client, operation_id).await {
+            Ok(lnv2_final_state) => lnv2_final_state,
+            Err(_) => Self::await_send_lnv1(client, operation_id).await?,
+        };
+        OperationLog::set_operation_outcome(client.db(), operation_id, &send_state).await?;
+        Ok(send_state)
     }
 
     async fn await_send_lnv2(
@@ -852,11 +854,12 @@ impl Multimint {
             .clients
             .get(federation_id)
             .expect("No federation exists");
-        if let Ok(lnv2_final_state) = Self::await_receive_lnv2(client, operation_id).await {
-            return Ok(lnv2_final_state);
-        }
-
-        Self::await_receive_lnv1(client, operation_id).await
+        let receive_state = match Self::await_receive_lnv2(client, operation_id).await {
+            Ok(lnv2_final_state) => lnv2_final_state,
+            Err(_) => Self::await_receive_lnv1(client, operation_id).await?,
+        };
+        OperationLog::set_operation_outcome(client.db(), operation_id, &receive_state).await?;
+        Ok(receive_state)
     }
 
     async fn await_receive_lnv2(
@@ -950,7 +953,6 @@ impl Multimint {
                     return None;
                 }
 
-                // Operation has not completed yet
                 let ts = key.creation_time;
                 let timestamp = ts
                     .duration_since(UNIX_EPOCH)
@@ -961,45 +963,75 @@ impl Multimint {
                     "lnv2" => {
                         let meta = op_log_val.meta::<LightningOperationMeta>();
                         match meta {
-                            LightningOperationMeta::Receive(receive) => Some(Transaction {
-                                received: true,
-                                amount: receive.contract.commitment.amount.msats,
-                                module: "lnv2".to_string(),
-                                timestamp,
-                            }),
-                            LightningOperationMeta::Send(send) => Some(Transaction {
-                                received: false,
-                                amount: send.contract.amount.msats,
-                                module: "lnv2".to_string(),
-                                timestamp,
-                            }),
+                            LightningOperationMeta::Receive(receive) => {
+                                // TODO: Maybe include as pending
+                                if op_log_val.outcome::<ReceiveOperationState>().is_none() {
+                                    return None;
+                                }
+
+                                Some(Transaction {
+                                    received: true,
+                                    amount: receive.contract.commitment.amount.msats,
+                                    module: "lnv2".to_string(),
+                                    timestamp,
+                                })
+                            }
+                            LightningOperationMeta::Send(send) => {
+                                // TODO: Maybe include as pending
+                                if op_log_val.outcome::<SendOperationState>().is_none() {
+                                    return None;
+                                }
+                                Some(Transaction {
+                                    received: false,
+                                    amount: send.contract.amount.msats,
+                                    module: "lnv2".to_string(),
+                                    timestamp,
+                                })
+                            }
                         }
                     }
                     "ln" => {
                         let meta = op_log_val.meta::<fedimint_ln_client::LightningOperationMeta>();
                         match meta.variant {
-                            LightningOperationMetaVariant::Pay(send) => Some(Transaction {
-                                received: false,
-                                amount: send
-                                    .invoice
-                                    .amount_milli_satoshis()
-                                    .expect("Cannot pay amountless invoice"),
-                                module: "ln".to_string(),
-                                timestamp,
-                            }),
+                            LightningOperationMetaVariant::Pay(send) => {
+                                // TODO: Maybe include as pending
+                                if op_log_val.outcome::<SendOperationState>().is_none() {
+                                    return None;
+                                }
+                                Some(Transaction {
+                                    received: false,
+                                    amount: send
+                                        .invoice
+                                        .amount_milli_satoshis()
+                                        .expect("Cannot pay amountless invoice"),
+                                    module: "ln".to_string(),
+                                    timestamp,
+                                })
+                            }
                             LightningOperationMetaVariant::Receive {
                                 out_point: _,
                                 invoice,
                                 gateway_id: _,
-                            } => Some(Transaction {
-                                received: true,
-                                amount: invoice
-                                    .amount_milli_satoshis()
-                                    .expect("Cannot receive amountless invoice"),
-                                module: "ln".to_string(),
-                                timestamp,
-                            }),
+                            } => {
+                                // TODO: Maybe include as pending
+                                if op_log_val.outcome::<ReceiveOperationState>().is_none() {
+                                    return None;
+                                }
+
+                                Some(Transaction {
+                                    received: true,
+                                    amount: invoice
+                                        .amount_milli_satoshis()
+                                        .expect("Cannot receive amountless invoice"),
+                                    module: "ln".to_string(),
+                                    timestamp,
+                                })
+                            }
                             LightningOperationMetaVariant::RecurringPaymentReceive(recurring) => {
+                                // TODO: Maybe include as pending
+                                if op_log_val.outcome::<ReceiveOperationState>().is_none() {
+                                    return None;
+                                }
                                 Some(Transaction {
                                     received: true,
                                     amount: recurring
