@@ -9,7 +9,7 @@ class Request extends StatefulWidget {
   final OperationId operationId;
   final FederationSelector fed;
 
-  const Request({Key? key, required this.invoice, required this.operationId, required this.fed}) : super(key: key);
+  const Request({super.key, required this.invoice, required this.operationId, required this.fed});
 
   @override
   State<Request> createState() => _RequestState();

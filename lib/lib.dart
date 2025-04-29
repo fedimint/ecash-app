@@ -6,8 +6,8 @@
 import 'frb_generated.dart';
 import 'package:flutter_rust_bridge/flutter_rust_bridge_for_generated.dart';
 
-// These functions are ignored because they are not marked as `pub`: `add_relay`, `await_receive_lnv1`, `await_receive_lnv2`, `await_send_lnv1`, `await_send_lnv2`, `build_client`, `create_nostr_client`, `derive_federation_secret`, `get_client_database`, `get_federation_meta`, `get_multimint`, `has_federation`, `init_global`, `lnv1_select_gateway`, `lnv1_update_gateway_cache`, `load_clients`, `parse_content`, `parse_federation_id`, `parse_federation_name`, `parse_invite_codes`, `parse_modules`, `parse_network`, `parse_picture`, `pay_lnv1`, `pay_lnv2`, `receive_lnv1`, `receive_lnv2`
-// These function are ignored because they are on traits that is not defined in current crate (put an empty `#[frb]` on it to unignore): `assert_receiver_is_total_eq`, `assert_receiver_is_total_eq`, `assert_receiver_is_total_eq`, `clone`, `clone`, `clone`, `eq`, `eq`, `eq`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `try_from`
+// These functions are ignored because they are not marked as `pub`: `add_relay`, `await_receive_lnv1`, `await_receive_lnv2`, `await_send_lnv1`, `await_send_lnv2`, `build_client`, `create_nostr_client`, `derive_federation_secret`, `get_client_database`, `get_federation_meta`, `get_multimint`, `has_federation`, `init_global`, `lnv1_select_gateway`, `lnv1_update_gateway_cache`, `load_clients`, `parse_content`, `parse_federation_id`, `parse_federation_name`, `parse_invite_codes`, `parse_modules`, `parse_network`, `parse_picture`, `pay_lnv1`, `pay_lnv2`, `receive_lnv1`, `receive_lnv2`, `transactions`
+// These function are ignored because they are on traits that is not defined in current crate (put an empty `#[frb]` on it to unignore): `assert_receiver_is_total_eq`, `assert_receiver_is_total_eq`, `assert_receiver_is_total_eq`, `clone`, `clone`, `clone`, `eq`, `eq`, `eq`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `try_from`
 
 Future<FederationSelector> joinFederation({required String inviteCode}) =>
     RustLib.instance.api.crateJoinFederation(inviteCode: inviteCode);
@@ -62,6 +62,14 @@ Future<PaymentPreview> parseInvoice({required String bolt11}) =>
 Future<(FederationMeta, FederationSelector)> getFederationMeta({
   required String inviteCode,
 }) => RustLib.instance.api.crateGetFederationMeta(inviteCode: inviteCode);
+
+Future<List<Transaction>> transactions({
+  required FederationId federationId,
+  required List<String> modules,
+}) => RustLib.instance.api.crateTransactions(
+  federationId: federationId,
+  modules: modules,
+);
 
 // Rust type: RustOpaqueMoi<flutter_rust_bridge::for_generated::RustAutoOpaqueInner<ClientConfig>>
 abstract class ClientConfig implements RustOpaqueInterface {}
@@ -220,4 +228,35 @@ class PaymentPreview {
           paymentHash == other.paymentHash &&
           network == other.network &&
           invoice == other.invoice;
+}
+
+class Transaction {
+  final bool received;
+  final BigInt amount;
+  final String module;
+  final BigInt timestamp;
+
+  const Transaction({
+    required this.received,
+    required this.amount,
+    required this.module,
+    required this.timestamp,
+  });
+
+  @override
+  int get hashCode =>
+      received.hashCode ^
+      amount.hashCode ^
+      module.hashCode ^
+      timestamp.hashCode;
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is Transaction &&
+          runtimeType == other.runtimeType &&
+          received == other.received &&
+          amount == other.amount &&
+          module == other.module &&
+          timestamp == other.timestamp;
 }

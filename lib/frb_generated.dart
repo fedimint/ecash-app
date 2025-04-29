@@ -63,7 +63,7 @@ class RustLib extends BaseEntrypoint<RustLibApi, RustLibApiImpl, RustLibWire> {
   String get codegenVersion => '2.9.0';
 
   @override
-  int get rustContentHash => 152640777;
+  int get rustContentHash => -1180653649;
 
   static const kDefaultExternalLibraryLoaderConfig =
       ExternalLibraryLoaderConfig(
@@ -305,6 +305,11 @@ abstract class RustLibApi extends BaseApi {
   Future<OperationId> crateSend({
     required FederationId federationId,
     required String invoice,
+  });
+
+  Future<List<Transaction>> crateTransactions({
+    required FederationId federationId,
+    required List<String> modules,
   });
 
   RustArcIncrementStrongCountFnType
@@ -2237,6 +2242,43 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
     argNames: ["federationId", "invoice"],
   );
 
+  @override
+  Future<List<Transaction>> crateTransactions({
+    required FederationId federationId,
+    required List<String> modules,
+  }) {
+    return handler.executeNormal(
+      NormalTask(
+        callFfi: (port_) {
+          final serializer = SseSerializer(generalizedFrbRustBinding);
+          sse_encode_Auto_Ref_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerFederationId(
+            federationId,
+            serializer,
+          );
+          sse_encode_list_String(modules, serializer);
+          pdeCallFfi(
+            generalizedFrbRustBinding,
+            serializer,
+            funcId: 54,
+            port: port_,
+          );
+        },
+        codec: SseCodec(
+          decodeSuccessData: sse_decode_list_transaction,
+          decodeErrorData: null,
+        ),
+        constMeta: kCrateTransactionsConstMeta,
+        argValues: [federationId, modules],
+        apiImpl: this,
+      ),
+    );
+  }
+
+  TaskConstMeta get kCrateTransactionsConstMeta => const TaskConstMeta(
+    debugName: "transactions",
+    argNames: ["federationId", "modules"],
+  );
+
   RustArcIncrementStrongCountFnType
   get rust_arc_increment_strong_count_ClientConfig =>
       wire.rust_arc_increment_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerClientConfig;
@@ -2681,6 +2723,12 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   }
 
   @protected
+  List<Transaction> dco_decode_list_transaction(dynamic raw) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    return (raw as List<dynamic>).map(dco_decode_transaction).toList();
+  }
+
+  @protected
   String? dco_decode_opt_String(dynamic raw) {
     // Codec=Dco (DartCObject based), see doc to use other codecs
     return raw == null ? null : dco_decode_String(raw);
@@ -2733,6 +2781,20 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
       dco_decode_Auto_Owned_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerOperationId(
         arr[1],
       ),
+    );
+  }
+
+  @protected
+  Transaction dco_decode_transaction(dynamic raw) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    final arr = raw as List<dynamic>;
+    if (arr.length != 4)
+      throw Exception('unexpected arr length: expect 4 but see ${arr.length}');
+    return Transaction(
+      received: dco_decode_bool(arr[0]),
+      amount: dco_decode_u_64(arr[1]),
+      module: dco_decode_String(arr[2]),
+      timestamp: dco_decode_u_64(arr[3]),
     );
   }
 
@@ -3218,6 +3280,18 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   }
 
   @protected
+  List<Transaction> sse_decode_list_transaction(SseDeserializer deserializer) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+
+    var len_ = sse_decode_i_32(deserializer);
+    var ans_ = <Transaction>[];
+    for (var idx_ = 0; idx_ < len_; ++idx_) {
+      ans_.add(sse_decode_transaction(deserializer));
+    }
+    return ans_;
+  }
+
+  @protected
   String? sse_decode_opt_String(SseDeserializer deserializer) {
     // Codec=Sse (Serialization based), see doc to use other codecs
 
@@ -3269,6 +3343,21 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           deserializer,
         );
     return (var_field0, var_field1);
+  }
+
+  @protected
+  Transaction sse_decode_transaction(SseDeserializer deserializer) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    var var_received = sse_decode_bool(deserializer);
+    var var_amount = sse_decode_u_64(deserializer);
+    var var_module = sse_decode_String(deserializer);
+    var var_timestamp = sse_decode_u_64(deserializer);
+    return Transaction(
+      received: var_received,
+      amount: var_amount,
+      module: var_module,
+      timestamp: var_timestamp,
+    );
   }
 
   @protected
@@ -3786,6 +3875,18 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   }
 
   @protected
+  void sse_encode_list_transaction(
+    List<Transaction> self,
+    SseSerializer serializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    sse_encode_i_32(self.length, serializer);
+    for (final item in self) {
+      sse_encode_transaction(item, serializer);
+    }
+  }
+
+  @protected
   void sse_encode_opt_String(String? self, SseSerializer serializer) {
     // Codec=Sse (Serialization based), see doc to use other codecs
 
@@ -3833,6 +3934,15 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
       self.$2,
       serializer,
     );
+  }
+
+  @protected
+  void sse_encode_transaction(Transaction self, SseSerializer serializer) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    sse_encode_bool(self.received, serializer);
+    sse_encode_u_64(self.amount, serializer);
+    sse_encode_String(self.module, serializer);
+    sse_encode_u_64(self.timestamp, serializer);
   }
 
   @protected

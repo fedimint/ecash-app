@@ -6,7 +6,7 @@ import 'package:numpad_layout/widgets/numpad.dart';
 
 class Receive extends StatefulWidget {
   final FederationSelector fed;
-  const Receive({Key? key, required this.fed}) : super(key: key);
+  const Receive({super.key, required this.fed});
 
   @override
   State<Receive> createState() => _ReceiveState();

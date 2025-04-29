@@ -18,6 +18,8 @@ enum PaymentType { lightning, onchain, ecash }
 class _DashboardState extends State<Dashboard> {
   BigInt? balanceMsats;
   bool isLoadingBalance = true;
+  bool isLoadingTransactions = true;
+  List<Transaction> _transactions = [];
 
   PaymentType _selectedPaymentType = PaymentType.lightning;
 
@@ -25,6 +27,7 @@ class _DashboardState extends State<Dashboard> {
   void initState() {
     super.initState();
     _loadBalance();
+    _loadTransactions();
   }
 
   Future<void> _loadBalance() async {
@@ -35,14 +38,24 @@ class _DashboardState extends State<Dashboard> {
     });
   }
 
+  Future<void> _loadTransactions() async {
+    final txs = await transactions(federationId: widget.fed.federationId, modules: ["ln", "lnv2"]);
+    setState(() {
+      _transactions = txs;
+      isLoadingTransactions = false;
+    });
+  }
+
   void _onSendPressed() async {
     await Navigator.push(context, MaterialPageRoute(builder: (context) => ScanQRPage(selectedFed: widget.fed)));
     _loadBalance();
+    _loadTransactions();
   }
 
   void _onReceivePressed() async {
     await Navigator.push(context, MaterialPageRoute(builder: (context) => Receive(fed: widget.fed)));
     _loadBalance();
+    _loadTransactions();
   }
 
   String formatSats(BigInt? msats) {
@@ -130,33 +143,33 @@ class _DashboardState extends State<Dashboard> {
               });
             },
             style: ButtonStyle(
-              padding: MaterialStateProperty.all(const EdgeInsets.symmetric(vertical: 20, horizontal: 24)),
-              shape: MaterialStateProperty.all(
+              padding: WidgetStateProperty.all(const EdgeInsets.symmetric(vertical: 20, horizontal: 24)),
+              shape: WidgetStateProperty.all(
                 RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(40),
                 ),
               ),
-              textStyle: MaterialStateProperty.all(
+              textStyle: WidgetStateProperty.all(
                 const TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
               ),
-              backgroundColor: MaterialStateProperty.resolveWith((states) {
-                if (states.contains(MaterialState.selected)) {
+              backgroundColor: WidgetStateProperty.resolveWith((states) {
+                if (states.contains(WidgetState.selected)) {
                   return Theme.of(context).colorScheme.primary;
                 }
-                return Theme.of(context).colorScheme.surfaceVariant;
+                return Theme.of(context).colorScheme.surfaceContainerHighest;
               }),
-              foregroundColor: MaterialStateProperty.resolveWith((states) {
-                if (states.contains(MaterialState.selected)) {
+              foregroundColor: WidgetStateProperty.resolveWith((states) {
+                if (states.contains(WidgetState.selected)) {
                   return Colors.white;
                 }
                 return Colors.black87;
               }),
-              side: MaterialStateProperty.all(
+              side: WidgetStateProperty.all(
                 const BorderSide(color: Colors.transparent),
               ),
-              shadowColor: MaterialStateProperty.all(Colors.black.withOpacity(0.2)),
-              elevation: MaterialStateProperty.resolveWith<double>((states) {
-                if (states.contains(MaterialState.selected)) {
+              shadowColor: WidgetStateProperty.all(Colors.black.withOpacity(0.2)),
+              elevation: WidgetStateProperty.resolveWith<double>((states) {
+                if (states.contains(WidgetState.selected)) {
                   return 6;
                 }
                 return 0;
@@ -218,6 +231,61 @@ class _DashboardState extends State<Dashboard> {
                       ],
                     );
             },
+          ),
+
+          const SizedBox(height: 48),
+
+          Align(
+            alignment: Alignment.centerLeft,
+            child: Text(
+              "Recent Transactions",
+              style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.bold,
+                  ),
+            ),
+          ),
+          const SizedBox(height: 16),
+
+          isLoadingTransactions
+              ? const CircularProgressIndicator()
+              : _transactions.isEmpty
+                  ? const Text("No transactions yet.")
+                  : SizedBox(
+                      height: 300,
+                      child: ListView.builder(
+                        itemCount: _transactions.length,
+                        itemBuilder: (context, index) {
+                          final tx = _transactions[index];
+                          final isIncoming = tx.received;
+                          final date = DateTime.fromMillisecondsSinceEpoch(tx.timestamp.toInt());
+                          final formattedDate = DateFormat.yMMMd().add_jm().format(date);
+                          final formattedAmount = formatSats(tx.amount);
+
+                          final icon = Icon(
+                            isIncoming ? Icons.arrow_downward : Icons.arrow_upward,
+                            color: isIncoming ? Colors.green : Colors.red,
+                          );
+
+                          final amountStyle = TextStyle(
+                            fontWeight: FontWeight.bold,
+                            color: isIncoming ? Colors.green : Colors.red,
+                          );
+
+                          return Card(
+                            elevation: 2,
+                            margin: const EdgeInsets.symmetric(vertical: 6),
+                            child: ListTile(
+                              leading: CircleAvatar(
+                                backgroundColor: (isIncoming ? Colors.green.shade50 : Colors.red.shade50),
+                                child: icon,
+                              ),
+                              title: Text(isIncoming ? "Received" : "Sent"),
+                              subtitle: Text(formattedDate),
+                              trailing: Text(formattedAmount, style: amountStyle),
+                            ),
+                          );
+                        },
+                      ),
           ),
         ],
       ),

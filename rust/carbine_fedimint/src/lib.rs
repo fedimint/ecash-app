@@ -11,6 +11,7 @@ use fedimint_meta_client::MetaClientInit;
 use flutter_rust_bridge::frb;
 use tokio::sync::{OnceCell, RwLock};
 
+use std::time::UNIX_EPOCH;
 use std::{collections::BTreeMap, fmt::Display, str::FromStr, sync::Arc, time::Duration};
 
 use anyhow::{anyhow, bail};
@@ -33,9 +34,13 @@ use fedimint_core::{
 };
 use fedimint_derive_secret::{ChildId, DerivableSecret};
 use fedimint_ln_client::{
-    InternalPayState, LightningClientInit, LightningClientModule, LnPayState, LnReceiveState,
+    InternalPayState, LightningClientInit, LightningClientModule, LightningOperationMetaVariant,
+    LnPayState, LnReceiveState,
 };
-use fedimint_lnv2_client::{FinalReceiveOperationState, FinalSendOperationState};
+use fedimint_lnv2_client::{
+    FinalReceiveOperationState, FinalSendOperationState, LightningOperationMeta,
+    ReceiveOperationMeta,
+};
 use fedimint_lnv2_common::Bolt11InvoiceDescription;
 use fedimint_mint_client::MintClientInit;
 use fedimint_rocksdb::RocksDb;
@@ -166,6 +171,13 @@ pub async fn get_federation_meta(
     let multimint = get_multimint().await;
     let mm = multimint.read().await;
     mm.get_federation_meta(invite_code).await
+}
+
+#[frb]
+pub async fn transactions(federation_id: &FederationId, modules: Vec<String>) -> Vec<Transaction> {
+    let multimint = get_multimint().await;
+    let mm = multimint.read().await;
+    mm.transactions(federation_id, modules).await
 }
 
 #[derive(Clone, Eq, PartialEq, Serialize, Debug)]
@@ -347,6 +359,14 @@ pub struct Multimint {
 pub struct FederationMeta {
     picture: Option<String>,
     welcome: Option<String>,
+}
+
+#[derive(Debug, Serialize)]
+pub struct Transaction {
+    received: bool,
+    amount: u64,
+    module: String,
+    timestamp: u64,
 }
 
 impl Multimint {
@@ -906,5 +926,98 @@ impl Multimint {
         gateways
             .choose(&mut thread_rng())
             .map(|gateway| gateway.info.clone())
+    }
+
+    // TODO: Paginate this
+    async fn transactions(
+        &self,
+        federation_id: &FederationId,
+        modules: Vec<String>,
+    ) -> Vec<Transaction> {
+        let client = self
+            .clients
+            .get(federation_id)
+            .expect("No federation exists");
+
+        let page = client
+            .operation_log()
+            .paginate_operations_rev(10, None)
+            .await;
+        let transactions = page
+            .iter()
+            .filter_map(|(key, op_log_val)| {
+                if !modules.contains(&op_log_val.operation_module_kind().to_string()) {
+                    return None;
+                }
+
+                // Operation has not completed yet
+                let ts = key.creation_time;
+                let timestamp = ts
+                    .duration_since(UNIX_EPOCH)
+                    .expect("Cannot be before unix epoch")
+                    .as_millis() as u64;
+
+                match op_log_val.operation_module_kind() {
+                    "lnv2" => {
+                        let meta = op_log_val.meta::<LightningOperationMeta>();
+                        match meta {
+                            LightningOperationMeta::Receive(receive) => Some(Transaction {
+                                received: true,
+                                amount: receive.contract.commitment.amount.msats,
+                                module: "lnv2".to_string(),
+                                timestamp,
+                            }),
+                            LightningOperationMeta::Send(send) => Some(Transaction {
+                                received: false,
+                                amount: send.contract.amount.msats,
+                                module: "lnv2".to_string(),
+                                timestamp,
+                            }),
+                        }
+                    }
+                    "ln" => {
+                        let meta = op_log_val.meta::<fedimint_ln_client::LightningOperationMeta>();
+                        match meta.variant {
+                            LightningOperationMetaVariant::Pay(send) => Some(Transaction {
+                                received: false,
+                                amount: send
+                                    .invoice
+                                    .amount_milli_satoshis()
+                                    .expect("Cannot pay amountless invoice"),
+                                module: "ln".to_string(),
+                                timestamp,
+                            }),
+                            LightningOperationMetaVariant::Receive {
+                                out_point: _,
+                                invoice,
+                                gateway_id: _,
+                            } => Some(Transaction {
+                                received: true,
+                                amount: invoice
+                                    .amount_milli_satoshis()
+                                    .expect("Cannot receive amountless invoice"),
+                                module: "ln".to_string(),
+                                timestamp,
+                            }),
+                            LightningOperationMetaVariant::RecurringPaymentReceive(recurring) => {
+                                Some(Transaction {
+                                    received: true,
+                                    amount: recurring
+                                        .invoice
+                                        .amount_milli_satoshis()
+                                        .expect("Cannot receive amountless invoice"),
+                                    module: "ln".to_string(),
+                                    timestamp,
+                                })
+                            }
+                            _ => None,
+                        }
+                    }
+                    _ => None,
+                }
+            })
+            .collect::<Vec<_>>();
+
+        transactions
     }
 }
