@@ -43,7 +43,7 @@ use fedimint_lnv2_client::{
     ReceiveOperationState, SendOperationState,
 };
 use fedimint_lnv2_common::Bolt11InvoiceDescription;
-use fedimint_mint_client::MintClientInit;
+use fedimint_mint_client::{MintClientInit, MintClientModule, SelectNotesWithExactAmount};
 use fedimint_rocksdb::RocksDb;
 use fedimint_wallet_client::WalletClientInit;
 use futures_util::StreamExt;
@@ -179,6 +179,13 @@ pub async fn transactions(federation_id: &FederationId, modules: Vec<String>) ->
     let multimint = get_multimint().await;
     let mm = multimint.read().await;
     mm.transactions(federation_id, modules).await
+}
+
+#[frb]
+pub async fn send_ecash(federation_id: &FederationId, amount_msats: u64) -> anyhow::Result<(OperationId, String)>{
+    let multimint = get_multimint().await;
+    let mm = multimint.read().await;
+    mm.send_ecash(federation_id, amount_msats).await
 }
 
 #[derive(Clone, Eq, PartialEq, Serialize, Debug)]
@@ -1051,5 +1058,19 @@ impl Multimint {
             .collect::<Vec<_>>();
 
         transactions
+    }
+
+    async fn send_ecash(&self, federation_id: &FederationId, amount_msats: u64) -> anyhow::Result<(OperationId, String)> {
+        let client = self
+            .clients
+            .get(federation_id)
+            .expect("No federation exists");
+        let mint = client.get_first_module::<MintClientModule>()?;
+        let amount = Amount::from_msats(amount_msats);
+        // Default timeout after one day
+        let timeout = Duration::from_secs(60 * 60 * 24);
+        let (operation_id, notes) = mint.spend_notes_with_selector(&SelectNotesWithExactAmount, amount, timeout, true, ()).await?;
+
+        Ok((operation_id, notes.to_string()))
     }
 }

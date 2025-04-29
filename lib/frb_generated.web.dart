@@ -288,6 +288,12 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   PaymentPreview dco_decode_payment_preview(dynamic raw);
 
   @protected
+  (OperationId, String)
+  dco_decode_record_auto_owned_rust_opaque_flutter_rust_bridgefor_generated_rust_auto_opaque_inner_operation_id_string(
+    dynamic raw,
+  );
+
+  @protected
   (FederationMeta, FederationSelector)
   dco_decode_record_federation_meta_auto_owned_rust_opaque_flutter_rust_bridgefor_generated_rust_auto_opaque_inner_federation_selector(
     dynamic raw,
@@ -538,6 +544,12 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
 
   @protected
   PaymentPreview sse_decode_payment_preview(SseDeserializer deserializer);
+
+  @protected
+  (OperationId, String)
+  sse_decode_record_auto_owned_rust_opaque_flutter_rust_bridgefor_generated_rust_auto_opaque_inner_operation_id_string(
+    SseDeserializer deserializer,
+  );
 
   @protected
   (FederationMeta, FederationSelector)
@@ -839,6 +851,13 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   @protected
   void sse_encode_payment_preview(
     PaymentPreview self,
+    SseSerializer serializer,
+  );
+
+  @protected
+  void
+  sse_encode_record_auto_owned_rust_opaque_flutter_rust_bridgefor_generated_rust_auto_opaque_inner_operation_id_string(
+    (OperationId, String) self,
     SseSerializer serializer,
   );
 

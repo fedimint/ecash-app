@@ -75,13 +75,21 @@ class _DashboardState extends State<Dashboard> {
   }
 
   void _onSendPressed() async {
-    await Navigator.push(context, MaterialPageRoute(builder: (context) => ScanQRPage(selectedFed: widget.fed)));
+    if (_selectedPaymentType == PaymentType.lightning) {
+      await Navigator.push(context, MaterialPageRoute(builder: (context) => ScanQRPage(selectedFed: widget.fed)));
+    } else if (_selectedPaymentType == PaymentType.ecash) {
+      await Navigator.push(context, MaterialPageRoute(builder: (context) => NumberPad(fed: widget.fed, paymentType: _selectedPaymentType)));
+    }
     _loadBalance();
     _loadTransactions();
   }
 
   void _onReceivePressed() async {
-    await Navigator.push(context, MaterialPageRoute(builder: (context) => NumberPad(fed: widget.fed)));
+    if (_selectedPaymentType == PaymentType.lightning) {
+      await Navigator.push(context, MaterialPageRoute(builder: (context) => NumberPad(fed: widget.fed, paymentType: _selectedPaymentType)));
+    } else if (_selectedPaymentType == PaymentType.ecash) {
+      await Navigator.push(context, MaterialPageRoute(builder: (context) => ScanQRPage(selectedFed: widget.fed)));
+    }
     _loadBalance();
     _loadTransactions();
   } 

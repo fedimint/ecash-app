@@ -63,7 +63,7 @@ class RustLib extends BaseEntrypoint<RustLibApi, RustLibApiImpl, RustLibWire> {
   String get codegenVersion => '2.9.0';
 
   @override
-  int get rustContentHash => -1180653649;
+  int get rustContentHash => -509693937;
 
   static const kDefaultExternalLibraryLoaderConfig =
       ExternalLibraryLoaderConfig(
@@ -305,6 +305,11 @@ abstract class RustLibApi extends BaseApi {
   Future<OperationId> crateSend({
     required FederationId federationId,
     required String invoice,
+  });
+
+  Future<(OperationId, String)> crateSendEcash({
+    required FederationId federationId,
+    required BigInt amountMsats,
   });
 
   Future<List<Transaction>> crateTransactions({
@@ -2243,6 +2248,44 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   );
 
   @override
+  Future<(OperationId, String)> crateSendEcash({
+    required FederationId federationId,
+    required BigInt amountMsats,
+  }) {
+    return handler.executeNormal(
+      NormalTask(
+        callFfi: (port_) {
+          final serializer = SseSerializer(generalizedFrbRustBinding);
+          sse_encode_Auto_Ref_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerFederationId(
+            federationId,
+            serializer,
+          );
+          sse_encode_u_64(amountMsats, serializer);
+          pdeCallFfi(
+            generalizedFrbRustBinding,
+            serializer,
+            funcId: 54,
+            port: port_,
+          );
+        },
+        codec: SseCodec(
+          decodeSuccessData:
+              sse_decode_record_auto_owned_rust_opaque_flutter_rust_bridgefor_generated_rust_auto_opaque_inner_operation_id_string,
+          decodeErrorData: sse_decode_AnyhowException,
+        ),
+        constMeta: kCrateSendEcashConstMeta,
+        argValues: [federationId, amountMsats],
+        apiImpl: this,
+      ),
+    );
+  }
+
+  TaskConstMeta get kCrateSendEcashConstMeta => const TaskConstMeta(
+    debugName: "send_ecash",
+    argNames: ["federationId", "amountMsats"],
+  );
+
+  @override
   Future<List<Transaction>> crateTransactions({
     required FederationId federationId,
     required List<String> modules,
@@ -2259,7 +2302,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 54,
+            funcId: 55,
             port: port_,
           );
         },
@@ -2745,6 +2788,24 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
       paymentHash: dco_decode_String(arr[1]),
       network: dco_decode_String(arr[2]),
       invoice: dco_decode_String(arr[3]),
+    );
+  }
+
+  @protected
+  (OperationId, String)
+  dco_decode_record_auto_owned_rust_opaque_flutter_rust_bridgefor_generated_rust_auto_opaque_inner_operation_id_string(
+    dynamic raw,
+  ) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    final arr = raw as List<dynamic>;
+    if (arr.length != 2) {
+      throw Exception('Expected 2 elements, got ${arr.length}');
+    }
+    return (
+      dco_decode_Auto_Owned_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerOperationId(
+        arr[0],
+      ),
+      dco_decode_String(arr[1]),
     );
   }
 
@@ -3315,6 +3376,20 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
       network: var_network,
       invoice: var_invoice,
     );
+  }
+
+  @protected
+  (OperationId, String)
+  sse_decode_record_auto_owned_rust_opaque_flutter_rust_bridgefor_generated_rust_auto_opaque_inner_operation_id_string(
+    SseDeserializer deserializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    var var_field0 =
+        sse_decode_Auto_Owned_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerOperationId(
+          deserializer,
+        );
+    var var_field1 = sse_decode_String(deserializer);
+    return (var_field0, var_field1);
   }
 
   @protected
@@ -3906,6 +3981,20 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
     sse_encode_String(self.paymentHash, serializer);
     sse_encode_String(self.network, serializer);
     sse_encode_String(self.invoice, serializer);
+  }
+
+  @protected
+  void
+  sse_encode_record_auto_owned_rust_opaque_flutter_rust_bridgefor_generated_rust_auto_opaque_inner_operation_id_string(
+    (OperationId, String) self,
+    SseSerializer serializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    sse_encode_Auto_Owned_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerOperationId(
+      self.$1,
+      serializer,
+    );
+    sse_encode_String(self.$2, serializer);
   }
 
   @protected

@@ -1,5 +1,6 @@
 import 'dart:convert';
 
+import 'package:carbine/dashboard.dart';
 import 'package:carbine/lib.dart';
 import 'package:carbine/request.dart';
 import 'package:flutter/material.dart';
@@ -9,7 +10,8 @@ import 'package:numpad_layout/widgets/numpad.dart';
 
 class NumberPad extends StatefulWidget {
   final FederationSelector fed;
-  const NumberPad({super.key, required this.fed});
+  final PaymentType paymentType;
+  const NumberPad({super.key, required this.fed, required this.paymentType});
 
   @override
   State<NumberPad> createState() => _NumberPadState();
@@ -63,15 +65,22 @@ class _NumberPadState extends State<NumberPad> {
     final amountSats = BigInt.tryParse(_rawAmount);
     if (amountSats != null) {
       final amountMsats = amountSats * BigInt.from(1000);
-      final invoice = await receive(federationId: widget.fed.federationId, amountMsats: amountMsats);
-      showModalBottomSheet(
-        context: context,
-        isScrollControlled: true,
-        builder: (context) => SizedBox(
-          height: MediaQuery.of(context).size.height,
-          child: Request(invoice: invoice.$1, fed: widget.fed, operationId: invoice.$2),
-        ),
-      );
+
+      if (widget.paymentType == PaymentType.lightning) {
+        final invoice = await receive(federationId: widget.fed.federationId, amountMsats: amountMsats);
+        showModalBottomSheet(
+          context: context,
+          isScrollControlled: true,
+          builder: (context) => SizedBox(
+            height: MediaQuery.of(context).size.height,
+            child: Request(invoice: invoice.$1, fed: widget.fed, operationId: invoice.$2),
+          ),
+        );
+      } else if (widget.paymentType == PaymentType.ecash) {
+        print('Generate ecash confirmation');
+      } else if (widget.paymentType == PaymentType.onchain) {
+        print('Generate bitcoin address and QR code');
+      }
     }
     setState(() => _creating = false);
   }
