@@ -1,5 +1,5 @@
 import 'package:carbine/lib.dart';
-import 'package:carbine/receive.dart';
+import 'package:carbine/number_pad.dart';
 import 'package:carbine/scan.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
@@ -79,7 +79,7 @@ class _DashboardState extends State<Dashboard> {
   }
 
   void _onReceivePressed() async {
-    await Navigator.push(context, MaterialPageRoute(builder: (context) => Receive(fed: widget.fed)));
+    await Navigator.push(context, MaterialPageRoute(builder: (context) => NumberPad(fed: widget.fed)));
     _loadBalance();
     _loadTransactions();
   }

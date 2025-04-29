@@ -4,17 +4,17 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:numpad_layout/widgets/numpad.dart';
 
-class Receive extends StatefulWidget {
+class NumberPad extends StatefulWidget {
   final FederationSelector fed;
-  const Receive({super.key, required this.fed});
+  const NumberPad({super.key, required this.fed});
 
   @override
-  State<Receive> createState() => _ReceiveState();
+  State<NumberPad> createState() => _NumberPadState();
 }
 
-class _ReceiveState extends State<Receive> {
+class _NumberPadState extends State<NumberPad> {
   String _rawAmount = '';
-  bool _creatingInvoice = false;
+  bool _creating = false;
 
   String _formatAmount(String value) {
     if (value.isEmpty) return '0';
@@ -25,7 +25,7 @@ class _ReceiveState extends State<Receive> {
 
   Future<void> _onConfirm() async {
     setState(() {
-      _creatingInvoice = true;
+      _creating = true;
     });
     final amountMsats = BigInt.tryParse(_rawAmount);
     if (amountMsats != null) {
@@ -40,7 +40,7 @@ class _ReceiveState extends State<Receive> {
       );
     }
     setState(() {
-      _creatingInvoice = false;
+      _creating = false;
     });
   }
 
@@ -89,7 +89,7 @@ class _ReceiveState extends State<Receive> {
               width: double.infinity,
               child: ElevatedButton(
                 onPressed: _onConfirm,
-                child: _creatingInvoice
+                child: _creating
                   ? const CircularProgressIndicator(color: Colors.white)
                   : const Text('Confirm', style: TextStyle(fontSize: 20)),
               ),
