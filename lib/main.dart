@@ -5,11 +5,28 @@ import 'package:carbine/scan.dart';
 import 'package:carbine/lib.dart';
 import 'package:carbine/sidebar.dart';
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await RustLib.init();
   runApp(const MyApp());
+}
+
+String formatBalance(BigInt? msats, bool showMsats) {
+  if (msats == null) return showMsats ? '0 msats' : '0 sats';
+
+  if (showMsats) {
+    final formatter = NumberFormat('#,##0', 'en_US');
+    var formatted = formatter.format(msats.toInt());
+    formatted = formatted.replaceAll(',', ' ');
+    return '$formatted msats';
+  } else {
+    final sats = msats ~/ BigInt.from(1000);
+    final formatter = NumberFormat('#,##0', 'en_US');
+    var formatted = formatter.format(sats.toInt());
+    return '$formatted sats';
+  }
 }
 
 class MyApp extends StatefulWidget {

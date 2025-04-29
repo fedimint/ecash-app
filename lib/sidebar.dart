@@ -1,6 +1,7 @@
 
 import 'package:carbine/fed_preview.dart';
 import 'package:carbine/lib.dart';
+import 'package:carbine/main.dart';
 import 'package:flutter/material.dart';
 
 class FederationSidebar extends StatelessWidget {
@@ -148,7 +149,7 @@ class _FederationListItemState extends State<FederationListItem> {
                   Text(
                     isLoading
                         ? 'Loading...'
-                        : '${balanceMsats ?? 'Unavailable'} msats',
+                        : formatBalance(balanceMsats, false),
                   ),
                   Text(numGuardians == BigInt.one ? '1 guardian' : '$numGuardians guardians'),
                 ],

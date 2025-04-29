@@ -1,4 +1,5 @@
 import 'package:carbine/lib.dart';
+import 'package:carbine/main.dart';
 import 'package:carbine/number_pad.dart';
 import 'package:carbine/scan.dart';
 import 'package:flutter/material.dart';
@@ -20,6 +21,7 @@ class _DashboardState extends State<Dashboard> {
   bool isLoadingBalance = true;
   bool isLoadingTransactions = true;
   List<Transaction> _transactions = [];
+  bool showMsats = false;
 
   PaymentType _selectedPaymentType = PaymentType.lightning;
 
@@ -82,18 +84,7 @@ class _DashboardState extends State<Dashboard> {
     await Navigator.push(context, MaterialPageRoute(builder: (context) => NumberPad(fed: widget.fed)));
     _loadBalance();
     _loadTransactions();
-  }
-
-  String formatSats(BigInt? msats) {
-    if (msats == null) return '0.00 sats';
-    final sats = msats.toDouble() / 1000;
-
-    final formatter = NumberFormat('#,##0.00', 'en_US');
-    var formatted = formatter.format(sats);
-    formatted = formatted.replaceAll(',', ' ');
-
-    return '$formatted sats';
-  }
+  } 
 
   @override
   Widget build(BuildContext context) {
@@ -133,15 +124,21 @@ class _DashboardState extends State<Dashboard> {
           if (isLoadingBalance)
             const CircularProgressIndicator()
           else
-            Text(
-              formatSats(balanceMsats),
+          GestureDetector(
+            onTap: () {
+              setState(() {
+                showMsats = !showMsats;
+              });
+            },
+            child: Text(
+              formatBalance(balanceMsats, showMsats),
               style: Theme.of(context).textTheme.displayLarge?.copyWith(
                     color: Theme.of(context).colorScheme.primary,
                     fontWeight: FontWeight.bold,
                   ),
               textAlign: TextAlign.center,
             ),
-
+          ),
           const SizedBox(height: 48),
 
           SegmentedButton<PaymentType>(
@@ -286,7 +283,7 @@ class _DashboardState extends State<Dashboard> {
                           final isIncoming = tx.received;
                           final date = DateTime.fromMillisecondsSinceEpoch(tx.timestamp.toInt());
                           final formattedDate = DateFormat.yMMMd().add_jm().format(date);
-                          final formattedAmount = formatSats(tx.amount);
+                          final formattedAmount = formatBalance(tx.amount, false);
 
                           final icon = Icon(
                             isIncoming ? Icons.arrow_downward : Icons.arrow_upward,
