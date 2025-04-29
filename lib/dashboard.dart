@@ -38,8 +38,34 @@ class _DashboardState extends State<Dashboard> {
     });
   }
 
+  List<String> _getModulesForPaymentType() {
+    switch (_selectedPaymentType) {
+      case PaymentType.lightning:
+        return ["ln", "lnv2"];
+      case PaymentType.onchain:
+        return ["wallet"];
+      case PaymentType.ecash:
+        return ["mint"];
+    }
+  }
+
+  String _getMessage() {
+    switch (_selectedPaymentType) {
+      case PaymentType.lightning:
+        return "No lightning transactions yet";
+      case PaymentType.onchain:
+        return "No onchain transactions yet";
+      case PaymentType.ecash:
+        return "No ecash transactions yet";
+    }
+  }
+
   Future<void> _loadTransactions() async {
-    final txs = await transactions(federationId: widget.fed.federationId, modules: ["ln", "lnv2"]);
+    setState(() {
+      isLoadingTransactions = true;
+    });
+    final modules = _getModulesForPaymentType();
+    final txs = await transactions(federationId: widget.fed.federationId, modules: modules);
     setState(() {
       _transactions = txs;
       isLoadingTransactions = false;
@@ -141,6 +167,7 @@ class _DashboardState extends State<Dashboard> {
               setState(() {
                 _selectedPaymentType = newSelection.first;
               });
+              _loadTransactions();
             },
             style: ButtonStyle(
               padding: WidgetStateProperty.all(const EdgeInsets.symmetric(vertical: 20, horizontal: 24)),
@@ -249,7 +276,7 @@ class _DashboardState extends State<Dashboard> {
           isLoadingTransactions
               ? const CircularProgressIndicator()
               : _transactions.isEmpty
-                  ? const Text("No transactions yet.")
+                  ? Text(_getMessage())
                   : SizedBox(
                       height: 300,
                       child: ListView.builder(
