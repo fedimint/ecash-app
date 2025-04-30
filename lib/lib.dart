@@ -6,7 +6,7 @@
 import 'frb_generated.dart';
 import 'package:flutter_rust_bridge/flutter_rust_bridge_for_generated.dart';
 
-// These functions are ignored because they are not marked as `pub`: `add_relay`, `await_receive_lnv1`, `await_receive_lnv2`, `await_send_lnv1`, `await_send_lnv2`, `build_client`, `create_nostr_client`, `derive_federation_secret`, `get_client_database`, `get_federation_meta`, `get_multimint`, `has_federation`, `init_global`, `lnv1_select_gateway`, `lnv1_update_gateway_cache`, `load_clients`, `parse_content`, `parse_federation_id`, `parse_federation_name`, `parse_invite_codes`, `parse_modules`, `parse_network`, `parse_picture`, `pay_lnv1`, `pay_lnv2`, `receive_lnv1`, `receive_lnv2`, `send_ecash`, `transactions`
+// These functions are ignored because they are not marked as `pub`: `add_relay`, `await_ecash_reissue`, `await_receive_lnv1`, `await_receive_lnv2`, `await_send_lnv1`, `await_send_lnv2`, `build_client`, `create_nostr_client`, `derive_federation_secret`, `get_client_database`, `get_federation_meta`, `get_multimint`, `has_federation`, `init_global`, `lnv1_select_gateway`, `lnv1_update_gateway_cache`, `load_clients`, `parse_content`, `parse_federation_id`, `parse_federation_name`, `parse_invite_codes`, `parse_modules`, `parse_network`, `parse_picture`, `pay_lnv1`, `pay_lnv2`, `receive_lnv1`, `receive_lnv2`, `reissue_ecash`, `send_ecash`, `transactions`
 // These function are ignored because they are on traits that is not defined in current crate (put an empty `#[frb]` on it to unignore): `assert_receiver_is_total_eq`, `assert_receiver_is_total_eq`, `assert_receiver_is_total_eq`, `clone`, `clone`, `clone`, `eq`, `eq`, `eq`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `try_from`
 
 Future<FederationSelector> joinFederation({required String inviteCode}) =>
@@ -71,12 +71,28 @@ Future<List<Transaction>> transactions({
   modules: modules,
 );
 
-Future<(OperationId, String)> sendEcash({
+Future<(OperationId, String, BigInt)> sendEcash({
   required FederationId federationId,
   required BigInt amountMsats,
 }) => RustLib.instance.api.crateSendEcash(
   federationId: federationId,
   amountMsats: amountMsats,
+);
+
+Future<OperationId> reissueEcash({
+  required FederationId federationId,
+  required String ecash,
+}) => RustLib.instance.api.crateReissueEcash(
+  federationId: federationId,
+  ecash: ecash,
+);
+
+Future<ReissueExternalNotesState> awaitEcashReissue({
+  required FederationId federationId,
+  required OperationId operationId,
+}) => RustLib.instance.api.crateAwaitEcashReissue(
+  federationId: federationId,
+  operationId: operationId,
 );
 
 // Rust type: RustOpaqueMoi<flutter_rust_bridge::for_generated::RustAutoOpaqueInner<ClientConfig>>
@@ -188,6 +204,9 @@ abstract class PublicFederation implements RustOpaqueInterface {
 
   set picture(String? picture);
 }
+
+// Rust type: RustOpaqueMoi<flutter_rust_bridge::for_generated::RustAutoOpaqueInner<ReissueExternalNotesState>>
+abstract class ReissueExternalNotesState implements RustOpaqueInterface {}
 
 class FederationMeta {
   final String? picture;

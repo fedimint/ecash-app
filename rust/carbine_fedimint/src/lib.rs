@@ -43,7 +43,7 @@ use fedimint_lnv2_client::{
     ReceiveOperationState, SendOperationState,
 };
 use fedimint_lnv2_common::Bolt11InvoiceDescription;
-use fedimint_mint_client::{MintClientInit, MintClientModule, SelectNotesWithExactAmount};
+use fedimint_mint_client::{MintClientInit, MintClientModule, OOBNotes, ReissueExternalNotesState, SelectNotesWithAtleastAmount};
 use fedimint_rocksdb::RocksDb;
 use fedimint_wallet_client::WalletClientInit;
 use futures_util::StreamExt;
@@ -182,10 +182,24 @@ pub async fn transactions(federation_id: &FederationId, modules: Vec<String>) ->
 }
 
 #[frb]
-pub async fn send_ecash(federation_id: &FederationId, amount_msats: u64) -> anyhow::Result<(OperationId, String)>{
+pub async fn send_ecash(federation_id: &FederationId, amount_msats: u64) -> anyhow::Result<(OperationId, String, u64)>{
     let multimint = get_multimint().await;
     let mm = multimint.read().await;
     mm.send_ecash(federation_id, amount_msats).await
+}
+
+#[frb]
+pub async fn reissue_ecash(federation_id: &FederationId, ecash: String) -> anyhow::Result<OperationId> {
+    let multimint = get_multimint().await;
+    let mm = multimint.read().await;
+    mm.reissue_ecash(federation_id, ecash).await
+}
+
+#[frb]
+pub async fn await_ecash_reissue(federation_id: &FederationId, operation_id: OperationId) -> anyhow::Result<ReissueExternalNotesState> {
+    let multimint = get_multimint().await;
+    let mm = multimint.read().await;
+    mm.await_ecash_reissue(federation_id, operation_id).await
 }
 
 #[derive(Clone, Eq, PartialEq, Serialize, Debug)]
@@ -1060,7 +1074,7 @@ impl Multimint {
         transactions
     }
 
-    async fn send_ecash(&self, federation_id: &FederationId, amount_msats: u64) -> anyhow::Result<(OperationId, String)> {
+    async fn send_ecash(&self, federation_id: &FederationId, amount_msats: u64) -> anyhow::Result<(OperationId, String, u64)> {
         let client = self
             .clients
             .get(federation_id)
@@ -1069,8 +1083,42 @@ impl Multimint {
         let amount = Amount::from_msats(amount_msats);
         // Default timeout after one day
         let timeout = Duration::from_secs(60 * 60 * 24);
-        let (operation_id, notes) = mint.spend_notes_with_selector(&SelectNotesWithExactAmount, amount, timeout, true, ()).await?;
+        // TODO: Should this be configurable?
+        let (operation_id, notes) = mint.spend_notes_with_selector(&SelectNotesWithAtleastAmount, amount, timeout, true, ()).await?;
 
-        Ok((operation_id, notes.to_string()))
+        Ok((operation_id, notes.to_string(), notes.total_amount().msats))
+    }
+
+    async fn reissue_ecash(&self, federation_id: &FederationId, ecash: String) -> anyhow::Result<OperationId> {
+        let client = self
+            .clients
+            .get(federation_id)
+            .expect("No federation exists");
+        let mint = client.get_first_module::<MintClientModule>()?;
+        let notes = OOBNotes::from_str(&ecash)?;
+        let operation_id = mint.reissue_external_notes(notes, ()).await?;
+        Ok(operation_id)
+    }
+
+    async fn await_ecash_reissue(&self, federation_id: &FederationId, operation_id: OperationId) -> anyhow::Result<ReissueExternalNotesState> {
+        let client = self
+            .clients
+            .get(federation_id)
+            .expect("No federation exists");
+        let mint = client.get_first_module::<MintClientModule>()?;
+        let mut updates = mint
+            .subscribe_reissue_external_notes(operation_id)
+            .await
+            .unwrap()
+            .into_stream();
+        while let Some(update) = updates.next().await {
+            match update {
+                ReissueExternalNotesState::Done => return Ok(ReissueExternalNotesState::Done),
+                ReissueExternalNotesState::Failed(e) => return Ok(ReissueExternalNotesState::Failed(e)),
+                _ => {}
+            }
+        }
+
+        Err(anyhow!("Unexpected state"))
     }
 }

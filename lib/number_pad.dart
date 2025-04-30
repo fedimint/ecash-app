@@ -1,6 +1,7 @@
 import 'dart:convert';
 
 import 'package:carbine/dashboard.dart';
+import 'package:carbine/ecash_send.dart';
 import 'package:carbine/lib.dart';
 import 'package:carbine/request.dart';
 import 'package:flutter/material.dart';
@@ -77,7 +78,14 @@ class _NumberPadState extends State<NumberPad> {
           ),
         );
       } else if (widget.paymentType == PaymentType.ecash) {
-        print('Generate ecash confirmation');
+        showModalBottomSheet(
+          context: context,
+          isScrollControlled: true,
+          builder: (context) => SizedBox(
+            height: MediaQuery.of(context).size.height,
+            child: EcashSend(fed: widget.fed, amountSats: amountSats),
+          ),
+        );
       } else if (widget.paymentType == PaymentType.onchain) {
         print('Generate bitcoin address and QR code');
       }

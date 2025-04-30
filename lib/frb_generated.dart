@@ -63,7 +63,7 @@ class RustLib extends BaseEntrypoint<RustLibApi, RustLibApiImpl, RustLibWire> {
   String get codegenVersion => '2.9.0';
 
   @override
-  int get rustContentHash => -509693937;
+  int get rustContentHash => -1098389603;
 
   static const kDefaultExternalLibraryLoaderConfig =
       ExternalLibraryLoaderConfig(
@@ -271,6 +271,11 @@ abstract class RustLibApi extends BaseApi {
     String? picture,
   });
 
+  Future<ReissueExternalNotesState> crateAwaitEcashReissue({
+    required FederationId federationId,
+    required OperationId operationId,
+  });
+
   Future<FinalReceiveOperationState> crateAwaitReceive({
     required FederationId federationId,
     required OperationId operationId,
@@ -302,12 +307,17 @@ abstract class RustLibApi extends BaseApi {
     required BigInt amountMsats,
   });
 
+  Future<OperationId> crateReissueEcash({
+    required FederationId federationId,
+    required String ecash,
+  });
+
   Future<OperationId> crateSend({
     required FederationId federationId,
     required String invoice,
   });
 
-  Future<(OperationId, String)> crateSendEcash({
+  Future<(OperationId, String, BigInt)> crateSendEcash({
     required FederationId federationId,
     required BigInt amountMsats,
   });
@@ -409,6 +419,15 @@ abstract class RustLibApi extends BaseApi {
 
   CrossPlatformFinalizerArg
   get rust_arc_decrement_strong_count_PublicFederationPtr;
+
+  RustArcIncrementStrongCountFnType
+  get rust_arc_increment_strong_count_ReissueExternalNotesState;
+
+  RustArcDecrementStrongCountFnType
+  get rust_arc_decrement_strong_count_ReissueExternalNotesState;
+
+  CrossPlatformFinalizerArg
+  get rust_arc_decrement_strong_count_ReissueExternalNotesStatePtr;
 }
 
 class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
@@ -1905,7 +1924,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
       );
 
   @override
-  Future<FinalReceiveOperationState> crateAwaitReceive({
+  Future<ReissueExternalNotesState> crateAwaitEcashReissue({
     required FederationId federationId,
     required OperationId operationId,
   }) {
@@ -1925,6 +1944,47 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
             generalizedFrbRustBinding,
             serializer,
             funcId: 44,
+            port: port_,
+          );
+        },
+        codec: SseCodec(
+          decodeSuccessData:
+              sse_decode_Auto_Owned_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerReissueExternalNotesState,
+          decodeErrorData: sse_decode_AnyhowException,
+        ),
+        constMeta: kCrateAwaitEcashReissueConstMeta,
+        argValues: [federationId, operationId],
+        apiImpl: this,
+      ),
+    );
+  }
+
+  TaskConstMeta get kCrateAwaitEcashReissueConstMeta => const TaskConstMeta(
+    debugName: "await_ecash_reissue",
+    argNames: ["federationId", "operationId"],
+  );
+
+  @override
+  Future<FinalReceiveOperationState> crateAwaitReceive({
+    required FederationId federationId,
+    required OperationId operationId,
+  }) {
+    return handler.executeNormal(
+      NormalTask(
+        callFfi: (port_) {
+          final serializer = SseSerializer(generalizedFrbRustBinding);
+          sse_encode_Auto_Ref_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerFederationId(
+            federationId,
+            serializer,
+          );
+          sse_encode_Auto_Owned_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerOperationId(
+            operationId,
+            serializer,
+          );
+          pdeCallFfi(
+            generalizedFrbRustBinding,
+            serializer,
+            funcId: 45,
             port: port_,
           );
         },
@@ -1965,7 +2025,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 45,
+            funcId: 46,
             port: port_,
           );
         },
@@ -1999,7 +2059,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 46,
+            funcId: 47,
             port: port_,
           );
         },
@@ -2026,7 +2086,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 47,
+            funcId: 48,
             port: port_,
           );
         },
@@ -2057,7 +2117,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 48,
+            funcId: 49,
             port: port_,
           );
         },
@@ -2088,7 +2148,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 49,
+            funcId: 50,
             port: port_,
           );
         },
@@ -2121,7 +2181,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 50,
+            funcId: 51,
             port: port_,
           );
         },
@@ -2153,7 +2213,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 51,
+            funcId: 52,
             port: port_,
           );
         },
@@ -2188,7 +2248,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 52,
+            funcId: 53,
             port: port_,
           );
         },
@@ -2210,6 +2270,44 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   );
 
   @override
+  Future<OperationId> crateReissueEcash({
+    required FederationId federationId,
+    required String ecash,
+  }) {
+    return handler.executeNormal(
+      NormalTask(
+        callFfi: (port_) {
+          final serializer = SseSerializer(generalizedFrbRustBinding);
+          sse_encode_Auto_Ref_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerFederationId(
+            federationId,
+            serializer,
+          );
+          sse_encode_String(ecash, serializer);
+          pdeCallFfi(
+            generalizedFrbRustBinding,
+            serializer,
+            funcId: 54,
+            port: port_,
+          );
+        },
+        codec: SseCodec(
+          decodeSuccessData:
+              sse_decode_Auto_Owned_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerOperationId,
+          decodeErrorData: sse_decode_AnyhowException,
+        ),
+        constMeta: kCrateReissueEcashConstMeta,
+        argValues: [federationId, ecash],
+        apiImpl: this,
+      ),
+    );
+  }
+
+  TaskConstMeta get kCrateReissueEcashConstMeta => const TaskConstMeta(
+    debugName: "reissue_ecash",
+    argNames: ["federationId", "ecash"],
+  );
+
+  @override
   Future<OperationId> crateSend({
     required FederationId federationId,
     required String invoice,
@@ -2226,7 +2324,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 53,
+            funcId: 55,
             port: port_,
           );
         },
@@ -2248,7 +2346,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   );
 
   @override
-  Future<(OperationId, String)> crateSendEcash({
+  Future<(OperationId, String, BigInt)> crateSendEcash({
     required FederationId federationId,
     required BigInt amountMsats,
   }) {
@@ -2264,13 +2362,13 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 54,
+            funcId: 56,
             port: port_,
           );
         },
         codec: SseCodec(
           decodeSuccessData:
-              sse_decode_record_auto_owned_rust_opaque_flutter_rust_bridgefor_generated_rust_auto_opaque_inner_operation_id_string,
+              sse_decode_record_auto_owned_rust_opaque_flutter_rust_bridgefor_generated_rust_auto_opaque_inner_operation_id_string_u_64,
           decodeErrorData: sse_decode_AnyhowException,
         ),
         constMeta: kCrateSendEcashConstMeta,
@@ -2302,7 +2400,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 55,
+            funcId: 57,
             port: port_,
           );
         },
@@ -2409,6 +2507,14 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   RustArcDecrementStrongCountFnType
   get rust_arc_decrement_strong_count_PublicFederation =>
       wire.rust_arc_decrement_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerPublicFederation;
+
+  RustArcIncrementStrongCountFnType
+  get rust_arc_increment_strong_count_ReissueExternalNotesState =>
+      wire.rust_arc_increment_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerReissueExternalNotesState;
+
+  RustArcDecrementStrongCountFnType
+  get rust_arc_decrement_strong_count_ReissueExternalNotesState =>
+      wire.rust_arc_decrement_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerReissueExternalNotesState;
 
   @protected
   AnyhowException dco_decode_AnyhowException(dynamic raw) {
@@ -2517,6 +2623,17 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   ) {
     // Codec=Dco (DartCObject based), see doc to use other codecs
     return PublicFederationImpl.frbInternalDcoDecode(raw as List<dynamic>);
+  }
+
+  @protected
+  ReissueExternalNotesState
+  dco_decode_Auto_Owned_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerReissueExternalNotesState(
+    dynamic raw,
+  ) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    return ReissueExternalNotesStateImpl.frbInternalDcoDecode(
+      raw as List<dynamic>,
+    );
   }
 
   @protected
@@ -2704,6 +2821,17 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   }
 
   @protected
+  ReissueExternalNotesState
+  dco_decode_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerReissueExternalNotesState(
+    dynamic raw,
+  ) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    return ReissueExternalNotesStateImpl.frbInternalDcoDecode(
+      raw as List<dynamic>,
+    );
+  }
+
+  @protected
   String dco_decode_String(dynamic raw) {
     // Codec=Dco (DartCObject based), see doc to use other codecs
     return raw as String;
@@ -2792,20 +2920,21 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   }
 
   @protected
-  (OperationId, String)
-  dco_decode_record_auto_owned_rust_opaque_flutter_rust_bridgefor_generated_rust_auto_opaque_inner_operation_id_string(
+  (OperationId, String, BigInt)
+  dco_decode_record_auto_owned_rust_opaque_flutter_rust_bridgefor_generated_rust_auto_opaque_inner_operation_id_string_u_64(
     dynamic raw,
   ) {
     // Codec=Dco (DartCObject based), see doc to use other codecs
     final arr = raw as List<dynamic>;
-    if (arr.length != 2) {
-      throw Exception('Expected 2 elements, got ${arr.length}');
+    if (arr.length != 3) {
+      throw Exception('Expected 3 elements, got ${arr.length}');
     }
     return (
       dco_decode_Auto_Owned_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerOperationId(
         arr[0],
       ),
       dco_decode_String(arr[1]),
+      dco_decode_u_64(arr[2]),
     );
   }
 
@@ -3017,6 +3146,18 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   ) {
     // Codec=Sse (Serialization based), see doc to use other codecs
     return PublicFederationImpl.frbInternalSseDecode(
+      sse_decode_usize(deserializer),
+      sse_decode_i_32(deserializer),
+    );
+  }
+
+  @protected
+  ReissueExternalNotesState
+  sse_decode_Auto_Owned_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerReissueExternalNotesState(
+    SseDeserializer deserializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    return ReissueExternalNotesStateImpl.frbInternalSseDecode(
       sse_decode_usize(deserializer),
       sse_decode_i_32(deserializer),
     );
@@ -3263,6 +3404,18 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   }
 
   @protected
+  ReissueExternalNotesState
+  sse_decode_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerReissueExternalNotesState(
+    SseDeserializer deserializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    return ReissueExternalNotesStateImpl.frbInternalSseDecode(
+      sse_decode_usize(deserializer),
+      sse_decode_i_32(deserializer),
+    );
+  }
+
+  @protected
   String sse_decode_String(SseDeserializer deserializer) {
     // Codec=Sse (Serialization based), see doc to use other codecs
     var inner = sse_decode_list_prim_u_8_strict(deserializer);
@@ -3379,8 +3532,8 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   }
 
   @protected
-  (OperationId, String)
-  sse_decode_record_auto_owned_rust_opaque_flutter_rust_bridgefor_generated_rust_auto_opaque_inner_operation_id_string(
+  (OperationId, String, BigInt)
+  sse_decode_record_auto_owned_rust_opaque_flutter_rust_bridgefor_generated_rust_auto_opaque_inner_operation_id_string_u_64(
     SseDeserializer deserializer,
   ) {
     // Codec=Sse (Serialization based), see doc to use other codecs
@@ -3389,7 +3542,8 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           deserializer,
         );
     var var_field1 = sse_decode_String(deserializer);
-    return (var_field0, var_field1);
+    var var_field2 = sse_decode_u_64(deserializer);
+    return (var_field0, var_field1, var_field2);
   }
 
   @protected
@@ -3612,6 +3766,19 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
     // Codec=Sse (Serialization based), see doc to use other codecs
     sse_encode_usize(
       (self as PublicFederationImpl).frbInternalSseEncode(move: true),
+      serializer,
+    );
+  }
+
+  @protected
+  void
+  sse_encode_Auto_Owned_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerReissueExternalNotesState(
+    ReissueExternalNotesState self,
+    SseSerializer serializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    sse_encode_usize(
+      (self as ReissueExternalNotesStateImpl).frbInternalSseEncode(move: true),
       serializer,
     );
   }
@@ -3877,6 +4044,19 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   }
 
   @protected
+  void
+  sse_encode_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerReissueExternalNotesState(
+    ReissueExternalNotesState self,
+    SseSerializer serializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    sse_encode_usize(
+      (self as ReissueExternalNotesStateImpl).frbInternalSseEncode(move: null),
+      serializer,
+    );
+  }
+
+  @protected
   void sse_encode_String(String self, SseSerializer serializer) {
     // Codec=Sse (Serialization based), see doc to use other codecs
     sse_encode_list_prim_u_8_strict(utf8.encoder.convert(self), serializer);
@@ -3985,8 +4165,8 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
 
   @protected
   void
-  sse_encode_record_auto_owned_rust_opaque_flutter_rust_bridgefor_generated_rust_auto_opaque_inner_operation_id_string(
-    (OperationId, String) self,
+  sse_encode_record_auto_owned_rust_opaque_flutter_rust_bridgefor_generated_rust_auto_opaque_inner_operation_id_string_u_64(
+    (OperationId, String, BigInt) self,
     SseSerializer serializer,
   ) {
     // Codec=Sse (Serialization based), see doc to use other codecs
@@ -3995,6 +4175,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
       serializer,
     );
     sse_encode_String(self.$2, serializer);
+    sse_encode_u_64(self.$3, serializer);
   }
 
   @protected
@@ -4523,4 +4704,36 @@ class PublicFederationImpl extends RustOpaque implements PublicFederation {
         that: this,
         picture: picture,
       );
+}
+
+@sealed
+class ReissueExternalNotesStateImpl extends RustOpaque
+    implements ReissueExternalNotesState {
+  // Not to be used by end users
+  ReissueExternalNotesStateImpl.frbInternalDcoDecode(List<dynamic> wire)
+    : super.frbInternalDcoDecode(wire, _kStaticData);
+
+  // Not to be used by end users
+  ReissueExternalNotesStateImpl.frbInternalSseDecode(
+    BigInt ptr,
+    int externalSizeOnNative,
+  ) : super.frbInternalSseDecode(ptr, externalSizeOnNative, _kStaticData);
+
+  static final _kStaticData = RustArcStaticData(
+    rustArcIncrementStrongCount:
+        RustLib
+            .instance
+            .api
+            .rust_arc_increment_strong_count_ReissueExternalNotesState,
+    rustArcDecrementStrongCount:
+        RustLib
+            .instance
+            .api
+            .rust_arc_decrement_strong_count_ReissueExternalNotesState,
+    rustArcDecrementStrongCountPtr:
+        RustLib
+            .instance
+            .api
+            .rust_arc_decrement_strong_count_ReissueExternalNotesStatePtr,
+  );
 }
