@@ -2964,7 +2964,6 @@ fn wire__crate__transactions_impl(
             let api_federation_id = <RustOpaqueMoi<
                 flutter_rust_bridge::for_generated::RustAutoOpaqueInner<FederationId>,
             >>::sse_decode(&mut deserializer);
-            let api_modules = <Vec<String>>::sse_decode(&mut deserializer);
             deserializer.end();
             move |context| async move {
                 transform_result_sse::<_, ()>(
@@ -2989,7 +2988,7 @@ fn wire__crate__transactions_impl(
                         }
                         let api_federation_id_guard = api_federation_id_guard.unwrap();
                         let output_ok = Result::<_, ()>::Ok(
-                            crate::transactions(&*api_federation_id_guard, api_modules).await,
+                            crate::transactions(&*api_federation_id_guard).await,
                         )?;
                         Ok(output_ok)
                     })()

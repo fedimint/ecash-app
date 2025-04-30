@@ -324,7 +324,6 @@ abstract class RustLibApi extends BaseApi {
 
   Future<List<Transaction>> crateTransactions({
     required FederationId federationId,
-    required List<String> modules,
   });
 
   RustArcIncrementStrongCountFnType
@@ -2386,7 +2385,6 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   @override
   Future<List<Transaction>> crateTransactions({
     required FederationId federationId,
-    required List<String> modules,
   }) {
     return handler.executeNormal(
       NormalTask(
@@ -2396,7 +2394,6 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
             federationId,
             serializer,
           );
-          sse_encode_list_String(modules, serializer);
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
@@ -2409,7 +2406,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           decodeErrorData: null,
         ),
         constMeta: kCrateTransactionsConstMeta,
-        argValues: [federationId, modules],
+        argValues: [federationId],
         apiImpl: this,
       ),
     );
@@ -2417,7 +2414,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
 
   TaskConstMeta get kCrateTransactionsConstMeta => const TaskConstMeta(
     debugName: "transactions",
-    argNames: ["federationId", "modules"],
+    argNames: ["federationId"],
   );
 
   RustArcIncrementStrongCountFnType

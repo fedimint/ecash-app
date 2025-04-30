@@ -63,13 +63,8 @@ Future<(FederationMeta, FederationSelector)> getFederationMeta({
   required String inviteCode,
 }) => RustLib.instance.api.crateGetFederationMeta(inviteCode: inviteCode);
 
-Future<List<Transaction>> transactions({
-  required FederationId federationId,
-  required List<String> modules,
-}) => RustLib.instance.api.crateTransactions(
-  federationId: federationId,
-  modules: modules,
-);
+Future<List<Transaction>> transactions({required FederationId federationId}) =>
+    RustLib.instance.api.crateTransactions(federationId: federationId);
 
 Future<(OperationId, String, BigInt)> sendEcash({
   required FederationId federationId,

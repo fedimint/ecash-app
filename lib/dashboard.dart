@@ -40,34 +40,11 @@ class _DashboardState extends State<Dashboard> {
     });
   }
 
-  List<String> _getModulesForPaymentType() {
-    switch (_selectedPaymentType) {
-      case PaymentType.lightning:
-        return ["ln", "lnv2"];
-      case PaymentType.onchain:
-        return ["wallet"];
-      case PaymentType.ecash:
-        return ["mint"];
-    }
-  }
-
-  String _getMessage() {
-    switch (_selectedPaymentType) {
-      case PaymentType.lightning:
-        return "No lightning transactions yet";
-      case PaymentType.onchain:
-        return "No onchain transactions yet";
-      case PaymentType.ecash:
-        return "No ecash transactions yet";
-    }
-  }
-
   Future<void> _loadTransactions() async {
     setState(() {
       isLoadingTransactions = true;
     });
-    final modules = _getModulesForPaymentType();
-    final txs = await transactions(federationId: widget.fed.federationId, modules: modules);
+    final txs = await transactions(federationId: widget.fed.federationId);
     setState(() {
       _transactions = txs;
       isLoadingTransactions = false;
@@ -172,7 +149,6 @@ class _DashboardState extends State<Dashboard> {
               setState(() {
                 _selectedPaymentType = newSelection.first;
               });
-              _loadTransactions();
             },
             style: ButtonStyle(
               padding: WidgetStateProperty.all(const EdgeInsets.symmetric(vertical: 20, horizontal: 24)),
@@ -281,7 +257,7 @@ class _DashboardState extends State<Dashboard> {
           isLoadingTransactions
               ? const CircularProgressIndicator()
               : _transactions.isEmpty
-                  ? Text(_getMessage())
+                  ? const Text('No transactions yet')
                   : SizedBox(
                       height: 300,
                       child: ListView.builder(
@@ -293,10 +269,22 @@ class _DashboardState extends State<Dashboard> {
                           final formattedDate = DateFormat.yMMMd().add_jm().format(date);
                           final formattedAmount = formatBalance(tx.amount, false);
 
-                          final icon = Icon(
-                            isIncoming ? Icons.arrow_downward : Icons.arrow_upward,
-                            color: isIncoming ? Colors.green : Colors.red,
-                          );
+                          // Determine the icon based on the module
+                          IconData moduleIcon;
+                          switch (tx.module) {
+                            case 'ln':
+                            case 'lnv2':
+                              moduleIcon = Icons.flash_on; // Lightning
+                              break;
+                            case 'wallet':
+                              moduleIcon = Icons.link; // Onchain
+                              break;
+                            case 'mint':
+                              moduleIcon = Icons.currency_bitcoin; // Ecash
+                              break;
+                            default:
+                              moduleIcon = Icons.help_outline; // Fallback
+                          }
 
                           final amountStyle = TextStyle(
                             fontWeight: FontWeight.bold,
@@ -309,7 +297,10 @@ class _DashboardState extends State<Dashboard> {
                             child: ListTile(
                               leading: CircleAvatar(
                                 backgroundColor: (isIncoming ? Colors.green.shade50 : Colors.red.shade50),
-                                child: icon,
+                                child: Icon(
+                                  moduleIcon,
+                                  color: isIncoming ? Colors.green : Colors.red,
+                                ),
                               ),
                               title: Text(isIncoming ? "Received" : "Sent"),
                               subtitle: Text(formattedDate),
@@ -318,7 +309,7 @@ class _DashboardState extends State<Dashboard> {
                           );
                         },
                       ),
-          ),
+                    ),
         ],
       ),
     );

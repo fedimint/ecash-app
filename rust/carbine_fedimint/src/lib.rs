@@ -43,7 +43,10 @@ use fedimint_lnv2_client::{
     ReceiveOperationState, SendOperationState,
 };
 use fedimint_lnv2_common::Bolt11InvoiceDescription;
-use fedimint_mint_client::{MintClientInit, MintClientModule, MintOperationMeta, MintOperationMetaVariant, OOBNotes, ReissueExternalNotesState, SelectNotesWithAtleastAmount};
+use fedimint_mint_client::{
+    MintClientInit, MintClientModule, MintOperationMeta, MintOperationMetaVariant, OOBNotes,
+    ReissueExternalNotesState, SelectNotesWithAtleastAmount,
+};
 use fedimint_rocksdb::RocksDb;
 use fedimint_wallet_client::WalletClientInit;
 use futures_util::StreamExt;
@@ -175,28 +178,37 @@ pub async fn get_federation_meta(
 }
 
 #[frb]
-pub async fn transactions(federation_id: &FederationId, modules: Vec<String>) -> Vec<Transaction> {
+pub async fn transactions(federation_id: &FederationId) -> Vec<Transaction> {
     let multimint = get_multimint().await;
     let mm = multimint.read().await;
-    mm.transactions(federation_id, modules).await
+    mm.transactions(federation_id).await
 }
 
 #[frb]
-pub async fn send_ecash(federation_id: &FederationId, amount_msats: u64) -> anyhow::Result<(OperationId, String, u64)>{
+pub async fn send_ecash(
+    federation_id: &FederationId,
+    amount_msats: u64,
+) -> anyhow::Result<(OperationId, String, u64)> {
     let multimint = get_multimint().await;
     let mm = multimint.read().await;
     mm.send_ecash(federation_id, amount_msats).await
 }
 
 #[frb]
-pub async fn reissue_ecash(federation_id: &FederationId, ecash: String) -> anyhow::Result<OperationId> {
+pub async fn reissue_ecash(
+    federation_id: &FederationId,
+    ecash: String,
+) -> anyhow::Result<OperationId> {
     let multimint = get_multimint().await;
     let mm = multimint.read().await;
     mm.reissue_ecash(federation_id, ecash).await
 }
 
 #[frb]
-pub async fn await_ecash_reissue(federation_id: &FederationId, operation_id: OperationId) -> anyhow::Result<ReissueExternalNotesState> {
+pub async fn await_ecash_reissue(
+    federation_id: &FederationId,
+    operation_id: OperationId,
+) -> anyhow::Result<ReissueExternalNotesState> {
     let multimint = get_multimint().await;
     let mm = multimint.read().await;
     mm.await_ecash_reissue(federation_id, operation_id).await
@@ -439,6 +451,8 @@ impl Multimint {
                 .await?;
             self.clients.insert(id.id, client);
         }
+
+        // TODO: Need to drive active operations to completion
 
         Ok(())
     }
@@ -812,7 +826,25 @@ impl Multimint {
         operation_id: OperationId,
     ) -> anyhow::Result<FinalSendOperationState> {
         let lnv2 = client.get_first_module::<fedimint_lnv2_client::LightningClientModule>()?;
-        let final_state = lnv2.await_final_send_operation_state(operation_id).await?;
+        let mut updates = lnv2
+            .subscribe_send_operation_state_updates(operation_id)
+            .await?
+            .into_stream();
+        let mut final_state = FinalSendOperationState::Failure;
+        while let Some(update) = updates.next().await {
+            match update {
+                SendOperationState::Success(_) => {
+                    final_state = FinalSendOperationState::Success;
+                }
+                SendOperationState::Refunded => {
+                    final_state = FinalSendOperationState::Refunded;
+                }
+                SendOperationState::Failure => {
+                    final_state = FinalSendOperationState::Failure;
+                }
+                _ => {}
+            }
+        }
         Ok(final_state)
     }
 
@@ -822,26 +854,35 @@ impl Multimint {
     ) -> anyhow::Result<FinalSendOperationState> {
         let lnv1 = client.get_first_module::<LightningClientModule>()?;
         // First check if its an internal payment
+        let mut final_state = None;
         if let Ok(updates) = lnv1.subscribe_internal_pay(operation_id).await {
             let mut stream = updates.into_stream();
             while let Some(update) = stream.next().await {
                 match update {
-                    InternalPayState::Preimage(_) => return Ok(FinalSendOperationState::Success),
+                    InternalPayState::Preimage(_) => {
+                        final_state = Some(FinalSendOperationState::Success);
+                    }
                     InternalPayState::RefundSuccess {
                         out_points: _,
                         error: _,
-                    } => return Ok(FinalSendOperationState::Refunded),
+                    } => {
+                        final_state = Some(FinalSendOperationState::Refunded);
+                    }
                     InternalPayState::FundingFailed { error: _ }
                     | InternalPayState::RefundError {
                         error_message: _,
                         error: _,
                     }
                     | InternalPayState::UnexpectedError(_) => {
-                        return Ok(FinalSendOperationState::Failure);
+                        final_state = Some(FinalSendOperationState::Failure);
                     }
                     _ => {}
                 }
             }
+        }
+
+        if let Some(internal_final_state) = final_state {
+            return Ok(internal_final_state);
         }
 
         // If internal fails, check if its an external payment
@@ -850,17 +891,21 @@ impl Multimint {
             while let Some(update) = stream.next().await {
                 match update {
                     LnPayState::Success { preimage: _ } => {
-                        return Ok(FinalSendOperationState::Success)
+                        final_state = Some(FinalSendOperationState::Success);
                     }
                     LnPayState::Refunded { gateway_error: _ } => {
-                        return Ok(FinalSendOperationState::Refunded)
+                        final_state = Some(FinalSendOperationState::Refunded);
                     }
                     LnPayState::UnexpectedError { error_message: _ } => {
-                        return Ok(FinalSendOperationState::Failure)
+                        final_state = Some(FinalSendOperationState::Failure);
                     }
                     _ => {}
                 }
             }
+        }
+
+        if let Some(external_final_state) = final_state {
+            return Ok(external_final_state);
         }
 
         Ok(FinalSendOperationState::Failure)
@@ -888,9 +933,25 @@ impl Multimint {
         operation_id: OperationId,
     ) -> anyhow::Result<FinalReceiveOperationState> {
         let lnv2 = client.get_first_module::<fedimint_lnv2_client::LightningClientModule>()?;
-        let final_state = lnv2
-            .await_final_receive_operation_state(operation_id)
-            .await?;
+        let mut updates = lnv2
+            .subscribe_receive_operation_state_updates(operation_id)
+            .await?
+            .into_stream();
+        let mut final_state = FinalReceiveOperationState::Failure;
+        while let Some(update) = updates.next().await {
+            match update {
+                ReceiveOperationState::Claimed => {
+                    final_state = FinalReceiveOperationState::Claimed;
+                }
+                ReceiveOperationState::Expired => {
+                    final_state = FinalReceiveOperationState::Expired;
+                }
+                ReceiveOperationState::Failure => {
+                    final_state = FinalReceiveOperationState::Failure;
+                }
+                _ => {}
+            }
+        }
         Ok(final_state)
     }
 
@@ -900,19 +961,17 @@ impl Multimint {
     ) -> anyhow::Result<FinalReceiveOperationState> {
         let lnv1 = client.get_first_module::<LightningClientModule>()?;
         let mut updates = lnv1.subscribe_ln_receive(operation_id).await?.into_stream();
+        let mut final_state = FinalReceiveOperationState::Failure;
         while let Some(update) = updates.next().await {
             match update {
                 LnReceiveState::Claimed => {
-                    return Ok(FinalReceiveOperationState::Claimed);
-                }
-                LnReceiveState::Canceled { reason: _ } => {
-                    return Ok(FinalReceiveOperationState::Failure);
+                    final_state = FinalReceiveOperationState::Claimed;
                 }
                 _ => {}
             }
         }
 
-        Ok(FinalReceiveOperationState::Failure)
+        Ok(final_state)
     }
 
     async fn lnv1_update_gateway_cache(&self, client: &ClientHandleArc) -> anyhow::Result<()> {
@@ -953,24 +1012,27 @@ impl Multimint {
     }
 
     // TODO: Paginate this
-    async fn transactions(
-        &self,
-        federation_id: &FederationId,
-        modules: Vec<String>,
-    ) -> Vec<Transaction> {
+    async fn transactions(&self, federation_id: &FederationId) -> Vec<Transaction> {
         let client = self
             .clients
             .get(federation_id)
             .expect("No federation exists");
 
+        let modules = vec!["ln", "lnv2", "mint"];
+
         let page = client
             .operation_log()
-            .paginate_operations_rev(1000, None)
+            .paginate_operations_rev(10, None)
             .await;
         let transactions = page
             .iter()
             .filter_map(|(key, op_log_val)| {
-                if !modules.contains(&op_log_val.operation_module_kind().to_string()) {
+                if !modules.contains(&op_log_val.operation_module_kind()) {
+                    return None;
+                }
+
+                let outcome = op_log_val.outcome::<serde_json::Value>();
+                if outcome.is_none() {
                     return None;
                 }
 
@@ -984,75 +1046,45 @@ impl Multimint {
                     "lnv2" => {
                         let meta = op_log_val.meta::<LightningOperationMeta>();
                         match meta {
-                            LightningOperationMeta::Receive(receive) => {
-                                // TODO: Maybe include as pending
-                                if op_log_val.outcome::<ReceiveOperationState>().is_none() {
-                                    return None;
-                                }
-
-                                Some(Transaction {
-                                    received: true,
-                                    amount: receive.contract.commitment.amount.msats,
-                                    module: "lnv2".to_string(),
-                                    timestamp,
-                                })
-                            }
-                            LightningOperationMeta::Send(send) => {
-                                // TODO: Maybe include as pending
-                                if op_log_val.outcome::<SendOperationState>().is_none() {
-                                    return None;
-                                }
-                                Some(Transaction {
-                                    received: false,
-                                    amount: send.contract.amount.msats,
-                                    module: "lnv2".to_string(),
-                                    timestamp,
-                                })
-                            }
+                            LightningOperationMeta::Receive(receive) => Some(Transaction {
+                                received: true,
+                                amount: receive.contract.commitment.amount.msats,
+                                module: "lnv2".to_string(),
+                                timestamp,
+                            }),
+                            LightningOperationMeta::Send(send) => Some(Transaction {
+                                received: false,
+                                amount: send.contract.amount.msats,
+                                module: "lnv2".to_string(),
+                                timestamp,
+                            }),
                         }
                     }
                     "ln" => {
                         let meta = op_log_val.meta::<fedimint_ln_client::LightningOperationMeta>();
                         match meta.variant {
-                            LightningOperationMetaVariant::Pay(send) => {
-                                // TODO: Maybe include as pending
-                                if op_log_val.outcome::<SendOperationState>().is_none() {
-                                    return None;
-                                }
-                                Some(Transaction {
-                                    received: false,
-                                    amount: send
-                                        .invoice
-                                        .amount_milli_satoshis()
-                                        .expect("Cannot pay amountless invoice"),
-                                    module: "ln".to_string(),
-                                    timestamp,
-                                })
-                            }
+                            LightningOperationMetaVariant::Pay(send) => Some(Transaction {
+                                received: false,
+                                amount: send
+                                    .invoice
+                                    .amount_milli_satoshis()
+                                    .expect("Cannot pay amountless invoice"),
+                                module: "ln".to_string(),
+                                timestamp,
+                            }),
                             LightningOperationMetaVariant::Receive {
                                 out_point: _,
                                 invoice,
                                 gateway_id: _,
-                            } => {
-                                // TODO: Maybe include as pending
-                                if op_log_val.outcome::<ReceiveOperationState>().is_none() {
-                                    return None;
-                                }
-
-                                Some(Transaction {
-                                    received: true,
-                                    amount: invoice
-                                        .amount_milli_satoshis()
-                                        .expect("Cannot receive amountless invoice"),
-                                    module: "ln".to_string(),
-                                    timestamp,
-                                })
-                            }
+                            } => Some(Transaction {
+                                received: true,
+                                amount: invoice
+                                    .amount_milli_satoshis()
+                                    .expect("Cannot receive amountless invoice"),
+                                module: "ln".to_string(),
+                                timestamp,
+                            }),
                             LightningOperationMetaVariant::RecurringPaymentReceive(recurring) => {
-                                // TODO: Maybe include as pending
-                                if op_log_val.outcome::<ReceiveOperationState>().is_none() {
-                                    return None;
-                                }
                                 Some(Transaction {
                                     received: true,
                                     amount: recurring
@@ -1069,21 +1101,27 @@ impl Multimint {
                     "mint" => {
                         let meta = op_log_val.meta::<MintOperationMeta>();
                         match meta.variant {
-                            MintOperationMetaVariant::SpendOOB { requested_amount: _, oob_notes } => {
-                                Some(Transaction {
-                                    received: false,
-                                    amount: oob_notes.total_amount().msats,
-                                    module: "mint".to_string(),
-                                    timestamp,
-                                })
-                            }
-                            MintOperationMetaVariant::Reissuance { legacy_out_point: _, txid: _, out_point_indices: _ } => {
-                                let amount: Amount = serde_json::from_value(meta.extra_meta).expect("Could not get total amount");
+                            MintOperationMetaVariant::SpendOOB {
+                                requested_amount: _,
+                                oob_notes,
+                            } => Some(Transaction {
+                                received: false,
+                                amount: oob_notes.total_amount().msats,
+                                module: "mint".to_string(),
+                                timestamp,
+                            }),
+                            MintOperationMetaVariant::Reissuance {
+                                legacy_out_point: _,
+                                txid: _,
+                                out_point_indices: _,
+                            } => {
+                                let amount: Amount = serde_json::from_value(meta.extra_meta)
+                                    .expect("Could not get total amount");
                                 Some(Transaction {
                                     received: true,
                                     amount: amount.msats,
                                     module: "mint".to_string(),
-                                    timestamp
+                                    timestamp,
                                 })
                             }
                         }
@@ -1096,7 +1134,11 @@ impl Multimint {
         transactions
     }
 
-    async fn send_ecash(&self, federation_id: &FederationId, amount_msats: u64) -> anyhow::Result<(OperationId, String, u64)> {
+    async fn send_ecash(
+        &self,
+        federation_id: &FederationId,
+        amount_msats: u64,
+    ) -> anyhow::Result<(OperationId, String, u64)> {
         let client = self
             .clients
             .get(federation_id)
@@ -1106,12 +1148,18 @@ impl Multimint {
         // Default timeout after one day
         let timeout = Duration::from_secs(60 * 60 * 24);
         // TODO: Should this be configurable?
-        let (operation_id, notes) = mint.spend_notes_with_selector(&SelectNotesWithAtleastAmount, amount, timeout, true, ()).await?;
+        let (operation_id, notes) = mint
+            .spend_notes_with_selector(&SelectNotesWithAtleastAmount, amount, timeout, true, ())
+            .await?;
 
         Ok((operation_id, notes.to_string(), notes.total_amount().msats))
     }
 
-    async fn reissue_ecash(&self, federation_id: &FederationId, ecash: String) -> anyhow::Result<OperationId> {
+    async fn reissue_ecash(
+        &self,
+        federation_id: &FederationId,
+        ecash: String,
+    ) -> anyhow::Result<OperationId> {
         let client = self
             .clients
             .get(federation_id)
@@ -1123,7 +1171,11 @@ impl Multimint {
         Ok(operation_id)
     }
 
-    async fn await_ecash_reissue(&self, federation_id: &FederationId, operation_id: OperationId) -> anyhow::Result<ReissueExternalNotesState> {
+    async fn await_ecash_reissue(
+        &self,
+        federation_id: &FederationId,
+        operation_id: OperationId,
+    ) -> anyhow::Result<ReissueExternalNotesState> {
         let client = self
             .clients
             .get(federation_id)
@@ -1134,14 +1186,19 @@ impl Multimint {
             .await
             .unwrap()
             .into_stream();
+        let mut final_state = ReissueExternalNotesState::Failed("Unexpected state".to_string());
         while let Some(update) = updates.next().await {
             match update {
-                ReissueExternalNotesState::Done => return Ok(ReissueExternalNotesState::Done),
-                ReissueExternalNotesState::Failed(e) => return Ok(ReissueExternalNotesState::Failed(e)),
+                ReissueExternalNotesState::Done => {
+                    final_state = ReissueExternalNotesState::Done;
+                }
+                ReissueExternalNotesState::Failed(e) => {
+                    final_state = ReissueExternalNotesState::Failed(e);
+                }
                 _ => {}
             }
         }
 
-        Err(anyhow!("Unexpected state"))
+        Ok(final_state)
     }
 }
