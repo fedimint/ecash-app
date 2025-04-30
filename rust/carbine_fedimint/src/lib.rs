@@ -43,7 +43,7 @@ use fedimint_lnv2_client::{
     ReceiveOperationState, SendOperationState,
 };
 use fedimint_lnv2_common::Bolt11InvoiceDescription;
-use fedimint_mint_client::{MintClientInit, MintClientModule, OOBNotes, ReissueExternalNotesState, SelectNotesWithAtleastAmount};
+use fedimint_mint_client::{MintClientInit, MintClientModule, MintOperationMeta, MintOperationMetaVariant, OOBNotes, ReissueExternalNotesState, SelectNotesWithAtleastAmount};
 use fedimint_rocksdb::RocksDb;
 use fedimint_wallet_client::WalletClientInit;
 use futures_util::StreamExt;
@@ -965,7 +965,7 @@ impl Multimint {
 
         let page = client
             .operation_log()
-            .paginate_operations_rev(10, None)
+            .paginate_operations_rev(1000, None)
             .await;
         let transactions = page
             .iter()
@@ -1066,6 +1066,28 @@ impl Multimint {
                             _ => None,
                         }
                     }
+                    "mint" => {
+                        let meta = op_log_val.meta::<MintOperationMeta>();
+                        match meta.variant {
+                            MintOperationMetaVariant::SpendOOB { requested_amount: _, oob_notes } => {
+                                Some(Transaction {
+                                    received: false,
+                                    amount: oob_notes.total_amount().msats,
+                                    module: "mint".to_string(),
+                                    timestamp,
+                                })
+                            }
+                            MintOperationMetaVariant::Reissuance { legacy_out_point: _, txid: _, out_point_indices: _ } => {
+                                let amount: Amount = serde_json::from_value(meta.extra_meta).expect("Could not get total amount");
+                                Some(Transaction {
+                                    received: true,
+                                    amount: amount.msats,
+                                    module: "mint".to_string(),
+                                    timestamp
+                                })
+                            }
+                        }
+                    }
                     _ => None,
                 }
             })
@@ -1096,7 +1118,8 @@ impl Multimint {
             .expect("No federation exists");
         let mint = client.get_first_module::<MintClientModule>()?;
         let notes = OOBNotes::from_str(&ecash)?;
-        let operation_id = mint.reissue_external_notes(notes, ()).await?;
+        let total_amount = notes.total_amount();
+        let operation_id = mint.reissue_external_notes(notes, total_amount).await?;
         Ok(operation_id)
     }
 
