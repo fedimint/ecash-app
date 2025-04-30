@@ -1,5 +1,6 @@
 mod db;
 mod frb_generated;
+use fedimint_client::db::ChronologicalOperationLogKey;
 use fedimint_client::oplog::OperationLog;
 use fedimint_core::config::ClientConfig;
 use fedimint_core::db::mem_impl::MemDatabase;
@@ -45,7 +46,7 @@ use fedimint_lnv2_client::{
 use fedimint_lnv2_common::Bolt11InvoiceDescription;
 use fedimint_mint_client::{
     MintClientInit, MintClientModule, MintOperationMeta, MintOperationMetaVariant, OOBNotes,
-    ReissueExternalNotesState, SelectNotesWithAtleastAmount,
+    ReissueExternalNotesState, SelectNotesWithAtleastAmount, SpendOOBState,
 };
 use fedimint_rocksdb::RocksDb;
 use fedimint_wallet_client::WalletClientInit;
@@ -178,10 +179,10 @@ pub async fn get_federation_meta(
 }
 
 #[frb]
-pub async fn transactions(federation_id: &FederationId) -> Vec<Transaction> {
+pub async fn transactions(federation_id: &FederationId, timestamp: Option<u64>, operation_id: Option<Vec<u8>>) -> Vec<Transaction> {
     let multimint = get_multimint().await;
     let mm = multimint.read().await;
-    mm.transactions(federation_id).await
+    mm.transactions(federation_id, timestamp, operation_id).await
 }
 
 #[frb]
@@ -192,6 +193,16 @@ pub async fn send_ecash(
     let multimint = get_multimint().await;
     let mm = multimint.read().await;
     mm.send_ecash(federation_id, amount_msats).await
+}
+
+#[frb]
+pub async fn await_ecash_send(
+    federation_id: &FederationId,
+    operation_id: OperationId,
+) -> anyhow::Result<SpendOOBState> {
+    let multimint = get_multimint().await;
+    let mm = multimint.read().await;
+    mm.await_ecash_send(federation_id, operation_id).await
 }
 
 #[frb]
@@ -401,6 +412,7 @@ pub struct Transaction {
     amount: u64,
     module: String,
     timestamp: u64,
+    operation_id: Vec<u8>,
 }
 
 impl Multimint {
@@ -1012,7 +1024,7 @@ impl Multimint {
     }
 
     // TODO: Paginate this
-    async fn transactions(&self, federation_id: &FederationId) -> Vec<Transaction> {
+    async fn transactions(&self, federation_id: &FederationId, timestamp: Option<u64>, operation_id: Option<Vec<u8>>) -> Vec<Transaction> {
         let client = self
             .clients
             .get(federation_id)
@@ -1020,9 +1032,15 @@ impl Multimint {
 
         let modules = vec!["ln", "lnv2", "mint"];
 
+        let first_key = if let Some(timestamp) = timestamp {
+            Some(ChronologicalOperationLogKey { creation_time: UNIX_EPOCH + Duration::from_secs(timestamp), operation_id: OperationId(operation_id.expect("Invalid operation").try_into().expect("Invalid operation")) })
+        } else {
+            None
+        };
+
         let page = client
             .operation_log()
-            .paginate_operations_rev(10, None)
+            .paginate_operations_rev(10, first_key)
             .await;
         let transactions = page
             .iter()
@@ -1031,10 +1049,7 @@ impl Multimint {
                     return None;
                 }
 
-                let outcome = op_log_val.outcome::<serde_json::Value>();
-                if outcome.is_none() {
-                    return None;
-                }
+                let outcome = op_log_val.outcome::<serde_json::Value>(); 
 
                 let ts = key.creation_time;
                 let timestamp = ts
@@ -1044,6 +1059,9 @@ impl Multimint {
 
                 match op_log_val.operation_module_kind() {
                     "lnv2" => {
+                        if outcome.is_none() {
+                            return None;
+                        }
                         let meta = op_log_val.meta::<LightningOperationMeta>();
                         match meta {
                             LightningOperationMeta::Receive(receive) => Some(Transaction {
@@ -1051,16 +1069,21 @@ impl Multimint {
                                 amount: receive.contract.commitment.amount.msats,
                                 module: "lnv2".to_string(),
                                 timestamp,
+                                operation_id: key.operation_id.0.to_vec(),
                             }),
                             LightningOperationMeta::Send(send) => Some(Transaction {
                                 received: false,
                                 amount: send.contract.amount.msats,
                                 module: "lnv2".to_string(),
                                 timestamp,
+                                operation_id: key.operation_id.0.to_vec(),
                             }),
                         }
                     }
                     "ln" => {
+                        if outcome.is_none() {
+                            return None;
+                        }
                         let meta = op_log_val.meta::<fedimint_ln_client::LightningOperationMeta>();
                         match meta.variant {
                             LightningOperationMetaVariant::Pay(send) => Some(Transaction {
@@ -1071,6 +1094,7 @@ impl Multimint {
                                     .expect("Cannot pay amountless invoice"),
                                 module: "ln".to_string(),
                                 timestamp,
+                                operation_id: key.operation_id.0.to_vec(),
                             }),
                             LightningOperationMetaVariant::Receive {
                                 out_point: _,
@@ -1083,6 +1107,7 @@ impl Multimint {
                                     .expect("Cannot receive amountless invoice"),
                                 module: "ln".to_string(),
                                 timestamp,
+                                operation_id: key.operation_id.0.to_vec(),
                             }),
                             LightningOperationMetaVariant::RecurringPaymentReceive(recurring) => {
                                 Some(Transaction {
@@ -1093,6 +1118,7 @@ impl Multimint {
                                         .expect("Cannot receive amountless invoice"),
                                     module: "ln".to_string(),
                                     timestamp,
+                                    operation_id: key.operation_id.0.to_vec(),
                                 })
                             }
                             _ => None,
@@ -1109,12 +1135,16 @@ impl Multimint {
                                 amount: oob_notes.total_amount().msats,
                                 module: "mint".to_string(),
                                 timestamp,
+                                operation_id: key.operation_id.0.to_vec(),
                             }),
                             MintOperationMetaVariant::Reissuance {
                                 legacy_out_point: _,
                                 txid: _,
                                 out_point_indices: _,
                             } => {
+                                if outcome.is_none() {
+                                    return None;
+                                }
                                 let amount: Amount = serde_json::from_value(meta.extra_meta)
                                     .expect("Could not get total amount");
                                 Some(Transaction {
@@ -1122,6 +1152,7 @@ impl Multimint {
                                     amount: amount.msats,
                                     module: "mint".to_string(),
                                     timestamp,
+                                    operation_id: key.operation_id.0.to_vec(),
                                 })
                             }
                         }
@@ -1153,6 +1184,21 @@ impl Multimint {
             .await?;
 
         Ok((operation_id, notes.to_string(), notes.total_amount().msats))
+    }
+
+    async fn await_ecash_send(&self, federation_id: &FederationId, operation_id: OperationId) -> anyhow::Result<SpendOOBState> {
+        let client = self
+            .clients
+            .get(federation_id)
+            .expect("No federation exists");
+        let mint = client.get_first_module::<MintClientModule>()?;
+        let mut updates = mint.subscribe_spend_notes(operation_id).await?.into_stream();
+        let mut final_state = SpendOOBState::UserCanceledFailure;
+        while let Some(update) = updates.next().await {
+            println!("Ecash send state: {update:?}");
+            final_state = update;
+        }
+        Ok(final_state)
     }
 
     async fn reissue_ecash(

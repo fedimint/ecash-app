@@ -39,7 +39,7 @@ flutter_rust_bridge::frb_generated_boilerplate!(
     default_rust_auto_opaque = RustAutoOpaqueMoi,
 );
 pub(crate) const FLUTTER_RUST_BRIDGE_CODEGEN_VERSION: &str = "2.9.0";
-pub(crate) const FLUTTER_RUST_BRIDGE_CODEGEN_CONTENT_HASH: i32 = -1098389603;
+pub(crate) const FLUTTER_RUST_BRIDGE_CODEGEN_CONTENT_HASH: i32 = -1455929632;
 
 // Section: executor
 
@@ -2346,6 +2346,66 @@ fn wire__crate__await_ecash_reissue_impl(
         },
     )
 }
+fn wire__crate__await_ecash_send_impl(
+    port_: flutter_rust_bridge::for_generated::MessagePort,
+    ptr_: flutter_rust_bridge::for_generated::PlatformGeneralizedUint8ListPtr,
+    rust_vec_len_: i32,
+    data_len_: i32,
+) {
+    FLUTTER_RUST_BRIDGE_HANDLER.wrap_async::<flutter_rust_bridge::for_generated::SseCodec, _, _, _>(
+        flutter_rust_bridge::for_generated::TaskInfo {
+            debug_name: "await_ecash_send",
+            port: Some(port_),
+            mode: flutter_rust_bridge::for_generated::FfiCallMode::Normal,
+        },
+        move || {
+            let message = unsafe {
+                flutter_rust_bridge::for_generated::Dart2RustMessageSse::from_wire(
+                    ptr_,
+                    rust_vec_len_,
+                    data_len_,
+                )
+            };
+            let mut deserializer =
+                flutter_rust_bridge::for_generated::SseDeserializer::new(message);
+            let api_federation_id = <RustOpaqueMoi<
+                flutter_rust_bridge::for_generated::RustAutoOpaqueInner<FederationId>,
+            >>::sse_decode(&mut deserializer);
+            let api_operation_id = <OperationId>::sse_decode(&mut deserializer);
+            deserializer.end();
+            move |context| async move {
+                transform_result_sse::<_, flutter_rust_bridge::for_generated::anyhow::Error>(
+                    (move || async move {
+                        let mut api_federation_id_guard = None;
+                        let decode_indices_ =
+                            flutter_rust_bridge::for_generated::lockable_compute_decode_order(
+                                vec![flutter_rust_bridge::for_generated::LockableOrderInfo::new(
+                                    &api_federation_id,
+                                    0,
+                                    false,
+                                )],
+                            );
+                        for i in decode_indices_ {
+                            match i {
+                                0 => {
+                                    api_federation_id_guard =
+                                        Some(api_federation_id.lockable_decode_async_ref().await)
+                                }
+                                _ => unreachable!(),
+                            }
+                        }
+                        let api_federation_id_guard = api_federation_id_guard.unwrap();
+                        let output_ok =
+                            crate::await_ecash_send(&*api_federation_id_guard, api_operation_id)
+                                .await?;
+                        Ok(output_ok)
+                    })()
+                    .await,
+                )
+            }
+        },
+    )
+}
 fn wire__crate__await_receive_impl(
     port_: flutter_rust_bridge::for_generated::MessagePort,
     ptr_: flutter_rust_bridge::for_generated::PlatformGeneralizedUint8ListPtr,
@@ -2964,6 +3024,8 @@ fn wire__crate__transactions_impl(
             let api_federation_id = <RustOpaqueMoi<
                 flutter_rust_bridge::for_generated::RustAutoOpaqueInner<FederationId>,
             >>::sse_decode(&mut deserializer);
+            let api_timestamp = <Option<u64>>::sse_decode(&mut deserializer);
+            let api_operation_id = <Option<Vec<u8>>>::sse_decode(&mut deserializer);
             deserializer.end();
             move |context| async move {
                 transform_result_sse::<_, ()>(
@@ -2988,7 +3050,12 @@ fn wire__crate__transactions_impl(
                         }
                         let api_federation_id_guard = api_federation_id_guard.unwrap();
                         let output_ok = Result::<_, ()>::Ok(
-                            crate::transactions(&*api_federation_id_guard).await,
+                            crate::transactions(
+                                &*api_federation_id_guard,
+                                api_timestamp,
+                                api_operation_id,
+                            )
+                            .await,
                         )?;
                         Ok(output_ok)
                     })()
@@ -3036,6 +3103,9 @@ flutter_rust_bridge::frb_generated_moi_arc_impl_value!(
 );
 flutter_rust_bridge::frb_generated_moi_arc_impl_value!(
     flutter_rust_bridge::for_generated::RustAutoOpaqueInner<ReissueExternalNotesState>
+);
+flutter_rust_bridge::frb_generated_moi_arc_impl_value!(
+    flutter_rust_bridge::for_generated::RustAutoOpaqueInner<SpendOOBState>
 );
 
 // Section: dart2rust
@@ -3168,6 +3238,16 @@ impl SseDecode for ReissueExternalNotesState {
     }
 }
 
+impl SseDecode for SpendOOBState {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
+        let mut inner = <RustOpaqueMoi<
+            flutter_rust_bridge::for_generated::RustAutoOpaqueInner<SpendOOBState>,
+        >>::sse_decode(deserializer);
+        return flutter_rust_bridge::for_generated::rust_auto_opaque_decode_owned(inner);
+    }
+}
+
 impl SseDecode
     for RustOpaqueMoi<flutter_rust_bridge::for_generated::RustAutoOpaqueInner<ClientConfig>>
 {
@@ -3294,6 +3374,16 @@ impl SseDecode
     }
 }
 
+impl SseDecode
+    for RustOpaqueMoi<flutter_rust_bridge::for_generated::RustAutoOpaqueInner<SpendOOBState>>
+{
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
+        let mut inner = <usize>::sse_decode(deserializer);
+        return decode_rust_opaque_moi(inner);
+    }
+}
+
 impl SseDecode for String {
     // Codec=Sse (Serialization based), see doc to use other codecs
     fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
@@ -3392,6 +3482,28 @@ impl SseDecode for Option<String> {
     }
 }
 
+impl SseDecode for Option<u64> {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
+        if (<bool>::sse_decode(deserializer)) {
+            return Some(<u64>::sse_decode(deserializer));
+        } else {
+            return None;
+        }
+    }
+}
+
+impl SseDecode for Option<Vec<u8>> {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
+        if (<bool>::sse_decode(deserializer)) {
+            return Some(<Vec<u8>>::sse_decode(deserializer));
+        } else {
+            return None;
+        }
+    }
+}
+
 impl SseDecode for crate::PaymentPreview {
     // Codec=Sse (Serialization based), see doc to use other codecs
     fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
@@ -3443,11 +3555,13 @@ impl SseDecode for crate::Transaction {
         let mut var_amount = <u64>::sse_decode(deserializer);
         let mut var_module = <String>::sse_decode(deserializer);
         let mut var_timestamp = <u64>::sse_decode(deserializer);
+        let mut var_operationId = <Vec<u8>>::sse_decode(deserializer);
         return crate::Transaction {
             received: var_received,
             amount: var_amount,
             module: var_module,
             timestamp: var_timestamp,
+            operation_id: var_operationId,
         };
     }
 }
@@ -3509,19 +3623,20 @@ fn pde_ffi_dispatcher_primary_impl(
             data_len,
         ),
         44 => wire__crate__await_ecash_reissue_impl(port, ptr, rust_vec_len, data_len),
-        45 => wire__crate__await_receive_impl(port, ptr, rust_vec_len, data_len),
-        46 => wire__crate__await_send_impl(port, ptr, rust_vec_len, data_len),
-        47 => wire__crate__balance_impl(port, ptr, rust_vec_len, data_len),
-        48 => wire__crate__federations_impl(port, ptr, rust_vec_len, data_len),
-        49 => wire__crate__get_federation_meta_impl(port, ptr, rust_vec_len, data_len),
-        50 => wire__crate__join_federation_impl(port, ptr, rust_vec_len, data_len),
-        51 => wire__crate__list_federations_from_nostr_impl(port, ptr, rust_vec_len, data_len),
-        52 => wire__crate__parse_invoice_impl(port, ptr, rust_vec_len, data_len),
-        53 => wire__crate__receive_impl(port, ptr, rust_vec_len, data_len),
-        54 => wire__crate__reissue_ecash_impl(port, ptr, rust_vec_len, data_len),
-        55 => wire__crate__send_impl(port, ptr, rust_vec_len, data_len),
-        56 => wire__crate__send_ecash_impl(port, ptr, rust_vec_len, data_len),
-        57 => wire__crate__transactions_impl(port, ptr, rust_vec_len, data_len),
+        45 => wire__crate__await_ecash_send_impl(port, ptr, rust_vec_len, data_len),
+        46 => wire__crate__await_receive_impl(port, ptr, rust_vec_len, data_len),
+        47 => wire__crate__await_send_impl(port, ptr, rust_vec_len, data_len),
+        48 => wire__crate__balance_impl(port, ptr, rust_vec_len, data_len),
+        49 => wire__crate__federations_impl(port, ptr, rust_vec_len, data_len),
+        50 => wire__crate__get_federation_meta_impl(port, ptr, rust_vec_len, data_len),
+        51 => wire__crate__join_federation_impl(port, ptr, rust_vec_len, data_len),
+        52 => wire__crate__list_federations_from_nostr_impl(port, ptr, rust_vec_len, data_len),
+        53 => wire__crate__parse_invoice_impl(port, ptr, rust_vec_len, data_len),
+        54 => wire__crate__receive_impl(port, ptr, rust_vec_len, data_len),
+        55 => wire__crate__reissue_ecash_impl(port, ptr, rust_vec_len, data_len),
+        56 => wire__crate__send_impl(port, ptr, rust_vec_len, data_len),
+        57 => wire__crate__send_ecash_impl(port, ptr, rust_vec_len, data_len),
+        58 => wire__crate__transactions_impl(port, ptr, rust_vec_len, data_len),
         _ => unreachable!(),
     }
 }
@@ -3905,6 +4020,21 @@ impl flutter_rust_bridge::IntoIntoDart<FrbWrapper<ReissueExternalNotesState>>
 }
 
 // Codec=Dco (DartCObject based), see doc to use other codecs
+impl flutter_rust_bridge::IntoDart for FrbWrapper<SpendOOBState> {
+    fn into_dart(self) -> flutter_rust_bridge::for_generated::DartAbi {
+        flutter_rust_bridge::for_generated::rust_auto_opaque_encode::<_, MoiArc<_>>(self.0)
+            .into_dart()
+    }
+}
+impl flutter_rust_bridge::for_generated::IntoDartExceptPrimitive for FrbWrapper<SpendOOBState> {}
+
+impl flutter_rust_bridge::IntoIntoDart<FrbWrapper<SpendOOBState>> for SpendOOBState {
+    fn into_into_dart(self) -> FrbWrapper<SpendOOBState> {
+        self.into()
+    }
+}
+
+// Codec=Dco (DartCObject based), see doc to use other codecs
 impl flutter_rust_bridge::IntoDart for crate::FederationMeta {
     fn into_dart(self) -> flutter_rust_bridge::for_generated::DartAbi {
         [
@@ -3946,6 +4076,7 @@ impl flutter_rust_bridge::IntoDart for crate::Transaction {
             self.amount.into_into_dart().into_dart(),
             self.module.into_into_dart().into_dart(),
             self.timestamp.into_into_dart().into_dart(),
+            self.operation_id.into_into_dart().into_dart(),
         ]
         .into_dart()
     }
@@ -4060,6 +4191,13 @@ impl SseEncode for ReissueExternalNotesState {
             flutter_rust_bridge::for_generated::rust_auto_opaque_encode::<_, MoiArc<_>>(self),
             serializer,
         );
+    }
+}
+
+impl SseEncode for SpendOOBState {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
+        <RustOpaqueMoi<flutter_rust_bridge::for_generated::RustAutoOpaqueInner<SpendOOBState>>>::sse_encode(flutter_rust_bridge::for_generated::rust_auto_opaque_encode::<_, MoiArc<_>>(self), serializer);
     }
 }
 
@@ -4201,6 +4339,17 @@ impl SseEncode
     }
 }
 
+impl SseEncode
+    for RustOpaqueMoi<flutter_rust_bridge::for_generated::RustAutoOpaqueInner<SpendOOBState>>
+{
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
+        let (ptr, size) = self.sse_encode_raw();
+        <usize>::sse_encode(ptr, serializer);
+        <i32>::sse_encode(size, serializer);
+    }
+}
+
 impl SseEncode for String {
     // Codec=Sse (Serialization based), see doc to use other codecs
     fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
@@ -4283,6 +4432,26 @@ impl SseEncode for Option<String> {
     }
 }
 
+impl SseEncode for Option<u64> {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
+        <bool>::sse_encode(self.is_some(), serializer);
+        if let Some(value) = self {
+            <u64>::sse_encode(value, serializer);
+        }
+    }
+}
+
+impl SseEncode for Option<Vec<u8>> {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
+        <bool>::sse_encode(self.is_some(), serializer);
+        if let Some(value) = self {
+            <Vec<u8>>::sse_encode(value, serializer);
+        }
+    }
+}
+
 impl SseEncode for crate::PaymentPreview {
     // Codec=Sse (Serialization based), see doc to use other codecs
     fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
@@ -4325,6 +4494,7 @@ impl SseEncode for crate::Transaction {
         <u64>::sse_encode(self.amount, serializer);
         <String>::sse_encode(self.module, serializer);
         <u64>::sse_encode(self.timestamp, serializer);
+        <Vec<u8>>::sse_encode(self.operation_id, serializer);
     }
 }
 
@@ -4551,6 +4721,20 @@ mod io {
     ) {
         MoiArc::<flutter_rust_bridge::for_generated::RustAutoOpaqueInner<ReissueExternalNotesState>>::decrement_strong_count(ptr as _);
     }
+
+    #[unsafe(no_mangle)]
+    pub extern "C" fn frbgen_carbine_rust_arc_increment_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerSpendOOBState(
+        ptr: *const std::ffi::c_void,
+    ) {
+        MoiArc::<flutter_rust_bridge::for_generated::RustAutoOpaqueInner<SpendOOBState>>::increment_strong_count(ptr as _);
+    }
+
+    #[unsafe(no_mangle)]
+    pub extern "C" fn frbgen_carbine_rust_arc_decrement_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerSpendOOBState(
+        ptr: *const std::ffi::c_void,
+    ) {
+        MoiArc::<flutter_rust_bridge::for_generated::RustAutoOpaqueInner<SpendOOBState>>::decrement_strong_count(ptr as _);
+    }
 }
 #[cfg(not(target_family = "wasm"))]
 pub use io::*;
@@ -4744,6 +4928,20 @@ mod web {
         ptr: *const std::ffi::c_void,
     ) {
         MoiArc::<flutter_rust_bridge::for_generated::RustAutoOpaqueInner<ReissueExternalNotesState>>::decrement_strong_count(ptr as _);
+    }
+
+    #[wasm_bindgen]
+    pub fn rust_arc_increment_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerSpendOOBState(
+        ptr: *const std::ffi::c_void,
+    ) {
+        MoiArc::<flutter_rust_bridge::for_generated::RustAutoOpaqueInner<SpendOOBState>>::increment_strong_count(ptr as _);
+    }
+
+    #[wasm_bindgen]
+    pub fn rust_arc_decrement_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerSpendOOBState(
+        ptr: *const std::ffi::c_void,
+    ) {
+        MoiArc::<flutter_rust_bridge::for_generated::RustAutoOpaqueInner<SpendOOBState>>::decrement_strong_count(ptr as _);
     }
 }
 #[cfg(target_family = "wasm")]

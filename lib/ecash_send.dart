@@ -39,6 +39,7 @@ class _EcashSendState extends State<EcashSend> with SingleTickerProviderStateMix
     if (_ecash != null) {
         final operationId = await reissueEcash(federationId: widget.fed.federationId, ecash: _ecash!);
         // TODO: Check outcome
+        print('Waiting on reissue...');
         await awaitEcashReissue(federationId: widget.fed.federationId, operationId: operationId);
         Navigator.of(context, rootNavigator: true).popUntil((route) => route.isFirst);
       ScaffoldMessenger.of(context).showSnackBar(
@@ -56,6 +57,7 @@ class _EcashSendState extends State<EcashSend> with SingleTickerProviderStateMix
         federationId: widget.fed.federationId,
         amountMsats: widget.amountSats * BigInt.from(1000),
       );
+      
       setState(() {
         _ecash = ecash.$2;
         _loading = false;
