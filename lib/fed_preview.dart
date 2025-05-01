@@ -57,6 +57,7 @@ class _FederationPreviewState extends State<FederationPreview> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final totalGuardians = widget.guardians.length;
+    final thresh = threshold(totalGuardians);
     final onlineGuardians = widget.guardians.where((g) => g.version != null).toList();
     final isFederationOnline = totalGuardians > 0 && onlineGuardians.length >= threshold(totalGuardians);
 
@@ -164,7 +165,7 @@ class _FederationPreviewState extends State<FederationPreview> {
               if (widget.guardians.isNotEmpty) ...[
                 const SizedBox(height: 24),
                 Text(
-                  'Guardians (${onlineGuardians.length}/$totalGuardians online)',
+                  'Guardians ($thresh/$totalGuardians federation)',
                   style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
                 ),
                 const SizedBox(height: 8),
