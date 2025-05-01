@@ -179,10 +179,15 @@ pub async fn get_federation_meta(
 }
 
 #[frb]
-pub async fn transactions(federation_id: &FederationId, timestamp: Option<u64>, operation_id: Option<Vec<u8>>) -> Vec<Transaction> {
+pub async fn transactions(
+    federation_id: &FederationId,
+    timestamp: Option<u64>,
+    operation_id: Option<Vec<u8>>,
+) -> Vec<Transaction> {
     let multimint = get_multimint().await;
     let mm = multimint.read().await;
-    mm.transactions(federation_id, timestamp, operation_id).await
+    mm.transactions(federation_id, timestamp, operation_id)
+        .await
 }
 
 #[frb]
@@ -1023,94 +1028,114 @@ impl Multimint {
             .map(|gateway| gateway.info.clone())
     }
 
-    // TODO: Paginate this
-    async fn transactions(&self, federation_id: &FederationId, timestamp: Option<u64>, operation_id: Option<Vec<u8>>) -> Vec<Transaction> {
+    async fn transactions(
+        &self,
+        federation_id: &FederationId,
+        timestamp: Option<u64>,
+        operation_id: Option<Vec<u8>>,
+    ) -> Vec<Transaction> {
         let client = self
             .clients
             .get(federation_id)
             .expect("No federation exists");
 
         let modules = vec!["ln", "lnv2", "mint"];
-
-        let first_key = if let Some(timestamp) = timestamp {
-            Some(ChronologicalOperationLogKey { creation_time: UNIX_EPOCH + Duration::from_secs(timestamp), operation_id: OperationId(operation_id.expect("Invalid operation").try_into().expect("Invalid operation")) })
+        let mut collected = Vec::new();
+        let mut next_key = if let Some(timestamp) = timestamp {
+            Some(ChronologicalOperationLogKey {
+                creation_time: UNIX_EPOCH + Duration::from_millis(timestamp),
+                operation_id: OperationId(
+                    operation_id
+                        .expect("Invalid operation")
+                        .try_into()
+                        .expect("Invalid operation"),
+                ),
+            })
         } else {
             None
         };
 
-        let page = client
-            .operation_log()
-            .paginate_operations_rev(10, first_key)
-            .await;
-        let transactions = page
-            .iter()
-            .filter_map(|(key, op_log_val)| {
-                if !modules.contains(&op_log_val.operation_module_kind()) {
-                    return None;
+        while collected.len() < 10 {
+            let page = client
+                .operation_log()
+                .paginate_operations_rev(50, next_key.clone())
+                .await;
+
+            if page.is_empty() {
+                break;
+            }
+
+            for (key, op_log_val) in &page {
+                if collected.len() >= 10 {
+                    break;
                 }
 
-                let outcome = op_log_val.outcome::<serde_json::Value>(); 
+                if !modules.contains(&op_log_val.operation_module_kind()) {
+                    continue;
+                }
 
-                let ts = key.creation_time;
-                let timestamp = ts
+                let outcome = op_log_val.outcome::<serde_json::Value>();
+                let timestamp = key
+                    .creation_time
                     .duration_since(UNIX_EPOCH)
                     .expect("Cannot be before unix epoch")
                     .as_millis() as u64;
 
-                match op_log_val.operation_module_kind() {
+                let tx = match op_log_val.operation_module_kind() {
                     "lnv2" => {
                         if outcome.is_none() {
-                            return None;
-                        }
-                        let meta = op_log_val.meta::<LightningOperationMeta>();
-                        match meta {
-                            LightningOperationMeta::Receive(receive) => Some(Transaction {
-                                received: true,
-                                amount: receive.contract.commitment.amount.msats,
-                                module: "lnv2".to_string(),
-                                timestamp,
-                                operation_id: key.operation_id.0.to_vec(),
-                            }),
-                            LightningOperationMeta::Send(send) => Some(Transaction {
-                                received: false,
-                                amount: send.contract.amount.msats,
-                                module: "lnv2".to_string(),
-                                timestamp,
-                                operation_id: key.operation_id.0.to_vec(),
-                            }),
+                            None
+                        } else {
+                            let meta = op_log_val.meta::<LightningOperationMeta>();
+                            match meta {
+                                LightningOperationMeta::Receive(receive) => Some(Transaction {
+                                    received: true,
+                                    amount: receive.contract.commitment.amount.msats,
+                                    module: "lnv2".to_string(),
+                                    timestamp,
+                                    operation_id: key.operation_id.0.to_vec(),
+                                }),
+                                LightningOperationMeta::Send(send) => Some(Transaction {
+                                    received: false,
+                                    amount: send.contract.amount.msats,
+                                    module: "lnv2".to_string(),
+                                    timestamp,
+                                    operation_id: key.operation_id.0.to_vec(),
+                                }),
+                            }
                         }
                     }
                     "ln" => {
                         if outcome.is_none() {
-                            return None;
-                        }
-                        let meta = op_log_val.meta::<fedimint_ln_client::LightningOperationMeta>();
-                        match meta.variant {
-                            LightningOperationMetaVariant::Pay(send) => Some(Transaction {
-                                received: false,
-                                amount: send
-                                    .invoice
-                                    .amount_milli_satoshis()
-                                    .expect("Cannot pay amountless invoice"),
-                                module: "ln".to_string(),
-                                timestamp,
-                                operation_id: key.operation_id.0.to_vec(),
-                            }),
-                            LightningOperationMetaVariant::Receive {
-                                out_point: _,
-                                invoice,
-                                gateway_id: _,
-                            } => Some(Transaction {
-                                received: true,
-                                amount: invoice
-                                    .amount_milli_satoshis()
-                                    .expect("Cannot receive amountless invoice"),
-                                module: "ln".to_string(),
-                                timestamp,
-                                operation_id: key.operation_id.0.to_vec(),
-                            }),
-                            LightningOperationMetaVariant::RecurringPaymentReceive(recurring) => {
-                                Some(Transaction {
+                            None
+                        } else {
+                            let meta =
+                                op_log_val.meta::<fedimint_ln_client::LightningOperationMeta>();
+                            match meta.variant {
+                                LightningOperationMetaVariant::Pay(send) => Some(Transaction {
+                                    received: false,
+                                    amount: send
+                                        .invoice
+                                        .amount_milli_satoshis()
+                                        .expect("Cannot pay amountless invoice"),
+                                    module: "ln".to_string(),
+                                    timestamp,
+                                    operation_id: key.operation_id.0.to_vec(),
+                                }),
+                                LightningOperationMetaVariant::Receive { invoice, .. } => {
+                                    Some(Transaction {
+                                        received: true,
+                                        amount: invoice
+                                            .amount_milli_satoshis()
+                                            .expect("Cannot receive amountless invoice"),
+                                        module: "ln".to_string(),
+                                        timestamp,
+                                        operation_id: key.operation_id.0.to_vec(),
+                                    })
+                                }
+                                LightningOperationMetaVariant::RecurringPaymentReceive(
+                                    recurring,
+                                ) => Some(Transaction {
                                     received: true,
                                     amount: recurring
                                         .invoice
@@ -1119,50 +1144,53 @@ impl Multimint {
                                     module: "ln".to_string(),
                                     timestamp,
                                     operation_id: key.operation_id.0.to_vec(),
-                                })
+                                }),
+                                _ => None,
                             }
-                            _ => None,
                         }
                     }
                     "mint" => {
                         let meta = op_log_val.meta::<MintOperationMeta>();
                         match meta.variant {
-                            MintOperationMetaVariant::SpendOOB {
-                                requested_amount: _,
-                                oob_notes,
-                            } => Some(Transaction {
-                                received: false,
-                                amount: oob_notes.total_amount().msats,
-                                module: "mint".to_string(),
-                                timestamp,
-                                operation_id: key.operation_id.0.to_vec(),
-                            }),
-                            MintOperationMetaVariant::Reissuance {
-                                legacy_out_point: _,
-                                txid: _,
-                                out_point_indices: _,
-                            } => {
-                                if outcome.is_none() {
-                                    return None;
-                                }
-                                let amount: Amount = serde_json::from_value(meta.extra_meta)
-                                    .expect("Could not get total amount");
+                            MintOperationMetaVariant::SpendOOB { oob_notes, .. } => {
                                 Some(Transaction {
-                                    received: true,
-                                    amount: amount.msats,
+                                    received: false,
+                                    amount: oob_notes.total_amount().msats,
                                     module: "mint".to_string(),
                                     timestamp,
                                     operation_id: key.operation_id.0.to_vec(),
                                 })
                             }
+                            MintOperationMetaVariant::Reissuance { .. } => {
+                                if outcome.is_none() {
+                                    None
+                                } else {
+                                    let amount: Amount = serde_json::from_value(meta.extra_meta)
+                                        .expect("Could not get total amount");
+                                    Some(Transaction {
+                                        received: true,
+                                        amount: amount.msats,
+                                        module: "mint".to_string(),
+                                        timestamp,
+                                        operation_id: key.operation_id.0.to_vec(),
+                                    })
+                                }
+                            }
                         }
                     }
                     _ => None,
-                }
-            })
-            .collect::<Vec<_>>();
+                };
 
-        transactions
+                if let Some(tx) = tx {
+                    collected.push(tx);
+                }
+            }
+
+            // Update the pagination key to the last item in this page
+            next_key = page.last().map(|(key, _)| key.clone());
+        }
+
+        collected
     }
 
     async fn send_ecash(
@@ -1186,13 +1214,20 @@ impl Multimint {
         Ok((operation_id, notes.to_string(), notes.total_amount().msats))
     }
 
-    async fn await_ecash_send(&self, federation_id: &FederationId, operation_id: OperationId) -> anyhow::Result<SpendOOBState> {
+    async fn await_ecash_send(
+        &self,
+        federation_id: &FederationId,
+        operation_id: OperationId,
+    ) -> anyhow::Result<SpendOOBState> {
         let client = self
             .clients
             .get(federation_id)
             .expect("No federation exists");
         let mint = client.get_first_module::<MintClientModule>()?;
-        let mut updates = mint.subscribe_spend_notes(operation_id).await?.into_stream();
+        let mut updates = mint
+            .subscribe_spend_notes(operation_id)
+            .await?
+            .into_stream();
         let mut final_state = SpendOOBState::UserCanceledFailure;
         while let Some(update) = updates.next().await {
             println!("Ecash send state: {update:?}");

@@ -20,16 +20,36 @@ class _DashboardState extends State<Dashboard> {
   BigInt? balanceMsats;
   bool isLoadingBalance = true;
   bool isLoadingTransactions = true;
-  List<Transaction> _transactions = [];
+  final List<Transaction> _transactions = [];
   bool showMsats = false;
+
+  Transaction? _lastTransaction;
+  bool _hasMore = true;
+  bool _isFetchingMore = false;
+  final ScrollController _scrollController = ScrollController();
 
   PaymentType _selectedPaymentType = PaymentType.lightning;
 
   @override
   void initState() {
     super.initState();
+    _scrollController.addListener(_onScroll);
     _loadBalance();
     _loadTransactions();
+  }
+
+  @override
+  void dispose() {
+    _scrollController.dispose();
+    super.dispose();
+  }
+
+  void _onScroll() {
+    if (_scrollController.position.pixels >= _scrollController.position.maxScrollExtent - 100 &&
+      !_isFetchingMore &&
+      _hasMore) {
+      _loadTransactions(loadMore: true);
+    }
   }
 
   Future<void> _loadBalance() async {
@@ -40,14 +60,35 @@ class _DashboardState extends State<Dashboard> {
     });
   }
 
-  Future<void> _loadTransactions() async {
+  Future<void> _loadTransactions({bool loadMore = false}) async {
+    if (_isFetchingMore) return;
+    _isFetchingMore = true;
+
+    if (!loadMore) {
+      setState(() {
+        isLoadingTransactions = true;
+        _transactions.clear();
+        _hasMore = true;
+        _lastTransaction = null;
+      });
+    }
+
+    final newTxs = await transactions(
+      federationId: widget.fed.federationId,
+      timestamp: loadMore ? _lastTransaction?.timestamp : null,
+      operationId: loadMore ? _lastTransaction?.operationId : null,
+    );
+
     setState(() {
-      isLoadingTransactions = true;
-    });
-    final txs = await transactions(federationId: widget.fed.federationId);
-    setState(() {
-      _transactions = txs;
+      _transactions.addAll(newTxs);
+      if (newTxs.length < 10) {
+        _hasMore = false;
+      }
+      if (newTxs.isNotEmpty) {
+        _lastTransaction = newTxs.last;
+      }
       isLoadingTransactions = false;
+      _isFetchingMore = false;
     });
   }
 
@@ -67,6 +108,7 @@ class _DashboardState extends State<Dashboard> {
     } else if (_selectedPaymentType == PaymentType.ecash) {
       await Navigator.push(context, MaterialPageRoute(builder: (context) => ScanQRPage(selectedFed: widget.fed)));
     }
+
     _loadBalance();
     _loadTransactions();
   } 
@@ -261,8 +303,17 @@ class _DashboardState extends State<Dashboard> {
                   : SizedBox(
                       height: 300,
                       child: ListView.builder(
-                        itemCount: _transactions.length,
+                        controller: _scrollController,
+                        itemCount: _transactions.length + (_hasMore ? 1 : 0),
                         itemBuilder: (context, index) {
+
+                          if (index == _transactions.length) {
+                            return const Padding(
+                              padding: EdgeInsets.all(8.0),
+                              child: Center(child: CircularProgressIndicator()),
+                            );
+                          }
+
                           final tx = _transactions[index];
                           final isIncoming = tx.received;
                           final date = DateTime.fromMillisecondsSinceEpoch(tx.timestamp.toInt());
