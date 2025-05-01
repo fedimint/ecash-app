@@ -103,6 +103,8 @@ class _Discover extends State<Discover> {
                           welcomeMessage: federation.about,
                           imageUrl: federation.picture,
                           joinable: true,
+                          // TODO: Refactor so we can get guardian status
+                          guardians: [],
                         ),
                       ),
                     ),

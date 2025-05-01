@@ -13,6 +13,11 @@ void main() async {
   runApp(const MyApp());
 }
 
+int threshold(int totalPeers) {
+  final maxEvil = (totalPeers - 1) ~/ 3;
+  return totalPeers - maxEvil;
+}
+
 String formatBalance(BigInt? msats, bool showMsats) {
   if (msats == null) return showMsats ? '0 msats' : '0 sats';
 

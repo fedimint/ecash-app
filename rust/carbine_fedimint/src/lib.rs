@@ -568,44 +568,46 @@ impl Multimint {
             invite_code: invite_code.to_string(),
         };
 
-        let meta = client.get_first_module::<fedimint_meta_client::MetaClientModule>()?;
-        let consensus = meta.get_consensus_value(DEFAULT_META_KEY).await?;
-        match consensus {
-            Some(value) => {
-                let val = serde_json::to_value(value).expect("cant fail");
-                let val = val
-                    .get("value")
-                    .ok_or(anyhow!("value not present"))?
-                    .as_str()
-                    .ok_or(anyhow!("value was not a string"))?;
-                let str = hex::decode(val)?;
-                let json = String::from_utf8(str)?;
-                let meta: serde_json::Value = serde_json::from_str(&json)?;
-                let welcome = if let Some(welcome) = meta.get("welcome_message") {
-                    welcome.as_str().map(|s| s.to_string())
-                } else {
-                    None
-                };
-                let picture = if let Some(picture) = meta.get("fedi:federation_icon_url") {
-                    let url_str = picture
+        let meta = client.get_first_module::<fedimint_meta_client::MetaClientModule>();
+        if let Ok(meta) = meta {
+            let consensus = meta.get_consensus_value(DEFAULT_META_KEY).await?;
+            match consensus {
+                Some(value) => {
+                    let val = serde_json::to_value(value).expect("cant fail");
+                    let val = val
+                        .get("value")
+                        .ok_or(anyhow!("value not present"))?
                         .as_str()
-                        .ok_or(anyhow!("icon url is not a string"))?;
-                    // Verify that it is a url
-                    Some(SafeUrl::parse(url_str)?.to_string())
-                } else {
-                    None
-                };
+                        .ok_or(anyhow!("value was not a string"))?;
+                    let str = hex::decode(val)?;
+                    let json = String::from_utf8(str)?;
+                    let meta: serde_json::Value = serde_json::from_str(&json)?;
+                    let welcome = if let Some(welcome) = meta.get("welcome_message") {
+                        welcome.as_str().map(|s| s.to_string())
+                    } else {
+                        None
+                    };
+                    let picture = if let Some(picture) = meta.get("fedi:federation_icon_url") {
+                        let url_str = picture
+                            .as_str()
+                            .ok_or(anyhow!("icon url is not a string"))?;
+                        // Verify that it is a url
+                        Some(SafeUrl::parse(url_str)?.to_string())
+                    } else {
+                        None
+                    };
 
-                return Ok((
-                    FederationMeta {
-                        picture,
-                        welcome,
-                        guardians,
-                    },
-                    selector,
-                ));
+                    return Ok((
+                        FederationMeta {
+                            picture,
+                            welcome,
+                            guardians,
+                        },
+                        selector,
+                    ));
+                }
+                None => {}
             }
-            None => {}
         }
 
         Ok((

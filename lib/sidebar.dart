@@ -89,7 +89,7 @@ class _FederationListItemState extends State<FederationListItem> {
     setState(() {
       isLoading = false;
     });
-  }
+  } 
 
   Future<void> _loadFederationMeta() async {
     try {
@@ -120,10 +120,16 @@ class _FederationListItemState extends State<FederationListItem> {
       guardians.isNotEmpty &&
       guardians.every((g) => g.version != null);
 
+  int get numOnlineGuardians =>
+    guardians.where((g) => g.version != null).length;
+
   @override
   Widget build(BuildContext context) {
     final numGuardians = guardians.length;
-    final onlineColor = allGuardiansOnline ? Colors.green : Colors.amber;
+    final thresh = threshold(numGuardians);
+    final onlineColor = numOnlineGuardians == numGuardians ? Colors.green
+      : numOnlineGuardians >= thresh ? Colors.amber
+      : Colors.red;
 
     return InkWell(
       onTap: widget.onTap,
@@ -157,13 +163,21 @@ class _FederationListItemState extends State<FederationListItem> {
                         ? 'Loading...'
                         : formatBalance(balanceMsats, false),
                   ),
-                  Row(
-                    children: [
-                      Text(numGuardians == 1 ? '1 guardian' : '$numGuardians guardians'),
-                      const SizedBox(width: 8),
-                      Icon(Icons.circle, size: 12, color: onlineColor),
-                    ],
-                  ),
+                  guardians.isEmpty
+                    ? Row(
+                        children: const [
+                          Text('Offline'),
+                          SizedBox(width: 8),
+                          Icon(Icons.circle, size: 12, color: Colors.red),
+                        ],
+                      )
+                    : Row(
+                        children: [
+                          Text(numGuardians == 1 ? '1 guardian' : '$numGuardians guardians'),
+                          const SizedBox(width: 8),
+                          Icon(Icons.circle, size: 12, color: onlineColor),
+                        ],
+                      ),
                 ],
               ),
             ),
@@ -191,6 +205,7 @@ class _FederationListItemState extends State<FederationListItem> {
                         welcomeMessage: welcomeMessage,
                         imageUrl: federationImageUrl,
                         joinable: false,
+                        guardians: guardians,
                       ),
                     ),
                   ),

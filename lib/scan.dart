@@ -66,6 +66,7 @@ class _ScanQRPageState extends State<ScanQRPage> {
               welcomeMessage: meta.$1.welcome,
               imageUrl: meta.$1.picture,
               joinable: true,
+              guardians: meta.$1.guardians,
             ),
           ),
         ),
