@@ -58,10 +58,7 @@ class _FederationPreviewState extends State<FederationPreview> {
     final theme = Theme.of(context);
     final totalGuardians = widget.guardians.length;
     final onlineGuardians = widget.guardians.where((g) => g.version != null).toList();
-    final isFederationOnline = widget.joinable || (totalGuardians > 0 && onlineGuardians.length >= threshold(totalGuardians));
-    print('TotalGuardians: $totalGuardians');
-    print('OnlineGuardians: $onlineGuardians');
-    print('isFederationOnline: $isFederationOnline');
+    final isFederationOnline = totalGuardians > 0 && onlineGuardians.length >= threshold(totalGuardians);
 
     return Container(
       padding: const EdgeInsets.all(16),

@@ -12,6 +12,7 @@ class Discover extends StatefulWidget {
 
 class _Discover extends State<Discover> {
   late Future<List<PublicFederation>> _futureFeds;
+  PublicFederation? _gettingMetadata;
 
   @override
   void initState() {
@@ -82,6 +83,10 @@ class _Discover extends State<Discover> {
               ),
               trailing: ElevatedButton(
                 onPressed: () async {
+                  setState(() {
+                    _gettingMetadata = federation;
+                  });
+                  final meta = await getFederationMeta(inviteCode: federation.inviteCodes.first);
                   final fed = await showModalBottomSheet(
                     context: context,
                     isScrollControlled: true,
@@ -98,24 +103,27 @@ class _Discover extends State<Discover> {
                           borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
                         ),
                         child: FederationPreview(
-                          federationName: federation.federationName,
-                          inviteCode: federation.inviteCodes.first,
-                          welcomeMessage: federation.about,
-                          imageUrl: federation.picture,
+                          federationName: meta.$2.federationName,
+                          inviteCode: meta.$2.inviteCode,
+                          welcomeMessage: meta.$1.welcome,
+                          imageUrl: meta.$1.picture,
                           joinable: true,
-                          // TODO: Refactor so we can get guardian status
-                          guardians: [],
+                          guardians: meta.$1.guardians,
                         ),
                       ),
                     ),
                   );
+
+                  setState(() {
+                    _gettingMetadata = null;
+                  });
                   await Future.delayed(const Duration(milliseconds: 400));
                   widget.onJoin(fed);
                   ScaffoldMessenger.of(context).showSnackBar(
                     SnackBar(content: Text("Joined ${fed.federationName}")),
                   );
                 },
-                child: const Text("Join"),
+                child: (_gettingMetadata != null && _gettingMetadata! == federation) ? const CircularProgressIndicator(color: Colors.white) : const Text("Join"),
               ),
             );
           },
