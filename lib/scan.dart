@@ -15,6 +15,7 @@ class ScanQRPage extends StatefulWidget {
 
 class _ScanQRPageState extends State<ScanQRPage> {
   bool _scanned = false;
+  bool _isPasting = false;
   
   void _onQRCodeScanned(String code) {
     if (_scanned) return;
@@ -28,6 +29,9 @@ class _ScanQRPageState extends State<ScanQRPage> {
   }
 
   Future<void> _pasteFromClipboard() async {
+    setState(() {
+      _isPasting = true;
+    });
     final clipboardData = await Clipboard.getData('text/plain');
     final text = clipboardData?.text ?? '';
 
@@ -67,15 +71,24 @@ class _ScanQRPageState extends State<ScanQRPage> {
         ),
       );
 
-      await Future.delayed(const Duration(milliseconds: 400));
-      Navigator.pop(context, fed);
-    } else if (text.startsWith("ln")) {
+      setState(() {
+        _isPasting = false;
+      });
+
+      if (fed != null) {
+        await Future.delayed(const Duration(milliseconds: 400));
+        Navigator.pop(context, fed);
+      }
+    } else if (text.startsWith("ln")) { 
       final paymentPreview = await parseInvoice(bolt11: text);
       if (widget.selectedFed != null) {
         if (widget.selectedFed!.network != paymentPreview.network) {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(content: Text("Cannot pay invoice from different network.")),
           );
+          setState(() {
+            _isPasting = false;
+          });
           return;
         }
         final bal = await balance(federationId: widget.selectedFed!.federationId);
@@ -83,6 +96,9 @@ class _ScanQRPageState extends State<ScanQRPage> {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(content: Text("This federation does not have enough funds to pay this invoice")),
           );
+          setState(() {
+            _isPasting = false;
+          });
           return;
         }
 
@@ -94,6 +110,9 @@ class _ScanQRPageState extends State<ScanQRPage> {
             child: PaymentPreviewWidget(fed: widget.selectedFed!, paymentPreview: paymentPreview),
           ),
         );
+        setState(() {
+          _isPasting = false;
+        });
       } else {
         // find federation that can pay invoice
         /*
@@ -124,7 +143,16 @@ class _ScanQRPageState extends State<ScanQRPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(),
+      appBar: AppBar(
+          title: const Text('Scan QR', style: TextStyle(fontWeight: FontWeight.bold)),
+          centerTitle: true,
+          backgroundColor: Colors.transparent,
+          elevation: 0,
+          leading: IconButton(
+            icon: const Icon(Icons.close),
+            onPressed: () => Navigator.of(context).pop(),
+          ),
+        ),
       body: Column(
         children: [
           Expanded(
@@ -141,9 +169,18 @@ class _ScanQRPageState extends State<ScanQRPage> {
           Padding(
             padding: const EdgeInsets.all(16.0),
             child: ElevatedButton.icon(
-              onPressed: _pasteFromClipboard,
-              icon: const Icon(Icons.paste),
-              label: const Text("Paste from Clipboard"),
+              onPressed: _isPasting ? null : _pasteFromClipboard,
+              icon: _isPasting
+                  ? SizedBox(
+                      width: 20,
+                      height: 20,
+                      child: CircularProgressIndicator(
+                        color: Colors.white,
+                        strokeWidth: 2.0,
+                      ),
+                    )
+                  : const Icon(Icons.paste),
+              label: Text(_isPasting ? "Pasting..." : "Paste from Clipboard"),
             ),
           ),
         ],
