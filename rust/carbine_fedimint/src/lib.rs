@@ -385,7 +385,6 @@ pub struct FederationSelector {
     pub federation_name: String,
     pub federation_id: FederationId,
     pub network: String,
-    pub num_peers: usize,
     pub invite_code: String,
 }
 
@@ -405,10 +404,18 @@ pub struct Multimint {
     task_group: TaskGroup,
 }
 
+// TODO: I dont like that this is separate from federation selector
 #[derive(Debug, Serialize)]
 pub struct FederationMeta {
     picture: Option<String>,
     welcome: Option<String>,
+    guardians: Vec<Guardian>,
+}
+
+#[derive(Debug, Serialize, Clone, Eq, PartialEq)]
+pub struct Guardian {
+    name: String,
+    version: Option<String>,
 }
 
 #[derive(Debug, Serialize)]
@@ -543,11 +550,21 @@ impl Multimint {
         let config = client.config().await;
         let wallet = client.get_first_module::<fedimint_wallet_client::WalletClientModule>()?;
         let network = wallet.get_network().to_string();
+
+        let peers = &config.global.api_endpoints;
+        let mut guardians = Vec::new();
+        for (peer_id, endpoint) in peers {
+            let fedimintd_vesion = client.api().fedimintd_version(*peer_id).await.ok();
+            guardians.push(Guardian {
+                name: endpoint.name.clone(),
+                version: fedimintd_vesion,
+            });
+        }
+
         let selector = FederationSelector {
             federation_name: config.global.federation_name().unwrap_or("").to_string(),
             federation_id,
             network,
-            num_peers: config.global.api_endpoints.len(),
             invite_code: invite_code.to_string(),
         };
 
@@ -579,7 +596,14 @@ impl Multimint {
                     None
                 };
 
-                return Ok((FederationMeta { picture, welcome }, selector));
+                return Ok((
+                    FederationMeta {
+                        picture,
+                        welcome,
+                        guardians,
+                    },
+                    selector,
+                ));
             }
             None => {}
         }
@@ -588,6 +612,7 @@ impl Multimint {
             FederationMeta {
                 picture: None,
                 welcome: None,
+                guardians,
             },
             selector,
         ))
@@ -616,6 +641,7 @@ impl Multimint {
 
         let wallet = client.get_first_module::<fedimint_wallet_client::WalletClientModule>()?;
         let network = wallet.get_network().to_string();
+
         let federation_config = FederationConfig {
             invite_code,
             connector: Connector::default(),
@@ -638,7 +664,6 @@ impl Multimint {
             federation_name,
             federation_id,
             network,
-            num_peers: client_config.global.api_endpoints.len(),
             invite_code: invite,
         })
     }
@@ -709,7 +734,6 @@ impl Multimint {
                 federation_name: config.federation_name,
                 federation_id: id.id,
                 network: config.network,
-                num_peers: config.client_config.global.api_endpoints.len(),
                 invite_code: config.invite_code.to_string(),
             })
             .collect::<Vec<_>>()

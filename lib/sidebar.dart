@@ -73,6 +73,7 @@ class _FederationListItemState extends State<FederationListItem> {
   bool isLoading = true;
   String? federationImageUrl;
   String? welcomeMessage;
+  List<Guardian> guardians = List.empty();
 
   @override
   void initState() {
@@ -103,6 +104,11 @@ class _FederationListItemState extends State<FederationListItem> {
             welcomeMessage = meta.$1.welcome;
           });
         }
+        if (meta.$1.guardians.isNotEmpty) {
+          setState(() {
+            guardians = meta.$1.guardians;
+          });
+        }
     } catch (e) {
       print('Failed to load federation metadata: $e');
     }
@@ -118,7 +124,7 @@ class _FederationListItemState extends State<FederationListItem> {
 
   @override
   Widget build(BuildContext context) {
-    final numGuardians = widget.fed.numPeers;
+    final numGuardians = guardians.length;
     return InkWell(
       onTap: widget.onTap,
       child: Padding(

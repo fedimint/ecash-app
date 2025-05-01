@@ -39,7 +39,7 @@ flutter_rust_bridge::frb_generated_boilerplate!(
     default_rust_auto_opaque = RustAutoOpaqueMoi,
 );
 pub(crate) const FLUTTER_RUST_BRIDGE_CODEGEN_VERSION: &str = "2.9.0";
-pub(crate) const FLUTTER_RUST_BRIDGE_CODEGEN_CONTENT_HASH: i32 = -1455929632;
+pub(crate) const FLUTTER_RUST_BRIDGE_CODEGEN_CONTENT_HASH: i32 = -1093337346;
 
 // Section: executor
 
@@ -716,52 +716,6 @@ fn wire__crate__FederationSelector_auto_accessor_get_network_impl(
         },
     )
 }
-fn wire__crate__FederationSelector_auto_accessor_get_num_peers_impl(
-    ptr_: flutter_rust_bridge::for_generated::PlatformGeneralizedUint8ListPtr,
-    rust_vec_len_: i32,
-    data_len_: i32,
-) -> flutter_rust_bridge::for_generated::WireSyncRust2DartSse {
-    FLUTTER_RUST_BRIDGE_HANDLER.wrap_sync::<flutter_rust_bridge::for_generated::SseCodec, _>(
-        flutter_rust_bridge::for_generated::TaskInfo {
-            debug_name: "FederationSelector_auto_accessor_get_num_peers",
-            port: None,
-            mode: flutter_rust_bridge::for_generated::FfiCallMode::Sync,
-        },
-        move || {
-            let message = unsafe {
-                flutter_rust_bridge::for_generated::Dart2RustMessageSse::from_wire(
-                    ptr_,
-                    rust_vec_len_,
-                    data_len_,
-                )
-            };
-            let mut deserializer =
-                flutter_rust_bridge::for_generated::SseDeserializer::new(message);
-            let api_that = <RustOpaqueMoi<
-                flutter_rust_bridge::for_generated::RustAutoOpaqueInner<FederationSelector>,
-            >>::sse_decode(&mut deserializer);
-            deserializer.end();
-            transform_result_sse::<_, ()>((move || {
-                let mut api_that_guard = None;
-                let decode_indices_ =
-                    flutter_rust_bridge::for_generated::lockable_compute_decode_order(vec![
-                        flutter_rust_bridge::for_generated::LockableOrderInfo::new(
-                            &api_that, 0, false,
-                        ),
-                    ]);
-                for i in decode_indices_ {
-                    match i {
-                        0 => api_that_guard = Some(api_that.lockable_decode_sync_ref()),
-                        _ => unreachable!(),
-                    }
-                }
-                let api_that_guard = api_that_guard.unwrap();
-                let output_ok = Result::<_, ()>::Ok(api_that_guard.num_peers.clone())?;
-                Ok(output_ok)
-            })())
-        },
-    )
-}
 fn wire__crate__FederationSelector_auto_accessor_set_federation_id_impl(
     ptr_: flutter_rust_bridge::for_generated::PlatformGeneralizedUint8ListPtr,
     rust_vec_len_: i32,
@@ -959,57 +913,6 @@ fn wire__crate__FederationSelector_auto_accessor_set_network_impl(
                 let output_ok = Result::<_, ()>::Ok({
                     {
                         api_that_guard.network = api_network;
-                    };
-                })?;
-                Ok(output_ok)
-            })())
-        },
-    )
-}
-fn wire__crate__FederationSelector_auto_accessor_set_num_peers_impl(
-    ptr_: flutter_rust_bridge::for_generated::PlatformGeneralizedUint8ListPtr,
-    rust_vec_len_: i32,
-    data_len_: i32,
-) -> flutter_rust_bridge::for_generated::WireSyncRust2DartSse {
-    FLUTTER_RUST_BRIDGE_HANDLER.wrap_sync::<flutter_rust_bridge::for_generated::SseCodec, _>(
-        flutter_rust_bridge::for_generated::TaskInfo {
-            debug_name: "FederationSelector_auto_accessor_set_num_peers",
-            port: None,
-            mode: flutter_rust_bridge::for_generated::FfiCallMode::Sync,
-        },
-        move || {
-            let message = unsafe {
-                flutter_rust_bridge::for_generated::Dart2RustMessageSse::from_wire(
-                    ptr_,
-                    rust_vec_len_,
-                    data_len_,
-                )
-            };
-            let mut deserializer =
-                flutter_rust_bridge::for_generated::SseDeserializer::new(message);
-            let api_that = <RustOpaqueMoi<
-                flutter_rust_bridge::for_generated::RustAutoOpaqueInner<FederationSelector>,
-            >>::sse_decode(&mut deserializer);
-            let api_num_peers = <usize>::sse_decode(&mut deserializer);
-            deserializer.end();
-            transform_result_sse::<_, ()>((move || {
-                let mut api_that_guard = None;
-                let decode_indices_ =
-                    flutter_rust_bridge::for_generated::lockable_compute_decode_order(vec![
-                        flutter_rust_bridge::for_generated::LockableOrderInfo::new(
-                            &api_that, 0, true,
-                        ),
-                    ]);
-                for i in decode_indices_ {
-                    match i {
-                        0 => api_that_guard = Some(api_that.lockable_decode_sync_ref_mut()),
-                        _ => unreachable!(),
-                    }
-                }
-                let mut api_that_guard = api_that_guard.unwrap();
-                let output_ok = Result::<_, ()>::Ok({
-                    {
-                        api_that_guard.num_peers = api_num_peers;
                     };
                 })?;
                 Ok(output_ok)
@@ -3404,9 +3307,23 @@ impl SseDecode for crate::FederationMeta {
     fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
         let mut var_picture = <Option<String>>::sse_decode(deserializer);
         let mut var_welcome = <Option<String>>::sse_decode(deserializer);
+        let mut var_guardians = <Vec<crate::Guardian>>::sse_decode(deserializer);
         return crate::FederationMeta {
             picture: var_picture,
             welcome: var_welcome,
+            guardians: var_guardians,
+        };
+    }
+}
+
+impl SseDecode for crate::Guardian {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
+        let mut var_name = <String>::sse_decode(deserializer);
+        let mut var_version = <Option<String>>::sse_decode(deserializer);
+        return crate::Guardian {
+            name: var_name,
+            version: var_version,
         };
     }
 }
@@ -3442,6 +3359,18 @@ impl SseDecode for Vec<String> {
         let mut ans_ = vec![];
         for idx_ in 0..len_ {
             ans_.push(<String>::sse_decode(deserializer));
+        }
+        return ans_;
+    }
+}
+
+impl SseDecode for Vec<crate::Guardian> {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
+        let mut len_ = <i32>::sse_decode(deserializer);
+        let mut ans_ = vec![];
+        for idx_ in 0..len_ {
+            ans_.push(<crate::Guardian>::sse_decode(deserializer));
         }
         return ans_;
     }
@@ -3608,35 +3537,35 @@ fn pde_ffi_dispatcher_primary_impl(
 ) {
     // Codec=Pde (Serialization + dispatch), see doc to use other codecs
     match func_id {
-        21 => wire__crate__Multimint_await_receive_impl(port, ptr, rust_vec_len, data_len),
-        22 => wire__crate__Multimint_await_send_impl(port, ptr, rust_vec_len, data_len),
-        23 => wire__crate__Multimint_balance_impl(port, ptr, rust_vec_len, data_len),
-        24 => wire__crate__Multimint_federations_impl(port, ptr, rust_vec_len, data_len),
-        25 => wire__crate__Multimint_join_federation_impl(port, ptr, rust_vec_len, data_len),
-        26 => wire__crate__Multimint_new_impl(port, ptr, rust_vec_len, data_len),
-        27 => wire__crate__Multimint_receive_impl(port, ptr, rust_vec_len, data_len),
-        28 => wire__crate__Multimint_send_impl(port, ptr, rust_vec_len, data_len),
-        29 => wire__crate__Multimint_update_federations_from_nostr_impl(
+        19 => wire__crate__Multimint_await_receive_impl(port, ptr, rust_vec_len, data_len),
+        20 => wire__crate__Multimint_await_send_impl(port, ptr, rust_vec_len, data_len),
+        21 => wire__crate__Multimint_balance_impl(port, ptr, rust_vec_len, data_len),
+        22 => wire__crate__Multimint_federations_impl(port, ptr, rust_vec_len, data_len),
+        23 => wire__crate__Multimint_join_federation_impl(port, ptr, rust_vec_len, data_len),
+        24 => wire__crate__Multimint_new_impl(port, ptr, rust_vec_len, data_len),
+        25 => wire__crate__Multimint_receive_impl(port, ptr, rust_vec_len, data_len),
+        26 => wire__crate__Multimint_send_impl(port, ptr, rust_vec_len, data_len),
+        27 => wire__crate__Multimint_update_federations_from_nostr_impl(
             port,
             ptr,
             rust_vec_len,
             data_len,
         ),
-        44 => wire__crate__await_ecash_reissue_impl(port, ptr, rust_vec_len, data_len),
-        45 => wire__crate__await_ecash_send_impl(port, ptr, rust_vec_len, data_len),
-        46 => wire__crate__await_receive_impl(port, ptr, rust_vec_len, data_len),
-        47 => wire__crate__await_send_impl(port, ptr, rust_vec_len, data_len),
-        48 => wire__crate__balance_impl(port, ptr, rust_vec_len, data_len),
-        49 => wire__crate__federations_impl(port, ptr, rust_vec_len, data_len),
-        50 => wire__crate__get_federation_meta_impl(port, ptr, rust_vec_len, data_len),
-        51 => wire__crate__join_federation_impl(port, ptr, rust_vec_len, data_len),
-        52 => wire__crate__list_federations_from_nostr_impl(port, ptr, rust_vec_len, data_len),
-        53 => wire__crate__parse_invoice_impl(port, ptr, rust_vec_len, data_len),
-        54 => wire__crate__receive_impl(port, ptr, rust_vec_len, data_len),
-        55 => wire__crate__reissue_ecash_impl(port, ptr, rust_vec_len, data_len),
-        56 => wire__crate__send_impl(port, ptr, rust_vec_len, data_len),
-        57 => wire__crate__send_ecash_impl(port, ptr, rust_vec_len, data_len),
-        58 => wire__crate__transactions_impl(port, ptr, rust_vec_len, data_len),
+        42 => wire__crate__await_ecash_reissue_impl(port, ptr, rust_vec_len, data_len),
+        43 => wire__crate__await_ecash_send_impl(port, ptr, rust_vec_len, data_len),
+        44 => wire__crate__await_receive_impl(port, ptr, rust_vec_len, data_len),
+        45 => wire__crate__await_send_impl(port, ptr, rust_vec_len, data_len),
+        46 => wire__crate__balance_impl(port, ptr, rust_vec_len, data_len),
+        47 => wire__crate__federations_impl(port, ptr, rust_vec_len, data_len),
+        48 => wire__crate__get_federation_meta_impl(port, ptr, rust_vec_len, data_len),
+        49 => wire__crate__join_federation_impl(port, ptr, rust_vec_len, data_len),
+        50 => wire__crate__list_federations_from_nostr_impl(port, ptr, rust_vec_len, data_len),
+        51 => wire__crate__parse_invoice_impl(port, ptr, rust_vec_len, data_len),
+        52 => wire__crate__receive_impl(port, ptr, rust_vec_len, data_len),
+        53 => wire__crate__reissue_ecash_impl(port, ptr, rust_vec_len, data_len),
+        54 => wire__crate__send_impl(port, ptr, rust_vec_len, data_len),
+        55 => wire__crate__send_ecash_impl(port, ptr, rust_vec_len, data_len),
+        56 => wire__crate__transactions_impl(port, ptr, rust_vec_len, data_len),
         _ => unreachable!(),
     }
 }
@@ -3719,98 +3648,88 @@ fn pde_ffi_dispatcher_sync_impl(
             rust_vec_len,
             data_len,
         ),
-        15 => wire__crate__FederationSelector_auto_accessor_get_num_peers_impl(
+        15 => wire__crate__FederationSelector_auto_accessor_set_federation_id_impl(
             ptr,
             rust_vec_len,
             data_len,
         ),
-        16 => wire__crate__FederationSelector_auto_accessor_set_federation_id_impl(
+        16 => wire__crate__FederationSelector_auto_accessor_set_federation_name_impl(
             ptr,
             rust_vec_len,
             data_len,
         ),
-        17 => wire__crate__FederationSelector_auto_accessor_set_federation_name_impl(
+        17 => wire__crate__FederationSelector_auto_accessor_set_invite_code_impl(
             ptr,
             rust_vec_len,
             data_len,
         ),
-        18 => wire__crate__FederationSelector_auto_accessor_set_invite_code_impl(
+        18 => wire__crate__FederationSelector_auto_accessor_set_network_impl(
             ptr,
             rust_vec_len,
             data_len,
         ),
-        19 => wire__crate__FederationSelector_auto_accessor_set_network_impl(
-            ptr,
-            rust_vec_len,
-            data_len,
-        ),
-        20 => wire__crate__FederationSelector_auto_accessor_set_num_peers_impl(
-            ptr,
-            rust_vec_len,
-            data_len,
-        ),
-        30 => {
+        28 => {
             wire__crate__PublicFederation_auto_accessor_get_about_impl(ptr, rust_vec_len, data_len)
         }
-        31 => wire__crate__PublicFederation_auto_accessor_get_federation_id_impl(
+        29 => wire__crate__PublicFederation_auto_accessor_get_federation_id_impl(
             ptr,
             rust_vec_len,
             data_len,
         ),
-        32 => wire__crate__PublicFederation_auto_accessor_get_federation_name_impl(
+        30 => wire__crate__PublicFederation_auto_accessor_get_federation_name_impl(
             ptr,
             rust_vec_len,
             data_len,
         ),
-        33 => wire__crate__PublicFederation_auto_accessor_get_invite_codes_impl(
+        31 => wire__crate__PublicFederation_auto_accessor_get_invite_codes_impl(
             ptr,
             rust_vec_len,
             data_len,
         ),
-        34 => wire__crate__PublicFederation_auto_accessor_get_modules_impl(
+        32 => wire__crate__PublicFederation_auto_accessor_get_modules_impl(
             ptr,
             rust_vec_len,
             data_len,
         ),
-        35 => wire__crate__PublicFederation_auto_accessor_get_network_impl(
+        33 => wire__crate__PublicFederation_auto_accessor_get_network_impl(
             ptr,
             rust_vec_len,
             data_len,
         ),
-        36 => wire__crate__PublicFederation_auto_accessor_get_picture_impl(
+        34 => wire__crate__PublicFederation_auto_accessor_get_picture_impl(
             ptr,
             rust_vec_len,
             data_len,
         ),
-        37 => {
+        35 => {
             wire__crate__PublicFederation_auto_accessor_set_about_impl(ptr, rust_vec_len, data_len)
         }
-        38 => wire__crate__PublicFederation_auto_accessor_set_federation_id_impl(
+        36 => wire__crate__PublicFederation_auto_accessor_set_federation_id_impl(
             ptr,
             rust_vec_len,
             data_len,
         ),
-        39 => wire__crate__PublicFederation_auto_accessor_set_federation_name_impl(
+        37 => wire__crate__PublicFederation_auto_accessor_set_federation_name_impl(
             ptr,
             rust_vec_len,
             data_len,
         ),
-        40 => wire__crate__PublicFederation_auto_accessor_set_invite_codes_impl(
+        38 => wire__crate__PublicFederation_auto_accessor_set_invite_codes_impl(
             ptr,
             rust_vec_len,
             data_len,
         ),
-        41 => wire__crate__PublicFederation_auto_accessor_set_modules_impl(
+        39 => wire__crate__PublicFederation_auto_accessor_set_modules_impl(
             ptr,
             rust_vec_len,
             data_len,
         ),
-        42 => wire__crate__PublicFederation_auto_accessor_set_network_impl(
+        40 => wire__crate__PublicFederation_auto_accessor_set_network_impl(
             ptr,
             rust_vec_len,
             data_len,
         ),
-        43 => wire__crate__PublicFederation_auto_accessor_set_picture_impl(
+        41 => wire__crate__PublicFederation_auto_accessor_set_picture_impl(
             ptr,
             rust_vec_len,
             data_len,
@@ -4040,6 +3959,7 @@ impl flutter_rust_bridge::IntoDart for crate::FederationMeta {
         [
             self.picture.into_into_dart().into_dart(),
             self.welcome.into_into_dart().into_dart(),
+            self.guardians.into_into_dart().into_dart(),
         ]
         .into_dart()
     }
@@ -4047,6 +3967,22 @@ impl flutter_rust_bridge::IntoDart for crate::FederationMeta {
 impl flutter_rust_bridge::for_generated::IntoDartExceptPrimitive for crate::FederationMeta {}
 impl flutter_rust_bridge::IntoIntoDart<crate::FederationMeta> for crate::FederationMeta {
     fn into_into_dart(self) -> crate::FederationMeta {
+        self
+    }
+}
+// Codec=Dco (DartCObject based), see doc to use other codecs
+impl flutter_rust_bridge::IntoDart for crate::Guardian {
+    fn into_dart(self) -> flutter_rust_bridge::for_generated::DartAbi {
+        [
+            self.name.into_into_dart().into_dart(),
+            self.version.into_into_dart().into_dart(),
+        ]
+        .into_dart()
+    }
+}
+impl flutter_rust_bridge::for_generated::IntoDartExceptPrimitive for crate::Guardian {}
+impl flutter_rust_bridge::IntoIntoDart<crate::Guardian> for crate::Guardian {
+    fn into_into_dart(self) -> crate::Guardian {
         self
     }
 }
@@ -4369,6 +4305,15 @@ impl SseEncode for crate::FederationMeta {
     fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
         <Option<String>>::sse_encode(self.picture, serializer);
         <Option<String>>::sse_encode(self.welcome, serializer);
+        <Vec<crate::Guardian>>::sse_encode(self.guardians, serializer);
+    }
+}
+
+impl SseEncode for crate::Guardian {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
+        <String>::sse_encode(self.name, serializer);
+        <Option<String>>::sse_encode(self.version, serializer);
     }
 }
 
@@ -4398,6 +4343,16 @@ impl SseEncode for Vec<String> {
         <i32>::sse_encode(self.len() as _, serializer);
         for item in self {
             <String>::sse_encode(item, serializer);
+        }
+    }
+}
+
+impl SseEncode for Vec<crate::Guardian> {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
+        <i32>::sse_encode(self.len() as _, serializer);
+        for item in self {
+            <crate::Guardian>::sse_encode(item, serializer);
         }
     }
 }

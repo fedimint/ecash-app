@@ -294,6 +294,9 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   FederationMeta dco_decode_federation_meta(dynamic raw);
 
   @protected
+  Guardian dco_decode_guardian(dynamic raw);
+
+  @protected
   List<FederationSelector>
   dco_decode_list_Auto_Owned_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerFederationSelector(
     dynamic raw,
@@ -307,6 +310,9 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
 
   @protected
   List<String> dco_decode_list_String(dynamic raw);
+
+  @protected
+  List<Guardian> dco_decode_list_guardian(dynamic raw);
 
   @protected
   Uint8List dco_decode_list_prim_u_8_strict(dynamic raw);
@@ -585,6 +591,9 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   FederationMeta sse_decode_federation_meta(SseDeserializer deserializer);
 
   @protected
+  Guardian sse_decode_guardian(SseDeserializer deserializer);
+
+  @protected
   List<FederationSelector>
   sse_decode_list_Auto_Owned_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerFederationSelector(
     SseDeserializer deserializer,
@@ -598,6 +607,9 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
 
   @protected
   List<String> sse_decode_list_String(SseDeserializer deserializer);
+
+  @protected
+  List<Guardian> sse_decode_list_guardian(SseDeserializer deserializer);
 
   @protected
   Uint8List sse_decode_list_prim_u_8_strict(SseDeserializer deserializer);
@@ -920,6 +932,9 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   );
 
   @protected
+  void sse_encode_guardian(Guardian self, SseSerializer serializer);
+
+  @protected
   void
   sse_encode_list_Auto_Owned_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerFederationSelector(
     List<FederationSelector> self,
@@ -935,6 +950,9 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
 
   @protected
   void sse_encode_list_String(List<String> self, SseSerializer serializer);
+
+  @protected
+  void sse_encode_list_guardian(List<Guardian> self, SseSerializer serializer);
 
   @protected
   void sse_encode_list_prim_u_8_strict(
