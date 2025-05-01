@@ -93,22 +93,16 @@ class _FederationListItemState extends State<FederationListItem> {
 
   Future<void> _loadFederationMeta() async {
     try {
-        final meta = await getFederationMeta(inviteCode: widget.fed.inviteCode);
-        if (meta.$1.picture != null && meta.$1.picture!.isNotEmpty) {
-          setState(() {
-            federationImageUrl = meta.$1.picture;
-          });
+      final meta = await getFederationMeta(inviteCode: widget.fed.inviteCode);
+      setState(() {
+        if (meta.$1.picture?.isNotEmpty ?? false) {
+          federationImageUrl = meta.$1.picture;
         }
-        if (meta.$1.welcome != null && meta.$1.welcome!.isNotEmpty) {
-          setState(() {
-            welcomeMessage = meta.$1.welcome;
-          });
+        if (meta.$1.welcome?.isNotEmpty ?? false) {
+          welcomeMessage = meta.$1.welcome;
         }
-        if (meta.$1.guardians.isNotEmpty) {
-          setState(() {
-            guardians = meta.$1.guardians;
-          });
-        }
+        guardians = meta.$1.guardians;
+      });
     } catch (e) {
       print('Failed to load federation metadata: $e');
     }
@@ -122,9 +116,15 @@ class _FederationListItemState extends State<FederationListItem> {
     });
   }
 
+  bool get allGuardiansOnline =>
+      guardians.isNotEmpty &&
+      guardians.every((g) => g.version != null);
+
   @override
   Widget build(BuildContext context) {
     final numGuardians = guardians.length;
+    final onlineColor = allGuardiansOnline ? Colors.green : Colors.amber;
+
     return InkWell(
       onTap: widget.onTap,
       child: Padding(
@@ -157,7 +157,13 @@ class _FederationListItemState extends State<FederationListItem> {
                         ? 'Loading...'
                         : formatBalance(balanceMsats, false),
                   ),
-                  Text(numGuardians == BigInt.one ? '1 guardian' : '$numGuardians guardians'),
+                  Row(
+                    children: [
+                      Text(numGuardians == 1 ? '1 guardian' : '$numGuardians guardians'),
+                      const SizedBox(width: 8),
+                      Icon(Icons.circle, size: 12, color: onlineColor),
+                    ],
+                  ),
                 ],
               ),
             ),
