@@ -8,8 +8,9 @@ class Request extends StatefulWidget {
   final String invoice;
   final OperationId operationId;
   final FederationSelector fed;
+  final BigInt amountSats;
 
-  const Request({super.key, required this.invoice, required this.operationId, required this.fed});
+  const Request({super.key, required this.invoice, required this.operationId, required this.fed, required this.amountSats});
 
   @override
   State<Request> createState() => _RequestState();
@@ -50,7 +51,9 @@ class _RequestState extends State<Request> {
     if (_received) {
       return SafeArea(
         child: Scaffold(
-          body: const Success(message: 'Payment Received!'),
+          // TODO: This is a bit weird, for LNv2 we are showing the invoice amount, not the amount received
+          // after fees
+          body: Success(lightning: true, received: true, amount: widget.amountSats),
         )
       );
     }

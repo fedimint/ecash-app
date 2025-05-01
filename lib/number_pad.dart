@@ -74,7 +74,7 @@ class _NumberPadState extends State<NumberPad> {
           isScrollControlled: true,
           builder: (context) => SizedBox(
             height: MediaQuery.of(context).size.height,
-            child: Request(invoice: invoice.$1, fed: widget.fed, operationId: invoice.$2),
+            child: Request(invoice: invoice.$1, fed: widget.fed, operationId: invoice.$2, amountSats: amountSats),
           ),
         );
       } else if (widget.paymentType == PaymentType.ecash) {
