@@ -126,6 +126,7 @@ class _Discover extends State<Discover> {
                     });
                     await Future.delayed(const Duration(milliseconds: 400));
                     widget.onJoin(fed);
+                    Navigator.pop(context);
                     ScaffoldMessenger.of(context).showSnackBar(
                       SnackBar(content: Text("Joined ${fed.federationName}")),
                     );

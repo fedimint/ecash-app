@@ -4,6 +4,7 @@ import 'package:carbine/scan.dart';
 import 'package:carbine/lib.dart';
 import 'package:carbine/setttings.dart';
 import 'package:carbine/sidebar.dart';
+import 'package:carbine/welcome.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
@@ -122,6 +123,35 @@ class _MyAppState extends State<MyApp> {
   Widget build(BuildContext context) {
     Widget bodyContent;
 
+    if (_selectedFederation != null) {
+      bodyContent = Dashboard(
+        key: ValueKey(_selectedFederation!.federationId),
+        fed: _selectedFederation!,
+      );
+    } else {
+      if (!_initialLoadComplete) {
+        // Show splash screen
+        bodyContent = Center(
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(20), // Adjust radius as needed
+            child: Image.asset(
+              'assets/images/fedimint.png',
+              width: 200, // Optional: constrain width
+              height: 200, // Optional: constrain height
+              fit: BoxFit.cover,
+            ),
+          ),
+        );
+      } else {
+        if (_currentIndex == 1) {
+          // Show settings screen after initial load
+          bodyContent = SettingsScreen(onJoin: _onJoinPressed);
+        } else {
+          bodyContent = WelcomeWidget(onJoin: _onJoinPressed);
+        }
+      }
+    }
+    /*
     if (_selectedFederation == null) {
       if (!_initialLoadComplete) {
         // Show splash screen
@@ -146,6 +176,7 @@ class _MyAppState extends State<MyApp> {
         fed: _selectedFederation!,
       );
     }
+    */
 
     return MaterialApp(
       home: Builder(
