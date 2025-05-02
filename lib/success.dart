@@ -1,3 +1,4 @@
+import 'package:carbine/main.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:lottie/lottie.dart';
@@ -5,19 +6,19 @@ import 'package:lottie/lottie.dart';
 class Success extends StatelessWidget {
   final bool lightning;
   final bool received;
-  final BigInt amount;
+  final BigInt amountMsats;
 
   const Success({
     super.key,
     required this.lightning,
     required this.received,
-    required this.amount,
+    required this.amountMsats,
   });
 
   @override
   Widget build(BuildContext context) {
     final actionText = received ? 'received' : 'sent';
-    final displayAmount = '${amount.toString()} sats';
+    final displayAmount = formatBalance(amountMsats, false);
 
     return Scaffold(
       body: Stack(

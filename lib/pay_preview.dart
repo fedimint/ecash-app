@@ -43,11 +43,10 @@ class _PaymentPreviewState extends State<PaymentPreviewWidget> {
 
   @override
   Widget build(BuildContext context) {
-    final amountSats = widget.paymentPreview.amount ~/ BigInt.from(1000);
     if (state == PaymentState.Success) {
       return SafeArea(
         child: Scaffold(
-          body: Success(lightning: true, received: false, amount: amountSats),
+          body: Success(lightning: true, received: false, amountMsats: widget.paymentPreview.amount),
         ),
       );
     }
