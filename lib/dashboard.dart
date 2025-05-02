@@ -168,21 +168,34 @@ class _DashboardState extends State<Dashboard> {
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
               ).createShader(Rect.fromLTWH(0, 0, bounds.width, bounds.height)),
-              child: Text(
-                name.toUpperCase(),
-                style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                      fontWeight: FontWeight.w900,
-                      letterSpacing: 2,
-                      color: Colors.white,
-                      shadows: [
-                        Shadow(
-                          blurRadius: 10,
-                          color: Theme.of(context).colorScheme.primary.withOpacity(0.5),
-                          offset: const Offset(0, 2),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    name.toUpperCase(),
+                    style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+                          fontWeight: FontWeight.w900,
+                          letterSpacing: 2,
+                          color: Colors.white,
+                          shadows: [
+                            Shadow(
+                              blurRadius: 10,
+                              color: Theme.of(context).colorScheme.primary.withOpacity(0.5),
+                              offset: const Offset(0, 2),
+                            ),
+                          ],
                         ),
-                      ],
+                    textAlign: TextAlign.center,
+                  ),
+                  if (widget.fed.network.toLowerCase() != 'bitcoin') ...[
+                    const SizedBox(width: 8),
+                    Tooltip(
+                      message: 'This is a test network and is not worth anything.',
+                      child: const Icon(Icons.warning_amber_rounded, color: Colors.amber),
                     ),
-                textAlign: TextAlign.center,
+                  ],
+                ],
               ),
             ),
             const SizedBox(height: 48),
