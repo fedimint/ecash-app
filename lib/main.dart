@@ -136,6 +136,10 @@ class _MyAppState extends State<MyApp> {
                 icon: Icon(Icons.qr_code_scanner),
                 label: 'Scan',
               ),
+              BottomNavigationBarItem(
+                icon: Icon(Icons.settings),
+                label: "Settings",
+              )
             ],
           ),
         ),
