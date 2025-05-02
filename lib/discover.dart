@@ -122,6 +122,7 @@ class _Discover extends State<Discover> {
                                 imageUrl: meta.$1.picture,
                                 joinable: true,
                                 guardians: meta.$1.guardians,
+                                network: meta.$2.network,
                               ),
                             ),
                           );

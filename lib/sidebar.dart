@@ -216,6 +216,7 @@ class _FederationListItemState extends State<FederationListItem> {
                         imageUrl: federationImageUrl,
                         joinable: false,
                         guardians: guardians,
+                        network: widget.fed.network,
                       ),
                     ),
                   ),

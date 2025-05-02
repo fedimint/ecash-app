@@ -11,6 +11,7 @@ class FederationPreview extends StatefulWidget {
   final String? imageUrl;
   final bool joinable;
   final List<Guardian>? guardians;
+  final String network;
 
   const FederationPreview({
     super.key,
@@ -20,6 +21,7 @@ class FederationPreview extends StatefulWidget {
     this.imageUrl,
     required this.joinable,
     this.guardians,
+    required this.network,
   });
 
   @override
@@ -80,6 +82,29 @@ class _FederationPreviewState extends State<FederationPreview> {
                 borderRadius: BorderRadius.circular(2.5),
               ),
             ),
+
+            if (widget.network.toLowerCase() != 'bitcoin') ...[
+              Container(
+                margin: const EdgeInsets.only(bottom: 16),
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: Colors.orange.shade100,
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Row(
+                  children: [
+                    const Icon(Icons.warning, color: Colors.orange),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        'Warning: This is a test network (${widget.network}) and is not worth anything.',
+                        style: const TextStyle(color: Colors.orange),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
 
             // Federation image
             Center(

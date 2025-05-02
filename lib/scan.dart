@@ -67,6 +67,7 @@ class _ScanQRPageState extends State<ScanQRPage> {
               imageUrl: meta.$1.picture,
               joinable: true,
               guardians: meta.$1.guardians,
+              network: meta.$2.network,
             ),
           ),
         ),
