@@ -54,7 +54,6 @@ class _PaymentPreviewState extends State<PaymentPreviewWidget> {
     if (state == PaymentState.Paying) {
       return SafeArea(
         child: Scaffold(
-          backgroundColor: Colors.white,
           body: Center(
             child: Column(
               mainAxisSize: MainAxisSize.min,

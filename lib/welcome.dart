@@ -48,7 +48,7 @@ class _WelcomeWidgetState extends State<WelcomeWidget> {
         RichText(
           textAlign: TextAlign.center,
           text: TextSpan(
-            style: const TextStyle(fontSize: 16, color: Colors.black87),
+            style: const TextStyle(fontSize: 16),
             children: [
               const TextSpan(text: 'You can explore and discover new federations through '),
               TextSpan(

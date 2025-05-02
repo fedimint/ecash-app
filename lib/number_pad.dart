@@ -126,6 +126,7 @@ class _NumberPadState extends State<NumberPad> {
                     _rawAmount += value.toString();
                   });
                 },
+                numberStyle: const TextStyle(fontSize: 24, color: Colors.grey),
                 rightWidget: IconButton(
                   onPressed: () {
                     setState(() {

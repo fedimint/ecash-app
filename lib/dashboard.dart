@@ -120,9 +120,9 @@ class _DashboardState extends State<Dashboard> {
 
     _loadBalance();
     _loadTransactions();
-  } 
+  }
 
-    @override
+  @override
   Widget build(BuildContext context) {
     final name = widget.fed.federationName;
 
@@ -243,7 +243,7 @@ class _DashboardState extends State<Dashboard> {
                 });
               },
               style: ButtonStyle(
-                padding: WidgetStateProperty.all(const EdgeInsets.symmetric(vertical: 20, horizontal: 24)),
+                padding: WidgetStateProperty.all(const EdgeInsets.symmetric(vertical: 18, horizontal: 20)),
                 shape: WidgetStateProperty.all(
                   RoundedRectangleBorder(borderRadius: BorderRadius.circular(40)),
                 ),
@@ -252,20 +252,20 @@ class _DashboardState extends State<Dashboard> {
                 ),
                 backgroundColor: WidgetStateProperty.resolveWith((states) {
                   if (states.contains(WidgetState.selected)) {
-                    return Theme.of(context).colorScheme.primary;
+                    return Theme.of(context).colorScheme.primary; // Selected state with primary color
                   }
-                  return Theme.of(context).colorScheme.surfaceContainerHighest;
+                  return Theme.of(context).colorScheme.surfaceContainerHighest; // Unselected state with a contrasting background
                 }),
                 foregroundColor: WidgetStateProperty.resolveWith((states) {
                   if (states.contains(WidgetState.selected)) {
-                    return Colors.white;
+                    return Colors.white; // White text when selected
                   }
-                  return Colors.black87;
+                  return Colors.white70; // Slightly muted text for unselected
                 }),
                 side: WidgetStateProperty.all(const BorderSide(color: Colors.transparent)),
                 shadowColor: WidgetStateProperty.all(Colors.black.withOpacity(0.2)),
                 elevation: WidgetStateProperty.resolveWith<double>((states) {
-                  return states.contains(WidgetState.selected) ? 6 : 0;
+                  return states.contains(WidgetState.selected) ? 6 : 0; // Elevate the selected button
                 }),
               ),
             ),
@@ -321,22 +321,23 @@ class _DashboardState extends State<Dashboard> {
 
                             final amountStyle = TextStyle(
                               fontWeight: FontWeight.bold,
-                              color: isIncoming ? Colors.green : Colors.red,
+                              color: isIncoming ? Colors.greenAccent : Colors.redAccent,
                             );
 
                             return Card(
-                              elevation: 2,
+                              elevation: 4,
                               margin: const EdgeInsets.symmetric(vertical: 6),
+                              color: Theme.of(context).colorScheme.surface,
                               child: ListTile(
                                 leading: CircleAvatar(
-                                  backgroundColor: isIncoming ? Colors.green.shade50 : Colors.red.shade50,
+                                  backgroundColor: isIncoming ? Colors.greenAccent.withOpacity(0.1) : Colors.redAccent.withOpacity(0.1),
                                   child: Icon(
                                     moduleIcon,
-                                    color: isIncoming ? Colors.green : Colors.red,
+                                    color: isIncoming ? Colors.greenAccent : Colors.redAccent,
                                   ),
                                 ),
-                                title: Text(isIncoming ? "Received" : "Sent"),
-                                subtitle: Text(formattedDate),
+                                title: Text(isIncoming ? "Received" : "Sent", style: Theme.of(context).textTheme.bodyMedium),
+                                subtitle: Text(formattedDate, style: Theme.of(context).textTheme.bodyMedium),
                                 trailing: Text(formattedAmount, style: amountStyle),
                               ),
                             );
@@ -349,5 +350,3 @@ class _DashboardState extends State<Dashboard> {
     );
   }
 }
-
-

@@ -45,7 +45,7 @@ final ThemeData cypherpunkNinjaTheme = ThemeData(
   ),
   iconTheme: const IconThemeData(color: Colors.greenAccent),
   bottomSheetTheme: const BottomSheetThemeData(
-    backgroundColor: Colors.black,
+    backgroundColor: Color(0xFF111111),
     shape: RoundedRectangleBorder(
       borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
     ),

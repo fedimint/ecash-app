@@ -172,7 +172,7 @@ class _MyAppState extends State<MyApp> {
               ? BottomNavigationBar(
                   currentIndex: _currentIndex,
                   onTap: (index) => _onNavBarTapped(index, innerContext),
-                  selectedItemColor: _currentIndex == 0 ? Colors.grey : Colors.blue,
+                  selectedItemColor: _currentIndex == 0 ? Colors.grey : Colors.greenAccent,
                   unselectedItemColor: Colors.grey,
                   items: const [
                     BottomNavigationBarItem(
