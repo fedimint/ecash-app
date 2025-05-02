@@ -1,8 +1,8 @@
 import 'package:carbine/dashboard.dart';
-import 'package:carbine/discover.dart';
 import 'package:carbine/frb_generated.dart';
 import 'package:carbine/scan.dart';
 import 'package:carbine/lib.dart';
+import 'package:carbine/setttings.dart';
 import 'package:carbine/sidebar.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
@@ -46,15 +46,22 @@ class _MyAppState extends State<MyApp> {
   int _refreshTrigger = 0;
   FederationSelector? _selectedFederation;
   int _currentIndex = 0;
+  bool _initialLoadComplete = false;
 
   @override
   void initState() {
     super.initState();
 
-    federations().then((feds) {
-      if (feds.isNotEmpty) {
+    // Add a delay so splash screen is visible for a bit
+    Future.delayed(const Duration(seconds: 2), () async {
+      final feds = await federations();
+
+      if (mounted) {
         setState(() {
-          _selectedFederation = feds.first;
+          if (feds.isNotEmpty) {
+            _selectedFederation = feds.first;
+          }
+          _initialLoadComplete = true;
         });
       }
     });
@@ -70,6 +77,7 @@ class _MyAppState extends State<MyApp> {
   void _setSelectedFederation(FederationSelector fed) {
     setState(() {
       _selectedFederation = fed;
+      _currentIndex = 0;
     });
   }
 
@@ -100,51 +108,79 @@ class _MyAppState extends State<MyApp> {
   void _onNavBarTapped(int index, BuildContext context) async {
     setState(() {
       _currentIndex = index;
-      if (index == 0) {
+      if (index == 1) {
         _selectedFederation = null;
       }
     });
 
-    if (index == 1) {
+    if (index == 0) {
       _onScanPressed(context);
     }
   }
 
   @override
   Widget build(BuildContext context) {
+    Widget bodyContent;
+
+    if (_selectedFederation == null) {
+      if (!_initialLoadComplete) {
+        // Show splash screen
+        bodyContent = Center(
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(20), // Adjust radius as needed
+            child: Image.asset(
+              'assets/images/fedimint.png',
+              width: 200, // Optional: constrain width
+              height: 200, // Optional: constrain height
+              fit: BoxFit.cover,
+            ),
+          ),
+        );
+      } else {
+        // Show settings screen after initial load
+        bodyContent = SettingsScreen(onJoin: _onJoinPressed);
+      }
+    } else {
+      bodyContent = Dashboard(
+        key: ValueKey(_selectedFederation!.federationId),
+        fed: _selectedFederation!,
+      );
+    }
+
     return MaterialApp(
       home: Builder(
         builder: (innerContext) => Scaffold(
           appBar: AppBar(),
-          drawer: FederationSidebar(
-            key: ValueKey(_refreshTrigger),
-            federationsFuture: _federationFuture,
-            onFederationSelected: _setSelectedFederation,
-          ),
-          body: _selectedFederation == null
-                ? Discover(onJoin: _onJoinPressed)
-                : Dashboard(key: ValueKey(_selectedFederation!.federationId), fed: _selectedFederation!),
-          bottomNavigationBar: BottomNavigationBar(
-            currentIndex: _currentIndex,
-            onTap: (index) => _onNavBarTapped(index, innerContext),
-            items: const [
-              BottomNavigationBarItem(
-                icon: Icon(Icons.explore),
-                label: 'Discover',
-              ),
-              BottomNavigationBarItem(
-                icon: Icon(Icons.qr_code_scanner),
-                label: 'Scan',
-              ),
-              BottomNavigationBarItem(
-                icon: Icon(Icons.settings),
-                label: "Settings",
-              )
-            ],
-          ),
+          drawer: _initialLoadComplete
+              ? FederationSidebar(
+                  key: ValueKey(_refreshTrigger),
+                  federationsFuture: _federationFuture,
+                  onFederationSelected: _setSelectedFederation,
+                )
+              : null,
+          body: bodyContent,
+          bottomNavigationBar: _initialLoadComplete
+              ? BottomNavigationBar(
+                  currentIndex: _currentIndex,
+                  onTap: (index) => _onNavBarTapped(index, innerContext),
+                  selectedItemColor: _currentIndex == 0 ? Colors.grey : Colors.blue,
+                  unselectedItemColor: Colors.grey,
+                  items: const [
+                    BottomNavigationBarItem(
+                      icon: Icon(Icons.qr_code_scanner),
+                      label: 'Scan',
+                    ),
+                    BottomNavigationBarItem(
+                      icon: Icon(Icons.settings),
+                      label: "Settings",
+                    )
+                  ],
+                )
+              : null,
         ),
       ),
     );
   }
 }
+
 
