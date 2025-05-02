@@ -4,6 +4,7 @@ import 'package:carbine/scan.dart';
 import 'package:carbine/lib.dart';
 import 'package:carbine/setttings.dart';
 import 'package:carbine/sidebar.dart';
+import 'package:carbine/theme.dart';
 import 'package:carbine/welcome.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
@@ -151,34 +152,11 @@ class _MyAppState extends State<MyApp> {
         }
       }
     }
-    /*
-    if (_selectedFederation == null) {
-      if (!_initialLoadComplete) {
-        // Show splash screen
-        bodyContent = Center(
-          child: ClipRRect(
-            borderRadius: BorderRadius.circular(20), // Adjust radius as needed
-            child: Image.asset(
-              'assets/images/fedimint.png',
-              width: 200, // Optional: constrain width
-              height: 200, // Optional: constrain height
-              fit: BoxFit.cover,
-            ),
-          ),
-        );
-      } else {
-        // Show settings screen after initial load
-        bodyContent = SettingsScreen(onJoin: _onJoinPressed);
-      }
-    } else {
-      bodyContent = Dashboard(
-        key: ValueKey(_selectedFederation!.federationId),
-        fed: _selectedFederation!,
-      );
-    }
-    */
 
     return MaterialApp(
+      title: 'Carbine',
+      debugShowCheckedModeBanner: false,
+      theme: cypherpunkNinjaTheme,
       home: Builder(
         builder: (innerContext) => Scaffold(
           appBar: AppBar(),

@@ -63,11 +63,8 @@ class _FederationPreviewState extends State<FederationPreview> {
     final onlineGuardians = widget.guardians != null ? widget.guardians!.where((g) => g.version != null).toList() : [];
     final isFederationOnline = totalGuardians > 0 && onlineGuardians.length >= threshold(totalGuardians);
 
-    return Container(
+    return Padding(
       padding: const EdgeInsets.all(16),
-      decoration: const BoxDecoration(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-      ),
       child: SingleChildScrollView(
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,

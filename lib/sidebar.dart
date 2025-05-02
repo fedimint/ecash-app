@@ -1,4 +1,3 @@
-
 import 'package:carbine/fed_preview.dart';
 import 'package:carbine/lib.dart';
 import 'package:carbine/main.dart';
@@ -17,43 +16,62 @@ class FederationSidebar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Drawer(
-      child: FutureBuilder<List<FederationSelector>>(
-        future: federationsFuture,
-        builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.waiting) {
-            return const Center(child: CircularProgressIndicator());
-          } else if (snapshot.hasError) {
-            return Center(child: Text('Error: ${snapshot.error}'));
-          } else if (!snapshot.hasData || snapshot.data!.isEmpty) {
-            return const Center(child: Text('No federations found'));
-          }
+      child: Container(
+        decoration: BoxDecoration(
+          color: Theme.of(context).colorScheme.surface,
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.6),
+              blurRadius: 12,
+            ),
+          ],
+        ),
+        child: FutureBuilder<List<FederationSelector>>(
+          future: federationsFuture,
+          builder: (context, snapshot) {
+            if (snapshot.connectionState == ConnectionState.waiting) {
+              return const Center(child: CircularProgressIndicator());
+            } else if (snapshot.hasError) {
+              return Center(child: Text('Error: ${snapshot.error}'));
+            } else if (!snapshot.hasData || snapshot.data!.isEmpty) {
+              return const Center(child: Text('No federations found'));
+            }
 
-          final federations = snapshot.data;
-          return ListView(
-            padding: EdgeInsets.zero,
-            children: [
-              Container(
-                height: 80, // Make this as short as you like
-                padding: const EdgeInsets.all(16),
-                decoration: const BoxDecoration(color: Colors.black87),
-                alignment: Alignment.centerLeft,
-                child: const Text(
-                  'Federations',
-                  style: TextStyle(color: Colors.white, fontSize: 18),
+            final federations = snapshot.data;
+            return ListView(
+              padding: EdgeInsets.zero,
+              children: [
+                Container(
+                  height: 80,
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: Colors.grey[900], // Slightly lighter for header contrast
+                    border: Border(
+                      bottom: BorderSide(color: Colors.grey.shade800),
+                    ),
+                  ),
+                  alignment: Alignment.centerLeft,
+                  child: const Text(
+                    'Federations',
+                    style: TextStyle(
+                      color: Colors.greenAccent,
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
                 ),
-              ),
-              ...federations!.map((selector) => FederationListItem(
-                fed: selector,
-                onTap: () {
-                  Navigator.of(context).pop();
-                  onFederationSelected(selector);
-                  print('Selected federation: $selector');
-                },
-              )),
-            ],
-          );
-        },
-      )
+                ...federations!.map((selector) => FederationListItem(
+                  fed: selector,
+                  onTap: () {
+                    Navigator.of(context).pop();
+                    onFederationSelected(selector);
+                  },
+                )),
+              ],
+            );
+          },
+        ),
+      ),
     );
   }
 }
@@ -126,104 +144,117 @@ class _FederationListItemState extends State<FederationListItem> {
 
   @override
   Widget build(BuildContext context) {
-    final numGuardians = guardians != null ? guardians!.length : 0;
+    final numGuardians = guardians?.length ?? 0;
     final thresh = guardians != null ? threshold(numGuardians) : 0;
-    final onlineColor = numOnlineGuardians == numGuardians ? Colors.green
-      : numOnlineGuardians >= thresh ? Colors.amber
-      : Colors.red;
+    final onlineColor = numOnlineGuardians == numGuardians
+        ? Colors.greenAccent
+        : numOnlineGuardians >= thresh
+            ? Colors.amberAccent
+            : Colors.redAccent;
 
-    return InkWell(
-      onTap: widget.onTap,
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-        child: Row(
-          children: [
-            CircleAvatar(
-              radius: 24,
-              backgroundImage: federationImageUrl != null
-                  ? NetworkImage(federationImageUrl!)
-                  : const AssetImage('assets/images/fedimint.png') as ImageProvider,
-              onBackgroundImageError: (_, __) {
-                setState(() {
-                  federationImageUrl = null;
-                });
-              },
-            ),
-            const SizedBox(width: 16),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    widget.fed.federationName,
-                    style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 12.0, vertical: 6),
+      child: Material(
+        color: Colors.grey[900],
+        borderRadius: BorderRadius.circular(12),
+        child: InkWell(
+          borderRadius: BorderRadius.circular(12),
+          onTap: widget.onTap,
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+            child: Row(
+              children: [
+                CircleAvatar(
+                  radius: 24,
+                  backgroundImage: federationImageUrl != null
+                      ? NetworkImage(federationImageUrl!)
+                      : const AssetImage('assets/images/fedimint.png') as ImageProvider,
+                  backgroundColor: Colors.black,
+                  onBackgroundImageError: (_, __) {
+                    setState(() {
+                      federationImageUrl = null;
+                    });
+                  },
+                ),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        widget.fed.federationName,
+                        style: Theme.of(context).textTheme.bodyLarge!.copyWith(
+                              fontWeight: FontWeight.bold,
+                              color: Colors.greenAccent,
+                            ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        isLoading
+                            ? 'Loading...'
+                            : formatBalance(balanceMsats, false),
+                        style: Theme.of(context).textTheme.bodyMedium,
+                      ),
+                      const SizedBox(height: 4),
+                      guardians == null
+                          ? const SizedBox(
+                              width: 16,
+                              height: 16,
+                              child: CircularProgressIndicator(
+                                color: Colors.greenAccent,
+                                strokeWidth: 2,
+                              ),
+                            )
+                          : Row(
+                              children: [
+                                Text(
+                                  guardians!.isEmpty
+                                      ? 'Offline'
+                                      : numGuardians == 1
+                                          ? '1 guardian'
+                                          : '$numGuardians guardians',
+                                  style: Theme.of(context).textTheme.bodySmall,
+                                ),
+                                const SizedBox(width: 6),
+                                Icon(Icons.circle, size: 10, color: onlineColor),
+                              ],
+                            ),
+                    ],
                   ),
-                  const SizedBox(height: 4),
-                  Text(
-                    isLoading
-                        ? 'Loading...'
-                        : formatBalance(balanceMsats, false),
-                  ),
-                  if (guardians == null) ...[
-                    const SizedBox(
-                      width: 16,
-                      height: 16,
-                      child: CircularProgressIndicator(color: Colors.black, strokeWidth: 2),
-                    )
-                  ] else ...[
-                    guardians!.isEmpty
-                      ? Row(
-                          children: const [
-                            Text('Offline'),
-                            SizedBox(width: 8),
-                            Icon(Icons.circle, size: 12, color: Colors.red),
-                          ],
-                        )
-                      : Row(
-                          children: [
-                            Text(numGuardians == 1 ? '1 guardian' : '$numGuardians guardians'),
-                            const SizedBox(width: 8),
-                            Icon(Icons.circle, size: 12, color: onlineColor),
-                          ],
+                ),
+                IconButton(
+                  icon: const Icon(Icons.qr_code),
+                  color: Colors.greenAccent,
+                  onPressed: () {
+                    showModalBottomSheet(
+                      context: context,
+                      backgroundColor:
+                          Theme.of(context).bottomSheetTheme.backgroundColor,
+                      isScrollControlled: true,
+                      shape: const RoundedRectangleBorder(
+                        borderRadius:
+                            BorderRadius.vertical(top: Radius.circular(24)),
+                      ),
+                      builder: (_) => Padding(
+                        padding: EdgeInsets.only(
+                          bottom: MediaQuery.of(context).viewInsets.bottom,
                         ),
-                  ]
-                  
-                ],
-              ),
-            ),
-            IconButton(
-              icon: const Icon(Icons.qr_code),
-              onPressed: () {
-                showModalBottomSheet(
-                  context: context,
-                  isScrollControlled: true,
-                  shape: const RoundedRectangleBorder(
-                    borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-                  ),
-                  builder: (_) => Padding(
-                    padding: EdgeInsets.only(
-                      bottom: MediaQuery.of(context).viewInsets.bottom,
-                    ),
-                    child: Container(
-                      decoration: const BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+                        child: FederationPreview(
+                          federationName: widget.fed.federationName,
+                          inviteCode: widget.fed.inviteCode,
+                          welcomeMessage: welcomeMessage,
+                          imageUrl: federationImageUrl,
+                          joinable: false,
+                          guardians: guardians,
+                          network: widget.fed.network,
+                        ),
                       ),
-                      child: FederationPreview(
-                        federationName: widget.fed.federationName,
-                        inviteCode: widget.fed.inviteCode,
-                        welcomeMessage: welcomeMessage,
-                        imageUrl: federationImageUrl,
-                        joinable: false,
-                        guardians: guardians,
-                        network: widget.fed.network,
-                      ),
-                    ),
-                  ),
-                );
-              },
+                    );
+                  },
+                ),
+              ],
             ),
-          ],
+          ),
         ),
       ),
     );
