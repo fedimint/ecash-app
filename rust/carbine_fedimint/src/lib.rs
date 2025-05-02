@@ -535,6 +535,7 @@ impl Multimint {
         &self,
         invite: String,
     ) -> anyhow::Result<(FederationMeta, FederationSelector)> {
+        println!("Getting federation meta for {invite}");
         // Sometimes we want to get the federation meta before we've joined (i.e to show a preview).
         // In this case, we create a temprorary client and retrieve all the data
         let invite_code = InviteCode::from_str(&invite)?;
@@ -547,6 +548,7 @@ impl Multimint {
                 .await?
         };
 
+        println!("Got client or created temporary one");
         let config = client.config().await;
         let wallet = client.get_first_module::<fedimint_wallet_client::WalletClientModule>()?;
         let network = wallet.get_network().to_string();
@@ -689,11 +691,14 @@ impl Multimint {
         } else {
             self.get_client_database(&federation_id)
         };
+        println!("Getting derivation secret");
         let secret = Self::derive_federation_secret(&self.mnemonic, &federation_id);
+        println!("Got derivation secret");
 
         let mut client_builder = Client::builder(client_db).await?;
         client_builder.with_module_inits(self.modules.clone());
         client_builder.with_primary_module_kind(fedimint_mint_client::KIND);
+        println!("Created client builder");
 
         let client = if Client::is_initialized(client_builder.db_no_decoders()).await {
             client_builder.open(secret).await
@@ -704,8 +709,10 @@ impl Multimint {
                 .await
         }
         .map(Arc::new)?;
+        println!("Opened client");
 
         self.lnv1_update_gateway_cache(&client).await?;
+        println!("Updated gateway cache");
         Ok(client)
     }
 

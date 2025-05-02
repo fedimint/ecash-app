@@ -10,7 +10,7 @@ class FederationPreview extends StatefulWidget {
   final String? welcomeMessage;
   final String? imageUrl;
   final bool joinable;
-  final List<Guardian> guardians;
+  final List<Guardian>? guardians;
 
   const FederationPreview({
     super.key,
@@ -19,7 +19,7 @@ class FederationPreview extends StatefulWidget {
     this.welcomeMessage,
     this.imageUrl,
     required this.joinable,
-    required this.guardians,
+    this.guardians,
   });
 
   @override
@@ -56,9 +56,9 @@ class _FederationPreviewState extends State<FederationPreview> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final totalGuardians = widget.guardians.length;
+    final totalGuardians = widget.guardians != null ? widget.guardians!.length : 0;
     final thresh = threshold(totalGuardians);
-    final onlineGuardians = widget.guardians.where((g) => g.version != null).toList();
+    final onlineGuardians = widget.guardians != null ? widget.guardians!.where((g) => g.version != null).toList() : [];
     final isFederationOnline = totalGuardians > 0 && onlineGuardians.length >= threshold(totalGuardians);
 
     return Container(
@@ -162,7 +162,7 @@ class _FederationPreviewState extends State<FederationPreview> {
               ),
 
               // Guardian list
-              if (widget.guardians.isNotEmpty) ...[
+              if (widget.guardians != null && widget.guardians!.isNotEmpty) ...[
                 const SizedBox(height: 24),
                 Text(
                   'Guardians ($thresh/$totalGuardians federation)',
@@ -172,9 +172,9 @@ class _FederationPreviewState extends State<FederationPreview> {
                 ListView.builder(
                   shrinkWrap: true,
                   physics: const NeverScrollableScrollPhysics(),
-                  itemCount: widget.guardians.length,
+                  itemCount: widget.guardians!.length,
                   itemBuilder: (context, index) {
-                    final guardian = widget.guardians[index];
+                    final guardian = widget.guardians![index];
                     final isOnline = guardian.version != null;
 
                     return ListTile(

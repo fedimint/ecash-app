@@ -73,7 +73,7 @@ class _FederationListItemState extends State<FederationListItem> {
   bool isLoading = true;
   String? federationImageUrl;
   String? welcomeMessage;
-  List<Guardian> guardians = List.empty();
+  List<Guardian>? guardians;
 
   @override
   void initState() {
@@ -117,16 +117,17 @@ class _FederationListItemState extends State<FederationListItem> {
   }
 
   bool get allGuardiansOnline =>
-      guardians.isNotEmpty &&
-      guardians.every((g) => g.version != null);
+      guardians != null &&
+      guardians!.isNotEmpty &&
+      guardians!.every((g) => g.version != null);
 
   int get numOnlineGuardians =>
-    guardians.where((g) => g.version != null).length;
+    guardians != null ? guardians!.where((g) => g.version != null).length : 0;
 
   @override
   Widget build(BuildContext context) {
-    final numGuardians = guardians.length;
-    final thresh = threshold(numGuardians);
+    final numGuardians = guardians != null ? guardians!.length : 0;
+    final thresh = guardians != null ? threshold(numGuardians) : 0;
     final onlineColor = numOnlineGuardians == numGuardians ? Colors.green
       : numOnlineGuardians >= thresh ? Colors.amber
       : Colors.red;
@@ -163,21 +164,30 @@ class _FederationListItemState extends State<FederationListItem> {
                         ? 'Loading...'
                         : formatBalance(balanceMsats, false),
                   ),
-                  guardians.isEmpty
-                    ? Row(
-                        children: const [
-                          Text('Offline'),
-                          SizedBox(width: 8),
-                          Icon(Icons.circle, size: 12, color: Colors.red),
-                        ],
-                      )
-                    : Row(
-                        children: [
-                          Text(numGuardians == 1 ? '1 guardian' : '$numGuardians guardians'),
-                          const SizedBox(width: 8),
-                          Icon(Icons.circle, size: 12, color: onlineColor),
-                        ],
-                      ),
+                  if (guardians == null) ...[
+                    const SizedBox(
+                      width: 16,
+                      height: 16,
+                      child: CircularProgressIndicator(color: Colors.black, strokeWidth: 2),
+                    )
+                  ] else ...[
+                    guardians!.isEmpty
+                      ? Row(
+                          children: const [
+                            Text('Offline'),
+                            SizedBox(width: 8),
+                            Icon(Icons.circle, size: 12, color: Colors.red),
+                          ],
+                        )
+                      : Row(
+                          children: [
+                            Text(numGuardians == 1 ? '1 guardian' : '$numGuardians guardians'),
+                            const SizedBox(width: 8),
+                            Icon(Icons.circle, size: 12, color: onlineColor),
+                          ],
+                        ),
+                  ]
+                  
                 ],
               ),
             ),
