@@ -47,6 +47,8 @@ class _ScanQRPageState extends State<ScanQRPage> {
       final meta = await getFederationMeta(inviteCode: text);
       final fed = await showModalBottomSheet(
         context: context,
+        backgroundColor:
+          Theme.of(context).bottomSheetTheme.backgroundColor,
         isScrollControlled: true,
         shape: const RoundedRectangleBorder(
           borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
@@ -55,12 +57,7 @@ class _ScanQRPageState extends State<ScanQRPage> {
           padding: EdgeInsets.only(
             bottom: MediaQuery.of(context).viewInsets.bottom,
           ),
-          child: Container(
-            decoration: const BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-            ),
-            child: FederationPreview(
+          child: FederationPreview(
               federationName: meta.$2.federationName,
               inviteCode: meta.$2.inviteCode,
               welcomeMessage: meta.$1.welcome,
@@ -68,7 +65,6 @@ class _ScanQRPageState extends State<ScanQRPage> {
               joinable: true,
               guardians: meta.$1.guardians,
               network: meta.$2.network,
-            ),
           ),
         ),
       );

@@ -108,12 +108,16 @@ class _Discover extends State<Discover> {
                           final meta = await getFederationMeta(inviteCode: federation.inviteCodes.first);
                           final fed = await showModalBottomSheet(
                             context: context,
+                            backgroundColor:
+                              Theme.of(context).bottomSheetTheme.backgroundColor,
                             isScrollControlled: true,
-                            backgroundColor: Colors.transparent,
-                            builder: (_) => Container(
-                              decoration: const BoxDecoration(
-                                color: Colors.white,
-                                borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+                            shape: const RoundedRectangleBorder(
+                              borderRadius:
+                                  BorderRadius.vertical(top: Radius.circular(24)),
+                            ),
+                            builder: (_) => Padding(
+                              padding: EdgeInsets.only(
+                                bottom: MediaQuery.of(context).viewInsets.bottom,
                               ),
                               child: FederationPreview(
                                 federationName: meta.$2.federationName,
