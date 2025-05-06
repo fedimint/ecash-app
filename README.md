@@ -2,13 +2,31 @@
 
 Carbine is a Fedimint wallet built using Flutter, Rust, and the Flutter Rust Bridge.
 
-There is currently no nix flake for installing dependencies, so setting up dependencies is currently a manual process.
+## Getting set up
+Carbine uses nix and nix flakes to manage dependencies and build the project.
 
-Necessary dependencies
- - Flutter
- - Rust + Cargo
- - Flutter Rust Bridge
+First, install nix
 
-To build the rust code, navigate to `rust/carbine_fedimint` and run `./generate`. This script will parse the rust code and build the library so it is usable in Flutter.
+```bash
+curl --proto '=https' --tlsv1.2 -sSf -L https://install.determinate.systems/nix | sh -s -- install
+```
 
-Then to run the Flutter app, run `flutter run`.
+Then enter the nix developer environment.
+
+```bash
+nix develop
+```
+
+To generate the Flutter bindings for the rust code, simply run
+```bash
+just generate
+```
+
+This will also build the rust library and place it in the appropriate location on Linux machines.
+
+To run the app on Linux, simply run
+```bash
+just run
+```
+
+Done! This will launch Carbine on Linux. Android is currently not supported yet.
