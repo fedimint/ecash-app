@@ -48,4 +48,3 @@ app.*.map.json
 **/target
 **/*.so
 **/*.db/
-**/*.lock

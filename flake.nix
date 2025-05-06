@@ -37,6 +37,7 @@
               pkgs.just
               pkgs.zlib
               flutter_rust_bridge_codegen
+              pkgs.cargo-expand
             ];
           });
         };
