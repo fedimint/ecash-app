@@ -51,6 +51,7 @@
 
               export LD_LIBRARY_PATH="${pkgs.zlib}/lib:$LD_LIBRARY_PATH"
               export NIXPKGS_ALLOW_UNFREE=1
+              export ROOT="$PWD"
 	    '';
           });
         };
