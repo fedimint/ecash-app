@@ -1,31 +1,16 @@
 {
-  description = "Dev environment with Rust, Flutter, flutter_rust_bridge, and just";
-
   inputs = {
-    nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
+    fedimint.url = "github:fedimint/fedimint?rev=b983d25d4c3cce1751c54e3ad0230fc507e3aeec";
     flake-utils.url = "github:numtide/flake-utils";
-    rust-overlay.url = "github:oxalica/rust-overlay";
+    nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
   };
 
-  outputs = { self, nixpkgs, flake-utils, rust-overlay }:
+  outputs = { self, fedimint, flake-utils, nixpkgs, ... }:
     flake-utils.lib.eachDefaultSystem (system:
       let
-        overlays = [ 
-          rust-overlay.overlays.default 
-        ];
-        pkgs = import nixpkgs {
-          inherit system overlays;
-          config.allowUnfree = true;
-        };
-
-        rustToolchain = pkgs.rust-bin.stable.latest.default.override {
-          extensions = [ "rust-src" ];
-        };
-
-        flutter = pkgs.flutter;
-        just = pkgs.just;
-
-        llvmPackages = pkgs.llvmPackages_14;
+        pkgs = import nixpkgs { inherit system; };
+        # Import the `devShells` from the fedimint flake
+        devShells = fedimint.devShells.${system};
 
         # Reproducibly install flutter_rust_bridge_codegen via Rust
         flutter_rust_bridge_codegen = pkgs.rustPlatform.buildRustPackage rec {
@@ -44,50 +29,17 @@
           doCheck = false;
         };
       in {
-        devShells.default = pkgs.mkShell {
-          name = "flutter-rust-dev";
-          packages = [
-            rustToolchain
-            flutter
-            just
-            flutter_rust_bridge_codegen
-            pkgs.clang14Stdenv
-            llvmPackages.clang
-            llvmPackages.libclang.lib
-            llvmPackages.llvm
-            llvmPackages.clang-unwrapped
-            pkgs.cmake
-            pkgs.ninja
-            pkgs.glibc
-            pkgs.gtk3
-            pkgs.graphite2
-            pkgs.pkg-config
-            pkgs.gdk-pixbuf
-            pkgs.libffi
-            pkgs.zlib
-            pkgs.libcanberra
-            pkgs.mesa
-            pkgs.libGL
-            pkgs.libglvnd
-          ];
-
-          shellHook = ''
-            export PATH="$PATH:${flutter}/bin"
-            export RUST_SRC_PATH="${rustToolchain}/lib/rustlib/src/rust/library"
-            export LIBCLANG_PATH="${llvmPackages.libclang.lib}/lib"
-            export LD_LIBRARY_PATH="${llvmPackages.libclang.lib}/lib:${llvmPackages.llvm.lib}/lib:$LD_LIBRARY_PATH"
-
-            # Add libz path to LD_LIBRARY_PATH
-            export LD_LIBRARY_PATH="${pkgs.zlib}/lib:$LD_LIBRARY_PATH"
-
-            export LD_LIBRARY_PATH="${pkgs.mesa}/lib:${pkgs.libGL}/lib:$LD_LIBRARY_PATH"
-
-            # Ensure pkg-config can locate GTK and related dependencies
-            export PKG_CONFIG_PATH="${pkgs.gtk3}/lib/pkgconfig:${pkgs.graphite2}/lib/pkgconfig:$PKG_CONFIG_PATH"
-
-            echo "🌟 Dev shell ready with Flutter, Rust, flutter_rust_bridge_codegen (Rust), and Just"
-          '';
+        devShells = {
+          # You can expose all or specific shells from the original flake
+          default = devShells.default.overrideAttrs (old: {
+            nativeBuildInputs = old.nativeBuildInputs or [] ++ [
+              pkgs.flutter
+              pkgs.just
+              pkgs.zlib
+              flutter_rust_bridge_codegen
+            ];
+          });
         };
-      });
+      }
+    );
 }
-
