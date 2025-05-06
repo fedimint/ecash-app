@@ -7,8 +7,7 @@ final ThemeData cypherpunkNinjaTheme = ThemeData(
   colorScheme: const ColorScheme.dark(
     primary: Colors.greenAccent,
     secondary: Colors.tealAccent,
-    surface: Color(0xFF111111), // <--- Dark grey surface for contrast
-    background: Colors.black,
+    surface: Color(0xFF111111),
     error: Colors.redAccent,
   ),
   drawerTheme: const DrawerThemeData(
