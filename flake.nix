@@ -3,12 +3,18 @@
     fedimint.url = "github:fedimint/fedimint?rev=b983d25d4c3cce1751c54e3ad0230fc507e3aeec";
     flake-utils.url = "github:numtide/flake-utils";
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
+    nixgl.url = "github:guibou/nixGL";
   };
 
-  outputs = { self, fedimint, flake-utils, nixpkgs, ... }:
+  outputs = { self, fedimint, flake-utils, nixpkgs, nixgl, ... }:
     flake-utils.lib.eachDefaultSystem (system:
       let
-        pkgs = import nixpkgs { inherit system; };
+        pkgs = import nixpkgs {
+          inherit system;
+          config.allowUnfree = true;
+        };
+        nixglPkgs = import nixgl { inherit system; };
+
         # Import the `devShells` from the fedimint flake
         devShells = fedimint.devShells.${system};
 
@@ -39,6 +45,13 @@
               flutter_rust_bridge_codegen
               pkgs.cargo-expand
             ];
+
+	    shellHook = ''
+	      ${old.shellHook or ""}
+
+              export LD_LIBRARY_PATH="${pkgs.zlib}/lib:$LD_LIBRARY_PATH"
+              export NIXPKGS_ALLOW_UNFREE=1
+	    '';
           });
         };
       }
