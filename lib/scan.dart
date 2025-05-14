@@ -109,51 +109,53 @@ class _ScanQRPageState extends State<ScanQRPage> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-          title: const Text('Scan QR', style: TextStyle(fontWeight: FontWeight.bold)),
-          centerTitle: true,
-          backgroundColor: Colors.transparent,
-          elevation: 0,
-          leading: IconButton(
-            icon: const Icon(Icons.close),
-            onPressed: () => Navigator.of(context).pop(),
-          ),
-        ),
-      body: Stack(
-        children: [
-          Positioned.fill(
-            child: MobileScanner(
-              onDetect: (barcode) {
-                final String? code = barcode.raw;
-                if (code != null) {
-                  _onQRCodeScanned(code);
-                }
-              },
+    return SafeArea(
+      child: Scaffold(
+        appBar: AppBar(
+            title: const Text('Scan QR', style: TextStyle(fontWeight: FontWeight.bold)),
+            centerTitle: true,
+            backgroundColor: Colors.transparent,
+            elevation: 0,
+            leading: IconButton(
+              icon: const Icon(Icons.close),
+              onPressed: () => Navigator.of(context).pop(),
             ),
           ),
-          Align(
-            alignment: Alignment.bottomCenter,
-            child: Padding(
-              padding: const EdgeInsets.all(48.0),
-              child: ElevatedButton.icon(
-                onPressed: _isPasting ? null : _pasteFromClipboard,
-                icon: _isPasting
-                    ? const SizedBox(
-                        width: 20,
-                        height: 20,
-                        child: CircularProgressIndicator(
-                          color: Colors.white,
-                          strokeWidth: 2.0,
-                        ),
-                      )
-                    : const Icon(Icons.paste),
-                label: Text(_isPasting ? "Pasting..." : "Paste from Clipboard"),
+        body: Stack(
+          children: [
+            Positioned.fill(
+              child: MobileScanner(
+                onDetect: (barcode) {
+                  final String? code = barcode.raw;
+                  if (code != null) {
+                    _onQRCodeScanned(code);
+                  }
+                },
               ),
             ),
-          ),
-        ],
-      ),
+            Align(
+              alignment: Alignment.bottomCenter,
+              child: Padding(
+                padding: const EdgeInsets.all(24.0),
+                child: ElevatedButton.icon(
+                  onPressed: _isPasting ? null : _pasteFromClipboard,
+                  icon: _isPasting
+                      ? const SizedBox(
+                          width: 20,
+                          height: 20,
+                          child: CircularProgressIndicator(
+                            color: Colors.white,
+                            strokeWidth: 2.0,
+                          ),
+                        )
+                      : const Icon(Icons.paste),
+                  label: Text(_isPasting ? "Pasting..." : "Paste from Clipboard"),
+                ),
+              ),
+            ),
+          ],
+        ),
+      )
     );
   }
 }

@@ -4,6 +4,7 @@ import 'package:carbine/dashboard.dart';
 import 'package:carbine/ecash_send.dart';
 import 'package:carbine/lib.dart';
 import 'package:carbine/request.dart';
+import 'package:carbine/theme.dart';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:intl/intl.dart';
@@ -69,22 +70,14 @@ class _NumberPadState extends State<NumberPad> {
 
       if (widget.paymentType == PaymentType.lightning) {
         final invoice = await receive(federationId: widget.fed.federationId, amountMsats: amountMsats);
-        showModalBottomSheet(
+        showCarbineModalBottomSheet(
           context: context,
-          isScrollControlled: true,
-          builder: (context) => SizedBox(
-            height: MediaQuery.of(context).size.height,
-            child: Request(invoice: invoice.$1, fed: widget.fed, operationId: invoice.$2, amountMsats: amountMsats),
-          ),
+          child: Request(invoice: invoice.$1, fed: widget.fed, operationId: invoice.$2, amountMsats: amountMsats),
         );
       } else if (widget.paymentType == PaymentType.ecash) {
-        showModalBottomSheet(
+        showCarbineModalBottomSheet(
           context: context,
-          isScrollControlled: true,
-          builder: (context) => SizedBox(
-            height: MediaQuery.of(context).size.height,
-            child: EcashSend(fed: widget.fed, amountSats: amountSats),
-          ),
+          child: EcashSend(fed: widget.fed, amountSats: amountSats),
         );
       } else if (widget.paymentType == PaymentType.onchain) {
         print('Generate bitcoin address and QR code');
@@ -97,63 +90,65 @@ class _NumberPadState extends State<NumberPad> {
   Widget build(BuildContext context) {
     final usdText = _calculateUsdValue();
 
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Enter Amount', style: TextStyle(fontWeight: FontWeight.bold)),
-        centerTitle: true,
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-      ),
-      body: Column(
-        children: [
-          const SizedBox(height: 24),
-          Text(
-            _formatAmount(_rawAmount),
-            style: const TextStyle(fontSize: 48, fontWeight: FontWeight.bold),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            usdText,
-            style: const TextStyle(fontSize: 24, color: Colors.grey),
-          ),
-          const SizedBox(height: 24),
-          Expanded(
-            child: Center(
-              child: NumPad(
-                arabicDigits: false,
-                onType: (value) {
-                  setState(() {
-                    _rawAmount += value.toString();
-                  });
-                },
-                numberStyle: const TextStyle(fontSize: 24, color: Colors.grey),
-                rightWidget: IconButton(
-                  onPressed: () {
+    return SafeArea(
+      child: Scaffold(
+        appBar: AppBar(
+          title: const Text('Enter Amount', style: TextStyle(fontWeight: FontWeight.bold)),
+          centerTitle: true,
+          backgroundColor: Colors.transparent,
+          elevation: 0,
+        ),
+        body: Column(
+          children: [
+            const SizedBox(height: 24),
+            Text(
+              _formatAmount(_rawAmount),
+              style: const TextStyle(fontSize: 48, fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              usdText,
+              style: const TextStyle(fontSize: 24, color: Colors.grey),
+            ),
+            const SizedBox(height: 24),
+            Expanded(
+              child: Center(
+                child: NumPad(
+                  arabicDigits: false,
+                  onType: (value) {
                     setState(() {
-                      if (_rawAmount.isNotEmpty) {
-                        _rawAmount = _rawAmount.substring(0, _rawAmount.length - 1);
-                      } 
+                      _rawAmount += value.toString();
                     });
                   },
-                  icon: const Icon(Icons.backspace),
+                  numberStyle: const TextStyle(fontSize: 24, color: Colors.grey),
+                  rightWidget: IconButton(
+                    onPressed: () {
+                      setState(() {
+                        if (_rawAmount.isNotEmpty) {
+                          _rawAmount = _rawAmount.substring(0, _rawAmount.length - 1);
+                        } 
+                      });
+                    },
+                    icon: const Icon(Icons.backspace),
+                  ),
                 ),
               ),
             ),
-          ),
-          Padding(
-            padding: const EdgeInsets.all(16.0),
-            child: SizedBox(
-              width: double.infinity,
-              child: ElevatedButton(
-                onPressed: _onConfirm,
-                child: _creating
-                  ? const CircularProgressIndicator(color: Colors.white)
-                  : const Text('Confirm', style: TextStyle(fontSize: 20)),
+            Padding(
+              padding: const EdgeInsets.all(16.0),
+              child: SizedBox(
+                width: double.infinity,
+                child: ElevatedButton(
+                  onPressed: _onConfirm,
+                  child: _creating
+                    ? const CircularProgressIndicator(color: Colors.white)
+                    : const Text('Confirm', style: TextStyle(fontSize: 20)),
+                ),
               ),
             ),
-          ),
-        ],
-      ),
+          ],
+        ),
+      )
     );
   }
 }
