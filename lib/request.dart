@@ -1,4 +1,5 @@
 import 'package:carbine/lib.dart';
+import 'package:carbine/main.dart';
 import 'package:carbine/success.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -77,6 +78,7 @@ class _RequestState extends State<Request> with SingleTickerProviderStateMixin {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final abbreviatedInvoice = _getAbbreviatedInvoice(widget.invoice);
+    final fees = widget.totalMsats - widget.requestedAmountMsats;
 
     if (_received) {
       return SafeArea(
@@ -121,12 +123,12 @@ class _RequestState extends State<Request> with SingleTickerProviderStateMixin {
               ),
             ),
             child: AspectRatio(
-              aspectRatio: 1, // Ensure square shape
+              aspectRatio: 1,
               child: QrImageView(
                 data: widget.invoice,
                 version: QrVersions.auto,
                 backgroundColor: Colors.white,
-                padding: EdgeInsets.zero, // Remove internal padding
+                padding: EdgeInsets.zero,
               ),
             ),
           ),
@@ -164,9 +166,57 @@ class _RequestState extends State<Request> with SingleTickerProviderStateMixin {
               ],
             ),
           ),
+          const SizedBox(height: 16),
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: theme.colorScheme.surfaceContainer,
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: theme.colorScheme.primary.withOpacity(0.25)),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                _buildDetailRow(theme, 'Fees', formatBalance(fees, true)),
+                _buildDetailRow(theme, 'Gateway', widget.gateway),
+                _buildDetailRow(theme, 'Payee Pubkey', widget.pubkey),
+                _buildDetailRow(theme, 'Payment Hash', widget.paymentHash),
+              ],
+            ),
+          ),
         ],
       ),
     );
   }
 }
+
+Widget _buildDetailRow(ThemeData theme, String label, String value) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            '$label: ',
+            style: theme.textTheme.bodyMedium?.copyWith(
+              color: theme.colorScheme.onSurface.withOpacity(0.8),
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+          Expanded(
+            child: Text(
+              value,
+              style: theme.textTheme.bodyMedium?.copyWith(
+                color: theme.colorScheme.onSurface,
+              ),
+              softWrap: true,
+              maxLines: null,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
 
