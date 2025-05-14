@@ -1,5 +1,6 @@
 import 'package:carbine/fed_preview.dart';
 import 'package:carbine/lib.dart';
+import 'package:carbine/theme.dart';
 import 'package:flutter/material.dart';
 
 class Discover extends StatefulWidget {
@@ -106,20 +107,10 @@ class _Discover extends State<Discover> {
                         onPressed: () async {
                           setState(() => _gettingMetadata = federation);
                           final meta = await getFederationMeta(inviteCode: federation.inviteCodes.first);
-                          final fed = await showModalBottomSheet(
+                          setState(() => _gettingMetadata = null);
+                          final fed = await showCarbineModalBottomSheet(
                             context: context,
-                            backgroundColor:
-                              Theme.of(context).bottomSheetTheme.backgroundColor,
-                            isScrollControlled: true,
-                            shape: const RoundedRectangleBorder(
-                              borderRadius:
-                                  BorderRadius.vertical(top: Radius.circular(24)),
-                            ),
-                            builder: (_) => Padding(
-                              padding: EdgeInsets.only(
-                                bottom: MediaQuery.of(context).viewInsets.bottom,
-                              ),
-                              child: FederationPreview(
+                            child: FederationPreview(
                                 federationName: meta.$2.federationName,
                                 inviteCode: meta.$2.inviteCode,
                                 welcomeMessage: meta.$1.welcome,
@@ -128,10 +119,8 @@ class _Discover extends State<Discover> {
                                 guardians: meta.$1.guardians,
                                 network: meta.$2.network,
                               ),
-                            ),
                           );
 
-                          setState(() => _gettingMetadata = null);
                           await Future.delayed(const Duration(milliseconds: 400));
                           widget.onJoin(fed);
                           if (context.mounted) Navigator.pop(context);

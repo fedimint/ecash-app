@@ -2,7 +2,6 @@ import 'package:carbine/lib.dart';
 import 'package:carbine/main.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:qr_flutter/qr_flutter.dart';
 
 class FederationPreview extends StatefulWidget {
   final String federationName;
@@ -69,16 +68,6 @@ class _FederationPreviewState extends State<FederationPreview> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            // Drag handle
-            Container(
-              width: 40,
-              height: 5,
-              margin: const EdgeInsets.only(bottom: 16),
-              decoration: BoxDecoration(
-                color: Colors.grey[300],
-                borderRadius: BorderRadius.circular(2.5),
-              ),
-            ),
 
             if (widget.network.toLowerCase() != 'bitcoin') ...[
               Container(
@@ -151,27 +140,6 @@ class _FederationPreviewState extends State<FederationPreview> {
             const SizedBox(height: 24),
 
             if (isFederationOnline) ...[
-              // QR code
-              Center(
-                child: QrImageView(
-                  data: widget.inviteCode,
-                  version: QrVersions.auto,
-                  size: 200.0,
-                  backgroundColor: Colors.white,
-                ),
-              ),
-
-              const SizedBox(height: 16),
-
-              // Invite code
-              SelectableText(
-                widget.inviteCode,
-                style: theme.textTheme.bodyLarge?.copyWith(fontWeight: FontWeight.w500),
-                textAlign: TextAlign.center,
-              ),
-
-              const SizedBox(height: 8),
-
               // Join / Copy button
               SizedBox(
                 width: double.infinity,

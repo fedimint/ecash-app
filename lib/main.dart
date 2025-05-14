@@ -164,13 +164,13 @@ class _MyAppState extends State<MyApp> {
         builder: (innerContext) => Scaffold(
           appBar: AppBar(),
           drawer: _initialLoadComplete
-              ? FederationSidebar(
+              ? SafeArea(child: FederationSidebar(
                   key: ValueKey(_refreshTrigger),
                   federationsFuture: _federationFuture,
                   onFederationSelected: _setSelectedFederation,
-                )
+                ))
               : null,
-          body: bodyContent,
+          body: SafeArea(child: bodyContent),
           bottomNavigationBar: _initialLoadComplete
               ? BottomNavigationBar(
                   currentIndex: _currentIndex,

@@ -1,6 +1,7 @@
 import 'package:carbine/fed_preview.dart';
 import 'package:carbine/lib.dart';
 import 'package:carbine/main.dart';
+import 'package:carbine/theme.dart';
 import 'package:flutter/material.dart';
 
 class FederationSidebar extends StatelessWidget {
@@ -226,28 +227,16 @@ class _FederationListItemState extends State<FederationListItem> {
                   icon: const Icon(Icons.qr_code),
                   color: Colors.greenAccent,
                   onPressed: () {
-                    showModalBottomSheet(
+                    showCarbineModalBottomSheet(
                       context: context,
-                      backgroundColor:
-                          Theme.of(context).bottomSheetTheme.backgroundColor,
-                      isScrollControlled: true,
-                      shape: const RoundedRectangleBorder(
-                        borderRadius:
-                            BorderRadius.vertical(top: Radius.circular(24)),
-                      ),
-                      builder: (_) => Padding(
-                        padding: EdgeInsets.only(
-                          bottom: MediaQuery.of(context).viewInsets.bottom,
-                        ),
-                        child: FederationPreview(
-                          federationName: widget.fed.federationName,
-                          inviteCode: widget.fed.inviteCode,
-                          welcomeMessage: welcomeMessage,
-                          imageUrl: federationImageUrl,
-                          joinable: false,
-                          guardians: guardians,
-                          network: widget.fed.network,
-                        ),
+                      child: FederationPreview(
+                        federationName: widget.fed.federationName,
+                        inviteCode: widget.fed.inviteCode,
+                        welcomeMessage: welcomeMessage,
+                        imageUrl: federationImageUrl,
+                        joinable: false,
+                        guardians: guardians,
+                        network: widget.fed.network,
                       ),
                     );
                   },
