@@ -164,13 +164,14 @@ class _DashboardState extends State<Dashboard> {
             const SizedBox(height: 32),
             ShaderMask(
               shaderCallback: (bounds) => LinearGradient(
-                colors: [Theme.of(context).colorScheme.primary, Theme.of(context).colorScheme.secondary],
+                colors: [
+                  Theme.of(context).colorScheme.primary,
+                  Theme.of(context).colorScheme.secondary
+                ],
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
               ).createShader(Rect.fromLTWH(0, 0, bounds.width, bounds.height)),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                mainAxisSize: MainAxisSize.min,
+              child: Column(
                 children: [
                   Text(
                     name.toUpperCase(),
@@ -188,13 +189,18 @@ class _DashboardState extends State<Dashboard> {
                         ),
                     textAlign: TextAlign.center,
                   ),
-                  if (widget.fed.network.toLowerCase() != 'bitcoin') ...[
-                    const SizedBox(width: 8),
-                    Tooltip(
-                      message: 'This is a test network and is not worth anything.',
-                      child: const Icon(Icons.warning_amber_rounded, color: Colors.amber),
+                  if (widget.fed.network.toLowerCase() != 'bitcoin')
+                    Padding(
+                      padding: const EdgeInsets.only(top: 8.0),
+                      child: Text(
+                        "This is a test network and is not worth anything.",
+                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                              color: Colors.amberAccent,
+                              fontStyle: FontStyle.italic,
+                            ),
+                        textAlign: TextAlign.center,
+                      ),
                     ),
-                  ],
                 ],
               ),
             ),
@@ -217,58 +223,6 @@ class _DashboardState extends State<Dashboard> {
                   textAlign: TextAlign.center,
                 ),
               ),
-            const SizedBox(height: 48),
-            SegmentedButton<PaymentType>(
-              segments: const [
-                ButtonSegment(
-                  value: PaymentType.lightning,
-                  label: Text('Lightning'),
-                  icon: Icon(Icons.flash_on),
-                ),
-                ButtonSegment(
-                  value: PaymentType.onchain,
-                  label: Text('Onchain'),
-                  icon: Icon(Icons.link),
-                ),
-                ButtonSegment(
-                  value: PaymentType.ecash,
-                  label: Text('Ecash'),
-                  icon: Icon(Icons.currency_bitcoin),
-                ),
-              ],
-              selected: {_selectedPaymentType},
-              onSelectionChanged: (newSelection) {
-                setState(() {
-                  _selectedPaymentType = newSelection.first;
-                });
-              },
-              style: ButtonStyle(
-                padding: WidgetStateProperty.all(const EdgeInsets.symmetric(vertical: 18, horizontal: 20)),
-                shape: WidgetStateProperty.all(
-                  RoundedRectangleBorder(borderRadius: BorderRadius.circular(40)),
-                ),
-                textStyle: WidgetStateProperty.all(
-                  const TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
-                ),
-                backgroundColor: WidgetStateProperty.resolveWith((states) {
-                  if (states.contains(WidgetState.selected)) {
-                    return Theme.of(context).colorScheme.primary; // Selected state with primary color
-                  }
-                  return Theme.of(context).colorScheme.surfaceContainerHighest; // Unselected state with a contrasting background
-                }),
-                foregroundColor: WidgetStateProperty.resolveWith((states) {
-                  if (states.contains(WidgetState.selected)) {
-                    return Colors.white; // White text when selected
-                  }
-                  return Colors.white70; // Slightly muted text for unselected
-                }),
-                side: WidgetStateProperty.all(const BorderSide(color: Colors.transparent)),
-                shadowColor: WidgetStateProperty.all(Colors.black.withOpacity(0.2)),
-                elevation: WidgetStateProperty.resolveWith<double>((states) {
-                  return states.contains(WidgetState.selected) ? 6 : 0; // Elevate the selected button
-                }),
-              ),
-            ),
             const SizedBox(height: 48),
             Align(
               alignment: Alignment.centerLeft,
@@ -346,6 +300,30 @@ class _DashboardState extends State<Dashboard> {
                       ),
           ],
         ),
+      ),
+      bottomNavigationBar: BottomNavigationBar(
+        currentIndex: _selectedPaymentType.index,
+        onTap: (index) {
+          setState(() {
+            _selectedPaymentType = PaymentType.values[index];
+          });
+        },
+        selectedItemColor: Theme.of(context).colorScheme.primary,
+        unselectedItemColor: Colors.grey,
+        items: const [
+          BottomNavigationBarItem(
+            icon: Icon(Icons.flash_on),
+            label: 'Lightning',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.link),
+            label: 'Onchain',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.currency_bitcoin),
+            label: 'Ecash',
+          ),
+        ],
       ),
     );
   }

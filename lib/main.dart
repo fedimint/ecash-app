@@ -110,19 +110,6 @@ class _MyAppState extends State<MyApp> {
     }
   }
 
-  void _onNavBarTapped(int index, BuildContext context) async {
-    setState(() {
-      _currentIndex = index;
-      if (index == 1) {
-        _selectedFederation = null;
-      }
-    });
-
-    if (index == 0) {
-      _onScanPressed(context);
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
     Widget bodyContent;
@@ -162,33 +149,37 @@ class _MyAppState extends State<MyApp> {
       theme: cypherpunkNinjaTheme,
       home: Builder(
         builder: (innerContext) => Scaffold(
-          appBar: AppBar(),
-          drawer: _initialLoadComplete
-              ? SafeArea(child: FederationSidebar(
-                  key: ValueKey(_refreshTrigger),
-                  federationsFuture: _federationFuture,
-                  onFederationSelected: _setSelectedFederation,
-                ))
-              : null,
-          body: SafeArea(child: bodyContent),
-          bottomNavigationBar: _initialLoadComplete
-              ? BottomNavigationBar(
-                  currentIndex: _currentIndex,
-                  onTap: (index) => _onNavBarTapped(index, innerContext),
-                  selectedItemColor: _currentIndex == 0 ? Colors.grey : Colors.greenAccent,
-                  unselectedItemColor: Colors.grey,
-                  items: const [
-                    BottomNavigationBarItem(
-                      icon: Icon(Icons.qr_code_scanner),
-                      label: 'Scan',
+          appBar: AppBar(
+            actions: _initialLoadComplete
+                ? [
+                    IconButton(
+                      icon: const Icon(Icons.qr_code_scanner),
+                      tooltip: 'Scan',
+                      onPressed: () => _onScanPressed(innerContext),
                     ),
-                    BottomNavigationBarItem(
-                      icon: Icon(Icons.settings),
-                      label: "Settings",
-                    )
-                  ],
+                    IconButton(
+                      icon: const Icon(Icons.settings),
+                      tooltip: 'Settings',
+                      onPressed: () {
+                        setState(() {
+                          _currentIndex = 1;
+                          _selectedFederation = null;
+                        });
+                      },
+                    ),
+                  ]
+                : null,
+          ),
+          drawer: _initialLoadComplete
+              ? SafeArea(
+                  child: FederationSidebar(
+                    key: ValueKey(_refreshTrigger),
+                    federationsFuture: _federationFuture,
+                    onFederationSelected: _setSelectedFederation,
+                  ),
                 )
               : null,
+          body: SafeArea(child: bodyContent),
         ),
       ),
     );
