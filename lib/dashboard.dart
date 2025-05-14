@@ -148,12 +148,13 @@ class _DashboardState extends State<Dashboard> {
             backgroundColor: Colors.green,
             onTap: () => _scheduleAction(_onReceivePressed),
           ),
-          SpeedDialChild(
-            child: const Icon(Icons.upload),
-            label: 'Send',
-            backgroundColor: Colors.blue,
-            onTap: () => _scheduleAction(_onSendPressed),
-          ),
+          if (balanceMsats != null && balanceMsats! > BigInt.zero) 
+            SpeedDialChild(
+              child: const Icon(Icons.upload),
+              label: 'Send',
+              backgroundColor: Colors.blue,
+              onTap: () => _scheduleAction(_onSendPressed),
+            ),
         ],
       ),
       body: SingleChildScrollView(
