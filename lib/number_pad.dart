@@ -66,13 +66,26 @@ class _NumberPadState extends State<NumberPad> {
     setState(() => _creating = true);
     final amountSats = BigInt.tryParse(_rawAmount);
     if (amountSats != null) {
-      final amountMsats = amountSats * BigInt.from(1000);
+      final requestedAmountMsats = amountSats * BigInt.from(1000);
 
       if (widget.paymentType == PaymentType.lightning) {
-        final invoice = await receive(federationId: widget.fed.federationId, amountMsats: amountMsats);
+        final gateway = await selectReceiveGateway(federationId: widget.fed.federationId);
+        final feeFromPpm = (requestedAmountMsats * gateway.$3) ~/ BigInt.from(1_000_000);
+        final totalMsats = requestedAmountMsats + gateway.$2 + feeFromPpm;
+        final invoice = await receive(federationId: widget.fed.federationId, amountMsats: totalMsats);
         showCarbineModalBottomSheet(
           context: context,
-          child: Request(invoice: invoice.$1, fed: widget.fed, operationId: invoice.$2, amountMsats: amountMsats),
+          child: Request(
+            invoice: invoice.$1,
+            fed: widget.fed,
+            operationId: invoice.$2,
+            requestedAmountMsats: requestedAmountMsats,
+            totalMsats: totalMsats,
+            gateway: gateway.$1,
+            pubkey: invoice.$3,
+            paymentHash: invoice.$4,
+            expiry: invoice.$5,
+          ),
         );
       } else if (widget.paymentType == PaymentType.ecash) {
         showCarbineModalBottomSheet(

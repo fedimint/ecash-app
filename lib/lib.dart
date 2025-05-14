@@ -6,7 +6,7 @@
 import 'frb_generated.dart';
 import 'package:flutter_rust_bridge/flutter_rust_bridge_for_generated.dart';
 
-// These functions are ignored because they are not marked as `pub`: `add_relay`, `await_ecash_reissue`, `await_ecash_send`, `await_receive_lnv1`, `await_receive_lnv2`, `await_send_lnv1`, `await_send_lnv2`, `build_client`, `create_nostr_client`, `derive_federation_secret`, `get_client_database`, `get_federation_meta`, `get_multimint`, `has_federation`, `lnv1_select_gateway`, `lnv1_update_gateway_cache`, `load_clients`, `parse_content`, `parse_federation_id`, `parse_federation_name`, `parse_invite_codes`, `parse_modules`, `parse_network`, `parse_picture`, `pay_lnv1`, `pay_lnv2`, `receive_lnv1`, `receive_lnv2`, `reissue_ecash`, `send_ecash`, `transactions`
+// These functions are ignored because they are not marked as `pub`: `add_relay`, `await_ecash_reissue`, `await_ecash_send`, `await_receive_lnv1`, `await_receive_lnv2`, `await_send_lnv1`, `await_send_lnv2`, `build_client`, `create_nostr_client`, `derive_federation_secret`, `get_client_database`, `get_federation_meta`, `get_multimint`, `has_federation`, `lnv1_select_gateway`, `lnv1_update_gateway_cache`, `lnv2_select_gateway`, `load_clients`, `parse_content`, `parse_federation_id`, `parse_federation_name`, `parse_invite_codes`, `parse_modules`, `parse_network`, `parse_picture`, `pay_lnv1`, `pay_lnv2`, `receive_lnv1`, `receive_lnv2`, `reissue_ecash`, `select_receive_gateway`, `send_ecash`, `transactions`
 // These function are ignored because they are on traits that is not defined in current crate (put an empty `#[frb]` on it to unignore): `assert_receiver_is_total_eq`, `assert_receiver_is_total_eq`, `assert_receiver_is_total_eq`, `assert_receiver_is_total_eq`, `clone`, `clone`, `clone`, `clone`, `eq`, `eq`, `eq`, `eq`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `try_from`
 
 Future<void> initMultimint({required String path}) =>
@@ -21,13 +21,18 @@ Future<List<FederationSelector>> federations() =>
 Future<BigInt> balance({required FederationId federationId}) =>
     RustLib.instance.api.crateBalance(federationId: federationId);
 
-Future<(String, OperationId)> receive({
+Future<(String, OperationId, String, String, BigInt)> receive({
   required FederationId federationId,
   required BigInt amountMsats,
 }) => RustLib.instance.api.crateReceive(
   federationId: federationId,
   amountMsats: amountMsats,
 );
+
+Future<(String, BigInt, BigInt)> selectReceiveGateway({
+  required FederationId federationId,
+}) =>
+    RustLib.instance.api.crateSelectReceiveGateway(federationId: federationId);
 
 Future<OperationId> send({
   required FederationId federationId,
@@ -108,6 +113,9 @@ Future<ReissueExternalNotesState> awaitEcashReissue({
   operationId: operationId,
 );
 
+// Rust type: RustOpaqueMoi<flutter_rust_bridge::for_generated::RustAutoOpaqueInner<Bolt11Invoice>>
+abstract class Bolt11Invoice implements RustOpaqueInterface {}
+
 // Rust type: RustOpaqueMoi<flutter_rust_bridge::for_generated::RustAutoOpaqueInner<ClientConfig>>
 abstract class ClientConfig implements RustOpaqueInterface {}
 
@@ -167,7 +175,7 @@ abstract class Multimint implements RustOpaqueInterface {
   static Future<Multimint> newInstance({required String path}) =>
       RustLib.instance.api.crateMultimintNew(path: path);
 
-  Future<(String, OperationId)> receive({
+  Future<(Bolt11Invoice, OperationId)> receive({
     required FederationId federationId,
     required BigInt amountMsats,
   });

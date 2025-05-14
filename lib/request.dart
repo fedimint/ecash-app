@@ -8,14 +8,24 @@ class Request extends StatefulWidget {
   final String invoice;
   final OperationId operationId;
   final FederationSelector fed;
-  final BigInt amountMsats;
+  final BigInt requestedAmountMsats;
+  final BigInt totalMsats;
+  final String gateway;
+  final String pubkey;
+  final String paymentHash;
+  final BigInt expiry;
 
   const Request({
     super.key,
     required this.invoice,
     required this.operationId,
     required this.fed,
-    required this.amountMsats,
+    required this.requestedAmountMsats,
+    required this.totalMsats,
+    required this.gateway,
+    required this.pubkey,
+    required this.paymentHash,
+    required this.expiry,
   });
 
   @override
@@ -66,7 +76,6 @@ class _RequestState extends State<Request> with SingleTickerProviderStateMixin {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final qrSize = MediaQuery.of(context).size.width * 0.75;
     final abbreviatedInvoice = _getAbbreviatedInvoice(widget.invoice);
 
     if (_received) {
@@ -75,7 +84,7 @@ class _RequestState extends State<Request> with SingleTickerProviderStateMixin {
           body: Success(
             lightning: true,
             received: true,
-            amountMsats: widget.amountMsats,
+            amountMsats: widget.requestedAmountMsats,
           ),
         ),
       );
@@ -125,7 +134,7 @@ class _RequestState extends State<Request> with SingleTickerProviderStateMixin {
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
             decoration: BoxDecoration(
-              color: theme.colorScheme.surfaceVariant,
+              color: theme.colorScheme.surfaceContainerHighest,
               borderRadius: BorderRadius.circular(12),
               border: Border.all(color: theme.colorScheme.primary.withOpacity(0.4)),
             ),

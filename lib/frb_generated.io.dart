@@ -20,6 +20,10 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   });
 
   CrossPlatformFinalizerArg
+  get rust_arc_decrement_strong_count_Bolt11InvoicePtr =>
+      wire._rust_arc_decrement_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerBolt11InvoicePtr;
+
+  CrossPlatformFinalizerArg
   get rust_arc_decrement_strong_count_ClientConfigPtr =>
       wire._rust_arc_decrement_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerClientConfigPtr;
 
@@ -70,6 +74,12 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
 
   @protected
   AnyhowException dco_decode_AnyhowException(dynamic raw);
+
+  @protected
+  Bolt11Invoice
+  dco_decode_Auto_Owned_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerBolt11Invoice(
+    dynamic raw,
+  );
 
   @protected
   ClientConfig
@@ -204,6 +214,12 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   );
 
   @protected
+  Bolt11Invoice
+  dco_decode_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerBolt11Invoice(
+    dynamic raw,
+  );
+
+  @protected
   ClientConfig
   dco_decode_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerClientConfig(
     dynamic raw,
@@ -333,6 +349,12 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   PaymentPreview dco_decode_payment_preview(dynamic raw);
 
   @protected
+  (Bolt11Invoice, OperationId)
+  dco_decode_record_auto_owned_rust_opaque_flutter_rust_bridgefor_generated_rust_auto_opaque_inner_bolt_11_invoice_auto_owned_rust_opaque_flutter_rust_bridgefor_generated_rust_auto_opaque_inner_operation_id(
+    dynamic raw,
+  );
+
+  @protected
   (OperationId, String, BigInt)
   dco_decode_record_auto_owned_rust_opaque_flutter_rust_bridgefor_generated_rust_auto_opaque_inner_operation_id_string_u_64(
     dynamic raw,
@@ -345,10 +367,13 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   );
 
   @protected
-  (String, OperationId)
-  dco_decode_record_string_auto_owned_rust_opaque_flutter_rust_bridgefor_generated_rust_auto_opaque_inner_operation_id(
+  (String, OperationId, String, String, BigInt)
+  dco_decode_record_string_auto_owned_rust_opaque_flutter_rust_bridgefor_generated_rust_auto_opaque_inner_operation_id_string_string_u_64(
     dynamic raw,
   );
+
+  @protected
+  (String, BigInt, BigInt) dco_decode_record_string_u_64_u_64(dynamic raw);
 
   @protected
   Transaction dco_decode_transaction(dynamic raw);
@@ -367,6 +392,12 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
 
   @protected
   AnyhowException sse_decode_AnyhowException(SseDeserializer deserializer);
+
+  @protected
+  Bolt11Invoice
+  sse_decode_Auto_Owned_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerBolt11Invoice(
+    SseDeserializer deserializer,
+  );
 
   @protected
   ClientConfig
@@ -501,6 +532,12 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   );
 
   @protected
+  Bolt11Invoice
+  sse_decode_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerBolt11Invoice(
+    SseDeserializer deserializer,
+  );
+
+  @protected
   ClientConfig
   sse_decode_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerClientConfig(
     SseDeserializer deserializer,
@@ -630,6 +667,12 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   PaymentPreview sse_decode_payment_preview(SseDeserializer deserializer);
 
   @protected
+  (Bolt11Invoice, OperationId)
+  sse_decode_record_auto_owned_rust_opaque_flutter_rust_bridgefor_generated_rust_auto_opaque_inner_bolt_11_invoice_auto_owned_rust_opaque_flutter_rust_bridgefor_generated_rust_auto_opaque_inner_operation_id(
+    SseDeserializer deserializer,
+  );
+
+  @protected
   (OperationId, String, BigInt)
   sse_decode_record_auto_owned_rust_opaque_flutter_rust_bridgefor_generated_rust_auto_opaque_inner_operation_id_string_u_64(
     SseDeserializer deserializer,
@@ -642,8 +685,13 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   );
 
   @protected
-  (String, OperationId)
-  sse_decode_record_string_auto_owned_rust_opaque_flutter_rust_bridgefor_generated_rust_auto_opaque_inner_operation_id(
+  (String, OperationId, String, String, BigInt)
+  sse_decode_record_string_auto_owned_rust_opaque_flutter_rust_bridgefor_generated_rust_auto_opaque_inner_operation_id_string_string_u_64(
+    SseDeserializer deserializer,
+  );
+
+  @protected
+  (String, BigInt, BigInt) sse_decode_record_string_u_64_u_64(
     SseDeserializer deserializer,
   );
 
@@ -668,6 +716,13 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   @protected
   void sse_encode_AnyhowException(
     AnyhowException self,
+    SseSerializer serializer,
+  );
+
+  @protected
+  void
+  sse_encode_Auto_Owned_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerBolt11Invoice(
+    Bolt11Invoice self,
     SseSerializer serializer,
   );
 
@@ -822,6 +877,13 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   void
   sse_encode_Auto_Ref_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerPublicFederation(
     PublicFederation self,
+    SseSerializer serializer,
+  );
+
+  @protected
+  void
+  sse_encode_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerBolt11Invoice(
+    Bolt11Invoice self,
     SseSerializer serializer,
   );
 
@@ -986,6 +1048,13 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
 
   @protected
   void
+  sse_encode_record_auto_owned_rust_opaque_flutter_rust_bridgefor_generated_rust_auto_opaque_inner_bolt_11_invoice_auto_owned_rust_opaque_flutter_rust_bridgefor_generated_rust_auto_opaque_inner_operation_id(
+    (Bolt11Invoice, OperationId) self,
+    SseSerializer serializer,
+  );
+
+  @protected
+  void
   sse_encode_record_auto_owned_rust_opaque_flutter_rust_bridgefor_generated_rust_auto_opaque_inner_operation_id_string_u_64(
     (OperationId, String, BigInt) self,
     SseSerializer serializer,
@@ -1000,8 +1069,14 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
 
   @protected
   void
-  sse_encode_record_string_auto_owned_rust_opaque_flutter_rust_bridgefor_generated_rust_auto_opaque_inner_operation_id(
-    (String, OperationId) self,
+  sse_encode_record_string_auto_owned_rust_opaque_flutter_rust_bridgefor_generated_rust_auto_opaque_inner_operation_id_string_string_u_64(
+    (String, OperationId, String, String, BigInt) self,
+    SseSerializer serializer,
+  );
+
+  @protected
+  void sse_encode_record_string_u_64_u_64(
+    (String, BigInt, BigInt) self,
     SseSerializer serializer,
   );
 
@@ -1037,6 +1112,40 @@ class RustLibWire implements BaseWire {
   /// The symbols are looked up in [dynamicLibrary].
   RustLibWire(ffi.DynamicLibrary dynamicLibrary)
     : _lookup = dynamicLibrary.lookup;
+
+  void
+  rust_arc_increment_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerBolt11Invoice(
+    ffi.Pointer<ffi.Void> ptr,
+  ) {
+    return _rust_arc_increment_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerBolt11Invoice(
+      ptr,
+    );
+  }
+
+  late final _rust_arc_increment_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerBolt11InvoicePtr =
+      _lookup<ffi.NativeFunction<ffi.Void Function(ffi.Pointer<ffi.Void>)>>(
+        'frbgen_carbine_rust_arc_increment_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerBolt11Invoice',
+      );
+  late final _rust_arc_increment_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerBolt11Invoice =
+      _rust_arc_increment_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerBolt11InvoicePtr
+          .asFunction<void Function(ffi.Pointer<ffi.Void>)>();
+
+  void
+  rust_arc_decrement_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerBolt11Invoice(
+    ffi.Pointer<ffi.Void> ptr,
+  ) {
+    return _rust_arc_decrement_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerBolt11Invoice(
+      ptr,
+    );
+  }
+
+  late final _rust_arc_decrement_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerBolt11InvoicePtr =
+      _lookup<ffi.NativeFunction<ffi.Void Function(ffi.Pointer<ffi.Void>)>>(
+        'frbgen_carbine_rust_arc_decrement_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerBolt11Invoice',
+      );
+  late final _rust_arc_decrement_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerBolt11Invoice =
+      _rust_arc_decrement_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerBolt11InvoicePtr
+          .asFunction<void Function(ffi.Pointer<ffi.Void>)>();
 
   void
   rust_arc_increment_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerClientConfig(
