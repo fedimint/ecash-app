@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:carbine/lib.dart';
 import 'package:carbine/main.dart';
 import 'package:carbine/success.dart';
@@ -36,11 +38,33 @@ class Request extends StatefulWidget {
 class _RequestState extends State<Request> with SingleTickerProviderStateMixin {
   bool _received = false;
   bool _copied = false;
+  late Duration _remaining;
+  Timer? _timer;
 
   @override
   void initState() {
     super.initState();
+    _remaining = Duration(seconds: widget.expiry.toInt());
+    _startCountdown();
     _waitForPayment();
+  }
+
+  @override
+  void dispose() {
+    _timer?.cancel();
+    super.dispose();
+  }
+
+  void _startCountdown() {
+    _timer = Timer.periodic(const Duration(seconds: 1), (timer) {
+      if (_remaining.inSeconds <= 0) {
+        timer.cancel();
+        return;
+      }
+      setState(() {
+        _remaining -= const Duration(seconds: 1);
+      });
+    });
   }
 
   void _waitForPayment() async {
@@ -74,6 +98,13 @@ class _RequestState extends State<Request> with SingleTickerProviderStateMixin {
     });
   }
 
+  String _formatDuration(Duration d) {
+    final minutes = d.inMinutes.remainder(60).toString().padLeft(2, '0');
+    final seconds = d.inSeconds.remainder(60).toString().padLeft(2, '0');
+    return '$minutes:$seconds';
+  }
+
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -97,6 +128,27 @@ class _RequestState extends State<Request> with SingleTickerProviderStateMixin {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
+          Row(
+            children: [
+              const Spacer(),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                decoration: BoxDecoration(
+                  color: theme.colorScheme.surfaceContainerHighest,
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: theme.colorScheme.primary.withOpacity(0.5)),
+                ),
+                child: Text(
+                  _formatDuration(_remaining),
+                  style: theme.textTheme.labelMedium?.copyWith(
+                    color: theme.colorScheme.onSurface,
+                    fontFeatures: [const FontFeature.tabularFigures()],
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
           Text(
             'Lightning Request',
             style: theme.textTheme.headlineSmall?.copyWith(
@@ -192,31 +244,44 @@ class _RequestState extends State<Request> with SingleTickerProviderStateMixin {
 }
 
 Widget _buildDetailRow(ThemeData theme, String label, String value) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 8),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            '$label: ',
+  return Padding(
+    padding: const EdgeInsets.symmetric(vertical: 6),
+    child: Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        SizedBox(
+          width: 100, // Fixed width to align values nicely
+          child: Text(
+            label,
             style: theme.textTheme.bodyMedium?.copyWith(
-              color: theme.colorScheme.onSurface.withOpacity(0.8),
+              color: theme.colorScheme.onSurface.withOpacity(0.7),
               fontWeight: FontWeight.w600,
             ),
           ),
-          Expanded(
-            child: Text(
-              value,
-              style: theme.textTheme.bodyMedium?.copyWith(
-                color: theme.colorScheme.onSurface,
-              ),
-              softWrap: true,
-              maxLines: null,
-            ),
+        ),
+        Container(
+          margin: const EdgeInsets.only(right: 8),
+          height: 20,
+          width: 2,
+          decoration: BoxDecoration(
+            color: theme.colorScheme.primary.withOpacity(0.7),
+            borderRadius: BorderRadius.circular(1),
           ),
-        ],
-      ),
-    );
-  }
-
+        ),
+        Expanded(
+          child: Text(
+            value,
+            style: theme.textTheme.bodyMedium?.copyWith(
+              color: theme.colorScheme.onSurface,
+              fontFamily: 'monospace', // adds cool, techy look
+              height: 1.4,
+            ),
+            softWrap: true,
+            maxLines: null,
+          ),
+        ),
+      ],
+    ),
+  );
+}
 
