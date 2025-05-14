@@ -22,8 +22,9 @@ class Request extends StatefulWidget {
   State<Request> createState() => _RequestState();
 }
 
-class _RequestState extends State<Request> {
+class _RequestState extends State<Request> with SingleTickerProviderStateMixin {
   bool _received = false;
+  bool _copied = false;
 
   @override
   void initState() {
@@ -36,11 +37,11 @@ class _RequestState extends State<Request> {
       federationId: widget.fed.federationId,
       operationId: widget.operationId,
     );
-    setState(() {
-      _received = true;
-    });
+    setState(() => _received = true);
     await Future.delayed(const Duration(seconds: 4));
-    Navigator.of(context, rootNavigator: true).popUntil((route) => route.isFirst);
+    if (mounted) {
+      Navigator.of(context, rootNavigator: true).popUntil((route) => route.isFirst);
+    }
   }
 
   String _getAbbreviatedInvoice(String invoice) {
@@ -48,11 +49,25 @@ class _RequestState extends State<Request> {
     return '${invoice.substring(0, 7)}...${invoice.substring(invoice.length - 7)}';
   }
 
+  void _copyInvoice() {
+    Clipboard.setData(ClipboardData(text: widget.invoice));
+    setState(() => _copied = true);
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('Invoice copied to clipboard'),
+        duration: Duration(seconds: 2),
+      ),
+    );
+    Future.delayed(const Duration(seconds: 2), () {
+      if (mounted) setState(() => _copied = false);
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
-    final abbreviatedInvoice = _getAbbreviatedInvoice(widget.invoice);
     final theme = Theme.of(context);
-    final qrSize = MediaQuery.of(context).size.width * 0.8;
+    final qrSize = MediaQuery.of(context).size.width * 0.75;
+    final abbreviatedInvoice = _getAbbreviatedInvoice(widget.invoice);
 
     if (_received) {
       return SafeArea(
@@ -66,56 +81,83 @@ class _RequestState extends State<Request> {
       );
     }
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        Text(
-          'Lightning Request',
-          style: theme.textTheme.titleLarge?.copyWith(fontSize: 22),
-          textAlign: TextAlign.center,
-        ),
-        const SizedBox(height: 24),
-        Center(
-          child: QrImageView(
-            data: widget.invoice,
-            version: QrVersions.auto,
-            size: qrSize,
-            backgroundColor: Colors.white,
+    return Padding(
+      padding: const EdgeInsets.all(20),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text(
+            'Lightning Request',
+            style: theme.textTheme.headlineSmall?.copyWith(
+              color: theme.colorScheme.primary,
+              fontWeight: FontWeight.bold,
+            ),
           ),
-        ),
-        const SizedBox(height: 24),
-        Container(
-          decoration: BoxDecoration(
-            color: theme.colorScheme.surface,
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: theme.colorScheme.primary.withOpacity(0.5)),
-          ),
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
-          child: Row(
-            children: [
-              Expanded(
-                child: Text(
-                  abbreviatedInvoice,
-                  style: theme.textTheme.bodyLarge,
-                  overflow: TextOverflow.ellipsis,
+          const SizedBox(height: 24),
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: theme.colorScheme.surface,
+              borderRadius: BorderRadius.circular(16),
+              boxShadow: [
+                BoxShadow(
+                  color: theme.colorScheme.primary.withOpacity(0.3),
+                  blurRadius: 12,
+                  spreadRadius: 1,
                 ),
+              ],
+              border: Border.all(
+                color: theme.colorScheme.primary.withOpacity(0.7),
+                width: 1.5,
               ),
-              IconButton(
-                icon: const Icon(Icons.copy),
-                onPressed: () {
-                  Clipboard.setData(ClipboardData(text: widget.invoice));
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text('Invoice copied to clipboard'),
-                      duration: Duration(seconds: 2),
-                    ),
-                  );
-                },
+            ),
+            child: AspectRatio(
+              aspectRatio: 1, // Ensure square shape
+              child: QrImageView(
+                data: widget.invoice,
+                version: QrVersions.auto,
+                backgroundColor: Colors.white,
+                padding: EdgeInsets.zero, // Remove internal padding
               ),
-            ],
+            ),
           ),
-        ),
-      ],
+          const SizedBox(height: 24),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+            decoration: BoxDecoration(
+              color: theme.colorScheme.surfaceVariant,
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: theme.colorScheme.primary.withOpacity(0.4)),
+            ),
+            child: Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    abbreviatedInvoice,
+                    style: theme.textTheme.bodyLarge?.copyWith(
+                      color: theme.colorScheme.onSurface,
+                      fontWeight: FontWeight.w500,
+                    ),
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+                IconButton(
+                  icon: AnimatedSwitcher(
+                    duration: const Duration(milliseconds: 300),
+                    transitionBuilder: (child, anim) =>
+                        ScaleTransition(scale: anim, child: child),
+                    child: _copied
+                        ? Icon(Icons.check, key: const ValueKey('copied'), color: theme.colorScheme.primary)
+                        : Icon(Icons.copy, key: const ValueKey('copy'), color: theme.colorScheme.primary),
+                  ),
+                  onPressed: _copyInvoice,
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
     );
   }
 }
+
