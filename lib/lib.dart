@@ -6,7 +6,7 @@
 import 'frb_generated.dart';
 import 'package:flutter_rust_bridge/flutter_rust_bridge_for_generated.dart';
 
-// These functions are ignored because they are not marked as `pub`: `add_relay`, `await_ecash_reissue`, `await_ecash_send`, `await_receive_lnv1`, `await_receive_lnv2`, `await_send_lnv1`, `await_send_lnv2`, `build_client`, `create_nostr_client`, `derive_federation_secret`, `get_client_database`, `get_federation_meta`, `get_multimint`, `has_federation`, `lnv1_select_gateway`, `lnv1_update_gateway_cache`, `lnv2_select_gateway`, `load_clients`, `parse_content`, `parse_federation_id`, `parse_federation_name`, `parse_invite_codes`, `parse_modules`, `parse_network`, `parse_picture`, `pay_lnv1`, `pay_lnv2`, `receive_lnv1`, `receive_lnv2`, `reissue_ecash`, `select_receive_gateway`, `send_ecash`, `transactions`
+// These functions are ignored because they are not marked as `pub`: `add_relay`, `await_ecash_reissue`, `await_ecash_send`, `await_receive_lnv1`, `await_receive_lnv2`, `await_send_lnv1`, `await_send_lnv2`, `build_client`, `create_nostr_client`, `derive_federation_secret`, `get_client_database`, `get_federation_meta`, `get_multimint`, `has_federation`, `lnv1_select_gateway`, `lnv1_update_gateway_cache`, `lnv2_select_gateway`, `load_clients`, `parse_content`, `parse_federation_id`, `parse_federation_name`, `parse_invite_codes`, `parse_modules`, `parse_network`, `parse_picture`, `pay_lnv1`, `pay_lnv2`, `receive_lnv1`, `receive_lnv2`, `reissue_ecash`, `select_receive_gateway`, `select_send_gateway`, `send_ecash`, `transactions`
 // These function are ignored because they are on traits that is not defined in current crate (put an empty `#[frb]` on it to unignore): `assert_receiver_is_total_eq`, `assert_receiver_is_total_eq`, `assert_receiver_is_total_eq`, `assert_receiver_is_total_eq`, `clone`, `clone`, `clone`, `clone`, `eq`, `eq`, `eq`, `eq`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `try_from`
 
 Future<void> initMultimint({required String path}) =>
@@ -69,8 +69,13 @@ Future<List<PublicFederation>> listFederationsFromNostr({
   forceUpdate: forceUpdate,
 );
 
-Future<PaymentPreview> parseInvoice({required String bolt11}) =>
-    RustLib.instance.api.crateParseInvoice(bolt11: bolt11);
+Future<PaymentPreview> paymentPreview({
+  required FederationId federationId,
+  required String bolt11,
+}) => RustLib.instance.api.cratePaymentPreview(
+  federationId: federationId,
+  bolt11: bolt11,
+);
 
 Future<(FederationMeta, FederationSelector)> getFederationMeta({
   required String inviteCode,
@@ -275,34 +280,50 @@ class Guardian {
 }
 
 class PaymentPreview {
-  final BigInt amount;
+  final BigInt amountMsats;
   final String paymentHash;
   final String network;
   final String invoice;
+  final String gateway;
+  final BigInt sendFeeBase;
+  final BigInt sendFeePpm;
+  final BigInt fedFee;
 
   const PaymentPreview({
-    required this.amount,
+    required this.amountMsats,
     required this.paymentHash,
     required this.network,
     required this.invoice,
+    required this.gateway,
+    required this.sendFeeBase,
+    required this.sendFeePpm,
+    required this.fedFee,
   });
 
   @override
   int get hashCode =>
-      amount.hashCode ^
+      amountMsats.hashCode ^
       paymentHash.hashCode ^
       network.hashCode ^
-      invoice.hashCode;
+      invoice.hashCode ^
+      gateway.hashCode ^
+      sendFeeBase.hashCode ^
+      sendFeePpm.hashCode ^
+      fedFee.hashCode;
 
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
       other is PaymentPreview &&
           runtimeType == other.runtimeType &&
-          amount == other.amount &&
+          amountMsats == other.amountMsats &&
           paymentHash == other.paymentHash &&
           network == other.network &&
-          invoice == other.invoice;
+          invoice == other.invoice &&
+          gateway == other.gateway &&
+          sendFeeBase == other.sendFeeBase &&
+          sendFeePpm == other.sendFeePpm &&
+          fedFee == other.fedFee;
 }
 
 class Transaction {
