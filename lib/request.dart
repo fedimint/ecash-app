@@ -36,7 +36,6 @@ class Request extends StatefulWidget {
 }
 
 class _RequestState extends State<Request> with SingleTickerProviderStateMixin {
-  bool _received = false;
   bool _copied = false;
   late Duration _remaining;
   Timer? _timer;
@@ -74,7 +73,11 @@ class _RequestState extends State<Request> with SingleTickerProviderStateMixin {
       federationId: widget.fed.federationId,
       operationId: widget.operationId,
     );
-    setState(() => _received = true);
+    Navigator.push(context, MaterialPageRoute(builder: (context) => Success(
+      lightning: true,
+      received: true,
+      amountMsats: widget.requestedAmountMsats
+    )));
     await Future.delayed(const Duration(seconds: 4));
     if (mounted) {
       Navigator.of(context, rootNavigator: true).popUntil((route) => route.isFirst);
@@ -119,18 +122,6 @@ class _RequestState extends State<Request> with SingleTickerProviderStateMixin {
     final theme = Theme.of(context);
     final abbreviatedInvoice = _getAbbreviatedInvoice(widget.invoice);
     final fees = widget.totalMsats - widget.requestedAmountMsats;
-
-    if (_received) {
-      return SafeArea(
-        child: Scaffold(
-          body: Success(
-            lightning: true,
-            received: true,
-            amountMsats: widget.requestedAmountMsats,
-          ),
-        ),
-      );
-    }
 
     return Padding(
       padding: const EdgeInsets.all(20),
