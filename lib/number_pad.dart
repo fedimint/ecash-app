@@ -9,6 +9,7 @@ import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:intl/intl.dart';
 import 'package:numpad_layout/widgets/numpad.dart';
+import 'package:flutter/services.dart';
 
 class NumberPad extends StatefulWidget {
   final FederationSelector fed;
@@ -20,6 +21,8 @@ class NumberPad extends StatefulWidget {
 }
 
 class _NumberPadState extends State<NumberPad> {
+  final FocusNode _numpadFocus = FocusNode();
+
   String _rawAmount = '';
   bool _creating = false;
   double? _btcPriceUsd;
@@ -28,6 +31,16 @@ class _NumberPadState extends State<NumberPad> {
   void initState() {
     super.initState();
     _fetchPrice();
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _numpadFocus.requestFocus();
+    });
+  }
+
+  @override
+  void dispose() {
+    _numpadFocus.dispose();
+    super.dispose();
   }
 
   Future<void> _fetchPrice() async {
@@ -110,6 +123,51 @@ class _NumberPadState extends State<NumberPad> {
     setState(() => _creating = false);
   }
 
+  void _handleKeyEvent(KeyEvent event) {
+    // only handle on key down
+    if (event is KeyDownEvent) {
+      final key = event.logicalKey;
+      // Handle Enter for confirm
+      if (key == LogicalKeyboardKey.enter ||
+          key == LogicalKeyboardKey.numpadEnter) {
+        _onConfirm();
+        return;
+      }
+
+      String digit = '';
+      if (key == LogicalKeyboardKey.digit0 || key == LogicalKeyboardKey.numpad0)
+        digit = '0';
+      if (key == LogicalKeyboardKey.digit1 || key == LogicalKeyboardKey.numpad1)
+        digit = '1';
+      if (key == LogicalKeyboardKey.digit2 || key == LogicalKeyboardKey.numpad2)
+        digit = '2';
+      if (key == LogicalKeyboardKey.digit3 || key == LogicalKeyboardKey.numpad3)
+        digit = '3';
+      if (key == LogicalKeyboardKey.digit4 || key == LogicalKeyboardKey.numpad4)
+        digit = '4';
+      if (key == LogicalKeyboardKey.digit5 || key == LogicalKeyboardKey.numpad5)
+        digit = '5';
+      if (key == LogicalKeyboardKey.digit6 || key == LogicalKeyboardKey.numpad6)
+        digit = '6';
+      if (key == LogicalKeyboardKey.digit7 || key == LogicalKeyboardKey.numpad7)
+        digit = '7';
+      if (key == LogicalKeyboardKey.digit8 || key == LogicalKeyboardKey.numpad8)
+        digit = '8';
+      if (key == LogicalKeyboardKey.digit9 || key == LogicalKeyboardKey.numpad9)
+        digit = '9';
+      if (key == LogicalKeyboardKey.backspace) {
+        setState(() {
+          if (_rawAmount.isNotEmpty) {
+            _rawAmount = _rawAmount.substring(0, _rawAmount.length - 1);
+          }
+        });
+      }
+      if (digit != '') {
+        setState(() => _rawAmount += digit);
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final usdText = _calculateUsdValue();
@@ -157,30 +215,34 @@ class _NumberPadState extends State<NumberPad> {
             ),
             const SizedBox(height: 24),
             Expanded(
-              child: Center(
-                child: NumPad(
-                  arabicDigits: false,
-                  onType: (value) {
-                    setState(() {
-                      _rawAmount += value.toString();
-                    });
-                  },
-                  numberStyle: const TextStyle(
-                    fontSize: 24,
-                    color: Colors.grey,
-                  ),
-                  rightWidget: IconButton(
-                    onPressed: () {
+              child: KeyboardListener(
+                focusNode: _numpadFocus,
+                onKeyEvent: _handleKeyEvent,
+                child: Center(
+                  child: NumPad(
+                    arabicDigits: false,
+                    onType: (value) {
                       setState(() {
-                        if (_rawAmount.isNotEmpty) {
-                          _rawAmount = _rawAmount.substring(
-                            0,
-                            _rawAmount.length - 1,
-                          );
-                        }
+                        _rawAmount += value.toString();
                       });
                     },
-                    icon: const Icon(Icons.backspace),
+                    numberStyle: const TextStyle(
+                      fontSize: 24,
+                      color: Colors.grey,
+                    ),
+                    rightWidget: IconButton(
+                      onPressed: () {
+                        setState(() {
+                          if (_rawAmount.isNotEmpty) {
+                            _rawAmount = _rawAmount.substring(
+                              0,
+                              _rawAmount.length - 1,
+                            );
+                          }
+                        });
+                      },
+                      icon: const Icon(Icons.backspace),
+                    ),
                   ),
                 ),
               ),
