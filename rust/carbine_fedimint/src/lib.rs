@@ -152,6 +152,25 @@ pub async fn select_receive_gateway(
 }
 
 #[frb]
+pub async fn send_lnaddress(federation_id: &FederationId, amount_msats: u64, address: String) -> anyhow::Result<OperationId> {
+    let lnurl = lnurl::lightning_address::LightningAddress::from_str(&address)?.lnurl();
+    let async_client = lnurl::AsyncClient::from_client(reqwest::Client::new());
+    let response = async_client.make_request(&lnurl.url).await?;
+    match response {
+        lnurl::LnUrlResponse::LnUrlPayResponse(response) => {
+            let invoice = async_client.get_invoice(&response, amount_msats, None, None).await?;
+
+            let multimint = get_multimint().await;
+            let mm = multimint.read().await;
+            return mm.send(federation_id, invoice.invoice().to_string()).await;
+        }
+        other => bail!("Unexpected response from lnurl: {other:?}"),
+    }
+
+    Err(anyhow!("Could not retrieve invoice"))
+}
+
+#[frb]
 pub async fn send(federation_id: &FederationId, invoice: String) -> anyhow::Result<OperationId> {
     let multimint = get_multimint().await;
     let mm = multimint.read().await;
@@ -1205,9 +1224,9 @@ impl Multimint {
             (url, send_fee)
         };
 
-        //Ok((url, fee, fed_fee.msats))
+        Ok((url, fee, fed_fee.msats))
         // Uncomment this to use LNv2
-        Err(anyhow!("Simulating error until LNv2 is done properly"))
+        //Err(anyhow!("Simulating error until LNv2 is done properly"))
     }
 
     async fn transactions(

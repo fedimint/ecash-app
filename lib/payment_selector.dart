@@ -1,5 +1,6 @@
 import 'package:carbine/lib.dart';
 import 'package:carbine/scan.dart';
+import 'package:carbine/send.dart';
 import 'package:flutter/material.dart';
 
 class PaymentMethodSelector extends StatefulWidget {
@@ -117,9 +118,15 @@ class _PaymentMethodSelectorState extends State<PaymentMethodSelector> {
 
   void _onConfirmPressed() async {
     if (_selected == 'lnaddress') {
-      final address = _lightningAddressController.text;
-      final amount = _amountController.text;
-      print('Lightning Address: $address, Amount: $amount');
+      try {
+        final address = _lightningAddressController.text;
+        final amount = BigInt.parse(_amountController.text) * BigInt.from(1000);
+        print('Lightning Address: $address, Amount: $amount');
+        await Navigator.push(context, MaterialPageRoute(builder: (context) => SendPayment(fed: widget.fed, amountMsats: amount, lnAddress: address)));
+      } catch (_) {
+        print("Error paying lightning address");
+      }
+      
     } else {
       await Navigator.push(context, MaterialPageRoute(builder: (context) => ScanQRPage(selectedFed: widget.fed)));
     }

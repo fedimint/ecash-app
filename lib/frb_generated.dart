@@ -63,7 +63,7 @@ class RustLib extends BaseEntrypoint<RustLibApi, RustLibApiImpl, RustLibWire> {
   String get codegenVersion => '2.9.0';
 
   @override
-  int get rustContentHash => 658923129;
+  int get rustContentHash => -1555487335;
 
   static const kDefaultExternalLibraryLoaderConfig =
       ExternalLibraryLoaderConfig(
@@ -328,6 +328,12 @@ abstract class RustLibApi extends BaseApi {
   Future<(OperationId, String, BigInt)> crateSendEcash({
     required FederationId federationId,
     required BigInt amountMsats,
+  });
+
+  Future<OperationId> crateSendLnaddress({
+    required FederationId federationId,
+    required BigInt amountMsats,
+    required String address,
   });
 
   Future<List<Transaction>> crateTransactions({
@@ -2478,6 +2484,46 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   );
 
   @override
+  Future<OperationId> crateSendLnaddress({
+    required FederationId federationId,
+    required BigInt amountMsats,
+    required String address,
+  }) {
+    return handler.executeNormal(
+      NormalTask(
+        callFfi: (port_) {
+          final serializer = SseSerializer(generalizedFrbRustBinding);
+          sse_encode_Auto_Ref_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerFederationId(
+            federationId,
+            serializer,
+          );
+          sse_encode_u_64(amountMsats, serializer);
+          sse_encode_String(address, serializer);
+          pdeCallFfi(
+            generalizedFrbRustBinding,
+            serializer,
+            funcId: 58,
+            port: port_,
+          );
+        },
+        codec: SseCodec(
+          decodeSuccessData:
+              sse_decode_Auto_Owned_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerOperationId,
+          decodeErrorData: sse_decode_AnyhowException,
+        ),
+        constMeta: kCrateSendLnaddressConstMeta,
+        argValues: [federationId, amountMsats, address],
+        apiImpl: this,
+      ),
+    );
+  }
+
+  TaskConstMeta get kCrateSendLnaddressConstMeta => const TaskConstMeta(
+    debugName: "send_lnaddress",
+    argNames: ["federationId", "amountMsats", "address"],
+  );
+
+  @override
   Future<List<Transaction>> crateTransactions({
     required FederationId federationId,
     BigInt? timestamp,
@@ -2498,7 +2544,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 58,
+            funcId: 59,
             port: port_,
           );
         },
