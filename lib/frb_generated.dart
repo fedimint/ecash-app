@@ -63,7 +63,7 @@ class RustLib extends BaseEntrypoint<RustLibApi, RustLibApiImpl, RustLibWire> {
   String get codegenVersion => '2.9.0';
 
   @override
-  int get rustContentHash => 81580466;
+  int get rustContentHash => 658923129;
 
   static const kDefaultExternalLibraryLoaderConfig =
       ExternalLibraryLoaderConfig(
@@ -299,7 +299,10 @@ abstract class RustLibApi extends BaseApi {
     required bool forceUpdate,
   });
 
-  Future<PaymentPreview> crateParseInvoice({required String bolt11});
+  Future<PaymentPreview> cratePaymentPreview({
+    required FederationId federationId,
+    required String bolt11,
+  });
 
   Future<(String, OperationId, String, String, BigInt)> crateReceive({
     required FederationId federationId,
@@ -2247,11 +2250,18 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
       );
 
   @override
-  Future<PaymentPreview> crateParseInvoice({required String bolt11}) {
+  Future<PaymentPreview> cratePaymentPreview({
+    required FederationId federationId,
+    required String bolt11,
+  }) {
     return handler.executeNormal(
       NormalTask(
         callFfi: (port_) {
           final serializer = SseSerializer(generalizedFrbRustBinding);
+          sse_encode_Auto_Ref_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerFederationId(
+            federationId,
+            serializer,
+          );
           sse_encode_String(bolt11, serializer);
           pdeCallFfi(
             generalizedFrbRustBinding,
@@ -2264,15 +2274,17 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           decodeSuccessData: sse_decode_payment_preview,
           decodeErrorData: sse_decode_AnyhowException,
         ),
-        constMeta: kCrateParseInvoiceConstMeta,
-        argValues: [bolt11],
+        constMeta: kCratePaymentPreviewConstMeta,
+        argValues: [federationId, bolt11],
         apiImpl: this,
       ),
     );
   }
 
-  TaskConstMeta get kCrateParseInvoiceConstMeta =>
-      const TaskConstMeta(debugName: "parse_invoice", argNames: ["bolt11"]);
+  TaskConstMeta get kCratePaymentPreviewConstMeta => const TaskConstMeta(
+    debugName: "payment_preview",
+    argNames: ["federationId", "bolt11"],
+  );
 
   @override
   Future<(String, OperationId, String, String, BigInt)> crateReceive({
@@ -3084,13 +3096,17 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   PaymentPreview dco_decode_payment_preview(dynamic raw) {
     // Codec=Dco (DartCObject based), see doc to use other codecs
     final arr = raw as List<dynamic>;
-    if (arr.length != 4)
-      throw Exception('unexpected arr length: expect 4 but see ${arr.length}');
+    if (arr.length != 8)
+      throw Exception('unexpected arr length: expect 8 but see ${arr.length}');
     return PaymentPreview(
-      amount: dco_decode_u_64(arr[0]),
+      amountMsats: dco_decode_u_64(arr[0]),
       paymentHash: dco_decode_String(arr[1]),
       network: dco_decode_String(arr[2]),
       invoice: dco_decode_String(arr[3]),
+      gateway: dco_decode_String(arr[4]),
+      sendFeeBase: dco_decode_u_64(arr[5]),
+      sendFeePpm: dco_decode_u_64(arr[6]),
+      fedFee: dco_decode_u_64(arr[7]),
     );
   }
 
@@ -3836,15 +3852,23 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   @protected
   PaymentPreview sse_decode_payment_preview(SseDeserializer deserializer) {
     // Codec=Sse (Serialization based), see doc to use other codecs
-    var var_amount = sse_decode_u_64(deserializer);
+    var var_amountMsats = sse_decode_u_64(deserializer);
     var var_paymentHash = sse_decode_String(deserializer);
     var var_network = sse_decode_String(deserializer);
     var var_invoice = sse_decode_String(deserializer);
+    var var_gateway = sse_decode_String(deserializer);
+    var var_sendFeeBase = sse_decode_u_64(deserializer);
+    var var_sendFeePpm = sse_decode_u_64(deserializer);
+    var var_fedFee = sse_decode_u_64(deserializer);
     return PaymentPreview(
-      amount: var_amount,
+      amountMsats: var_amountMsats,
       paymentHash: var_paymentHash,
       network: var_network,
       invoice: var_invoice,
+      gateway: var_gateway,
+      sendFeeBase: var_sendFeeBase,
+      sendFeePpm: var_sendFeePpm,
+      fedFee: var_fedFee,
     );
   }
 
@@ -4606,10 +4630,14 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
     SseSerializer serializer,
   ) {
     // Codec=Sse (Serialization based), see doc to use other codecs
-    sse_encode_u_64(self.amount, serializer);
+    sse_encode_u_64(self.amountMsats, serializer);
     sse_encode_String(self.paymentHash, serializer);
     sse_encode_String(self.network, serializer);
     sse_encode_String(self.invoice, serializer);
+    sse_encode_String(self.gateway, serializer);
+    sse_encode_u_64(self.sendFeeBase, serializer);
+    sse_encode_u_64(self.sendFeePpm, serializer);
+    sse_encode_u_64(self.fedFee, serializer);
   }
 
   @protected

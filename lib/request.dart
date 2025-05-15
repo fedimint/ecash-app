@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:carbine/lib.dart';
 import 'package:carbine/main.dart';
 import 'package:carbine/success.dart';
+import 'package:carbine/theme.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:qr_flutter/qr_flutter.dart';
@@ -43,8 +44,6 @@ class _RequestState extends State<Request> with SingleTickerProviderStateMixin {
   @override
   void initState() {
     super.initState();
-    print("Invoice Expiry: ${widget.expiry}");
-    print('As duration: ${Duration(seconds: widget.expiry.toInt())}');
     _remaining = Duration(seconds: widget.expiry.toInt());
     _startCountdown();
     _waitForPayment();
@@ -82,12 +81,7 @@ class _RequestState extends State<Request> with SingleTickerProviderStateMixin {
     if (mounted) {
       Navigator.of(context, rootNavigator: true).popUntil((route) => route.isFirst);
     }
-  }
-
-  String _getAbbreviatedInvoice(String invoice) {
-    if (invoice.length <= 14) return invoice;
-    return '${invoice.substring(0, 7)}...${invoice.substring(invoice.length - 7)}';
-  }
+  } 
 
   void _copyInvoice() {
     Clipboard.setData(ClipboardData(text: widget.invoice));
@@ -120,7 +114,7 @@ class _RequestState extends State<Request> with SingleTickerProviderStateMixin {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final abbreviatedInvoice = _getAbbreviatedInvoice(widget.invoice);
+    final abbreviatedInvoice = getAbbreviatedInvoice(widget.invoice);
     final fees = widget.totalMsats - widget.requestedAmountMsats;
 
     return Padding(
@@ -230,11 +224,11 @@ class _RequestState extends State<Request> with SingleTickerProviderStateMixin {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                _buildDetailRow(theme, 'Amount', formatBalance(widget.requestedAmountMsats, true)),
-                _buildDetailRow(theme, 'Fees', formatBalance(fees, true)),
-                _buildDetailRow(theme, 'Gateway', widget.gateway),
-                _buildDetailRow(theme, 'Payee Pubkey', widget.pubkey),
-                _buildDetailRow(theme, 'Payment Hash', widget.paymentHash),
+                buildDetailRow(theme, 'Amount', formatBalance(widget.requestedAmountMsats, true)),
+                buildDetailRow(theme, 'Fees', formatBalance(fees, true)),
+                buildDetailRow(theme, 'Gateway', widget.gateway),
+                buildDetailRow(theme, 'Payee Pubkey', widget.pubkey),
+                buildDetailRow(theme, 'Payment Hash', widget.paymentHash),
               ],
             ),
           ),
@@ -242,47 +236,5 @@ class _RequestState extends State<Request> with SingleTickerProviderStateMixin {
       ),
     );
   }
-}
-
-Widget _buildDetailRow(ThemeData theme, String label, String value) {
-  return Padding(
-    padding: const EdgeInsets.symmetric(vertical: 6),
-    child: Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        SizedBox(
-          width: 100, // Fixed width to align values nicely
-          child: Text(
-            label,
-            style: theme.textTheme.bodyMedium?.copyWith(
-              color: theme.colorScheme.onSurface.withOpacity(0.7),
-              fontWeight: FontWeight.w600,
-            ),
-          ),
-        ),
-        Container(
-          margin: const EdgeInsets.only(right: 8),
-          height: 20,
-          width: 2,
-          decoration: BoxDecoration(
-            color: theme.colorScheme.primary.withOpacity(0.7),
-            borderRadius: BorderRadius.circular(1),
-          ),
-        ),
-        Expanded(
-          child: Text(
-            value,
-            style: theme.textTheme.bodyMedium?.copyWith(
-              color: theme.colorScheme.onSurface,
-              fontFamily: 'monospace', // adds cool, techy look
-              height: 1.4,
-            ),
-            softWrap: true,
-            maxLines: null,
-          ),
-        ),
-      ],
-    ),
-  );
 }
 

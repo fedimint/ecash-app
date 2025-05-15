@@ -193,18 +193,27 @@ pub async fn list_federations_from_nostr(force_update: bool) -> Vec<PublicFedera
 }
 
 #[frb]
-pub async fn parse_invoice(bolt11: String) -> anyhow::Result<PaymentPreview> {
+pub async fn payment_preview(federation_id: &FederationId, bolt11: String) -> anyhow::Result<PaymentPreview> {
     let invoice = Bolt11Invoice::from_str(&bolt11)?;
-    let amount = invoice
+    let amount_msats = invoice
         .amount_milli_satoshis()
         .expect("No amount specified");
     let payment_hash = invoice.payment_hash().consensus_encode_to_hex();
     let network = invoice.network().to_string();
+
+    let multimint = get_multimint().await;
+    let mm = multimint.read().await;
+    let (gateway, fee_base, fee_ppm, fed_fee) = mm.select_send_gateway(federation_id, Amount::from_msats(amount_msats)).await?;
+
     Ok(PaymentPreview {
-        amount,
+        amount_msats,
         payment_hash,
         network,
         invoice: bolt11,
+        gateway,
+        send_fee_base: fee_base,
+        send_fee_ppm: fee_ppm,
+        fed_fee,
     })
 }
 
@@ -272,10 +281,14 @@ pub async fn await_ecash_reissue(
 
 #[derive(Clone, Eq, PartialEq, Serialize, Debug)]
 pub struct PaymentPreview {
-    amount: u64,
+    amount_msats: u64,
     payment_hash: String,
     network: String,
     invoice: String,
+    gateway: String,
+    send_fee_base: u64,
+    send_fee_ppm: u64,
+    fed_fee: u64,
 }
 
 #[derive(Clone, Eq, PartialEq, Serialize, Debug)]
@@ -866,11 +879,11 @@ impl Multimint {
             .clients
             .get(federation_id)
             .expect("No federation exists");
-        if let Ok((url, fee, fed_fee)) = Self::lnv2_select_gateway(client, amount).await {
+        if let Ok((url, receive_fee, fed_fee)) = Self::lnv2_select_gateway(client, amount, true).await {
             return Ok((
                 url.to_string(),
-                fee.base.msats,
-                fee.parts_per_million,
+                receive_fee.base.msats,
+                receive_fee.parts_per_million,
                 fed_fee,
             ));
         }
@@ -880,6 +893,31 @@ impl Multimint {
             .await
             .ok_or(anyhow!("No available gateways"))?;
         Ok((gateway.api.to_string(), 0, 0, 0))
+    }
+
+    async fn select_send_gateway(
+        &self,
+        federation_id: &FederationId,
+        amount: Amount,
+    ) -> anyhow::Result<(String, u64, u64, u64)> {
+        let client = self
+            .clients
+            .get(federation_id)
+            .expect("No federation exists");
+        if let Ok((url, send_fee, fed_fee)) = Self::lnv2_select_gateway(client, amount, false).await {
+            return Ok((
+                url.to_string(),
+                send_fee.base.msats,
+                send_fee.parts_per_million,
+                fed_fee,
+            ));
+        }
+
+        // LNv1 only has Lightning routing fees
+        let gateway = Self::lnv1_select_gateway(client)
+            .await
+            .ok_or(anyhow!("No available gateways"))?;
+        Ok((gateway.api.to_string(), gateway.fees.base_msat as u64, gateway.fees.proportional_millionths as u64, 0))
     }
 
     pub async fn send(
@@ -1135,6 +1173,7 @@ impl Multimint {
     async fn lnv2_select_gateway(
         client: &ClientHandleArc,
         amount: Amount,
+        is_receive: bool,
     ) -> anyhow::Result<(SafeUrl, PaymentFee, u64)> {
         let lnv2 = client.get_first_module::<fedimint_lnv2_client::LightningClientModule>()?;
         let client_config = client
@@ -1150,13 +1189,25 @@ impl Multimint {
         let fed_fee = lnv2_config.fee_consensus.fee(amount);
         // TODO: Lnv2 currently has no exposed way of querying gateways
         // Just add placeholder here
-        let url = SafeUrl::parse("https://mutinynet.mplsfed.xyz").expect("could not parse SafeUrl");
-        let fee = PaymentFee {
-            base: Amount::from_msats(0),
-            parts_per_million: 0,
+        let (url, fee) = if is_receive {
+            let url = SafeUrl::parse("https://mutinynet.mplsfed.xyz").expect("could not parse SafeUrl");
+            let receive_fee = PaymentFee {
+                base: Amount::from_msats(0),
+                parts_per_million: 0,
+            };
+            (url, receive_fee)
+        } else {
+            let url = SafeUrl::parse("https://mutinynet.mplsfed.xyz").expect("could not parse SafeUrl");
+            let send_fee = PaymentFee {
+                base: Amount::from_msats(0),
+                parts_per_million: 0,
+            };
+            (url, send_fee)
         };
 
-        Ok((url, fee, fed_fee.msats))
+        //Ok((url, fee, fed_fee.msats))
+        // Uncomment this to use LNv2
+        Err(anyhow!("Simulating error until LNv2 is done properly"))
     }
 
     async fn transactions(

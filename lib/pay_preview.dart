@@ -1,8 +1,10 @@
 import 'package:carbine/lib.dart';
-import 'package:carbine/success.dart';
+import 'package:carbine/main.dart';
+import 'package:carbine/theme.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
-class PaymentPreviewWidget extends StatefulWidget {
+class PaymentPreviewWidget extends StatelessWidget {
   final FederationSelector fed;
   final PaymentPreview paymentPreview;
 
@@ -13,17 +15,75 @@ class PaymentPreviewWidget extends StatefulWidget {
   });
 
   @override
-  State<PaymentPreviewWidget> createState() => _PaymentPreviewState();
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final amount = paymentPreview.amountMsats;
+    final feeFromPpm = (amount * paymentPreview.sendFeePpm) ~/ BigInt.from(1_000_000);
+    final fedFee = paymentPreview.fedFee;
+    final fees = paymentPreview.sendFeeBase + feeFromPpm + fedFee;
+    final total = amount + fees;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'Confirm Lightning Payment',
+          style: theme.textTheme.headlineSmall?.copyWith(
+            color: theme.colorScheme.primary,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        const SizedBox(height: 24),
+        Container(
+          width: double.infinity,
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: theme.colorScheme.surfaceContainer,
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: theme.colorScheme.primary.withOpacity(0.25)),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              buildDetailRow(theme, "Payer Federation", fed.federationName),
+              buildDetailRow(theme, 'Amount', formatBalance(amount, true)),
+              buildDetailRow(theme, 'Fees', formatBalance(fees, true)),
+              buildDetailRow(theme, 'Total', formatBalance(total, true)),
+              buildDetailRow(theme, 'Gateway', paymentPreview.gateway),
+              buildDetailRow(theme, 'Payment Hash', paymentPreview.paymentHash),
+            ],
+          ),
+        ),
+        const SizedBox(height: 32),
+        SizedBox(
+          width: double.infinity,
+          child: ElevatedButton.icon(
+            icon: const Icon(Icons.send, color: Colors.white),
+            label: const Text(
+              'Send Payment',
+              style: TextStyle(color: Colors.white),
+            ),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: theme.colorScheme.primary,
+              padding: const EdgeInsets.symmetric(vertical: 16),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(16),
+              ),
+            ),
+            onPressed: () {
+              print("PayInvoice pressed");
+            },
+          ),
+        ),
+        const SizedBox(height: 24), // Padding to prevent tight bottom
+      ],
+    );
+  }
 }
 
-enum PaymentState {
-  Preview,
-  Paying,
-  Success,
-}
 
+/*
 class _PaymentPreviewState extends State<PaymentPreviewWidget> {
-  PaymentState state = PaymentState.Preview;
 
   void _payInvoice() async {
     setState(() {
@@ -37,142 +97,13 @@ class _PaymentPreviewState extends State<PaymentPreviewWidget> {
     setState(() {
       state = PaymentState.Success;
     });
+    Navigator.push(context, MaterialPageRoute(builder: (context) => Success(
+      lightning: true,
+      received: false,
+      amountMsats: widget.paymentPreview.amountMsats,
+    )));
     await Future.delayed(Duration(seconds: 4));
     Navigator.of(context, rootNavigator: true).popUntil((route) => route.isFirst);
   }
-
-  @override
-  Widget build(BuildContext context) {
-    if (state == PaymentState.Success) {
-      return SafeArea(
-        child: Scaffold(
-          body: Success(lightning: true, received: false, amountMsats: widget.paymentPreview.amount),
-        ),
-      );
-    }
-
-    if (state == PaymentState.Paying) {
-      return SafeArea(
-        child: Scaffold(
-          body: Center(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                const CircularProgressIndicator(),
-                const SizedBox(height: 24),
-                Text(
-                  'Sending Payment...',
-                  style: Theme.of(context).textTheme.titleMedium,
-                ),
-              ],
-            ),
-          ),
-        ),
-      );
-    }
-
-    return Container(
-      padding: const EdgeInsets.all(24),
-      decoration: const BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-      ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Center(
-            child: Container(
-              width: 40,
-              height: 5,
-              margin: const EdgeInsets.only(bottom: 16),
-              decoration: BoxDecoration(
-                color: Colors.grey[400],
-                borderRadius: BorderRadius.circular(10),
-              ),
-            ),
-          ),
-          const SizedBox(height: 8),
-          Center(
-            child: Text(
-              'Confirm Payment',
-              style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                    fontWeight: FontWeight.bold,
-                  ),
-            ),
-          ),
-          const SizedBox(height: 24),
-          Center(
-            child: Text(
-              '${widget.paymentPreview.amount} msats',
-              style: Theme.of(context).textTheme.displaySmall?.copyWith(
-                    color: Colors.green[700],
-                    fontWeight: FontWeight.bold,
-                  ),
-            ),
-          ),
-          const SizedBox(height: 24),
-          Card(
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(16),
-            ),
-            elevation: 4,
-            child: Padding(
-              padding: const EdgeInsets.all(16),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'Federation:',
-                    style: Theme.of(context).textTheme.bodySmall,
-                  ),
-                  const SizedBox(height: 4),
-                  Text(widget.fed.federationName),
-                  const SizedBox(height: 16),
-                  Text(
-                    'Payment Hash:',
-                    style: Theme.of(context).textTheme.bodySmall,
-                  ),
-                  const SizedBox(height: 4),
-                  SelectableText(
-                    widget.paymentPreview.paymentHash,
-                    style: Theme.of(context).textTheme.bodyMedium,
-                  ),
-                  const SizedBox(height: 16),
-                  Text(
-                    'Invoice:',
-                    style: Theme.of(context).textTheme.bodySmall,
-                  ),
-                  const SizedBox(height: 4),
-                  SelectableText(
-                    widget.paymentPreview.invoice,
-                    style: Theme.of(context).textTheme.bodyMedium,
-                  ),
-                ],
-              ),
-            ),
-          ),
-          const SizedBox(height: 24),
-          SizedBox(
-            width: double.infinity,
-            child: ElevatedButton.icon(
-              icon: const Icon(Icons.send, color: Colors.white),
-              label: const Text(
-                'Send Payment',
-                style: TextStyle(color: Colors.white),
-              ),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.green[700],
-                padding: const EdgeInsets.symmetric(vertical: 16),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(16),
-                ),
-              ),
-              onPressed: _payInvoice,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
 }
+*/

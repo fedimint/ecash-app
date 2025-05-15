@@ -39,7 +39,7 @@ flutter_rust_bridge::frb_generated_boilerplate!(
     default_rust_auto_opaque = RustAutoOpaqueMoi,
 );
 pub(crate) const FLUTTER_RUST_BRIDGE_CODEGEN_VERSION: &str = "2.9.0";
-pub(crate) const FLUTTER_RUST_BRIDGE_CODEGEN_CONTENT_HASH: i32 = 81580466;
+pub(crate) const FLUTTER_RUST_BRIDGE_CODEGEN_CONTENT_HASH: i32 = 658923129;
 
 // Section: executor
 
@@ -2672,7 +2672,7 @@ fn wire__crate__list_federations_from_nostr_impl(
         },
     )
 }
-fn wire__crate__parse_invoice_impl(
+fn wire__crate__payment_preview_impl(
     port_: flutter_rust_bridge::for_generated::MessagePort,
     ptr_: flutter_rust_bridge::for_generated::PlatformGeneralizedUint8ListPtr,
     rust_vec_len_: i32,
@@ -2680,7 +2680,7 @@ fn wire__crate__parse_invoice_impl(
 ) {
     FLUTTER_RUST_BRIDGE_HANDLER.wrap_async::<flutter_rust_bridge::for_generated::SseCodec, _, _, _>(
         flutter_rust_bridge::for_generated::TaskInfo {
-            debug_name: "parse_invoice",
+            debug_name: "payment_preview",
             port: Some(port_),
             mode: flutter_rust_bridge::for_generated::FfiCallMode::Normal,
         },
@@ -2694,12 +2694,35 @@ fn wire__crate__parse_invoice_impl(
             };
             let mut deserializer =
                 flutter_rust_bridge::for_generated::SseDeserializer::new(message);
+            let api_federation_id = <RustOpaqueMoi<
+                flutter_rust_bridge::for_generated::RustAutoOpaqueInner<FederationId>,
+            >>::sse_decode(&mut deserializer);
             let api_bolt11 = <String>::sse_decode(&mut deserializer);
             deserializer.end();
             move |context| async move {
                 transform_result_sse::<_, flutter_rust_bridge::for_generated::anyhow::Error>(
                     (move || async move {
-                        let output_ok = crate::parse_invoice(api_bolt11).await?;
+                        let mut api_federation_id_guard = None;
+                        let decode_indices_ =
+                            flutter_rust_bridge::for_generated::lockable_compute_decode_order(
+                                vec![flutter_rust_bridge::for_generated::LockableOrderInfo::new(
+                                    &api_federation_id,
+                                    0,
+                                    false,
+                                )],
+                            );
+                        for i in decode_indices_ {
+                            match i {
+                                0 => {
+                                    api_federation_id_guard =
+                                        Some(api_federation_id.lockable_decode_async_ref().await)
+                                }
+                                _ => unreachable!(),
+                            }
+                        }
+                        let api_federation_id_guard = api_federation_id_guard.unwrap();
+                        let output_ok =
+                            crate::payment_preview(&*api_federation_id_guard, api_bolt11).await?;
                         Ok(output_ok)
                     })()
                     .await,
@@ -3569,15 +3592,23 @@ impl SseDecode for Option<Vec<u8>> {
 impl SseDecode for crate::PaymentPreview {
     // Codec=Sse (Serialization based), see doc to use other codecs
     fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
-        let mut var_amount = <u64>::sse_decode(deserializer);
+        let mut var_amountMsats = <u64>::sse_decode(deserializer);
         let mut var_paymentHash = <String>::sse_decode(deserializer);
         let mut var_network = <String>::sse_decode(deserializer);
         let mut var_invoice = <String>::sse_decode(deserializer);
+        let mut var_gateway = <String>::sse_decode(deserializer);
+        let mut var_sendFeeBase = <u64>::sse_decode(deserializer);
+        let mut var_sendFeePpm = <u64>::sse_decode(deserializer);
+        let mut var_fedFee = <u64>::sse_decode(deserializer);
         return crate::PaymentPreview {
-            amount: var_amount,
+            amount_msats: var_amountMsats,
             payment_hash: var_paymentHash,
             network: var_network,
             invoice: var_invoice,
+            gateway: var_gateway,
+            send_fee_base: var_sendFeeBase,
+            send_fee_ppm: var_sendFeePpm,
+            fed_fee: var_fedFee,
         };
     }
 }
@@ -3717,7 +3748,7 @@ fn pde_ffi_dispatcher_primary_impl(
         49 => wire__crate__init_multimint_impl(port, ptr, rust_vec_len, data_len),
         50 => wire__crate__join_federation_impl(port, ptr, rust_vec_len, data_len),
         51 => wire__crate__list_federations_from_nostr_impl(port, ptr, rust_vec_len, data_len),
-        52 => wire__crate__parse_invoice_impl(port, ptr, rust_vec_len, data_len),
+        52 => wire__crate__payment_preview_impl(port, ptr, rust_vec_len, data_len),
         53 => wire__crate__receive_impl(port, ptr, rust_vec_len, data_len),
         54 => wire__crate__reissue_ecash_impl(port, ptr, rust_vec_len, data_len),
         55 => wire__crate__select_receive_gateway_impl(port, ptr, rust_vec_len, data_len),
@@ -4163,10 +4194,14 @@ impl flutter_rust_bridge::IntoIntoDart<crate::Guardian> for crate::Guardian {
 impl flutter_rust_bridge::IntoDart for crate::PaymentPreview {
     fn into_dart(self) -> flutter_rust_bridge::for_generated::DartAbi {
         [
-            self.amount.into_into_dart().into_dart(),
+            self.amount_msats.into_into_dart().into_dart(),
             self.payment_hash.into_into_dart().into_dart(),
             self.network.into_into_dart().into_dart(),
             self.invoice.into_into_dart().into_dart(),
+            self.gateway.into_into_dart().into_dart(),
+            self.send_fee_base.into_into_dart().into_dart(),
+            self.send_fee_ppm.into_into_dart().into_dart(),
+            self.fed_fee.into_into_dart().into_dart(),
         ]
         .into_dart()
     }
@@ -4601,10 +4636,14 @@ impl SseEncode for Option<Vec<u8>> {
 impl SseEncode for crate::PaymentPreview {
     // Codec=Sse (Serialization based), see doc to use other codecs
     fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
-        <u64>::sse_encode(self.amount, serializer);
+        <u64>::sse_encode(self.amount_msats, serializer);
         <String>::sse_encode(self.payment_hash, serializer);
         <String>::sse_encode(self.network, serializer);
         <String>::sse_encode(self.invoice, serializer);
+        <String>::sse_encode(self.gateway, serializer);
+        <u64>::sse_encode(self.send_fee_base, serializer);
+        <u64>::sse_encode(self.send_fee_ppm, serializer);
+        <u64>::sse_encode(self.fed_fee, serializer);
     }
 }
 

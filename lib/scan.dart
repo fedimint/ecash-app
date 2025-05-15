@@ -41,16 +41,16 @@ class _ScanQRPageState extends State<ScanQRPage> {
       }
 
     } else if (text.startsWith("ln")) {
-      final paymentPreview = await parseInvoice(bolt11: text);
       if (widget.selectedFed != null) {
-        if (widget.selectedFed!.network != paymentPreview.network) {
+        final preview = await paymentPreview(federationId: widget.selectedFed!.federationId, bolt11: text);
+        if (widget.selectedFed!.network != preview.network) {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(content: Text("Cannot pay invoice from different network.")),
           );
           return;
         }
         final bal = await balance(federationId: widget.selectedFed!.federationId);
-        if (bal < paymentPreview.amount) {
+        if (bal < preview.amountMsats) {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(content: Text("This federation does not have enough funds to pay this invoice")),
           );
@@ -61,7 +61,7 @@ class _ScanQRPageState extends State<ScanQRPage> {
           context: context,
           child: PaymentPreviewWidget(
             fed: widget.selectedFed!,
-            paymentPreview: paymentPreview,
+            paymentPreview: preview,
           ),
         );
       }
