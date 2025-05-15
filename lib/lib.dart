@@ -23,16 +23,21 @@ Future<BigInt> balance({required FederationId federationId}) =>
 
 Future<(String, OperationId, String, String, BigInt)> receive({
   required FederationId federationId,
-  required BigInt amountMsats,
+  required BigInt amountMsatsWithFees,
+  required BigInt amountMsatsWithoutFees,
 }) => RustLib.instance.api.crateReceive(
+  federationId: federationId,
+  amountMsatsWithFees: amountMsatsWithFees,
+  amountMsatsWithoutFees: amountMsatsWithoutFees,
+);
+
+Future<(String, BigInt, BigInt, BigInt)> selectReceiveGateway({
+  required FederationId federationId,
+  required BigInt amountMsats,
+}) => RustLib.instance.api.crateSelectReceiveGateway(
   federationId: federationId,
   amountMsats: amountMsats,
 );
-
-Future<(String, BigInt, BigInt)> selectReceiveGateway({
-  required FederationId federationId,
-}) =>
-    RustLib.instance.api.crateSelectReceiveGateway(federationId: federationId);
 
 Future<OperationId> send({
   required FederationId federationId,
@@ -177,7 +182,8 @@ abstract class Multimint implements RustOpaqueInterface {
 
   Future<(Bolt11Invoice, OperationId)> receive({
     required FederationId federationId,
-    required BigInt amountMsats,
+    required BigInt amountMsatsWithFees,
+    required BigInt amountMsatsWithoutFees,
   });
 
   Future<OperationId> send({

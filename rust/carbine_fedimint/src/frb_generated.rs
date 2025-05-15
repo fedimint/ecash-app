@@ -1327,7 +1327,8 @@ fn wire__crate__Multimint_receive_impl(
             let api_federation_id = <RustOpaqueMoi<
                 flutter_rust_bridge::for_generated::RustAutoOpaqueInner<FederationId>,
             >>::sse_decode(&mut deserializer);
-            let api_amount_msats = <u64>::sse_decode(&mut deserializer);
+            let api_amount_msats_with_fees = <u64>::sse_decode(&mut deserializer);
+            let api_amount_msats_without_fees = <u64>::sse_decode(&mut deserializer);
             deserializer.end();
             move |context| async move {
                 transform_result_sse::<_, flutter_rust_bridge::for_generated::anyhow::Error>(
@@ -1365,7 +1366,8 @@ fn wire__crate__Multimint_receive_impl(
                         let output_ok = crate::Multimint::receive(
                             &*api_that_guard,
                             &*api_federation_id_guard,
-                            api_amount_msats,
+                            api_amount_msats_with_fees,
+                            api_amount_msats_without_fees,
                         )
                         .await?;
                         Ok(output_ok)
@@ -2731,7 +2733,8 @@ fn wire__crate__receive_impl(
             let api_federation_id = <RustOpaqueMoi<
                 flutter_rust_bridge::for_generated::RustAutoOpaqueInner<FederationId>,
             >>::sse_decode(&mut deserializer);
-            let api_amount_msats = <u64>::sse_decode(&mut deserializer);
+            let api_amount_msats_with_fees = <u64>::sse_decode(&mut deserializer);
+            let api_amount_msats_without_fees = <u64>::sse_decode(&mut deserializer);
             deserializer.end();
             move |context| async move {
                 transform_result_sse::<_, flutter_rust_bridge::for_generated::anyhow::Error>(
@@ -2755,8 +2758,12 @@ fn wire__crate__receive_impl(
                             }
                         }
                         let api_federation_id_guard = api_federation_id_guard.unwrap();
-                        let output_ok =
-                            crate::receive(&*api_federation_id_guard, api_amount_msats).await?;
+                        let output_ok = crate::receive(
+                            &*api_federation_id_guard,
+                            api_amount_msats_with_fees,
+                            api_amount_msats_without_fees,
+                        )
+                        .await?;
                         Ok(output_ok)
                     })()
                     .await,
@@ -2849,6 +2856,7 @@ fn wire__crate__select_receive_gateway_impl(
             let api_federation_id = <RustOpaqueMoi<
                 flutter_rust_bridge::for_generated::RustAutoOpaqueInner<FederationId>,
             >>::sse_decode(&mut deserializer);
+            let api_amount_msats = <u64>::sse_decode(&mut deserializer);
             deserializer.end();
             move |context| async move {
                 transform_result_sse::<_, flutter_rust_bridge::for_generated::anyhow::Error>(
@@ -2872,8 +2880,11 @@ fn wire__crate__select_receive_gateway_impl(
                             }
                         }
                         let api_federation_id_guard = api_federation_id_guard.unwrap();
-                        let output_ok =
-                            crate::select_receive_gateway(&*api_federation_id_guard).await?;
+                        let output_ok = crate::select_receive_gateway(
+                            &*api_federation_id_guard,
+                            api_amount_msats,
+                        )
+                        .await?;
                         Ok(output_ok)
                     })()
                     .await,
@@ -3609,13 +3620,14 @@ impl SseDecode for (String, OperationId, String, String, u64) {
     }
 }
 
-impl SseDecode for (String, u64, u64) {
+impl SseDecode for (String, u64, u64, u64) {
     // Codec=Sse (Serialization based), see doc to use other codecs
     fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
         let mut var_field0 = <String>::sse_decode(deserializer);
         let mut var_field1 = <u64>::sse_decode(deserializer);
         let mut var_field2 = <u64>::sse_decode(deserializer);
-        return (var_field0, var_field1, var_field2);
+        let mut var_field3 = <u64>::sse_decode(deserializer);
+        return (var_field0, var_field1, var_field2, var_field3);
     }
 }
 
@@ -4630,12 +4642,13 @@ impl SseEncode for (String, OperationId, String, String, u64) {
     }
 }
 
-impl SseEncode for (String, u64, u64) {
+impl SseEncode for (String, u64, u64, u64) {
     // Codec=Sse (Serialization based), see doc to use other codecs
     fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
         <String>::sse_encode(self.0, serializer);
         <u64>::sse_encode(self.1, serializer);
         <u64>::sse_encode(self.2, serializer);
+        <u64>::sse_encode(self.3, serializer);
     }
 }
 

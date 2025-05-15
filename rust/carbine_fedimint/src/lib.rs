@@ -7,11 +7,13 @@ use fedimint_core::db::mem_impl::MemDatabase;
 use fedimint_core::hex;
 use fedimint_core::secp256k1::rand::seq::SliceRandom;
 use fedimint_core::task::TaskGroup;
+use fedimint_lnv2_common::config::LightningClientConfig;
 use fedimint_lnv2_common::gateway_api::PaymentFee;
 use fedimint_meta_client::common::DEFAULT_META_KEY;
 use fedimint_meta_client::MetaClientInit;
 /* AUTO INJECTED BY flutter_rust_bridge. This line may not be accurate, and you can change it according to your needs. */
 use flutter_rust_bridge::frb;
+use serde_json::to_value;
 use tokio::sync::{OnceCell, RwLock};
 
 use std::path::PathBuf;
@@ -45,7 +47,7 @@ use fedimint_lnv2_client::{
     FinalReceiveOperationState, FinalSendOperationState, LightningOperationMeta,
     ReceiveOperationState, SendOperationState,
 };
-use fedimint_lnv2_common::Bolt11InvoiceDescription;
+use fedimint_lnv2_common::{Bolt11InvoiceDescription, LightningInvoice};
 use fedimint_mint_client::{
     MintClientInit, MintClientModule, MintOperationMeta, MintOperationMetaVariant, OOBNotes,
     ReissueExternalNotesState, SelectNotesWithAtleastAmount, SpendOOBState,
@@ -79,11 +81,15 @@ async fn get_multimint() -> Arc<RwLock<Multimint>> {
 
 #[frb]
 pub async fn init_multimint(path: String) {
-    MULTIMINT.get_or_init(|| async {
-        Arc::new(RwLock::new(
-            Multimint::new(path).await.expect("Could not create multimint"),
-        ))
-    }).await;
+    MULTIMINT
+        .get_or_init(|| async {
+            Arc::new(RwLock::new(
+                Multimint::new(path)
+                    .await
+                    .expect("Could not create multimint"),
+            ))
+        })
+        .await;
 }
 
 #[frb]
@@ -110,24 +116,39 @@ pub async fn balance(federation_id: &FederationId) -> u64 {
 #[frb]
 pub async fn receive(
     federation_id: &FederationId,
-    amount_msats: u64,
+    amount_msats_with_fees: u64,
+    amount_msats_without_fees: u64,
 ) -> anyhow::Result<(String, OperationId, String, String, u64)> {
     let multimint = get_multimint().await;
     let mm = multimint.read().await;
-    let (invoice, operation_id) = mm.receive(federation_id, amount_msats).await?;
+    let (invoice, operation_id) = mm
+        .receive(
+            federation_id,
+            amount_msats_with_fees,
+            amount_msats_without_fees,
+        )
+        .await?;
     let pubkey = invoice.get_payee_pub_key();
     let payment_hash = invoice.payment_hash();
     let expiry = invoice.expiry_time().as_secs();
-    Ok((invoice.to_string(), operation_id, pubkey.to_string(), payment_hash.to_string(), expiry))
+    Ok((
+        invoice.to_string(),
+        operation_id,
+        pubkey.to_string(),
+        payment_hash.to_string(),
+        expiry,
+    ))
 }
 
 #[frb]
 pub async fn select_receive_gateway(
     federation_id: &FederationId,
-) -> anyhow::Result<(String, u64, u64)> {
+    amount_msats: u64,
+) -> anyhow::Result<(String, u64, u64, u64)> {
+    let amount = Amount::from_msats(amount_msats);
     let multimint = get_multimint().await;
     let mm = multimint.read().await;
-    mm.select_receive_gateway(federation_id).await
+    mm.select_receive_gateway(federation_id, amount).await
 }
 
 #[frb]
@@ -778,33 +799,38 @@ impl Multimint {
     pub async fn receive(
         &self,
         federation_id: &FederationId,
-        amount_msats: u64,
+        amount_msats_with_fees: u64,
+        amount_msats_without_fees: u64,
     ) -> anyhow::Result<(Bolt11Invoice, OperationId)> {
-        let amount = Amount::from_msats(amount_msats);
+        let amount_with_fees = Amount::from_msats(amount_msats_with_fees);
+        let amount_without_fees = Amount::from_msats(amount_msats_without_fees);
         let client = self
             .clients
             .get(federation_id)
             .expect("No federation exists");
 
-        if let Ok((invoice, operation_id)) = Self::receive_lnv2(client, amount).await {
+        if let Ok((invoice, operation_id)) =
+            Self::receive_lnv2(client, amount_with_fees, amount_without_fees).await
+        {
             return Ok((invoice, operation_id));
         }
 
-        Self::receive_lnv1(client, amount).await
+        Self::receive_lnv1(client, amount_with_fees, amount_without_fees).await
     }
 
     async fn receive_lnv2(
         client: &ClientHandleArc,
-        amount: Amount,
+        amount_with_fees: Amount,
+        amount_without_fees: Amount,
     ) -> anyhow::Result<(Bolt11Invoice, OperationId)> {
         let lnv2 = client.get_first_module::<fedimint_lnv2_client::LightningClientModule>()?;
         let (invoice, operation_id) = lnv2
             .receive(
-                amount,
+                amount_with_fees,
                 DEFAULT_EXPIRY_TIME_SECS,
                 Bolt11InvoiceDescription::Direct(String::new()),
                 None,
-                ().into(),
+                to_value(amount_without_fees)?,
             )
             .await?;
         Ok((invoice, operation_id))
@@ -812,35 +838,47 @@ impl Multimint {
 
     async fn receive_lnv1(
         client: &ClientHandleArc,
-        amount: Amount,
+        amount_with_fees: Amount,
+        amount_without_fees: Amount,
     ) -> anyhow::Result<(Bolt11Invoice, OperationId)> {
         let lnv1 = client.get_first_module::<LightningClientModule>()?;
         let gateway = Self::lnv1_select_gateway(client).await;
         let desc = Description::new(String::new())?;
         let (operation_id, invoice, _) = lnv1
             .create_bolt11_invoice(
-                amount,
+                amount_with_fees,
                 lightning_invoice::Bolt11InvoiceDescription::Direct(&desc),
                 Some(DEFAULT_EXPIRY_TIME_SECS as u64),
-                (),
+                to_value(amount_without_fees)?,
                 gateway,
             )
             .await?;
         Ok((invoice, operation_id))
     }
 
-    async fn select_receive_gateway(&self, federation_id: &FederationId) -> anyhow::Result<(String, u64, u64)> {
+    async fn select_receive_gateway(
+        &self,
+        federation_id: &FederationId,
+        amount: Amount,
+    ) -> anyhow::Result<(String, u64, u64, u64)> {
         let client = self
             .clients
             .get(federation_id)
             .expect("No federation exists");
-        if let Ok((url, fee)) = Self::lnv2_select_gateway(client).await {
-            return Ok((url.to_string(), fee.base.msats, fee.parts_per_million));
+        if let Ok((url, fee, fed_fee)) = Self::lnv2_select_gateway(client, amount).await {
+            return Ok((
+                url.to_string(),
+                fee.base.msats,
+                fee.parts_per_million,
+                fed_fee,
+            ));
         }
 
         // LNv1 does not have fees for receiving
-        let gateway = Self::lnv1_select_gateway(client).await.ok_or(anyhow!("No available gateways"))?;
-        Ok((gateway.api.to_string(), 0, 0))
+        let gateway = Self::lnv1_select_gateway(client)
+            .await
+            .ok_or(anyhow!("No available gateways"))?;
+        Ok((gateway.api.to_string(), 0, 0, 0))
     }
 
     pub async fn send(
@@ -1095,17 +1133,29 @@ impl Multimint {
 
     async fn lnv2_select_gateway(
         client: &ClientHandleArc,
-    ) -> anyhow::Result<(SafeUrl, PaymentFee)> {
-        let _lnv2 = client.get_first_module::<fedimint_lnv2_client::LightningClientModule>()?;
+        amount: Amount,
+    ) -> anyhow::Result<(SafeUrl, PaymentFee, u64)> {
+        let lnv2 = client.get_first_module::<fedimint_lnv2_client::LightningClientModule>()?;
+        let client_config = client
+            .config()
+            .await
+            .get_module_cfg(lnv2.id)?
+            .config
+            .expect_decoded();
+        let lnv2_config = client_config
+            .as_any()
+            .downcast_ref::<LightningClientConfig>()
+            .ok_or(anyhow!("Could not downcast config"))?;
+        let fed_fee = lnv2_config.fee_consensus.fee(amount);
         // TODO: Lnv2 currently has no exposed way of querying gateways
         // Just add placeholder here
         let url = SafeUrl::parse("https://mutinynet.mplsfed.xyz").expect("could not parse SafeUrl");
         let fee = PaymentFee {
-            base: Amount::from_msats(10),
-            parts_per_million: 1000,
+            base: Amount::from_msats(0),
+            parts_per_million: 0,
         };
 
-        Ok((url, fee))
+        Ok((url, fee, fed_fee.msats))
     }
 
     async fn transactions(
@@ -1170,7 +1220,9 @@ impl Multimint {
                             match meta {
                                 LightningOperationMeta::Receive(receive) => Some(Transaction {
                                     received: true,
-                                    amount: receive.contract.commitment.amount.msats,
+                                    amount: serde_json::from_value::<Amount>(receive.custom_meta)
+                                        .expect("Could not deserialize amount")
+                                        .msats,
                                     module: "lnv2".to_string(),
                                     timestamp,
                                     operation_id: key.operation_id.0.to_vec(),

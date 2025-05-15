@@ -186,7 +186,8 @@ abstract class RustLibApi extends BaseApi {
   Future<(Bolt11Invoice, OperationId)> crateMultimintReceive({
     required Multimint that,
     required FederationId federationId,
-    required BigInt amountMsats,
+    required BigInt amountMsatsWithFees,
+    required BigInt amountMsatsWithoutFees,
   });
 
   Future<OperationId> crateMultimintSend({
@@ -302,7 +303,8 @@ abstract class RustLibApi extends BaseApi {
 
   Future<(String, OperationId, String, String, BigInt)> crateReceive({
     required FederationId federationId,
-    required BigInt amountMsats,
+    required BigInt amountMsatsWithFees,
+    required BigInt amountMsatsWithoutFees,
   });
 
   Future<OperationId> crateReissueEcash({
@@ -310,8 +312,9 @@ abstract class RustLibApi extends BaseApi {
     required String ecash,
   });
 
-  Future<(String, BigInt, BigInt)> crateSelectReceiveGateway({
+  Future<(String, BigInt, BigInt, BigInt)> crateSelectReceiveGateway({
     required FederationId federationId,
+    required BigInt amountMsats,
   });
 
   Future<OperationId> crateSend({
@@ -1307,7 +1310,8 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   Future<(Bolt11Invoice, OperationId)> crateMultimintReceive({
     required Multimint that,
     required FederationId federationId,
-    required BigInt amountMsats,
+    required BigInt amountMsatsWithFees,
+    required BigInt amountMsatsWithoutFees,
   }) {
     return handler.executeNormal(
       NormalTask(
@@ -1321,7 +1325,8 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
             federationId,
             serializer,
           );
-          sse_encode_u_64(amountMsats, serializer);
+          sse_encode_u_64(amountMsatsWithFees, serializer);
+          sse_encode_u_64(amountMsatsWithoutFees, serializer);
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
@@ -1335,7 +1340,12 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           decodeErrorData: sse_decode_AnyhowException,
         ),
         constMeta: kCrateMultimintReceiveConstMeta,
-        argValues: [that, federationId, amountMsats],
+        argValues: [
+          that,
+          federationId,
+          amountMsatsWithFees,
+          amountMsatsWithoutFees,
+        ],
         apiImpl: this,
       ),
     );
@@ -1343,7 +1353,12 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
 
   TaskConstMeta get kCrateMultimintReceiveConstMeta => const TaskConstMeta(
     debugName: "Multimint_receive",
-    argNames: ["that", "federationId", "amountMsats"],
+    argNames: [
+      "that",
+      "federationId",
+      "amountMsatsWithFees",
+      "amountMsatsWithoutFees",
+    ],
   );
 
   @override
@@ -2261,7 +2276,8 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   @override
   Future<(String, OperationId, String, String, BigInt)> crateReceive({
     required FederationId federationId,
-    required BigInt amountMsats,
+    required BigInt amountMsatsWithFees,
+    required BigInt amountMsatsWithoutFees,
   }) {
     return handler.executeNormal(
       NormalTask(
@@ -2271,7 +2287,8 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
             federationId,
             serializer,
           );
-          sse_encode_u_64(amountMsats, serializer);
+          sse_encode_u_64(amountMsatsWithFees, serializer);
+          sse_encode_u_64(amountMsatsWithoutFees, serializer);
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
@@ -2285,7 +2302,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           decodeErrorData: sse_decode_AnyhowException,
         ),
         constMeta: kCrateReceiveConstMeta,
-        argValues: [federationId, amountMsats],
+        argValues: [federationId, amountMsatsWithFees, amountMsatsWithoutFees],
         apiImpl: this,
       ),
     );
@@ -2293,7 +2310,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
 
   TaskConstMeta get kCrateReceiveConstMeta => const TaskConstMeta(
     debugName: "receive",
-    argNames: ["federationId", "amountMsats"],
+    argNames: ["federationId", "amountMsatsWithFees", "amountMsatsWithoutFees"],
   );
 
   @override
@@ -2335,8 +2352,9 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   );
 
   @override
-  Future<(String, BigInt, BigInt)> crateSelectReceiveGateway({
+  Future<(String, BigInt, BigInt, BigInt)> crateSelectReceiveGateway({
     required FederationId federationId,
+    required BigInt amountMsats,
   }) {
     return handler.executeNormal(
       NormalTask(
@@ -2346,6 +2364,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
             federationId,
             serializer,
           );
+          sse_encode_u_64(amountMsats, serializer);
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
@@ -2354,11 +2373,11 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           );
         },
         codec: SseCodec(
-          decodeSuccessData: sse_decode_record_string_u_64_u_64,
+          decodeSuccessData: sse_decode_record_string_u_64_u_64_u_64,
           decodeErrorData: sse_decode_AnyhowException,
         ),
         constMeta: kCrateSelectReceiveGatewayConstMeta,
-        argValues: [federationId],
+        argValues: [federationId, amountMsats],
         apiImpl: this,
       ),
     );
@@ -2366,7 +2385,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
 
   TaskConstMeta get kCrateSelectReceiveGatewayConstMeta => const TaskConstMeta(
     debugName: "select_receive_gateway",
-    argNames: ["federationId"],
+    argNames: ["federationId", "amountMsats"],
   );
 
   @override
@@ -3151,16 +3170,19 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   }
 
   @protected
-  (String, BigInt, BigInt) dco_decode_record_string_u_64_u_64(dynamic raw) {
+  (String, BigInt, BigInt, BigInt) dco_decode_record_string_u_64_u_64_u_64(
+    dynamic raw,
+  ) {
     // Codec=Dco (DartCObject based), see doc to use other codecs
     final arr = raw as List<dynamic>;
-    if (arr.length != 3) {
-      throw Exception('Expected 3 elements, got ${arr.length}');
+    if (arr.length != 4) {
+      throw Exception('Expected 4 elements, got ${arr.length}');
     }
     return (
       dco_decode_String(arr[0]),
       dco_decode_u_64(arr[1]),
       dco_decode_u_64(arr[2]),
+      dco_decode_u_64(arr[3]),
     );
   }
 
@@ -3887,14 +3909,15 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   }
 
   @protected
-  (String, BigInt, BigInt) sse_decode_record_string_u_64_u_64(
+  (String, BigInt, BigInt, BigInt) sse_decode_record_string_u_64_u_64_u_64(
     SseDeserializer deserializer,
   ) {
     // Codec=Sse (Serialization based), see doc to use other codecs
     var var_field0 = sse_decode_String(deserializer);
     var var_field1 = sse_decode_u_64(deserializer);
     var var_field2 = sse_decode_u_64(deserializer);
-    return (var_field0, var_field1, var_field2);
+    var var_field3 = sse_decode_u_64(deserializer);
+    return (var_field0, var_field1, var_field2, var_field3);
   }
 
   @protected
@@ -4650,14 +4673,15 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   }
 
   @protected
-  void sse_encode_record_string_u_64_u_64(
-    (String, BigInt, BigInt) self,
+  void sse_encode_record_string_u_64_u_64_u_64(
+    (String, BigInt, BigInt, BigInt) self,
     SseSerializer serializer,
   ) {
     // Codec=Sse (Serialization based), see doc to use other codecs
     sse_encode_String(self.$1, serializer);
     sse_encode_u_64(self.$2, serializer);
     sse_encode_u_64(self.$3, serializer);
+    sse_encode_u_64(self.$4, serializer);
   }
 
   @protected
@@ -5047,11 +5071,13 @@ class MultimintImpl extends RustOpaque implements Multimint {
 
   Future<(Bolt11Invoice, OperationId)> receive({
     required FederationId federationId,
-    required BigInt amountMsats,
+    required BigInt amountMsatsWithFees,
+    required BigInt amountMsatsWithoutFees,
   }) => RustLib.instance.api.crateMultimintReceive(
     that: this,
     federationId: federationId,
-    amountMsats: amountMsats,
+    amountMsatsWithFees: amountMsatsWithFees,
+    amountMsatsWithoutFees: amountMsatsWithoutFees,
   );
 
   Future<OperationId> send({
