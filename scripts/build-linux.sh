@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 unset CC_aarch64_linux_android
 unset CXX_aarch64_linux_android
