@@ -3037,6 +3037,7 @@ fn wire__crate__transactions_impl(
             >>::sse_decode(&mut deserializer);
             let api_timestamp = <Option<u64>>::sse_decode(&mut deserializer);
             let api_operation_id = <Option<Vec<u8>>>::sse_decode(&mut deserializer);
+            let api_modules = <Vec<String>>::sse_decode(&mut deserializer);
             deserializer.end();
             move |context| async move {
                 transform_result_sse::<_, ()>(
@@ -3065,6 +3066,7 @@ fn wire__crate__transactions_impl(
                                 &*api_federation_id_guard,
                                 api_timestamp,
                                 api_operation_id,
+                                api_modules,
                             )
                             .await,
                         )?;

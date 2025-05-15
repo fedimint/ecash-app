@@ -47,7 +47,7 @@ use fedimint_lnv2_client::{
     FinalReceiveOperationState, FinalSendOperationState, LightningOperationMeta,
     ReceiveOperationState, SendOperationState,
 };
-use fedimint_lnv2_common::{Bolt11InvoiceDescription, LightningInvoice};
+use fedimint_lnv2_common::Bolt11InvoiceDescription;
 use fedimint_mint_client::{
     MintClientInit, MintClientModule, MintOperationMeta, MintOperationMetaVariant, OOBNotes,
     ReissueExternalNotesState, SelectNotesWithAtleastAmount, SpendOOBState,
@@ -222,10 +222,11 @@ pub async fn transactions(
     federation_id: &FederationId,
     timestamp: Option<u64>,
     operation_id: Option<Vec<u8>>,
+    modules: Vec<String>,
 ) -> Vec<Transaction> {
     let multimint = get_multimint().await;
     let mm = multimint.read().await;
-    mm.transactions(federation_id, timestamp, operation_id)
+    mm.transactions(federation_id, timestamp, operation_id, modules)
         .await
 }
 
@@ -1163,13 +1164,13 @@ impl Multimint {
         federation_id: &FederationId,
         timestamp: Option<u64>,
         operation_id: Option<Vec<u8>>,
+        modules: Vec<String>,
     ) -> Vec<Transaction> {
         let client = self
             .clients
             .get(federation_id)
             .expect("No federation exists");
 
-        let modules = vec!["ln", "lnv2", "mint"];
         let mut collected = Vec::new();
         let mut next_key = if let Some(timestamp) = timestamp {
             Some(ChronologicalOperationLogKey {
@@ -1200,7 +1201,7 @@ impl Multimint {
                     break;
                 }
 
-                if !modules.contains(&op_log_val.operation_module_kind()) {
+                if !modules.contains(&op_log_val.operation_module_kind().to_string()) {
                     continue;
                 }
 

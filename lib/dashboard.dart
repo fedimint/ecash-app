@@ -61,6 +61,28 @@ class _DashboardState extends State<Dashboard> {
     }
   }
 
+  List<String> _getKindsForSelectedPaymentType() {
+    switch (_selectedPaymentType) {
+      case PaymentType.lightning:
+        return ['ln', 'lnv2'];
+      case PaymentType.onchain:
+        return ['wallet'];
+      case PaymentType.ecash:
+        return ['mint'];
+    }
+  }
+
+  String _getNoTransactionsMessage() {
+    switch (_selectedPaymentType) {
+      case PaymentType.lightning:
+        return "No lightning transactions yet";
+      case PaymentType.onchain:
+        return "No onchain transactions yet";
+      case PaymentType.ecash:
+        return "No ecash transactions yet";
+    }
+  }
+
   Future<void> _loadBalance() async {
     final bal = await balance(federationId: widget.fed.federationId);
     setState(() {
@@ -86,6 +108,7 @@ class _DashboardState extends State<Dashboard> {
       federationId: widget.fed.federationId,
       timestamp: loadMore ? _lastTransaction?.timestamp : null,
       operationId: loadMore ? _lastTransaction?.operationId : null,
+      modules: _getKindsForSelectedPaymentType(),
     );
 
     setState(() {
@@ -238,7 +261,7 @@ class _DashboardState extends State<Dashboard> {
             isLoadingTransactions
                 ? const CircularProgressIndicator()
                 : _transactions.isEmpty
-                    ? const Text('No transactions yet')
+                    ? Text(_getNoTransactionsMessage())
                     : SizedBox(
                         height: 300,
                         child: ListView.builder(
@@ -308,6 +331,7 @@ class _DashboardState extends State<Dashboard> {
           setState(() {
             _selectedPaymentType = PaymentType.values[index];
           });
+          _loadTransactions();
         },
         selectedItemColor: Theme.of(context).colorScheme.primary,
         unselectedItemColor: Colors.grey,

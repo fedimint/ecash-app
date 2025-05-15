@@ -80,10 +80,12 @@ Future<List<Transaction>> transactions({
   required FederationId federationId,
   BigInt? timestamp,
   Uint8List? operationId,
+  required List<String> modules,
 }) => RustLib.instance.api.crateTransactions(
   federationId: federationId,
   timestamp: timestamp,
   operationId: operationId,
+  modules: modules,
 );
 
 Future<(OperationId, String, BigInt)> sendEcash({

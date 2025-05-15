@@ -331,6 +331,7 @@ abstract class RustLibApi extends BaseApi {
     required FederationId federationId,
     BigInt? timestamp,
     Uint8List? operationId,
+    required List<String> modules,
   });
 
   RustArcIncrementStrongCountFnType
@@ -2469,6 +2470,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
     required FederationId federationId,
     BigInt? timestamp,
     Uint8List? operationId,
+    required List<String> modules,
   }) {
     return handler.executeNormal(
       NormalTask(
@@ -2480,6 +2482,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           );
           sse_encode_opt_box_autoadd_u_64(timestamp, serializer);
           sse_encode_opt_list_prim_u_8_strict(operationId, serializer);
+          sse_encode_list_String(modules, serializer);
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
@@ -2492,7 +2495,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           decodeErrorData: null,
         ),
         constMeta: kCrateTransactionsConstMeta,
-        argValues: [federationId, timestamp, operationId],
+        argValues: [federationId, timestamp, operationId, modules],
         apiImpl: this,
       ),
     );
@@ -2500,7 +2503,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
 
   TaskConstMeta get kCrateTransactionsConstMeta => const TaskConstMeta(
     debugName: "transactions",
-    argNames: ["federationId", "timestamp", "operationId"],
+    argNames: ["federationId", "timestamp", "operationId", "modules"],
   );
 
   RustArcIncrementStrongCountFnType
