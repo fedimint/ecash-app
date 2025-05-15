@@ -69,12 +69,21 @@ class _NumberPadState extends State<NumberPad> {
       final requestedAmountMsats = amountSats * BigInt.from(1000);
 
       if (widget.paymentType == PaymentType.lightning) {
-        final gateway = await selectReceiveGateway(federationId: widget.fed.federationId, amountMsats: requestedAmountMsats);
-        final feeFromPpm = (requestedAmountMsats * gateway.$3) ~/ BigInt.from(1_000_000);
+        final gateway = await selectReceiveGateway(
+          federationId: widget.fed.federationId,
+          amountMsats: requestedAmountMsats,
+        );
+        final feeFromPpm =
+            (requestedAmountMsats * gateway.$3) ~/ BigInt.from(1_000_000);
         final fedFee = gateway.$4;
         // If we want to receive the request amount, we need to add the gateway's base fee, ppm fee, and the federation fee
-        final totalMsats = requestedAmountMsats + gateway.$2 + feeFromPpm + fedFee;
-        final invoice = await receive(federationId: widget.fed.federationId, amountMsatsWithFees: totalMsats, amountMsatsWithoutFees: requestedAmountMsats);
+        final totalMsats =
+            requestedAmountMsats + gateway.$2 + feeFromPpm + fedFee;
+        final invoice = await receive(
+          federationId: widget.fed.federationId,
+          amountMsatsWithFees: totalMsats,
+          amountMsatsWithoutFees: requestedAmountMsats,
+        );
         showCarbineModalBottomSheet(
           context: context,
           child: Request(
@@ -108,7 +117,10 @@ class _NumberPadState extends State<NumberPad> {
     return SafeArea(
       child: Scaffold(
         appBar: AppBar(
-          title: const Text('Enter Amount', style: TextStyle(fontWeight: FontWeight.bold)),
+          title: const Text(
+            'Enter Amount',
+            style: TextStyle(fontWeight: FontWeight.bold),
+          ),
           centerTitle: true,
           backgroundColor: Colors.transparent,
           elevation: 0,
@@ -135,13 +147,19 @@ class _NumberPadState extends State<NumberPad> {
                       _rawAmount += value.toString();
                     });
                   },
-                  numberStyle: const TextStyle(fontSize: 24, color: Colors.grey),
+                  numberStyle: const TextStyle(
+                    fontSize: 24,
+                    color: Colors.grey,
+                  ),
                   rightWidget: IconButton(
                     onPressed: () {
                       setState(() {
                         if (_rawAmount.isNotEmpty) {
-                          _rawAmount = _rawAmount.substring(0, _rawAmount.length - 1);
-                        } 
+                          _rawAmount = _rawAmount.substring(
+                            0,
+                            _rawAmount.length - 1,
+                          );
+                        }
                       });
                     },
                     icon: const Icon(Icons.backspace),
@@ -155,15 +173,19 @@ class _NumberPadState extends State<NumberPad> {
                 width: double.infinity,
                 child: ElevatedButton(
                   onPressed: _onConfirm,
-                  child: _creating
-                    ? const CircularProgressIndicator(color: Colors.white)
-                    : const Text('Confirm', style: TextStyle(fontSize: 20)),
+                  child:
+                      _creating
+                          ? const CircularProgressIndicator(color: Colors.white)
+                          : const Text(
+                            'Confirm',
+                            style: TextStyle(fontSize: 20),
+                          ),
                 ),
               ),
             ),
           ],
         ),
-      )
+      ),
     );
   }
 }
