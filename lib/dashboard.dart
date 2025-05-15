@@ -1,7 +1,9 @@
 import 'package:carbine/lib.dart';
 import 'package:carbine/main.dart';
 import 'package:carbine/number_pad.dart';
+import 'package:carbine/payment_selector.dart';
 import 'package:carbine/scan.dart';
+import 'package:carbine/theme.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_speed_dial/flutter_speed_dial.dart';
 import 'package:intl/intl.dart';
@@ -126,7 +128,11 @@ class _DashboardState extends State<Dashboard> {
 
   void _onSendPressed() async {
     if (_selectedPaymentType == PaymentType.lightning) {
-      await Navigator.push(context, MaterialPageRoute(builder: (context) => ScanQRPage(selectedFed: widget.fed)));
+      //await Navigator.push(context, MaterialPageRoute(builder: (context) => ScanQRPage(selectedFed: widget.fed)));
+      await showCarbineModalBottomSheet(
+        context: context, 
+        child: PaymentMethodSelector(fed: widget.fed),
+      );
     } else if (_selectedPaymentType == PaymentType.ecash) {
       await Navigator.push(context, MaterialPageRoute(builder: (context) => NumberPad(fed: widget.fed, paymentType: _selectedPaymentType)));
     }

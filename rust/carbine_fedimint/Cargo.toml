@@ -26,7 +26,12 @@ flutter_rust_bridge = "=2.9.0"
 futures-timer = "3.0.3"
 futures-util = "0.3.30"
 lightning-invoice = { version = "0.32.0", features = ["std"] }
+lnurl-rs = { version = "0.9.0", default_features = false }
 nostr-sdk = "0.41.0"
+#reqwest = "0.12.15"
+reqwest = { version = "0.12.15", features = [
+  "rustls-tls",
+], default-features = false }
 serde = { version = "1.0.219", features = ["derive"] }
 serde_json = "1.0.140"
 tokio = "1.44.2"
