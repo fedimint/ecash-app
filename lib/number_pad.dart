@@ -128,9 +128,27 @@ class _NumberPadState extends State<NumberPad> {
         body: Column(
           children: [
             const SizedBox(height: 24),
-            Text(
-              _formatAmount(_rawAmount),
-              style: const TextStyle(fontSize: 48, fontWeight: FontWeight.bold),
+            RichText(
+              text: TextSpan(
+                style: const TextStyle(color: Colors.white),
+                children: [
+                  TextSpan(
+                    text: _formatAmount(_rawAmount),
+                    style: const TextStyle(
+                      fontSize: 48,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                  TextSpan(
+                    text: ' sats',
+                    style: TextStyle(
+                      fontSize: 24,
+                      fontWeight: FontWeight.w400,
+                      color: Colors.white70,
+                    ),
+                  ),
+                ],
+              ),
             ),
             const SizedBox(height: 8),
             Text(
