@@ -44,6 +44,8 @@ class _RequestState extends State<Request> with SingleTickerProviderStateMixin {
   @override
   void initState() {
     super.initState();
+    print("Invoice Expiry: ${widget.expiry}");
+    print('As duration: ${Duration(seconds: widget.expiry.toInt())}');
     _remaining = Duration(seconds: widget.expiry.toInt());
     _startCountdown();
     _waitForPayment();
@@ -99,10 +101,17 @@ class _RequestState extends State<Request> with SingleTickerProviderStateMixin {
   }
 
   String _formatDuration(Duration d) {
+    final hours = d.inHours;
     final minutes = d.inMinutes.remainder(60).toString().padLeft(2, '0');
     final seconds = d.inSeconds.remainder(60).toString().padLeft(2, '0');
-    return '$minutes:$seconds';
+
+    if (hours > 0) {
+      return '${hours.toString().padLeft(2, '0')}:$minutes:$seconds';
+    } else {
+      return '$minutes:$seconds';
+    }
   }
+
 
 
   @override
@@ -230,6 +239,7 @@ class _RequestState extends State<Request> with SingleTickerProviderStateMixin {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
+                _buildDetailRow(theme, 'Amount', formatBalance(widget.requestedAmountMsats, true)),
                 _buildDetailRow(theme, 'Fees', formatBalance(fees, true)),
                 _buildDetailRow(theme, 'Gateway', widget.gateway),
                 _buildDetailRow(theme, 'Payee Pubkey', widget.pubkey),
