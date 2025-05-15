@@ -1,5 +1,6 @@
 import 'package:carbine/lib.dart';
 import 'package:carbine/main.dart';
+import 'package:carbine/success.dart';
 import 'package:carbine/theme.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -71,7 +72,7 @@ class PaymentPreviewWidget extends StatelessWidget {
               ),
             ),
             onPressed: () {
-              print("PayInvoice pressed");
+              Navigator.push(context, MaterialPageRoute(builder: (context) => SendPayment(fed: fed, invoice: paymentPreview.invoice, amountMsats: amount)));
             },
           ),
         ),
@@ -81,29 +82,107 @@ class PaymentPreviewWidget extends StatelessWidget {
   }
 }
 
+class SendPayment extends StatefulWidget {
+  final FederationSelector fed;
+  final String invoice;
+  final BigInt amountMsats;
 
-/*
-class _PaymentPreviewState extends State<PaymentPreviewWidget> {
+  const SendPayment({
+    super.key,
+    required this.fed,
+    required this.invoice,
+    required this.amountMsats,
+  });
+
+  @override
+  State<SendPayment> createState() => _SendPaymentState();
+}
+
+class _SendPaymentState extends State<SendPayment> {
+  bool _isSending = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _payInvoice();
+  }
 
   void _payInvoice() async {
-    setState(() {
-      state = PaymentState.Paying;
-    });
+    try {
+      final operationId = await send(
+        federationId: widget.fed.federationId,
+        invoice: widget.invoice,
+      );
 
-    final operationId = await send(federationId: widget.fed.federationId, invoice: widget.paymentPreview.invoice);
-    final finalState = await awaitSend(federationId: widget.fed.federationId, operationId: operationId);
-    print('FinalState: $finalState');
+      final finalState = await awaitSend(
+        federationId: widget.fed.federationId,
+        operationId: operationId,
+      );
 
-    setState(() {
-      state = PaymentState.Success;
-    });
-    Navigator.push(context, MaterialPageRoute(builder: (context) => Success(
-      lightning: true,
-      received: false,
-      amountMsats: widget.paymentPreview.amountMsats,
-    )));
-    await Future.delayed(Duration(seconds: 4));
-    Navigator.of(context, rootNavigator: true).popUntil((route) => route.isFirst);
+      debugPrint('FinalState: $finalState');
+
+      if (!mounted) return;
+
+      setState(() {
+        _isSending = false;
+      });
+
+      // Navigate to Success screen
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) => Success(
+            lightning: true,
+            received: false,
+            amountMsats: widget.amountMsats,
+          ),
+        ),
+      );
+
+      await Future.delayed(const Duration(seconds: 4));
+
+      if (mounted) {
+        Navigator.of(context, rootNavigator: true).popUntil((route) => route.isFirst);
+      }
+    } catch (e) {
+      debugPrint('Error while sending payment: $e');
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Failed to send payment')),
+      );
+      Navigator.of(context).pop(); // Close modal on failure
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
+    return Center(
+      child: AnimatedSwitcher(
+        duration: const Duration(milliseconds: 500),
+        child: _isSending
+            ? Column(
+                key: const ValueKey('sending'),
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const SizedBox(height: 24),
+                  CircularProgressIndicator(
+                    valueColor: AlwaysStoppedAnimation(theme.colorScheme.primary),
+                    strokeWidth: 3,
+                  ),
+                  const SizedBox(height: 24),
+                  Text(
+                    'Sending Payment',
+                    style: theme.textTheme.titleLarge?.copyWith(
+                      fontWeight: FontWeight.bold,
+                      color: theme.colorScheme.onSurface,
+                    ),
+                  ),
+                ],
+              )
+            : const SizedBox.shrink(), // Replaced by Success screen
+      ),
+    );
   }
 }
-*/
