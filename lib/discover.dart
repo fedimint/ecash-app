@@ -26,7 +26,10 @@ class _Discover extends State<Discover> {
     final theme = Theme.of(context);
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Discover Federations', style: TextStyle(fontWeight: FontWeight.bold)),
+        title: const Text(
+          'Discover Federations',
+          style: TextStyle(fontWeight: FontWeight.bold),
+        ),
         centerTitle: true,
         elevation: 0,
       ),
@@ -36,9 +39,16 @@ class _Discover extends State<Discover> {
           if (snapshot.connectionState == ConnectionState.waiting) {
             return const Center(child: CircularProgressIndicator());
           } else if (snapshot.hasError) {
-            return Center(child: Text("Error: ${snapshot.error}", style: TextStyle(color: theme.colorScheme.error)));
+            return Center(
+              child: Text(
+                "Error: ${snapshot.error}",
+                style: TextStyle(color: theme.colorScheme.error),
+              ),
+            );
           } else if (!snapshot.hasData || snapshot.data!.isEmpty) {
-            return const Center(child: Text("No public federations available to join"));
+            return const Center(
+              child: Text("No public federations available to join"),
+            );
           }
 
           final federations = snapshot.data!;
@@ -50,7 +60,9 @@ class _Discover extends State<Discover> {
               final federation = federations[index];
               return Card(
                 elevation: 2,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(16),
+                ),
                 child: Padding(
                   padding: const EdgeInsets.all(16),
                   child: Row(
@@ -58,16 +70,26 @@ class _Discover extends State<Discover> {
                     children: [
                       ClipRRect(
                         borderRadius: BorderRadius.circular(12),
-                        child: federation.picture != null && federation.picture!.isNotEmpty
-                            ? Image.network(
-                                federation.picture!,
-                                width: 50,
-                                height: 50,
-                                fit: BoxFit.cover,
-                                errorBuilder: (_, __, ___) =>
-                                    Image.asset('assets/images/fedimint.png', width: 50, height: 50),
-                              )
-                            : Image.asset('assets/images/fedimint.png', width: 50, height: 50),
+                        child:
+                            federation.picture != null &&
+                                    federation.picture!.isNotEmpty
+                                ? Image.network(
+                                  federation.picture!,
+                                  width: 50,
+                                  height: 50,
+                                  fit: BoxFit.cover,
+                                  errorBuilder:
+                                      (_, __, ___) => Image.asset(
+                                        'assets/images/fedimint.png',
+                                        width: 50,
+                                        height: 50,
+                                      ),
+                                )
+                                : Image.asset(
+                                  'assets/images/fedimint.png',
+                                  width: 50,
+                                  height: 50,
+                                ),
                       ),
                       const SizedBox(width: 16),
                       Expanded(
@@ -76,7 +98,9 @@ class _Discover extends State<Discover> {
                           children: [
                             Text(
                               federation.federationName,
-                              style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600),
+                              style: theme.textTheme.titleMedium?.copyWith(
+                                fontWeight: FontWeight.w600,
+                              ),
                             ),
                             const SizedBox(height: 4),
                             Text(
@@ -85,7 +109,8 @@ class _Discover extends State<Discover> {
                                 color: theme.colorScheme.onSurfaceVariant,
                               ),
                             ),
-                            if (federation.about != null && federation.about!.isNotEmpty) ...[
+                            if (federation.about != null &&
+                                federation.about!.isNotEmpty) ...[
                               const SizedBox(height: 6),
                               Text(
                                 federation.about!,
@@ -100,41 +125,54 @@ class _Discover extends State<Discover> {
                       const SizedBox(width: 12),
                       ElevatedButton(
                         style: ElevatedButton.styleFrom(
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
                           minimumSize: const Size(70, 36),
                           padding: const EdgeInsets.symmetric(horizontal: 12),
                         ),
                         onPressed: () async {
                           setState(() => _gettingMetadata = federation);
-                          final meta = await getFederationMeta(inviteCode: federation.inviteCodes.first);
+                          final meta = await getFederationMeta(
+                            inviteCode: federation.inviteCodes.first,
+                          );
                           setState(() => _gettingMetadata = null);
                           final fed = await showCarbineModalBottomSheet(
                             context: context,
                             child: FederationPreview(
-                                federationName: meta.$2.federationName,
-                                inviteCode: meta.$2.inviteCode,
-                                welcomeMessage: meta.$1.welcome,
-                                imageUrl: meta.$1.picture,
-                                joinable: true,
-                                guardians: meta.$1.guardians,
-                                network: meta.$2.network,
-                              ),
+                              federationName: meta.$2.federationName,
+                              inviteCode: meta.$2.inviteCode,
+                              welcomeMessage: meta.$1.welcome,
+                              imageUrl: meta.$1.picture,
+                              joinable: true,
+                              guardians: meta.$1.guardians,
+                              network: meta.$2.network,
+                            ),
                           );
 
-                          await Future.delayed(const Duration(milliseconds: 400));
+                          await Future.delayed(
+                            const Duration(milliseconds: 400),
+                          );
                           widget.onJoin(fed);
                           if (context.mounted) Navigator.pop(context);
                           ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(content: Text("Joined ${fed.federationName}")),
+                            SnackBar(
+                              content: Text("Joined ${fed.federationName}"),
+                            ),
                           );
                         },
-                        child: (_gettingMetadata != null && _gettingMetadata == federation)
-                            ? const SizedBox(
-                                width: 16,
-                                height: 16,
-                                child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
-                              )
-                            : const Text("Join"),
+                        child:
+                            (_gettingMetadata != null &&
+                                    _gettingMetadata == federation)
+                                ? const SizedBox(
+                                  width: 16,
+                                  height: 16,
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2,
+                                    color: Colors.white,
+                                  ),
+                                )
+                                : const Text("Join"),
                       ),
                     ],
                   ),

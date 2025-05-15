@@ -32,7 +32,10 @@ final ThemeData cypherpunkNinjaTheme = ThemeData(
   textTheme: const TextTheme(
     bodyLarge: TextStyle(color: Colors.white),
     bodyMedium: TextStyle(color: Colors.white70),
-    titleLarge: TextStyle(color: Colors.greenAccent, fontWeight: FontWeight.bold),
+    titleLarge: TextStyle(
+      color: Colors.greenAccent,
+      fontWeight: FontWeight.bold,
+    ),
   ),
   buttonTheme: const ButtonThemeData(
     buttonColor: Colors.greenAccent,
@@ -145,4 +148,3 @@ String getAbbreviatedInvoice(String invoice) {
   if (invoice.length <= 14) return invoice;
   return '${invoice.substring(0, 7)}...${invoice.substring(invoice.length - 7)}';
 }
-

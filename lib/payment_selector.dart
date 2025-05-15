@@ -97,16 +97,19 @@ class _PaymentMethodSelectorState extends State<PaymentMethodSelector> {
 
         // Confirm Button
         ElevatedButton.icon(
-          onPressed: (_selected == 'invoice' || _isLightningFormValid)
-              ? _onConfirmPressed
-              : null,
+          onPressed:
+              (_selected == 'invoice' || _isLightningFormValid)
+                  ? _onConfirmPressed
+                  : null,
           icon: const Icon(Icons.check_circle),
           label: const Text('Confirm'),
           style: ElevatedButton.styleFrom(
             backgroundColor: theme.colorScheme.primary,
             foregroundColor: theme.colorScheme.onPrimary,
             padding: const EdgeInsets.symmetric(vertical: 16),
-            textStyle: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600),
+            textStyle: theme.textTheme.titleMedium?.copyWith(
+              fontWeight: FontWeight.w600,
+            ),
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(16),
             ),
@@ -122,25 +125,44 @@ class _PaymentMethodSelectorState extends State<PaymentMethodSelector> {
         final address = _lightningAddressController.text;
         final amount = BigInt.parse(_amountController.text) * BigInt.from(1000);
         print('Lightning Address: $address, Amount: $amount');
-        await Navigator.push(context, MaterialPageRoute(builder: (context) => SendPayment(fed: widget.fed, amountMsats: amount, lnAddress: address)));
+        await Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder:
+                (context) => SendPayment(
+                  fed: widget.fed,
+                  amountMsats: amount,
+                  lnAddress: address,
+                ),
+          ),
+        );
       } catch (_) {
         print("Error paying lightning address");
       }
-      
     } else {
-      await Navigator.push(context, MaterialPageRoute(builder: (context) => ScanQRPage(selectedFed: widget.fed)));
+      await Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) => ScanQRPage(selectedFed: widget.fed),
+        ),
+      );
     }
   }
 
-  Widget _buildOption({required String label, required IconData icon, required String value}) {
+  Widget _buildOption({
+    required String label,
+    required IconData icon,
+    required String value,
+  }) {
     final theme = Theme.of(context);
     final isSelected = _selected == value;
 
     return Expanded(
       child: GestureDetector(
-        onTap: () => setState(() {
-          _selected = value;
-        }),
+        onTap:
+            () => setState(() {
+              _selected = value;
+            }),
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 200),
           padding: const EdgeInsets.symmetric(vertical: 16),
@@ -158,7 +180,8 @@ class _PaymentMethodSelectorState extends State<PaymentMethodSelector> {
               Text(
                 label,
                 style: theme.textTheme.bodyMedium?.copyWith(
-                  color: isSelected ? Colors.white : theme.colorScheme.onSurface,
+                  color:
+                      isSelected ? Colors.white : theme.colorScheme.onSurface,
                 ),
               ),
             ],
@@ -220,4 +243,3 @@ class _PaymentMethodSelectorState extends State<PaymentMethodSelector> {
     );
   }
 }
-

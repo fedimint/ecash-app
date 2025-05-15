@@ -28,7 +28,7 @@ class FederationPreview extends StatefulWidget {
 }
 
 class _FederationPreviewState extends State<FederationPreview> {
-  bool isJoining = false; 
+  bool isJoining = false;
 
   Future<void> _onButtonPressed() async {
     if (widget.joinable) {
@@ -57,10 +57,16 @@ class _FederationPreviewState extends State<FederationPreview> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final totalGuardians = widget.guardians != null ? widget.guardians!.length : 0;
+    final totalGuardians =
+        widget.guardians != null ? widget.guardians!.length : 0;
     final thresh = threshold(totalGuardians);
-    final onlineGuardians = widget.guardians != null ? widget.guardians!.where((g) => g.version != null).toList() : [];
-    final isFederationOnline = totalGuardians > 0 && onlineGuardians.length >= threshold(totalGuardians);
+    final onlineGuardians =
+        widget.guardians != null
+            ? widget.guardians!.where((g) => g.version != null).toList()
+            : [];
+    final isFederationOnline =
+        totalGuardians > 0 &&
+        onlineGuardians.length >= threshold(totalGuardians);
 
     return Padding(
       padding: const EdgeInsets.all(16),
@@ -68,7 +74,6 @@ class _FederationPreviewState extends State<FederationPreview> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-
             if (widget.network.toLowerCase() != 'bitcoin') ...[
               Container(
                 margin: const EdgeInsets.only(bottom: 16),
@@ -99,21 +104,22 @@ class _FederationPreviewState extends State<FederationPreview> {
                 child: SizedBox(
                   width: 150,
                   height: 150,
-                  child: widget.imageUrl != null
-                      ? Image.network(
-                          widget.imageUrl!,
-                          fit: BoxFit.cover,
-                          errorBuilder: (context, error, stackTrace) {
-                            return Image.asset(
-                              'assets/images/fedimint.png',
-                              fit: BoxFit.cover,
-                            );
-                          },
-                        )
-                      : Image.asset(
-                          'assets/images/fedimint.png',
-                          fit: BoxFit.cover,
-                        ),
+                  child:
+                      widget.imageUrl != null
+                          ? Image.network(
+                            widget.imageUrl!,
+                            fit: BoxFit.cover,
+                            errorBuilder: (context, error, stackTrace) {
+                              return Image.asset(
+                                'assets/images/fedimint.png',
+                                fit: BoxFit.cover,
+                              );
+                            },
+                          )
+                          : Image.asset(
+                            'assets/images/fedimint.png',
+                            fit: BoxFit.cover,
+                          ),
                 ),
               ),
             ),
@@ -123,7 +129,9 @@ class _FederationPreviewState extends State<FederationPreview> {
             // Federation name
             Text(
               widget.federationName,
-              style: theme.textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.bold),
+              style: theme.textTheme.headlineSmall?.copyWith(
+                fontWeight: FontWeight.bold,
+              ),
               textAlign: TextAlign.center,
             ),
 
@@ -157,16 +165,21 @@ class _FederationPreviewState extends State<FederationPreview> {
                       fontWeight: FontWeight.bold,
                     ),
                   ),
-                  child: isJoining
-                      ? const SizedBox(
-                          height: 20,
-                          width: 20,
-                          child: CircularProgressIndicator(
-                            color: Colors.black,
-                            strokeWidth: 2,
+                  child:
+                      isJoining
+                          ? const SizedBox(
+                            height: 20,
+                            width: 20,
+                            child: CircularProgressIndicator(
+                              color: Colors.black,
+                              strokeWidth: 2,
+                            ),
+                          )
+                          : Text(
+                            widget.joinable
+                                ? "Join Federation"
+                                : "Copy Invite Code",
                           ),
-                        )
-                      : Text(widget.joinable ? "Join Federation" : "Copy Invite Code"),
                 ),
               ),
 
@@ -175,7 +188,9 @@ class _FederationPreviewState extends State<FederationPreview> {
                 const SizedBox(height: 24),
                 Text(
                   'Guardians ($thresh/$totalGuardians federation)',
-                  style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
+                  style: theme.textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
                 const SizedBox(height: 8),
                 ListView.builder(
@@ -195,9 +210,10 @@ class _FederationPreviewState extends State<FederationPreview> {
                         size: 12,
                       ),
                       title: Text(guardian.name),
-                      subtitle: isOnline
-                          ? Text('Version: ${guardian.version}')
-                          : const Text('Offline'),
+                      subtitle:
+                          isOnline
+                              ? Text('Version: ${guardian.version}')
+                              : const Text('Offline'),
                     );
                   },
                 ),

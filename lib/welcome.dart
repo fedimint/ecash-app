@@ -25,15 +25,13 @@ class _WelcomeWidgetState extends State<WelcomeWidget> {
 
   bool get isMobile {
     return defaultTargetPlatform == TargetPlatform.iOS ||
-        defaultTargetPlatform == TargetPlatform.android || kIsWeb;
+        defaultTargetPlatform == TargetPlatform.android ||
+        kIsWeb;
   }
 
   Widget _buildPage({required Widget content}) {
     return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(24.0),
-        child: content,
-      ),
+      child: Padding(padding: const EdgeInsets.all(24.0), child: content),
     );
   }
 
@@ -43,33 +41,52 @@ class _WelcomeWidgetState extends State<WelcomeWidget> {
       children: [
         Icon(Icons.explore, size: 80, color: Theme.of(context).primaryColor),
         const SizedBox(height: 32),
-        const Text('Discover Federations', style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
+        const Text(
+          'Discover Federations',
+          style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+        ),
         const SizedBox(height: 16),
         RichText(
           textAlign: TextAlign.center,
           text: TextSpan(
             style: const TextStyle(fontSize: 16),
             children: [
-              const TextSpan(text: 'You can explore and discover new federations through '),
+              const TextSpan(
+                text: 'You can explore and discover new federations through ',
+              ),
               TextSpan(
                 text: 'Nostr',
-                style: const TextStyle(color: Colors.blue, decoration: TextDecoration.underline),
-                recognizer: TapGestureRecognizer()
-                  ..onTap = () {
-                    Navigator.push(context, MaterialPageRoute(builder: (context) => Discover(onJoin: widget.onJoin)));
-                  },
+                style: const TextStyle(
+                  color: Colors.blue,
+                  decoration: TextDecoration.underline,
+                ),
+                recognizer:
+                    TapGestureRecognizer()
+                      ..onTap = () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder:
+                                (context) => Discover(onJoin: widget.onJoin),
+                          ),
+                        );
+                      },
               ),
               const TextSpan(text: ' or by visiting '),
               TextSpan(
                 text: 'Fedimint Observer',
-                style: const TextStyle(color: Colors.blue, decoration: TextDecoration.underline),
-                recognizer: TapGestureRecognizer()
-                  ..onTap = () async {
-                    const url = 'https://observer.fedimint.org';
-                    if (await canLaunch(url)) {
-                      await launch(url);
-                    }
-                  },
+                style: const TextStyle(
+                  color: Colors.blue,
+                  decoration: TextDecoration.underline,
+                ),
+                recognizer:
+                    TapGestureRecognizer()
+                      ..onTap = () async {
+                        const url = 'https://observer.fedimint.org';
+                        if (await canLaunch(url)) {
+                          await launch(url);
+                        }
+                      },
               ),
               const TextSpan(text: '.'),
             ],
@@ -91,9 +108,19 @@ class _WelcomeWidgetState extends State<WelcomeWidget> {
                 content: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    Icon(Icons.group_add, size: 80, color: Theme.of(context).primaryColor),
+                    Icon(
+                      Icons.group_add,
+                      size: 80,
+                      color: Theme.of(context).primaryColor,
+                    ),
                     const SizedBox(height: 32),
-                    const Text('Welcome!', style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
+                    const Text(
+                      'Welcome!',
+                      style: TextStyle(
+                        fontSize: 24,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
                     const SizedBox(height: 16),
                     const Text(
                       'You can join a community by scanning or copying a join code provided by a federation.',
@@ -115,7 +142,10 @@ class _WelcomeWidgetState extends State<WelcomeWidget> {
                 icon: const Icon(Icons.arrow_back),
                 onPressed: () {
                   if (_controller.page! > 0) {
-                    _controller.previousPage(duration: const Duration(milliseconds: 300), curve: Curves.easeInOut);
+                    _controller.previousPage(
+                      duration: const Duration(milliseconds: 300),
+                      curve: Curves.easeInOut,
+                    );
                   }
                 },
               ),
@@ -123,7 +153,10 @@ class _WelcomeWidgetState extends State<WelcomeWidget> {
                 icon: const Icon(Icons.arrow_forward),
                 onPressed: () {
                   if (_controller.page! < 1) {
-                    _controller.nextPage(duration: const Duration(milliseconds: 300), curve: Curves.easeInOut);
+                    _controller.nextPage(
+                      duration: const Duration(milliseconds: 300),
+                      curve: Curves.easeInOut,
+                    );
                   }
                 },
               ),
@@ -147,4 +180,3 @@ class _WelcomeWidgetState extends State<WelcomeWidget> {
     );
   }
 }
-

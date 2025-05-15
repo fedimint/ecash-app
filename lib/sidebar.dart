@@ -21,10 +21,7 @@ class FederationSidebar extends StatelessWidget {
         decoration: BoxDecoration(
           color: Theme.of(context).colorScheme.surface,
           boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.6),
-              blurRadius: 12,
-            ),
+            BoxShadow(color: Colors.black.withOpacity(0.6), blurRadius: 12),
           ],
         ),
         child: FutureBuilder<List<FederationSelector>>(
@@ -46,7 +43,9 @@ class FederationSidebar extends StatelessWidget {
                   height: 80,
                   padding: const EdgeInsets.all(16),
                   decoration: BoxDecoration(
-                    color: Colors.grey[900], // Slightly lighter for header contrast
+                    color:
+                        Colors
+                            .grey[900], // Slightly lighter for header contrast
                     border: Border(
                       bottom: BorderSide(color: Colors.grey.shade800),
                     ),
@@ -61,13 +60,15 @@ class FederationSidebar extends StatelessWidget {
                     ),
                   ),
                 ),
-                ...federations!.map((selector) => FederationListItem(
-                  fed: selector,
-                  onTap: () {
-                    Navigator.of(context).pop();
-                    onFederationSelected(selector);
-                  },
-                )),
+                ...federations!.map(
+                  (selector) => FederationListItem(
+                    fed: selector,
+                    onTap: () {
+                      Navigator.of(context).pop();
+                      onFederationSelected(selector);
+                    },
+                  ),
+                ),
               ],
             );
           },
@@ -101,14 +102,11 @@ class _FederationListItemState extends State<FederationListItem> {
   }
 
   Future<void> _initializeData() async {
-    await Future.wait([
-      _loadBalance(),
-      _loadFederationMeta(),
-    ]);
+    await Future.wait([_loadBalance(), _loadFederationMeta()]);
     setState(() {
       isLoading = false;
     });
-  } 
+  }
 
   Future<void> _loadFederationMeta() async {
     try {
@@ -141,15 +139,16 @@ class _FederationListItemState extends State<FederationListItem> {
       guardians!.every((g) => g.version != null);
 
   int get numOnlineGuardians =>
-    guardians != null ? guardians!.where((g) => g.version != null).length : 0;
+      guardians != null ? guardians!.where((g) => g.version != null).length : 0;
 
   @override
   Widget build(BuildContext context) {
     final numGuardians = guardians?.length ?? 0;
     final thresh = guardians != null ? threshold(numGuardians) : 0;
-    final onlineColor = numOnlineGuardians == numGuardians
-        ? Colors.greenAccent
-        : numOnlineGuardians >= thresh
+    final onlineColor =
+        numOnlineGuardians == numGuardians
+            ? Colors.greenAccent
+            : numOnlineGuardians >= thresh
             ? Colors.amberAccent
             : Colors.redAccent;
 
@@ -167,9 +166,11 @@ class _FederationListItemState extends State<FederationListItem> {
               children: [
                 CircleAvatar(
                   radius: 24,
-                  backgroundImage: federationImageUrl != null
-                      ? NetworkImage(federationImageUrl!)
-                      : const AssetImage('assets/images/fedimint.png') as ImageProvider,
+                  backgroundImage:
+                      federationImageUrl != null
+                          ? NetworkImage(federationImageUrl!)
+                          : const AssetImage('assets/images/fedimint.png')
+                              as ImageProvider,
                   backgroundColor: Colors.black,
                   onBackgroundImageError: (_, __) {
                     setState(() {
@@ -185,9 +186,9 @@ class _FederationListItemState extends State<FederationListItem> {
                       Text(
                         widget.fed.federationName,
                         style: Theme.of(context).textTheme.bodyLarge!.copyWith(
-                              fontWeight: FontWeight.bold,
-                              color: Colors.greenAccent,
-                            ),
+                          fontWeight: FontWeight.bold,
+                          color: Colors.greenAccent,
+                        ),
                       ),
                       const SizedBox(height: 4),
                       Text(
@@ -199,27 +200,27 @@ class _FederationListItemState extends State<FederationListItem> {
                       const SizedBox(height: 4),
                       guardians == null
                           ? const SizedBox(
-                              width: 16,
-                              height: 16,
-                              child: CircularProgressIndicator(
-                                color: Colors.greenAccent,
-                                strokeWidth: 2,
-                              ),
-                            )
-                          : Row(
-                              children: [
-                                Text(
-                                  guardians!.isEmpty
-                                      ? 'Offline'
-                                      : numGuardians == 1
-                                          ? '1 guardian'
-                                          : '$numGuardians guardians',
-                                  style: Theme.of(context).textTheme.bodySmall,
-                                ),
-                                const SizedBox(width: 6),
-                                Icon(Icons.circle, size: 10, color: onlineColor),
-                              ],
+                            width: 16,
+                            height: 16,
+                            child: CircularProgressIndicator(
+                              color: Colors.greenAccent,
+                              strokeWidth: 2,
                             ),
+                          )
+                          : Row(
+                            children: [
+                              Text(
+                                guardians!.isEmpty
+                                    ? 'Offline'
+                                    : numGuardians == 1
+                                    ? '1 guardian'
+                                    : '$numGuardians guardians',
+                                style: Theme.of(context).textTheme.bodySmall,
+                              ),
+                              const SizedBox(width: 6),
+                              Icon(Icons.circle, size: 10, color: onlineColor),
+                            ],
+                          ),
                     ],
                   ),
                 ),

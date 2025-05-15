@@ -19,7 +19,9 @@ class _ScanQRPageState extends State<ScanQRPage> {
   bool _isPasting = false;
 
   Future<void> _processText(String text) async {
-    if (text.startsWith("fed") && !text.startsWith("fedimint") && widget.selectedFed == null) {
+    if (text.startsWith("fed") &&
+        !text.startsWith("fedimint") &&
+        widget.selectedFed == null) {
       final meta = await getFederationMeta(inviteCode: text);
 
       final fed = await showCarbineModalBottomSheet(
@@ -39,20 +41,30 @@ class _ScanQRPageState extends State<ScanQRPage> {
         await Future.delayed(const Duration(milliseconds: 400));
         Navigator.pop(context, fed);
       }
-
     } else if (text.startsWith("ln")) {
       if (widget.selectedFed != null) {
-        final preview = await paymentPreview(federationId: widget.selectedFed!.federationId, bolt11: text);
+        final preview = await paymentPreview(
+          federationId: widget.selectedFed!.federationId,
+          bolt11: text,
+        );
         if (widget.selectedFed!.network != preview.network) {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text("Cannot pay invoice from different network.")),
+            const SnackBar(
+              content: Text("Cannot pay invoice from different network."),
+            ),
           );
           return;
         }
-        final bal = await balance(federationId: widget.selectedFed!.federationId);
+        final bal = await balance(
+          federationId: widget.selectedFed!.federationId,
+        );
         if (bal < preview.amountMsats) {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text("This federation does not have enough funds to pay this invoice")),
+            const SnackBar(
+              content: Text(
+                "This federation does not have enough funds to pay this invoice",
+              ),
+            ),
           );
           return;
         }
@@ -89,9 +101,9 @@ class _ScanQRPageState extends State<ScanQRPage> {
     final text = clipboardData?.text ?? '';
 
     if (text.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Clipboard is empty")),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text("Clipboard is empty")));
 
       setState(() {
         _isPasting = false;
@@ -112,15 +124,18 @@ class _ScanQRPageState extends State<ScanQRPage> {
     return SafeArea(
       child: Scaffold(
         appBar: AppBar(
-            title: const Text('Scan QR', style: TextStyle(fontWeight: FontWeight.bold)),
-            centerTitle: true,
-            backgroundColor: Colors.transparent,
-            elevation: 0,
-            leading: IconButton(
-              icon: const Icon(Icons.close),
-              onPressed: () => Navigator.of(context).pop(),
-            ),
+          title: const Text(
+            'Scan QR',
+            style: TextStyle(fontWeight: FontWeight.bold),
           ),
+          centerTitle: true,
+          backgroundColor: Colors.transparent,
+          elevation: 0,
+          leading: IconButton(
+            icon: const Icon(Icons.close),
+            onPressed: () => Navigator.of(context).pop(),
+          ),
+        ),
         body: Stack(
           children: [
             Positioned.fill(
@@ -139,23 +154,26 @@ class _ScanQRPageState extends State<ScanQRPage> {
                 padding: const EdgeInsets.all(24.0),
                 child: ElevatedButton.icon(
                   onPressed: _isPasting ? null : _pasteFromClipboard,
-                  icon: _isPasting
-                      ? const SizedBox(
-                          width: 20,
-                          height: 20,
-                          child: CircularProgressIndicator(
-                            color: Colors.white,
-                            strokeWidth: 2.0,
-                          ),
-                        )
-                      : const Icon(Icons.paste),
-                  label: Text(_isPasting ? "Pasting..." : "Paste from Clipboard"),
+                  icon:
+                      _isPasting
+                          ? const SizedBox(
+                            width: 20,
+                            height: 20,
+                            child: CircularProgressIndicator(
+                              color: Colors.white,
+                              strokeWidth: 2.0,
+                            ),
+                          )
+                          : const Icon(Icons.paste),
+                  label: Text(
+                    _isPasting ? "Pasting..." : "Paste from Clipboard",
+                  ),
                 ),
               ),
             ),
           ],
         ),
-      )
+      ),
     );
   }
 }
