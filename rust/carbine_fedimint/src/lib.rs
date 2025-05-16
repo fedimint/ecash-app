@@ -279,6 +279,16 @@ pub async fn await_ecash_send(
 }
 
 #[frb]
+pub async fn parse_ecash(
+    federation_id: &FederationId,
+    ecash: String,
+) -> anyhow::Result<u64> {
+    let multimint = get_multimint().await;
+    let mm = multimint.read().await;
+    mm.parse_ecash(federation_id, ecash).await
+}
+
+#[frb]
 pub async fn reissue_ecash(
     federation_id: &FederationId,
     ecash: String,
@@ -1437,6 +1447,20 @@ impl Multimint {
             final_state = update;
         }
         Ok(final_state)
+    }
+
+    async fn parse_ecash(
+        &self,
+        federation_id: &FederationId,
+        ecash: String,
+    ) -> anyhow::Result<u64> {
+        let notes = OOBNotes::from_str(&ecash)?;
+        let given_federation_id_prefix = notes.federation_id_prefix();
+        if federation_id.to_prefix() != given_federation_id_prefix {
+            return Err(anyhow!("Trying to claim ecash into incorrect federation"));
+        }
+        let total_amount = notes.total_amount();
+        Ok(total_amount.msats)
     }
 
     async fn reissue_ecash(

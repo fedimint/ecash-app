@@ -57,6 +57,7 @@ final ThemeData cypherpunkNinjaTheme = ThemeData(
 Future<T?> showCarbineModalBottomSheet<T>({
   required BuildContext context,
   required Widget child,
+  double? heightFactor,
 }) {
   return showModalBottomSheet<T>(
     context: context,
@@ -68,7 +69,7 @@ Future<T?> showCarbineModalBottomSheet<T>({
     builder: (context) {
       return SafeArea(
         child: FractionallySizedBox(
-          heightFactor: 0.80,
+          heightFactor: heightFactor ?? 0.8,
           child: Padding(
             padding: EdgeInsets.only(
               bottom: MediaQuery.of(context).viewInsets.bottom,

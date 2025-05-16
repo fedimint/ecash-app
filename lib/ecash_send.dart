@@ -110,6 +110,7 @@ class _EcashSendState extends State<EcashSend> {
     );
   }
 
+  // TODO: Remove this, it is confusing when sending
   String _abbreviate(String text, [int max = 30]) {
     if (text.length <= max) return text;
     return '${text.substring(0, 10)}...${text.substring(text.length - 10)}';
