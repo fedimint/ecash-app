@@ -76,7 +76,7 @@ class _MyAppState extends State<MyApp> {
 
   void _onJoinPressed(FederationSelector fed) {
     _setSelectedFederation(fed);
-    _refreshFederations(); 
+    _refreshFederations();
   }
 
   void _setSelectedFederation(FederationSelector fed) {
@@ -148,42 +148,43 @@ class _MyAppState extends State<MyApp> {
       debugShowCheckedModeBanner: false,
       theme: cypherpunkNinjaTheme,
       home: Builder(
-        builder: (innerContext) => Scaffold(
-          appBar: AppBar(
-            actions: _initialLoadComplete
-                ? [
-                    IconButton(
-                      icon: const Icon(Icons.qr_code_scanner),
-                      tooltip: 'Scan',
-                      onPressed: () => _onScanPressed(innerContext),
-                    ),
-                    IconButton(
-                      icon: const Icon(Icons.settings),
-                      tooltip: 'Settings',
-                      onPressed: () {
-                        setState(() {
-                          _currentIndex = 1;
-                          _selectedFederation = null;
-                        });
-                      },
-                    ),
-                  ]
-                : null,
-          ),
-          drawer: _initialLoadComplete
-              ? SafeArea(
-                  child: FederationSidebar(
-                    key: ValueKey(_refreshTrigger),
-                    federationsFuture: _federationFuture,
-                    onFederationSelected: _setSelectedFederation,
-                  ),
-                )
-              : null,
-          body: SafeArea(child: bodyContent),
-        ),
+        builder:
+            (innerContext) => Scaffold(
+              appBar: AppBar(
+                actions:
+                    _initialLoadComplete
+                        ? [
+                          IconButton(
+                            icon: const Icon(Icons.qr_code_scanner),
+                            tooltip: 'Scan',
+                            onPressed: () => _onScanPressed(innerContext),
+                          ),
+                          IconButton(
+                            icon: const Icon(Icons.settings),
+                            tooltip: 'Settings',
+                            onPressed: () {
+                              setState(() {
+                                _currentIndex = 1;
+                                _selectedFederation = null;
+                              });
+                            },
+                          ),
+                        ]
+                        : null,
+              ),
+              drawer:
+                  _initialLoadComplete
+                      ? SafeArea(
+                        child: FederationSidebar(
+                          key: ValueKey(_refreshTrigger),
+                          federationsFuture: _federationFuture,
+                          onFederationSelected: _setSelectedFederation,
+                        ),
+                      )
+                      : null,
+              body: SafeArea(child: bodyContent),
+            ),
       ),
     );
   }
 }
-
-

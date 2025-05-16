@@ -18,8 +18,13 @@ class SettingsScreen extends StatelessWidget {
             title: "Discover",
             subtitle: "Find new Federations using Nostr",
             onTap: () {
-              Navigator.push(context, MaterialPageRoute(builder: (context) => Discover(onJoin: onJoin)));
-            }
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => Discover(onJoin: onJoin),
+                ),
+              );
+            },
           ),
           _SettingsOption(
             icon: Icons.link,

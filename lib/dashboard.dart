@@ -56,9 +56,10 @@ class _DashboardState extends State<Dashboard> {
   }
 
   void _onScroll() {
-    if (_scrollController.position.pixels >= _scrollController.position.maxScrollExtent - 100 &&
-      !_isFetchingMore &&
-      _hasMore) {
+    if (_scrollController.position.pixels >=
+            _scrollController.position.maxScrollExtent - 100 &&
+        !_isFetchingMore &&
+        _hasMore) {
       _loadTransactions(loadMore: true);
     }
   }
@@ -130,11 +131,18 @@ class _DashboardState extends State<Dashboard> {
     if (_selectedPaymentType == PaymentType.lightning) {
       //await Navigator.push(context, MaterialPageRoute(builder: (context) => ScanQRPage(selectedFed: widget.fed)));
       await showCarbineModalBottomSheet(
-        context: context, 
+        context: context,
         child: PaymentMethodSelector(fed: widget.fed),
       );
     } else if (_selectedPaymentType == PaymentType.ecash) {
-      await Navigator.push(context, MaterialPageRoute(builder: (context) => NumberPad(fed: widget.fed, paymentType: _selectedPaymentType)));
+      await Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder:
+              (context) =>
+                  NumberPad(fed: widget.fed, paymentType: _selectedPaymentType),
+        ),
+      );
     }
     _loadBalance();
     _loadTransactions();
@@ -142,9 +150,21 @@ class _DashboardState extends State<Dashboard> {
 
   void _onReceivePressed() async {
     if (_selectedPaymentType == PaymentType.lightning) {
-      await Navigator.push(context, MaterialPageRoute(builder: (context) => NumberPad(fed: widget.fed, paymentType: _selectedPaymentType)));
+      await Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder:
+              (context) =>
+                  NumberPad(fed: widget.fed, paymentType: _selectedPaymentType),
+        ),
+      );
     } else if (_selectedPaymentType == PaymentType.ecash) {
-      await Navigator.push(context, MaterialPageRoute(builder: (context) => ScanQRPage(selectedFed: widget.fed)));
+      await Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) => ScanQRPage(selectedFed: widget.fed),
+        ),
+      );
     }
 
     _loadBalance();
@@ -177,7 +197,7 @@ class _DashboardState extends State<Dashboard> {
             backgroundColor: Colors.green,
             onTap: () => _scheduleAction(_onReceivePressed),
           ),
-          if (balanceMsats != null && balanceMsats! > BigInt.zero) 
+          if (balanceMsats != null && balanceMsats! > BigInt.zero)
             SpeedDialChild(
               child: const Icon(Icons.upload),
               label: 'Send',
@@ -193,30 +213,35 @@ class _DashboardState extends State<Dashboard> {
           children: [
             const SizedBox(height: 32),
             ShaderMask(
-              shaderCallback: (bounds) => LinearGradient(
-                colors: [
-                  Theme.of(context).colorScheme.primary,
-                  Theme.of(context).colorScheme.secondary
-                ],
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-              ).createShader(Rect.fromLTWH(0, 0, bounds.width, bounds.height)),
+              shaderCallback:
+                  (bounds) => LinearGradient(
+                    colors: [
+                      Theme.of(context).colorScheme.primary,
+                      Theme.of(context).colorScheme.secondary,
+                    ],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                  ).createShader(
+                    Rect.fromLTWH(0, 0, bounds.width, bounds.height),
+                  ),
               child: Column(
                 children: [
                   Text(
                     name.toUpperCase(),
                     style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                          fontWeight: FontWeight.w900,
-                          letterSpacing: 2,
-                          color: Colors.white,
-                          shadows: [
-                            Shadow(
-                              blurRadius: 10,
-                              color: Theme.of(context).colorScheme.primary.withOpacity(0.5),
-                              offset: const Offset(0, 2),
-                            ),
-                          ],
+                      fontWeight: FontWeight.w900,
+                      letterSpacing: 2,
+                      color: Colors.white,
+                      shadows: [
+                        Shadow(
+                          blurRadius: 10,
+                          color: Theme.of(
+                            context,
+                          ).colorScheme.primary.withOpacity(0.5),
+                          offset: const Offset(0, 2),
                         ),
+                      ],
+                    ),
                     textAlign: TextAlign.center,
                   ),
                   if (widget.fed.network.toLowerCase() != 'bitcoin')
@@ -225,9 +250,9 @@ class _DashboardState extends State<Dashboard> {
                       child: Text(
                         "This is a test network and is not worth anything.",
                         style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                              color: Colors.amberAccent,
-                              fontStyle: FontStyle.italic,
-                            ),
+                          color: Colors.amberAccent,
+                          fontStyle: FontStyle.italic,
+                        ),
                         textAlign: TextAlign.center,
                       ),
                     ),
@@ -247,9 +272,9 @@ class _DashboardState extends State<Dashboard> {
                 child: Text(
                   formatBalance(balanceMsats, showMsats),
                   style: Theme.of(context).textTheme.displayLarge?.copyWith(
-                        color: Theme.of(context).colorScheme.primary,
-                        fontWeight: FontWeight.bold,
-                      ),
+                    color: Theme.of(context).colorScheme.primary,
+                    fontWeight: FontWeight.bold,
+                  ),
                   textAlign: TextAlign.center,
                 ),
               ),
@@ -258,76 +283,93 @@ class _DashboardState extends State<Dashboard> {
               alignment: Alignment.centerLeft,
               child: Text(
                 "Recent Transactions",
-                style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                      fontWeight: FontWeight.bold,
-                    ),
+                style: Theme.of(
+                  context,
+                ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
               ),
             ),
             const SizedBox(height: 16),
             isLoadingTransactions
                 ? const CircularProgressIndicator()
                 : _transactions.isEmpty
-                    ? Text(_getNoTransactionsMessage())
-                    : SizedBox(
-                        height: 300,
-                        child: ListView.builder(
-                          controller: _scrollController,
-                          itemCount: _transactions.length + (_hasMore ? 1 : 0),
-                          itemBuilder: (context, index) {
-                            if (index == _transactions.length) {
-                              return const Padding(
-                                padding: EdgeInsets.all(8.0),
-                                child: Center(child: CircularProgressIndicator()),
-                              );
-                            }
+                ? Text(_getNoTransactionsMessage())
+                : SizedBox(
+                  height: 300,
+                  child: ListView.builder(
+                    controller: _scrollController,
+                    itemCount: _transactions.length + (_hasMore ? 1 : 0),
+                    itemBuilder: (context, index) {
+                      if (index == _transactions.length) {
+                        return const Padding(
+                          padding: EdgeInsets.all(8.0),
+                          child: Center(child: CircularProgressIndicator()),
+                        );
+                      }
 
-                            final tx = _transactions[index];
-                            final isIncoming = tx.received;
-                            final date = DateTime.fromMillisecondsSinceEpoch(tx.timestamp.toInt());
-                            final formattedDate = DateFormat.yMMMd().add_jm().format(date);
-                            final formattedAmount = formatBalance(tx.amount, false);
+                      final tx = _transactions[index];
+                      final isIncoming = tx.received;
+                      final date = DateTime.fromMillisecondsSinceEpoch(
+                        tx.timestamp.toInt(),
+                      );
+                      final formattedDate = DateFormat.yMMMd().add_jm().format(
+                        date,
+                      );
+                      final formattedAmount = formatBalance(tx.amount, false);
 
-                            IconData moduleIcon;
-                            switch (tx.module) {
-                              case 'ln':
-                              case 'lnv2':
-                                moduleIcon = Icons.flash_on;
-                                break;
-                              case 'wallet':
-                                moduleIcon = Icons.link;
-                                break;
-                              case 'mint':
-                                moduleIcon = Icons.currency_bitcoin;
-                                break;
-                              default:
-                                moduleIcon = Icons.help_outline;
-                            }
+                      IconData moduleIcon;
+                      switch (tx.module) {
+                        case 'ln':
+                        case 'lnv2':
+                          moduleIcon = Icons.flash_on;
+                          break;
+                        case 'wallet':
+                          moduleIcon = Icons.link;
+                          break;
+                        case 'mint':
+                          moduleIcon = Icons.currency_bitcoin;
+                          break;
+                        default:
+                          moduleIcon = Icons.help_outline;
+                      }
 
-                            final amountStyle = TextStyle(
-                              fontWeight: FontWeight.bold,
-                              color: isIncoming ? Colors.greenAccent : Colors.redAccent,
-                            );
+                      final amountStyle = TextStyle(
+                        fontWeight: FontWeight.bold,
+                        color:
+                            isIncoming ? Colors.greenAccent : Colors.redAccent,
+                      );
 
-                            return Card(
-                              elevation: 4,
-                              margin: const EdgeInsets.symmetric(vertical: 6),
-                              color: Theme.of(context).colorScheme.surface,
-                              child: ListTile(
-                                leading: CircleAvatar(
-                                  backgroundColor: isIncoming ? Colors.greenAccent.withOpacity(0.1) : Colors.redAccent.withOpacity(0.1),
-                                  child: Icon(
-                                    moduleIcon,
-                                    color: isIncoming ? Colors.greenAccent : Colors.redAccent,
-                                  ),
-                                ),
-                                title: Text(isIncoming ? "Received" : "Sent", style: Theme.of(context).textTheme.bodyMedium),
-                                subtitle: Text(formattedDate, style: Theme.of(context).textTheme.bodyMedium),
-                                trailing: Text(formattedAmount, style: amountStyle),
-                              ),
-                            );
-                          },
+                      return Card(
+                        elevation: 4,
+                        margin: const EdgeInsets.symmetric(vertical: 6),
+                        color: Theme.of(context).colorScheme.surface,
+                        child: ListTile(
+                          leading: CircleAvatar(
+                            backgroundColor:
+                                isIncoming
+                                    ? Colors.greenAccent.withOpacity(0.1)
+                                    : Colors.redAccent.withOpacity(0.1),
+                            child: Icon(
+                              moduleIcon,
+                              color:
+                                  isIncoming
+                                      ? Colors.greenAccent
+                                      : Colors.redAccent,
+                            ),
+                          ),
+                          title: Text(
+                            isIncoming ? "Received" : "Sent",
+                            style: Theme.of(context).textTheme.bodyMedium,
+                          ),
+                          subtitle: Text(
+                            formattedDate,
+                            style: Theme.of(context).textTheme.bodyMedium,
+                          ),
+                          trailing: Text(formattedAmount, style: amountStyle),
                         ),
-                      ),
+                      );
+                    },
+                  ),
+                ),
           ],
         ),
       ),
@@ -346,10 +388,7 @@ class _DashboardState extends State<Dashboard> {
             icon: Icon(Icons.flash_on),
             label: 'Lightning',
           ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.link),
-            label: 'Onchain',
-          ),
+          BottomNavigationBarItem(icon: Icon(Icons.link), label: 'Onchain'),
           BottomNavigationBarItem(
             icon: Icon(Icons.currency_bitcoin),
             label: 'Ecash',

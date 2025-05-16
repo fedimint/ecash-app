@@ -18,7 +18,8 @@ class PaymentPreviewWidget extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final amount = paymentPreview.amountMsats;
-    final feeFromPpm = (amount * paymentPreview.sendFeePpm) ~/ BigInt.from(1_000_000);
+    final feeFromPpm =
+        (amount * paymentPreview.sendFeePpm) ~/ BigInt.from(1_000_000);
     final fedFee = paymentPreview.fedFee;
     final fees = paymentPreview.sendFeeBase + feeFromPpm + fedFee;
     final total = amount + fees;
@@ -40,7 +41,9 @@ class PaymentPreviewWidget extends StatelessWidget {
           decoration: BoxDecoration(
             color: theme.colorScheme.surfaceContainer,
             borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: theme.colorScheme.primary.withOpacity(0.25)),
+            border: Border.all(
+              color: theme.colorScheme.primary.withOpacity(0.25),
+            ),
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -71,7 +74,17 @@ class PaymentPreviewWidget extends StatelessWidget {
               ),
             ),
             onPressed: () {
-              Navigator.push(context, MaterialPageRoute(builder: (context) => SendPayment(fed: fed, invoice: paymentPreview.invoice, amountMsats: amount)));
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder:
+                      (context) => SendPayment(
+                        fed: fed,
+                        invoice: paymentPreview.invoice,
+                        amountMsats: amount,
+                      ),
+                ),
+              );
             },
           ),
         ),

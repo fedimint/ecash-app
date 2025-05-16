@@ -38,14 +38,8 @@ class Success extends StatelessWidget {
           Center(
             child: Animate(
               effects: [
-                ScaleEffect(
-                  duration: 600.ms,
-                  curve: Curves.easeOutBack,
-                ),
-                FadeEffect(
-                  duration: 600.ms,
-                  curve: Curves.easeIn,
-                ),
+                ScaleEffect(duration: 600.ms, curve: Curves.easeOutBack),
+                FadeEffect(duration: 600.ms, curve: Curves.easeIn),
               ],
               child: Column(
                 mainAxisSize: MainAxisSize.min,
@@ -85,4 +79,3 @@ class Success extends StatelessWidget {
     );
   }
 }
-

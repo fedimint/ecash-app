@@ -8,11 +8,7 @@ class EcashSend extends StatefulWidget {
   final FederationSelector fed;
   final BigInt amountSats;
 
-  const EcashSend({
-    super.key,
-    required this.fed,
-    required this.amountSats,
-  });
+  const EcashSend({super.key, required this.fed, required this.amountSats});
 
   @override
   State<EcashSend> createState() => _EcashSendState();
@@ -68,10 +64,13 @@ class _EcashSendState extends State<EcashSend> {
         operationId: opId,
       );
       if (mounted) {
-        Navigator.of(context, rootNavigator: true).popUntil((route) => route.isFirst);
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('✅ Ecash reclaimed')),
-        );
+        Navigator.of(
+          context,
+          rootNavigator: true,
+        ).popUntil((route) => route.isFirst);
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(const SnackBar(content: Text('✅ Ecash reclaimed')));
       }
     }
 
@@ -102,7 +101,10 @@ class _EcashSendState extends State<EcashSend> {
 
   void _copyEcash() {
     Clipboard.setData(ClipboardData(text: _ecash!));
-    Navigator.of(context, rootNavigator: true).popUntil((route) => route.isFirst);
+    Navigator.of(
+      context,
+      rootNavigator: true,
+    ).popUntil((route) => route.isFirst);
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(content: Text('✅ Ecash copied to clipboard')),
     );
@@ -154,7 +156,9 @@ class _EcashSendState extends State<EcashSend> {
             // QR Code
             Card(
               margin: EdgeInsets.zero,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(16),
+              ),
               child: Padding(
                 padding: const EdgeInsets.all(16),
                 child: QrImageView(
@@ -213,23 +217,21 @@ class _EcashSendState extends State<EcashSend> {
             _reclaiming
                 ? const CircularProgressIndicator()
                 : SizedBox(
-                    width: double.infinity,
-                    child: ElevatedButton.icon(
-                      onPressed: _reclaimEcash,
-                      icon: const Icon(Icons.undo),
-                      label: const Text("Reclaim"),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.red,
-                        foregroundColor: Colors.white,
-                        padding: const EdgeInsets.symmetric(vertical: 16),
-                      ),
+                  width: double.infinity,
+                  child: ElevatedButton.icon(
+                    onPressed: _reclaimEcash,
+                    icon: const Icon(Icons.undo),
+                    label: const Text("Reclaim"),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.red,
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(vertical: 16),
                     ),
                   ),
+                ),
           ],
         ),
       ),
     );
   }
 }
-
-

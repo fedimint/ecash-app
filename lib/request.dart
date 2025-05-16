@@ -72,16 +72,25 @@ class _RequestState extends State<Request> with SingleTickerProviderStateMixin {
       federationId: widget.fed.federationId,
       operationId: widget.operationId,
     );
-    Navigator.push(context, MaterialPageRoute(builder: (context) => Success(
-      lightning: true,
-      received: true,
-      amountMsats: widget.requestedAmountMsats
-    )));
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder:
+            (context) => Success(
+              lightning: true,
+              received: true,
+              amountMsats: widget.requestedAmountMsats,
+            ),
+      ),
+    );
     await Future.delayed(const Duration(seconds: 4));
     if (mounted) {
-      Navigator.of(context, rootNavigator: true).popUntil((route) => route.isFirst);
+      Navigator.of(
+        context,
+        rootNavigator: true,
+      ).popUntil((route) => route.isFirst);
     }
-  } 
+  }
 
   void _copyInvoice() {
     Clipboard.setData(ClipboardData(text: widget.invoice));
@@ -109,8 +118,6 @@ class _RequestState extends State<Request> with SingleTickerProviderStateMixin {
     }
   }
 
-
-
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -126,11 +133,16 @@ class _RequestState extends State<Request> with SingleTickerProviderStateMixin {
             children: [
               const Spacer(),
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 6,
+                ),
                 decoration: BoxDecoration(
                   color: theme.colorScheme.surfaceContainerHighest,
                   borderRadius: BorderRadius.circular(8),
-                  border: Border.all(color: theme.colorScheme.primary.withOpacity(0.5)),
+                  border: Border.all(
+                    color: theme.colorScheme.primary.withOpacity(0.5),
+                  ),
                 ),
                 child: Text(
                   _formatDuration(_remaining),
@@ -184,7 +196,9 @@ class _RequestState extends State<Request> with SingleTickerProviderStateMixin {
             decoration: BoxDecoration(
               color: theme.colorScheme.surfaceContainerHighest,
               borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: theme.colorScheme.primary.withOpacity(0.4)),
+              border: Border.all(
+                color: theme.colorScheme.primary.withOpacity(0.4),
+              ),
             ),
             child: Row(
               children: [
@@ -201,11 +215,21 @@ class _RequestState extends State<Request> with SingleTickerProviderStateMixin {
                 IconButton(
                   icon: AnimatedSwitcher(
                     duration: const Duration(milliseconds: 300),
-                    transitionBuilder: (child, anim) =>
-                        ScaleTransition(scale: anim, child: child),
-                    child: _copied
-                        ? Icon(Icons.check, key: const ValueKey('copied'), color: theme.colorScheme.primary)
-                        : Icon(Icons.copy, key: const ValueKey('copy'), color: theme.colorScheme.primary),
+                    transitionBuilder:
+                        (child, anim) =>
+                            ScaleTransition(scale: anim, child: child),
+                    child:
+                        _copied
+                            ? Icon(
+                              Icons.check,
+                              key: const ValueKey('copied'),
+                              color: theme.colorScheme.primary,
+                            )
+                            : Icon(
+                              Icons.copy,
+                              key: const ValueKey('copy'),
+                              color: theme.colorScheme.primary,
+                            ),
                   ),
                   onPressed: _copyInvoice,
                 ),
@@ -219,12 +243,18 @@ class _RequestState extends State<Request> with SingleTickerProviderStateMixin {
             decoration: BoxDecoration(
               color: theme.colorScheme.surfaceContainer,
               borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: theme.colorScheme.primary.withOpacity(0.25)),
+              border: Border.all(
+                color: theme.colorScheme.primary.withOpacity(0.25),
+              ),
             ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                buildDetailRow(theme, 'Amount', formatBalance(widget.requestedAmountMsats, true)),
+                buildDetailRow(
+                  theme,
+                  'Amount',
+                  formatBalance(widget.requestedAmountMsats, true),
+                ),
                 buildDetailRow(theme, 'Fees', formatBalance(fees, true)),
                 buildDetailRow(theme, 'Gateway', widget.gateway),
                 buildDetailRow(theme, 'Payee Pubkey', widget.pubkey),
@@ -237,4 +267,3 @@ class _RequestState extends State<Request> with SingleTickerProviderStateMixin {
     );
   }
 }
-
