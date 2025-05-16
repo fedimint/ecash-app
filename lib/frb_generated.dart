@@ -63,7 +63,7 @@ class RustLib extends BaseEntrypoint<RustLibApi, RustLibApiImpl, RustLibWire> {
   String get codegenVersion => '2.9.0';
 
   @override
-  int get rustContentHash => 2114482201;
+  int get rustContentHash => -1309894117;
 
   static const kDefaultExternalLibraryLoaderConfig =
       ExternalLibraryLoaderConfig(
@@ -176,14 +176,11 @@ abstract class RustLibApi extends BaseApi {
     required Multimint that,
   });
 
+  Future<List<String>> crateMultimintGetMnemonic({required Multimint that});
+
   Future<FederationSelector> crateMultimintJoinFederation({
     required Multimint that,
     required String invite,
-  });
-
-  Future<Multimint> crateMultimintNew({
-    required String path,
-    required MultimintCreation creationType,
   });
 
   Future<(Bolt11Invoice, OperationId)> crateMultimintReceive({
@@ -293,6 +290,11 @@ abstract class RustLibApi extends BaseApi {
 
   Future<BigInt> crateBalance({required FederationId federationId});
 
+  Future<void> crateCreateMultimintFromWords({
+    required String path,
+    required List<String> words,
+  });
+
   Future<void> crateCreateNewMultimint({required String path});
 
   Future<List<FederationSelector>> crateFederations();
@@ -300,6 +302,8 @@ abstract class RustLibApi extends BaseApi {
   Future<(FederationMeta, FederationSelector)> crateGetFederationMeta({
     required String inviteCode,
   });
+
+  Future<List<String>> crateGetMnemonic();
 
   Future<FederationSelector> crateJoinFederation({required String inviteCode});
 
@@ -1268,6 +1272,39 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   );
 
   @override
+  Future<List<String>> crateMultimintGetMnemonic({required Multimint that}) {
+    return handler.executeNormal(
+      NormalTask(
+        callFfi: (port_) {
+          final serializer = SseSerializer(generalizedFrbRustBinding);
+          sse_encode_Auto_Ref_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerMultimint(
+            that,
+            serializer,
+          );
+          pdeCallFfi(
+            generalizedFrbRustBinding,
+            serializer,
+            funcId: 23,
+            port: port_,
+          );
+        },
+        codec: SseCodec(
+          decodeSuccessData: sse_decode_list_String,
+          decodeErrorData: null,
+        ),
+        constMeta: kCrateMultimintGetMnemonicConstMeta,
+        argValues: [that],
+        apiImpl: this,
+      ),
+    );
+  }
+
+  TaskConstMeta get kCrateMultimintGetMnemonicConstMeta => const TaskConstMeta(
+    debugName: "Multimint_get_mnemonic",
+    argNames: ["that"],
+  );
+
+  @override
   Future<FederationSelector> crateMultimintJoinFederation({
     required Multimint that,
     required String invite,
@@ -1284,7 +1321,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 23,
+            funcId: 24,
             port: port_,
           );
         },
@@ -1305,41 +1342,6 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
         debugName: "Multimint_join_federation",
         argNames: ["that", "invite"],
       );
-
-  @override
-  Future<Multimint> crateMultimintNew({
-    required String path,
-    required MultimintCreation creationType,
-  }) {
-    return handler.executeNormal(
-      NormalTask(
-        callFfi: (port_) {
-          final serializer = SseSerializer(generalizedFrbRustBinding);
-          sse_encode_String(path, serializer);
-          sse_encode_box_autoadd_multimint_creation(creationType, serializer);
-          pdeCallFfi(
-            generalizedFrbRustBinding,
-            serializer,
-            funcId: 24,
-            port: port_,
-          );
-        },
-        codec: SseCodec(
-          decodeSuccessData:
-              sse_decode_Auto_Owned_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerMultimint,
-          decodeErrorData: sse_decode_AnyhowException,
-        ),
-        constMeta: kCrateMultimintNewConstMeta,
-        argValues: [path, creationType],
-        apiImpl: this,
-      ),
-    );
-  }
-
-  TaskConstMeta get kCrateMultimintNewConstMeta => const TaskConstMeta(
-    debugName: "Multimint_new",
-    argNames: ["path", "creationType"],
-  );
 
   @override
   Future<(Bolt11Invoice, OperationId)> crateMultimintReceive({
@@ -2167,6 +2169,41 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
       const TaskConstMeta(debugName: "balance", argNames: ["federationId"]);
 
   @override
+  Future<void> crateCreateMultimintFromWords({
+    required String path,
+    required List<String> words,
+  }) {
+    return handler.executeNormal(
+      NormalTask(
+        callFfi: (port_) {
+          final serializer = SseSerializer(generalizedFrbRustBinding);
+          sse_encode_String(path, serializer);
+          sse_encode_list_String(words, serializer);
+          pdeCallFfi(
+            generalizedFrbRustBinding,
+            serializer,
+            funcId: 48,
+            port: port_,
+          );
+        },
+        codec: SseCodec(
+          decodeSuccessData: sse_decode_unit,
+          decodeErrorData: null,
+        ),
+        constMeta: kCrateCreateMultimintFromWordsConstMeta,
+        argValues: [path, words],
+        apiImpl: this,
+      ),
+    );
+  }
+
+  TaskConstMeta get kCrateCreateMultimintFromWordsConstMeta =>
+      const TaskConstMeta(
+        debugName: "create_multimint_from_words",
+        argNames: ["path", "words"],
+      );
+
+  @override
   Future<void> crateCreateNewMultimint({required String path}) {
     return handler.executeNormal(
       NormalTask(
@@ -2176,7 +2213,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 48,
+            funcId: 49,
             port: port_,
           );
         },
@@ -2205,7 +2242,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 49,
+            funcId: 50,
             port: port_,
           );
         },
@@ -2236,7 +2273,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 50,
+            funcId: 51,
             port: port_,
           );
         },
@@ -2258,6 +2295,33 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   );
 
   @override
+  Future<List<String>> crateGetMnemonic() {
+    return handler.executeNormal(
+      NormalTask(
+        callFfi: (port_) {
+          final serializer = SseSerializer(generalizedFrbRustBinding);
+          pdeCallFfi(
+            generalizedFrbRustBinding,
+            serializer,
+            funcId: 52,
+            port: port_,
+          );
+        },
+        codec: SseCodec(
+          decodeSuccessData: sse_decode_list_String,
+          decodeErrorData: null,
+        ),
+        constMeta: kCrateGetMnemonicConstMeta,
+        argValues: [],
+        apiImpl: this,
+      ),
+    );
+  }
+
+  TaskConstMeta get kCrateGetMnemonicConstMeta =>
+      const TaskConstMeta(debugName: "get_mnemonic", argNames: []);
+
+  @override
   Future<FederationSelector> crateJoinFederation({required String inviteCode}) {
     return handler.executeNormal(
       NormalTask(
@@ -2267,7 +2331,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 51,
+            funcId: 53,
             port: port_,
           );
         },
@@ -2300,7 +2364,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 52,
+            funcId: 54,
             port: port_,
           );
         },
@@ -2332,7 +2396,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 53,
+            funcId: 55,
             port: port_,
           );
         },
@@ -2367,7 +2431,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 54,
+            funcId: 56,
             port: port_,
           );
         },
@@ -2404,7 +2468,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 55,
+            funcId: 57,
             port: port_,
           );
         },
@@ -2443,7 +2507,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 56,
+            funcId: 58,
             port: port_,
           );
         },
@@ -2477,7 +2541,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 57,
+            funcId: 59,
             port: port_,
           );
         },
@@ -2512,7 +2576,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 58,
+            funcId: 60,
             port: port_,
           );
         },
@@ -2550,7 +2614,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 59,
+            funcId: 61,
             port: port_,
           );
         },
@@ -2587,7 +2651,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 60,
+            funcId: 62,
             port: port_,
           );
         },
@@ -2625,7 +2689,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 61,
+            funcId: 63,
             port: port_,
           );
         },
@@ -2665,7 +2729,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 62,
+            funcId: 64,
             port: port_,
           );
         },
@@ -2707,7 +2771,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 63,
+            funcId: 65,
             port: port_,
           );
         },
@@ -2737,7 +2801,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 64,
+            funcId: 66,
             port: port_,
           );
         },
@@ -3231,12 +3295,6 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   }
 
   @protected
-  MultimintCreation dco_decode_box_autoadd_multimint_creation(dynamic raw) {
-    // Codec=Dco (DartCObject based), see doc to use other codecs
-    return dco_decode_multimint_creation(raw);
-  }
-
-  @protected
   BigInt dco_decode_box_autoadd_u_64(dynamic raw) {
     // Codec=Dco (DartCObject based), see doc to use other codecs
     return dco_decode_u_64(raw);
@@ -3315,23 +3373,6 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   List<Transaction> dco_decode_list_transaction(dynamic raw) {
     // Codec=Dco (DartCObject based), see doc to use other codecs
     return (raw as List<dynamic>).map(dco_decode_transaction).toList();
-  }
-
-  @protected
-  MultimintCreation dco_decode_multimint_creation(dynamic raw) {
-    // Codec=Dco (DartCObject based), see doc to use other codecs
-    switch (raw[0]) {
-      case 0:
-        return MultimintCreation_New();
-      case 1:
-        return MultimintCreation_LoadExisting();
-      case 2:
-        return MultimintCreation_NewFromMnemonic(
-          words: dco_decode_String(raw[1]),
-        );
-      default:
-        throw Exception("unreachable");
-    }
   }
 
   @protected
@@ -3979,14 +4020,6 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   }
 
   @protected
-  MultimintCreation sse_decode_box_autoadd_multimint_creation(
-    SseDeserializer deserializer,
-  ) {
-    // Codec=Sse (Serialization based), see doc to use other codecs
-    return (sse_decode_multimint_creation(deserializer));
-  }
-
-  @protected
   BigInt sse_decode_box_autoadd_u_64(SseDeserializer deserializer) {
     // Codec=Sse (Serialization based), see doc to use other codecs
     return (sse_decode_u_64(deserializer));
@@ -4092,26 +4125,6 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
       ans_.add(sse_decode_transaction(deserializer));
     }
     return ans_;
-  }
-
-  @protected
-  MultimintCreation sse_decode_multimint_creation(
-    SseDeserializer deserializer,
-  ) {
-    // Codec=Sse (Serialization based), see doc to use other codecs
-
-    var tag_ = sse_decode_i_32(deserializer);
-    switch (tag_) {
-      case 0:
-        return MultimintCreation_New();
-      case 1:
-        return MultimintCreation_LoadExisting();
-      case 2:
-        var var_words = sse_decode_String(deserializer);
-        return MultimintCreation_NewFromMnemonic(words: var_words);
-      default:
-        throw UnimplementedError('');
-    }
   }
 
   @protected
@@ -4802,15 +4815,6 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   }
 
   @protected
-  void sse_encode_box_autoadd_multimint_creation(
-    MultimintCreation self,
-    SseSerializer serializer,
-  ) {
-    // Codec=Sse (Serialization based), see doc to use other codecs
-    sse_encode_multimint_creation(self, serializer);
-  }
-
-  @protected
   void sse_encode_box_autoadd_u_64(BigInt self, SseSerializer serializer) {
     // Codec=Sse (Serialization based), see doc to use other codecs
     sse_encode_u_64(self, serializer);
@@ -4903,23 +4907,6 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
     sse_encode_i_32(self.length, serializer);
     for (final item in self) {
       sse_encode_transaction(item, serializer);
-    }
-  }
-
-  @protected
-  void sse_encode_multimint_creation(
-    MultimintCreation self,
-    SseSerializer serializer,
-  ) {
-    // Codec=Sse (Serialization based), see doc to use other codecs
-    switch (self) {
-      case MultimintCreation_New():
-        sse_encode_i_32(0, serializer);
-      case MultimintCreation_LoadExisting():
-        sse_encode_i_32(1, serializer);
-      case MultimintCreation_NewFromMnemonic(words: final words):
-        sse_encode_i_32(2, serializer);
-        sse_encode_String(words, serializer);
     }
   }
 
@@ -5436,6 +5423,9 @@ class MultimintImpl extends RustOpaque implements Multimint {
 
   Future<List<FederationSelector>> federations() =>
       RustLib.instance.api.crateMultimintFederations(that: this);
+
+  Future<List<String>> getMnemonic() =>
+      RustLib.instance.api.crateMultimintGetMnemonic(that: this);
 
   Future<FederationSelector> joinFederation({required String invite}) => RustLib
       .instance
