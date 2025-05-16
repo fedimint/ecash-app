@@ -1,6 +1,7 @@
 import 'package:carbine/fed_preview.dart';
 import 'package:carbine/lib.dart';
 import 'package:carbine/pay_preview.dart';
+import 'package:carbine/redeem_ecash.dart';
 import 'package:carbine/theme.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -78,7 +79,29 @@ class _ScanQRPageState extends State<ScanQRPage> {
         );
       }
     } else {
-      print('Unknown text');
+      // TODO: Dont support direct scan yet, fix this later
+      if (widget.selectedFed != null) {
+        try {
+          print('Trying to parse ecash...');
+          final amountMsats = await parseEcash(
+            federationId: widget.selectedFed!.federationId,
+            ecash: text,
+          );
+          showCarbineModalBottomSheet(
+            context: context,
+            child: EcashRedeemPrompt(
+              fed: widget.selectedFed!,
+              ecash: text,
+              amount: amountMsats,
+            ),
+            heightFactor: 0.25,
+          );
+        } catch (_) {
+          print('Could not parse text as ecash');
+        }
+      } else {
+        print("Unknown Text");
+      }
     }
   }
 

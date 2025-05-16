@@ -39,7 +39,7 @@ flutter_rust_bridge::frb_generated_boilerplate!(
     default_rust_auto_opaque = RustAutoOpaqueMoi,
 );
 pub(crate) const FLUTTER_RUST_BRIDGE_CODEGEN_VERSION: &str = "2.9.0";
-pub(crate) const FLUTTER_RUST_BRIDGE_CODEGEN_CONTENT_HASH: i32 = -1555487335;
+pub(crate) const FLUTTER_RUST_BRIDGE_CODEGEN_CONTENT_HASH: i32 = -2020551964;
 
 // Section: executor
 
@@ -2672,6 +2672,65 @@ fn wire__crate__list_federations_from_nostr_impl(
         },
     )
 }
+fn wire__crate__parse_ecash_impl(
+    port_: flutter_rust_bridge::for_generated::MessagePort,
+    ptr_: flutter_rust_bridge::for_generated::PlatformGeneralizedUint8ListPtr,
+    rust_vec_len_: i32,
+    data_len_: i32,
+) {
+    FLUTTER_RUST_BRIDGE_HANDLER.wrap_async::<flutter_rust_bridge::for_generated::SseCodec, _, _, _>(
+        flutter_rust_bridge::for_generated::TaskInfo {
+            debug_name: "parse_ecash",
+            port: Some(port_),
+            mode: flutter_rust_bridge::for_generated::FfiCallMode::Normal,
+        },
+        move || {
+            let message = unsafe {
+                flutter_rust_bridge::for_generated::Dart2RustMessageSse::from_wire(
+                    ptr_,
+                    rust_vec_len_,
+                    data_len_,
+                )
+            };
+            let mut deserializer =
+                flutter_rust_bridge::for_generated::SseDeserializer::new(message);
+            let api_federation_id = <RustOpaqueMoi<
+                flutter_rust_bridge::for_generated::RustAutoOpaqueInner<FederationId>,
+            >>::sse_decode(&mut deserializer);
+            let api_ecash = <String>::sse_decode(&mut deserializer);
+            deserializer.end();
+            move |context| async move {
+                transform_result_sse::<_, flutter_rust_bridge::for_generated::anyhow::Error>(
+                    (move || async move {
+                        let mut api_federation_id_guard = None;
+                        let decode_indices_ =
+                            flutter_rust_bridge::for_generated::lockable_compute_decode_order(
+                                vec![flutter_rust_bridge::for_generated::LockableOrderInfo::new(
+                                    &api_federation_id,
+                                    0,
+                                    false,
+                                )],
+                            );
+                        for i in decode_indices_ {
+                            match i {
+                                0 => {
+                                    api_federation_id_guard =
+                                        Some(api_federation_id.lockable_decode_async_ref().await)
+                                }
+                                _ => unreachable!(),
+                            }
+                        }
+                        let api_federation_id_guard = api_federation_id_guard.unwrap();
+                        let output_ok =
+                            crate::parse_ecash(&*api_federation_id_guard, api_ecash).await?;
+                        Ok(output_ok)
+                    })()
+                    .await,
+                )
+            }
+        },
+    )
+}
 fn wire__crate__payment_preview_impl(
     port_: flutter_rust_bridge::for_generated::MessagePort,
     ptr_: flutter_rust_bridge::for_generated::PlatformGeneralizedUint8ListPtr,
@@ -3812,14 +3871,15 @@ fn pde_ffi_dispatcher_primary_impl(
         49 => wire__crate__init_multimint_impl(port, ptr, rust_vec_len, data_len),
         50 => wire__crate__join_federation_impl(port, ptr, rust_vec_len, data_len),
         51 => wire__crate__list_federations_from_nostr_impl(port, ptr, rust_vec_len, data_len),
-        52 => wire__crate__payment_preview_impl(port, ptr, rust_vec_len, data_len),
-        53 => wire__crate__receive_impl(port, ptr, rust_vec_len, data_len),
-        54 => wire__crate__reissue_ecash_impl(port, ptr, rust_vec_len, data_len),
-        55 => wire__crate__select_receive_gateway_impl(port, ptr, rust_vec_len, data_len),
-        56 => wire__crate__send_impl(port, ptr, rust_vec_len, data_len),
-        57 => wire__crate__send_ecash_impl(port, ptr, rust_vec_len, data_len),
-        58 => wire__crate__send_lnaddress_impl(port, ptr, rust_vec_len, data_len),
-        59 => wire__crate__transactions_impl(port, ptr, rust_vec_len, data_len),
+        52 => wire__crate__parse_ecash_impl(port, ptr, rust_vec_len, data_len),
+        53 => wire__crate__payment_preview_impl(port, ptr, rust_vec_len, data_len),
+        54 => wire__crate__receive_impl(port, ptr, rust_vec_len, data_len),
+        55 => wire__crate__reissue_ecash_impl(port, ptr, rust_vec_len, data_len),
+        56 => wire__crate__select_receive_gateway_impl(port, ptr, rust_vec_len, data_len),
+        57 => wire__crate__send_impl(port, ptr, rust_vec_len, data_len),
+        58 => wire__crate__send_ecash_impl(port, ptr, rust_vec_len, data_len),
+        59 => wire__crate__send_lnaddress_impl(port, ptr, rust_vec_len, data_len),
+        60 => wire__crate__transactions_impl(port, ptr, rust_vec_len, data_len),
         _ => unreachable!(),
     }
 }
