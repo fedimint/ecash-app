@@ -113,6 +113,10 @@
               export ANDROID_NDK_HOME=$ANDROID_SDK_ROOT/ndk/27.0.12077973
               #export JAVA_HOME=/opt/android-studio/jbr
               export JAVA_HOME=${pkgs.jdk21}
+
+              if [ -d .git ]; then
+                ln -sf "$PWD/scripts/git-hooks/pre-commit.sh" .git/hooks/pre-commit
+              fi
 	    '';
           });
         };
