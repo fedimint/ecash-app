@@ -138,10 +138,13 @@ pub async fn get_mnemonic() -> Vec<String> {
 }
 
 #[frb]
-pub async fn join_federation(invite_code: String) -> anyhow::Result<FederationSelector> {
+pub async fn join_federation(
+    invite_code: String,
+    recover: bool,
+) -> anyhow::Result<FederationSelector> {
     let multimint = get_multimint().await;
     let mut mm = multimint.write().await;
-    mm.join_federation(invite_code).await
+    mm.join_federation(invite_code, recover).await
 }
 
 #[frb]
@@ -572,9 +575,13 @@ pub struct Transaction {
 pub enum MultimintCreation {
     New,
     LoadExisting,
-    NewFromMnemonic {
-        words: Vec<String>,
-    },
+    NewFromMnemonic { words: Vec<String> },
+}
+
+pub enum ClientType {
+    New,
+    Temporary,
+    Recovery { client_config: ClientConfig },
 }
 
 impl Multimint {
@@ -589,10 +596,12 @@ impl Multimint {
                 mnemonic
             }
             MultimintCreation::LoadExisting => {
-                let entropy = Client::load_decodable_client_secret::<Vec<u8>>(&db).await.expect("Could not load existing secret");
+                let entropy = Client::load_decodable_client_secret::<Vec<u8>>(&db)
+                    .await
+                    .expect("Could not load existing secret");
                 Mnemonic::from_entropy(&entropy)?
             }
-            MultimintCreation::NewFromMnemonic{ words } => {
+            MultimintCreation::NewFromMnemonic { words } => {
                 let all_words = words.join(" ");
                 Mnemonic::parse_in_normalized(Language::English, all_words.as_str())?
             }
@@ -627,7 +636,12 @@ impl Multimint {
             .await;
         for (id, config) in configs {
             let client = self
-                .build_client(&id.id, &config.invite_code, config.connector, false)
+                .build_client(
+                    &id.id,
+                    &config.invite_code,
+                    config.connector,
+                    ClientType::New,
+                )
                 .await?;
             self.clients.insert(id.id, client);
         }
@@ -700,7 +714,12 @@ impl Multimint {
             client
         } else {
             &self
-                .build_client(&federation_id, &invite_code, Connector::Tcp, true)
+                .build_client(
+                    &federation_id,
+                    &invite_code,
+                    Connector::Tcp,
+                    ClientType::Temporary,
+                )
                 .await?
         };
 
@@ -779,24 +798,55 @@ impl Multimint {
     }
 
     pub fn get_mnemonic(&self) -> Vec<String> {
-        self.mnemonic.words().map(std::string::ToString::to_string).collect::<Vec<_>>()
+        self.mnemonic
+            .words()
+            .map(std::string::ToString::to_string)
+            .collect::<Vec<_>>()
     }
 
-    // TODO: Implement recovery
-    pub async fn join_federation(&mut self, invite: String) -> anyhow::Result<FederationSelector> {
+    pub async fn join_federation(
+        &mut self,
+        invite: String,
+        recover: bool,
+    ) -> anyhow::Result<FederationSelector> {
         let invite_code = InviteCode::from_str(&invite)?;
         let federation_id = invite_code.federation_id();
         if self.has_federation(&federation_id).await {
             bail!("Already joined federation")
         }
 
-        let client = self
-            .build_client(&federation_id, &invite_code, Connector::Tcp, false)
-            .await?;
-
         let client_config = Connector::default()
             .download_from_invite_code(&invite_code)
             .await?;
+
+        let client = if recover {
+            self.build_client(
+                &federation_id,
+                &invite_code,
+                Connector::Tcp,
+                ClientType::Recovery {
+                    client_config: client_config.clone(),
+                },
+            )
+            .await?;
+            println!("Building new client after recovery...");
+            self.build_client(
+                &federation_id,
+                &invite_code,
+                Connector::Tcp,
+                ClientType::New,
+            )
+            .await?
+        } else {
+            self.build_client(
+                &federation_id,
+                &invite_code,
+                Connector::Tcp,
+                ClientType::New,
+            )
+            .await?
+        };
+
         let federation_name = client_config
             .global
             .federation_name()
@@ -844,13 +894,13 @@ impl Multimint {
         federation_id: &FederationId,
         invite_code: &InviteCode,
         connector: Connector,
-        is_temporary: bool,
+        client_type: ClientType,
     ) -> anyhow::Result<ClientHandleArc> {
-        let client_db = if is_temporary {
-            MemDatabase::new().into()
-        } else {
-            self.get_client_database(&federation_id)
+        let client_db = match client_type {
+            ClientType::Temporary => MemDatabase::new().into(),
+            _ => self.get_client_database(&federation_id),
         };
+
         println!("Getting derivation secret");
         let secret = Self::derive_federation_secret(&self.mnemonic, &federation_id);
         println!("Got derivation secret");
@@ -860,19 +910,38 @@ impl Multimint {
         client_builder.with_primary_module_kind(fedimint_mint_client::KIND);
         println!("Created client builder");
 
-        let client = if Client::is_initialized(client_builder.db_no_decoders()).await {
-            client_builder.open(secret).await
-        } else {
-            let client_config = connector.download_from_invite_code(&invite_code).await?;
-            client_builder
-                .join(secret, client_config.clone(), invite_code.api_secret())
-                .await
-        }
-        .map(Arc::new)?;
-        println!("Opened client");
+        let client = match client_type {
+            ClientType::Recovery { client_config } => {
+                let backup = client_builder
+                    .download_backup_from_federation(
+                        &secret,
+                        &client_config,
+                        invite_code.api_secret(),
+                    )
+                    .await?;
+                let client = client_builder
+                    .recover(secret, client_config, invite_code.api_secret(), backup)
+                    .await
+                    .map(Arc::new)?;
+                // TODO: move this so it is async
+                client.wait_for_all_recoveries().await?;
+                client
+            }
+            _ => {
+                let client = if Client::is_initialized(client_builder.db_no_decoders()).await {
+                    client_builder.open(secret).await
+                } else {
+                    let client_config = connector.download_from_invite_code(&invite_code).await?;
+                    client_builder
+                        .join(secret, client_config.clone(), invite_code.api_secret())
+                        .await
+                }
+                .map(Arc::new)?;
+                client
+            }
+        };
 
         self.lnv1_update_gateway_cache(&client).await?;
-        println!("Updated gateway cache");
         Ok(client)
     }
 
