@@ -18,7 +18,7 @@ class EcashSend extends StatefulWidget {
 class _EcashSendState extends State<EcashSend> {
   String? _ecash;
   bool _loading = true;
-  BigInt _ecashAmountMsats = BigInt.zero;
+  BigInt _ecashAmountSats = BigInt.zero;
   bool _reclaiming = false;
 
   double _progress = 0.0;
@@ -41,7 +41,7 @@ class _EcashSendState extends State<EcashSend> {
 
       setState(() {
         _ecash = ecash.$2;
-        _ecashAmountMsats = ecash.$3.toSats;
+        _ecashAmountSats = ecash.$3.toSats;
         _loading = false;
       });
     } catch (_) {
@@ -148,7 +148,7 @@ class _EcashSendState extends State<EcashSend> {
             ),
             const SizedBox(height: 8),
             Text(
-              "You’ve withdrawn ${_ecashAmountMsats.toString()} sats.\n"
+              "You’ve withdrawn ${_ecashAmountSats.toString()} sats.\n"
               "You must now send this ecash string to the recipient.",
               textAlign: TextAlign.center,
               style: Theme.of(context).textTheme.bodyMedium,
