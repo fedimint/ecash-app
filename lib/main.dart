@@ -35,6 +35,7 @@ String formatBalance(BigInt? msats, bool showMsats) {
     final sats = msats ~/ BigInt.from(1000);
     final formatter = NumberFormat('#,##0', 'en_US');
     var formatted = formatter.format(sats.toInt());
+    formatted = formatted.replaceAll(',', ' ');
     return '$formatted sats';
   }
 }
