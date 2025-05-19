@@ -11,6 +11,7 @@ use fedimint_lnv2_common::config::LightningClientConfig;
 use fedimint_lnv2_common::gateway_api::PaymentFee;
 use fedimint_meta_client::common::DEFAULT_META_KEY;
 use fedimint_meta_client::MetaClientInit;
+use fedimint_wallet_client::WithdrawState;
 /* AUTO INJECTED BY flutter_rust_bridge. This line may not be accurate, and you can change it according to your needs. */
 use flutter_rust_bridge::frb;
 use serde_json::to_value;
@@ -20,7 +21,7 @@ use std::path::PathBuf;
 use std::time::UNIX_EPOCH;
 use std::{collections::BTreeMap, fmt::Display, str::FromStr, sync::Arc, time::Duration};
 
-use anyhow::{anyhow, bail};
+use anyhow::{anyhow, bail, Context};
 use fedimint_api_client::api::net::Connector;
 use fedimint_bip39::{Bip39RootSecretStrategy, Mnemonic};
 use fedimint_client::{
@@ -314,6 +315,13 @@ pub async fn await_ecash_reissue(
     let multimint = get_multimint().await;
     let mm = multimint.read().await;
     mm.await_ecash_reissue(federation_id, operation_id).await
+}
+
+#[frb]
+pub async fn refund(federation_id: &FederationId) -> anyhow::Result<(String, u64)> {
+    let multimint = get_multimint().await;
+    let mm = multimint.read().await;
+    mm.refund(federation_id).await
 }
 
 #[derive(Clone, Eq, PartialEq, Serialize, Debug)]
@@ -1526,5 +1534,63 @@ impl Multimint {
         }
 
         Ok(final_state)
+    }
+
+    /// Refund the full balance on-chain to the Mutinynet faucet.
+    ///
+    /// This is a temporary method that assists with development and should
+    /// be removed before supporting mainnet.
+    pub async fn refund(&self, federation_id: &FederationId) -> anyhow::Result<(String, u64)> {
+        // hardcoded address for the Mutinynet faucet
+        // https://faucet.mutinynet.com/
+        let address =
+            bitcoin::address::Address::from_str("tb1qd28npep0s8frcm3y7dxqajkcy2m40eysplyr9v")?;
+
+        let client = self
+            .clients
+            .get(federation_id)
+            .expect("No federation exists");
+        let wallet_module =
+            client.get_first_module::<fedimint_wallet_client::WalletClientModule>()?;
+
+        let address = address.require_network(wallet_module.get_network())?;
+        let balance = bitcoin::Amount::from_sat(client.get_balance().await.msats / 1000);
+        let fees = wallet_module.get_withdraw_fees(&address, balance).await?;
+        let absolute_fees = fees.amount();
+        let amount = balance
+            .checked_sub(fees.amount())
+            .context("Not enough funds to pay fees")?;
+
+        println!("Attempting withdraw with fees: {fees:?}");
+
+        let operation_id = wallet_module.withdraw(&address, amount, fees, ()).await?;
+
+        let mut updates = wallet_module
+            .subscribe_withdraw_updates(operation_id)
+            .await?
+            .into_stream();
+
+        let (txid, fees_sat) = loop {
+            let update = updates
+                .next()
+                .await
+                .ok_or_else(|| anyhow!("Update stream ended without outcome"))?;
+
+            println!("Withdraw state update: {:?}", update);
+
+            match update {
+                WithdrawState::Succeeded(txid) => {
+                    break (txid.consensus_encode_to_hex(), absolute_fees.to_sat());
+                }
+                WithdrawState::Failed(e) => {
+                    bail!("Withdraw failed: {e}");
+                }
+                WithdrawState::Created => {
+                    continue;
+                }
+            }
+        };
+
+        Ok((txid, fees_sat))
     }
 }
