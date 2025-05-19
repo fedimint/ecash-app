@@ -6,6 +6,7 @@ import 'package:carbine/setttings.dart';
 import 'package:carbine/sidebar.dart';
 import 'package:carbine/theme.dart';
 import 'package:carbine/welcome.dart';
+import 'package:carbine/utils.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:path_provider/path_provider.dart';
@@ -32,7 +33,7 @@ String formatBalance(BigInt? msats, bool showMsats) {
     formatted = formatted.replaceAll(',', ' ');
     return '$formatted msats';
   } else {
-    final sats = msats ~/ BigInt.from(1000);
+    final sats = msats.toSats;
     final formatter = NumberFormat('#,##0', 'en_US');
     var formatted = formatter.format(sats.toInt());
     return '$formatted sats';
