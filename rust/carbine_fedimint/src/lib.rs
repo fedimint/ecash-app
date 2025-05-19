@@ -152,13 +152,19 @@ pub async fn select_receive_gateway(
 }
 
 #[frb]
-pub async fn send_lnaddress(federation_id: &FederationId, amount_msats: u64, address: String) -> anyhow::Result<OperationId> {
+pub async fn send_lnaddress(
+    federation_id: &FederationId,
+    amount_msats: u64,
+    address: String,
+) -> anyhow::Result<OperationId> {
     let lnurl = lnurl::lightning_address::LightningAddress::from_str(&address)?.lnurl();
     let async_client = lnurl::AsyncClient::from_client(reqwest::Client::new());
     let response = async_client.make_request(&lnurl.url).await?;
     match response {
         lnurl::LnUrlResponse::LnUrlPayResponse(response) => {
-            let invoice = async_client.get_invoice(&response, amount_msats, None, None).await?;
+            let invoice = async_client
+                .get_invoice(&response, amount_msats, None, None)
+                .await?;
 
             let multimint = get_multimint().await;
             let mm = multimint.read().await;
@@ -212,7 +218,10 @@ pub async fn list_federations_from_nostr(force_update: bool) -> Vec<PublicFedera
 }
 
 #[frb]
-pub async fn payment_preview(federation_id: &FederationId, bolt11: String) -> anyhow::Result<PaymentPreview> {
+pub async fn payment_preview(
+    federation_id: &FederationId,
+    bolt11: String,
+) -> anyhow::Result<PaymentPreview> {
     let invoice = Bolt11Invoice::from_str(&bolt11)?;
     let amount_msats = invoice
         .amount_milli_satoshis()
@@ -222,7 +231,9 @@ pub async fn payment_preview(federation_id: &FederationId, bolt11: String) -> an
 
     let multimint = get_multimint().await;
     let mm = multimint.read().await;
-    let (gateway, fee_base, fee_ppm, fed_fee) = mm.select_send_gateway(federation_id, Amount::from_msats(amount_msats)).await?;
+    let (gateway, fee_base, fee_ppm, fed_fee) = mm
+        .select_send_gateway(federation_id, Amount::from_msats(amount_msats))
+        .await?;
 
     Ok(PaymentPreview {
         amount_msats,
@@ -279,10 +290,7 @@ pub async fn await_ecash_send(
 }
 
 #[frb]
-pub async fn parse_ecash(
-    federation_id: &FederationId,
-    ecash: String,
-) -> anyhow::Result<u64> {
+pub async fn parse_ecash(federation_id: &FederationId, ecash: String) -> anyhow::Result<u64> {
     let multimint = get_multimint().await;
     let mm = multimint.read().await;
     mm.parse_ecash(federation_id, ecash).await
@@ -908,7 +916,9 @@ impl Multimint {
             .clients
             .get(federation_id)
             .expect("No federation exists");
-        if let Ok((url, receive_fee, fed_fee)) = Self::lnv2_select_gateway(client, amount, true).await {
+        if let Ok((url, receive_fee, fed_fee)) =
+            Self::lnv2_select_gateway(client, amount, true).await
+        {
             return Ok((
                 url.to_string(),
                 receive_fee.base.msats,
@@ -933,7 +943,8 @@ impl Multimint {
             .clients
             .get(federation_id)
             .expect("No federation exists");
-        if let Ok((url, send_fee, fed_fee)) = Self::lnv2_select_gateway(client, amount, false).await {
+        if let Ok((url, send_fee, fed_fee)) = Self::lnv2_select_gateway(client, amount, false).await
+        {
             return Ok((
                 url.to_string(),
                 send_fee.base.msats,
@@ -946,7 +957,12 @@ impl Multimint {
         let gateway = Self::lnv1_select_gateway(client)
             .await
             .ok_or(anyhow!("No available gateways"))?;
-        Ok((gateway.api.to_string(), gateway.fees.base_msat as u64, gateway.fees.proportional_millionths as u64, 0))
+        Ok((
+            gateway.api.to_string(),
+            gateway.fees.base_msat as u64,
+            gateway.fees.proportional_millionths as u64,
+            0,
+        ))
     }
 
     pub async fn send(
@@ -1219,14 +1235,16 @@ impl Multimint {
         // TODO: Lnv2 currently has no exposed way of querying gateways
         // Just add placeholder here
         let (url, fee) = if is_receive {
-            let url = SafeUrl::parse("https://mutinynet.mplsfed.xyz").expect("could not parse SafeUrl");
+            let url =
+                SafeUrl::parse("https://mutinynet.mplsfed.xyz").expect("could not parse SafeUrl");
             let receive_fee = PaymentFee {
                 base: Amount::from_msats(0),
                 parts_per_million: 0,
             };
             (url, receive_fee)
         } else {
-            let url = SafeUrl::parse("https://mutinynet.mplsfed.xyz").expect("could not parse SafeUrl");
+            let url =
+                SafeUrl::parse("https://mutinynet.mplsfed.xyz").expect("could not parse SafeUrl");
             let send_fee = PaymentFee {
                 base: Amount::from_msats(0),
                 parts_per_million: 0,
