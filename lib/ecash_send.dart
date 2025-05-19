@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'package:carbine/lib.dart';
+import 'package:carbine/utils.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:qr_flutter/qr_flutter.dart';
@@ -40,7 +41,7 @@ class _EcashSendState extends State<EcashSend> {
 
       setState(() {
         _ecash = ecash.$2;
-        _ecashAmountMsats = ecash.$3 ~/ BigInt.from(1000);
+        _ecashAmountMsats = ecash.$3.toSats;
         _loading = false;
       });
     } catch (_) {
