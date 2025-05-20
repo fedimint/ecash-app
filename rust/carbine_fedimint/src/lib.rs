@@ -599,11 +599,16 @@ impl Multimint {
                 let entropy = Client::load_decodable_client_secret::<Vec<u8>>(&db)
                     .await
                     .expect("Could not load existing secret");
-                Mnemonic::from_entropy(&entropy)?
+                println!("Successfully loaded entropy from existing wallet");
+                let mnemonic = Mnemonic::from_entropy(&entropy)?;
+                println!("Created mnemonic from entropy");
+                mnemonic
             }
             MultimintCreation::NewFromMnemonic { words } => {
                 let all_words = words.join(" ");
-                Mnemonic::parse_in_normalized(Language::English, all_words.as_str())?
+                let mnemonic = Mnemonic::parse_in_normalized(Language::English, all_words.as_str())?;
+                Client::store_encodable_client_secret(&db, mnemonic.to_entropy()).await?;
+                mnemonic
             }
         };
 
@@ -628,6 +633,7 @@ impl Multimint {
     }
 
     async fn load_clients(&mut self) -> anyhow::Result<()> {
+        println!("Loading all clients...");
         let mut dbtx = self.db.begin_transaction_nc().await;
         let configs = dbtx
             .find_by_prefix(&FederationConfigKeyPrefix)
@@ -929,8 +935,10 @@ impl Multimint {
             }
             _ => {
                 let client = if Client::is_initialized(client_builder.db_no_decoders()).await {
+                    println!("Client is already initialized, opening using secret...");
                     client_builder.open(secret).await
                 } else {
+                    println!("Client is not initialized, downloading invite code...");
                     let client_config = connector.download_from_invite_code(&invite_code).await?;
                     client_builder
                         .join(secret, client_config.clone(), invite_code.api_secret())

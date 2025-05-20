@@ -23,6 +23,8 @@ class _SplashState extends State<Splash> {
   Future<void> _checkWalletStatus() async {
     final exists = await walletExists(path: widget.dir.path);
 
+    print("Wallet exists: $exists");
+
     if (!mounted) return;
     final Widget screen;
     if (exists) {
