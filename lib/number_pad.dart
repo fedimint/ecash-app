@@ -79,23 +79,18 @@ class _NumberPadState extends State<NumberPad> {
     setState(() => _creating = true);
     final amountSats = BigInt.tryParse(_rawAmount);
     if (amountSats != null) {
-      final requestedAmountMsats = amountSats * BigInt.from(1000);
-
       if (widget.paymentType == PaymentType.lightning) {
+        final requestedAmountMsats = amountSats * BigInt.from(1000);
         final gateway = await selectReceiveGateway(
           federationId: widget.fed.federationId,
           amountMsats: requestedAmountMsats,
         );
-        final feeFromPpm =
-            (requestedAmountMsats * gateway.$3) ~/ BigInt.from(1_000_000);
-        final fedFee = gateway.$4;
-        // If we want to receive the request amount, we need to add the gateway's base fee, ppm fee, and the federation fee
-        final totalMsats =
-            requestedAmountMsats + gateway.$2 + feeFromPpm + fedFee;
+        final contractAmount = gateway.$2;
         final invoice = await receive(
           federationId: widget.fed.federationId,
-          amountMsatsWithFees: totalMsats,
+          amountMsatsWithFees: contractAmount,
           amountMsatsWithoutFees: requestedAmountMsats,
+          gateway: gateway.$1,
         );
         showCarbineModalBottomSheet(
           context: context,
@@ -104,7 +99,7 @@ class _NumberPadState extends State<NumberPad> {
             fed: widget.fed,
             operationId: invoice.$2,
             requestedAmountMsats: requestedAmountMsats,
-            totalMsats: totalMsats,
+            totalMsats: contractAmount,
             gateway: gateway.$1,
             pubkey: invoice.$3,
             paymentHash: invoice.$4,

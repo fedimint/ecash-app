@@ -1347,6 +1347,7 @@ fn wire__crate__Multimint_receive_impl(
             >>::sse_decode(&mut deserializer);
             let api_amount_msats_with_fees = <u64>::sse_decode(&mut deserializer);
             let api_amount_msats_without_fees = <u64>::sse_decode(&mut deserializer);
+            let api_gateway = <SafeUrl>::sse_decode(&mut deserializer);
             deserializer.end();
             move |context| async move {
                 transform_result_sse::<_, flutter_rust_bridge::for_generated::anyhow::Error>(
@@ -1386,6 +1387,7 @@ fn wire__crate__Multimint_receive_impl(
                             &*api_federation_id_guard,
                             api_amount_msats_with_fees,
                             api_amount_msats_without_fees,
+                            api_gateway,
                         )
                         .await?;
                         Ok(output_ok)
@@ -3022,6 +3024,7 @@ fn wire__crate__receive_impl(
             >>::sse_decode(&mut deserializer);
             let api_amount_msats_with_fees = <u64>::sse_decode(&mut deserializer);
             let api_amount_msats_without_fees = <u64>::sse_decode(&mut deserializer);
+            let api_gateway = <String>::sse_decode(&mut deserializer);
             deserializer.end();
             move |context| async move {
                 transform_result_sse::<_, flutter_rust_bridge::for_generated::anyhow::Error>(
@@ -3049,6 +3052,7 @@ fn wire__crate__receive_impl(
                             &*api_federation_id_guard,
                             api_amount_msats_with_fees,
                             api_amount_msats_without_fees,
+                            api_gateway,
                         )
                         .await?;
                         Ok(output_ok)
@@ -3565,6 +3569,9 @@ flutter_rust_bridge::frb_generated_moi_arc_impl_value!(
     flutter_rust_bridge::for_generated::RustAutoOpaqueInner<ReissueExternalNotesState>
 );
 flutter_rust_bridge::frb_generated_moi_arc_impl_value!(
+    flutter_rust_bridge::for_generated::RustAutoOpaqueInner<SafeUrl>
+);
+flutter_rust_bridge::frb_generated_moi_arc_impl_value!(
     flutter_rust_bridge::for_generated::RustAutoOpaqueInner<SpendOOBState>
 );
 
@@ -3703,6 +3710,16 @@ impl SseDecode for ReissueExternalNotesState {
     fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
         let mut inner = <RustOpaqueMoi<
             flutter_rust_bridge::for_generated::RustAutoOpaqueInner<ReissueExternalNotesState>,
+        >>::sse_decode(deserializer);
+        return flutter_rust_bridge::for_generated::rust_auto_opaque_decode_owned(inner);
+    }
+}
+
+impl SseDecode for SafeUrl {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
+        let mut inner = <RustOpaqueMoi<
+            flutter_rust_bridge::for_generated::RustAutoOpaqueInner<SafeUrl>,
         >>::sse_decode(deserializer);
         return flutter_rust_bridge::for_generated::rust_auto_opaque_decode_owned(inner);
     }
@@ -3847,6 +3864,14 @@ impl SseDecode
         flutter_rust_bridge::for_generated::RustAutoOpaqueInner<ReissueExternalNotesState>,
     >
 {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
+        let mut inner = <usize>::sse_decode(deserializer);
+        return decode_rust_opaque_moi(inner);
+    }
+}
+
+impl SseDecode for RustOpaqueMoi<flutter_rust_bridge::for_generated::RustAutoOpaqueInner<SafeUrl>> {
     // Codec=Sse (Serialization based), see doc to use other codecs
     fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
         let mut inner = <usize>::sse_decode(deserializer);
@@ -4018,18 +4043,14 @@ impl SseDecode for crate::PaymentPreview {
         let mut var_network = <String>::sse_decode(deserializer);
         let mut var_invoice = <String>::sse_decode(deserializer);
         let mut var_gateway = <String>::sse_decode(deserializer);
-        let mut var_sendFeeBase = <u64>::sse_decode(deserializer);
-        let mut var_sendFeePpm = <u64>::sse_decode(deserializer);
-        let mut var_fedFee = <u64>::sse_decode(deserializer);
+        let mut var_amountWithFees = <u64>::sse_decode(deserializer);
         return crate::PaymentPreview {
             amount_msats: var_amountMsats,
             payment_hash: var_paymentHash,
             network: var_network,
             invoice: var_invoice,
             gateway: var_gateway,
-            send_fee_base: var_sendFeeBase,
-            send_fee_ppm: var_sendFeePpm,
-            fed_fee: var_fedFee,
+            amount_with_fees: var_amountWithFees,
         };
     }
 }
@@ -4080,17 +4101,6 @@ impl SseDecode for (String, u64) {
         let mut var_field0 = <String>::sse_decode(deserializer);
         let mut var_field1 = <u64>::sse_decode(deserializer);
         return (var_field0, var_field1);
-    }
-}
-
-impl SseDecode for (String, u64, u64, u64) {
-    // Codec=Sse (Serialization based), see doc to use other codecs
-    fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
-        let mut var_field0 = <String>::sse_decode(deserializer);
-        let mut var_field1 = <u64>::sse_decode(deserializer);
-        let mut var_field2 = <u64>::sse_decode(deserializer);
-        let mut var_field3 = <u64>::sse_decode(deserializer);
-        return (var_field0, var_field1, var_field2, var_field3);
     }
 }
 
@@ -4581,6 +4591,21 @@ impl flutter_rust_bridge::IntoIntoDart<FrbWrapper<ReissueExternalNotesState>>
 }
 
 // Codec=Dco (DartCObject based), see doc to use other codecs
+impl flutter_rust_bridge::IntoDart for FrbWrapper<SafeUrl> {
+    fn into_dart(self) -> flutter_rust_bridge::for_generated::DartAbi {
+        flutter_rust_bridge::for_generated::rust_auto_opaque_encode::<_, MoiArc<_>>(self.0)
+            .into_dart()
+    }
+}
+impl flutter_rust_bridge::for_generated::IntoDartExceptPrimitive for FrbWrapper<SafeUrl> {}
+
+impl flutter_rust_bridge::IntoIntoDart<FrbWrapper<SafeUrl>> for SafeUrl {
+    fn into_into_dart(self) -> FrbWrapper<SafeUrl> {
+        self.into()
+    }
+}
+
+// Codec=Dco (DartCObject based), see doc to use other codecs
 impl flutter_rust_bridge::IntoDart for FrbWrapper<SpendOOBState> {
     fn into_dart(self) -> flutter_rust_bridge::for_generated::DartAbi {
         flutter_rust_bridge::for_generated::rust_auto_opaque_encode::<_, MoiArc<_>>(self.0)
@@ -4637,9 +4662,7 @@ impl flutter_rust_bridge::IntoDart for crate::PaymentPreview {
             self.network.into_into_dart().into_dart(),
             self.invoice.into_into_dart().into_dart(),
             self.gateway.into_into_dart().into_dart(),
-            self.send_fee_base.into_into_dart().into_dart(),
-            self.send_fee_ppm.into_into_dart().into_dart(),
-            self.fed_fee.into_into_dart().into_dart(),
+            self.amount_with_fees.into_into_dart().into_dart(),
         ]
         .into_dart()
     }
@@ -4780,6 +4803,13 @@ impl SseEncode for ReissueExternalNotesState {
             flutter_rust_bridge::for_generated::rust_auto_opaque_encode::<_, MoiArc<_>>(self),
             serializer,
         );
+    }
+}
+
+impl SseEncode for SafeUrl {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
+        <RustOpaqueMoi<flutter_rust_bridge::for_generated::RustAutoOpaqueInner<SafeUrl>>>::sse_encode(flutter_rust_bridge::for_generated::rust_auto_opaque_encode::<_, MoiArc<_>>(self), serializer);
     }
 }
 
@@ -4939,6 +4969,15 @@ impl SseEncode
     }
 }
 
+impl SseEncode for RustOpaqueMoi<flutter_rust_bridge::for_generated::RustAutoOpaqueInner<SafeUrl>> {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
+        let (ptr, size) = self.sse_encode_raw();
+        <usize>::sse_encode(ptr, serializer);
+        <i32>::sse_encode(size, serializer);
+    }
+}
+
 impl SseEncode
     for RustOpaqueMoi<flutter_rust_bridge::for_generated::RustAutoOpaqueInner<SpendOOBState>>
 {
@@ -5079,9 +5118,7 @@ impl SseEncode for crate::PaymentPreview {
         <String>::sse_encode(self.network, serializer);
         <String>::sse_encode(self.invoice, serializer);
         <String>::sse_encode(self.gateway, serializer);
-        <u64>::sse_encode(self.send_fee_base, serializer);
-        <u64>::sse_encode(self.send_fee_ppm, serializer);
-        <u64>::sse_encode(self.fed_fee, serializer);
+        <u64>::sse_encode(self.amount_with_fees, serializer);
     }
 }
 
@@ -5126,16 +5163,6 @@ impl SseEncode for (String, u64) {
     fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
         <String>::sse_encode(self.0, serializer);
         <u64>::sse_encode(self.1, serializer);
-    }
-}
-
-impl SseEncode for (String, u64, u64, u64) {
-    // Codec=Sse (Serialization based), see doc to use other codecs
-    fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
-        <String>::sse_encode(self.0, serializer);
-        <u64>::sse_encode(self.1, serializer);
-        <u64>::sse_encode(self.2, serializer);
-        <u64>::sse_encode(self.3, serializer);
     }
 }
 
@@ -5389,6 +5416,20 @@ mod io {
     }
 
     #[unsafe(no_mangle)]
+    pub extern "C" fn frbgen_carbine_rust_arc_increment_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerSafeUrl(
+        ptr: *const std::ffi::c_void,
+    ) {
+        MoiArc::<flutter_rust_bridge::for_generated::RustAutoOpaqueInner<SafeUrl>>::increment_strong_count(ptr as _);
+    }
+
+    #[unsafe(no_mangle)]
+    pub extern "C" fn frbgen_carbine_rust_arc_decrement_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerSafeUrl(
+        ptr: *const std::ffi::c_void,
+    ) {
+        MoiArc::<flutter_rust_bridge::for_generated::RustAutoOpaqueInner<SafeUrl>>::decrement_strong_count(ptr as _);
+    }
+
+    #[unsafe(no_mangle)]
     pub extern "C" fn frbgen_carbine_rust_arc_increment_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerSpendOOBState(
         ptr: *const std::ffi::c_void,
     ) {
@@ -5608,6 +5649,20 @@ mod web {
         ptr: *const std::ffi::c_void,
     ) {
         MoiArc::<flutter_rust_bridge::for_generated::RustAutoOpaqueInner<ReissueExternalNotesState>>::decrement_strong_count(ptr as _);
+    }
+
+    #[wasm_bindgen]
+    pub fn rust_arc_increment_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerSafeUrl(
+        ptr: *const std::ffi::c_void,
+    ) {
+        MoiArc::<flutter_rust_bridge::for_generated::RustAutoOpaqueInner<SafeUrl>>::increment_strong_count(ptr as _);
+    }
+
+    #[wasm_bindgen]
+    pub fn rust_arc_decrement_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerSafeUrl(
+        ptr: *const std::ffi::c_void,
+    ) {
+        MoiArc::<flutter_rust_bridge::for_generated::RustAutoOpaqueInner<SafeUrl>>::decrement_strong_count(ptr as _);
     }
 
     #[wasm_bindgen]

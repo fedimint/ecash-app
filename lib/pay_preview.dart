@@ -18,11 +18,8 @@ class PaymentPreviewWidget extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final amount = paymentPreview.amountMsats;
-    final feeFromPpm =
-        (amount * paymentPreview.sendFeePpm) ~/ BigInt.from(1_000_000);
-    final fedFee = paymentPreview.fedFee;
-    final fees = paymentPreview.sendFeeBase + feeFromPpm + fedFee;
-    final total = amount + fees;
+    final amountWithFees = paymentPreview.amountWithFees;
+    final fees = amountWithFees - amount;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -51,7 +48,11 @@ class PaymentPreviewWidget extends StatelessWidget {
               buildDetailRow(theme, "Payer Federation", fed.federationName),
               buildDetailRow(theme, 'Amount', formatBalance(amount, true)),
               buildDetailRow(theme, 'Fees', formatBalance(fees, true)),
-              buildDetailRow(theme, 'Total', formatBalance(total, true)),
+              buildDetailRow(
+                theme,
+                'Total',
+                formatBalance(amountWithFees, true),
+              ),
               buildDetailRow(theme, 'Gateway', paymentPreview.gateway),
               buildDetailRow(theme, 'Payment Hash', paymentPreview.paymentHash),
             ],
