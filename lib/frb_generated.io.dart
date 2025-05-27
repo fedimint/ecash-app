@@ -391,6 +391,9 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   (String, BigInt) dco_decode_record_string_u_64(dynamic raw);
 
   @protected
+  (String, BigInt, bool) dco_decode_record_string_u_64_bool(dynamic raw);
+
+  @protected
   Transaction dco_decode_transaction(dynamic raw);
 
   @protected
@@ -719,6 +722,11 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
 
   @protected
   (String, BigInt) sse_decode_record_string_u_64(SseDeserializer deserializer);
+
+  @protected
+  (String, BigInt, bool) sse_decode_record_string_u_64_bool(
+    SseDeserializer deserializer,
+  );
 
   @protected
   Transaction sse_decode_transaction(SseDeserializer deserializer);
@@ -1116,6 +1124,12 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   @protected
   void sse_encode_record_string_u_64(
     (String, BigInt) self,
+    SseSerializer serializer,
+  );
+
+  @protected
+  void sse_encode_record_string_u_64_bool(
+    (String, BigInt, bool) self,
     SseSerializer serializer,
   );
 

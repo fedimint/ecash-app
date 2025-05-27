@@ -1348,6 +1348,7 @@ fn wire__crate__Multimint_receive_impl(
             let api_amount_msats_with_fees = <u64>::sse_decode(&mut deserializer);
             let api_amount_msats_without_fees = <u64>::sse_decode(&mut deserializer);
             let api_gateway = <SafeUrl>::sse_decode(&mut deserializer);
+            let api_is_lnv2 = <bool>::sse_decode(&mut deserializer);
             deserializer.end();
             move |context| async move {
                 transform_result_sse::<_, flutter_rust_bridge::for_generated::anyhow::Error>(
@@ -1388,6 +1389,7 @@ fn wire__crate__Multimint_receive_impl(
                             api_amount_msats_with_fees,
                             api_amount_msats_without_fees,
                             api_gateway,
+                            api_is_lnv2,
                         )
                         .await?;
                         Ok(output_ok)
@@ -3025,6 +3027,7 @@ fn wire__crate__receive_impl(
             let api_amount_msats_with_fees = <u64>::sse_decode(&mut deserializer);
             let api_amount_msats_without_fees = <u64>::sse_decode(&mut deserializer);
             let api_gateway = <String>::sse_decode(&mut deserializer);
+            let api_is_lnv2 = <bool>::sse_decode(&mut deserializer);
             deserializer.end();
             move |context| async move {
                 transform_result_sse::<_, flutter_rust_bridge::for_generated::anyhow::Error>(
@@ -3053,6 +3056,7 @@ fn wire__crate__receive_impl(
                             api_amount_msats_with_fees,
                             api_amount_msats_without_fees,
                             api_gateway,
+                            api_is_lnv2,
                         )
                         .await?;
                         Ok(output_ok)
@@ -4101,6 +4105,16 @@ impl SseDecode for (String, u64) {
         let mut var_field0 = <String>::sse_decode(deserializer);
         let mut var_field1 = <u64>::sse_decode(deserializer);
         return (var_field0, var_field1);
+    }
+}
+
+impl SseDecode for (String, u64, bool) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
+        let mut var_field0 = <String>::sse_decode(deserializer);
+        let mut var_field1 = <u64>::sse_decode(deserializer);
+        let mut var_field2 = <bool>::sse_decode(deserializer);
+        return (var_field0, var_field1, var_field2);
     }
 }
 
@@ -5163,6 +5177,15 @@ impl SseEncode for (String, u64) {
     fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
         <String>::sse_encode(self.0, serializer);
         <u64>::sse_encode(self.1, serializer);
+    }
+}
+
+impl SseEncode for (String, u64, bool) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
+        <String>::sse_encode(self.0, serializer);
+        <u64>::sse_encode(self.1, serializer);
+        <bool>::sse_encode(self.2, serializer);
     }
 }
 

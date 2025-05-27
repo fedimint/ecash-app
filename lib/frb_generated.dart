@@ -190,6 +190,7 @@ abstract class RustLibApi extends BaseApi {
     required BigInt amountMsatsWithFees,
     required BigInt amountMsatsWithoutFees,
     required SafeUrl gateway,
+    required bool isLnv2,
   });
 
   Future<(String, BigInt)> crateMultimintRefund({
@@ -333,6 +334,7 @@ abstract class RustLibApi extends BaseApi {
     required BigInt amountMsatsWithFees,
     required BigInt amountMsatsWithoutFees,
     required String gateway,
+    required bool isLnv2,
   });
 
   Future<(String, BigInt)> crateRefund({required FederationId federationId});
@@ -342,7 +344,7 @@ abstract class RustLibApi extends BaseApi {
     required String ecash,
   });
 
-  Future<(String, BigInt)> crateSelectReceiveGateway({
+  Future<(String, BigInt, bool)> crateSelectReceiveGateway({
     required FederationId federationId,
     required BigInt amountMsats,
   });
@@ -1364,6 +1366,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
     required BigInt amountMsatsWithFees,
     required BigInt amountMsatsWithoutFees,
     required SafeUrl gateway,
+    required bool isLnv2,
   }) {
     return handler.executeNormal(
       NormalTask(
@@ -1383,6 +1386,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
             gateway,
             serializer,
           );
+          sse_encode_bool(isLnv2, serializer);
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
@@ -1402,6 +1406,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           amountMsatsWithFees,
           amountMsatsWithoutFees,
           gateway,
+          isLnv2,
         ],
         apiImpl: this,
       ),
@@ -1416,6 +1421,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
       "amountMsatsWithFees",
       "amountMsatsWithoutFees",
       "gateway",
+      "isLnv2",
     ],
   );
 
@@ -2519,6 +2525,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
     required BigInt amountMsatsWithFees,
     required BigInt amountMsatsWithoutFees,
     required String gateway,
+    required bool isLnv2,
   }) {
     return handler.executeNormal(
       NormalTask(
@@ -2531,6 +2538,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           sse_encode_u_64(amountMsatsWithFees, serializer);
           sse_encode_u_64(amountMsatsWithoutFees, serializer);
           sse_encode_String(gateway, serializer);
+          sse_encode_bool(isLnv2, serializer);
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
@@ -2549,6 +2557,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           amountMsatsWithFees,
           amountMsatsWithoutFees,
           gateway,
+          isLnv2,
         ],
         apiImpl: this,
       ),
@@ -2562,6 +2571,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
       "amountMsatsWithFees",
       "amountMsatsWithoutFees",
       "gateway",
+      "isLnv2",
     ],
   );
 
@@ -2635,7 +2645,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   );
 
   @override
-  Future<(String, BigInt)> crateSelectReceiveGateway({
+  Future<(String, BigInt, bool)> crateSelectReceiveGateway({
     required FederationId federationId,
     required BigInt amountMsats,
   }) {
@@ -2656,7 +2666,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           );
         },
         codec: SseCodec(
-          decodeSuccessData: sse_decode_record_string_u_64,
+          decodeSuccessData: sse_decode_record_string_u_64_bool,
           decodeErrorData: sse_decode_AnyhowException,
         ),
         constMeta: kCrateSelectReceiveGatewayConstMeta,
@@ -3561,6 +3571,20 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   }
 
   @protected
+  (String, BigInt, bool) dco_decode_record_string_u_64_bool(dynamic raw) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    final arr = raw as List<dynamic>;
+    if (arr.length != 3) {
+      throw Exception('Expected 3 elements, got ${arr.length}');
+    }
+    return (
+      dco_decode_String(arr[0]),
+      dco_decode_u_64(arr[1]),
+      dco_decode_bool(arr[2]),
+    );
+  }
+
+  @protected
   Transaction dco_decode_transaction(dynamic raw) {
     // Codec=Dco (DartCObject based), see doc to use other codecs
     final arr = raw as List<dynamic>;
@@ -4316,6 +4340,17 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
     var var_field0 = sse_decode_String(deserializer);
     var var_field1 = sse_decode_u_64(deserializer);
     return (var_field0, var_field1);
+  }
+
+  @protected
+  (String, BigInt, bool) sse_decode_record_string_u_64_bool(
+    SseDeserializer deserializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    var var_field0 = sse_decode_String(deserializer);
+    var var_field1 = sse_decode_u_64(deserializer);
+    var var_field2 = sse_decode_bool(deserializer);
+    return (var_field0, var_field1, var_field2);
   }
 
   @protected
@@ -5109,6 +5144,17 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   }
 
   @protected
+  void sse_encode_record_string_u_64_bool(
+    (String, BigInt, bool) self,
+    SseSerializer serializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    sse_encode_String(self.$1, serializer);
+    sse_encode_u_64(self.$2, serializer);
+    sse_encode_bool(self.$3, serializer);
+  }
+
+  @protected
   void sse_encode_transaction(Transaction self, SseSerializer serializer) {
     // Codec=Sse (Serialization based), see doc to use other codecs
     sse_encode_bool(self.received, serializer);
@@ -5505,12 +5551,14 @@ class MultimintImpl extends RustOpaque implements Multimint {
     required BigInt amountMsatsWithFees,
     required BigInt amountMsatsWithoutFees,
     required SafeUrl gateway,
+    required bool isLnv2,
   }) => RustLib.instance.api.crateMultimintReceive(
     that: this,
     federationId: federationId,
     amountMsatsWithFees: amountMsatsWithFees,
     amountMsatsWithoutFees: amountMsatsWithoutFees,
     gateway: gateway,
+    isLnv2: isLnv2,
   );
 
   /// Refund the full balance on-chain to the Mutinynet faucet.

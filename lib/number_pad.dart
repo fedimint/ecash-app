@@ -91,6 +91,7 @@ class _NumberPadState extends State<NumberPad> {
           amountMsatsWithFees: contractAmount,
           amountMsatsWithoutFees: requestedAmountMsats,
           gateway: gateway.$1,
+          isLnv2: gateway.$3,
         );
         showCarbineModalBottomSheet(
           context: context,

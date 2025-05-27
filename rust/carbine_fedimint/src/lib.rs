@@ -166,6 +166,7 @@ pub async fn receive(
     amount_msats_with_fees: u64,
     amount_msats_without_fees: u64,
     gateway: String,
+    is_lnv2: bool,
 ) -> anyhow::Result<(String, OperationId, String, String, u64)> {
     let gateway = SafeUrl::parse(&gateway)?;
     let multimint = get_multimint().await;
@@ -176,6 +177,7 @@ pub async fn receive(
             amount_msats_with_fees,
             amount_msats_without_fees,
             gateway,
+            is_lnv2,
         )
         .await?;
     let pubkey = invoice.get_payee_pub_key();
@@ -194,7 +196,7 @@ pub async fn receive(
 pub async fn select_receive_gateway(
     federation_id: &FederationId,
     amount_msats: u64,
-) -> anyhow::Result<(String, u64)> {
+) -> anyhow::Result<(String, u64, bool)> {
     let amount = Amount::from_msats(amount_msats);
     let multimint = get_multimint().await;
     let mm = multimint.read().await;
@@ -583,7 +585,10 @@ pub enum ClientType {
 }
 
 impl Multimint {
-    pub(crate) async fn new(path: String, creation_type: MultimintCreation) -> anyhow::Result<Self> {
+    pub(crate) async fn new(
+        path: String,
+        creation_type: MultimintCreation,
+    ) -> anyhow::Result<Self> {
         let db_path = PathBuf::from_str(&path)?.join("client.db");
         let db: Database = RocksDb::open(db_path).await?.into();
 
@@ -604,7 +609,8 @@ impl Multimint {
             }
             MultimintCreation::NewFromMnemonic { words } => {
                 let all_words = words.join(" ");
-                let mnemonic = Mnemonic::parse_in_normalized(Language::English, all_words.as_str())?;
+                let mnemonic =
+                    Mnemonic::parse_in_normalized(Language::English, all_words.as_str())?;
                 Client::store_encodable_client_secret(&db, mnemonic.to_entropy()).await?;
                 mnemonic
             }
@@ -998,6 +1004,7 @@ impl Multimint {
         amount_msats_with_fees: u64,
         amount_msats_without_fees: u64,
         gateway: SafeUrl,
+        is_lnv2: bool,
     ) -> anyhow::Result<(Bolt11Invoice, OperationId)> {
         let amount_with_fees = Amount::from_msats(amount_msats_with_fees);
         let amount_without_fees = Amount::from_msats(amount_msats_without_fees);
@@ -1008,13 +1015,22 @@ impl Multimint {
             .get(federation_id)
             .expect("No federation exists");
 
-        if let Ok((invoice, operation_id)) =
-            Self::receive_lnv2(client, amount_with_fees, amount_without_fees, gateway).await
-        {
-            return Ok((invoice, operation_id));
+        if is_lnv2 {
+            if let Ok((invoice, operation_id)) = Self::receive_lnv2(
+                client,
+                amount_with_fees,
+                amount_without_fees,
+                gateway.clone(),
+            )
+            .await
+            {
+                println!("Using LNv2 for the actual invoice");
+                return Ok((invoice, operation_id));
+            }
         }
 
-        Self::receive_lnv1(client, amount_with_fees, amount_without_fees).await
+        println!("Using LNv1 for the actual invoice");
+        Self::receive_lnv1(client, amount_with_fees, amount_without_fees, gateway).await
     }
 
     async fn receive_lnv2(
@@ -1040,9 +1056,16 @@ impl Multimint {
         client: &ClientHandleArc,
         amount_with_fees: Amount,
         amount_without_fees: Amount,
+        gateway_url: SafeUrl,
     ) -> anyhow::Result<(Bolt11Invoice, OperationId)> {
         let lnv1 = client.get_first_module::<LightningClientModule>()?;
-        let gateway = Self::lnv1_select_gateway(client).await;
+        let gateways = lnv1.list_gateways().await;
+        let gateway = gateways
+            .iter()
+            .find(|g| g.info.api == gateway_url)
+            .ok_or(anyhow!("Could not find gateway"))?
+            .info
+            .clone();
         let desc = Description::new(String::new())?;
         let (operation_id, invoice, _) = lnv1
             .create_bolt11_invoice(
@@ -1050,7 +1073,7 @@ impl Multimint {
                 lightning_invoice::Bolt11InvoiceDescription::Direct(&desc),
                 Some(DEFAULT_EXPIRY_TIME_SECS as u64),
                 to_value(amount_without_fees)?,
-                gateway,
+                Some(gateway),
             )
             .await?;
         Ok((invoice, operation_id))
@@ -1060,34 +1083,77 @@ impl Multimint {
         &self,
         federation_id: &FederationId,
         amount: Amount,
-    ) -> anyhow::Result<(String, u64)> {
+    ) -> anyhow::Result<(String, u64, bool)> {
         let client = self
             .clients
             .get(federation_id)
             .expect("No federation exists");
-        if let Ok((url, receive_fee)) =
-            Self::lnv2_select_gateway(client, None).await
-        {
+        if let Ok((url, receive_fee)) = Self::lnv2_select_gateway(client, None).await {
             // TODO: It is currently not possible to get the fed_base and fed_ppm from the config
-            let amount_with_fees = Self::compute_receive_amount(amount, 1_000, 100, receive_fee.base.msats, receive_fee.parts_per_million);
-            return Ok((
-                url.to_string(),
-                amount_with_fees,
-            ));
+            println!("Using LNv2 for selecting receive gateway");
+            let amount_with_fees = Self::compute_receive_amount(
+                amount,
+                1_000,
+                100,
+                receive_fee.base.msats,
+                receive_fee.parts_per_million,
+            );
+            return Ok((url.to_string(), amount_with_fees, true));
         }
 
         // LNv1 does not have fees for receiving
+        println!("Using LNv1 for selecting receive gateway");
         let gateway = Self::lnv1_select_gateway(client)
             .await
             .ok_or(anyhow!("No available gateways"))?;
-        let amount_with_fees = Self::compute_receive_amount(amount, 0, 0, 0, 0);
-        Ok((gateway.api.to_string(), amount_with_fees))
+        Ok((gateway.api.to_string(), amount.msats, false))
     }
 
-    fn compute_receive_amount(requested_amount: Amount, fed_base: u64, fed_ppm: u64, gw_base: u64, gw_ppm: u64) -> u64 {
-        let numerator = (requested_amount.msats + fed_base + gw_base) * 1_000_000;
-        let denominator = 1_000_000 - (fed_ppm + gw_ppm);
-        numerator / denominator
+    fn compute_receive_amount(
+        requested_amount: Amount,
+        fed_base: u64,
+        fed_ppm: u64,
+        gw_base: u64,
+        gw_ppm: u64,
+    ) -> u64 {
+        let requested_f = requested_amount.msats as f64;
+        let fed_base_f = fed_base as f64;
+        let fed_ppm_f = fed_ppm as f64;
+        let gw_base_f = gw_base as f64;
+        let gw_ppm_f = gw_ppm as f64;
+        let x_after_gateway = (requested_f + fed_base_f) / (1.0 - fed_ppm_f / 1_000_000.0);
+        let x_f = (x_after_gateway + gw_base_f) / (1.0 - gw_ppm_f / 1_000_000.0);
+        let x_ceil =
+            Self::receive_amount_after_fees(x_f.ceil() as u64, gw_base, gw_ppm, fed_base, fed_ppm);
+
+        if x_ceil == requested_amount.msats {
+            x_f.ceil() as u64
+        } else {
+            let max = x_f.ceil() as u64;
+            let requested = requested_amount.msats;
+            for i in (requested..=max).rev() {
+                let receive =
+                    Self::receive_amount_after_fees(i, gw_base, gw_ppm, fed_base, fed_ppm);
+                if receive == requested {
+                    return i;
+                }
+            }
+            max
+        }
+    }
+
+    fn receive_amount_after_fees(
+        x: u64,
+        gw_base: u64,
+        gw_ppm: u64,
+        fed_base: u64,
+        fed_ppm: u64,
+    ) -> u64 {
+        let gw_fee = gw_base + ((gw_ppm as f64 / 1_000_000.0) * x as f64) as u64;
+        let after_gateway = x - gw_fee;
+        let fed_fee = fed_base + ((fed_ppm as f64 / 1_000_000.0) * after_gateway as f64) as u64;
+        let leftover = after_gateway - fed_fee;
+        leftover
     }
 
     async fn select_send_gateway(
@@ -1100,27 +1166,38 @@ impl Multimint {
             .clients
             .get(federation_id)
             .expect("No federation exists");
-        if let Ok((url, send_fee)) = Self::lnv2_select_gateway(client, Some(bolt11)).await
-        {
-            let amount_with_fees = Self::compute_send_amount(amount, 1_000, 100, send_fee.base.msats, send_fee.parts_per_million);
-            return Ok((
-                url.to_string(),
-                amount_with_fees,
-            ));
+        if let Ok((url, send_fee)) = Self::lnv2_select_gateway(client, Some(bolt11)).await {
+            let amount_with_fees = Self::compute_send_amount(
+                amount,
+                1_000,
+                100,
+                send_fee.base.msats,
+                send_fee.parts_per_million,
+            );
+            return Ok((url.to_string(), amount_with_fees));
         }
 
         // LNv1 only has Lightning routing fees
         let gateway = Self::lnv1_select_gateway(client)
             .await
             .ok_or(anyhow!("No available gateways"))?;
-        let amount_with_fees = Self::compute_send_amount(amount, 0, 0, gateway.fees.base_msat as u64, gateway.fees.proportional_millionths as u64);
-        Ok((
-            gateway.api.to_string(),
-            amount_with_fees,
-        ))
+        let amount_with_fees = Self::compute_send_amount(
+            amount,
+            0,
+            0,
+            gateway.fees.base_msat as u64,
+            gateway.fees.proportional_millionths as u64,
+        );
+        Ok((gateway.api.to_string(), amount_with_fees))
     }
 
-    fn compute_send_amount(requested_amount: Amount, fed_base: u64, fed_ppm: u64, gw_base: u64, gw_ppm: u64) -> u64 {
+    fn compute_send_amount(
+        requested_amount: Amount,
+        fed_base: u64,
+        fed_ppm: u64,
+        gw_base: u64,
+        gw_ppm: u64,
+    ) -> u64 {
         let fed_fee = fed_base + ((requested_amount.msats * fed_ppm) / 1_000_000);
         let gw_fee = gw_base + ((requested_amount.msats * gw_ppm) / 1_000_000);
         requested_amount.msats + fed_fee + gw_fee

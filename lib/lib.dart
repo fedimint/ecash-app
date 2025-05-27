@@ -6,7 +6,7 @@
 import 'frb_generated.dart';
 import 'package:flutter_rust_bridge/flutter_rust_bridge_for_generated.dart';
 
-// These functions are ignored because they are not marked as `pub`: `add_relay`, `await_ecash_reissue`, `await_ecash_send`, `await_receive_lnv1`, `await_receive_lnv2`, `await_send_lnv1`, `await_send_lnv2`, `build_client`, `compute_receive_amount`, `compute_send_amount`, `create_nostr_client`, `derive_federation_secret`, `get_client_database`, `get_federation_meta`, `get_multimint`, `has_federation`, `lnv1_select_gateway`, `lnv1_update_gateway_cache`, `lnv2_select_gateway`, `load_clients`, `new`, `parse_content`, `parse_ecash`, `parse_federation_id`, `parse_federation_name`, `parse_invite_codes`, `parse_modules`, `parse_network`, `parse_picture`, `pay_lnv1`, `pay_lnv2`, `receive_lnv1`, `receive_lnv2`, `reissue_ecash`, `select_receive_gateway`, `select_send_gateway`, `send_ecash`, `transactions`
+// These functions are ignored because they are not marked as `pub`: `add_relay`, `await_ecash_reissue`, `await_ecash_send`, `await_receive_lnv1`, `await_receive_lnv2`, `await_send_lnv1`, `await_send_lnv2`, `build_client`, `compute_receive_amount2`, `compute_receive_amount`, `compute_send_amount`, `create_nostr_client`, `derive_federation_secret`, `get_client_database`, `get_federation_meta`, `get_multimint`, `has_federation`, `lnv1_select_gateway`, `lnv1_update_gateway_cache`, `lnv2_select_gateway`, `load_clients`, `new`, `parse_content`, `parse_ecash`, `parse_federation_id`, `parse_federation_name`, `parse_invite_codes`, `parse_modules`, `parse_network`, `parse_picture`, `pay_lnv1`, `pay_lnv2`, `receive_lnv1`, `receive_lnv2`, `reissue_ecash`, `select_receive_gateway`, `select_send_gateway`, `send_ecash`, `transactions`
 // These types are ignored because they are neither used by any `pub` functions nor (for structs and enums) marked `#[frb(unignore)]`: `ClientType`, `MultimintCreation`
 // These function are ignored because they are on traits that is not defined in current crate (put an empty `#[frb]` on it to unignore): `assert_receiver_is_total_eq`, `assert_receiver_is_total_eq`, `assert_receiver_is_total_eq`, `assert_receiver_is_total_eq`, `clone`, `clone`, `clone`, `clone`, `eq`, `eq`, `eq`, `eq`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `try_from`
 
@@ -48,14 +48,16 @@ Future<(String, OperationId, String, String, BigInt)> receive({
   required BigInt amountMsatsWithFees,
   required BigInt amountMsatsWithoutFees,
   required String gateway,
+  required bool isLnv2,
 }) => RustLib.instance.api.crateReceive(
   federationId: federationId,
   amountMsatsWithFees: amountMsatsWithFees,
   amountMsatsWithoutFees: amountMsatsWithoutFees,
   gateway: gateway,
+  isLnv2: isLnv2,
 );
 
-Future<(String, BigInt)> selectReceiveGateway({
+Future<(String, BigInt, bool)> selectReceiveGateway({
   required FederationId federationId,
   required BigInt amountMsats,
 }) => RustLib.instance.api.crateSelectReceiveGateway(
@@ -238,6 +240,7 @@ abstract class Multimint implements RustOpaqueInterface {
     required BigInt amountMsatsWithFees,
     required BigInt amountMsatsWithoutFees,
     required SafeUrl gateway,
+    required bool isLnv2,
   });
 
   /// Refund the full balance on-chain to the Mutinynet faucet.
