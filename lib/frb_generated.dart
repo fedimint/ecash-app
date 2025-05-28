@@ -202,6 +202,8 @@ abstract class RustLibApi extends BaseApi {
     required Multimint that,
     required FederationId federationId,
     required String invoice,
+    required SafeUrl gateway,
+    required bool isLnv2,
   });
 
   Future<void> crateMultimintUpdateFederationsFromNostr({
@@ -352,6 +354,8 @@ abstract class RustLibApi extends BaseApi {
   Future<OperationId> crateSend({
     required FederationId federationId,
     required String invoice,
+    required String gateway,
+    required bool isLnv2,
   });
 
   Future<(OperationId, String, BigInt)> crateSendEcash({
@@ -1470,6 +1474,8 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
     required Multimint that,
     required FederationId federationId,
     required String invoice,
+    required SafeUrl gateway,
+    required bool isLnv2,
   }) {
     return handler.executeNormal(
       NormalTask(
@@ -1484,6 +1490,11 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
             serializer,
           );
           sse_encode_String(invoice, serializer);
+          sse_encode_Auto_Owned_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerSafeUrl(
+            gateway,
+            serializer,
+          );
+          sse_encode_bool(isLnv2, serializer);
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
@@ -1497,7 +1508,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           decodeErrorData: sse_decode_AnyhowException,
         ),
         constMeta: kCrateMultimintSendConstMeta,
-        argValues: [that, federationId, invoice],
+        argValues: [that, federationId, invoice, gateway, isLnv2],
         apiImpl: this,
       ),
     );
@@ -1505,7 +1516,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
 
   TaskConstMeta get kCrateMultimintSendConstMeta => const TaskConstMeta(
     debugName: "Multimint_send",
-    argNames: ["that", "federationId", "invoice"],
+    argNames: ["that", "federationId", "invoice", "gateway", "isLnv2"],
   );
 
   @override
@@ -2685,6 +2696,8 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   Future<OperationId> crateSend({
     required FederationId federationId,
     required String invoice,
+    required String gateway,
+    required bool isLnv2,
   }) {
     return handler.executeNormal(
       NormalTask(
@@ -2695,6 +2708,8 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
             serializer,
           );
           sse_encode_String(invoice, serializer);
+          sse_encode_String(gateway, serializer);
+          sse_encode_bool(isLnv2, serializer);
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
@@ -2708,7 +2723,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           decodeErrorData: sse_decode_AnyhowException,
         ),
         constMeta: kCrateSendConstMeta,
-        argValues: [federationId, invoice],
+        argValues: [federationId, invoice, gateway, isLnv2],
         apiImpl: this,
       ),
     );
@@ -2716,7 +2731,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
 
   TaskConstMeta get kCrateSendConstMeta => const TaskConstMeta(
     debugName: "send",
-    argNames: ["federationId", "invoice"],
+    argNames: ["federationId", "invoice", "gateway", "isLnv2"],
   );
 
   @override
@@ -3470,8 +3485,8 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   PaymentPreview dco_decode_payment_preview(dynamic raw) {
     // Codec=Dco (DartCObject based), see doc to use other codecs
     final arr = raw as List<dynamic>;
-    if (arr.length != 6)
-      throw Exception('unexpected arr length: expect 6 but see ${arr.length}');
+    if (arr.length != 7)
+      throw Exception('unexpected arr length: expect 7 but see ${arr.length}');
     return PaymentPreview(
       amountMsats: dco_decode_u_64(arr[0]),
       paymentHash: dco_decode_String(arr[1]),
@@ -3479,6 +3494,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
       invoice: dco_decode_String(arr[3]),
       gateway: dco_decode_String(arr[4]),
       amountWithFees: dco_decode_u_64(arr[5]),
+      isLnv2: dco_decode_bool(arr[6]),
     );
   }
 
@@ -4261,6 +4277,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
     var var_invoice = sse_decode_String(deserializer);
     var var_gateway = sse_decode_String(deserializer);
     var var_amountWithFees = sse_decode_u_64(deserializer);
+    var var_isLnv2 = sse_decode_bool(deserializer);
     return PaymentPreview(
       amountMsats: var_amountMsats,
       paymentHash: var_paymentHash,
@@ -4268,6 +4285,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
       invoice: var_invoice,
       gateway: var_gateway,
       amountWithFees: var_amountWithFees,
+      isLnv2: var_isLnv2,
     );
   }
 
@@ -5068,6 +5086,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
     sse_encode_String(self.invoice, serializer);
     sse_encode_String(self.gateway, serializer);
     sse_encode_u_64(self.amountWithFees, serializer);
+    sse_encode_bool(self.isLnv2, serializer);
   }
 
   @protected
@@ -5574,10 +5593,14 @@ class MultimintImpl extends RustOpaque implements Multimint {
   Future<OperationId> send({
     required FederationId federationId,
     required String invoice,
+    required SafeUrl gateway,
+    required bool isLnv2,
   }) => RustLib.instance.api.crateMultimintSend(
     that: this,
     federationId: federationId,
     invoice: invoice,
+    gateway: gateway,
+    isLnv2: isLnv2,
   );
 
   Future<void> updateFederationsFromNostr() =>

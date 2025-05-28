@@ -1502,6 +1502,8 @@ fn wire__crate__Multimint_send_impl(
                 flutter_rust_bridge::for_generated::RustAutoOpaqueInner<FederationId>,
             >>::sse_decode(&mut deserializer);
             let api_invoice = <String>::sse_decode(&mut deserializer);
+            let api_gateway = <SafeUrl>::sse_decode(&mut deserializer);
+            let api_is_lnv2 = <bool>::sse_decode(&mut deserializer);
             deserializer.end();
             move |context| async move {
                 transform_result_sse::<_, flutter_rust_bridge::for_generated::anyhow::Error>(
@@ -1540,6 +1542,8 @@ fn wire__crate__Multimint_send_impl(
                             &*api_that_guard,
                             &*api_federation_id_guard,
                             api_invoice,
+                            api_gateway,
+                            api_is_lnv2,
                         )
                         .await?;
                         Ok(output_ok)
@@ -3271,6 +3275,8 @@ fn wire__crate__send_impl(
                 flutter_rust_bridge::for_generated::RustAutoOpaqueInner<FederationId>,
             >>::sse_decode(&mut deserializer);
             let api_invoice = <String>::sse_decode(&mut deserializer);
+            let api_gateway = <String>::sse_decode(&mut deserializer);
+            let api_is_lnv2 = <bool>::sse_decode(&mut deserializer);
             deserializer.end();
             move |context| async move {
                 transform_result_sse::<_, flutter_rust_bridge::for_generated::anyhow::Error>(
@@ -3294,7 +3300,13 @@ fn wire__crate__send_impl(
                             }
                         }
                         let api_federation_id_guard = api_federation_id_guard.unwrap();
-                        let output_ok = crate::send(&*api_federation_id_guard, api_invoice).await?;
+                        let output_ok = crate::send(
+                            &*api_federation_id_guard,
+                            api_invoice,
+                            api_gateway,
+                            api_is_lnv2,
+                        )
+                        .await?;
                         Ok(output_ok)
                     })()
                     .await,
@@ -4048,6 +4060,7 @@ impl SseDecode for crate::PaymentPreview {
         let mut var_invoice = <String>::sse_decode(deserializer);
         let mut var_gateway = <String>::sse_decode(deserializer);
         let mut var_amountWithFees = <u64>::sse_decode(deserializer);
+        let mut var_isLnv2 = <bool>::sse_decode(deserializer);
         return crate::PaymentPreview {
             amount_msats: var_amountMsats,
             payment_hash: var_paymentHash,
@@ -4055,6 +4068,7 @@ impl SseDecode for crate::PaymentPreview {
             invoice: var_invoice,
             gateway: var_gateway,
             amount_with_fees: var_amountWithFees,
+            is_lnv2: var_isLnv2,
         };
     }
 }
@@ -4677,6 +4691,7 @@ impl flutter_rust_bridge::IntoDart for crate::PaymentPreview {
             self.invoice.into_into_dart().into_dart(),
             self.gateway.into_into_dart().into_dart(),
             self.amount_with_fees.into_into_dart().into_dart(),
+            self.is_lnv2.into_into_dart().into_dart(),
         ]
         .into_dart()
     }
@@ -5133,6 +5148,7 @@ impl SseEncode for crate::PaymentPreview {
         <String>::sse_encode(self.invoice, serializer);
         <String>::sse_encode(self.gateway, serializer);
         <u64>::sse_encode(self.amount_with_fees, serializer);
+        <bool>::sse_encode(self.is_lnv2, serializer);
     }
 }
 

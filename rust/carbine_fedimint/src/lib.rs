@@ -7,6 +7,7 @@ use fedimint_core::db::mem_impl::MemDatabase;
 use fedimint_core::hex;
 use fedimint_core::secp256k1::rand::seq::SliceRandom;
 use fedimint_core::task::TaskGroup;
+use fedimint_ln_common::LightningGateway;
 use fedimint_lnv2_common::gateway_api::PaymentFee;
 use fedimint_meta_client::common::DEFAULT_META_KEY;
 use fedimint_meta_client::MetaClientInit;
@@ -220,7 +221,18 @@ pub async fn send_lnaddress(
 
             let multimint = get_multimint().await;
             let mm = multimint.read().await;
-            return mm.send(federation_id, invoice.invoice().to_string()).await;
+            let bolt11 = Bolt11Invoice::from_str(invoice.invoice())?;
+            let (gateway_url, _, is_lnv2) = mm
+                .select_send_gateway(
+                    federation_id,
+                    Amount::from_msats(amount_msats),
+                    bolt11.clone(),
+                )
+                .await?;
+            let gateway = SafeUrl::parse(&gateway_url)?;
+            return mm
+                .send(federation_id, bolt11.to_string(), gateway, is_lnv2)
+                .await;
         }
         other => bail!("Unexpected response from lnurl: {other:?}"),
     }
@@ -229,10 +241,16 @@ pub async fn send_lnaddress(
 }
 
 #[frb]
-pub async fn send(federation_id: &FederationId, invoice: String) -> anyhow::Result<OperationId> {
+pub async fn send(
+    federation_id: &FederationId,
+    invoice: String,
+    gateway: String,
+    is_lnv2: bool,
+) -> anyhow::Result<OperationId> {
     let multimint = get_multimint().await;
     let mm = multimint.read().await;
-    mm.send(federation_id, invoice).await
+    let gateway = SafeUrl::parse(&gateway)?;
+    mm.send(federation_id, invoice, gateway, is_lnv2).await
 }
 
 #[frb]
@@ -283,7 +301,7 @@ pub async fn payment_preview(
 
     let multimint = get_multimint().await;
     let mm = multimint.read().await;
-    let (gateway, amount_with_fees) = mm
+    let (gateway, amount_with_fees, is_lnv2) = mm
         .select_send_gateway(federation_id, Amount::from_msats(amount_msats), invoice)
         .await?;
 
@@ -294,6 +312,7 @@ pub async fn payment_preview(
         invoice: bolt11,
         gateway,
         amount_with_fees,
+        is_lnv2,
     })
 }
 
@@ -381,6 +400,7 @@ pub struct PaymentPreview {
     invoice: String,
     gateway: String,
     amount_with_fees: u64,
+    is_lnv2: bool,
 }
 
 #[derive(Clone, Eq, PartialEq, Serialize, Debug)]
@@ -1161,52 +1181,64 @@ impl Multimint {
         federation_id: &FederationId,
         amount: Amount,
         bolt11: Bolt11Invoice,
-    ) -> anyhow::Result<(String, u64)> {
+    ) -> anyhow::Result<(String, u64, bool)> {
         let client = self
             .clients
             .get(federation_id)
             .expect("No federation exists");
-        if let Ok((url, send_fee)) = Self::lnv2_select_gateway(client, Some(bolt11)).await {
-            let amount_with_fees = Self::compute_send_amount(
-                amount,
-                1_000,
-                100,
-                send_fee.base.msats,
-                send_fee.parts_per_million,
-            );
-            return Ok((url.to_string(), amount_with_fees));
+        if let Ok((url, send_fee)) = Self::lnv2_select_gateway(client, Some(bolt11.clone())).await {
+            let amount_with_fees = Self::compute_send_amount(amount, 1_000, 100, send_fee);
+            return Ok((url.to_string(), amount_with_fees, true));
         }
 
         // LNv1 only has Lightning routing fees
         let gateway = Self::lnv1_select_gateway(client)
             .await
             .ok_or(anyhow!("No available gateways"))?;
-        let amount_with_fees = Self::compute_send_amount(
-            amount,
-            0,
-            0,
-            gateway.fees.base_msat as u64,
-            gateway.fees.proportional_millionths as u64,
-        );
-        Ok((gateway.api.to_string(), amount_with_fees))
+        let fees = if Self::invoice_routes_back_to_federation(&bolt11, gateway.clone()) {
+            // There are no fees on internal swaps
+            PaymentFee {
+                base: Amount::ZERO,
+                parts_per_million: 0,
+            }
+        } else {
+            gateway.fees.into()
+        };
+        let amount_with_fees = Self::compute_send_amount(amount, 0, 0, fees);
+        Ok((gateway.api.to_string(), amount_with_fees, false))
+    }
+
+    fn invoice_routes_back_to_federation(
+        invoice: &Bolt11Invoice,
+        gateway: LightningGateway,
+    ) -> bool {
+        invoice
+            .route_hints()
+            .first()
+            .and_then(|rh| rh.0.last())
+            .map(|hop| (hop.src_node_id, hop.short_channel_id))
+            == Some((gateway.node_pub_key, gateway.federation_index))
     }
 
     fn compute_send_amount(
         requested_amount: Amount,
         fed_base: u64,
         fed_ppm: u64,
-        gw_base: u64,
-        gw_ppm: u64,
+        send_fee: PaymentFee,
     ) -> u64 {
-        let fed_fee = fed_base + ((requested_amount.msats * fed_ppm) / 1_000_000);
-        let gw_fee = gw_base + ((requested_amount.msats * gw_ppm) / 1_000_000);
-        requested_amount.msats + fed_fee + gw_fee
+        let contract_amount = send_fee.add_to(requested_amount.msats);
+        let fed_fee =
+            fed_base + (((fed_ppm as f64) / 1_000_000.0) * contract_amount.msats as f64) as u64;
+        let total = contract_amount.msats + fed_fee;
+        total
     }
 
     pub async fn send(
         &self,
         federation_id: &FederationId,
         invoice: String,
+        gateway: SafeUrl,
+        is_lnv2: bool,
     ) -> anyhow::Result<OperationId> {
         let client = self
             .clients
@@ -1214,14 +1246,18 @@ impl Multimint {
             .expect("No federation exists");
         let invoice = Bolt11Invoice::from_str(&invoice)?;
 
-        println!("Attempting to pay using LNv2...");
-        if let Ok(lnv2_operation_id) = Self::pay_lnv2(client, invoice.clone()).await {
-            println!("Successfully initated LNv2 payment");
-            return Ok(lnv2_operation_id);
+        if is_lnv2 {
+            println!("Attempting to pay using LNv2...");
+            if let Ok(lnv2_operation_id) =
+                Self::pay_lnv2(client, invoice.clone(), gateway.clone()).await
+            {
+                println!("Successfully initated LNv2 payment");
+                return Ok(lnv2_operation_id);
+            }
         }
 
         println!("Attempting to pay using LNv1...");
-        let operation_id = Self::pay_lnv1(client, invoice).await?;
+        let operation_id = Self::pay_lnv1(client, invoice, gateway).await?;
         println!("Successfully initiated LNv1 payment");
         Ok(operation_id)
     }
@@ -1229,19 +1265,28 @@ impl Multimint {
     async fn pay_lnv2(
         client: &ClientHandleArc,
         invoice: Bolt11Invoice,
+        gateway: SafeUrl,
     ) -> anyhow::Result<OperationId> {
         let lnv2 = client.get_first_module::<fedimint_lnv2_client::LightningClientModule>()?;
-        let operation_id = lnv2.send(invoice, None, ().into()).await?;
+        let operation_id = lnv2.send(invoice, Some(gateway), ().into()).await?;
         Ok(operation_id)
     }
 
     async fn pay_lnv1(
         client: &ClientHandleArc,
         invoice: Bolt11Invoice,
+        gateway_url: SafeUrl,
     ) -> anyhow::Result<OperationId> {
         let lnv1 = client.get_first_module::<LightningClientModule>()?;
-        let gateway = Self::lnv1_select_gateway(client).await;
-        let outgoing_lightning_payment = lnv1.pay_bolt11_invoice(gateway, invoice, ()).await?;
+        let gateways = lnv1.list_gateways().await;
+        let gateway = gateways
+            .iter()
+            .find(|g| g.info.api == gateway_url)
+            .ok_or(anyhow!("Could not find gateway"))?
+            .info
+            .clone();
+        let outgoing_lightning_payment =
+            lnv1.pay_bolt11_invoice(Some(gateway), invoice, ()).await?;
         Ok(outgoing_lightning_payment.payment_type.operation_id())
     }
 
@@ -1461,9 +1506,9 @@ impl Multimint {
         let (gateway, routing_info) = lnv2.select_gateway(invoice.clone()).await?;
         let fee = if let Some(bolt11) = invoice {
             if bolt11.get_payee_pub_key() == routing_info.lightning_public_key {
-                routing_info.send_fee_default
-            } else {
                 routing_info.send_fee_minimum
+            } else {
+                routing_info.send_fee_default
             }
         } else {
             routing_info.receive_fee
