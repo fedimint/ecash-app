@@ -39,7 +39,7 @@ flutter_rust_bridge::frb_generated_boilerplate!(
     default_rust_auto_opaque = RustAutoOpaqueMoi,
 );
 pub(crate) const FLUTTER_RUST_BRIDGE_CODEGEN_VERSION: &str = "2.9.0";
-pub(crate) const FLUTTER_RUST_BRIDGE_CODEGEN_CONTENT_HASH: i32 = -1309894117;
+pub(crate) const FLUTTER_RUST_BRIDGE_CODEGEN_CONTENT_HASH: i32 = -1874373789;
 
 // Section: executor
 
@@ -505,7 +505,7 @@ fn wire__crate__db__FederationConfig_auto_accessor_set_network_impl(
             let api_that = <RustOpaqueMoi<
                 flutter_rust_bridge::for_generated::RustAutoOpaqueInner<FederationConfig>,
             >>::sse_decode(&mut deserializer);
-            let api_network = <String>::sse_decode(&mut deserializer);
+            let api_network = <Option<String>>::sse_decode(&mut deserializer);
             deserializer.end();
             transform_result_sse::<_, ()>((move || {
                 let mut api_that_guard = None;
@@ -893,7 +893,7 @@ fn wire__crate__FederationSelector_auto_accessor_set_network_impl(
             let api_that = <RustOpaqueMoi<
                 flutter_rust_bridge::for_generated::RustAutoOpaqueInner<FederationSelector>,
             >>::sse_decode(&mut deserializer);
-            let api_network = <String>::sse_decode(&mut deserializer);
+            let api_network = <Option<String>>::sse_decode(&mut deserializer);
             deserializer.end();
             transform_result_sse::<_, ()>((move || {
                 let mut api_that_guard = None;
@@ -3506,6 +3506,42 @@ fn wire__crate__transactions_impl(
         },
     )
 }
+fn wire__crate__wait_for_recovery_impl(
+    port_: flutter_rust_bridge::for_generated::MessagePort,
+    ptr_: flutter_rust_bridge::for_generated::PlatformGeneralizedUint8ListPtr,
+    rust_vec_len_: i32,
+    data_len_: i32,
+) {
+    FLUTTER_RUST_BRIDGE_HANDLER.wrap_async::<flutter_rust_bridge::for_generated::SseCodec, _, _, _>(
+        flutter_rust_bridge::for_generated::TaskInfo {
+            debug_name: "wait_for_recovery",
+            port: Some(port_),
+            mode: flutter_rust_bridge::for_generated::FfiCallMode::Normal,
+        },
+        move || {
+            let message = unsafe {
+                flutter_rust_bridge::for_generated::Dart2RustMessageSse::from_wire(
+                    ptr_,
+                    rust_vec_len_,
+                    data_len_,
+                )
+            };
+            let mut deserializer =
+                flutter_rust_bridge::for_generated::SseDeserializer::new(message);
+            let api_invite_code = <String>::sse_decode(&mut deserializer);
+            deserializer.end();
+            move |context| async move {
+                transform_result_sse::<_, flutter_rust_bridge::for_generated::anyhow::Error>(
+                    (move || async move {
+                        let output_ok = crate::wait_for_recovery(api_invite_code).await?;
+                        Ok(output_ok)
+                    })()
+                    .await,
+                )
+            }
+        },
+    )
+}
 fn wire__crate__wallet_exists_impl(
     port_: flutter_rust_bridge::for_generated::MessagePort,
     ptr_: flutter_rust_bridge::for_generated::PlatformGeneralizedUint8ListPtr,
@@ -3946,18 +3982,6 @@ impl SseDecode for crate::Guardian {
     }
 }
 
-impl SseDecode for Vec<FederationSelector> {
-    // Codec=Sse (Serialization based), see doc to use other codecs
-    fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
-        let mut len_ = <i32>::sse_decode(deserializer);
-        let mut ans_ = vec![];
-        for idx_ in 0..len_ {
-            ans_.push(<FederationSelector>::sse_decode(deserializer));
-        }
-        return ans_;
-    }
-}
-
 impl SseDecode for Vec<PublicFederation> {
     // Codec=Sse (Serialization based), see doc to use other codecs
     fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
@@ -4001,6 +4025,18 @@ impl SseDecode for Vec<u8> {
         let mut ans_ = vec![];
         for idx_ in 0..len_ {
             ans_.push(<u8>::sse_decode(deserializer));
+        }
+        return ans_;
+    }
+}
+
+impl SseDecode for Vec<(FederationSelector, bool)> {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
+        let mut len_ = <i32>::sse_decode(deserializer);
+        let mut ans_ = vec![];
+        for idx_ in 0..len_ {
+            ans_.push(<(FederationSelector, bool)>::sse_decode(deserializer));
         }
         return ans_;
     }
@@ -4078,6 +4114,15 @@ impl SseDecode for (Bolt11Invoice, OperationId) {
     fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
         let mut var_field0 = <Bolt11Invoice>::sse_decode(deserializer);
         let mut var_field1 = <OperationId>::sse_decode(deserializer);
+        return (var_field0, var_field1);
+    }
+}
+
+impl SseDecode for (FederationSelector, bool) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
+        let mut var_field0 = <FederationSelector>::sse_decode(deserializer);
+        let mut var_field1 = <bool>::sse_decode(deserializer);
         return (var_field0, var_field1);
     }
 }
@@ -4230,7 +4275,8 @@ fn pde_ffi_dispatcher_primary_impl(
         63 => wire__crate__send_ecash_impl(port, ptr, rust_vec_len, data_len),
         64 => wire__crate__send_lnaddress_impl(port, ptr, rust_vec_len, data_len),
         65 => wire__crate__transactions_impl(port, ptr, rust_vec_len, data_len),
-        66 => wire__crate__wallet_exists_impl(port, ptr, rust_vec_len, data_len),
+        66 => wire__crate__wait_for_recovery_impl(port, ptr, rust_vec_len, data_len),
+        67 => wire__crate__wallet_exists_impl(port, ptr, rust_vec_len, data_len),
         _ => unreachable!(),
     }
 }
@@ -5049,16 +5095,6 @@ impl SseEncode for crate::Guardian {
     }
 }
 
-impl SseEncode for Vec<FederationSelector> {
-    // Codec=Sse (Serialization based), see doc to use other codecs
-    fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
-        <i32>::sse_encode(self.len() as _, serializer);
-        for item in self {
-            <FederationSelector>::sse_encode(item, serializer);
-        }
-    }
-}
-
 impl SseEncode for Vec<PublicFederation> {
     // Codec=Sse (Serialization based), see doc to use other codecs
     fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
@@ -5095,6 +5131,16 @@ impl SseEncode for Vec<u8> {
         <i32>::sse_encode(self.len() as _, serializer);
         for item in self {
             <u8>::sse_encode(item, serializer);
+        }
+    }
+}
+
+impl SseEncode for Vec<(FederationSelector, bool)> {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
+        <i32>::sse_encode(self.len() as _, serializer);
+        for item in self {
+            <(FederationSelector, bool)>::sse_encode(item, serializer);
         }
     }
 }
@@ -5157,6 +5203,14 @@ impl SseEncode for (Bolt11Invoice, OperationId) {
     fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
         <Bolt11Invoice>::sse_encode(self.0, serializer);
         <OperationId>::sse_encode(self.1, serializer);
+    }
+}
+
+impl SseEncode for (FederationSelector, bool) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
+        <FederationSelector>::sse_encode(self.0, serializer);
+        <bool>::sse_encode(self.1, serializer);
     }
 }
 

@@ -4,15 +4,38 @@ import 'package:carbine/main.dart';
 import 'package:carbine/theme.dart';
 import 'package:flutter/material.dart';
 
-class FederationSidebar extends StatelessWidget {
-  final List<FederationSelector> feds;
-  final void Function(FederationSelector) onFederationSelected;
+class FederationSidebar extends StatefulWidget {
+  final List<(FederationSelector, bool)> initialFederations;
+  final void Function(FederationSelector, bool) onFederationSelected;
 
   const FederationSidebar({
     super.key,
-    required this.feds,
+    required this.initialFederations,
     required this.onFederationSelected,
   });
+
+  @override
+  State<FederationSidebar> createState() => FederationSidebarState();
+}
+
+class FederationSidebarState extends State<FederationSidebar> {
+  late List<(FederationSelector, bool)> _feds;
+  int _refreshTrigger = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    _feds = widget.initialFederations;
+    _refreshFederations();
+  }
+
+  void _refreshFederations() async {
+    final feds = await federations();
+    setState(() {
+      _feds = feds;
+      _refreshTrigger++;
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -25,10 +48,11 @@ class FederationSidebar extends StatelessWidget {
           ],
         ),
         child:
-            feds.isEmpty
+            _feds.isEmpty
                 ? const Center(child: Text('No federations found'))
                 : ListView(
                   padding: EdgeInsets.zero,
+                  key: ValueKey(_refreshTrigger),
                   children: [
                     Container(
                       height: 80,
@@ -49,12 +73,13 @@ class FederationSidebar extends StatelessWidget {
                         ),
                       ),
                     ),
-                    ...feds.map(
+                    ..._feds.map(
                       (selector) => FederationListItem(
-                        fed: selector,
+                        fed: selector.$1,
+                        isRecovering: selector.$2,
                         onTap: () {
                           Navigator.of(context).pop();
-                          onFederationSelected(selector);
+                          widget.onFederationSelected(selector.$1, selector.$2);
                         },
                       ),
                     ),
@@ -67,9 +92,15 @@ class FederationSidebar extends StatelessWidget {
 
 class FederationListItem extends StatefulWidget {
   final FederationSelector fed;
+  final bool isRecovering;
   final VoidCallback onTap;
 
-  const FederationListItem({super.key, required this.fed, required this.onTap});
+  const FederationListItem({
+    super.key,
+    required this.fed,
+    required this.onTap,
+    required this.isRecovering,
+  });
 
   @override
   State<FederationListItem> createState() => _FederationListItemState();
@@ -89,7 +120,10 @@ class _FederationListItemState extends State<FederationListItem> {
   }
 
   Future<void> _initializeData() async {
-    await Future.wait([_loadBalance(), _loadFederationMeta()]);
+    print("FederationListItemState: _initializeData");
+    await _loadBalance();
+    await _loadFederationMeta();
+    if (!mounted) return;
     setState(() {
       isLoading = false;
     });
@@ -98,6 +132,7 @@ class _FederationListItemState extends State<FederationListItem> {
   Future<void> _loadFederationMeta() async {
     try {
       final meta = await getFederationMeta(inviteCode: widget.fed.inviteCode);
+      if (!mounted) return;
       setState(() {
         if (meta.$1.picture?.isNotEmpty ?? false) {
           federationImageUrl = meta.$1.picture;
@@ -113,11 +148,20 @@ class _FederationListItemState extends State<FederationListItem> {
   }
 
   Future<void> _loadBalance() async {
-    final bal = await balance(federationId: widget.fed.federationId);
-    setState(() {
-      balanceMsats = bal;
-      isLoading = false;
-    });
+    print("FederationListItemState: _loadBalance");
+    if (!widget.isRecovering) {
+      print("FederationListItemState: done recovering, getting balance");
+      final bal = await balance(federationId: widget.fed.federationId);
+      if (!mounted) return;
+      setState(() {
+        balanceMsats = bal;
+        isLoading = false;
+      });
+    } else {
+      print(
+        "FederationListItemState: we are still recovering, not getting balance",
+      );
+    }
   }
 
   bool get allGuardiansOnline =>
@@ -179,7 +223,9 @@ class _FederationListItemState extends State<FederationListItem> {
                       ),
                       const SizedBox(height: 4),
                       Text(
-                        isLoading
+                        widget.isRecovering
+                            ? "Recovering..."
+                            : isLoading
                             ? 'Loading...'
                             : formatBalance(balanceMsats, false),
                         style: Theme.of(context).textTheme.bodyMedium,
@@ -224,7 +270,7 @@ class _FederationListItemState extends State<FederationListItem> {
                         imageUrl: federationImageUrl,
                         joinable: false,
                         guardians: guardians,
-                        network: widget.fed.network,
+                        network: widget.fed.network!,
                       ),
                     );
                   },

@@ -7,7 +7,7 @@ import 'package:smooth_page_indicator/smooth_page_indicator.dart';
 import 'package:url_launcher/url_launcher.dart'; // Add to pubspec.yaml
 
 class WelcomeWidget extends StatefulWidget {
-  final void Function(FederationSelector fed) onJoin;
+  final void Function(FederationSelector fed, bool recovering) onJoin;
   const WelcomeWidget({super.key, required this.onJoin});
 
   @override

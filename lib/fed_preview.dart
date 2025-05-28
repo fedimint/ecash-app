@@ -42,7 +42,7 @@ class _FederationPreviewState extends State<FederationPreview> {
         );
         print('Successfully joined federation');
         if (mounted) {
-          Navigator.of(context).pop(fed);
+          Navigator.of(context).pop((fed, false));
         }
       } catch (e) {
         print('Could not join federation $e');
@@ -202,7 +202,7 @@ class _FederationPreviewState extends State<FederationPreview> {
                           recover: true,
                         );
                         if (mounted) {
-                          Navigator.of(context).pop(fed);
+                          Navigator.of(context).pop((fed, true));
                         }
                       } catch (e) {
                         print('Could not recover federation $e');

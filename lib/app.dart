@@ -8,7 +8,7 @@ import 'package:carbine/welcome.dart';
 import 'package:flutter/material.dart';
 
 class MyApp extends StatefulWidget {
-  final List<FederationSelector> initialFederations;
+  final List<(FederationSelector, bool)> initialFederations;
   const MyApp({super.key, required this.initialFederations});
 
   @override
@@ -16,9 +16,10 @@ class MyApp extends StatefulWidget {
 }
 
 class _MyAppState extends State<MyApp> {
-  late List<FederationSelector> _feds;
+  late List<(FederationSelector, bool)> _feds;
   int _refreshTrigger = 0;
   FederationSelector? _selectedFederation;
+  bool? _isRecovering;
   int _currentIndex = 0;
 
   @override
@@ -27,18 +28,20 @@ class _MyAppState extends State<MyApp> {
     _feds = widget.initialFederations;
 
     if (_feds.isNotEmpty) {
-      _selectedFederation = _feds.first;
+      _selectedFederation = _feds.first.$1;
+      _isRecovering = _feds.first.$2;
     }
   }
 
-  void _onJoinPressed(FederationSelector fed) {
-    _setSelectedFederation(fed);
+  void _onJoinPressed(FederationSelector fed, bool recovering) {
+    _setSelectedFederation(fed, recovering);
     _refreshFederations();
   }
 
-  void _setSelectedFederation(FederationSelector fed) {
+  void _setSelectedFederation(FederationSelector fed, bool recovering) {
     setState(() {
       _selectedFederation = fed;
+      _isRecovering = recovering;
       _currentIndex = 0;
     });
   }
@@ -52,16 +55,16 @@ class _MyAppState extends State<MyApp> {
   }
 
   void _onScanPressed(BuildContext context) async {
-    final result = await Navigator.push<FederationSelector>(
+    final result = await Navigator.push<(FederationSelector, bool)>(
       context,
       MaterialPageRoute(builder: (context) => const ScanQRPage()),
     );
 
     if (result != null) {
-      _setSelectedFederation(result);
+      _setSelectedFederation(result.$1, result.$2);
       _refreshFederations();
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text("Joined ${result.federationName}")),
+        SnackBar(content: Text("Joined ${result.$1.federationName}")),
       );
     } else {
       print('Result is null, not updating federations');
@@ -76,6 +79,7 @@ class _MyAppState extends State<MyApp> {
       bodyContent = Dashboard(
         key: ValueKey(_selectedFederation!.federationId),
         fed: _selectedFederation!,
+        recovering: _isRecovering!,
       );
     } else {
       if (_currentIndex == 1) {
@@ -114,7 +118,7 @@ class _MyAppState extends State<MyApp> {
               drawer: SafeArea(
                 child: FederationSidebar(
                   key: ValueKey(_refreshTrigger),
-                  feds: _feds,
+                  initialFederations: _feds,
                   onFederationSelected: _setSelectedFederation,
                 ),
               ),

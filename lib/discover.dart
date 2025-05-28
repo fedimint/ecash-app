@@ -4,7 +4,7 @@ import 'package:carbine/theme.dart';
 import 'package:flutter/material.dart';
 
 class Discover extends StatefulWidget {
-  final void Function(FederationSelector fed) onJoin;
+  final void Function(FederationSelector fed, bool recovering) onJoin;
   const Discover({super.key, required this.onJoin});
 
   @override
@@ -146,14 +146,14 @@ class _Discover extends State<Discover> {
                               imageUrl: meta.$1.picture,
                               joinable: true,
                               guardians: meta.$1.guardians,
-                              network: meta.$2.network,
+                              network: meta.$2.network!,
                             ),
                           );
 
                           await Future.delayed(
                             const Duration(milliseconds: 400),
                           );
-                          widget.onJoin(fed);
+                          widget.onJoin(fed.$1, fed.$2);
                           if (context.mounted) Navigator.pop(context);
                           ScaffoldMessenger.of(context).showSnackBar(
                             SnackBar(

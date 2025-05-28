@@ -3,7 +3,7 @@ import 'package:carbine/lib.dart';
 import 'package:flutter/material.dart';
 
 class SettingsScreen extends StatelessWidget {
-  final void Function(FederationSelector fed) onJoin;
+  final void Function(FederationSelector fed, bool recovering) onJoin;
   const SettingsScreen({super.key, required this.onJoin});
 
   @override

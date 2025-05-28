@@ -20,7 +20,7 @@ abstract class FederationConfig implements RustOpaqueInterface {
 
   InviteCode get inviteCode;
 
-  String get network;
+  String? get network;
 
   set clientConfig(ClientConfig clientConfig);
 
@@ -30,5 +30,5 @@ abstract class FederationConfig implements RustOpaqueInterface {
 
   set inviteCode(InviteCode inviteCode);
 
-  set network(String network);
+  set network(String? network);
 }
