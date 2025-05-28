@@ -189,6 +189,8 @@ abstract class RustLibApi extends BaseApi {
     required FederationId federationId,
     required BigInt amountMsatsWithFees,
     required BigInt amountMsatsWithoutFees,
+    required SafeUrl gateway,
+    required bool isLnv2,
   });
 
   Future<(String, BigInt)> crateMultimintRefund({
@@ -200,6 +202,8 @@ abstract class RustLibApi extends BaseApi {
     required Multimint that,
     required FederationId federationId,
     required String invoice,
+    required SafeUrl gateway,
+    required bool isLnv2,
   });
 
   Future<void> crateMultimintUpdateFederationsFromNostr({
@@ -331,6 +335,8 @@ abstract class RustLibApi extends BaseApi {
     required FederationId federationId,
     required BigInt amountMsatsWithFees,
     required BigInt amountMsatsWithoutFees,
+    required String gateway,
+    required bool isLnv2,
   });
 
   Future<(String, BigInt)> crateRefund({required FederationId federationId});
@@ -340,7 +346,7 @@ abstract class RustLibApi extends BaseApi {
     required String ecash,
   });
 
-  Future<(String, BigInt, BigInt, BigInt)> crateSelectReceiveGateway({
+  Future<(String, BigInt, bool)> crateSelectReceiveGateway({
     required FederationId federationId,
     required BigInt amountMsats,
   });
@@ -348,6 +354,8 @@ abstract class RustLibApi extends BaseApi {
   Future<OperationId> crateSend({
     required FederationId federationId,
     required String invoice,
+    required String gateway,
+    required bool isLnv2,
   });
 
   Future<(OperationId, String, BigInt)> crateSendEcash({
@@ -480,6 +488,12 @@ abstract class RustLibApi extends BaseApi {
 
   CrossPlatformFinalizerArg
   get rust_arc_decrement_strong_count_ReissueExternalNotesStatePtr;
+
+  RustArcIncrementStrongCountFnType get rust_arc_increment_strong_count_SafeUrl;
+
+  RustArcDecrementStrongCountFnType get rust_arc_decrement_strong_count_SafeUrl;
+
+  CrossPlatformFinalizerArg get rust_arc_decrement_strong_count_SafeUrlPtr;
 
   RustArcIncrementStrongCountFnType
   get rust_arc_increment_strong_count_SpendOobState;
@@ -1355,6 +1369,8 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
     required FederationId federationId,
     required BigInt amountMsatsWithFees,
     required BigInt amountMsatsWithoutFees,
+    required SafeUrl gateway,
+    required bool isLnv2,
   }) {
     return handler.executeNormal(
       NormalTask(
@@ -1370,6 +1386,11 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           );
           sse_encode_u_64(amountMsatsWithFees, serializer);
           sse_encode_u_64(amountMsatsWithoutFees, serializer);
+          sse_encode_Auto_Owned_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerSafeUrl(
+            gateway,
+            serializer,
+          );
+          sse_encode_bool(isLnv2, serializer);
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
@@ -1388,6 +1409,8 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           federationId,
           amountMsatsWithFees,
           amountMsatsWithoutFees,
+          gateway,
+          isLnv2,
         ],
         apiImpl: this,
       ),
@@ -1401,6 +1424,8 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
       "federationId",
       "amountMsatsWithFees",
       "amountMsatsWithoutFees",
+      "gateway",
+      "isLnv2",
     ],
   );
 
@@ -1449,6 +1474,8 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
     required Multimint that,
     required FederationId federationId,
     required String invoice,
+    required SafeUrl gateway,
+    required bool isLnv2,
   }) {
     return handler.executeNormal(
       NormalTask(
@@ -1463,6 +1490,11 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
             serializer,
           );
           sse_encode_String(invoice, serializer);
+          sse_encode_Auto_Owned_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerSafeUrl(
+            gateway,
+            serializer,
+          );
+          sse_encode_bool(isLnv2, serializer);
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
@@ -1476,7 +1508,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           decodeErrorData: sse_decode_AnyhowException,
         ),
         constMeta: kCrateMultimintSendConstMeta,
-        argValues: [that, federationId, invoice],
+        argValues: [that, federationId, invoice, gateway, isLnv2],
         apiImpl: this,
       ),
     );
@@ -1484,7 +1516,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
 
   TaskConstMeta get kCrateMultimintSendConstMeta => const TaskConstMeta(
     debugName: "Multimint_send",
-    argNames: ["that", "federationId", "invoice"],
+    argNames: ["that", "federationId", "invoice", "gateway", "isLnv2"],
   );
 
   @override
@@ -2503,6 +2535,8 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
     required FederationId federationId,
     required BigInt amountMsatsWithFees,
     required BigInt amountMsatsWithoutFees,
+    required String gateway,
+    required bool isLnv2,
   }) {
     return handler.executeNormal(
       NormalTask(
@@ -2514,6 +2548,8 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           );
           sse_encode_u_64(amountMsatsWithFees, serializer);
           sse_encode_u_64(amountMsatsWithoutFees, serializer);
+          sse_encode_String(gateway, serializer);
+          sse_encode_bool(isLnv2, serializer);
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
@@ -2527,7 +2563,13 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           decodeErrorData: sse_decode_AnyhowException,
         ),
         constMeta: kCrateReceiveConstMeta,
-        argValues: [federationId, amountMsatsWithFees, amountMsatsWithoutFees],
+        argValues: [
+          federationId,
+          amountMsatsWithFees,
+          amountMsatsWithoutFees,
+          gateway,
+          isLnv2,
+        ],
         apiImpl: this,
       ),
     );
@@ -2535,7 +2577,13 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
 
   TaskConstMeta get kCrateReceiveConstMeta => const TaskConstMeta(
     debugName: "receive",
-    argNames: ["federationId", "amountMsatsWithFees", "amountMsatsWithoutFees"],
+    argNames: [
+      "federationId",
+      "amountMsatsWithFees",
+      "amountMsatsWithoutFees",
+      "gateway",
+      "isLnv2",
+    ],
   );
 
   @override
@@ -2608,7 +2656,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   );
 
   @override
-  Future<(String, BigInt, BigInt, BigInt)> crateSelectReceiveGateway({
+  Future<(String, BigInt, bool)> crateSelectReceiveGateway({
     required FederationId federationId,
     required BigInt amountMsats,
   }) {
@@ -2629,7 +2677,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           );
         },
         codec: SseCodec(
-          decodeSuccessData: sse_decode_record_string_u_64_u_64_u_64,
+          decodeSuccessData: sse_decode_record_string_u_64_bool,
           decodeErrorData: sse_decode_AnyhowException,
         ),
         constMeta: kCrateSelectReceiveGatewayConstMeta,
@@ -2648,6 +2696,8 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   Future<OperationId> crateSend({
     required FederationId federationId,
     required String invoice,
+    required String gateway,
+    required bool isLnv2,
   }) {
     return handler.executeNormal(
       NormalTask(
@@ -2658,6 +2708,8 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
             serializer,
           );
           sse_encode_String(invoice, serializer);
+          sse_encode_String(gateway, serializer);
+          sse_encode_bool(isLnv2, serializer);
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
@@ -2671,7 +2723,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           decodeErrorData: sse_decode_AnyhowException,
         ),
         constMeta: kCrateSendConstMeta,
-        argValues: [federationId, invoice],
+        argValues: [federationId, invoice, gateway, isLnv2],
         apiImpl: this,
       ),
     );
@@ -2679,7 +2731,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
 
   TaskConstMeta get kCrateSendConstMeta => const TaskConstMeta(
     debugName: "send",
-    argNames: ["federationId", "invoice"],
+    argNames: ["federationId", "invoice", "gateway", "isLnv2"],
   );
 
   @override
@@ -2934,6 +2986,14 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
       wire.rust_arc_decrement_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerReissueExternalNotesState;
 
   RustArcIncrementStrongCountFnType
+  get rust_arc_increment_strong_count_SafeUrl =>
+      wire.rust_arc_increment_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerSafeUrl;
+
+  RustArcDecrementStrongCountFnType
+  get rust_arc_decrement_strong_count_SafeUrl =>
+      wire.rust_arc_decrement_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerSafeUrl;
+
+  RustArcIncrementStrongCountFnType
   get rust_arc_increment_strong_count_SpendOobState =>
       wire.rust_arc_increment_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerSpendOOBState;
 
@@ -3068,6 +3128,15 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
     return ReissueExternalNotesStateImpl.frbInternalDcoDecode(
       raw as List<dynamic>,
     );
+  }
+
+  @protected
+  SafeUrl
+  dco_decode_Auto_Owned_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerSafeUrl(
+    dynamic raw,
+  ) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    return SafeUrlImpl.frbInternalDcoDecode(raw as List<dynamic>);
   }
 
   @protected
@@ -3284,6 +3353,15 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   }
 
   @protected
+  SafeUrl
+  dco_decode_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerSafeUrl(
+    dynamic raw,
+  ) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    return SafeUrlImpl.frbInternalDcoDecode(raw as List<dynamic>);
+  }
+
+  @protected
   SpendOobState
   dco_decode_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerSpendOOBState(
     dynamic raw,
@@ -3407,17 +3485,16 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   PaymentPreview dco_decode_payment_preview(dynamic raw) {
     // Codec=Dco (DartCObject based), see doc to use other codecs
     final arr = raw as List<dynamic>;
-    if (arr.length != 8)
-      throw Exception('unexpected arr length: expect 8 but see ${arr.length}');
+    if (arr.length != 7)
+      throw Exception('unexpected arr length: expect 7 but see ${arr.length}');
     return PaymentPreview(
       amountMsats: dco_decode_u_64(arr[0]),
       paymentHash: dco_decode_String(arr[1]),
       network: dco_decode_String(arr[2]),
       invoice: dco_decode_String(arr[3]),
       gateway: dco_decode_String(arr[4]),
-      sendFeeBase: dco_decode_u_64(arr[5]),
-      sendFeePpm: dco_decode_u_64(arr[6]),
-      fedFee: dco_decode_u_64(arr[7]),
+      amountWithFees: dco_decode_u_64(arr[5]),
+      isLnv2: dco_decode_bool(arr[6]),
     );
   }
 
@@ -3510,19 +3587,16 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   }
 
   @protected
-  (String, BigInt, BigInt, BigInt) dco_decode_record_string_u_64_u_64_u_64(
-    dynamic raw,
-  ) {
+  (String, BigInt, bool) dco_decode_record_string_u_64_bool(dynamic raw) {
     // Codec=Dco (DartCObject based), see doc to use other codecs
     final arr = raw as List<dynamic>;
-    if (arr.length != 4) {
-      throw Exception('Expected 4 elements, got ${arr.length}');
+    if (arr.length != 3) {
+      throw Exception('Expected 3 elements, got ${arr.length}');
     }
     return (
       dco_decode_String(arr[0]),
       dco_decode_u_64(arr[1]),
-      dco_decode_u_64(arr[2]),
-      dco_decode_u_64(arr[3]),
+      dco_decode_bool(arr[2]),
     );
   }
 
@@ -3723,6 +3797,18 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   ) {
     // Codec=Sse (Serialization based), see doc to use other codecs
     return ReissueExternalNotesStateImpl.frbInternalSseDecode(
+      sse_decode_usize(deserializer),
+      sse_decode_i_32(deserializer),
+    );
+  }
+
+  @protected
+  SafeUrl
+  sse_decode_Auto_Owned_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerSafeUrl(
+    SseDeserializer deserializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    return SafeUrlImpl.frbInternalSseDecode(
       sse_decode_usize(deserializer),
       sse_decode_i_32(deserializer),
     );
@@ -4005,6 +4091,18 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   }
 
   @protected
+  SafeUrl
+  sse_decode_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerSafeUrl(
+    SseDeserializer deserializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    return SafeUrlImpl.frbInternalSseDecode(
+      sse_decode_usize(deserializer),
+      sse_decode_i_32(deserializer),
+    );
+  }
+
+  @protected
   SpendOobState
   sse_decode_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerSpendOOBState(
     SseDeserializer deserializer,
@@ -4178,18 +4276,16 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
     var var_network = sse_decode_String(deserializer);
     var var_invoice = sse_decode_String(deserializer);
     var var_gateway = sse_decode_String(deserializer);
-    var var_sendFeeBase = sse_decode_u_64(deserializer);
-    var var_sendFeePpm = sse_decode_u_64(deserializer);
-    var var_fedFee = sse_decode_u_64(deserializer);
+    var var_amountWithFees = sse_decode_u_64(deserializer);
+    var var_isLnv2 = sse_decode_bool(deserializer);
     return PaymentPreview(
       amountMsats: var_amountMsats,
       paymentHash: var_paymentHash,
       network: var_network,
       invoice: var_invoice,
       gateway: var_gateway,
-      sendFeeBase: var_sendFeeBase,
-      sendFeePpm: var_sendFeePpm,
-      fedFee: var_fedFee,
+      amountWithFees: var_amountWithFees,
+      isLnv2: var_isLnv2,
     );
   }
 
@@ -4265,15 +4361,14 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   }
 
   @protected
-  (String, BigInt, BigInt, BigInt) sse_decode_record_string_u_64_u_64_u_64(
+  (String, BigInt, bool) sse_decode_record_string_u_64_bool(
     SseDeserializer deserializer,
   ) {
     // Codec=Sse (Serialization based), see doc to use other codecs
     var var_field0 = sse_decode_String(deserializer);
     var var_field1 = sse_decode_u_64(deserializer);
-    var var_field2 = sse_decode_u_64(deserializer);
-    var var_field3 = sse_decode_u_64(deserializer);
-    return (var_field0, var_field1, var_field2, var_field3);
+    var var_field2 = sse_decode_bool(deserializer);
+    return (var_field0, var_field1, var_field2);
   }
 
   @protected
@@ -4496,6 +4591,19 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
     // Codec=Sse (Serialization based), see doc to use other codecs
     sse_encode_usize(
       (self as ReissueExternalNotesStateImpl).frbInternalSseEncode(move: true),
+      serializer,
+    );
+  }
+
+  @protected
+  void
+  sse_encode_Auto_Owned_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerSafeUrl(
+    SafeUrl self,
+    SseSerializer serializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    sse_encode_usize(
+      (self as SafeUrlImpl).frbInternalSseEncode(move: true),
       serializer,
     );
   }
@@ -4801,6 +4909,19 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
 
   @protected
   void
+  sse_encode_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerSafeUrl(
+    SafeUrl self,
+    SseSerializer serializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    sse_encode_usize(
+      (self as SafeUrlImpl).frbInternalSseEncode(move: null),
+      serializer,
+    );
+  }
+
+  @protected
+  void
   sse_encode_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerSpendOOBState(
     SpendOobState self,
     SseSerializer serializer,
@@ -4964,9 +5085,8 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
     sse_encode_String(self.network, serializer);
     sse_encode_String(self.invoice, serializer);
     sse_encode_String(self.gateway, serializer);
-    sse_encode_u_64(self.sendFeeBase, serializer);
-    sse_encode_u_64(self.sendFeePpm, serializer);
-    sse_encode_u_64(self.fedFee, serializer);
+    sse_encode_u_64(self.amountWithFees, serializer);
+    sse_encode_bool(self.isLnv2, serializer);
   }
 
   @protected
@@ -5043,15 +5163,14 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   }
 
   @protected
-  void sse_encode_record_string_u_64_u_64_u_64(
-    (String, BigInt, BigInt, BigInt) self,
+  void sse_encode_record_string_u_64_bool(
+    (String, BigInt, bool) self,
     SseSerializer serializer,
   ) {
     // Codec=Sse (Serialization based), see doc to use other codecs
     sse_encode_String(self.$1, serializer);
     sse_encode_u_64(self.$2, serializer);
-    sse_encode_u_64(self.$3, serializer);
-    sse_encode_u_64(self.$4, serializer);
+    sse_encode_bool(self.$3, serializer);
   }
 
   @protected
@@ -5450,11 +5569,15 @@ class MultimintImpl extends RustOpaque implements Multimint {
     required FederationId federationId,
     required BigInt amountMsatsWithFees,
     required BigInt amountMsatsWithoutFees,
+    required SafeUrl gateway,
+    required bool isLnv2,
   }) => RustLib.instance.api.crateMultimintReceive(
     that: this,
     federationId: federationId,
     amountMsatsWithFees: amountMsatsWithFees,
     amountMsatsWithoutFees: amountMsatsWithoutFees,
+    gateway: gateway,
+    isLnv2: isLnv2,
   );
 
   /// Refund the full balance on-chain to the Mutinynet faucet.
@@ -5470,10 +5593,14 @@ class MultimintImpl extends RustOpaque implements Multimint {
   Future<OperationId> send({
     required FederationId federationId,
     required String invoice,
+    required SafeUrl gateway,
+    required bool isLnv2,
   }) => RustLib.instance.api.crateMultimintSend(
     that: this,
     federationId: federationId,
     invoice: invoice,
+    gateway: gateway,
+    isLnv2: isLnv2,
   );
 
   Future<void> updateFederationsFromNostr() =>
@@ -5614,6 +5741,26 @@ class ReissueExternalNotesStateImpl extends RustOpaque
             .instance
             .api
             .rust_arc_decrement_strong_count_ReissueExternalNotesStatePtr,
+  );
+}
+
+@sealed
+class SafeUrlImpl extends RustOpaque implements SafeUrl {
+  // Not to be used by end users
+  SafeUrlImpl.frbInternalDcoDecode(List<dynamic> wire)
+    : super.frbInternalDcoDecode(wire, _kStaticData);
+
+  // Not to be used by end users
+  SafeUrlImpl.frbInternalSseDecode(BigInt ptr, int externalSizeOnNative)
+    : super.frbInternalSseDecode(ptr, externalSizeOnNative, _kStaticData);
+
+  static final _kStaticData = RustArcStaticData(
+    rustArcIncrementStrongCount:
+        RustLib.instance.api.rust_arc_increment_strong_count_SafeUrl,
+    rustArcDecrementStrongCount:
+        RustLib.instance.api.rust_arc_decrement_strong_count_SafeUrl,
+    rustArcDecrementStrongCountPtr:
+        RustLib.instance.api.rust_arc_decrement_strong_count_SafeUrlPtr,
   );
 }
 

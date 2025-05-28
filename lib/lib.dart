@@ -6,7 +6,7 @@
 import 'frb_generated.dart';
 import 'package:flutter_rust_bridge/flutter_rust_bridge_for_generated.dart';
 
-// These functions are ignored because they are not marked as `pub`: `add_relay`, `await_ecash_reissue`, `await_ecash_send`, `await_receive_lnv1`, `await_receive_lnv2`, `await_send_lnv1`, `await_send_lnv2`, `build_client`, `create_nostr_client`, `derive_federation_secret`, `get_client_database`, `get_federation_meta`, `get_multimint`, `has_federation`, `lnv1_select_gateway`, `lnv1_update_gateway_cache`, `lnv2_select_gateway`, `load_clients`, `new`, `parse_content`, `parse_ecash`, `parse_federation_id`, `parse_federation_name`, `parse_invite_codes`, `parse_modules`, `parse_network`, `parse_picture`, `pay_lnv1`, `pay_lnv2`, `receive_lnv1`, `receive_lnv2`, `reissue_ecash`, `select_receive_gateway`, `select_send_gateway`, `send_ecash`, `transactions`
+// These functions are ignored because they are not marked as `pub`: `add_relay`, `await_ecash_reissue`, `await_ecash_send`, `await_receive_lnv1`, `await_receive_lnv2`, `await_send_lnv1`, `await_send_lnv2`, `build_client`, `compute_receive_amount`, `compute_send_amount`, `create_nostr_client`, `derive_federation_secret`, `get_client_database`, `get_federation_meta`, `get_multimint`, `has_federation`, `lnv1_select_gateway`, `lnv1_update_gateway_cache`, `lnv2_select_gateway`, `load_clients`, `new`, `parse_content`, `parse_ecash`, `parse_federation_id`, `parse_federation_name`, `parse_invite_codes`, `parse_modules`, `parse_network`, `parse_picture`, `pay_lnv1`, `pay_lnv2`, `receive_amount_after_fees`, `receive_lnv1`, `receive_lnv2`, `reissue_ecash`, `select_receive_gateway`, `select_send_gateway`, `send_ecash`, `transactions`
 // These types are ignored because they are neither used by any `pub` functions nor (for structs and enums) marked `#[frb(unignore)]`: `ClientType`, `MultimintCreation`
 // These function are ignored because they are on traits that is not defined in current crate (put an empty `#[frb]` on it to unignore): `assert_receiver_is_total_eq`, `assert_receiver_is_total_eq`, `assert_receiver_is_total_eq`, `assert_receiver_is_total_eq`, `clone`, `clone`, `clone`, `clone`, `eq`, `eq`, `eq`, `eq`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `try_from`
 
@@ -47,13 +47,17 @@ Future<(String, OperationId, String, String, BigInt)> receive({
   required FederationId federationId,
   required BigInt amountMsatsWithFees,
   required BigInt amountMsatsWithoutFees,
+  required String gateway,
+  required bool isLnv2,
 }) => RustLib.instance.api.crateReceive(
   federationId: federationId,
   amountMsatsWithFees: amountMsatsWithFees,
   amountMsatsWithoutFees: amountMsatsWithoutFees,
+  gateway: gateway,
+  isLnv2: isLnv2,
 );
 
-Future<(String, BigInt, BigInt, BigInt)> selectReceiveGateway({
+Future<(String, BigInt, bool)> selectReceiveGateway({
   required FederationId federationId,
   required BigInt amountMsats,
 }) => RustLib.instance.api.crateSelectReceiveGateway(
@@ -74,9 +78,13 @@ Future<OperationId> sendLnaddress({
 Future<OperationId> send({
   required FederationId federationId,
   required String invoice,
+  required String gateway,
+  required bool isLnv2,
 }) => RustLib.instance.api.crateSend(
   federationId: federationId,
   invoice: invoice,
+  gateway: gateway,
+  isLnv2: isLnv2,
 );
 
 Future<FinalSendOperationState> awaitSend({
@@ -235,6 +243,8 @@ abstract class Multimint implements RustOpaqueInterface {
     required FederationId federationId,
     required BigInt amountMsatsWithFees,
     required BigInt amountMsatsWithoutFees,
+    required SafeUrl gateway,
+    required bool isLnv2,
   });
 
   /// Refund the full balance on-chain to the Mutinynet faucet.
@@ -246,6 +256,8 @@ abstract class Multimint implements RustOpaqueInterface {
   Future<OperationId> send({
     required FederationId federationId,
     required String invoice,
+    required SafeUrl gateway,
+    required bool isLnv2,
   });
 
   Future<void> updateFederationsFromNostr();
@@ -287,6 +299,9 @@ abstract class PublicFederation implements RustOpaqueInterface {
 
 // Rust type: RustOpaqueMoi<flutter_rust_bridge::for_generated::RustAutoOpaqueInner<ReissueExternalNotesState>>
 abstract class ReissueExternalNotesState implements RustOpaqueInterface {}
+
+// Rust type: RustOpaqueMoi<flutter_rust_bridge::for_generated::RustAutoOpaqueInner<SafeUrl>>
+abstract class SafeUrl implements RustOpaqueInterface {}
 
 // Rust type: RustOpaqueMoi<flutter_rust_bridge::for_generated::RustAutoOpaqueInner<SpendOOBState>>
 abstract class SpendOobState implements RustOpaqueInterface {}
@@ -335,9 +350,8 @@ class PaymentPreview {
   final String network;
   final String invoice;
   final String gateway;
-  final BigInt sendFeeBase;
-  final BigInt sendFeePpm;
-  final BigInt fedFee;
+  final BigInt amountWithFees;
+  final bool isLnv2;
 
   const PaymentPreview({
     required this.amountMsats,
@@ -345,9 +359,8 @@ class PaymentPreview {
     required this.network,
     required this.invoice,
     required this.gateway,
-    required this.sendFeeBase,
-    required this.sendFeePpm,
-    required this.fedFee,
+    required this.amountWithFees,
+    required this.isLnv2,
   });
 
   @override
@@ -357,9 +370,8 @@ class PaymentPreview {
       network.hashCode ^
       invoice.hashCode ^
       gateway.hashCode ^
-      sendFeeBase.hashCode ^
-      sendFeePpm.hashCode ^
-      fedFee.hashCode;
+      amountWithFees.hashCode ^
+      isLnv2.hashCode;
 
   @override
   bool operator ==(Object other) =>
@@ -371,9 +383,8 @@ class PaymentPreview {
           network == other.network &&
           invoice == other.invoice &&
           gateway == other.gateway &&
-          sendFeeBase == other.sendFeeBase &&
-          sendFeePpm == other.sendFeePpm &&
-          fedFee == other.fedFee;
+          amountWithFees == other.amountWithFees &&
+          isLnv2 == other.isLnv2;
 }
 
 class Transaction {

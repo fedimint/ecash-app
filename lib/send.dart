@@ -7,11 +7,15 @@ class SendPayment extends StatefulWidget {
   final String? invoice;
   final String? lnAddress;
   final BigInt amountMsats;
+  final String? gateway;
+  final bool? isLnv2;
 
   const SendPayment({
     super.key,
     required this.fed,
     required this.amountMsats,
+    this.gateway,
+    this.isLnv2,
     this.invoice,
     this.lnAddress,
   });
@@ -34,9 +38,12 @@ class _SendPaymentState extends State<SendPayment> {
       final operationId = await send(
         federationId: widget.fed.federationId,
         invoice: widget.invoice!,
+        gateway: widget.gateway!,
+        isLnv2: widget.isLnv2!,
       );
       return operationId;
     } else {
+      // When sending via LN address, gateway is selected internally
       final operationId = await sendLnaddress(
         federationId: widget.fed.federationId,
         amountMsats: widget.amountMsats,
