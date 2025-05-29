@@ -21,7 +21,14 @@ class _SeedPhraseInputState extends State<SeedPhraseInput> {
   @override
   void initState() {
     super.initState();
-    controllers = List.generate(12, (_) => TextEditingController());
+    controllers = List.generate(12, (index) {
+      final controller = TextEditingController();
+      controller.addListener(() {
+        setState(() {}); // Rebuild when text changes to update border styling
+      });
+      return controller;
+    });
+
     focusNodes = List.generate(12, (_) => FocusNode());
   }
 
@@ -34,6 +41,24 @@ class _SeedPhraseInputState extends State<SeedPhraseInput> {
       f.dispose();
     }
     super.dispose();
+  }
+
+  Color getBorderColor(int index, ThemeData theme) {
+    final word = controllers[index].text.trim().toLowerCase();
+    if (word.isEmpty) {
+      return theme.colorScheme.primary.withOpacity(0.3);
+    } else if (!widget.validWords.contains(word)) {
+      return Colors.red;
+    } else {
+      return theme.colorScheme.primary;
+    }
+  }
+
+  double getBorderWidth(int index) {
+    final word = controllers[index].text.trim().toLowerCase();
+    if (word.isEmpty) return 1;
+    if (!widget.validWords.contains(word)) return 2;
+    return 2.5; // thicker border for valid words
   }
 
   @override
@@ -75,7 +100,8 @@ class _SeedPhraseInputState extends State<SeedPhraseInput> {
                         color: theme.colorScheme.surface,
                         borderRadius: BorderRadius.circular(12),
                         border: Border.all(
-                          color: theme.colorScheme.primary.withOpacity(0.3),
+                          color: getBorderColor(index, theme),
+                          width: getBorderWidth(index),
                         ),
                       ),
                       padding: const EdgeInsets.symmetric(horizontal: 12),
