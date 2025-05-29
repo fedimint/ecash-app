@@ -24,7 +24,7 @@ class _SeedPhraseInputState extends State<SeedPhraseInput> {
     controllers = List.generate(12, (index) {
       final controller = TextEditingController();
       controller.addListener(() {
-        setState(() {}); // Rebuild when text changes to update border styling
+        setState(() {}); // Update UI on input changes
       });
       return controller;
     });
@@ -43,6 +43,13 @@ class _SeedPhraseInputState extends State<SeedPhraseInput> {
     super.dispose();
   }
 
+  bool get isValidSeed {
+    return controllers.every((c) {
+      final word = c.text.trim().toLowerCase();
+      return word.isNotEmpty && widget.validWords.contains(word);
+    });
+  }
+
   Color getBorderColor(int index, ThemeData theme) {
     final word = controllers[index].text.trim().toLowerCase();
     if (word.isEmpty) {
@@ -58,7 +65,7 @@ class _SeedPhraseInputState extends State<SeedPhraseInput> {
     final word = controllers[index].text.trim().toLowerCase();
     if (word.isEmpty) return 1;
     if (!widget.validWords.contains(word)) return 2;
-    return 2.5; // thicker border for valid words
+    return 2.5;
   }
 
   @override
@@ -193,17 +200,24 @@ class _SeedPhraseInputState extends State<SeedPhraseInput> {
                   label: const Text('Confirm'),
                   style: ElevatedButton.styleFrom(
                     padding: const EdgeInsets.symmetric(vertical: 16),
-                    backgroundColor: theme.colorScheme.primary,
-                    foregroundColor: Colors.black,
+                    backgroundColor:
+                        isValidSeed
+                            ? theme.colorScheme.primary
+                            : theme.colorScheme.primary.withOpacity(0.3),
+                    foregroundColor:
+                        isValidSeed ? Colors.black : Colors.black45,
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(16),
                     ),
                   ),
-                  onPressed: () {
-                    final words =
-                        controllers.map((c) => c.text.trim()).toList();
-                    widget.onConfirm(words);
-                  },
+                  onPressed:
+                      isValidSeed
+                          ? () {
+                            final words =
+                                controllers.map((c) => c.text.trim()).toList();
+                            widget.onConfirm(words);
+                          }
+                          : null,
                 ),
               ),
             ],
