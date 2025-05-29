@@ -11,8 +11,9 @@ import 'package:intl/intl.dart';
 
 class Dashboard extends StatefulWidget {
   final FederationSelector fed;
+  final bool recovering;
 
-  const Dashboard({super.key, required this.fed});
+  const Dashboard({super.key, required this.fed, required this.recovering});
 
   @override
   State<Dashboard> createState() => _DashboardState();
@@ -36,12 +37,21 @@ class _DashboardState extends State<Dashboard> {
 
   VoidCallback? _pendingAction;
 
+  late bool recovering;
+
   @override
   void initState() {
     super.initState();
+    setState(() {
+      recovering = widget.recovering;
+    });
     _scrollController.addListener(_onScroll);
     _loadBalance();
     _loadTransactions();
+
+    if (recovering) {
+      _loadFederation();
+    }
   }
 
   @override
@@ -87,50 +97,63 @@ class _DashboardState extends State<Dashboard> {
     }
   }
 
-  Future<void> _loadBalance() async {
-    final bal = await balance(federationId: widget.fed.federationId);
+  Future<void> _loadFederation() async {
+    await waitForRecovery(inviteCode: widget.fed.inviteCode);
     setState(() {
-      balanceMsats = bal;
-      isLoadingBalance = false;
+      recovering = false;
     });
+
+    _loadBalance();
+    _loadTransactions();
+  }
+
+  Future<void> _loadBalance() async {
+    if (!recovering) {
+      final bal = await balance(federationId: widget.fed.federationId);
+      setState(() {
+        balanceMsats = bal;
+        isLoadingBalance = false;
+      });
+    }
   }
 
   Future<void> _loadTransactions({bool loadMore = false}) async {
-    if (_isFetchingMore) return;
-    _isFetchingMore = true;
+    if (!recovering) {
+      if (_isFetchingMore) return;
+      _isFetchingMore = true;
 
-    if (!loadMore) {
+      if (!loadMore) {
+        setState(() {
+          isLoadingTransactions = true;
+          _transactions.clear();
+          _hasMore = true;
+          _lastTransaction = null;
+        });
+      }
+
+      final newTxs = await transactions(
+        federationId: widget.fed.federationId,
+        timestamp: loadMore ? _lastTransaction?.timestamp : null,
+        operationId: loadMore ? _lastTransaction?.operationId : null,
+        modules: _getKindsForSelectedPaymentType(),
+      );
+
       setState(() {
-        isLoadingTransactions = true;
-        _transactions.clear();
-        _hasMore = true;
-        _lastTransaction = null;
+        _transactions.addAll(newTxs);
+        if (newTxs.length < 10) {
+          _hasMore = false;
+        }
+        if (newTxs.isNotEmpty) {
+          _lastTransaction = newTxs.last;
+        }
+        isLoadingTransactions = false;
+        _isFetchingMore = false;
       });
     }
-
-    final newTxs = await transactions(
-      federationId: widget.fed.federationId,
-      timestamp: loadMore ? _lastTransaction?.timestamp : null,
-      operationId: loadMore ? _lastTransaction?.operationId : null,
-      modules: _getKindsForSelectedPaymentType(),
-    );
-
-    setState(() {
-      _transactions.addAll(newTxs);
-      if (newTxs.length < 10) {
-        _hasMore = false;
-      }
-      if (newTxs.isNotEmpty) {
-        _lastTransaction = newTxs.last;
-      }
-      isLoadingTransactions = false;
-      _isFetchingMore = false;
-    });
   }
 
   void _onSendPressed() async {
     if (_selectedPaymentType == PaymentType.lightning) {
-      //await Navigator.push(context, MaterialPageRoute(builder: (context) => ScanQRPage(selectedFed: widget.fed)));
       await showCarbineModalBottomSheet(
         context: context,
         child: PaymentMethodSelector(fed: widget.fed),
@@ -269,7 +292,8 @@ class _DashboardState extends State<Dashboard> {
                     ),
                     textAlign: TextAlign.center,
                   ),
-                  if (widget.fed.network.toLowerCase() != 'bitcoin')
+                  if (widget.fed.network != null &&
+                      widget.fed.network!.toLowerCase() != 'bitcoin')
                     Padding(
                       padding: const EdgeInsets.only(top: 8.0),
                       child: Text(
@@ -285,24 +309,35 @@ class _DashboardState extends State<Dashboard> {
               ),
             ),
             const SizedBox(height: 48),
-            if (isLoadingBalance)
-              const CircularProgressIndicator()
-            else
-              GestureDetector(
-                onTap: () {
-                  setState(() {
-                    showMsats = !showMsats;
-                  });
-                },
-                child: Text(
-                  formatBalance(balanceMsats, showMsats),
-                  style: Theme.of(context).textTheme.displayLarge?.copyWith(
-                    color: Theme.of(context).colorScheme.primary,
-                    fontWeight: FontWeight.bold,
+            if (!recovering) ...[
+              if (isLoadingBalance)
+                const CircularProgressIndicator()
+              else
+                GestureDetector(
+                  onTap: () {
+                    setState(() {
+                      showMsats = !showMsats;
+                    });
+                  },
+                  child: Text(
+                    formatBalance(balanceMsats, showMsats),
+                    style: Theme.of(context).textTheme.displayLarge?.copyWith(
+                      color: Theme.of(context).colorScheme.primary,
+                      fontWeight: FontWeight.bold,
+                    ),
+                    textAlign: TextAlign.center,
                   ),
-                  textAlign: TextAlign.center,
                 ),
+            ] else ...[
+              Text(
+                "Recovering...",
+                style: Theme.of(context).textTheme.displaySmall?.copyWith(
+                  color: Theme.of(context).colorScheme.primary,
+                  fontWeight: FontWeight.bold,
+                ),
+                textAlign: TextAlign.center,
               ),
+            ],
             const SizedBox(height: 48),
             Align(
               alignment: Alignment.centerLeft,
@@ -314,87 +349,91 @@ class _DashboardState extends State<Dashboard> {
               ),
             ),
             const SizedBox(height: 16),
-            isLoadingTransactions
-                ? const CircularProgressIndicator()
-                : _transactions.isEmpty
-                ? Text(_getNoTransactionsMessage())
-                : SizedBox(
-                  height: 300,
-                  child: ListView.builder(
-                    controller: _scrollController,
-                    itemCount: _transactions.length + (_hasMore ? 1 : 0),
-                    itemBuilder: (context, index) {
-                      if (index == _transactions.length) {
-                        return const Padding(
-                          padding: EdgeInsets.all(8.0),
-                          child: Center(child: CircularProgressIndicator()),
+            if (!recovering) ...[
+              isLoadingTransactions
+                  ? const CircularProgressIndicator()
+                  : _transactions.isEmpty
+                  ? Text(_getNoTransactionsMessage())
+                  : SizedBox(
+                    height: 300,
+                    child: ListView.builder(
+                      controller: _scrollController,
+                      itemCount: _transactions.length + (_hasMore ? 1 : 0),
+                      itemBuilder: (context, index) {
+                        if (index == _transactions.length) {
+                          return const Padding(
+                            padding: EdgeInsets.all(8.0),
+                            child: Center(child: CircularProgressIndicator()),
+                          );
+                        }
+
+                        final tx = _transactions[index];
+                        final isIncoming = tx.received;
+                        final date = DateTime.fromMillisecondsSinceEpoch(
+                          tx.timestamp.toInt(),
                         );
-                      }
+                        final formattedDate = DateFormat.yMMMd()
+                            .add_jm()
+                            .format(date);
+                        final formattedAmount = formatBalance(tx.amount, false);
 
-                      final tx = _transactions[index];
-                      final isIncoming = tx.received;
-                      final date = DateTime.fromMillisecondsSinceEpoch(
-                        tx.timestamp.toInt(),
-                      );
-                      final formattedDate = DateFormat.yMMMd().add_jm().format(
-                        date,
-                      );
-                      final formattedAmount = formatBalance(tx.amount, false);
+                        IconData moduleIcon;
+                        switch (tx.module) {
+                          case 'ln':
+                          case 'lnv2':
+                            moduleIcon = Icons.flash_on;
+                            break;
+                          case 'wallet':
+                            moduleIcon = Icons.link;
+                            break;
+                          case 'mint':
+                            moduleIcon = Icons.currency_bitcoin;
+                            break;
+                          default:
+                            moduleIcon = Icons.help_outline;
+                        }
 
-                      IconData moduleIcon;
-                      switch (tx.module) {
-                        case 'ln':
-                        case 'lnv2':
-                          moduleIcon = Icons.flash_on;
-                          break;
-                        case 'wallet':
-                          moduleIcon = Icons.link;
-                          break;
-                        case 'mint':
-                          moduleIcon = Icons.currency_bitcoin;
-                          break;
-                        default:
-                          moduleIcon = Icons.help_outline;
-                      }
+                        final amountStyle = TextStyle(
+                          fontWeight: FontWeight.bold,
+                          color:
+                              isIncoming
+                                  ? Colors.greenAccent
+                                  : Colors.redAccent,
+                        );
 
-                      final amountStyle = TextStyle(
-                        fontWeight: FontWeight.bold,
-                        color:
-                            isIncoming ? Colors.greenAccent : Colors.redAccent,
-                      );
-
-                      return Card(
-                        elevation: 4,
-                        margin: const EdgeInsets.symmetric(vertical: 6),
-                        color: Theme.of(context).colorScheme.surface,
-                        child: ListTile(
-                          leading: CircleAvatar(
-                            backgroundColor:
-                                isIncoming
-                                    ? Colors.greenAccent.withOpacity(0.1)
-                                    : Colors.redAccent.withOpacity(0.1),
-                            child: Icon(
-                              moduleIcon,
-                              color:
+                        return Card(
+                          elevation: 4,
+                          margin: const EdgeInsets.symmetric(vertical: 6),
+                          color: Theme.of(context).colorScheme.surface,
+                          child: ListTile(
+                            leading: CircleAvatar(
+                              backgroundColor:
                                   isIncoming
-                                      ? Colors.greenAccent
-                                      : Colors.redAccent,
+                                      ? Colors.greenAccent.withOpacity(0.1)
+                                      : Colors.redAccent.withOpacity(0.1),
+                              child: Icon(
+                                moduleIcon,
+                                color:
+                                    isIncoming
+                                        ? Colors.greenAccent
+                                        : Colors.redAccent,
+                              ),
                             ),
+                            title: Text(
+                              isIncoming ? "Received" : "Sent",
+                              style: Theme.of(context).textTheme.bodyMedium,
+                            ),
+                            subtitle: Text(
+                              formattedDate,
+                              style: Theme.of(context).textTheme.bodyMedium,
+                            ),
+                            trailing: Text(formattedAmount, style: amountStyle),
                           ),
-                          title: Text(
-                            isIncoming ? "Received" : "Sent",
-                            style: Theme.of(context).textTheme.bodyMedium,
-                          ),
-                          subtitle: Text(
-                            formattedDate,
-                            style: Theme.of(context).textTheme.bodyMedium,
-                          ),
-                          trailing: Text(formattedAmount, style: amountStyle),
-                        ),
-                      );
-                    },
+                        );
+                      },
+                    ),
                   ),
-                ),
+            ],
           ],
         ),
       ),

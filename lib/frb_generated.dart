@@ -63,7 +63,7 @@ class RustLib extends BaseEntrypoint<RustLibApi, RustLibApiImpl, RustLibWire> {
   String get codegenVersion => '2.9.0';
 
   @override
-  int get rustContentHash => -1309894117;
+  int get rustContentHash => -1874373789;
 
   static const kDefaultExternalLibraryLoaderConfig =
       ExternalLibraryLoaderConfig(
@@ -90,7 +90,7 @@ abstract class RustLibApi extends BaseApi {
     required FederationConfig that,
   });
 
-  String crateDbFederationConfigAutoAccessorGetNetwork({
+  String? crateDbFederationConfigAutoAccessorGetNetwork({
     required FederationConfig that,
   });
 
@@ -116,7 +116,7 @@ abstract class RustLibApi extends BaseApi {
 
   void crateDbFederationConfigAutoAccessorSetNetwork({
     required FederationConfig that,
-    required String network,
+    String? network,
   });
 
   FederationId crateFederationSelectorAutoAccessorGetFederationId({
@@ -131,7 +131,7 @@ abstract class RustLibApi extends BaseApi {
     required FederationSelector that,
   });
 
-  String crateFederationSelectorAutoAccessorGetNetwork({
+  String? crateFederationSelectorAutoAccessorGetNetwork({
     required FederationSelector that,
   });
 
@@ -152,7 +152,7 @@ abstract class RustLibApi extends BaseApi {
 
   void crateFederationSelectorAutoAccessorSetNetwork({
     required FederationSelector that,
-    required String network,
+    String? network,
   });
 
   Future<FinalReceiveOperationState> crateMultimintAwaitReceive({
@@ -172,7 +172,7 @@ abstract class RustLibApi extends BaseApi {
     required FederationId federationId,
   });
 
-  Future<List<FederationSelector>> crateMultimintFederations({
+  Future<List<(FederationSelector, bool)>> crateMultimintFederations({
     required Multimint that,
   });
 
@@ -302,7 +302,7 @@ abstract class RustLibApi extends BaseApi {
 
   Future<void> crateCreateNewMultimint({required String path});
 
-  Future<List<FederationSelector>> crateFederations();
+  Future<List<(FederationSelector, bool)>> crateFederations();
 
   Future<(FederationMeta, FederationSelector)> crateGetFederationMeta({
     required String inviteCode,
@@ -375,6 +375,8 @@ abstract class RustLibApi extends BaseApi {
     Uint8List? operationId,
     required List<String> modules,
   });
+
+  Future<FederationSelector> crateWaitForRecovery({required String inviteCode});
 
   Future<bool> crateWalletExists({required String path});
 
@@ -645,7 +647,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
       );
 
   @override
-  String crateDbFederationConfigAutoAccessorGetNetwork({
+  String? crateDbFederationConfigAutoAccessorGetNetwork({
     required FederationConfig that,
   }) {
     return handler.executeSync(
@@ -659,7 +661,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           return pdeCallFfi(generalizedFrbRustBinding, serializer, funcId: 5)!;
         },
         codec: SseCodec(
-          decodeSuccessData: sse_decode_String,
+          decodeSuccessData: sse_decode_opt_String,
           decodeErrorData: null,
         ),
         constMeta: kCrateDbFederationConfigAutoAccessorGetNetworkConstMeta,
@@ -823,7 +825,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   @override
   void crateDbFederationConfigAutoAccessorSetNetwork({
     required FederationConfig that,
-    required String network,
+    String? network,
   }) {
     return handler.executeSync(
       SyncTask(
@@ -833,7 +835,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
             that,
             serializer,
           );
-          sse_encode_String(network, serializer);
+          sse_encode_opt_String(network, serializer);
           return pdeCallFfi(generalizedFrbRustBinding, serializer, funcId: 10)!;
         },
         codec: SseCodec(
@@ -952,7 +954,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
       );
 
   @override
-  String crateFederationSelectorAutoAccessorGetNetwork({
+  String? crateFederationSelectorAutoAccessorGetNetwork({
     required FederationSelector that,
   }) {
     return handler.executeSync(
@@ -966,7 +968,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           return pdeCallFfi(generalizedFrbRustBinding, serializer, funcId: 14)!;
         },
         codec: SseCodec(
-          decodeSuccessData: sse_decode_String,
+          decodeSuccessData: sse_decode_opt_String,
           decodeErrorData: null,
         ),
         constMeta: kCrateFederationSelectorAutoAccessorGetNetworkConstMeta,
@@ -1091,7 +1093,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   @override
   void crateFederationSelectorAutoAccessorSetNetwork({
     required FederationSelector that,
-    required String network,
+    String? network,
   }) {
     return handler.executeSync(
       SyncTask(
@@ -1101,7 +1103,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
             that,
             serializer,
           );
-          sse_encode_String(network, serializer);
+          sse_encode_opt_String(network, serializer);
           return pdeCallFfi(generalizedFrbRustBinding, serializer, funcId: 18)!;
         },
         codec: SseCodec(
@@ -1254,7 +1256,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   );
 
   @override
-  Future<List<FederationSelector>> crateMultimintFederations({
+  Future<List<(FederationSelector, bool)>> crateMultimintFederations({
     required Multimint that,
   }) {
     return handler.executeNormal(
@@ -1274,7 +1276,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
         },
         codec: SseCodec(
           decodeSuccessData:
-              sse_decode_list_Auto_Owned_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerFederationSelector,
+              sse_decode_list_record_auto_owned_rust_opaque_flutter_rust_bridgefor_generated_rust_auto_opaque_inner_federation_selector_bool,
           decodeErrorData: null,
         ),
         constMeta: kCrateMultimintFederationsConstMeta,
@@ -2272,7 +2274,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   );
 
   @override
-  Future<List<FederationSelector>> crateFederations() {
+  Future<List<(FederationSelector, bool)>> crateFederations() {
     return handler.executeNormal(
       NormalTask(
         callFfi: (port_) {
@@ -2286,7 +2288,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
         },
         codec: SseCodec(
           decodeSuccessData:
-              sse_decode_list_Auto_Owned_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerFederationSelector,
+              sse_decode_list_record_auto_owned_rust_opaque_flutter_rust_bridgefor_generated_rust_auto_opaque_inner_federation_selector_bool,
           decodeErrorData: null,
         ),
         constMeta: kCrateFederationsConstMeta,
@@ -2854,6 +2856,39 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   );
 
   @override
+  Future<FederationSelector> crateWaitForRecovery({
+    required String inviteCode,
+  }) {
+    return handler.executeNormal(
+      NormalTask(
+        callFfi: (port_) {
+          final serializer = SseSerializer(generalizedFrbRustBinding);
+          sse_encode_String(inviteCode, serializer);
+          pdeCallFfi(
+            generalizedFrbRustBinding,
+            serializer,
+            funcId: 66,
+            port: port_,
+          );
+        },
+        codec: SseCodec(
+          decodeSuccessData:
+              sse_decode_Auto_Owned_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerFederationSelector,
+          decodeErrorData: sse_decode_AnyhowException,
+        ),
+        constMeta: kCrateWaitForRecoveryConstMeta,
+        argValues: [inviteCode],
+        apiImpl: this,
+      ),
+    );
+  }
+
+  TaskConstMeta get kCrateWaitForRecoveryConstMeta => const TaskConstMeta(
+    debugName: "wait_for_recovery",
+    argNames: ["inviteCode"],
+  );
+
+  @override
   Future<bool> crateWalletExists({required String path}) {
     return handler.executeNormal(
       NormalTask(
@@ -2863,7 +2898,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 66,
+            funcId: 67,
             port: port_,
           );
         },
@@ -3414,19 +3449,6 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   }
 
   @protected
-  List<FederationSelector>
-  dco_decode_list_Auto_Owned_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerFederationSelector(
-    dynamic raw,
-  ) {
-    // Codec=Dco (DartCObject based), see doc to use other codecs
-    return (raw as List<dynamic>)
-        .map(
-          dco_decode_Auto_Owned_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerFederationSelector,
-        )
-        .toList();
-  }
-
-  @protected
   List<PublicFederation>
   dco_decode_list_Auto_Owned_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerPublicFederation(
     dynamic raw,
@@ -3455,6 +3477,19 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   Uint8List dco_decode_list_prim_u_8_strict(dynamic raw) {
     // Codec=Dco (DartCObject based), see doc to use other codecs
     return raw as Uint8List;
+  }
+
+  @protected
+  List<(FederationSelector, bool)>
+  dco_decode_list_record_auto_owned_rust_opaque_flutter_rust_bridgefor_generated_rust_auto_opaque_inner_federation_selector_bool(
+    dynamic raw,
+  ) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    return (raw as List<dynamic>)
+        .map(
+          dco_decode_record_auto_owned_rust_opaque_flutter_rust_bridgefor_generated_rust_auto_opaque_inner_federation_selector_bool,
+        )
+        .toList();
   }
 
   @protected
@@ -3515,6 +3550,24 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
       dco_decode_Auto_Owned_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerOperationId(
         arr[1],
       ),
+    );
+  }
+
+  @protected
+  (FederationSelector, bool)
+  dco_decode_record_auto_owned_rust_opaque_flutter_rust_bridgefor_generated_rust_auto_opaque_inner_federation_selector_bool(
+    dynamic raw,
+  ) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    final arr = raw as List<dynamic>;
+    if (arr.length != 2) {
+      throw Exception('Expected 2 elements, got ${arr.length}');
+    }
+    return (
+      dco_decode_Auto_Owned_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerFederationSelector(
+        arr[0],
+      ),
+      dco_decode_bool(arr[1]),
     );
   }
 
@@ -4155,25 +4208,6 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   }
 
   @protected
-  List<FederationSelector>
-  sse_decode_list_Auto_Owned_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerFederationSelector(
-    SseDeserializer deserializer,
-  ) {
-    // Codec=Sse (Serialization based), see doc to use other codecs
-
-    var len_ = sse_decode_i_32(deserializer);
-    var ans_ = <FederationSelector>[];
-    for (var idx_ = 0; idx_ < len_; ++idx_) {
-      ans_.add(
-        sse_decode_Auto_Owned_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerFederationSelector(
-          deserializer,
-        ),
-      );
-    }
-    return ans_;
-  }
-
-  @protected
   List<PublicFederation>
   sse_decode_list_Auto_Owned_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerPublicFederation(
     SseDeserializer deserializer,
@@ -4221,6 +4255,25 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
     // Codec=Sse (Serialization based), see doc to use other codecs
     var len_ = sse_decode_i_32(deserializer);
     return deserializer.buffer.getUint8List(len_);
+  }
+
+  @protected
+  List<(FederationSelector, bool)>
+  sse_decode_list_record_auto_owned_rust_opaque_flutter_rust_bridgefor_generated_rust_auto_opaque_inner_federation_selector_bool(
+    SseDeserializer deserializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+
+    var len_ = sse_decode_i_32(deserializer);
+    var ans_ = <(FederationSelector, bool)>[];
+    for (var idx_ = 0; idx_ < len_; ++idx_) {
+      ans_.add(
+        sse_decode_record_auto_owned_rust_opaque_flutter_rust_bridgefor_generated_rust_auto_opaque_inner_federation_selector_bool(
+          deserializer,
+        ),
+      );
+    }
+    return ans_;
   }
 
   @protected
@@ -4303,6 +4356,20 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
         sse_decode_Auto_Owned_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerOperationId(
           deserializer,
         );
+    return (var_field0, var_field1);
+  }
+
+  @protected
+  (FederationSelector, bool)
+  sse_decode_record_auto_owned_rust_opaque_flutter_rust_bridgefor_generated_rust_auto_opaque_inner_federation_selector_bool(
+    SseDeserializer deserializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    var var_field0 =
+        sse_decode_Auto_Owned_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerFederationSelector(
+          deserializer,
+        );
+    var var_field1 = sse_decode_bool(deserializer);
     return (var_field0, var_field1);
   }
 
@@ -4971,22 +5038,6 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
 
   @protected
   void
-  sse_encode_list_Auto_Owned_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerFederationSelector(
-    List<FederationSelector> self,
-    SseSerializer serializer,
-  ) {
-    // Codec=Sse (Serialization based), see doc to use other codecs
-    sse_encode_i_32(self.length, serializer);
-    for (final item in self) {
-      sse_encode_Auto_Owned_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerFederationSelector(
-        item,
-        serializer,
-      );
-    }
-  }
-
-  @protected
-  void
   sse_encode_list_Auto_Owned_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerPublicFederation(
     List<PublicFederation> self,
     SseSerializer serializer,
@@ -5027,6 +5078,22 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
     // Codec=Sse (Serialization based), see doc to use other codecs
     sse_encode_i_32(self.length, serializer);
     serializer.buffer.putUint8List(self);
+  }
+
+  @protected
+  void
+  sse_encode_list_record_auto_owned_rust_opaque_flutter_rust_bridgefor_generated_rust_auto_opaque_inner_federation_selector_bool(
+    List<(FederationSelector, bool)> self,
+    SseSerializer serializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    sse_encode_i_32(self.length, serializer);
+    for (final item in self) {
+      sse_encode_record_auto_owned_rust_opaque_flutter_rust_bridgefor_generated_rust_auto_opaque_inner_federation_selector_bool(
+        item,
+        serializer,
+      );
+    }
   }
 
   @protected
@@ -5104,6 +5171,20 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
       self.$2,
       serializer,
     );
+  }
+
+  @protected
+  void
+  sse_encode_record_auto_owned_rust_opaque_flutter_rust_bridgefor_generated_rust_auto_opaque_inner_federation_selector_bool(
+    (FederationSelector, bool) self,
+    SseSerializer serializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    sse_encode_Auto_Owned_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerFederationSelector(
+      self.$1,
+      serializer,
+    );
+    sse_encode_bool(self.$2, serializer);
   }
 
   @protected
@@ -5309,7 +5390,7 @@ class FederationConfigImpl extends RustOpaque implements FederationConfig {
   InviteCode get inviteCode => RustLib.instance.api
       .crateDbFederationConfigAutoAccessorGetInviteCode(that: this);
 
-  String get network => RustLib.instance.api
+  String? get network => RustLib.instance.api
       .crateDbFederationConfigAutoAccessorGetNetwork(that: this);
 
   set clientConfig(ClientConfig clientConfig) =>
@@ -5336,7 +5417,7 @@ class FederationConfigImpl extends RustOpaque implements FederationConfig {
         inviteCode: inviteCode,
       );
 
-  set network(String network) =>
+  set network(String? network) =>
       RustLib.instance.api.crateDbFederationConfigAutoAccessorSetNetwork(
         that: this,
         network: network,
@@ -5396,7 +5477,7 @@ class FederationSelectorImpl extends RustOpaque implements FederationSelector {
   String get inviteCode => RustLib.instance.api
       .crateFederationSelectorAutoAccessorGetInviteCode(that: this);
 
-  String get network => RustLib.instance.api
+  String? get network => RustLib.instance.api
       .crateFederationSelectorAutoAccessorGetNetwork(that: this);
 
   set federationId(FederationId federationId) =>
@@ -5417,7 +5498,7 @@ class FederationSelectorImpl extends RustOpaque implements FederationSelector {
         inviteCode: inviteCode,
       );
 
-  set network(String network) =>
+  set network(String? network) =>
       RustLib.instance.api.crateFederationSelectorAutoAccessorSetNetwork(
         that: this,
         network: network,
@@ -5550,7 +5631,7 @@ class MultimintImpl extends RustOpaque implements Multimint {
       .api
       .crateMultimintBalance(that: this, federationId: federationId);
 
-  Future<List<FederationSelector>> federations() =>
+  Future<List<(FederationSelector, bool)>> federations() =>
       RustLib.instance.api.crateMultimintFederations(that: this);
 
   Future<List<String>> getMnemonic() =>

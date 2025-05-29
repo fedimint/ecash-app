@@ -24,7 +24,7 @@ pub(crate) struct FederationConfig {
     pub invite_code: InviteCode,
     pub connector: Connector,
     pub federation_name: String,
-    pub network: String,
+    pub network: Option<String>,
     pub client_config: ClientConfig,
 }
 

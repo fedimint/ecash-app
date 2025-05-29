@@ -330,12 +330,6 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   Guardian dco_decode_guardian(dynamic raw);
 
   @protected
-  List<FederationSelector>
-  dco_decode_list_Auto_Owned_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerFederationSelector(
-    dynamic raw,
-  );
-
-  @protected
   List<PublicFederation>
   dco_decode_list_Auto_Owned_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerPublicFederation(
     dynamic raw,
@@ -349,6 +343,12 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
 
   @protected
   Uint8List dco_decode_list_prim_u_8_strict(dynamic raw);
+
+  @protected
+  List<(FederationSelector, bool)>
+  dco_decode_list_record_auto_owned_rust_opaque_flutter_rust_bridgefor_generated_rust_auto_opaque_inner_federation_selector_bool(
+    dynamic raw,
+  );
 
   @protected
   List<Transaction> dco_decode_list_transaction(dynamic raw);
@@ -368,6 +368,12 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   @protected
   (Bolt11Invoice, OperationId)
   dco_decode_record_auto_owned_rust_opaque_flutter_rust_bridgefor_generated_rust_auto_opaque_inner_bolt_11_invoice_auto_owned_rust_opaque_flutter_rust_bridgefor_generated_rust_auto_opaque_inner_operation_id(
+    dynamic raw,
+  );
+
+  @protected
+  (FederationSelector, bool)
+  dco_decode_record_auto_owned_rust_opaque_flutter_rust_bridgefor_generated_rust_auto_opaque_inner_federation_selector_bool(
     dynamic raw,
   );
 
@@ -663,12 +669,6 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   Guardian sse_decode_guardian(SseDeserializer deserializer);
 
   @protected
-  List<FederationSelector>
-  sse_decode_list_Auto_Owned_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerFederationSelector(
-    SseDeserializer deserializer,
-  );
-
-  @protected
   List<PublicFederation>
   sse_decode_list_Auto_Owned_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerPublicFederation(
     SseDeserializer deserializer,
@@ -682,6 +682,12 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
 
   @protected
   Uint8List sse_decode_list_prim_u_8_strict(SseDeserializer deserializer);
+
+  @protected
+  List<(FederationSelector, bool)>
+  sse_decode_list_record_auto_owned_rust_opaque_flutter_rust_bridgefor_generated_rust_auto_opaque_inner_federation_selector_bool(
+    SseDeserializer deserializer,
+  );
 
   @protected
   List<Transaction> sse_decode_list_transaction(SseDeserializer deserializer);
@@ -701,6 +707,12 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   @protected
   (Bolt11Invoice, OperationId)
   sse_decode_record_auto_owned_rust_opaque_flutter_rust_bridgefor_generated_rust_auto_opaque_inner_bolt_11_invoice_auto_owned_rust_opaque_flutter_rust_bridgefor_generated_rust_auto_opaque_inner_operation_id(
+    SseDeserializer deserializer,
+  );
+
+  @protected
+  (FederationSelector, bool)
+  sse_decode_record_auto_owned_rust_opaque_flutter_rust_bridgefor_generated_rust_auto_opaque_inner_federation_selector_bool(
     SseDeserializer deserializer,
   );
 
@@ -1047,13 +1059,6 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
 
   @protected
   void
-  sse_encode_list_Auto_Owned_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerFederationSelector(
-    List<FederationSelector> self,
-    SseSerializer serializer,
-  );
-
-  @protected
-  void
   sse_encode_list_Auto_Owned_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerPublicFederation(
     List<PublicFederation> self,
     SseSerializer serializer,
@@ -1068,6 +1073,13 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   @protected
   void sse_encode_list_prim_u_8_strict(
     Uint8List self,
+    SseSerializer serializer,
+  );
+
+  @protected
+  void
+  sse_encode_list_record_auto_owned_rust_opaque_flutter_rust_bridgefor_generated_rust_auto_opaque_inner_federation_selector_bool(
+    List<(FederationSelector, bool)> self,
     SseSerializer serializer,
   );
 
@@ -1099,6 +1111,13 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   void
   sse_encode_record_auto_owned_rust_opaque_flutter_rust_bridgefor_generated_rust_auto_opaque_inner_bolt_11_invoice_auto_owned_rust_opaque_flutter_rust_bridgefor_generated_rust_auto_opaque_inner_operation_id(
     (Bolt11Invoice, OperationId) self,
+    SseSerializer serializer,
+  );
+
+  @protected
+  void
+  sse_encode_record_auto_owned_rust_opaque_flutter_rust_bridgefor_generated_rust_auto_opaque_inner_federation_selector_bool(
+    (FederationSelector, bool) self,
     SseSerializer serializer,
   );
 
