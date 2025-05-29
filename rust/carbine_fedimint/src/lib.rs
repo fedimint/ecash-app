@@ -1,5 +1,6 @@
 mod db;
 mod frb_generated;
+use db::SeedPhraseAckKey;
 use fedimint_client::db::ChronologicalOperationLogKey;
 use fedimint_client::oplog::OperationLog;
 use fedimint_core::config::ClientConfig;
@@ -399,6 +400,20 @@ pub async fn refund(federation_id: &FederationId) -> anyhow::Result<(String, u64
     mm.refund(federation_id).await
 }
 
+#[frb]
+pub async fn has_seed_phrase_ack() -> bool {
+    let multimint = get_multimint().await;
+    let mm = multimint.read().await;
+    mm.has_seed_phrase_ack().await
+}
+
+#[frb]
+pub async fn ack_seed_phrase() {
+    let multimint = get_multimint().await;
+    let mm = multimint.read().await;
+    mm.ack_seed_phrase().await
+}
+
 #[derive(Clone, Eq, PartialEq, Serialize, Debug)]
 pub struct PaymentPreview {
     amount_msats: u64,
@@ -688,6 +703,17 @@ impl Multimint {
         // TODO: Need to drive active operations to completion
 
         Ok(())
+    }
+
+    pub async fn has_seed_phrase_ack(&self) -> bool {
+        let mut dbtx = self.db.begin_transaction_nc().await;
+        dbtx.get_value(&SeedPhraseAckKey).await.is_some()
+    }
+
+    pub async fn ack_seed_phrase(&self) {
+        let mut dbtx = self.db.begin_transaction().await;
+        dbtx.insert_entry(&SeedPhraseAckKey, &()).await;
+        dbtx.commit_tx().await;
     }
 
     async fn create_nostr_client() -> nostr_sdk::Client {

@@ -179,6 +179,10 @@ Future<ReissueExternalNotesState> awaitEcashReissue({
 Future<(String, BigInt)> refund({required FederationId federationId}) =>
     RustLib.instance.api.crateRefund(federationId: federationId);
 
+Future<bool> hasSeedPhraseAck() => RustLib.instance.api.crateHasSeedPhraseAck();
+
+Future<void> ackSeedPhrase() => RustLib.instance.api.crateAckSeedPhrase();
+
 // Rust type: RustOpaqueMoi<flutter_rust_bridge::for_generated::RustAutoOpaqueInner<Bolt11Invoice>>
 abstract class Bolt11Invoice implements RustOpaqueInterface {}
 
@@ -221,6 +225,8 @@ abstract class InviteCode implements RustOpaqueInterface {}
 
 // Rust type: RustOpaqueMoi<flutter_rust_bridge::for_generated::RustAutoOpaqueInner<Multimint>>
 abstract class Multimint implements RustOpaqueInterface {
+  Future<void> ackSeedPhrase();
+
   Future<FinalReceiveOperationState> awaitReceive({
     required FederationId federationId,
     required OperationId operationId,
@@ -236,6 +242,8 @@ abstract class Multimint implements RustOpaqueInterface {
   Future<List<(FederationSelector, bool)>> federations();
 
   Future<List<String>> getMnemonic();
+
+  Future<bool> hasSeedPhraseAck();
 
   Future<FederationSelector> joinFederation({
     required String invite,

@@ -12,6 +12,7 @@ use serde::{Deserialize, Serialize};
 pub(crate) enum DbKeyPrefix {
     FederationConfig = 0x00,
     ClientDatabase = 0x01,
+    SeedPhraseAck = 0x02,
 }
 
 #[derive(Debug, Clone, Encodable, Decodable, Eq, PartialEq, Hash, Ord, PartialOrd)]
@@ -40,4 +41,13 @@ impl_db_record!(
 impl_db_lookup!(
     key = FederationConfigKey,
     query_prefix = FederationConfigKeyPrefix
+);
+
+#[derive(Debug, Encodable, Decodable)]
+pub(crate) struct SeedPhraseAckKey;
+
+impl_db_record!(
+    key = SeedPhraseAckKey,
+    value = (),
+    db_prefix = DbKeyPrefix::SeedPhraseAck,
 );

@@ -39,7 +39,7 @@ flutter_rust_bridge::frb_generated_boilerplate!(
     default_rust_auto_opaque = RustAutoOpaqueMoi,
 );
 pub(crate) const FLUTTER_RUST_BRIDGE_CODEGEN_VERSION: &str = "2.9.0";
-pub(crate) const FLUTTER_RUST_BRIDGE_CODEGEN_CONTENT_HASH: i32 = -1874373789;
+pub(crate) const FLUTTER_RUST_BRIDGE_CODEGEN_CONTENT_HASH: i32 = 55978999;
 
 // Section: executor
 
@@ -920,6 +920,63 @@ fn wire__crate__FederationSelector_auto_accessor_set_network_impl(
         },
     )
 }
+fn wire__crate__Multimint_ack_seed_phrase_impl(
+    port_: flutter_rust_bridge::for_generated::MessagePort,
+    ptr_: flutter_rust_bridge::for_generated::PlatformGeneralizedUint8ListPtr,
+    rust_vec_len_: i32,
+    data_len_: i32,
+) {
+    FLUTTER_RUST_BRIDGE_HANDLER.wrap_async::<flutter_rust_bridge::for_generated::SseCodec, _, _, _>(
+        flutter_rust_bridge::for_generated::TaskInfo {
+            debug_name: "Multimint_ack_seed_phrase",
+            port: Some(port_),
+            mode: flutter_rust_bridge::for_generated::FfiCallMode::Normal,
+        },
+        move || {
+            let message = unsafe {
+                flutter_rust_bridge::for_generated::Dart2RustMessageSse::from_wire(
+                    ptr_,
+                    rust_vec_len_,
+                    data_len_,
+                )
+            };
+            let mut deserializer =
+                flutter_rust_bridge::for_generated::SseDeserializer::new(message);
+            let api_that = <RustOpaqueMoi<
+                flutter_rust_bridge::for_generated::RustAutoOpaqueInner<Multimint>,
+            >>::sse_decode(&mut deserializer);
+            deserializer.end();
+            move |context| async move {
+                transform_result_sse::<_, ()>(
+                    (move || async move {
+                        let mut api_that_guard = None;
+                        let decode_indices_ =
+                            flutter_rust_bridge::for_generated::lockable_compute_decode_order(
+                                vec![flutter_rust_bridge::for_generated::LockableOrderInfo::new(
+                                    &api_that, 0, false,
+                                )],
+                            );
+                        for i in decode_indices_ {
+                            match i {
+                                0 => {
+                                    api_that_guard =
+                                        Some(api_that.lockable_decode_async_ref().await)
+                                }
+                                _ => unreachable!(),
+                            }
+                        }
+                        let api_that_guard = api_that_guard.unwrap();
+                        let output_ok = Result::<_, ()>::Ok({
+                            crate::Multimint::ack_seed_phrase(&*api_that_guard).await;
+                        })?;
+                        Ok(output_ok)
+                    })()
+                    .await,
+                )
+            }
+        },
+    )
+}
 fn wire__crate__Multimint_await_receive_impl(
     port_: flutter_rust_bridge::for_generated::MessagePort,
     ptr_: flutter_rust_bridge::for_generated::PlatformGeneralizedUint8ListPtr,
@@ -1251,6 +1308,63 @@ fn wire__crate__Multimint_get_mnemonic_impl(
                         Result::<_, ()>::Ok(crate::Multimint::get_mnemonic(&*api_that_guard))?;
                     Ok(output_ok)
                 })())
+            }
+        },
+    )
+}
+fn wire__crate__Multimint_has_seed_phrase_ack_impl(
+    port_: flutter_rust_bridge::for_generated::MessagePort,
+    ptr_: flutter_rust_bridge::for_generated::PlatformGeneralizedUint8ListPtr,
+    rust_vec_len_: i32,
+    data_len_: i32,
+) {
+    FLUTTER_RUST_BRIDGE_HANDLER.wrap_async::<flutter_rust_bridge::for_generated::SseCodec, _, _, _>(
+        flutter_rust_bridge::for_generated::TaskInfo {
+            debug_name: "Multimint_has_seed_phrase_ack",
+            port: Some(port_),
+            mode: flutter_rust_bridge::for_generated::FfiCallMode::Normal,
+        },
+        move || {
+            let message = unsafe {
+                flutter_rust_bridge::for_generated::Dart2RustMessageSse::from_wire(
+                    ptr_,
+                    rust_vec_len_,
+                    data_len_,
+                )
+            };
+            let mut deserializer =
+                flutter_rust_bridge::for_generated::SseDeserializer::new(message);
+            let api_that = <RustOpaqueMoi<
+                flutter_rust_bridge::for_generated::RustAutoOpaqueInner<Multimint>,
+            >>::sse_decode(&mut deserializer);
+            deserializer.end();
+            move |context| async move {
+                transform_result_sse::<_, ()>(
+                    (move || async move {
+                        let mut api_that_guard = None;
+                        let decode_indices_ =
+                            flutter_rust_bridge::for_generated::lockable_compute_decode_order(
+                                vec![flutter_rust_bridge::for_generated::LockableOrderInfo::new(
+                                    &api_that, 0, false,
+                                )],
+                            );
+                        for i in decode_indices_ {
+                            match i {
+                                0 => {
+                                    api_that_guard =
+                                        Some(api_that.lockable_decode_async_ref().await)
+                                }
+                                _ => unreachable!(),
+                            }
+                        }
+                        let api_that_guard = api_that_guard.unwrap();
+                        let output_ok = Result::<_, ()>::Ok(
+                            crate::Multimint::has_seed_phrase_ack(&*api_that_guard).await,
+                        )?;
+                        Ok(output_ok)
+                    })()
+                    .await,
+                )
             }
         },
     )
@@ -2291,6 +2405,43 @@ fn wire__crate__PublicFederation_auto_accessor_set_picture_impl(
         },
     )
 }
+fn wire__crate__ack_seed_phrase_impl(
+    port_: flutter_rust_bridge::for_generated::MessagePort,
+    ptr_: flutter_rust_bridge::for_generated::PlatformGeneralizedUint8ListPtr,
+    rust_vec_len_: i32,
+    data_len_: i32,
+) {
+    FLUTTER_RUST_BRIDGE_HANDLER.wrap_async::<flutter_rust_bridge::for_generated::SseCodec, _, _, _>(
+        flutter_rust_bridge::for_generated::TaskInfo {
+            debug_name: "ack_seed_phrase",
+            port: Some(port_),
+            mode: flutter_rust_bridge::for_generated::FfiCallMode::Normal,
+        },
+        move || {
+            let message = unsafe {
+                flutter_rust_bridge::for_generated::Dart2RustMessageSse::from_wire(
+                    ptr_,
+                    rust_vec_len_,
+                    data_len_,
+                )
+            };
+            let mut deserializer =
+                flutter_rust_bridge::for_generated::SseDeserializer::new(message);
+            deserializer.end();
+            move |context| async move {
+                transform_result_sse::<_, ()>(
+                    (move || async move {
+                        let output_ok = Result::<_, ()>::Ok({
+                            crate::ack_seed_phrase().await;
+                        })?;
+                        Ok(output_ok)
+                    })()
+                    .await,
+                )
+            }
+        },
+    )
+}
 fn wire__crate__await_ecash_reissue_impl(
     port_: flutter_rust_bridge::for_generated::MessagePort,
     ptr_: flutter_rust_bridge::for_generated::PlatformGeneralizedUint8ListPtr,
@@ -2763,6 +2914,41 @@ fn wire__crate__get_mnemonic_impl(
                 transform_result_sse::<_, ()>(
                     (move || async move {
                         let output_ok = Result::<_, ()>::Ok(crate::get_mnemonic().await)?;
+                        Ok(output_ok)
+                    })()
+                    .await,
+                )
+            }
+        },
+    )
+}
+fn wire__crate__has_seed_phrase_ack_impl(
+    port_: flutter_rust_bridge::for_generated::MessagePort,
+    ptr_: flutter_rust_bridge::for_generated::PlatformGeneralizedUint8ListPtr,
+    rust_vec_len_: i32,
+    data_len_: i32,
+) {
+    FLUTTER_RUST_BRIDGE_HANDLER.wrap_async::<flutter_rust_bridge::for_generated::SseCodec, _, _, _>(
+        flutter_rust_bridge::for_generated::TaskInfo {
+            debug_name: "has_seed_phrase_ack",
+            port: Some(port_),
+            mode: flutter_rust_bridge::for_generated::FfiCallMode::Normal,
+        },
+        move || {
+            let message = unsafe {
+                flutter_rust_bridge::for_generated::Dart2RustMessageSse::from_wire(
+                    ptr_,
+                    rust_vec_len_,
+                    data_len_,
+                )
+            };
+            let mut deserializer =
+                flutter_rust_bridge::for_generated::SseDeserializer::new(message);
+            deserializer.end();
+            move |context| async move {
+                transform_result_sse::<_, ()>(
+                    (move || async move {
+                        let output_ok = Result::<_, ()>::Ok(crate::has_seed_phrase_ack().await)?;
                         Ok(output_ok)
                     })()
                     .await,
@@ -4237,46 +4423,50 @@ fn pde_ffi_dispatcher_primary_impl(
 ) {
     // Codec=Pde (Serialization + dispatch), see doc to use other codecs
     match func_id {
-        19 => wire__crate__Multimint_await_receive_impl(port, ptr, rust_vec_len, data_len),
-        20 => wire__crate__Multimint_await_send_impl(port, ptr, rust_vec_len, data_len),
-        21 => wire__crate__Multimint_balance_impl(port, ptr, rust_vec_len, data_len),
-        22 => wire__crate__Multimint_federations_impl(port, ptr, rust_vec_len, data_len),
-        23 => wire__crate__Multimint_get_mnemonic_impl(port, ptr, rust_vec_len, data_len),
-        24 => wire__crate__Multimint_join_federation_impl(port, ptr, rust_vec_len, data_len),
-        25 => wire__crate__Multimint_receive_impl(port, ptr, rust_vec_len, data_len),
-        26 => wire__crate__Multimint_refund_impl(port, ptr, rust_vec_len, data_len),
-        27 => wire__crate__Multimint_send_impl(port, ptr, rust_vec_len, data_len),
-        28 => wire__crate__Multimint_update_federations_from_nostr_impl(
+        19 => wire__crate__Multimint_ack_seed_phrase_impl(port, ptr, rust_vec_len, data_len),
+        20 => wire__crate__Multimint_await_receive_impl(port, ptr, rust_vec_len, data_len),
+        21 => wire__crate__Multimint_await_send_impl(port, ptr, rust_vec_len, data_len),
+        22 => wire__crate__Multimint_balance_impl(port, ptr, rust_vec_len, data_len),
+        23 => wire__crate__Multimint_federations_impl(port, ptr, rust_vec_len, data_len),
+        24 => wire__crate__Multimint_get_mnemonic_impl(port, ptr, rust_vec_len, data_len),
+        25 => wire__crate__Multimint_has_seed_phrase_ack_impl(port, ptr, rust_vec_len, data_len),
+        26 => wire__crate__Multimint_join_federation_impl(port, ptr, rust_vec_len, data_len),
+        27 => wire__crate__Multimint_receive_impl(port, ptr, rust_vec_len, data_len),
+        28 => wire__crate__Multimint_refund_impl(port, ptr, rust_vec_len, data_len),
+        29 => wire__crate__Multimint_send_impl(port, ptr, rust_vec_len, data_len),
+        30 => wire__crate__Multimint_update_federations_from_nostr_impl(
             port,
             ptr,
             rust_vec_len,
             data_len,
         ),
-        43 => wire__crate__await_ecash_reissue_impl(port, ptr, rust_vec_len, data_len),
-        44 => wire__crate__await_ecash_send_impl(port, ptr, rust_vec_len, data_len),
-        45 => wire__crate__await_receive_impl(port, ptr, rust_vec_len, data_len),
-        46 => wire__crate__await_send_impl(port, ptr, rust_vec_len, data_len),
-        47 => wire__crate__balance_impl(port, ptr, rust_vec_len, data_len),
-        48 => wire__crate__create_multimint_from_words_impl(port, ptr, rust_vec_len, data_len),
-        49 => wire__crate__create_new_multimint_impl(port, ptr, rust_vec_len, data_len),
-        50 => wire__crate__federations_impl(port, ptr, rust_vec_len, data_len),
-        51 => wire__crate__get_federation_meta_impl(port, ptr, rust_vec_len, data_len),
-        52 => wire__crate__get_mnemonic_impl(port, ptr, rust_vec_len, data_len),
-        53 => wire__crate__join_federation_impl(port, ptr, rust_vec_len, data_len),
-        54 => wire__crate__list_federations_from_nostr_impl(port, ptr, rust_vec_len, data_len),
-        55 => wire__crate__load_multimint_impl(port, ptr, rust_vec_len, data_len),
-        56 => wire__crate__parse_ecash_impl(port, ptr, rust_vec_len, data_len),
-        57 => wire__crate__payment_preview_impl(port, ptr, rust_vec_len, data_len),
-        58 => wire__crate__receive_impl(port, ptr, rust_vec_len, data_len),
-        59 => wire__crate__refund_impl(port, ptr, rust_vec_len, data_len),
-        60 => wire__crate__reissue_ecash_impl(port, ptr, rust_vec_len, data_len),
-        61 => wire__crate__select_receive_gateway_impl(port, ptr, rust_vec_len, data_len),
-        62 => wire__crate__send_impl(port, ptr, rust_vec_len, data_len),
-        63 => wire__crate__send_ecash_impl(port, ptr, rust_vec_len, data_len),
-        64 => wire__crate__send_lnaddress_impl(port, ptr, rust_vec_len, data_len),
-        65 => wire__crate__transactions_impl(port, ptr, rust_vec_len, data_len),
-        66 => wire__crate__wait_for_recovery_impl(port, ptr, rust_vec_len, data_len),
-        67 => wire__crate__wallet_exists_impl(port, ptr, rust_vec_len, data_len),
+        45 => wire__crate__ack_seed_phrase_impl(port, ptr, rust_vec_len, data_len),
+        46 => wire__crate__await_ecash_reissue_impl(port, ptr, rust_vec_len, data_len),
+        47 => wire__crate__await_ecash_send_impl(port, ptr, rust_vec_len, data_len),
+        48 => wire__crate__await_receive_impl(port, ptr, rust_vec_len, data_len),
+        49 => wire__crate__await_send_impl(port, ptr, rust_vec_len, data_len),
+        50 => wire__crate__balance_impl(port, ptr, rust_vec_len, data_len),
+        51 => wire__crate__create_multimint_from_words_impl(port, ptr, rust_vec_len, data_len),
+        52 => wire__crate__create_new_multimint_impl(port, ptr, rust_vec_len, data_len),
+        53 => wire__crate__federations_impl(port, ptr, rust_vec_len, data_len),
+        54 => wire__crate__get_federation_meta_impl(port, ptr, rust_vec_len, data_len),
+        55 => wire__crate__get_mnemonic_impl(port, ptr, rust_vec_len, data_len),
+        56 => wire__crate__has_seed_phrase_ack_impl(port, ptr, rust_vec_len, data_len),
+        57 => wire__crate__join_federation_impl(port, ptr, rust_vec_len, data_len),
+        58 => wire__crate__list_federations_from_nostr_impl(port, ptr, rust_vec_len, data_len),
+        59 => wire__crate__load_multimint_impl(port, ptr, rust_vec_len, data_len),
+        60 => wire__crate__parse_ecash_impl(port, ptr, rust_vec_len, data_len),
+        61 => wire__crate__payment_preview_impl(port, ptr, rust_vec_len, data_len),
+        62 => wire__crate__receive_impl(port, ptr, rust_vec_len, data_len),
+        63 => wire__crate__refund_impl(port, ptr, rust_vec_len, data_len),
+        64 => wire__crate__reissue_ecash_impl(port, ptr, rust_vec_len, data_len),
+        65 => wire__crate__select_receive_gateway_impl(port, ptr, rust_vec_len, data_len),
+        66 => wire__crate__send_impl(port, ptr, rust_vec_len, data_len),
+        67 => wire__crate__send_ecash_impl(port, ptr, rust_vec_len, data_len),
+        68 => wire__crate__send_lnaddress_impl(port, ptr, rust_vec_len, data_len),
+        69 => wire__crate__transactions_impl(port, ptr, rust_vec_len, data_len),
+        70 => wire__crate__wait_for_recovery_impl(port, ptr, rust_vec_len, data_len),
+        71 => wire__crate__wallet_exists_impl(port, ptr, rust_vec_len, data_len),
         _ => unreachable!(),
     }
 }
@@ -4379,68 +4569,68 @@ fn pde_ffi_dispatcher_sync_impl(
             rust_vec_len,
             data_len,
         ),
-        29 => {
+        31 => {
             wire__crate__PublicFederation_auto_accessor_get_about_impl(ptr, rust_vec_len, data_len)
         }
-        30 => wire__crate__PublicFederation_auto_accessor_get_federation_id_impl(
+        32 => wire__crate__PublicFederation_auto_accessor_get_federation_id_impl(
             ptr,
             rust_vec_len,
             data_len,
         ),
-        31 => wire__crate__PublicFederation_auto_accessor_get_federation_name_impl(
+        33 => wire__crate__PublicFederation_auto_accessor_get_federation_name_impl(
             ptr,
             rust_vec_len,
             data_len,
         ),
-        32 => wire__crate__PublicFederation_auto_accessor_get_invite_codes_impl(
+        34 => wire__crate__PublicFederation_auto_accessor_get_invite_codes_impl(
             ptr,
             rust_vec_len,
             data_len,
         ),
-        33 => wire__crate__PublicFederation_auto_accessor_get_modules_impl(
+        35 => wire__crate__PublicFederation_auto_accessor_get_modules_impl(
             ptr,
             rust_vec_len,
             data_len,
         ),
-        34 => wire__crate__PublicFederation_auto_accessor_get_network_impl(
+        36 => wire__crate__PublicFederation_auto_accessor_get_network_impl(
             ptr,
             rust_vec_len,
             data_len,
         ),
-        35 => wire__crate__PublicFederation_auto_accessor_get_picture_impl(
+        37 => wire__crate__PublicFederation_auto_accessor_get_picture_impl(
             ptr,
             rust_vec_len,
             data_len,
         ),
-        36 => {
+        38 => {
             wire__crate__PublicFederation_auto_accessor_set_about_impl(ptr, rust_vec_len, data_len)
         }
-        37 => wire__crate__PublicFederation_auto_accessor_set_federation_id_impl(
+        39 => wire__crate__PublicFederation_auto_accessor_set_federation_id_impl(
             ptr,
             rust_vec_len,
             data_len,
         ),
-        38 => wire__crate__PublicFederation_auto_accessor_set_federation_name_impl(
+        40 => wire__crate__PublicFederation_auto_accessor_set_federation_name_impl(
             ptr,
             rust_vec_len,
             data_len,
         ),
-        39 => wire__crate__PublicFederation_auto_accessor_set_invite_codes_impl(
+        41 => wire__crate__PublicFederation_auto_accessor_set_invite_codes_impl(
             ptr,
             rust_vec_len,
             data_len,
         ),
-        40 => wire__crate__PublicFederation_auto_accessor_set_modules_impl(
+        42 => wire__crate__PublicFederation_auto_accessor_set_modules_impl(
             ptr,
             rust_vec_len,
             data_len,
         ),
-        41 => wire__crate__PublicFederation_auto_accessor_set_network_impl(
+        43 => wire__crate__PublicFederation_auto_accessor_set_network_impl(
             ptr,
             rust_vec_len,
             data_len,
         ),
-        42 => wire__crate__PublicFederation_auto_accessor_set_picture_impl(
+        44 => wire__crate__PublicFederation_auto_accessor_set_picture_impl(
             ptr,
             rust_vec_len,
             data_len,

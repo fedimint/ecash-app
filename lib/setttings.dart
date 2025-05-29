@@ -1,10 +1,32 @@
 import 'package:carbine/discover.dart';
 import 'package:carbine/lib.dart';
+import 'package:carbine/mnemonic.dart';
+import 'package:carbine/theme.dart';
 import 'package:flutter/material.dart';
 
-class SettingsScreen extends StatelessWidget {
+class SettingsScreen extends StatefulWidget {
   final void Function(FederationSelector fed, bool recovering) onJoin;
   const SettingsScreen({super.key, required this.onJoin});
+
+  @override
+  State<SettingsScreen> createState() => _SettingsScreenState();
+}
+
+class _SettingsScreenState extends State<SettingsScreen> {
+  bool? hasAck;
+
+  @override
+  void initState() {
+    super.initState();
+    _checkSeedAck();
+  }
+
+  Future<void> _checkSeedAck() async {
+    final result = await hasSeedPhraseAck();
+    setState(() {
+      hasAck = result;
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -21,7 +43,7 @@ class SettingsScreen extends StatelessWidget {
               Navigator.push(
                 context,
                 MaterialPageRoute(
-                  builder: (context) => Discover(onJoin: onJoin),
+                  builder: (context) => Discover(onJoin: widget.onJoin),
                 ),
               );
             },
@@ -30,27 +52,28 @@ class SettingsScreen extends StatelessWidget {
             icon: Icons.link,
             title: 'Nostr Wallet Connect',
             subtitle: 'Connect to NWC-compatible apps',
-            onTap: () {
-              // Handle NWC tap
-            },
+            onTap: () {},
           ),
           const SizedBox(height: 12),
           _SettingsOption(
             icon: Icons.flash_on,
             title: 'Lightning Address',
             subtitle: 'Set or update your LN address',
-            onTap: () {
-              // Handle Lightning Address tap
-            },
+            onTap: () {},
           ),
           const SizedBox(height: 12),
           _SettingsOption(
             icon: Icons.vpn_key,
             title: 'Mnemonic',
-            subtitle: 'View or export your seed phrase',
+            subtitle: 'View your seed phrase',
+            warning: hasAck == false,
             onTap: () async {
               final words = await getMnemonic();
-              print("Mnemonic: $words");
+              await showCarbineModalBottomSheet(
+                context: context,
+                child: Mnemonic(words: words, hasAck: hasAck!),
+              );
+              _checkSeedAck();
             },
           ),
         ],
@@ -64,12 +87,14 @@ class _SettingsOption extends StatelessWidget {
   final String title;
   final String subtitle;
   final VoidCallback onTap;
+  final bool warning;
 
   const _SettingsOption({
     required this.icon,
     required this.title,
     required this.subtitle,
     required this.onTap,
+    this.warning = false,
   });
 
   @override
@@ -91,11 +116,15 @@ class _SettingsOption extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
-                      title,
-                      style: theme.textTheme.titleMedium?.copyWith(
-                        fontWeight: FontWeight.w600,
-                      ),
+                    Row(
+                      children: [
+                        Text(
+                          title,
+                          style: theme.textTheme.titleMedium?.copyWith(
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ],
                     ),
                     const SizedBox(height: 4),
                     Text(
@@ -107,7 +136,19 @@ class _SettingsOption extends StatelessWidget {
                   ],
                 ),
               ),
-              const Icon(Icons.chevron_right),
+              Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  if (warning)
+                    Icon(
+                      Icons.warning_amber_rounded,
+                      size: 28,
+                      color: Colors.orange,
+                    ),
+                  const SizedBox(width: 8),
+                  const Icon(Icons.chevron_right),
+                ],
+              ),
             ],
           ),
         ),
