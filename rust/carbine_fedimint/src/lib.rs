@@ -1197,7 +1197,7 @@ impl Multimint {
         if let Ok((url, receive_fee)) = Self::lnv2_select_gateway(client, None).await {
             // TODO: It is currently not possible to get the fed_base and fed_ppm from the config
             println!("Using LNv2 for selecting receive gateway");
-            let amount_with_fees = Self::compute_receive_amount(
+            let amount_with_fees = compute_receive_amount(
                 amount,
                 1_000,
                 100,
@@ -1215,53 +1215,6 @@ impl Multimint {
         Ok((gateway.api.to_string(), amount.msats, false))
     }
 
-    fn compute_receive_amount(
-        requested_amount: Amount,
-        fed_base: u64,
-        fed_ppm: u64,
-        gw_base: u64,
-        gw_ppm: u64,
-    ) -> u64 {
-        let requested_f = requested_amount.msats as f64;
-        let fed_base_f = fed_base as f64;
-        let fed_ppm_f = fed_ppm as f64;
-        let gw_base_f = gw_base as f64;
-        let gw_ppm_f = gw_ppm as f64;
-        let x_after_gateway = (requested_f + fed_base_f) / (1.0 - fed_ppm_f / 1_000_000.0);
-        let x_f = (x_after_gateway + gw_base_f) / (1.0 - gw_ppm_f / 1_000_000.0);
-        let x_ceil =
-            Self::receive_amount_after_fees(x_f.ceil() as u64, gw_base, gw_ppm, fed_base, fed_ppm);
-
-        if x_ceil == requested_amount.msats {
-            x_f.ceil() as u64
-        } else {
-            let max = x_f.ceil() as u64;
-            let requested = requested_amount.msats;
-            for i in (requested..=max).rev() {
-                let receive =
-                    Self::receive_amount_after_fees(i, gw_base, gw_ppm, fed_base, fed_ppm);
-                if receive == requested {
-                    return i;
-                }
-            }
-            max
-        }
-    }
-
-    fn receive_amount_after_fees(
-        x: u64,
-        gw_base: u64,
-        gw_ppm: u64,
-        fed_base: u64,
-        fed_ppm: u64,
-    ) -> u64 {
-        let gw_fee = gw_base + ((gw_ppm as f64 / 1_000_000.0) * x as f64) as u64;
-        let after_gateway = x - gw_fee;
-        let fed_fee = fed_base + ((fed_ppm as f64 / 1_000_000.0) * after_gateway as f64) as u64;
-        let leftover = after_gateway - fed_fee;
-        leftover
-    }
-
     async fn select_send_gateway(
         &self,
         federation_id: &FederationId,
@@ -1273,7 +1226,7 @@ impl Multimint {
             .get(federation_id)
             .expect("No federation exists");
         if let Ok((url, send_fee)) = Self::lnv2_select_gateway(client, Some(bolt11.clone())).await {
-            let amount_with_fees = Self::compute_send_amount(amount, 1_000, 100, send_fee);
+            let amount_with_fees = compute_send_amount(amount, 1_000, 100, send_fee);
             return Ok((url.to_string(), amount_with_fees, true));
         }
 
@@ -1290,7 +1243,7 @@ impl Multimint {
         } else {
             gateway.fees.into()
         };
-        let amount_with_fees = Self::compute_send_amount(amount, 0, 0, fees);
+        let amount_with_fees = compute_send_amount(amount, 0, 0, fees);
         Ok((gateway.api.to_string(), amount_with_fees, false))
     }
 
@@ -1304,19 +1257,6 @@ impl Multimint {
             .and_then(|rh| rh.0.last())
             .map(|hop| (hop.src_node_id, hop.short_channel_id))
             == Some((gateway.node_pub_key, gateway.federation_index))
-    }
-
-    fn compute_send_amount(
-        requested_amount: Amount,
-        fed_base: u64,
-        fed_ppm: u64,
-        send_fee: PaymentFee,
-    ) -> u64 {
-        let contract_amount = send_fee.add_to(requested_amount.msats);
-        let fed_fee =
-            fed_base + (((fed_ppm as f64) / 1_000_000.0) * contract_amount.msats as f64) as u64;
-        let total = contract_amount.msats + fed_fee;
-        total
     }
 
     pub async fn send(
@@ -1930,5 +1870,119 @@ impl Multimint {
         };
 
         Ok((txid, fees_sat))
+    }
+}
+
+/// Using the given federation (transaction) and gateway fees, compute the value `X` such that `X - total_fee == requested_amount`.
+/// This is non-trivial because the federation and gateway fees both contain a ppm fee, making each fee calculation dependent on each other.
+fn compute_receive_amount(
+    requested_amount: Amount,
+    fed_base: u64,
+    fed_ppm: u64,
+    gw_base: u64,
+    gw_ppm: u64,
+) -> u64 {
+    let requested_f = requested_amount.msats as f64;
+    let fed_base_f = fed_base as f64;
+    let fed_ppm_f = fed_ppm as f64;
+    let gw_base_f = gw_base as f64;
+    let gw_ppm_f = gw_ppm as f64;
+    let x_after_gateway = (requested_f + fed_base_f) / (1.0 - fed_ppm_f / 1_000_000.0);
+    let x_f = (x_after_gateway + gw_base_f) / (1.0 - gw_ppm_f / 1_000_000.0);
+    let x_ceil = receive_amount_after_fees(x_f.ceil() as u64, gw_base, gw_ppm, fed_base, fed_ppm);
+
+    if x_ceil == requested_amount.msats {
+        x_f.ceil() as u64
+    } else {
+        // The above logic is not exactly correct due to rounding, so it could be off by a few msats
+        // Until the above math is fixed, just iterate from the overestimate down until we find a value
+        // that, after fees, matches the `requested_amount`
+        let max = x_f.ceil() as u64;
+        let requested = requested_amount.msats;
+        for i in (requested..=max).rev() {
+            let receive = receive_amount_after_fees(i, gw_base, gw_ppm, fed_base, fed_ppm);
+            if receive == requested {
+                return i;
+            }
+        }
+        max
+    }
+}
+
+/// Using the given federation (transaction) and gateway fees, compute amount that will be leftover from `x` after fees
+/// have been subtracted.
+fn receive_amount_after_fees(
+    x: u64,
+    gw_base: u64,
+    gw_ppm: u64,
+    fed_base: u64,
+    fed_ppm: u64,
+) -> u64 {
+    let gw_fee = gw_base + ((gw_ppm as f64 / 1_000_000.0) * x as f64) as u64;
+    let after_gateway = x - gw_fee;
+    let fed_fee = fed_base + ((fed_ppm as f64 / 1_000_000.0) * after_gateway as f64) as u64;
+    let leftover = after_gateway - fed_fee;
+    leftover
+}
+
+/// Given the `requested_amount`, compute the total that the user will pay including gateway and federation (transaction) fees.
+fn compute_send_amount(
+    requested_amount: Amount,
+    fed_base: u64,
+    fed_ppm: u64,
+    send_fee: PaymentFee,
+) -> u64 {
+    let contract_amount = send_fee.add_to(requested_amount.msats);
+    let fed_fee =
+        fed_base + (((fed_ppm as f64) / 1_000_000.0) * contract_amount.msats as f64) as u64;
+    let total = contract_amount.msats + fed_fee;
+    total
+}
+
+#[cfg(test)]
+mod tests {
+    use fedimint_lnv2_common::gateway_api::PaymentFee;
+
+    use crate::{compute_receive_amount, compute_send_amount, receive_amount_after_fees};
+
+    #[test]
+    fn verify_lnv2_receive_amount() {
+        let invoice_amount = compute_receive_amount(
+            fedimint_core::Amount::from_sats(1_000),
+            1_000,
+            100,
+            50_000,
+            5_000,
+        );
+        assert_eq!(invoice_amount, 1_056_381);
+
+        let leftover = receive_amount_after_fees(1_056_381, 50_000, 5_000, 1_000, 100);
+        assert_eq!(leftover, 1_000_000);
+
+        let invoice_amount = compute_receive_amount(
+            fedimint_core::Amount::from_sats(54_561),
+            1_000,
+            100,
+            5_555,
+            1_234,
+        );
+        assert_eq!(invoice_amount, 54_640_437);
+
+        let leftover = receive_amount_after_fees(54_640_437, 5_555, 1_234, 1_000, 100);
+        assert_eq!(leftover, 54_561_000);
+    }
+
+    #[test]
+    fn verify_lnv2_send_amount() {
+        let send_amount = compute_send_amount(
+            fedimint_core::Amount::from_sats(1_000),
+            1_000,
+            100,
+            PaymentFee {
+                base: fedimint_core::Amount::from_sats(50),
+                parts_per_million: 5_000,
+            },
+        );
+        assert_eq!(send_amount, 1_056_105);
     }
 }
