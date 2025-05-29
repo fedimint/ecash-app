@@ -93,7 +93,7 @@ class _SeedPhraseInputState extends State<SeedPhraseInput> {
                 child: GridView.builder(
                   itemCount: 12,
                   gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                    crossAxisCount: 3,
+                    crossAxisCount: 2,
                     crossAxisSpacing: 12,
                     mainAxisSpacing: 12,
                     childAspectRatio: 3.5,
