@@ -183,6 +183,8 @@ Future<bool> hasSeedPhraseAck() => RustLib.instance.api.crateHasSeedPhraseAck();
 
 Future<void> ackSeedPhrase() => RustLib.instance.api.crateAckSeedPhrase();
 
+Future<List<String>> wordList() => RustLib.instance.api.crateWordList();
+
 // Rust type: RustOpaqueMoi<flutter_rust_bridge::for_generated::RustAutoOpaqueInner<Bolt11Invoice>>
 abstract class Bolt11Invoice implements RustOpaqueInterface {}
 

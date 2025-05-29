@@ -63,7 +63,7 @@ class RustLib extends BaseEntrypoint<RustLibApi, RustLibApiImpl, RustLibWire> {
   String get codegenVersion => '2.9.0';
 
   @override
-  int get rustContentHash => 55978999;
+  int get rustContentHash => -168831019;
 
   static const kDefaultExternalLibraryLoaderConfig =
       ExternalLibraryLoaderConfig(
@@ -387,6 +387,8 @@ abstract class RustLibApi extends BaseApi {
   Future<FederationSelector> crateWaitForRecovery({required String inviteCode});
 
   Future<bool> crateWalletExists({required String path});
+
+  Future<List<String>> crateWordList();
 
   RustArcIncrementStrongCountFnType
   get rust_arc_increment_strong_count_Bolt11Invoice;
@@ -3045,6 +3047,33 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
 
   TaskConstMeta get kCrateWalletExistsConstMeta =>
       const TaskConstMeta(debugName: "wallet_exists", argNames: ["path"]);
+
+  @override
+  Future<List<String>> crateWordList() {
+    return handler.executeNormal(
+      NormalTask(
+        callFfi: (port_) {
+          final serializer = SseSerializer(generalizedFrbRustBinding);
+          pdeCallFfi(
+            generalizedFrbRustBinding,
+            serializer,
+            funcId: 72,
+            port: port_,
+          );
+        },
+        codec: SseCodec(
+          decodeSuccessData: sse_decode_list_String,
+          decodeErrorData: null,
+        ),
+        constMeta: kCrateWordListConstMeta,
+        argValues: [],
+        apiImpl: this,
+      ),
+    );
+  }
+
+  TaskConstMeta get kCrateWordListConstMeta =>
+      const TaskConstMeta(debugName: "word_list", argNames: []);
 
   RustArcIncrementStrongCountFnType
   get rust_arc_increment_strong_count_Bolt11Invoice =>

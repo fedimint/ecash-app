@@ -414,6 +414,15 @@ pub async fn ack_seed_phrase() {
     mm.ack_seed_phrase().await
 }
 
+#[frb]
+pub async fn word_list() -> Vec<String> {
+    Language::English
+        .word_list()
+        .iter()
+        .map(|s| s.to_string())
+        .collect()
+}
+
 #[derive(Clone, Eq, PartialEq, Serialize, Debug)]
 pub struct PaymentPreview {
     amount_msats: u64,

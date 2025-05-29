@@ -15,6 +15,20 @@ class CreateWallet extends StatefulWidget {
 
 class _CreateWalletState extends State<CreateWallet> {
   bool _isCreating = false;
+  late List<String> _words;
+
+  @override
+  void initState() {
+    super.initState();
+    loadWords();
+  }
+
+  Future<void> loadWords() async {
+    final words = await wordList();
+    setState(() {
+      _words = words;
+    });
+  }
 
   Future<void> _handleCreateWallet() async {
     setState(() {
@@ -116,6 +130,7 @@ class _CreateWalletState extends State<CreateWallet> {
                               builder:
                                   (_) => SeedPhraseInput(
                                     onConfirm: _handleRecoverWallet,
+                                    validWords: _words,
                                   ),
                             ),
                           );
