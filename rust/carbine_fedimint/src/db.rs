@@ -13,6 +13,7 @@ pub(crate) enum DbKeyPrefix {
     FederationConfig = 0x00,
     ClientDatabase = 0x01,
     SeedPhraseAck = 0x02,
+    NostrKey = 0x03,
 }
 
 #[derive(Debug, Clone, Encodable, Decodable, Eq, PartialEq, Hash, Ord, PartialOrd)]
@@ -50,4 +51,18 @@ impl_db_record!(
     key = SeedPhraseAckKey,
     value = (),
     db_prefix = DbKeyPrefix::SeedPhraseAck,
+);
+
+#[derive(Debug, Encodable, Decodable)]
+pub(crate) struct NostrKey;
+
+#[derive(Debug, Encodable, Decodable)]
+pub(crate) struct NostrSecretKey {
+    pub(crate) secret_key_hex: String,
+}
+
+impl_db_record!(
+    key = NostrKey,
+    value = NostrSecretKey,
+    db_prefix = DbKeyPrefix::NostrKey,
 );
