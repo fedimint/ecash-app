@@ -1,3 +1,5 @@
+#![allow(unexpected_cfgs)]
+
 mod db;
 mod frb_generated;
 mod nostr;
@@ -271,8 +273,6 @@ pub async fn send_lnaddress(
         }
         other => bail!("Unexpected response from lnurl: {other:?}"),
     }
-
-    Err(anyhow!("Could not retrieve invoice"))
 }
 
 #[frb]
