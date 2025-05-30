@@ -16,6 +16,7 @@ use fedimint_meta_client::MetaClientInit;
 use fedimint_wallet_client::WithdrawState;
 /* AUTO INJECTED BY flutter_rust_bridge. This line may not be accurate, and you can change it according to your needs. */
 use flutter_rust_bridge::frb;
+use nostr::{NostrClient, PublicFederation};
 use serde_json::to_value;
 use tokio::sync::{OnceCell, RwLock};
 
@@ -64,17 +65,53 @@ use crate::db::{FederationConfig, FederationConfigKey, FederationConfigKeyPrefix
 const DEFAULT_EXPIRY_TIME_SECS: u32 = 86400;
 
 static MULTIMINT: OnceCell<Arc<RwLock<Multimint>>> = OnceCell::const_new();
+static DATABASE: OnceCell<Database> = OnceCell::const_new();
+static NOSTR: OnceCell<Arc<RwLock<NostrClient>>> = OnceCell::const_new();
 
 async fn get_multimint() -> Arc<RwLock<Multimint>> {
     MULTIMINT.get().expect("Multimint not initialized").clone()
 }
 
+async fn get_database(path: String) -> Database {
+    DATABASE
+        .get_or_init(|| async {
+            let db_path = PathBuf::from_str(&path)
+                .expect("Could not parse db path")
+                .join("client.db");
+            RocksDb::open(db_path)
+                .await
+                .expect("Could not open database")
+                .into()
+        })
+        .await
+        .clone()
+}
+
+async fn get_nostr_client() -> Arc<RwLock<NostrClient>> {
+    NOSTR.get().expect("NostrClient not initialized").clone()
+}
+
+#[frb]
+pub async fn create_nostr_client(path: String) {
+    let db = get_database(path).await;
+    NOSTR
+        .get_or_init(|| async {
+            Arc::new(RwLock::new(
+                NostrClient::new(db)
+                    .await
+                    .expect("Could not create nostr client"),
+            ))
+        })
+        .await;
+}
+
 #[frb]
 pub async fn create_new_multimint(path: String) {
+    let db = get_database(path).await;
     MULTIMINT
         .get_or_init(|| async {
             Arc::new(RwLock::new(
-                Multimint::new(path, MultimintCreation::New)
+                Multimint::new(db, MultimintCreation::New)
                     .await
                     .expect("Could not create multimint"),
             ))
@@ -84,10 +121,11 @@ pub async fn create_new_multimint(path: String) {
 
 #[frb]
 pub async fn load_multimint(path: String) {
+    let db = get_database(path).await;
     MULTIMINT
         .get_or_init(|| async {
             Arc::new(RwLock::new(
-                Multimint::new(path, MultimintCreation::LoadExisting)
+                Multimint::new(db, MultimintCreation::LoadExisting)
                     .await
                     .expect("Could not create multimint"),
             ))
@@ -97,10 +135,11 @@ pub async fn load_multimint(path: String) {
 
 #[frb]
 pub async fn create_multimint_from_words(path: String, words: Vec<String>) {
+    let db = get_database(path).await;
     MULTIMINT
         .get_or_init(|| async {
             Arc::new(RwLock::new(
-                Multimint::new(path, MultimintCreation::NewFromMnemonic { words })
+                Multimint::new(db, MultimintCreation::NewFromMnemonic { words })
                     .await
                     .expect("Could not create multimint"),
             ))
@@ -269,21 +308,24 @@ pub async fn await_receive(
     mm.await_receive(federation_id, operation_id).await
 }
 
-/*
 #[frb]
 pub async fn list_federations_from_nostr(force_update: bool) -> Vec<PublicFederation> {
+    let nostr_client = get_nostr_client().await;
+    let mut nostr = nostr_client.write().await;
+
     let multimint = get_multimint().await;
-    let mut mm = multimint.write().await;
-    if mm.public_federations.is_empty() || force_update {
-        mm.update_federations_from_nostr().await;
+    let mm = multimint.read().await;
+
+    if nostr.public_federations.is_empty() || force_update {
+        nostr.update_federations_from_nostr().await;
     }
-    mm.public_federations
+    nostr
+        .public_federations
         .clone()
         .into_iter()
         .filter(|pub_fed| !mm.clients.contains_key(&pub_fed.federation_id))
         .collect()
 }
-*/
 
 #[frb]
 pub async fn payment_preview(
@@ -440,7 +482,7 @@ impl Display for FederationSelector {
 
 #[derive(Clone)]
 pub(crate) struct Multimint {
-    pub(crate) db: Database,
+    db: Database,
     mnemonic: Mnemonic,
     modules: ClientModuleInitRegistry,
     clients: BTreeMap<FederationId, ClientHandleArc>,
@@ -485,12 +527,9 @@ pub enum ClientType {
 
 impl Multimint {
     pub(crate) async fn new(
-        path: String,
+        db: Database,
         creation_type: MultimintCreation,
     ) -> anyhow::Result<Self> {
-        let db_path = PathBuf::from_str(&path)?.join("client.db");
-        let db: Database = RocksDb::open(db_path).await?.into();
-
         let mnemonic = match creation_type {
             MultimintCreation::New => {
                 let mnemonic = Bip39RootSecretStrategy::<12>::random(&mut thread_rng());
@@ -762,7 +801,10 @@ impl Multimint {
         })
     }
 
-    async fn has_federation(&self, federation_id: &FederationId) -> bool {
+    // TODO: This is not currently being used, because we re-join a federation after recovery from a seed
+    // However, we should probably be checking when joining a federation that we haven't already joined
+    // and are currently not recovering.
+    async fn _has_federation(&self, federation_id: &FederationId) -> bool {
         let mut dbtx = self.db.begin_transaction_nc().await;
         dbtx.get_value(&FederationConfigKey { id: *federation_id })
             .await

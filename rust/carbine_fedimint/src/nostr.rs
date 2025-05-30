@@ -8,6 +8,7 @@ use bitcoin::Network;
 use fedimint_core::{
     config::FederationId,
     db::{Database, IDatabaseTransactionOpsCoreTyped},
+    task::TaskGroup,
     util::{FmtCompact, SafeUrl},
 };
 use serde::Serialize;
@@ -24,9 +25,10 @@ pub const DEFAULT_RELAYS: &[&str] = &[
 ];
 
 #[derive(Clone)]
-pub struct NostrClient {
+pub(crate) struct NostrClient {
     nostr_client: nostr_sdk::Client,
-    //public_federations: Vec<PublicFederation>,
+    pub(crate) public_federations: Vec<PublicFederation>,
+    task_group: TaskGroup,
 }
 
 impl NostrClient {
@@ -44,7 +46,8 @@ impl NostrClient {
                     &NostrSecretKey {
                         secret_key_hex: keys.secret_key().to_secret_hex(),
                     },
-                );
+                )
+                .await;
                 dbtx.commit_tx().await;
                 keys
             }
@@ -58,9 +61,21 @@ impl NostrClient {
             }
         }
 
-        Ok(NostrClient {
+        let nostr_client = NostrClient {
             nostr_client: client,
-        })
+            public_federations: vec![],
+            task_group: TaskGroup::new(),
+        };
+
+        let mut background_nostr = nostr_client.clone();
+        nostr_client
+            .task_group
+            .spawn_cancellable("update nostr feds", async move {
+                println!("Updating federations from nostr in the background...");
+                background_nostr.update_federations_from_nostr().await;
+            });
+
+        Ok(nostr_client)
     }
 
     pub async fn update_federations_from_nostr(&mut self) {
@@ -90,7 +105,7 @@ impl NostrClient {
                     .collect::<Vec<_>>();
 
                 println!("Public Federations: {events:?}");
-                //self.public_federations = events;
+                self.public_federations = events;
             }
             Err(e) => {
                 println!("Failed to fetch events from nostr: {e}");
