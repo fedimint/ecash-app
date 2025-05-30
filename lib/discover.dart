@@ -1,5 +1,6 @@
 import 'package:carbine/fed_preview.dart';
 import 'package:carbine/lib.dart';
+import 'package:carbine/nostr.dart';
 import 'package:carbine/theme.dart';
 import 'package:flutter/material.dart';
 

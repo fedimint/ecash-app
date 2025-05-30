@@ -127,8 +127,9 @@ class _SeedPhraseInputState extends State<SeedPhraseInput> {
                               textEditingController: controller,
                               focusNode: focusNode,
                               optionsBuilder: (TextEditingValue value) {
-                                if (value.text.isEmpty)
+                                if (value.text.isEmpty) {
                                   return const Iterable<String>.empty();
+                                }
                                 return widget.validWords.where(
                                   (word) =>
                                       word.startsWith(value.text.toLowerCase()),
