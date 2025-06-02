@@ -1,5 +1,6 @@
 import 'package:carbine/lib.dart';
 import 'package:carbine/main.dart';
+import 'package:carbine/multimint.dart';
 import 'package:carbine/number_pad.dart';
 import 'package:carbine/payment_selector.dart';
 import 'package:carbine/scan.dart';
