@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:carbine/dashboard.dart';
 import 'package:carbine/ecash_send.dart';
 import 'package:carbine/lib.dart';
+import 'package:carbine/multimint.dart';
 import 'package:carbine/request.dart';
 import 'package:carbine/theme.dart';
 import 'package:flutter/material.dart';

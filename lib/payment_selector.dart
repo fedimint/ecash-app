@@ -1,4 +1,4 @@
-import 'package:carbine/lib.dart';
+import 'package:carbine/multimint.dart';
 import 'package:carbine/scan.dart';
 import 'package:carbine/send.dart';
 import 'package:flutter/material.dart';

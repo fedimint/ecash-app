@@ -4,12 +4,11 @@
 // ignore_for_file: invalid_use_of_internal_member, unused_import, unnecessary_import
 
 import 'frb_generated.dart';
+import 'multimint.dart';
 import 'nostr.dart';
 import 'package:flutter_rust_bridge/flutter_rust_bridge_for_generated.dart';
 
-// These functions are ignored because they are not marked as `pub`: `_has_federation`, `await_ecash_reissue`, `await_ecash_send`, `await_receive_lnv1`, `await_receive_lnv2`, `await_send_lnv1`, `await_send_lnv2`, `build_client`, `compute_receive_amount`, `compute_send_amount`, `derive_federation_secret`, `get_client_database`, `get_database`, `get_federation_meta`, `get_multimint`, `get_nostr_client`, `invoice_routes_back_to_federation`, `lnv1_select_gateway`, `lnv1_update_gateway_cache`, `lnv2_select_gateway`, `load_clients`, `new`, `parse_ecash`, `pay_lnv1`, `pay_lnv2`, `receive_amount_after_fees`, `receive_lnv1`, `receive_lnv2`, `reissue_ecash`, `select_receive_gateway`, `select_send_gateway`, `send_ecash`, `transactions`, `wait_for_recovery`
-// These types are ignored because they are neither used by any `pub` functions nor (for structs and enums) marked `#[frb(unignore)]`: `ClientType`, `MultimintCreation`
-// These function are ignored because they are on traits that is not defined in current crate (put an empty `#[frb]` on it to unignore): `assert_receiver_is_total_eq`, `assert_receiver_is_total_eq`, `assert_receiver_is_total_eq`, `assert_receiver_is_total_eq`, `clone`, `clone`, `clone`, `clone`, `eq`, `eq`, `eq`, `eq`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`
+// These functions are ignored because they are not marked as `pub`: `get_database`, `get_multimint`, `get_nostr_client`
 
 Future<void> createNostrClient({required String path}) =>
     RustLib.instance.api.crateCreateNostrClient(path: path);
@@ -189,9 +188,6 @@ Future<void> ackSeedPhrase() => RustLib.instance.api.crateAckSeedPhrase();
 
 Future<List<String>> wordList() => RustLib.instance.api.crateWordList();
 
-// Rust type: RustOpaqueMoi<flutter_rust_bridge::for_generated::RustAutoOpaqueInner<Bolt11Invoice>>
-abstract class Bolt11Invoice implements RustOpaqueInterface {}
-
 // Rust type: RustOpaqueMoi<flutter_rust_bridge::for_generated::RustAutoOpaqueInner<ClientConfig>>
 abstract class ClientConfig implements RustOpaqueInterface {}
 
@@ -204,207 +200,5 @@ abstract class Database implements RustOpaqueInterface {}
 // Rust type: RustOpaqueMoi<flutter_rust_bridge::for_generated::RustAutoOpaqueInner<FederationId>>
 abstract class FederationId implements RustOpaqueInterface {}
 
-// Rust type: RustOpaqueMoi<flutter_rust_bridge::for_generated::RustAutoOpaqueInner<FederationSelector>>
-abstract class FederationSelector implements RustOpaqueInterface {
-  FederationId get federationId;
-
-  String get federationName;
-
-  String get inviteCode;
-
-  String? get network;
-
-  set federationId(FederationId federationId);
-
-  set federationName(String federationName);
-
-  set inviteCode(String inviteCode);
-
-  set network(String? network);
-}
-
-// Rust type: RustOpaqueMoi<flutter_rust_bridge::for_generated::RustAutoOpaqueInner<FinalReceiveOperationState>>
-abstract class FinalReceiveOperationState implements RustOpaqueInterface {}
-
-// Rust type: RustOpaqueMoi<flutter_rust_bridge::for_generated::RustAutoOpaqueInner<FinalSendOperationState>>
-abstract class FinalSendOperationState implements RustOpaqueInterface {}
-
 // Rust type: RustOpaqueMoi<flutter_rust_bridge::for_generated::RustAutoOpaqueInner<InviteCode>>
 abstract class InviteCode implements RustOpaqueInterface {}
-
-// Rust type: RustOpaqueMoi<flutter_rust_bridge::for_generated::RustAutoOpaqueInner<Multimint>>
-abstract class Multimint implements RustOpaqueInterface {
-  Future<void> ackSeedPhrase();
-
-  Future<FinalReceiveOperationState> awaitReceive({
-    required FederationId federationId,
-    required OperationId operationId,
-  });
-
-  Future<FinalSendOperationState> awaitSend({
-    required FederationId federationId,
-    required OperationId operationId,
-  });
-
-  Future<BigInt> balance({required FederationId federationId});
-
-  Future<List<(FederationSelector, bool)>> federations();
-
-  Future<List<String>> getMnemonic();
-
-  Future<bool> hasSeedPhraseAck();
-
-  Future<FederationSelector> joinFederation({
-    required String invite,
-    required bool recover,
-  });
-
-  Future<(Bolt11Invoice, OperationId)> receive({
-    required FederationId federationId,
-    required BigInt amountMsatsWithFees,
-    required BigInt amountMsatsWithoutFees,
-    required SafeUrl gateway,
-    required bool isLnv2,
-  });
-
-  /// Refund the full balance on-chain to the Mutinynet faucet.
-  ///
-  /// This is a temporary method that assists with development and should
-  /// be removed before supporting mainnet.
-  Future<(String, BigInt)> refund({required FederationId federationId});
-
-  Future<OperationId> send({
-    required FederationId federationId,
-    required String invoice,
-    required SafeUrl gateway,
-    required bool isLnv2,
-  });
-}
-
-// Rust type: RustOpaqueMoi<flutter_rust_bridge::for_generated::RustAutoOpaqueInner<OperationId>>
-abstract class OperationId implements RustOpaqueInterface {}
-
-// Rust type: RustOpaqueMoi<flutter_rust_bridge::for_generated::RustAutoOpaqueInner<ReissueExternalNotesState>>
-abstract class ReissueExternalNotesState implements RustOpaqueInterface {}
-
-// Rust type: RustOpaqueMoi<flutter_rust_bridge::for_generated::RustAutoOpaqueInner<SafeUrl>>
-abstract class SafeUrl implements RustOpaqueInterface {}
-
-// Rust type: RustOpaqueMoi<flutter_rust_bridge::for_generated::RustAutoOpaqueInner<SpendOOBState>>
-abstract class SpendOobState implements RustOpaqueInterface {}
-
-class FederationMeta {
-  final String? picture;
-  final String? welcome;
-  final List<Guardian> guardians;
-
-  const FederationMeta({this.picture, this.welcome, required this.guardians});
-
-  @override
-  int get hashCode => picture.hashCode ^ welcome.hashCode ^ guardians.hashCode;
-
-  @override
-  bool operator ==(Object other) =>
-      identical(this, other) ||
-      other is FederationMeta &&
-          runtimeType == other.runtimeType &&
-          picture == other.picture &&
-          welcome == other.welcome &&
-          guardians == other.guardians;
-}
-
-class Guardian {
-  final String name;
-  final String? version;
-
-  const Guardian({required this.name, this.version});
-
-  @override
-  int get hashCode => name.hashCode ^ version.hashCode;
-
-  @override
-  bool operator ==(Object other) =>
-      identical(this, other) ||
-      other is Guardian &&
-          runtimeType == other.runtimeType &&
-          name == other.name &&
-          version == other.version;
-}
-
-class PaymentPreview {
-  final BigInt amountMsats;
-  final String paymentHash;
-  final String network;
-  final String invoice;
-  final String gateway;
-  final BigInt amountWithFees;
-  final bool isLnv2;
-
-  const PaymentPreview({
-    required this.amountMsats,
-    required this.paymentHash,
-    required this.network,
-    required this.invoice,
-    required this.gateway,
-    required this.amountWithFees,
-    required this.isLnv2,
-  });
-
-  @override
-  int get hashCode =>
-      amountMsats.hashCode ^
-      paymentHash.hashCode ^
-      network.hashCode ^
-      invoice.hashCode ^
-      gateway.hashCode ^
-      amountWithFees.hashCode ^
-      isLnv2.hashCode;
-
-  @override
-  bool operator ==(Object other) =>
-      identical(this, other) ||
-      other is PaymentPreview &&
-          runtimeType == other.runtimeType &&
-          amountMsats == other.amountMsats &&
-          paymentHash == other.paymentHash &&
-          network == other.network &&
-          invoice == other.invoice &&
-          gateway == other.gateway &&
-          amountWithFees == other.amountWithFees &&
-          isLnv2 == other.isLnv2;
-}
-
-class Transaction {
-  final bool received;
-  final BigInt amount;
-  final String module;
-  final BigInt timestamp;
-  final Uint8List operationId;
-
-  const Transaction({
-    required this.received,
-    required this.amount,
-    required this.module,
-    required this.timestamp,
-    required this.operationId,
-  });
-
-  @override
-  int get hashCode =>
-      received.hashCode ^
-      amount.hashCode ^
-      module.hashCode ^
-      timestamp.hashCode ^
-      operationId.hashCode;
-
-  @override
-  bool operator ==(Object other) =>
-      identical(this, other) ||
-      other is Transaction &&
-          runtimeType == other.runtimeType &&
-          received == other.received &&
-          amount == other.amount &&
-          module == other.module &&
-          timestamp == other.timestamp &&
-          operationId == other.operationId;
-}
