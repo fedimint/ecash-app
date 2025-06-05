@@ -188,6 +188,22 @@ Future<void> ackSeedPhrase() => RustLib.instance.api.crateAckSeedPhrase();
 
 Future<List<String>> wordList() => RustLib.instance.api.crateWordList();
 
+Stream<DepositEvent> subscribeDeposits({required FederationId federationId}) =>
+    RustLib.instance.api.crateSubscribeDeposits(federationId: federationId);
+
+Future<void> monitorDepositAddress({
+  required FederationId federationId,
+  required String address,
+}) => RustLib.instance.api.crateMonitorDepositAddress(
+  federationId: federationId,
+  address: address,
+);
+
+Future<String> allocateDepositAddress({required FederationId federationId}) =>
+    RustLib.instance.api.crateAllocateDepositAddress(
+      federationId: federationId,
+    );
+
 // Rust type: RustOpaqueMoi<flutter_rust_bridge::for_generated::RustAutoOpaqueInner<ClientConfig>>
 abstract class ClientConfig implements RustOpaqueInterface {}
 

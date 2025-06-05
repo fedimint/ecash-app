@@ -41,7 +41,7 @@ flutter_rust_bridge::frb_generated_boilerplate!(
     default_rust_auto_opaque = RustAutoOpaqueMoi,
 );
 pub(crate) const FLUTTER_RUST_BRIDGE_CODEGEN_VERSION: &str = "2.9.0";
-pub(crate) const FLUTTER_RUST_BRIDGE_CODEGEN_CONTENT_HASH: i32 = 979969919;
+pub(crate) const FLUTTER_RUST_BRIDGE_CODEGEN_CONTENT_HASH: i32 = -1645376612;
 
 // Section: executor
 
@@ -49,6 +49,201 @@ flutter_rust_bridge::frb_generated_default_handler!();
 
 // Section: wire_funcs
 
+fn wire__crate__multimint__DepositEvent_auto_accessor_get_event_kind_impl(
+    ptr_: flutter_rust_bridge::for_generated::PlatformGeneralizedUint8ListPtr,
+    rust_vec_len_: i32,
+    data_len_: i32,
+) -> flutter_rust_bridge::for_generated::WireSyncRust2DartSse {
+    FLUTTER_RUST_BRIDGE_HANDLER.wrap_sync::<flutter_rust_bridge::for_generated::SseCodec, _>(
+        flutter_rust_bridge::for_generated::TaskInfo {
+            debug_name: "DepositEvent_auto_accessor_get_event_kind",
+            port: None,
+            mode: flutter_rust_bridge::for_generated::FfiCallMode::Sync,
+        },
+        move || {
+            let message = unsafe {
+                flutter_rust_bridge::for_generated::Dart2RustMessageSse::from_wire(
+                    ptr_,
+                    rust_vec_len_,
+                    data_len_,
+                )
+            };
+            let mut deserializer =
+                flutter_rust_bridge::for_generated::SseDeserializer::new(message);
+            let api_that = <RustOpaqueMoi<
+                flutter_rust_bridge::for_generated::RustAutoOpaqueInner<DepositEvent>,
+            >>::sse_decode(&mut deserializer);
+            deserializer.end();
+            transform_result_sse::<_, ()>((move || {
+                let mut api_that_guard = None;
+                let decode_indices_ =
+                    flutter_rust_bridge::for_generated::lockable_compute_decode_order(vec![
+                        flutter_rust_bridge::for_generated::LockableOrderInfo::new(
+                            &api_that, 0, false,
+                        ),
+                    ]);
+                for i in decode_indices_ {
+                    match i {
+                        0 => api_that_guard = Some(api_that.lockable_decode_sync_ref()),
+                        _ => unreachable!(),
+                    }
+                }
+                let api_that_guard = api_that_guard.unwrap();
+                let output_ok = Result::<_, ()>::Ok(api_that_guard.event_kind.clone())?;
+                Ok(output_ok)
+            })())
+        },
+    )
+}
+fn wire__crate__multimint__DepositEvent_auto_accessor_get_federation_id_impl(
+    ptr_: flutter_rust_bridge::for_generated::PlatformGeneralizedUint8ListPtr,
+    rust_vec_len_: i32,
+    data_len_: i32,
+) -> flutter_rust_bridge::for_generated::WireSyncRust2DartSse {
+    FLUTTER_RUST_BRIDGE_HANDLER.wrap_sync::<flutter_rust_bridge::for_generated::SseCodec, _>(
+        flutter_rust_bridge::for_generated::TaskInfo {
+            debug_name: "DepositEvent_auto_accessor_get_federation_id",
+            port: None,
+            mode: flutter_rust_bridge::for_generated::FfiCallMode::Sync,
+        },
+        move || {
+            let message = unsafe {
+                flutter_rust_bridge::for_generated::Dart2RustMessageSse::from_wire(
+                    ptr_,
+                    rust_vec_len_,
+                    data_len_,
+                )
+            };
+            let mut deserializer =
+                flutter_rust_bridge::for_generated::SseDeserializer::new(message);
+            let api_that = <RustOpaqueMoi<
+                flutter_rust_bridge::for_generated::RustAutoOpaqueInner<DepositEvent>,
+            >>::sse_decode(&mut deserializer);
+            deserializer.end();
+            transform_result_sse::<_, ()>((move || {
+                let mut api_that_guard = None;
+                let decode_indices_ =
+                    flutter_rust_bridge::for_generated::lockable_compute_decode_order(vec![
+                        flutter_rust_bridge::for_generated::LockableOrderInfo::new(
+                            &api_that, 0, false,
+                        ),
+                    ]);
+                for i in decode_indices_ {
+                    match i {
+                        0 => api_that_guard = Some(api_that.lockable_decode_sync_ref()),
+                        _ => unreachable!(),
+                    }
+                }
+                let api_that_guard = api_that_guard.unwrap();
+                let output_ok = Result::<_, ()>::Ok(api_that_guard.federation_id.clone())?;
+                Ok(output_ok)
+            })())
+        },
+    )
+}
+fn wire__crate__multimint__DepositEvent_auto_accessor_set_event_kind_impl(
+    ptr_: flutter_rust_bridge::for_generated::PlatformGeneralizedUint8ListPtr,
+    rust_vec_len_: i32,
+    data_len_: i32,
+) -> flutter_rust_bridge::for_generated::WireSyncRust2DartSse {
+    FLUTTER_RUST_BRIDGE_HANDLER.wrap_sync::<flutter_rust_bridge::for_generated::SseCodec, _>(
+        flutter_rust_bridge::for_generated::TaskInfo {
+            debug_name: "DepositEvent_auto_accessor_set_event_kind",
+            port: None,
+            mode: flutter_rust_bridge::for_generated::FfiCallMode::Sync,
+        },
+        move || {
+            let message = unsafe {
+                flutter_rust_bridge::for_generated::Dart2RustMessageSse::from_wire(
+                    ptr_,
+                    rust_vec_len_,
+                    data_len_,
+                )
+            };
+            let mut deserializer =
+                flutter_rust_bridge::for_generated::SseDeserializer::new(message);
+            let api_that = <RustOpaqueMoi<
+                flutter_rust_bridge::for_generated::RustAutoOpaqueInner<DepositEvent>,
+            >>::sse_decode(&mut deserializer);
+            let api_event_kind =
+                <crate::multimint::DepositEventKind>::sse_decode(&mut deserializer);
+            deserializer.end();
+            transform_result_sse::<_, ()>((move || {
+                let mut api_that_guard = None;
+                let decode_indices_ =
+                    flutter_rust_bridge::for_generated::lockable_compute_decode_order(vec![
+                        flutter_rust_bridge::for_generated::LockableOrderInfo::new(
+                            &api_that, 0, true,
+                        ),
+                    ]);
+                for i in decode_indices_ {
+                    match i {
+                        0 => api_that_guard = Some(api_that.lockable_decode_sync_ref_mut()),
+                        _ => unreachable!(),
+                    }
+                }
+                let mut api_that_guard = api_that_guard.unwrap();
+                let output_ok = Result::<_, ()>::Ok({
+                    {
+                        api_that_guard.event_kind = api_event_kind;
+                    };
+                })?;
+                Ok(output_ok)
+            })())
+        },
+    )
+}
+fn wire__crate__multimint__DepositEvent_auto_accessor_set_federation_id_impl(
+    ptr_: flutter_rust_bridge::for_generated::PlatformGeneralizedUint8ListPtr,
+    rust_vec_len_: i32,
+    data_len_: i32,
+) -> flutter_rust_bridge::for_generated::WireSyncRust2DartSse {
+    FLUTTER_RUST_BRIDGE_HANDLER.wrap_sync::<flutter_rust_bridge::for_generated::SseCodec, _>(
+        flutter_rust_bridge::for_generated::TaskInfo {
+            debug_name: "DepositEvent_auto_accessor_set_federation_id",
+            port: None,
+            mode: flutter_rust_bridge::for_generated::FfiCallMode::Sync,
+        },
+        move || {
+            let message = unsafe {
+                flutter_rust_bridge::for_generated::Dart2RustMessageSse::from_wire(
+                    ptr_,
+                    rust_vec_len_,
+                    data_len_,
+                )
+            };
+            let mut deserializer =
+                flutter_rust_bridge::for_generated::SseDeserializer::new(message);
+            let api_that = <RustOpaqueMoi<
+                flutter_rust_bridge::for_generated::RustAutoOpaqueInner<DepositEvent>,
+            >>::sse_decode(&mut deserializer);
+            let api_federation_id = <FederationId>::sse_decode(&mut deserializer);
+            deserializer.end();
+            transform_result_sse::<_, ()>((move || {
+                let mut api_that_guard = None;
+                let decode_indices_ =
+                    flutter_rust_bridge::for_generated::lockable_compute_decode_order(vec![
+                        flutter_rust_bridge::for_generated::LockableOrderInfo::new(
+                            &api_that, 0, true,
+                        ),
+                    ]);
+                for i in decode_indices_ {
+                    match i {
+                        0 => api_that_guard = Some(api_that.lockable_decode_sync_ref_mut()),
+                        _ => unreachable!(),
+                    }
+                }
+                let mut api_that_guard = api_that_guard.unwrap();
+                let output_ok = Result::<_, ()>::Ok({
+                    {
+                        api_that_guard.federation_id = api_federation_id;
+                    };
+                })?;
+                Ok(output_ok)
+            })())
+        },
+    )
+}
 fn wire__crate__db__FederationConfig_auto_accessor_get_client_config_impl(
     ptr_: flutter_rust_bridge::for_generated::PlatformGeneralizedUint8ListPtr,
     rust_vec_len_: i32,
@@ -979,6 +1174,66 @@ fn wire__crate__multimint__Multimint_ack_seed_phrase_impl(
         },
     )
 }
+fn wire__crate__multimint__Multimint_allocate_deposit_address_impl(
+    port_: flutter_rust_bridge::for_generated::MessagePort,
+    ptr_: flutter_rust_bridge::for_generated::PlatformGeneralizedUint8ListPtr,
+    rust_vec_len_: i32,
+    data_len_: i32,
+) {
+    FLUTTER_RUST_BRIDGE_HANDLER.wrap_async::<flutter_rust_bridge::for_generated::SseCodec, _, _, _>(
+        flutter_rust_bridge::for_generated::TaskInfo {
+            debug_name: "Multimint_allocate_deposit_address",
+            port: Some(port_),
+            mode: flutter_rust_bridge::for_generated::FfiCallMode::Normal,
+        },
+        move || {
+            let message = unsafe {
+                flutter_rust_bridge::for_generated::Dart2RustMessageSse::from_wire(
+                    ptr_,
+                    rust_vec_len_,
+                    data_len_,
+                )
+            };
+            let mut deserializer =
+                flutter_rust_bridge::for_generated::SseDeserializer::new(message);
+            let api_that = <RustOpaqueMoi<
+                flutter_rust_bridge::for_generated::RustAutoOpaqueInner<Multimint>,
+            >>::sse_decode(&mut deserializer);
+            let api_federation_id = <FederationId>::sse_decode(&mut deserializer);
+            deserializer.end();
+            move |context| async move {
+                transform_result_sse::<_, flutter_rust_bridge::for_generated::anyhow::Error>(
+                    (move || async move {
+                        let mut api_that_guard = None;
+                        let decode_indices_ =
+                            flutter_rust_bridge::for_generated::lockable_compute_decode_order(
+                                vec![flutter_rust_bridge::for_generated::LockableOrderInfo::new(
+                                    &api_that, 0, false,
+                                )],
+                            );
+                        for i in decode_indices_ {
+                            match i {
+                                0 => {
+                                    api_that_guard =
+                                        Some(api_that.lockable_decode_async_ref().await)
+                                }
+                                _ => unreachable!(),
+                            }
+                        }
+                        let api_that_guard = api_that_guard.unwrap();
+                        let output_ok = crate::multimint::Multimint::allocate_deposit_address(
+                            &*api_that_guard,
+                            api_federation_id,
+                        )
+                        .await?;
+                        Ok(output_ok)
+                    })()
+                    .await,
+                )
+            }
+        },
+    )
+}
 fn wire__crate__multimint__Multimint_await_ecash_reissue_impl(
     port_: flutter_rust_bridge::for_generated::MessagePort,
     ptr_: flutter_rust_bridge::for_generated::PlatformGeneralizedUint8ListPtr,
@@ -1370,7 +1625,7 @@ fn wire__crate__multimint__Multimint_contains_client_impl(
     rust_vec_len_: i32,
     data_len_: i32,
 ) {
-    FLUTTER_RUST_BRIDGE_HANDLER.wrap_normal::<flutter_rust_bridge::for_generated::SseCodec, _, _>(
+    FLUTTER_RUST_BRIDGE_HANDLER.wrap_async::<flutter_rust_bridge::for_generated::SseCodec, _, _, _>(
         flutter_rust_bridge::for_generated::TaskInfo {
             debug_name: "Multimint_contains_client",
             port: Some(port_),
@@ -1393,40 +1648,50 @@ fn wire__crate__multimint__Multimint_contains_client_impl(
                 flutter_rust_bridge::for_generated::RustAutoOpaqueInner<FederationId>,
             >>::sse_decode(&mut deserializer);
             deserializer.end();
-            move |context| {
-                transform_result_sse::<_, ()>((move || {
-                    let mut api_that_guard = None;
-                    let mut api_federation_id_guard = None;
-                    let decode_indices_ =
-                        flutter_rust_bridge::for_generated::lockable_compute_decode_order(vec![
-                            flutter_rust_bridge::for_generated::LockableOrderInfo::new(
-                                &api_that, 0, false,
-                            ),
-                            flutter_rust_bridge::for_generated::LockableOrderInfo::new(
-                                &api_federation_id,
-                                1,
-                                false,
-                            ),
-                        ]);
-                    for i in decode_indices_ {
-                        match i {
-                            0 => api_that_guard = Some(api_that.lockable_decode_sync_ref()),
-                            1 => {
-                                api_federation_id_guard =
-                                    Some(api_federation_id.lockable_decode_sync_ref())
+            move |context| async move {
+                transform_result_sse::<_, ()>(
+                    (move || async move {
+                        let mut api_that_guard = None;
+                        let mut api_federation_id_guard = None;
+                        let decode_indices_ =
+                            flutter_rust_bridge::for_generated::lockable_compute_decode_order(
+                                vec![
+                                    flutter_rust_bridge::for_generated::LockableOrderInfo::new(
+                                        &api_that, 0, false,
+                                    ),
+                                    flutter_rust_bridge::for_generated::LockableOrderInfo::new(
+                                        &api_federation_id,
+                                        1,
+                                        false,
+                                    ),
+                                ],
+                            );
+                        for i in decode_indices_ {
+                            match i {
+                                0 => {
+                                    api_that_guard =
+                                        Some(api_that.lockable_decode_async_ref().await)
+                                }
+                                1 => {
+                                    api_federation_id_guard =
+                                        Some(api_federation_id.lockable_decode_async_ref().await)
+                                }
+                                _ => unreachable!(),
                             }
-                            _ => unreachable!(),
                         }
-                    }
-                    let api_that_guard = api_that_guard.unwrap();
-                    let api_federation_id_guard = api_federation_id_guard.unwrap();
-                    let output_ok =
-                        Result::<_, ()>::Ok(crate::multimint::Multimint::contains_client(
-                            &*api_that_guard,
-                            &*api_federation_id_guard,
-                        ))?;
-                    Ok(output_ok)
-                })())
+                        let api_that_guard = api_that_guard.unwrap();
+                        let api_federation_id_guard = api_federation_id_guard.unwrap();
+                        let output_ok = Result::<_, ()>::Ok(
+                            crate::multimint::Multimint::contains_client(
+                                &*api_that_guard,
+                                &*api_federation_id_guard,
+                            )
+                            .await,
+                        )?;
+                        Ok(output_ok)
+                    })()
+                    .await,
+                )
             }
         },
     )
@@ -1709,6 +1974,68 @@ fn wire__crate__multimint__Multimint_join_federation_impl(
                             &mut *api_that_guard,
                             api_invite,
                             api_recover,
+                        )
+                        .await?;
+                        Ok(output_ok)
+                    })()
+                    .await,
+                )
+            }
+        },
+    )
+}
+fn wire__crate__multimint__Multimint_monitor_deposit_address_impl(
+    port_: flutter_rust_bridge::for_generated::MessagePort,
+    ptr_: flutter_rust_bridge::for_generated::PlatformGeneralizedUint8ListPtr,
+    rust_vec_len_: i32,
+    data_len_: i32,
+) {
+    FLUTTER_RUST_BRIDGE_HANDLER.wrap_async::<flutter_rust_bridge::for_generated::SseCodec, _, _, _>(
+        flutter_rust_bridge::for_generated::TaskInfo {
+            debug_name: "Multimint_monitor_deposit_address",
+            port: Some(port_),
+            mode: flutter_rust_bridge::for_generated::FfiCallMode::Normal,
+        },
+        move || {
+            let message = unsafe {
+                flutter_rust_bridge::for_generated::Dart2RustMessageSse::from_wire(
+                    ptr_,
+                    rust_vec_len_,
+                    data_len_,
+                )
+            };
+            let mut deserializer =
+                flutter_rust_bridge::for_generated::SseDeserializer::new(message);
+            let api_that = <RustOpaqueMoi<
+                flutter_rust_bridge::for_generated::RustAutoOpaqueInner<Multimint>,
+            >>::sse_decode(&mut deserializer);
+            let api_federation_id = <FederationId>::sse_decode(&mut deserializer);
+            let api_address = <String>::sse_decode(&mut deserializer);
+            deserializer.end();
+            move |context| async move {
+                transform_result_sse::<_, flutter_rust_bridge::for_generated::anyhow::Error>(
+                    (move || async move {
+                        let mut api_that_guard = None;
+                        let decode_indices_ =
+                            flutter_rust_bridge::for_generated::lockable_compute_decode_order(
+                                vec![flutter_rust_bridge::for_generated::LockableOrderInfo::new(
+                                    &api_that, 0, false,
+                                )],
+                            );
+                        for i in decode_indices_ {
+                            match i {
+                                0 => {
+                                    api_that_guard =
+                                        Some(api_that.lockable_decode_async_ref().await)
+                                }
+                                _ => unreachable!(),
+                            }
+                        }
+                        let api_that_guard = api_that_guard.unwrap();
+                        let output_ok = crate::multimint::Multimint::monitor_deposit_address(
+                            &*api_that_guard,
+                            api_federation_id,
+                            api_address,
                         )
                         .await?;
                         Ok(output_ok)
@@ -2383,6 +2710,32 @@ fn wire__crate__multimint__Multimint_send_ecash_impl(
             }
         },
     )
+}
+fn wire__crate__multimint__Multimint_subscribe_deposits_impl(
+    port_: flutter_rust_bridge::for_generated::MessagePort,
+    ptr_: flutter_rust_bridge::for_generated::PlatformGeneralizedUint8ListPtr,
+    rust_vec_len_: i32,
+    data_len_: i32,
+) {
+    FLUTTER_RUST_BRIDGE_HANDLER.wrap_async::<flutter_rust_bridge::for_generated::SseCodec,_,_,_>(flutter_rust_bridge::for_generated::TaskInfo{ debug_name: "Multimint_subscribe_deposits", port: Some(port_), mode: flutter_rust_bridge::for_generated::FfiCallMode::Normal }, move || { 
+            let message = unsafe { flutter_rust_bridge::for_generated::Dart2RustMessageSse::from_wire(ptr_, rust_vec_len_, data_len_) };
+            let mut deserializer = flutter_rust_bridge::for_generated::SseDeserializer::new(message);
+            let api_that = <RustOpaqueMoi<flutter_rust_bridge::for_generated::RustAutoOpaqueInner<Multimint>>>::sse_decode(&mut deserializer);
+let api_federation_id = <FederationId>::sse_decode(&mut deserializer);
+let api_sink = <StreamSink<DepositEvent,flutter_rust_bridge::for_generated::SseCodec>>::sse_decode(&mut deserializer);deserializer.end(); move |context| async move {
+                    transform_result_sse::<_, flutter_rust_bridge::for_generated::anyhow::Error>((move || async move {
+                        let mut api_that_guard = None;
+let decode_indices_ = flutter_rust_bridge::for_generated::lockable_compute_decode_order(vec![flutter_rust_bridge::for_generated::LockableOrderInfo::new(&api_that, 0, false)]);
+        for i in decode_indices_ {
+            match i {
+                0 => api_that_guard = Some(api_that.lockable_decode_async_ref().await),
+                _ => unreachable!(),
+            }
+        }
+        let api_that_guard = api_that_guard.unwrap();
+ let output_ok = crate::multimint::Multimint::subscribe_deposits(&*api_that_guard, api_federation_id, api_sink).await?;   Ok(output_ok)
+                    })().await)
+                } })
 }
 fn wire__crate__multimint__Multimint_transactions_impl(
     port_: flutter_rust_bridge::for_generated::MessagePort,
@@ -3339,6 +3692,42 @@ fn wire__crate__ack_seed_phrase_impl(
         },
     )
 }
+fn wire__crate__allocate_deposit_address_impl(
+    port_: flutter_rust_bridge::for_generated::MessagePort,
+    ptr_: flutter_rust_bridge::for_generated::PlatformGeneralizedUint8ListPtr,
+    rust_vec_len_: i32,
+    data_len_: i32,
+) {
+    FLUTTER_RUST_BRIDGE_HANDLER.wrap_async::<flutter_rust_bridge::for_generated::SseCodec, _, _, _>(
+        flutter_rust_bridge::for_generated::TaskInfo {
+            debug_name: "allocate_deposit_address",
+            port: Some(port_),
+            mode: flutter_rust_bridge::for_generated::FfiCallMode::Normal,
+        },
+        move || {
+            let message = unsafe {
+                flutter_rust_bridge::for_generated::Dart2RustMessageSse::from_wire(
+                    ptr_,
+                    rust_vec_len_,
+                    data_len_,
+                )
+            };
+            let mut deserializer =
+                flutter_rust_bridge::for_generated::SseDeserializer::new(message);
+            let api_federation_id = <FederationId>::sse_decode(&mut deserializer);
+            deserializer.end();
+            move |context| async move {
+                transform_result_sse::<_, flutter_rust_bridge::for_generated::anyhow::Error>(
+                    (move || async move {
+                        let output_ok = crate::allocate_deposit_address(api_federation_id).await?;
+                        Ok(output_ok)
+                    })()
+                    .await,
+                )
+            }
+        },
+    )
+}
 fn wire__crate__await_ecash_reissue_impl(
     port_: flutter_rust_bridge::for_generated::MessagePort,
     ptr_: flutter_rust_bridge::for_generated::PlatformGeneralizedUint8ListPtr,
@@ -4006,6 +4395,44 @@ fn wire__crate__load_multimint_impl(
         },
     )
 }
+fn wire__crate__monitor_deposit_address_impl(
+    port_: flutter_rust_bridge::for_generated::MessagePort,
+    ptr_: flutter_rust_bridge::for_generated::PlatformGeneralizedUint8ListPtr,
+    rust_vec_len_: i32,
+    data_len_: i32,
+) {
+    FLUTTER_RUST_BRIDGE_HANDLER.wrap_async::<flutter_rust_bridge::for_generated::SseCodec, _, _, _>(
+        flutter_rust_bridge::for_generated::TaskInfo {
+            debug_name: "monitor_deposit_address",
+            port: Some(port_),
+            mode: flutter_rust_bridge::for_generated::FfiCallMode::Normal,
+        },
+        move || {
+            let message = unsafe {
+                flutter_rust_bridge::for_generated::Dart2RustMessageSse::from_wire(
+                    ptr_,
+                    rust_vec_len_,
+                    data_len_,
+                )
+            };
+            let mut deserializer =
+                flutter_rust_bridge::for_generated::SseDeserializer::new(message);
+            let api_federation_id = <FederationId>::sse_decode(&mut deserializer);
+            let api_address = <String>::sse_decode(&mut deserializer);
+            deserializer.end();
+            move |context| async move {
+                transform_result_sse::<_, flutter_rust_bridge::for_generated::anyhow::Error>(
+                    (move || async move {
+                        let output_ok =
+                            crate::monitor_deposit_address(api_federation_id, api_address).await?;
+                        Ok(output_ok)
+                    })()
+                    .await,
+                )
+            }
+        },
+    )
+}
 fn wire__crate__parse_ecash_impl(
     port_: flutter_rust_bridge::for_generated::MessagePort,
     ptr_: flutter_rust_bridge::for_generated::PlatformGeneralizedUint8ListPtr,
@@ -4559,6 +4986,22 @@ fn wire__crate__send_lnaddress_impl(
         },
     )
 }
+fn wire__crate__subscribe_deposits_impl(
+    port_: flutter_rust_bridge::for_generated::MessagePort,
+    ptr_: flutter_rust_bridge::for_generated::PlatformGeneralizedUint8ListPtr,
+    rust_vec_len_: i32,
+    data_len_: i32,
+) {
+    FLUTTER_RUST_BRIDGE_HANDLER.wrap_async::<flutter_rust_bridge::for_generated::SseCodec,_,_,_>(flutter_rust_bridge::for_generated::TaskInfo{ debug_name: "subscribe_deposits", port: Some(port_), mode: flutter_rust_bridge::for_generated::FfiCallMode::Normal }, move || { 
+            let message = unsafe { flutter_rust_bridge::for_generated::Dart2RustMessageSse::from_wire(ptr_, rust_vec_len_, data_len_) };
+            let mut deserializer = flutter_rust_bridge::for_generated::SseDeserializer::new(message);
+            let api_sink = <StreamSink<DepositEvent,flutter_rust_bridge::for_generated::SseCodec>>::sse_decode(&mut deserializer);
+let api_federation_id = <FederationId>::sse_decode(&mut deserializer);deserializer.end(); move |context| async move {
+                    transform_result_sse::<_, flutter_rust_bridge::for_generated::anyhow::Error>((move || async move {
+                         let output_ok = crate::subscribe_deposits(api_sink, api_federation_id).await?;   Ok(output_ok)
+                    })().await)
+                } })
+}
 fn wire__crate__transactions_impl(
     port_: flutter_rust_bridge::for_generated::MessagePort,
     ptr_: flutter_rust_bridge::for_generated::PlatformGeneralizedUint8ListPtr,
@@ -4753,6 +5196,9 @@ flutter_rust_bridge::frb_generated_moi_arc_impl_value!(
     flutter_rust_bridge::for_generated::RustAutoOpaqueInner<Database>
 );
 flutter_rust_bridge::frb_generated_moi_arc_impl_value!(
+    flutter_rust_bridge::for_generated::RustAutoOpaqueInner<DepositEvent>
+);
+flutter_rust_bridge::frb_generated_moi_arc_impl_value!(
     flutter_rust_bridge::for_generated::RustAutoOpaqueInner<FederationConfig>
 );
 flutter_rust_bridge::frb_generated_moi_arc_impl_value!(
@@ -4847,6 +5293,16 @@ impl SseDecode for Database {
     fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
         let mut inner = <RustOpaqueMoi<
             flutter_rust_bridge::for_generated::RustAutoOpaqueInner<Database>,
+        >>::sse_decode(deserializer);
+        return flutter_rust_bridge::for_generated::rust_auto_opaque_decode_owned(inner);
+    }
+}
+
+impl SseDecode for DepositEvent {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
+        let mut inner = <RustOpaqueMoi<
+            flutter_rust_bridge::for_generated::RustAutoOpaqueInner<DepositEvent>,
         >>::sse_decode(deserializer);
         return flutter_rust_bridge::for_generated::rust_auto_opaque_decode_owned(inner);
     }
@@ -5031,6 +5487,16 @@ impl SseDecode
 }
 
 impl SseDecode
+    for RustOpaqueMoi<flutter_rust_bridge::for_generated::RustAutoOpaqueInner<DepositEvent>>
+{
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
+        let mut inner = <usize>::sse_decode(deserializer);
+        return decode_rust_opaque_moi(inner);
+    }
+}
+
+impl SseDecode
     for RustOpaqueMoi<flutter_rust_bridge::for_generated::RustAutoOpaqueInner<FederationConfig>>
 {
     // Codec=Sse (Serialization based), see doc to use other codecs
@@ -5164,6 +5630,14 @@ impl SseDecode
     }
 }
 
+impl SseDecode for StreamSink<DepositEvent, flutter_rust_bridge::for_generated::SseCodec> {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
+        let mut inner = <String>::sse_decode(deserializer);
+        return StreamSink::deserialize(inner);
+    }
+}
+
 impl SseDecode for String {
     // Codec=Sse (Serialization based), see doc to use other codecs
     fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
@@ -5172,10 +5646,79 @@ impl SseDecode for String {
     }
 }
 
+impl SseDecode for crate::multimint::AwaitingConfsEvent {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
+        let mut var_amount = <u64>::sse_decode(deserializer);
+        let mut var_txid = <String>::sse_decode(deserializer);
+        let mut var_blockHeight = <u64>::sse_decode(deserializer);
+        let mut var_needed = <u64>::sse_decode(deserializer);
+        return crate::multimint::AwaitingConfsEvent {
+            amount: var_amount,
+            txid: var_txid,
+            block_height: var_blockHeight,
+            needed: var_needed,
+        };
+    }
+}
+
 impl SseDecode for bool {
     // Codec=Sse (Serialization based), see doc to use other codecs
     fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
         deserializer.cursor.read_u8().unwrap() != 0
+    }
+}
+
+impl SseDecode for crate::multimint::ClaimedEvent {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
+        let mut var_amount = <u64>::sse_decode(deserializer);
+        let mut var_txid = <String>::sse_decode(deserializer);
+        return crate::multimint::ClaimedEvent {
+            amount: var_amount,
+            txid: var_txid,
+        };
+    }
+}
+
+impl SseDecode for crate::multimint::ConfirmedEvent {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
+        let mut var_amount = <u64>::sse_decode(deserializer);
+        let mut var_txid = <String>::sse_decode(deserializer);
+        return crate::multimint::ConfirmedEvent {
+            amount: var_amount,
+            txid: var_txid,
+        };
+    }
+}
+
+impl SseDecode for crate::multimint::DepositEventKind {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
+        let mut tag_ = <i32>::sse_decode(deserializer);
+        match tag_ {
+            0 => {
+                let mut var_field0 = <crate::multimint::MempoolEvent>::sse_decode(deserializer);
+                return crate::multimint::DepositEventKind::Mempool(var_field0);
+            }
+            1 => {
+                let mut var_field0 =
+                    <crate::multimint::AwaitingConfsEvent>::sse_decode(deserializer);
+                return crate::multimint::DepositEventKind::AwaitingConfs(var_field0);
+            }
+            2 => {
+                let mut var_field0 = <crate::multimint::ConfirmedEvent>::sse_decode(deserializer);
+                return crate::multimint::DepositEventKind::Confirmed(var_field0);
+            }
+            3 => {
+                let mut var_field0 = <crate::multimint::ClaimedEvent>::sse_decode(deserializer);
+                return crate::multimint::DepositEventKind::Claimed(var_field0);
+            }
+            _ => {
+                unimplemented!("");
+            }
+        }
     }
 }
 
@@ -5274,6 +5817,18 @@ impl SseDecode for Vec<crate::multimint::Transaction> {
             ans_.push(<crate::multimint::Transaction>::sse_decode(deserializer));
         }
         return ans_;
+    }
+}
+
+impl SseDecode for crate::multimint::MempoolEvent {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
+        let mut var_amount = <u64>::sse_decode(deserializer);
+        let mut var_txid = <String>::sse_decode(deserializer);
+        return crate::multimint::MempoolEvent {
+            amount: var_amount,
+            txid: var_txid,
+        };
     }
 }
 
@@ -5482,123 +6037,144 @@ fn pde_ffi_dispatcher_primary_impl(
 ) {
     // Codec=Pde (Serialization + dispatch), see doc to use other codecs
     match func_id {
-        19 => wire__crate__multimint__Multimint_ack_seed_phrase_impl(
+        23 => wire__crate__multimint__Multimint_ack_seed_phrase_impl(
             port,
             ptr,
             rust_vec_len,
             data_len,
         ),
-        20 => wire__crate__multimint__Multimint_await_ecash_reissue_impl(
+        24 => wire__crate__multimint__Multimint_allocate_deposit_address_impl(
             port,
             ptr,
             rust_vec_len,
             data_len,
         ),
-        21 => wire__crate__multimint__Multimint_await_ecash_send_impl(
+        25 => wire__crate__multimint__Multimint_await_ecash_reissue_impl(
             port,
             ptr,
             rust_vec_len,
             data_len,
         ),
-        22 => {
+        26 => wire__crate__multimint__Multimint_await_ecash_send_impl(
+            port,
+            ptr,
+            rust_vec_len,
+            data_len,
+        ),
+        27 => {
             wire__crate__multimint__Multimint_await_receive_impl(port, ptr, rust_vec_len, data_len)
         }
-        23 => wire__crate__multimint__Multimint_await_send_impl(port, ptr, rust_vec_len, data_len),
-        24 => wire__crate__multimint__Multimint_balance_impl(port, ptr, rust_vec_len, data_len),
-        25 => wire__crate__multimint__Multimint_contains_client_impl(
+        28 => wire__crate__multimint__Multimint_await_send_impl(port, ptr, rust_vec_len, data_len),
+        29 => wire__crate__multimint__Multimint_balance_impl(port, ptr, rust_vec_len, data_len),
+        30 => wire__crate__multimint__Multimint_contains_client_impl(
             port,
             ptr,
             rust_vec_len,
             data_len,
         ),
-        26 => wire__crate__multimint__Multimint_federations_impl(port, ptr, rust_vec_len, data_len),
-        27 => wire__crate__multimint__Multimint_get_federation_meta_impl(
+        31 => wire__crate__multimint__Multimint_federations_impl(port, ptr, rust_vec_len, data_len),
+        32 => wire__crate__multimint__Multimint_get_federation_meta_impl(
             port,
             ptr,
             rust_vec_len,
             data_len,
         ),
-        28 => {
+        33 => {
             wire__crate__multimint__Multimint_get_mnemonic_impl(port, ptr, rust_vec_len, data_len)
         }
-        29 => wire__crate__multimint__Multimint_has_seed_phrase_ack_impl(
+        34 => wire__crate__multimint__Multimint_has_seed_phrase_ack_impl(
             port,
             ptr,
             rust_vec_len,
             data_len,
         ),
-        30 => wire__crate__multimint__Multimint_join_federation_impl(
+        35 => wire__crate__multimint__Multimint_join_federation_impl(
             port,
             ptr,
             rust_vec_len,
             data_len,
         ),
-        31 => wire__crate__multimint__Multimint_new_impl(port, ptr, rust_vec_len, data_len),
-        32 => wire__crate__multimint__Multimint_parse_ecash_impl(port, ptr, rust_vec_len, data_len),
-        33 => wire__crate__multimint__Multimint_receive_impl(port, ptr, rust_vec_len, data_len),
-        34 => wire__crate__multimint__Multimint_refund_impl(port, ptr, rust_vec_len, data_len),
-        35 => {
+        36 => wire__crate__multimint__Multimint_monitor_deposit_address_impl(
+            port,
+            ptr,
+            rust_vec_len,
+            data_len,
+        ),
+        37 => wire__crate__multimint__Multimint_new_impl(port, ptr, rust_vec_len, data_len),
+        38 => wire__crate__multimint__Multimint_parse_ecash_impl(port, ptr, rust_vec_len, data_len),
+        39 => wire__crate__multimint__Multimint_receive_impl(port, ptr, rust_vec_len, data_len),
+        40 => wire__crate__multimint__Multimint_refund_impl(port, ptr, rust_vec_len, data_len),
+        41 => {
             wire__crate__multimint__Multimint_reissue_ecash_impl(port, ptr, rust_vec_len, data_len)
         }
-        36 => wire__crate__multimint__Multimint_select_receive_gateway_impl(
+        42 => wire__crate__multimint__Multimint_select_receive_gateway_impl(
             port,
             ptr,
             rust_vec_len,
             data_len,
         ),
-        37 => wire__crate__multimint__Multimint_select_send_gateway_impl(
+        43 => wire__crate__multimint__Multimint_select_send_gateway_impl(
             port,
             ptr,
             rust_vec_len,
             data_len,
         ),
-        38 => wire__crate__multimint__Multimint_send_impl(port, ptr, rust_vec_len, data_len),
-        39 => wire__crate__multimint__Multimint_send_ecash_impl(port, ptr, rust_vec_len, data_len),
-        40 => {
+        44 => wire__crate__multimint__Multimint_send_impl(port, ptr, rust_vec_len, data_len),
+        45 => wire__crate__multimint__Multimint_send_ecash_impl(port, ptr, rust_vec_len, data_len),
+        46 => wire__crate__multimint__Multimint_subscribe_deposits_impl(
+            port,
+            ptr,
+            rust_vec_len,
+            data_len,
+        ),
+        47 => {
             wire__crate__multimint__Multimint_transactions_impl(port, ptr, rust_vec_len, data_len)
         }
-        41 => wire__crate__multimint__Multimint_wait_for_recovery_impl(
+        48 => wire__crate__multimint__Multimint_wait_for_recovery_impl(
             port,
             ptr,
             rust_vec_len,
             data_len,
         ),
-        42 => wire__crate__nostr__NostrClient_new_impl(port, ptr, rust_vec_len, data_len),
-        43 => wire__crate__nostr__NostrClient_update_federations_from_nostr_impl(
+        49 => wire__crate__nostr__NostrClient_new_impl(port, ptr, rust_vec_len, data_len),
+        50 => wire__crate__nostr__NostrClient_update_federations_from_nostr_impl(
             port,
             ptr,
             rust_vec_len,
             data_len,
         ),
-        58 => wire__crate__ack_seed_phrase_impl(port, ptr, rust_vec_len, data_len),
-        59 => wire__crate__await_ecash_reissue_impl(port, ptr, rust_vec_len, data_len),
-        60 => wire__crate__await_ecash_send_impl(port, ptr, rust_vec_len, data_len),
-        61 => wire__crate__await_receive_impl(port, ptr, rust_vec_len, data_len),
-        62 => wire__crate__await_send_impl(port, ptr, rust_vec_len, data_len),
-        63 => wire__crate__balance_impl(port, ptr, rust_vec_len, data_len),
-        64 => wire__crate__create_multimint_from_words_impl(port, ptr, rust_vec_len, data_len),
-        65 => wire__crate__create_new_multimint_impl(port, ptr, rust_vec_len, data_len),
-        66 => wire__crate__create_nostr_client_impl(port, ptr, rust_vec_len, data_len),
-        67 => wire__crate__federations_impl(port, ptr, rust_vec_len, data_len),
-        68 => wire__crate__get_federation_meta_impl(port, ptr, rust_vec_len, data_len),
-        69 => wire__crate__get_mnemonic_impl(port, ptr, rust_vec_len, data_len),
-        70 => wire__crate__has_seed_phrase_ack_impl(port, ptr, rust_vec_len, data_len),
-        71 => wire__crate__join_federation_impl(port, ptr, rust_vec_len, data_len),
-        72 => wire__crate__list_federations_from_nostr_impl(port, ptr, rust_vec_len, data_len),
-        73 => wire__crate__load_multimint_impl(port, ptr, rust_vec_len, data_len),
-        74 => wire__crate__parse_ecash_impl(port, ptr, rust_vec_len, data_len),
-        75 => wire__crate__payment_preview_impl(port, ptr, rust_vec_len, data_len),
-        76 => wire__crate__receive_impl(port, ptr, rust_vec_len, data_len),
-        77 => wire__crate__refund_impl(port, ptr, rust_vec_len, data_len),
-        78 => wire__crate__reissue_ecash_impl(port, ptr, rust_vec_len, data_len),
-        79 => wire__crate__select_receive_gateway_impl(port, ptr, rust_vec_len, data_len),
-        80 => wire__crate__send_impl(port, ptr, rust_vec_len, data_len),
-        81 => wire__crate__send_ecash_impl(port, ptr, rust_vec_len, data_len),
-        82 => wire__crate__send_lnaddress_impl(port, ptr, rust_vec_len, data_len),
-        83 => wire__crate__transactions_impl(port, ptr, rust_vec_len, data_len),
-        84 => wire__crate__wait_for_recovery_impl(port, ptr, rust_vec_len, data_len),
-        85 => wire__crate__wallet_exists_impl(port, ptr, rust_vec_len, data_len),
-        86 => wire__crate__word_list_impl(port, ptr, rust_vec_len, data_len),
+        65 => wire__crate__ack_seed_phrase_impl(port, ptr, rust_vec_len, data_len),
+        66 => wire__crate__allocate_deposit_address_impl(port, ptr, rust_vec_len, data_len),
+        67 => wire__crate__await_ecash_reissue_impl(port, ptr, rust_vec_len, data_len),
+        68 => wire__crate__await_ecash_send_impl(port, ptr, rust_vec_len, data_len),
+        69 => wire__crate__await_receive_impl(port, ptr, rust_vec_len, data_len),
+        70 => wire__crate__await_send_impl(port, ptr, rust_vec_len, data_len),
+        71 => wire__crate__balance_impl(port, ptr, rust_vec_len, data_len),
+        72 => wire__crate__create_multimint_from_words_impl(port, ptr, rust_vec_len, data_len),
+        73 => wire__crate__create_new_multimint_impl(port, ptr, rust_vec_len, data_len),
+        74 => wire__crate__create_nostr_client_impl(port, ptr, rust_vec_len, data_len),
+        75 => wire__crate__federations_impl(port, ptr, rust_vec_len, data_len),
+        76 => wire__crate__get_federation_meta_impl(port, ptr, rust_vec_len, data_len),
+        77 => wire__crate__get_mnemonic_impl(port, ptr, rust_vec_len, data_len),
+        78 => wire__crate__has_seed_phrase_ack_impl(port, ptr, rust_vec_len, data_len),
+        79 => wire__crate__join_federation_impl(port, ptr, rust_vec_len, data_len),
+        80 => wire__crate__list_federations_from_nostr_impl(port, ptr, rust_vec_len, data_len),
+        81 => wire__crate__load_multimint_impl(port, ptr, rust_vec_len, data_len),
+        82 => wire__crate__monitor_deposit_address_impl(port, ptr, rust_vec_len, data_len),
+        83 => wire__crate__parse_ecash_impl(port, ptr, rust_vec_len, data_len),
+        84 => wire__crate__payment_preview_impl(port, ptr, rust_vec_len, data_len),
+        85 => wire__crate__receive_impl(port, ptr, rust_vec_len, data_len),
+        86 => wire__crate__refund_impl(port, ptr, rust_vec_len, data_len),
+        87 => wire__crate__reissue_ecash_impl(port, ptr, rust_vec_len, data_len),
+        88 => wire__crate__select_receive_gateway_impl(port, ptr, rust_vec_len, data_len),
+        89 => wire__crate__send_impl(port, ptr, rust_vec_len, data_len),
+        90 => wire__crate__send_ecash_impl(port, ptr, rust_vec_len, data_len),
+        91 => wire__crate__send_lnaddress_impl(port, ptr, rust_vec_len, data_len),
+        92 => wire__crate__subscribe_deposits_impl(port, ptr, rust_vec_len, data_len),
+        93 => wire__crate__transactions_impl(port, ptr, rust_vec_len, data_len),
+        94 => wire__crate__wait_for_recovery_impl(port, ptr, rust_vec_len, data_len),
+        95 => wire__crate__wallet_exists_impl(port, ptr, rust_vec_len, data_len),
+        96 => wire__crate__word_list_impl(port, ptr, rust_vec_len, data_len),
         _ => unreachable!(),
     }
 }
@@ -5611,162 +6187,182 @@ fn pde_ffi_dispatcher_sync_impl(
 ) -> flutter_rust_bridge::for_generated::WireSyncRust2DartSse {
     // Codec=Pde (Serialization + dispatch), see doc to use other codecs
     match func_id {
-        1 => wire__crate__db__FederationConfig_auto_accessor_get_client_config_impl(
+        1 => wire__crate__multimint__DepositEvent_auto_accessor_get_event_kind_impl(
             ptr,
             rust_vec_len,
             data_len,
         ),
-        2 => wire__crate__db__FederationConfig_auto_accessor_get_connector_impl(
+        2 => wire__crate__multimint__DepositEvent_auto_accessor_get_federation_id_impl(
             ptr,
             rust_vec_len,
             data_len,
         ),
-        3 => wire__crate__db__FederationConfig_auto_accessor_get_federation_name_impl(
+        3 => wire__crate__multimint__DepositEvent_auto_accessor_set_event_kind_impl(
             ptr,
             rust_vec_len,
             data_len,
         ),
-        4 => wire__crate__db__FederationConfig_auto_accessor_get_invite_code_impl(
+        4 => wire__crate__multimint__DepositEvent_auto_accessor_set_federation_id_impl(
             ptr,
             rust_vec_len,
             data_len,
         ),
-        5 => wire__crate__db__FederationConfig_auto_accessor_get_network_impl(
+        5 => wire__crate__db__FederationConfig_auto_accessor_get_client_config_impl(
             ptr,
             rust_vec_len,
             data_len,
         ),
-        6 => wire__crate__db__FederationConfig_auto_accessor_set_client_config_impl(
+        6 => wire__crate__db__FederationConfig_auto_accessor_get_connector_impl(
             ptr,
             rust_vec_len,
             data_len,
         ),
-        7 => wire__crate__db__FederationConfig_auto_accessor_set_connector_impl(
+        7 => wire__crate__db__FederationConfig_auto_accessor_get_federation_name_impl(
             ptr,
             rust_vec_len,
             data_len,
         ),
-        8 => wire__crate__db__FederationConfig_auto_accessor_set_federation_name_impl(
+        8 => wire__crate__db__FederationConfig_auto_accessor_get_invite_code_impl(
             ptr,
             rust_vec_len,
             data_len,
         ),
-        9 => wire__crate__db__FederationConfig_auto_accessor_set_invite_code_impl(
+        9 => wire__crate__db__FederationConfig_auto_accessor_get_network_impl(
             ptr,
             rust_vec_len,
             data_len,
         ),
-        10 => wire__crate__db__FederationConfig_auto_accessor_set_network_impl(
+        10 => wire__crate__db__FederationConfig_auto_accessor_set_client_config_impl(
             ptr,
             rust_vec_len,
             data_len,
         ),
-        11 => wire__crate__multimint__FederationSelector_auto_accessor_get_federation_id_impl(
+        11 => wire__crate__db__FederationConfig_auto_accessor_set_connector_impl(
             ptr,
             rust_vec_len,
             data_len,
         ),
-        12 => wire__crate__multimint__FederationSelector_auto_accessor_get_federation_name_impl(
+        12 => wire__crate__db__FederationConfig_auto_accessor_set_federation_name_impl(
             ptr,
             rust_vec_len,
             data_len,
         ),
-        13 => wire__crate__multimint__FederationSelector_auto_accessor_get_invite_code_impl(
+        13 => wire__crate__db__FederationConfig_auto_accessor_set_invite_code_impl(
             ptr,
             rust_vec_len,
             data_len,
         ),
-        14 => wire__crate__multimint__FederationSelector_auto_accessor_get_network_impl(
+        14 => wire__crate__db__FederationConfig_auto_accessor_set_network_impl(
             ptr,
             rust_vec_len,
             data_len,
         ),
-        15 => wire__crate__multimint__FederationSelector_auto_accessor_set_federation_id_impl(
+        15 => wire__crate__multimint__FederationSelector_auto_accessor_get_federation_id_impl(
             ptr,
             rust_vec_len,
             data_len,
         ),
-        16 => wire__crate__multimint__FederationSelector_auto_accessor_set_federation_name_impl(
+        16 => wire__crate__multimint__FederationSelector_auto_accessor_get_federation_name_impl(
             ptr,
             rust_vec_len,
             data_len,
         ),
-        17 => wire__crate__multimint__FederationSelector_auto_accessor_set_invite_code_impl(
+        17 => wire__crate__multimint__FederationSelector_auto_accessor_get_invite_code_impl(
             ptr,
             rust_vec_len,
             data_len,
         ),
-        18 => wire__crate__multimint__FederationSelector_auto_accessor_set_network_impl(
+        18 => wire__crate__multimint__FederationSelector_auto_accessor_get_network_impl(
             ptr,
             rust_vec_len,
             data_len,
         ),
-        44 => wire__crate__nostr__PublicFederation_auto_accessor_get_about_impl(
+        19 => wire__crate__multimint__FederationSelector_auto_accessor_set_federation_id_impl(
             ptr,
             rust_vec_len,
             data_len,
         ),
-        45 => wire__crate__nostr__PublicFederation_auto_accessor_get_federation_id_impl(
+        20 => wire__crate__multimint__FederationSelector_auto_accessor_set_federation_name_impl(
             ptr,
             rust_vec_len,
             data_len,
         ),
-        46 => wire__crate__nostr__PublicFederation_auto_accessor_get_federation_name_impl(
+        21 => wire__crate__multimint__FederationSelector_auto_accessor_set_invite_code_impl(
             ptr,
             rust_vec_len,
             data_len,
         ),
-        47 => wire__crate__nostr__PublicFederation_auto_accessor_get_invite_codes_impl(
+        22 => wire__crate__multimint__FederationSelector_auto_accessor_set_network_impl(
             ptr,
             rust_vec_len,
             data_len,
         ),
-        48 => wire__crate__nostr__PublicFederation_auto_accessor_get_modules_impl(
+        51 => wire__crate__nostr__PublicFederation_auto_accessor_get_about_impl(
             ptr,
             rust_vec_len,
             data_len,
         ),
-        49 => wire__crate__nostr__PublicFederation_auto_accessor_get_network_impl(
+        52 => wire__crate__nostr__PublicFederation_auto_accessor_get_federation_id_impl(
             ptr,
             rust_vec_len,
             data_len,
         ),
-        50 => wire__crate__nostr__PublicFederation_auto_accessor_get_picture_impl(
+        53 => wire__crate__nostr__PublicFederation_auto_accessor_get_federation_name_impl(
             ptr,
             rust_vec_len,
             data_len,
         ),
-        51 => wire__crate__nostr__PublicFederation_auto_accessor_set_about_impl(
+        54 => wire__crate__nostr__PublicFederation_auto_accessor_get_invite_codes_impl(
             ptr,
             rust_vec_len,
             data_len,
         ),
-        52 => wire__crate__nostr__PublicFederation_auto_accessor_set_federation_id_impl(
+        55 => wire__crate__nostr__PublicFederation_auto_accessor_get_modules_impl(
             ptr,
             rust_vec_len,
             data_len,
         ),
-        53 => wire__crate__nostr__PublicFederation_auto_accessor_set_federation_name_impl(
+        56 => wire__crate__nostr__PublicFederation_auto_accessor_get_network_impl(
             ptr,
             rust_vec_len,
             data_len,
         ),
-        54 => wire__crate__nostr__PublicFederation_auto_accessor_set_invite_codes_impl(
+        57 => wire__crate__nostr__PublicFederation_auto_accessor_get_picture_impl(
             ptr,
             rust_vec_len,
             data_len,
         ),
-        55 => wire__crate__nostr__PublicFederation_auto_accessor_set_modules_impl(
+        58 => wire__crate__nostr__PublicFederation_auto_accessor_set_about_impl(
             ptr,
             rust_vec_len,
             data_len,
         ),
-        56 => wire__crate__nostr__PublicFederation_auto_accessor_set_network_impl(
+        59 => wire__crate__nostr__PublicFederation_auto_accessor_set_federation_id_impl(
             ptr,
             rust_vec_len,
             data_len,
         ),
-        57 => wire__crate__nostr__PublicFederation_auto_accessor_set_picture_impl(
+        60 => wire__crate__nostr__PublicFederation_auto_accessor_set_federation_name_impl(
+            ptr,
+            rust_vec_len,
+            data_len,
+        ),
+        61 => wire__crate__nostr__PublicFederation_auto_accessor_set_invite_codes_impl(
+            ptr,
+            rust_vec_len,
+            data_len,
+        ),
+        62 => wire__crate__nostr__PublicFederation_auto_accessor_set_modules_impl(
+            ptr,
+            rust_vec_len,
+            data_len,
+        ),
+        63 => wire__crate__nostr__PublicFederation_auto_accessor_set_network_impl(
+            ptr,
+            rust_vec_len,
+            data_len,
+        ),
+        64 => wire__crate__nostr__PublicFederation_auto_accessor_set_picture_impl(
             ptr,
             rust_vec_len,
             data_len,
@@ -5848,6 +6444,21 @@ impl flutter_rust_bridge::for_generated::IntoDartExceptPrimitive for FrbWrapper<
 
 impl flutter_rust_bridge::IntoIntoDart<FrbWrapper<Database>> for Database {
     fn into_into_dart(self) -> FrbWrapper<Database> {
+        self.into()
+    }
+}
+
+// Codec=Dco (DartCObject based), see doc to use other codecs
+impl flutter_rust_bridge::IntoDart for FrbWrapper<DepositEvent> {
+    fn into_dart(self) -> flutter_rust_bridge::for_generated::DartAbi {
+        flutter_rust_bridge::for_generated::rust_auto_opaque_encode::<_, MoiArc<_>>(self.0)
+            .into_dart()
+    }
+}
+impl flutter_rust_bridge::for_generated::IntoDartExceptPrimitive for FrbWrapper<DepositEvent> {}
+
+impl flutter_rust_bridge::IntoIntoDart<FrbWrapper<DepositEvent>> for DepositEvent {
+    fn into_into_dart(self) -> FrbWrapper<DepositEvent> {
         self.into()
     }
 }
@@ -6066,6 +6677,104 @@ impl flutter_rust_bridge::IntoIntoDart<FrbWrapper<SpendOOBState>> for SpendOOBSt
 }
 
 // Codec=Dco (DartCObject based), see doc to use other codecs
+impl flutter_rust_bridge::IntoDart for crate::multimint::AwaitingConfsEvent {
+    fn into_dart(self) -> flutter_rust_bridge::for_generated::DartAbi {
+        [
+            self.amount.into_into_dart().into_dart(),
+            self.txid.into_into_dart().into_dart(),
+            self.block_height.into_into_dart().into_dart(),
+            self.needed.into_into_dart().into_dart(),
+        ]
+        .into_dart()
+    }
+}
+impl flutter_rust_bridge::for_generated::IntoDartExceptPrimitive
+    for crate::multimint::AwaitingConfsEvent
+{
+}
+impl flutter_rust_bridge::IntoIntoDart<crate::multimint::AwaitingConfsEvent>
+    for crate::multimint::AwaitingConfsEvent
+{
+    fn into_into_dart(self) -> crate::multimint::AwaitingConfsEvent {
+        self
+    }
+}
+// Codec=Dco (DartCObject based), see doc to use other codecs
+impl flutter_rust_bridge::IntoDart for crate::multimint::ClaimedEvent {
+    fn into_dart(self) -> flutter_rust_bridge::for_generated::DartAbi {
+        [
+            self.amount.into_into_dart().into_dart(),
+            self.txid.into_into_dart().into_dart(),
+        ]
+        .into_dart()
+    }
+}
+impl flutter_rust_bridge::for_generated::IntoDartExceptPrimitive
+    for crate::multimint::ClaimedEvent
+{
+}
+impl flutter_rust_bridge::IntoIntoDart<crate::multimint::ClaimedEvent>
+    for crate::multimint::ClaimedEvent
+{
+    fn into_into_dart(self) -> crate::multimint::ClaimedEvent {
+        self
+    }
+}
+// Codec=Dco (DartCObject based), see doc to use other codecs
+impl flutter_rust_bridge::IntoDart for crate::multimint::ConfirmedEvent {
+    fn into_dart(self) -> flutter_rust_bridge::for_generated::DartAbi {
+        [
+            self.amount.into_into_dart().into_dart(),
+            self.txid.into_into_dart().into_dart(),
+        ]
+        .into_dart()
+    }
+}
+impl flutter_rust_bridge::for_generated::IntoDartExceptPrimitive
+    for crate::multimint::ConfirmedEvent
+{
+}
+impl flutter_rust_bridge::IntoIntoDart<crate::multimint::ConfirmedEvent>
+    for crate::multimint::ConfirmedEvent
+{
+    fn into_into_dart(self) -> crate::multimint::ConfirmedEvent {
+        self
+    }
+}
+// Codec=Dco (DartCObject based), see doc to use other codecs
+impl flutter_rust_bridge::IntoDart for crate::multimint::DepositEventKind {
+    fn into_dart(self) -> flutter_rust_bridge::for_generated::DartAbi {
+        match self {
+            crate::multimint::DepositEventKind::Mempool(field0) => {
+                [0.into_dart(), field0.into_into_dart().into_dart()].into_dart()
+            }
+            crate::multimint::DepositEventKind::AwaitingConfs(field0) => {
+                [1.into_dart(), field0.into_into_dart().into_dart()].into_dart()
+            }
+            crate::multimint::DepositEventKind::Confirmed(field0) => {
+                [2.into_dart(), field0.into_into_dart().into_dart()].into_dart()
+            }
+            crate::multimint::DepositEventKind::Claimed(field0) => {
+                [3.into_dart(), field0.into_into_dart().into_dart()].into_dart()
+            }
+            _ => {
+                unimplemented!("");
+            }
+        }
+    }
+}
+impl flutter_rust_bridge::for_generated::IntoDartExceptPrimitive
+    for crate::multimint::DepositEventKind
+{
+}
+impl flutter_rust_bridge::IntoIntoDart<crate::multimint::DepositEventKind>
+    for crate::multimint::DepositEventKind
+{
+    fn into_into_dart(self) -> crate::multimint::DepositEventKind {
+        self
+    }
+}
+// Codec=Dco (DartCObject based), see doc to use other codecs
 impl flutter_rust_bridge::IntoDart for crate::multimint::FederationMeta {
     fn into_dart(self) -> flutter_rust_bridge::for_generated::DartAbi {
         [
@@ -6100,6 +6809,27 @@ impl flutter_rust_bridge::IntoDart for crate::multimint::Guardian {
 impl flutter_rust_bridge::for_generated::IntoDartExceptPrimitive for crate::multimint::Guardian {}
 impl flutter_rust_bridge::IntoIntoDart<crate::multimint::Guardian> for crate::multimint::Guardian {
     fn into_into_dart(self) -> crate::multimint::Guardian {
+        self
+    }
+}
+// Codec=Dco (DartCObject based), see doc to use other codecs
+impl flutter_rust_bridge::IntoDart for crate::multimint::MempoolEvent {
+    fn into_dart(self) -> flutter_rust_bridge::for_generated::DartAbi {
+        [
+            self.amount.into_into_dart().into_dart(),
+            self.txid.into_into_dart().into_dart(),
+        ]
+        .into_dart()
+    }
+}
+impl flutter_rust_bridge::for_generated::IntoDartExceptPrimitive
+    for crate::multimint::MempoolEvent
+{
+}
+impl flutter_rust_bridge::IntoIntoDart<crate::multimint::MempoolEvent>
+    for crate::multimint::MempoolEvent
+{
+    fn into_into_dart(self) -> crate::multimint::MempoolEvent {
         self
     }
 }
@@ -6216,6 +6946,13 @@ impl SseEncode for Database {
     // Codec=Sse (Serialization based), see doc to use other codecs
     fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
         <RustOpaqueMoi<flutter_rust_bridge::for_generated::RustAutoOpaqueInner<Database>>>::sse_encode(flutter_rust_bridge::for_generated::rust_auto_opaque_encode::<_, MoiArc<_>>(self), serializer);
+    }
+}
+
+impl SseEncode for DepositEvent {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
+        <RustOpaqueMoi<flutter_rust_bridge::for_generated::RustAutoOpaqueInner<DepositEvent>>>::sse_encode(flutter_rust_bridge::for_generated::rust_auto_opaque_encode::<_, MoiArc<_>>(self), serializer);
     }
 }
 
@@ -6379,6 +7116,17 @@ impl SseEncode
 }
 
 impl SseEncode
+    for RustOpaqueMoi<flutter_rust_bridge::for_generated::RustAutoOpaqueInner<DepositEvent>>
+{
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
+        let (ptr, size) = self.sse_encode_raw();
+        <usize>::sse_encode(ptr, serializer);
+        <i32>::sse_encode(size, serializer);
+    }
+}
+
+impl SseEncode
     for RustOpaqueMoi<flutter_rust_bridge::for_generated::RustAutoOpaqueInner<FederationConfig>>
 {
     // Codec=Sse (Serialization based), see doc to use other codecs
@@ -6525,6 +7273,13 @@ impl SseEncode
     }
 }
 
+impl SseEncode for StreamSink<DepositEvent, flutter_rust_bridge::for_generated::SseCodec> {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
+        unimplemented!("")
+    }
+}
+
 impl SseEncode for String {
     // Codec=Sse (Serialization based), see doc to use other codecs
     fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
@@ -6532,10 +7287,63 @@ impl SseEncode for String {
     }
 }
 
+impl SseEncode for crate::multimint::AwaitingConfsEvent {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
+        <u64>::sse_encode(self.amount, serializer);
+        <String>::sse_encode(self.txid, serializer);
+        <u64>::sse_encode(self.block_height, serializer);
+        <u64>::sse_encode(self.needed, serializer);
+    }
+}
+
 impl SseEncode for bool {
     // Codec=Sse (Serialization based), see doc to use other codecs
     fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
         serializer.cursor.write_u8(self as _).unwrap();
+    }
+}
+
+impl SseEncode for crate::multimint::ClaimedEvent {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
+        <u64>::sse_encode(self.amount, serializer);
+        <String>::sse_encode(self.txid, serializer);
+    }
+}
+
+impl SseEncode for crate::multimint::ConfirmedEvent {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
+        <u64>::sse_encode(self.amount, serializer);
+        <String>::sse_encode(self.txid, serializer);
+    }
+}
+
+impl SseEncode for crate::multimint::DepositEventKind {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
+        match self {
+            crate::multimint::DepositEventKind::Mempool(field0) => {
+                <i32>::sse_encode(0, serializer);
+                <crate::multimint::MempoolEvent>::sse_encode(field0, serializer);
+            }
+            crate::multimint::DepositEventKind::AwaitingConfs(field0) => {
+                <i32>::sse_encode(1, serializer);
+                <crate::multimint::AwaitingConfsEvent>::sse_encode(field0, serializer);
+            }
+            crate::multimint::DepositEventKind::Confirmed(field0) => {
+                <i32>::sse_encode(2, serializer);
+                <crate::multimint::ConfirmedEvent>::sse_encode(field0, serializer);
+            }
+            crate::multimint::DepositEventKind::Claimed(field0) => {
+                <i32>::sse_encode(3, serializer);
+                <crate::multimint::ClaimedEvent>::sse_encode(field0, serializer);
+            }
+            _ => {
+                unimplemented!("");
+            }
+        }
     }
 }
 
@@ -6613,6 +7421,14 @@ impl SseEncode for Vec<crate::multimint::Transaction> {
         for item in self {
             <crate::multimint::Transaction>::sse_encode(item, serializer);
         }
+    }
+}
+
+impl SseEncode for crate::multimint::MempoolEvent {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
+        <u64>::sse_encode(self.amount, serializer);
+        <String>::sse_encode(self.txid, serializer);
     }
 }
 
@@ -6878,6 +7694,20 @@ mod io {
         ptr: *const std::ffi::c_void,
     ) {
         MoiArc::<flutter_rust_bridge::for_generated::RustAutoOpaqueInner<Database>>::decrement_strong_count(ptr as _);
+    }
+
+    #[unsafe(no_mangle)]
+    pub extern "C" fn frbgen_carbine_rust_arc_increment_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerDepositEvent(
+        ptr: *const std::ffi::c_void,
+    ) {
+        MoiArc::<flutter_rust_bridge::for_generated::RustAutoOpaqueInner<DepositEvent>>::increment_strong_count(ptr as _);
+    }
+
+    #[unsafe(no_mangle)]
+    pub extern "C" fn frbgen_carbine_rust_arc_decrement_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerDepositEvent(
+        ptr: *const std::ffi::c_void,
+    ) {
+        MoiArc::<flutter_rust_bridge::for_generated::RustAutoOpaqueInner<DepositEvent>>::decrement_strong_count(ptr as _);
     }
 
     #[unsafe(no_mangle)]
@@ -7158,6 +7988,20 @@ mod web {
         ptr: *const std::ffi::c_void,
     ) {
         MoiArc::<flutter_rust_bridge::for_generated::RustAutoOpaqueInner<Database>>::decrement_strong_count(ptr as _);
+    }
+
+    #[wasm_bindgen]
+    pub fn rust_arc_increment_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerDepositEvent(
+        ptr: *const std::ffi::c_void,
+    ) {
+        MoiArc::<flutter_rust_bridge::for_generated::RustAutoOpaqueInner<DepositEvent>>::increment_strong_count(ptr as _);
+    }
+
+    #[wasm_bindgen]
+    pub fn rust_arc_decrement_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerDepositEvent(
+        ptr: *const std::ffi::c_void,
+    ) {
+        MoiArc::<flutter_rust_bridge::for_generated::RustAutoOpaqueInner<DepositEvent>>::decrement_strong_count(ptr as _);
     }
 
     #[wasm_bindgen]
