@@ -3,12 +3,14 @@ import 'package:carbine/main.dart';
 import 'package:carbine/multimint.dart';
 import 'package:carbine/number_pad.dart';
 import 'package:carbine/payment_selector.dart';
+import 'package:carbine/onchain_receive.dart';
 import 'package:carbine/scan.dart';
 import 'package:carbine/theme.dart';
 import 'package:carbine/refund.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_speed_dial/flutter_speed_dial.dart';
 import 'package:intl/intl.dart';
+import 'dart:async';
 
 class Dashboard extends StatefulWidget {
   final FederationSelector fed;
@@ -39,6 +41,10 @@ class _DashboardState extends State<Dashboard> {
   VoidCallback? _pendingAction;
 
   late bool recovering;
+  late Stream<DepositEvent> depositEvents;
+  late StreamSubscription<DepositEvent> _claimSubscription;
+  late StreamSubscription<DepositEvent> _depositSubscription;
+  final Map<String, DepositEvent> _depositMap = {};
 
   @override
   void initState() {
@@ -49,6 +55,41 @@ class _DashboardState extends State<Dashboard> {
     _scrollController.addListener(_onScroll);
     _loadBalance();
     _loadTransactions();
+    depositEvents =
+        subscribeDeposits(
+          federationId: widget.fed.federationId,
+        ).asBroadcastStream();
+    _claimSubscription = depositEvents.listen((event) {
+      if (event.eventKind is DepositEventKind_Claimed) {
+        if (!mounted) return;
+        _loadBalance();
+        Timer(const Duration(milliseconds: 100), () {
+          if (!mounted) return;
+          _loadTransactions();
+        });
+      }
+    });
+
+    _depositSubscription = depositEvents.listen((event) {
+      String txid;
+      switch (event.eventKind) {
+        case DepositEventKind_Mempool(field0: final mempoolEvt):
+          txid = mempoolEvt.txid;
+          break;
+        case DepositEventKind_AwaitingConfs(field0: final awaitEvt):
+          txid = awaitEvt.txid;
+          break;
+        case DepositEventKind_Confirmed(field0: final confirmedEvt):
+          txid = confirmedEvt.txid;
+          break;
+        case DepositEventKind_Claimed(field0: final claimedEvt):
+          txid = claimedEvt.txid;
+          break;
+      }
+      setState(() {
+        _depositMap[txid] = event;
+      });
+    });
 
     if (recovering) {
       _loadFederation();
@@ -58,6 +99,9 @@ class _DashboardState extends State<Dashboard> {
   @override
   void dispose() {
     _scrollController.dispose();
+    _depositSubscription.cancel();
+    _claimSubscription.cancel();
+
     super.dispose();
   }
 
@@ -109,6 +153,7 @@ class _DashboardState extends State<Dashboard> {
   }
 
   Future<void> _loadBalance() async {
+    if (!mounted) return;
     if (!recovering) {
       final bal = await balance(federationId: widget.fed.federationId);
       setState(() {
@@ -124,12 +169,14 @@ class _DashboardState extends State<Dashboard> {
       _isFetchingMore = true;
 
       if (!loadMore) {
-        setState(() {
-          isLoadingTransactions = true;
-          _transactions.clear();
-          _hasMore = true;
-          _lastTransaction = null;
-        });
+        if (mounted) {
+          setState(() {
+            isLoadingTransactions = true;
+            _transactions.clear();
+            _hasMore = true;
+            _lastTransaction = null;
+          });
+        }
       }
 
       final newTxs = await transactions(
@@ -139,6 +186,7 @@ class _DashboardState extends State<Dashboard> {
         modules: _getKindsForSelectedPaymentType(),
       );
 
+      if (!mounted) return;
       setState(() {
         _transactions.addAll(newTxs);
         if (newTxs.length < 10) {
@@ -183,6 +231,13 @@ class _DashboardState extends State<Dashboard> {
                   NumberPad(fed: widget.fed, paymentType: _selectedPaymentType),
         ),
       );
+    } else if (_selectedPaymentType == PaymentType.onchain) {
+      await Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) => OnChainReceive(fed: widget.fed),
+        ),
+      );
     } else if (_selectedPaymentType == PaymentType.ecash) {
       await Navigator.push(
         context,
@@ -215,6 +270,30 @@ class _DashboardState extends State<Dashboard> {
   @override
   Widget build(BuildContext context) {
     final name = widget.fed.federationName;
+    final pendingCount =
+        (_selectedPaymentType == PaymentType.onchain) ? _depositMap.length : 0;
+
+    int confirmedDisplayCount;
+    if (recovering) {
+      confirmedDisplayCount = 0;
+    } else if (isLoadingTransactions) {
+      confirmedDisplayCount = 1;
+    } else if (_transactions.isEmpty) {
+      confirmedDisplayCount = 1;
+    } else {
+      confirmedDisplayCount = _transactions.length + (_hasMore ? 1 : 0);
+    }
+
+    // Number of fixed, static widgets before the dynamic lists:
+    //   0: SizedBox(height:32)
+    //   1: ShaderMask(...)
+    //   2: SizedBox(height:48)
+    //   3: Balance / Recovering widget
+    //   4: SizedBox(height:48)
+    //   5: Align(Text("Recent Transactions"))
+    const int staticHeaderCount = 6;
+
+    final totalCount = staticHeaderCount + pendingCount + confirmedDisplayCount;
 
     return Scaffold(
       floatingActionButton: SpeedDial(
@@ -255,188 +334,273 @@ class _DashboardState extends State<Dashboard> {
               ),
         ],
       ),
-      body: SingleChildScrollView(
+      body: ListView.builder(
         padding: const EdgeInsets.all(24),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.center,
-          children: [
-            const SizedBox(height: 32),
-            ShaderMask(
-              shaderCallback:
-                  (bounds) => LinearGradient(
-                    colors: [
-                      Theme.of(context).colorScheme.primary,
-                      Theme.of(context).colorScheme.secondary,
-                    ],
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                  ).createShader(
-                    Rect.fromLTWH(0, 0, bounds.width, bounds.height),
-                  ),
-              child: Column(
-                children: [
-                  Text(
-                    name.toUpperCase(),
-                    style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                      fontWeight: FontWeight.w900,
-                      letterSpacing: 2,
-                      color: Colors.white,
-                      shadows: [
-                        Shadow(
-                          blurRadius: 10,
-                          color: Theme.of(
-                            context,
-                          ).colorScheme.primary.withOpacity(0.5),
-                          offset: const Offset(0, 2),
-                        ),
-                      ],
-                    ),
-                    textAlign: TextAlign.center,
-                  ),
-                  if (widget.fed.network != null &&
-                      widget.fed.network!.toLowerCase() != 'bitcoin')
-                    Padding(
-                      padding: const EdgeInsets.only(top: 8.0),
-                      child: Text(
-                        "This is a test network and is not worth anything.",
-                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                          color: Colors.amberAccent,
-                          fontStyle: FontStyle.italic,
+        itemCount: totalCount,
+        itemBuilder: (context, index) {
+          if (index < staticHeaderCount) {
+            switch (index) {
+              case 0:
+                return const SizedBox(height: 32);
+              case 1:
+                return ShaderMask(
+                  shaderCallback:
+                      (bounds) => LinearGradient(
+                        colors: [
+                          Theme.of(context).colorScheme.primary,
+                          Theme.of(context).colorScheme.secondary,
+                        ],
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                      ).createShader(
+                        Rect.fromLTWH(0, 0, bounds.width, bounds.height),
+                      ),
+                  child: Column(
+                    children: [
+                      Text(
+                        name.toUpperCase(),
+                        style: Theme.of(
+                          context,
+                        ).textTheme.headlineMedium?.copyWith(
+                          fontWeight: FontWeight.w900,
+                          letterSpacing: 2,
+                          color: Colors.white,
+                          shadows: [
+                            Shadow(
+                              blurRadius: 10,
+                              color: Theme.of(
+                                context,
+                              ).colorScheme.primary.withOpacity(0.5),
+                              offset: const Offset(0, 2),
+                            ),
+                          ],
                         ),
                         textAlign: TextAlign.center,
                       ),
+                      if (widget.fed.network != null &&
+                          widget.fed.network!.toLowerCase() != 'bitcoin')
+                        Padding(
+                          padding: const EdgeInsets.only(top: 8.0),
+                          child: Text(
+                            "This is a test network and is not worth anything.",
+                            style: Theme.of(
+                              context,
+                            ).textTheme.bodySmall?.copyWith(
+                              color: Colors.amberAccent,
+                              fontStyle: FontStyle.italic,
+                            ),
+                            textAlign: TextAlign.center,
+                          ),
+                        ),
+                    ],
+                  ),
+                );
+              case 2:
+                return const SizedBox(height: 48);
+              case 3:
+                if (!recovering) {
+                  if (isLoadingBalance) {
+                    return const Center(child: CircularProgressIndicator());
+                  } else {
+                    return Center(
+                      child: GestureDetector(
+                        onTap: () => setState(() => showMsats = !showMsats),
+                        child: Text(
+                          formatBalance(balanceMsats, showMsats),
+                          style: Theme.of(
+                            context,
+                          ).textTheme.displayLarge?.copyWith(
+                            color: Theme.of(context).colorScheme.primary,
+                            fontWeight: FontWeight.bold,
+                          ),
+                          textAlign: TextAlign.center,
+                        ),
+                      ),
+                    );
+                  }
+                } else {
+                  return Center(
+                    child: Text(
+                      "Recovering...",
+                      style: Theme.of(context).textTheme.displaySmall?.copyWith(
+                        color: Theme.of(context).colorScheme.primary,
+                        fontWeight: FontWeight.bold,
+                      ),
+                      textAlign: TextAlign.center,
                     ),
-                ],
-              ),
-            ),
-            const SizedBox(height: 48),
-            if (!recovering) ...[
-              if (isLoadingBalance)
-                const CircularProgressIndicator()
-              else
-                GestureDetector(
-                  onTap: () {
-                    setState(() {
-                      showMsats = !showMsats;
-                    });
-                  },
+                  );
+                }
+              case 4:
+                return const SizedBox(height: 48);
+              case 5:
+                return Align(
+                  alignment: Alignment.centerLeft,
                   child: Text(
-                    formatBalance(balanceMsats, showMsats),
-                    style: Theme.of(context).textTheme.displayLarge?.copyWith(
-                      color: Theme.of(context).colorScheme.primary,
+                    "Recent Transactions",
+                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
                       fontWeight: FontWeight.bold,
                     ),
-                    textAlign: TextAlign.center,
                   ),
+                );
+            }
+          }
+
+          final adjustedIndex = index - staticHeaderCount;
+
+          if (_selectedPaymentType == PaymentType.onchain &&
+              adjustedIndex < pendingCount) {
+            final events =
+                _depositMap.values.toList()..sort((a, b) {
+                  final aMempool = a.eventKind is DepositEventKind_Mempool;
+                  final bMempool = b.eventKind is DepositEventKind_Mempool;
+                  if (aMempool && !bMempool) return -1;
+                  if (!aMempool && bMempool) return 1;
+                  final BigInt na =
+                      a.eventKind is DepositEventKind_AwaitingConfs
+                          ? (a.eventKind as DepositEventKind_AwaitingConfs)
+                              .field0
+                              .needed
+                          : BigInt.zero;
+                  final BigInt nb =
+                      b.eventKind is DepositEventKind_AwaitingConfs
+                          ? (b.eventKind as DepositEventKind_AwaitingConfs)
+                              .field0
+                              .needed
+                          : BigInt.zero;
+                  return nb.compareTo(na);
+                });
+            final event = events[adjustedIndex];
+
+            String msg;
+            BigInt amount;
+            switch (event.eventKind) {
+              case DepositEventKind_Mempool(field0: final e):
+                msg = 'Tx in mempool';
+                amount = e.amount;
+                break;
+              case DepositEventKind_AwaitingConfs(field0: final e):
+                msg =
+                    'Tx included in block ${e.blockHeight}. Remaining confs: ${e.needed}';
+                amount = e.amount;
+                break;
+              case DepositEventKind_Confirmed(field0: final e):
+                msg = 'Tx confirmed, claiming ecash';
+                amount = e.amount;
+                break;
+              case DepositEventKind_Claimed():
+                return const SizedBox.shrink();
+            }
+
+            final formattedAmount = formatBalance(amount, false);
+            final amountStyle = TextStyle(
+              fontWeight: FontWeight.bold,
+              color: Colors.greenAccent,
+            );
+
+            return Card(
+              elevation: 4,
+              margin: const EdgeInsets.symmetric(vertical: 6),
+              color: Theme.of(context).colorScheme.surface,
+              child: ListTile(
+                leading: CircleAvatar(
+                  backgroundColor: Colors.greenAccent.withOpacity(0.1),
+                  child: Icon(Icons.link, color: Colors.yellowAccent),
                 ),
-            ] else ...[
-              Text(
-                "Recovering...",
-                style: Theme.of(context).textTheme.displaySmall?.copyWith(
-                  color: Theme.of(context).colorScheme.primary,
-                  fontWeight: FontWeight.bold,
+                title: Text(
+                  "Pending Receive",
+                  style: Theme.of(context).textTheme.bodyMedium,
                 ),
-                textAlign: TextAlign.center,
+                subtitle: Text(
+                  msg,
+                  style: Theme.of(context).textTheme.bodyMedium,
+                ),
+                trailing: Text(formattedAmount, style: amountStyle),
               ),
-            ],
-            const SizedBox(height: 48),
-            Align(
-              alignment: Alignment.centerLeft,
-              child: Text(
-                "Recent Transactions",
-                style: Theme.of(
-                  context,
-                ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
-              ),
-            ),
-            const SizedBox(height: 16),
-            if (!recovering) ...[
-              isLoadingTransactions
-                  ? const CircularProgressIndicator()
-                  : _transactions.isEmpty
-                  ? Text(_getNoTransactionsMessage())
-                  : SizedBox(
-                    height: 300,
-                    child: ListView.builder(
-                      controller: _scrollController,
-                      itemCount: _transactions.length + (_hasMore ? 1 : 0),
-                      itemBuilder: (context, index) {
-                        if (index == _transactions.length) {
-                          return const Padding(
-                            padding: EdgeInsets.all(8.0),
-                            child: Center(child: CircularProgressIndicator()),
-                          );
-                        }
+            );
+          }
 
-                        final tx = _transactions[index];
-                        final isIncoming = tx.received;
-                        final date = DateTime.fromMillisecondsSinceEpoch(
-                          tx.timestamp.toInt(),
-                        );
-                        final formattedDate = DateFormat.yMMMd()
-                            .add_jm()
-                            .format(date);
-                        final formattedAmount = formatBalance(tx.amount, false);
+          final confirmedStartIndex = pendingCount;
+          final confirmIndex = adjustedIndex - confirmedStartIndex;
 
-                        IconData moduleIcon;
-                        switch (tx.module) {
-                          case 'ln':
-                          case 'lnv2':
-                            moduleIcon = Icons.flash_on;
-                            break;
-                          case 'wallet':
-                            moduleIcon = Icons.link;
-                            break;
-                          case 'mint':
-                            moduleIcon = Icons.currency_bitcoin;
-                            break;
-                          default:
-                            moduleIcon = Icons.help_outline;
-                        }
+          if (!recovering && confirmIndex == 0) {
+            if (isLoadingTransactions) {
+              return const Center(child: CircularProgressIndicator());
+            } else if (_transactions.isEmpty && pendingCount == 0) {
+              return Center(child: Text(_getNoTransactionsMessage()));
+            }
+          }
 
-                        final amountStyle = TextStyle(
-                          fontWeight: FontWeight.bold,
-                          color:
-                              isIncoming
-                                  ? Colors.greenAccent
-                                  : Colors.redAccent,
-                        );
+          if (!recovering &&
+              !isLoadingTransactions &&
+              _transactions.isNotEmpty) {
+            if (confirmIndex < _transactions.length) {
+              final tx = _transactions[confirmIndex];
+              final isIncoming = tx.received;
+              final date = DateTime.fromMillisecondsSinceEpoch(
+                tx.timestamp.toInt(),
+              );
+              final formattedDate = DateFormat.yMMMd().add_jm().format(date);
+              final formattedAmount = formatBalance(tx.amount, false);
 
-                        return Card(
-                          elevation: 4,
-                          margin: const EdgeInsets.symmetric(vertical: 6),
-                          color: Theme.of(context).colorScheme.surface,
-                          child: ListTile(
-                            leading: CircleAvatar(
-                              backgroundColor:
-                                  isIncoming
-                                      ? Colors.greenAccent.withOpacity(0.1)
-                                      : Colors.redAccent.withOpacity(0.1),
-                              child: Icon(
-                                moduleIcon,
-                                color:
-                                    isIncoming
-                                        ? Colors.greenAccent
-                                        : Colors.redAccent,
-                              ),
-                            ),
-                            title: Text(
-                              isIncoming ? "Received" : "Sent",
-                              style: Theme.of(context).textTheme.bodyMedium,
-                            ),
-                            subtitle: Text(
-                              formattedDate,
-                              style: Theme.of(context).textTheme.bodyMedium,
-                            ),
-                            trailing: Text(formattedAmount, style: amountStyle),
-                          ),
-                        );
-                      },
+              IconData moduleIcon;
+              switch (tx.module) {
+                case 'ln':
+                case 'lnv2':
+                  moduleIcon = Icons.flash_on;
+                  break;
+                case 'wallet':
+                  moduleIcon = Icons.link;
+                  break;
+                case 'mint':
+                  moduleIcon = Icons.currency_bitcoin;
+                  break;
+                default:
+                  moduleIcon = Icons.help_outline;
+              }
+
+              final amountStyle = TextStyle(
+                fontWeight: FontWeight.bold,
+                color: isIncoming ? Colors.greenAccent : Colors.redAccent,
+              );
+
+              return Card(
+                elevation: 4,
+                margin: const EdgeInsets.symmetric(vertical: 6),
+                color: Theme.of(context).colorScheme.surface,
+                child: ListTile(
+                  leading: CircleAvatar(
+                    backgroundColor:
+                        isIncoming
+                            ? Colors.greenAccent.withOpacity(0.1)
+                            : Colors.redAccent.withOpacity(0.1),
+                    child: Icon(
+                      moduleIcon,
+                      color: isIncoming ? Colors.greenAccent : Colors.redAccent,
                     ),
                   ),
-            ],
-          ],
-        ),
+                  title: Text(
+                    isIncoming ? "Received" : "Sent",
+                    style: Theme.of(context).textTheme.bodyMedium,
+                  ),
+                  subtitle: Text(
+                    formattedDate,
+                    style: Theme.of(context).textTheme.bodyMedium,
+                  ),
+                  trailing: Text(formattedAmount, style: amountStyle),
+                ),
+              );
+            }
+
+            if (_hasMore) {
+              return const Padding(
+                padding: EdgeInsets.symmetric(vertical: 12.0),
+                child: Center(child: CircularProgressIndicator()),
+              );
+            }
+          }
+
+          return const SizedBox.shrink();
+        },
       ),
       bottomNavigationBar: BottomNavigationBar(
         currentIndex: _selectedPaymentType.index,

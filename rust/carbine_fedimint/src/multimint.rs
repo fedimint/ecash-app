@@ -1,25 +1,63 @@
-use std::{collections::BTreeMap, fmt::Display, str::FromStr, sync::Arc, time::{Duration, UNIX_EPOCH}};
+use std::{
+    collections::BTreeMap,
+    fmt::Display,
+    str::FromStr,
+    sync::Arc,
+    time::{Duration, UNIX_EPOCH},
+};
 
 use anyhow::{bail, Context};
 use bitcoin::key::rand::{seq::SliceRandom, thread_rng};
 use fedimint_api_client::api::net::Connector;
 use fedimint_bip39::{Bip39RootSecretStrategy, Language, Mnemonic};
-use fedimint_client::{db::ChronologicalOperationLogKey, module_init::ClientModuleInitRegistry, oplog::OperationLog, secret::RootSecretStrategy, Client, ClientHandleArc, OperationId};
-use fedimint_core::{config::{ClientConfig, FederationId}, db::{mem_impl::MemDatabase, Database, IDatabaseTransactionOpsCoreTyped}, encoding::Encodable, hex, invite_code::InviteCode, task::TaskGroup, util::SafeUrl, Amount};
+use fedimint_client::{
+    db::ChronologicalOperationLogKey, module_init::ClientModuleInitRegistry, oplog::OperationLog,
+    secret::RootSecretStrategy, Client, ClientHandleArc, OperationId,
+};
+use fedimint_core::{
+    config::{ClientConfig, FederationId},
+    db::{mem_impl::MemDatabase, Database, IDatabaseTransactionOpsCoreTyped},
+    encoding::Encodable,
+    hex,
+    invite_code::InviteCode,
+    task::TaskGroup,
+    util::SafeUrl,
+    Amount,
+};
 use fedimint_derive_secret::{ChildId, DerivableSecret};
-use fedimint_ln_client::{InternalPayState, LightningClientInit, LightningClientModule, LightningOperationMetaVariant, LnPayState, LnReceiveState};
+use fedimint_ln_client::{
+    InternalPayState, LightningClientInit, LightningClientModule, LightningOperationMetaVariant,
+    LnPayState, LnReceiveState,
+};
 use fedimint_ln_common::LightningGateway;
-use fedimint_lnv2_client::{FinalReceiveOperationState, FinalSendOperationState, LightningOperationMeta, ReceiveOperationState, SendOperationState};
+use fedimint_lnv2_client::{
+    FinalReceiveOperationState, FinalSendOperationState, LightningOperationMeta,
+    ReceiveOperationState, SendOperationState,
+};
 use fedimint_lnv2_common::{gateway_api::PaymentFee, Bolt11InvoiceDescription};
 use fedimint_meta_client::{common::DEFAULT_META_KEY, MetaClientInit};
-use fedimint_mint_client::{MintClientInit, MintClientModule, MintOperationMeta, MintOperationMetaVariant, OOBNotes, ReissueExternalNotesState, SelectNotesWithAtleastAmount, SpendOOBState};
-use fedimint_wallet_client::{WalletClientInit, WithdrawState};
+use fedimint_mint_client::{
+    MintClientInit, MintClientModule, MintOperationMeta, MintOperationMetaVariant, OOBNotes,
+    ReissueExternalNotesState, SelectNotesWithAtleastAmount, SpendOOBState,
+};
+use fedimint_wallet_client::api::WalletFederationApi;
+use fedimint_wallet_client::client_db::TweakIdx;
+use fedimint_wallet_client::{
+    DepositStateV2, WalletClientInit, WalletClientModule, WalletOperationMeta,
+    WalletOperationMetaVariant, WithdrawState,
+};
 use futures_util::StreamExt;
 use lightning_invoice::{Bolt11Invoice, Description};
 use serde::Serialize;
 use serde_json::to_value;
+use tokio::sync::mpsc::{unbounded_channel, UnboundedReceiver, UnboundedSender};
+use tokio::sync::RwLock;
 
-use crate::{FederationConfig, FederationConfigKey, FederationConfigKeyPrefix, SeedPhraseAckKey, anyhow};
+use crate::event_bus::EventBus;
+use crate::frb_generated::StreamSink;
+use crate::{
+    anyhow, FederationConfig, FederationConfigKey, FederationConfigKeyPrefix, SeedPhraseAckKey,
+};
 
 const DEFAULT_EXPIRY_TIME_SECS: u32 = 86400;
 
@@ -53,8 +91,10 @@ pub struct Multimint {
     db: Database,
     mnemonic: Mnemonic,
     modules: ClientModuleInitRegistry,
-    clients: BTreeMap<FederationId, ClientHandleArc>,
+    clients: Arc<RwLock<BTreeMap<FederationId, ClientHandleArc>>>,
     task_group: TaskGroup,
+    pegin_address_monitor_tx: UnboundedSender<(FederationId, TweakIdx)>,
+    event_bus: EventBus<DepositEvent>,
 }
 
 // TODO: I dont like that this is separate from federation selector
@@ -93,11 +133,48 @@ pub enum ClientType {
     Recovery { client_config: ClientConfig },
 }
 
+#[derive(Clone, Eq, PartialEq, Serialize, Debug)]
+pub struct MempoolEvent {
+    pub amount: u64,
+    pub txid: String,
+}
+
+#[derive(Clone, Eq, PartialEq, Serialize, Debug)]
+pub struct AwaitingConfsEvent {
+    pub amount: u64,
+    pub txid: String,
+    pub block_height: u64,
+    pub needed: u64,
+}
+
+#[derive(Clone, Eq, PartialEq, Serialize, Debug)]
+pub struct ConfirmedEvent {
+    pub amount: u64,
+    pub txid: String,
+}
+
+#[derive(Clone, Eq, PartialEq, Serialize, Debug)]
+pub struct ClaimedEvent {
+    pub amount: u64,
+    pub txid: String,
+}
+
+#[derive(Clone, Eq, PartialEq, Serialize, Debug)]
+pub enum DepositEventKind {
+    Mempool(MempoolEvent),
+    AwaitingConfs(AwaitingConfsEvent),
+    Confirmed(ConfirmedEvent),
+    Claimed(ClaimedEvent),
+}
+
+#[derive(Clone, Eq, PartialEq, Serialize, Debug)]
+pub struct DepositEvent {
+    pub federation_id: FederationId,
+    pub event_kind: DepositEventKind,
+}
+
 impl Multimint {
-    pub async fn new(
-        db: Database,
-        creation_type: MultimintCreation,
-    ) -> anyhow::Result<Self> {
+    pub async fn new(db: Database, creation_type: MultimintCreation) -> anyhow::Result<Self> {
         let mnemonic = match creation_type {
             MultimintCreation::New => {
                 let mnemonic = Bip39RootSecretStrategy::<12>::random(&mut thread_rng());
@@ -129,14 +206,27 @@ impl Multimint {
         modules.attach(fedimint_lnv2_client::LightningClientInit::default());
         modules.attach(MetaClientInit);
 
+        let clients = Arc::new(RwLock::new(BTreeMap::new()));
+
+        let (pegin_address_monitor_tx, pegin_address_monitor_rx) =
+            unbounded_channel::<(FederationId, TweakIdx)>();
+
         let mut multimint = Self {
             db,
             mnemonic,
             modules,
-            clients: BTreeMap::new(),
+            clients: clients.clone(),
             task_group: TaskGroup::new(),
+            pegin_address_monitor_tx: pegin_address_monitor_tx.clone(),
+            event_bus: EventBus::new(100, 1000),
         };
+
         multimint.load_clients().await?;
+        multimint
+            .spawn_pegin_address_watcher(pegin_address_monitor_rx)
+            .await?;
+        multimint.monitor_all_unused_pegin_addresses().await?;
+
         Ok(multimint)
     }
 
@@ -157,7 +247,7 @@ impl Multimint {
                     ClientType::New,
                 )
                 .await?;
-            self.clients.insert(id.id, client);
+            self.clients.write().await.insert(id.id, client);
         }
 
         // TODO: Need to drive active operations to completion
@@ -165,8 +255,222 @@ impl Multimint {
         Ok(())
     }
 
-    pub fn contains_client(&self, federation_id: &FederationId) -> bool {
-        self.clients.contains_key(federation_id)
+    async fn spawn_pegin_address_watcher(
+        &self,
+        mut monitor_rx: UnboundedReceiver<(FederationId, TweakIdx)>,
+    ) -> anyhow::Result<()> {
+        let event_bus_clone = self.event_bus.clone();
+        let task_group_clone = self.task_group.clone();
+        let clients_clone = self.clients.clone();
+
+        self.task_group
+            .spawn_cancellable("pegin address watcher", async move {
+                while let Some((fed_id, tweak_idx)) = monitor_rx.recv().await {
+                    let event_bus = event_bus_clone.clone();
+                    // wrapping the clients in Arc<RwLock<..>> allows us to monitor using clients
+                    // created after the background task is spawned
+                    let client = clients_clone
+                        .read()
+                        .await
+                        .get(&fed_id)
+                        .expect("No federation exists")
+                        .clone();
+
+                    task_group_clone.spawn_cancellable("tweak index watcher", async move {
+                        if let Err(e) =
+                            Self::watch_pegin_address(fed_id, client, tweak_idx, event_bus).await
+                        {
+                            eprintln!("watch_pegin_address({}) failed: {:?}", tweak_idx.0, e);
+                        }
+                    });
+                }
+            });
+
+        Ok(())
+    }
+
+    async fn watch_pegin_address(
+        federation_id: FederationId,
+        client: ClientHandleArc,
+        tweak_idx: TweakIdx,
+        event_bus: EventBus<DepositEvent>,
+    ) -> anyhow::Result<()> {
+        let wallet_module = client.get_first_module::<WalletClientModule>()?;
+
+        let data = match wallet_module.get_pegin_tweak_idx(tweak_idx).await {
+            Ok(d) => d,
+            Err(e) if e.to_string().contains("TweakIdx not found") => return Ok(()),
+            Err(e) => return Err(e),
+        };
+
+        let mut updates = wallet_module
+            .subscribe_deposit(data.operation_id)
+            .await?
+            .into_stream();
+
+        while let Some(state) = updates.next().await {
+            match state {
+                DepositStateV2::WaitingForTransaction => {}
+                DepositStateV2::WaitingForConfirmation {
+                    btc_deposited,
+                    btc_out_point,
+                } => {
+                    let deposit_event = DepositEvent {
+                        federation_id,
+                        event_kind: DepositEventKind::Mempool(MempoolEvent {
+                            amount: Amount::from_sats(btc_deposited.to_sat()).msats,
+                            txid: btc_out_point.txid.to_string(),
+                        }),
+                    };
+
+                    event_bus.publish(deposit_event).await;
+
+                    let client = reqwest::Client::new();
+
+                    let api_url = "https://mutinynet.com/api".to_string();
+                    // let api_url = "http://localhost:19610".to_string();
+
+                    let tx_height = fedimint_core::util::retry(
+                        "get confirmed block height",
+                        fedimint_core::util::backoff_util::background_backoff(),
+                        || async {
+                            let resp = client
+                                .get(format!("{}/tx/{}", api_url, btc_out_point.txid.to_string(),))
+                                .send()
+                                .await?
+                                .error_for_status()?
+                                .text()
+                                .await?;
+
+                            serde_json::from_str::<serde_json::Value>(&resp)?
+                                .get("status")
+                                .and_then(|s| s.get("block_height"))
+                                .and_then(|h| h.as_u64())
+                                .ok_or_else(|| {
+                                    anyhow::anyhow!("no confirmation height yet, still in mempool")
+                                })
+                        },
+                    )
+                    .await
+                    .expect("Never gives up");
+
+                    let every_10_secs = fedimint_core::util::backoff_util::custom_backoff(
+                        Duration::from_secs(10),
+                        Duration::from_secs(10),
+                        None,
+                    );
+                    fedimint_core::util::retry("consensus confirmation", every_10_secs, || async {
+                        let consensus_height = wallet_module
+                            .api
+                            .fetch_consensus_block_count()
+                            .await?
+                            .saturating_sub(1);
+
+                        let needed = tx_height.saturating_sub(consensus_height);
+
+                        let deposit_event = DepositEvent {
+                            federation_id,
+                            event_kind: DepositEventKind::AwaitingConfs(AwaitingConfsEvent {
+                                amount: Amount::from_sats(btc_deposited.to_sat()).msats,
+                                txid: btc_out_point.txid.to_string(),
+                                block_height: tx_height,
+                                needed,
+                            }),
+                        };
+
+                        event_bus.publish(deposit_event).await;
+                        anyhow::ensure!(needed == 0, "{} more confs needed", needed);
+
+                        Ok(())
+                    })
+                    .await
+                    .expect("Never gives up");
+
+                    // trigger another check of pegin monitor for faster claim
+                    wallet_module.recheck_pegin_address(tweak_idx).await?;
+                }
+                DepositStateV2::Confirmed {
+                    btc_deposited,
+                    btc_out_point,
+                } => {
+                    let deposit_event = DepositEvent {
+                        federation_id,
+                        event_kind: DepositEventKind::Confirmed(ConfirmedEvent {
+                            amount: Amount::from_sats(btc_deposited.to_sat()).msats,
+                            txid: btc_out_point.txid.to_string(),
+                        }),
+                    };
+
+                    event_bus.publish(deposit_event).await;
+                }
+                DepositStateV2::Claimed {
+                    btc_deposited,
+                    btc_out_point,
+                } => {
+                    let deposit_event = DepositEvent {
+                        federation_id,
+                        event_kind: DepositEventKind::Claimed(ClaimedEvent {
+                            amount: Amount::from_sats(btc_deposited.to_sat()).msats,
+                            txid: btc_out_point.txid.to_string(),
+                        }),
+                    };
+
+                    event_bus.publish(deposit_event).await;
+                }
+                DepositStateV2::Failed(e) => {
+                    println!("deposit failed: {:?}", e);
+                    break;
+                }
+            };
+        }
+
+        Ok(())
+    }
+
+    async fn monitor_all_unused_pegin_addresses(&self) -> anyhow::Result<()> {
+        let federation_ids = self
+            .federations()
+            .await
+            .into_iter()
+            .map(|(fed, _)| fed.federation_id);
+        let pegin_address_monitor_tx_clone = self.pegin_address_monitor_tx.clone();
+        let clients_clone = self.clients.clone();
+
+        self.task_group
+            .spawn_cancellable("unused address monitor", async move {
+                for fed_id in federation_ids {
+                    let client = clients_clone
+                        .read()
+                        .await
+                        .get(&fed_id)
+                        .expect("No federation exists")
+                        .clone();
+                    let wallet_module = client
+                        .get_first_module::<WalletClientModule>()
+                        .expect("No wallet module exists");
+
+                    let mut tweak_idx = TweakIdx(0);
+                    while let Ok(data) = wallet_module.get_pegin_tweak_idx(tweak_idx).await {
+                        if data.claimed.is_empty() {
+                            // we found an allocated, unused address so we need to monitor
+                            if let Err(_) = pegin_address_monitor_tx_clone.send((fed_id, tweak_idx))
+                            {
+                                eprintln!(
+                                    "failed to monitor tweak index {:?} for fed {:?}",
+                                    tweak_idx, fed_id
+                                );
+                            }
+                        }
+                        tweak_idx = tweak_idx.next();
+                    }
+                }
+            });
+
+        Ok(())
+    }
+
+    pub async fn contains_client(&self, federation_id: &FederationId) -> bool {
+        self.clients.read().await.contains_key(federation_id)
     }
 
     pub async fn has_seed_phrase_ack(&self) -> bool {
@@ -189,31 +493,30 @@ impl Multimint {
         // In this case, we create a temprorary client and retrieve all the data
         let invite_code = InviteCode::from_str(&invite)?;
         let federation_id = invite_code.federation_id();
-        let client = if let Some(client) = self.clients.get(&federation_id) {
+        let maybe_client = self.clients.read().await.get(&federation_id).cloned();
+        let client = if let Some(client) = maybe_client {
             if !client.has_pending_recoveries() {
                 println!("Federation Meta: Using cached client");
                 client
             } else {
                 println!("Federation Meta: Building temporary client because we are recovering");
-                &self
-                    .build_client(
-                        &federation_id,
-                        &invite_code,
-                        Connector::Tcp,
-                        ClientType::Temporary,
-                    )
-                    .await?
-            }
-        } else {
-            println!("Federation Meta: Building temporary client");
-            &self
-                .build_client(
+                self.build_client(
                     &federation_id,
                     &invite_code,
                     Connector::Tcp,
                     ClientType::Temporary,
                 )
                 .await?
+            }
+        } else {
+            println!("Federation Meta: Building temporary client");
+            self.build_client(
+                &federation_id,
+                &invite_code,
+                Connector::Tcp,
+                ClientType::Temporary,
+            )
+            .await?
         };
 
         let config = client.config().await;
@@ -355,7 +658,7 @@ impl Multimint {
             client_config: client_config.clone(),
         };
 
-        self.clients.insert(federation_id, client);
+        self.clients.write().await.insert(federation_id, client);
 
         let mut dbtx = self.db.begin_transaction().await;
         dbtx.insert_entry(
@@ -450,6 +753,8 @@ impl Multimint {
         let federation_id = invite.federation_id();
         let recovering_client = self
             .clients
+            .read()
+            .await
             .get(&federation_id)
             .expect("No federation exists")
             .clone();
@@ -459,8 +764,11 @@ impl Multimint {
         let selector = self.join_federation(invite_code, false).await?;
         let new_client = self
             .clients
+            .read()
+            .await
             .get(&federation_id)
-            .expect("Client should be available");
+            .expect("Client should be available")
+            .clone();
         println!("Waiting for all active state machines...");
         new_client.wait_for_all_active_state_machines().await?;
 
@@ -490,15 +798,23 @@ impl Multimint {
         let mut dbtx = self.db.begin_transaction_nc().await;
         dbtx.find_by_prefix(&FederationConfigKeyPrefix)
             .await
-            .map(|(id, config)| {
-                let client = self.clients.get(&id.id).expect("No client exists");
-                let selector = FederationSelector {
-                    federation_name: config.federation_name,
-                    federation_id: id.id,
-                    network: config.network,
-                    invite_code: config.invite_code.to_string(),
-                };
-                (selector, client.has_pending_recoveries())
+            .then(|(id, config)| {
+                let clients_clone = self.clients.clone();
+                async move {
+                    let client = clients_clone
+                        .read()
+                        .await
+                        .get(&id.id)
+                        .expect("No client exists")
+                        .clone();
+                    let selector = FederationSelector {
+                        federation_name: config.federation_name,
+                        federation_id: id.id,
+                        network: config.network,
+                        invite_code: config.invite_code.to_string(),
+                    };
+                    (selector, client.has_pending_recoveries())
+                }
             })
             .collect::<Vec<_>>()
             .await
@@ -507,8 +823,11 @@ impl Multimint {
     pub async fn balance(&self, federation_id: &FederationId) -> u64 {
         let client = self
             .clients
+            .read()
+            .await
             .get(federation_id)
-            .expect("No federation exists");
+            .expect("No federation exists")
+            .clone();
         client.get_balance().await.msats
     }
 
@@ -526,12 +845,15 @@ impl Multimint {
         println!("Amount without fees: {amount_without_fees:?}");
         let client = self
             .clients
+            .read()
+            .await
             .get(federation_id)
-            .expect("No federation exists");
+            .expect("No federation exists")
+            .clone();
 
         if is_lnv2 {
             if let Ok((invoice, operation_id)) = Self::receive_lnv2(
-                client,
+                &client,
                 amount_with_fees,
                 amount_without_fees,
                 gateway.clone(),
@@ -544,7 +866,7 @@ impl Multimint {
         }
 
         println!("Using LNv1 for the actual invoice");
-        Self::receive_lnv1(client, amount_with_fees, amount_without_fees, gateway).await
+        Self::receive_lnv1(&client, amount_with_fees, amount_without_fees, gateway).await
     }
 
     async fn receive_lnv2(
@@ -600,9 +922,12 @@ impl Multimint {
     ) -> anyhow::Result<(String, u64, bool)> {
         let client = self
             .clients
+            .read()
+            .await
             .get(federation_id)
-            .expect("No federation exists");
-        if let Ok((url, receive_fee)) = Self::lnv2_select_gateway(client, None).await {
+            .expect("No federation exists")
+            .clone();
+        if let Ok((url, receive_fee)) = Self::lnv2_select_gateway(&client, None).await {
             // TODO: It is currently not possible to get the fed_base and fed_ppm from the config
             println!("Using LNv2 for selecting receive gateway");
             let amount_with_fees = compute_receive_amount(
@@ -617,7 +942,7 @@ impl Multimint {
 
         // LNv1 does not have fees for receiving
         println!("Using LNv1 for selecting receive gateway");
-        let gateway = Self::lnv1_select_gateway(client)
+        let gateway = Self::lnv1_select_gateway(&client)
             .await
             .ok_or(anyhow!("No available gateways"))?;
         Ok((gateway.api.to_string(), amount.msats, false))
@@ -631,15 +956,19 @@ impl Multimint {
     ) -> anyhow::Result<(String, u64, bool)> {
         let client = self
             .clients
+            .read()
+            .await
             .get(federation_id)
-            .expect("No federation exists");
-        if let Ok((url, send_fee)) = Self::lnv2_select_gateway(client, Some(bolt11.clone())).await {
+            .expect("No federation exists")
+            .clone();
+        if let Ok((url, send_fee)) = Self::lnv2_select_gateway(&client, Some(bolt11.clone())).await
+        {
             let amount_with_fees = compute_send_amount(amount, 1_000, 100, send_fee);
             return Ok((url.to_string(), amount_with_fees, true));
         }
 
         // LNv1 only has Lightning routing fees
-        let gateway = Self::lnv1_select_gateway(client)
+        let gateway = Self::lnv1_select_gateway(&client)
             .await
             .ok_or(anyhow!("No available gateways"))?;
         let fees = if Self::invoice_routes_back_to_federation(&bolt11, gateway.clone()) {
@@ -676,14 +1005,17 @@ impl Multimint {
     ) -> anyhow::Result<OperationId> {
         let client = self
             .clients
+            .read()
+            .await
             .get(federation_id)
-            .expect("No federation exists");
+            .expect("No federation exists")
+            .clone();
         let invoice = Bolt11Invoice::from_str(&invoice)?;
 
         if is_lnv2 {
             println!("Attempting to pay using LNv2...");
             if let Ok(lnv2_operation_id) =
-                Self::pay_lnv2(client, invoice.clone(), gateway.clone()).await
+                Self::pay_lnv2(&client, invoice.clone(), gateway.clone()).await
             {
                 println!("Successfully initated LNv2 payment");
                 return Ok(lnv2_operation_id);
@@ -691,7 +1023,7 @@ impl Multimint {
         }
 
         println!("Attempting to pay using LNv1...");
-        let operation_id = Self::pay_lnv1(client, invoice, gateway).await?;
+        let operation_id = Self::pay_lnv1(&client, invoice, gateway).await?;
         println!("Successfully initiated LNv1 payment");
         Ok(operation_id)
     }
@@ -731,12 +1063,15 @@ impl Multimint {
     ) -> anyhow::Result<FinalSendOperationState> {
         let client = self
             .clients
+            .read()
+            .await
             .get(federation_id)
-            .expect("No federation exists");
+            .expect("No federation exists")
+            .clone();
 
-        let send_state = match Self::await_send_lnv2(client, operation_id).await {
+        let send_state = match Self::await_send_lnv2(&client, operation_id).await {
             Ok(lnv2_final_state) => lnv2_final_state,
-            Err(_) => Self::await_send_lnv1(client, operation_id).await?,
+            Err(_) => Self::await_send_lnv1(&client, operation_id).await?,
         };
         OperationLog::set_operation_outcome(client.db(), operation_id, &send_state).await?;
         Ok(send_state)
@@ -839,11 +1174,14 @@ impl Multimint {
     ) -> anyhow::Result<FinalReceiveOperationState> {
         let client = self
             .clients
+            .read()
+            .await
             .get(federation_id)
-            .expect("No federation exists");
-        let receive_state = match Self::await_receive_lnv2(client, operation_id).await {
+            .expect("No federation exists")
+            .clone();
+        let receive_state = match Self::await_receive_lnv2(&client, operation_id).await {
             Ok(lnv2_final_state) => lnv2_final_state,
-            Err(_) => Self::await_receive_lnv1(client, operation_id).await?,
+            Err(_) => Self::await_receive_lnv1(&client, operation_id).await?,
         };
         OperationLog::set_operation_outcome(client.db(), operation_id, &receive_state).await?;
         Ok(receive_state)
@@ -960,8 +1298,11 @@ impl Multimint {
     ) -> Vec<Transaction> {
         let client = self
             .clients
+            .read()
+            .await
             .get(federation_id)
-            .expect("No federation exists");
+            .expect("No federation exists")
+            .clone();
 
         let mut collected = Vec::new();
         let mut next_key = if let Some(timestamp) = timestamp {
@@ -1103,6 +1444,29 @@ impl Multimint {
                             }
                         }
                     }
+                    "wallet" => {
+                        let meta = op_log_val.meta::<WalletOperationMeta>();
+                        let outcome = op_log_val.outcome::<DepositStateV2>();
+                        match meta.variant {
+                            WalletOperationMetaVariant::Deposit { .. } => {
+                                if let Some(DepositStateV2::Claimed { btc_deposited, .. }) = outcome
+                                {
+                                    let amount = Amount::from_sats(btc_deposited.to_sat()).msats;
+                                    Some(Transaction {
+                                        received: true,
+                                        amount,
+                                        module: "wallet".to_string(),
+                                        timestamp,
+                                        operation_id: key.operation_id.0.to_vec(),
+                                    })
+                                } else {
+                                    None
+                                }
+                            }
+                            WalletOperationMetaVariant::Withdraw { .. } => None,
+                            WalletOperationMetaVariant::RbfWithdraw { .. } => None,
+                        }
+                    }
                     _ => None,
                 };
 
@@ -1125,8 +1489,11 @@ impl Multimint {
     ) -> anyhow::Result<(OperationId, String, u64)> {
         let client = self
             .clients
+            .read()
+            .await
             .get(federation_id)
-            .expect("No federation exists");
+            .expect("No federation exists")
+            .clone();
         let mint = client.get_first_module::<MintClientModule>()?;
         let amount = Amount::from_msats(amount_msats);
         // Default timeout after one day
@@ -1146,8 +1513,11 @@ impl Multimint {
     ) -> anyhow::Result<SpendOOBState> {
         let client = self
             .clients
+            .read()
+            .await
             .get(federation_id)
-            .expect("No federation exists");
+            .expect("No federation exists")
+            .clone();
         let mint = client.get_first_module::<MintClientModule>()?;
         let mut updates = mint
             .subscribe_spend_notes(operation_id)
@@ -1182,8 +1552,11 @@ impl Multimint {
     ) -> anyhow::Result<OperationId> {
         let client = self
             .clients
+            .read()
+            .await
             .get(federation_id)
-            .expect("No federation exists");
+            .expect("No federation exists")
+            .clone();
         let mint = client.get_first_module::<MintClientModule>()?;
         let notes = OOBNotes::from_str(&ecash)?;
         let total_amount = notes.total_amount();
@@ -1198,8 +1571,11 @@ impl Multimint {
     ) -> anyhow::Result<ReissueExternalNotesState> {
         let client = self
             .clients
+            .read()
+            .await
             .get(federation_id)
-            .expect("No federation exists");
+            .expect("No federation exists")
+            .clone();
         let mint = client.get_first_module::<MintClientModule>()?;
         let mut updates = mint
             .subscribe_reissue_external_notes(operation_id)
@@ -1234,8 +1610,11 @@ impl Multimint {
 
         let client = self
             .clients
+            .read()
+            .await
             .get(federation_id)
-            .expect("No federation exists");
+            .expect("No federation exists")
+            .clone();
         let wallet_module =
             client.get_first_module::<fedimint_wallet_client::WalletClientModule>()?;
 
@@ -1278,6 +1657,69 @@ impl Multimint {
         };
 
         Ok((txid, fees_sat))
+    }
+
+    pub async fn monitor_deposit_address(
+        &self,
+        federation_id: FederationId,
+        address: String,
+    ) -> anyhow::Result<()> {
+        let client = self
+            .clients
+            .read()
+            .await
+            .get(&federation_id)
+            .cloned()
+            .ok_or_else(|| anyhow::anyhow!("No federation exists"))?;
+
+        let wallet_module = client.get_first_module::<WalletClientModule>()?;
+        let address = bitcoin::Address::from_str(&address)?;
+        let tweak_idx = wallet_module.find_tweak_idx_by_address(address).await?;
+
+        self.pegin_address_monitor_tx
+            .send((federation_id, tweak_idx))
+            .map_err(|e| anyhow::anyhow!("failed to monitor tweak index: {}", e))?;
+
+        Ok(())
+    }
+
+    pub async fn allocate_deposit_address(
+        &self,
+        federation_id: FederationId,
+    ) -> anyhow::Result<String> {
+        let client = self
+            .clients
+            .read()
+            .await
+            .get(&federation_id)
+            .expect("No federation exists")
+            .clone();
+        let wallet_module =
+            client.get_first_module::<fedimint_wallet_client::WalletClientModule>()?;
+
+        let (_, address, _) = wallet_module.safe_allocate_deposit_address(()).await?;
+        self.monitor_deposit_address(federation_id, address.to_string())
+            .await?;
+
+        Ok(address.to_string())
+    }
+
+    pub async fn subscribe_deposits(
+        &self,
+        federation_id: FederationId,
+        sink: StreamSink<DepositEvent>,
+    ) -> anyhow::Result<()> {
+        let mut stream = self.event_bus.subscribe();
+
+        while let Some(evt) = stream.next().await {
+            if evt.federation_id == federation_id {
+                if sink.add(evt).is_err() {
+                    break;
+                }
+            }
+        }
+
+        Ok(())
     }
 }
 
@@ -1351,7 +1793,9 @@ fn compute_send_amount(
 mod tests {
     use fedimint_lnv2_common::gateway_api::PaymentFee;
 
-    use crate::multimint::{compute_receive_amount, compute_send_amount, receive_amount_after_fees};
+    use crate::multimint::{
+        compute_receive_amount, compute_send_amount, receive_amount_after_fees,
+    };
 
     #[test]
     fn verify_lnv2_receive_amount() {

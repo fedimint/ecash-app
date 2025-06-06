@@ -1,14 +1,17 @@
 #![allow(unexpected_cfgs)]
 
 mod db;
+mod event_bus;
 mod frb_generated;
-mod nostr;
 mod multimint;
+mod nostr;
 use db::SeedPhraseAckKey;
 use fedimint_core::config::ClientConfig;
 /* AUTO INJECTED BY flutter_rust_bridge. This line may not be accurate, and you can change it according to your needs. */
 use flutter_rust_bridge::frb;
-use multimint::{FederationMeta, FederationSelector, Multimint, MultimintCreation, PaymentPreview, Transaction};
+use multimint::{
+    FederationMeta, FederationSelector, Multimint, MultimintCreation, PaymentPreview, Transaction,
+};
 use nostr::{NostrClient, PublicFederation};
 use tokio::sync::{OnceCell, RwLock};
 
@@ -20,24 +23,17 @@ use fedimint_api_client::api::net::Connector;
 use fedimint_bip39::Language;
 use fedimint_client::{Client, OperationId};
 use fedimint_core::{
-    config::FederationId,
-    db::Database,
-    encoding::Encodable,
-    invite_code::InviteCode,
-    util::SafeUrl,
-    Amount,
+    config::FederationId, db::Database, encoding::Encodable, invite_code::InviteCode,
+    util::SafeUrl, Amount,
 };
-use fedimint_lnv2_client::{
-    FinalReceiveOperationState, FinalSendOperationState,
-};
-use fedimint_mint_client::{
-    ReissueExternalNotesState, SpendOOBState,
-};
+use fedimint_lnv2_client::{FinalReceiveOperationState, FinalSendOperationState};
+use fedimint_mint_client::{ReissueExternalNotesState, SpendOOBState};
 use fedimint_rocksdb::RocksDb;
 use lightning_invoice::Bolt11Invoice;
 
 use crate::db::{FederationConfig, FederationConfigKey, FederationConfigKeyPrefix};
-
+use crate::frb_generated::StreamSink;
+use crate::multimint::DepositEvent;
 
 static MULTIMINT: OnceCell<Arc<RwLock<Multimint>>> = OnceCell::const_new();
 static DATABASE: OnceCell<Database> = OnceCell::const_new();
@@ -292,12 +288,17 @@ pub async fn list_federations_from_nostr(force_update: bool) -> Vec<PublicFedera
     if nostr.public_federations.is_empty() || force_update {
         nostr.update_federations_from_nostr().await;
     }
-    nostr
-        .public_federations
-        .clone()
-        .into_iter()
-        .filter(|pub_fed| !mm.contains_client(&pub_fed.federation_id))
-        .collect()
+
+    let public_federations = nostr.public_federations.clone();
+
+    let mut joinable_federations = Vec::new();
+    for pub_fed in public_federations {
+        if !mm.contains_client(&pub_fed.federation_id).await {
+            joinable_federations.push(pub_fed);
+        }
+    }
+
+    joinable_federations
 }
 
 #[frb]
@@ -426,4 +427,31 @@ pub async fn word_list() -> Vec<String> {
         .iter()
         .map(|s| s.to_string())
         .collect()
+}
+
+#[frb]
+pub async fn subscribe_deposits(
+    sink: StreamSink<DepositEvent>,
+    federation_id: FederationId,
+) -> anyhow::Result<()> {
+    let multimint = get_multimint().await;
+    let mm = multimint.read().await;
+    mm.subscribe_deposits(federation_id, sink).await
+}
+
+#[frb]
+pub async fn monitor_deposit_address(
+    federation_id: FederationId,
+    address: String,
+) -> anyhow::Result<()> {
+    let multimint = get_multimint().await;
+    let mm = multimint.read().await;
+    mm.monitor_deposit_address(federation_id, address).await
+}
+
+#[frb]
+pub async fn allocate_deposit_address(federation_id: FederationId) -> anyhow::Result<String> {
+    let multimint = get_multimint().await;
+    let mm = multimint.read().await;
+    mm.allocate_deposit_address(federation_id).await
 }

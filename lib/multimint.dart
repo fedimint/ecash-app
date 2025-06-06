@@ -9,15 +9,26 @@ import 'package:flutter_rust_bridge/flutter_rust_bridge_for_generated.dart';
 import 'package:freezed_annotation/freezed_annotation.dart' hide protected;
 part 'multimint.freezed.dart';
 
-// These functions are ignored because they are not marked as `pub`: `_has_federation`, `await_receive_lnv1`, `await_receive_lnv2`, `await_send_lnv1`, `await_send_lnv2`, `build_client`, `compute_receive_amount`, `compute_send_amount`, `derive_federation_secret`, `get_client_database`, `invoice_routes_back_to_federation`, `lnv1_select_gateway`, `lnv1_update_gateway_cache`, `lnv2_select_gateway`, `load_clients`, `pay_lnv1`, `pay_lnv2`, `receive_amount_after_fees`, `receive_lnv1`, `receive_lnv2`
+// These functions are ignored because they are not marked as `pub`: `_has_federation`, `await_receive_lnv1`, `await_receive_lnv2`, `await_send_lnv1`, `await_send_lnv2`, `build_client`, `compute_receive_amount`, `compute_send_amount`, `derive_federation_secret`, `get_client_database`, `invoice_routes_back_to_federation`, `lnv1_select_gateway`, `lnv1_update_gateway_cache`, `lnv2_select_gateway`, `load_clients`, `monitor_all_unused_pegin_addresses`, `pay_lnv1`, `pay_lnv2`, `receive_amount_after_fees`, `receive_lnv1`, `receive_lnv2`, `spawn_pegin_address_watcher`, `watch_pegin_address`
 // These types are ignored because they are neither used by any `pub` functions nor (for structs and enums) marked `#[frb(unignore)]`: `ClientType`
-// These function are ignored because they are on traits that is not defined in current crate (put an empty `#[frb]` on it to unignore): `assert_receiver_is_total_eq`, `assert_receiver_is_total_eq`, `assert_receiver_is_total_eq`, `assert_receiver_is_total_eq`, `clone`, `clone`, `clone`, `clone`, `eq`, `eq`, `eq`, `eq`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`
+// These function are ignored because they are on traits that is not defined in current crate (put an empty `#[frb]` on it to unignore): `assert_receiver_is_total_eq`, `assert_receiver_is_total_eq`, `assert_receiver_is_total_eq`, `assert_receiver_is_total_eq`, `assert_receiver_is_total_eq`, `assert_receiver_is_total_eq`, `assert_receiver_is_total_eq`, `assert_receiver_is_total_eq`, `assert_receiver_is_total_eq`, `assert_receiver_is_total_eq`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `eq`, `eq`, `eq`, `eq`, `eq`, `eq`, `eq`, `eq`, `eq`, `eq`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`
 
 // Rust type: RustOpaqueMoi<flutter_rust_bridge::for_generated::RustAutoOpaqueInner<Amount>>
 abstract class Amount implements RustOpaqueInterface {}
 
 // Rust type: RustOpaqueMoi<flutter_rust_bridge::for_generated::RustAutoOpaqueInner<Bolt11Invoice>>
 abstract class Bolt11Invoice implements RustOpaqueInterface {}
+
+// Rust type: RustOpaqueMoi<flutter_rust_bridge::for_generated::RustAutoOpaqueInner<DepositEvent>>
+abstract class DepositEvent implements RustOpaqueInterface {
+  DepositEventKind get eventKind;
+
+  FederationId get federationId;
+
+  set eventKind(DepositEventKind eventKind);
+
+  set federationId(FederationId federationId);
+}
 
 // Rust type: RustOpaqueMoi<flutter_rust_bridge::for_generated::RustAutoOpaqueInner<FederationSelector>>
 abstract class FederationSelector implements RustOpaqueInterface {
@@ -47,6 +58,8 @@ abstract class FinalSendOperationState implements RustOpaqueInterface {}
 // Rust type: RustOpaqueMoi<flutter_rust_bridge::for_generated::RustAutoOpaqueInner<Multimint>>
 abstract class Multimint implements RustOpaqueInterface {
   Future<void> ackSeedPhrase();
+
+  Future<String> allocateDepositAddress({required FederationId federationId});
 
   Future<ReissueExternalNotesState> awaitEcashReissue({
     required FederationId federationId,
@@ -85,6 +98,11 @@ abstract class Multimint implements RustOpaqueInterface {
   Future<FederationSelector> joinFederation({
     required String invite,
     required bool recover,
+  });
+
+  Future<void> monitorDepositAddress({
+    required FederationId federationId,
+    required String address,
   });
 
   // HINT: Make it `#[frb(sync)]` to let it become the default constructor of Dart class.
@@ -143,6 +161,8 @@ abstract class Multimint implements RustOpaqueInterface {
     required BigInt amountMsats,
   });
 
+  Stream<DepositEvent> subscribeDeposits({required FederationId federationId});
+
   Future<List<Transaction>> transactions({
     required FederationId federationId,
     BigInt? timestamp,
@@ -164,6 +184,84 @@ abstract class SafeUrl implements RustOpaqueInterface {}
 
 // Rust type: RustOpaqueMoi<flutter_rust_bridge::for_generated::RustAutoOpaqueInner<SpendOOBState>>
 abstract class SpendOobState implements RustOpaqueInterface {}
+
+class AwaitingConfsEvent {
+  final BigInt amount;
+  final String txid;
+  final BigInt blockHeight;
+  final BigInt needed;
+
+  const AwaitingConfsEvent({
+    required this.amount,
+    required this.txid,
+    required this.blockHeight,
+    required this.needed,
+  });
+
+  @override
+  int get hashCode =>
+      amount.hashCode ^ txid.hashCode ^ blockHeight.hashCode ^ needed.hashCode;
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is AwaitingConfsEvent &&
+          runtimeType == other.runtimeType &&
+          amount == other.amount &&
+          txid == other.txid &&
+          blockHeight == other.blockHeight &&
+          needed == other.needed;
+}
+
+class ClaimedEvent {
+  final BigInt amount;
+  final String txid;
+
+  const ClaimedEvent({required this.amount, required this.txid});
+
+  @override
+  int get hashCode => amount.hashCode ^ txid.hashCode;
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is ClaimedEvent &&
+          runtimeType == other.runtimeType &&
+          amount == other.amount &&
+          txid == other.txid;
+}
+
+class ConfirmedEvent {
+  final BigInt amount;
+  final String txid;
+
+  const ConfirmedEvent({required this.amount, required this.txid});
+
+  @override
+  int get hashCode => amount.hashCode ^ txid.hashCode;
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is ConfirmedEvent &&
+          runtimeType == other.runtimeType &&
+          amount == other.amount &&
+          txid == other.txid;
+}
+
+@freezed
+sealed class DepositEventKind with _$DepositEventKind {
+  const DepositEventKind._();
+
+  const factory DepositEventKind.mempool(MempoolEvent field0) =
+      DepositEventKind_Mempool;
+  const factory DepositEventKind.awaitingConfs(AwaitingConfsEvent field0) =
+      DepositEventKind_AwaitingConfs;
+  const factory DepositEventKind.confirmed(ConfirmedEvent field0) =
+      DepositEventKind_Confirmed;
+  const factory DepositEventKind.claimed(ClaimedEvent field0) =
+      DepositEventKind_Claimed;
+}
 
 class FederationMeta {
   final String? picture;
@@ -201,6 +299,24 @@ class Guardian {
           runtimeType == other.runtimeType &&
           name == other.name &&
           version == other.version;
+}
+
+class MempoolEvent {
+  final BigInt amount;
+  final String txid;
+
+  const MempoolEvent({required this.amount, required this.txid});
+
+  @override
+  int get hashCode => amount.hashCode ^ txid.hashCode;
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is MempoolEvent &&
+          runtimeType == other.runtimeType &&
+          amount == other.amount &&
+          txid == other.txid;
 }
 
 @freezed
