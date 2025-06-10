@@ -1,6 +1,6 @@
 import 'package:carbine/lib.dart';
-import 'package:carbine/main.dart';
 import 'package:carbine/multimint.dart';
+import 'package:carbine/utils.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
@@ -41,12 +41,12 @@ class _FederationPreviewState extends State<FederationPreview> {
           inviteCode: widget.inviteCode,
           recover: false,
         );
-        print('Successfully joined federation');
+        logToFile('Successfully joined federation');
         if (mounted) {
           Navigator.of(context).pop((fed, false));
         }
       } catch (e) {
-        print('Could not join federation $e');
+        logToFile('Could not join federation $e');
         setState(() {
           isJoining = false;
         });
@@ -54,7 +54,6 @@ class _FederationPreviewState extends State<FederationPreview> {
     } else {
       // TODO: show toast here
       Clipboard.setData(ClipboardData(text: widget.inviteCode));
-      print('Invite code copied');
     }
   }
 
@@ -206,7 +205,7 @@ class _FederationPreviewState extends State<FederationPreview> {
                           Navigator.of(context).pop((fed, true));
                         }
                       } catch (e) {
-                        print('Could not recover federation $e');
+                        logToFile('Could not recover federation $e');
                         setState(() {
                           isJoining = false;
                         });

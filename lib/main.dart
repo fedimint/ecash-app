@@ -5,36 +5,14 @@ import 'package:carbine/splash.dart';
 import 'package:carbine/theme.dart';
 import 'package:carbine/utils.dart';
 import 'package:flutter/material.dart';
-import 'package:intl/intl.dart';
 import 'package:path_provider/path_provider.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await RustLib.init();
+  logToFile("Starting Carbine...");
   final dir = await getApplicationDocumentsDirectory();
   runApp(Carbine(dir: dir));
-}
-
-int threshold(int totalPeers) {
-  final maxEvil = (totalPeers - 1) ~/ 3;
-  return totalPeers - maxEvil;
-}
-
-String formatBalance(BigInt? msats, bool showMsats) {
-  if (msats == null) return showMsats ? '0 msats' : '0 sats';
-
-  if (showMsats) {
-    final formatter = NumberFormat('#,##0', 'en_US');
-    var formatted = formatter.format(msats.toInt());
-    formatted = formatted.replaceAll(',', ' ');
-    return '$formatted msats';
-  } else {
-    final sats = msats.toSats;
-    final formatter = NumberFormat('#,##0', 'en_US');
-    var formatted = formatter.format(sats.toInt());
-    formatted = formatted.replaceAll(',', ' ');
-    return '$formatted sats';
-  }
 }
 
 class Carbine extends StatelessWidget {

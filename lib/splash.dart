@@ -2,6 +2,7 @@ import 'dart:io';
 
 import 'package:carbine/app.dart';
 import 'package:carbine/lib.dart';
+import 'package:carbine/utils.dart';
 import 'package:flutter/material.dart';
 import 'create_wallet.dart';
 
@@ -23,7 +24,7 @@ class _SplashState extends State<Splash> {
   Future<void> _checkWalletStatus() async {
     final exists = await walletExists(path: widget.dir.path);
 
-    print("Wallet exists: $exists");
+    logToFile("Wallet exists: $exists");
 
     await createNostrClient(path: widget.dir.path);
 

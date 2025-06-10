@@ -1,8 +1,8 @@
 import 'package:carbine/fed_preview.dart';
 import 'package:carbine/lib.dart';
-import 'package:carbine/main.dart';
 import 'package:carbine/multimint.dart';
 import 'package:carbine/theme.dart';
+import 'package:carbine/utils.dart';
 import 'package:flutter/material.dart';
 
 class FederationSidebar extends StatefulWidget {
@@ -121,7 +121,6 @@ class _FederationListItemState extends State<FederationListItem> {
   }
 
   Future<void> _initializeData() async {
-    print("FederationListItemState: _initializeData");
     await _loadBalance();
     await _loadFederationMeta();
     if (!mounted) return;
@@ -144,14 +143,13 @@ class _FederationListItemState extends State<FederationListItem> {
         guardians = meta.$1.guardians;
       });
     } catch (e) {
-      print('Failed to load federation metadata: $e');
+      logToFile('Failed to load federation metadata: $e');
     }
   }
 
   Future<void> _loadBalance() async {
-    print("FederationListItemState: _loadBalance");
     if (!widget.isRecovering) {
-      print("FederationListItemState: done recovering, getting balance");
+      logToFile("FederationListItemState: done recovering, getting balance");
       final bal = await balance(federationId: widget.fed.federationId);
       if (!mounted) return;
       setState(() {
@@ -159,7 +157,7 @@ class _FederationListItemState extends State<FederationListItem> {
         isLoading = false;
       });
     } else {
-      print(
+      logToFile(
         "FederationListItemState: we are still recovering, not getting balance",
       );
     }

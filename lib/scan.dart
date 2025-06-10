@@ -4,6 +4,7 @@ import 'package:carbine/multimint.dart';
 import 'package:carbine/pay_preview.dart';
 import 'package:carbine/redeem_ecash.dart';
 import 'package:carbine/theme.dart';
+import 'package:carbine/utils.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
@@ -83,7 +84,7 @@ class _ScanQRPageState extends State<ScanQRPage> {
       // TODO: Dont support direct scan yet, fix this later
       if (widget.selectedFed != null) {
         try {
-          print('Trying to parse ecash...');
+          logToFile('Trying to parse ecash...');
           final amountMsats = await parseEcash(
             federationId: widget.selectedFed!.federationId,
             ecash: text,
@@ -98,22 +99,21 @@ class _ScanQRPageState extends State<ScanQRPage> {
             heightFactor: 0.25,
           );
         } catch (_) {
-          print('Could not parse text as ecash');
+          logToFile('Could not parse text as ecash');
         }
       } else {
-        print("Unknown Text");
+        logToFile("Scanned unknown Text");
       }
     }
   }
 
-  void _onQRCodeScanned(String code) {
+  void _onQRCodeScanned(String code) async {
     if (_scanned) return;
     setState(() {
       _scanned = true;
     });
 
-    _processText(code);
-    Navigator.pop(context);
+    await _processText(code);
   }
 
   Future<void> _pasteFromClipboard() async {
@@ -164,8 +164,9 @@ class _ScanQRPageState extends State<ScanQRPage> {
           children: [
             Positioned.fill(
               child: MobileScanner(
-                onDetect: (barcode) {
-                  final String? code = barcode.raw;
+                onDetect: (capture) {
+                  final barcode = capture.barcodes.first;
+                  final String? code = barcode.rawValue;
                   if (code != null) {
                     _onQRCodeScanned(code);
                   }

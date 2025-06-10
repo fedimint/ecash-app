@@ -1,7 +1,7 @@
-import 'package:carbine/main.dart';
 import 'package:carbine/multimint.dart';
 import 'package:carbine/send.dart';
 import 'package:carbine/theme.dart';
+import 'package:carbine/utils.dart';
 import 'package:flutter/material.dart';
 
 class PaymentPreviewWidget extends StatelessWidget {
