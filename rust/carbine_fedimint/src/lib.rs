@@ -12,7 +12,7 @@ use flutter_rust_bridge::frb;
 use multimint::{
     FederationMeta, FederationSelector, Multimint, MultimintCreation, PaymentPreview, Transaction,
 };
-use nostr::{NostrClient, PublicFederation};
+use nostr::{NWCConnectionInfo, NostrClient, PublicFederation};
 use tokio::sync::{OnceCell, RwLock};
 
 use std::path::PathBuf;
@@ -62,9 +62,7 @@ async fn get_nostr_client() -> Arc<RwLock<NostrClient>> {
     NOSTR.get().expect("NostrClient not initialized").clone()
 }
 
-#[frb]
-pub async fn create_nostr_client(path: String) {
-    let db = get_database(path).await;
+async fn create_nostr_client(db: Database) {
     NOSTR
         .get_or_init(|| async {
             Arc::new(RwLock::new(
@@ -82,12 +80,13 @@ pub async fn create_new_multimint(path: String) {
     MULTIMINT
         .get_or_init(|| async {
             Arc::new(RwLock::new(
-                Multimint::new(db, MultimintCreation::New)
+                Multimint::new(db.clone(), MultimintCreation::New)
                     .await
                     .expect("Could not create multimint"),
             ))
         })
         .await;
+    create_nostr_client(db).await;
 }
 
 #[frb]
@@ -96,12 +95,13 @@ pub async fn load_multimint(path: String) {
     MULTIMINT
         .get_or_init(|| async {
             Arc::new(RwLock::new(
-                Multimint::new(db, MultimintCreation::LoadExisting)
+                Multimint::new(db.clone(), MultimintCreation::LoadExisting)
                     .await
                     .expect("Could not create multimint"),
             ))
         })
         .await;
+    create_nostr_client(db).await;
 }
 
 #[frb]
@@ -110,12 +110,13 @@ pub async fn create_multimint_from_words(path: String, words: Vec<String>) {
     MULTIMINT
         .get_or_init(|| async {
             Arc::new(RwLock::new(
-                Multimint::new(db, MultimintCreation::NewFromMnemonic { words })
+                Multimint::new(db.clone(), MultimintCreation::NewFromMnemonic { words })
                     .await
                     .expect("Could not create multimint"),
             ))
         })
         .await;
+    create_nostr_client(db).await;
 }
 
 #[frb]
@@ -261,7 +262,7 @@ pub async fn send(
 pub async fn await_send(
     federation_id: &FederationId,
     operation_id: OperationId,
-) -> anyhow::Result<FinalSendOperationState> {
+) -> anyhow::Result<(FinalSendOperationState, String)> {
     let multimint = get_multimint().await;
     let mm = multimint.read().await;
     mm.await_send(federation_id, operation_id).await
@@ -285,11 +286,7 @@ pub async fn list_federations_from_nostr(force_update: bool) -> Vec<PublicFedera
     let multimint = get_multimint().await;
     let mm = multimint.read().await;
 
-    if nostr.public_federations.is_empty() || force_update {
-        nostr.update_federations_from_nostr().await;
-    }
-
-    let public_federations = nostr.public_federations.clone();
+    let public_federations = nostr.get_public_federations(force_update).await;
 
     let mut joinable_federations = Vec::new();
     for pub_fed in public_federations {
@@ -454,4 +451,28 @@ pub async fn allocate_deposit_address(federation_id: FederationId) -> anyhow::Re
     let multimint = get_multimint().await;
     let mm = multimint.read().await;
     mm.allocate_deposit_address(federation_id).await
+}
+
+#[frb]
+pub async fn get_nwc_connection_info() -> Vec<(FederationSelector, NWCConnectionInfo)> {
+    let nostr_client = get_nostr_client().await;
+    let nostr = nostr_client.read().await;
+    nostr.get_nwc_connection_info().await
+}
+
+#[frb]
+pub async fn set_nwc_connection_info(
+    federation_id: FederationId,
+    relay: String,
+) -> NWCConnectionInfo {
+    let nostr_client = get_nostr_client().await;
+    let mut nostr = nostr_client.write().await;
+    nostr.set_nwc_connection_info(federation_id, relay).await
+}
+
+#[frb]
+pub async fn get_relays() -> Vec<String> {
+    let nostr_client = get_nostr_client().await;
+    let nostr = nostr_client.read().await;
+    nostr.get_relays().await
 }

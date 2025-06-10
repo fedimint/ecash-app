@@ -275,6 +275,12 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   );
 
   @protected
+  NostrClient
+  dco_decode_Auto_Ref_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerNostrClient(
+    dynamic raw,
+  );
+
+  @protected
   PublicFederation
   dco_decode_Auto_Ref_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerPublicFederation(
     dynamic raw,
@@ -464,6 +470,12 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   );
 
   @protected
+  List<(FederationSelector, NWCConnectionInfo)>
+  dco_decode_list_record_auto_owned_rust_opaque_flutter_rust_bridgefor_generated_rust_auto_opaque_inner_federation_selector_nwc_connection_info(
+    dynamic raw,
+  );
+
+  @protected
   List<Transaction> dco_decode_list_transaction(dynamic raw);
 
   @protected
@@ -471,6 +483,9 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
 
   @protected
   MultimintCreation dco_decode_multimint_creation(dynamic raw);
+
+  @protected
+  NWCConnectionInfo dco_decode_nwc_connection_info(dynamic raw);
 
   @protected
   String? dco_decode_opt_String(dynamic raw);
@@ -493,6 +508,18 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   @protected
   (FederationSelector, bool)
   dco_decode_record_auto_owned_rust_opaque_flutter_rust_bridgefor_generated_rust_auto_opaque_inner_federation_selector_bool(
+    dynamic raw,
+  );
+
+  @protected
+  (FederationSelector, NWCConnectionInfo)
+  dco_decode_record_auto_owned_rust_opaque_flutter_rust_bridgefor_generated_rust_auto_opaque_inner_federation_selector_nwc_connection_info(
+    dynamic raw,
+  );
+
+  @protected
+  (FinalSendOperationState, String)
+  dco_decode_record_auto_owned_rust_opaque_flutter_rust_bridgefor_generated_rust_auto_opaque_inner_final_send_operation_state_string(
     dynamic raw,
   );
 
@@ -719,6 +746,12 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   );
 
   @protected
+  NostrClient
+  sse_decode_Auto_Ref_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerNostrClient(
+    SseDeserializer deserializer,
+  );
+
+  @protected
   PublicFederation
   sse_decode_Auto_Ref_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerPublicFederation(
     SseDeserializer deserializer,
@@ -920,6 +953,12 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   );
 
   @protected
+  List<(FederationSelector, NWCConnectionInfo)>
+  sse_decode_list_record_auto_owned_rust_opaque_flutter_rust_bridgefor_generated_rust_auto_opaque_inner_federation_selector_nwc_connection_info(
+    SseDeserializer deserializer,
+  );
+
+  @protected
   List<Transaction> sse_decode_list_transaction(SseDeserializer deserializer);
 
   @protected
@@ -927,6 +966,11 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
 
   @protected
   MultimintCreation sse_decode_multimint_creation(SseDeserializer deserializer);
+
+  @protected
+  NWCConnectionInfo sse_decode_nwc_connection_info(
+    SseDeserializer deserializer,
+  );
 
   @protected
   String? sse_decode_opt_String(SseDeserializer deserializer);
@@ -949,6 +993,18 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   @protected
   (FederationSelector, bool)
   sse_decode_record_auto_owned_rust_opaque_flutter_rust_bridgefor_generated_rust_auto_opaque_inner_federation_selector_bool(
+    SseDeserializer deserializer,
+  );
+
+  @protected
+  (FederationSelector, NWCConnectionInfo)
+  sse_decode_record_auto_owned_rust_opaque_flutter_rust_bridgefor_generated_rust_auto_opaque_inner_federation_selector_nwc_connection_info(
+    SseDeserializer deserializer,
+  );
+
+  @protected
+  (FinalSendOperationState, String)
+  sse_decode_record_auto_owned_rust_opaque_flutter_rust_bridgefor_generated_rust_auto_opaque_inner_final_send_operation_state_string(
     SseDeserializer deserializer,
   );
 
@@ -1214,6 +1270,13 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
 
   @protected
   void
+  sse_encode_Auto_Ref_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerNostrClient(
+    NostrClient self,
+    SseSerializer serializer,
+  );
+
+  @protected
+  void
   sse_encode_Auto_Ref_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerPublicFederation(
     PublicFederation self,
     SseSerializer serializer,
@@ -1455,6 +1518,13 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   );
 
   @protected
+  void
+  sse_encode_list_record_auto_owned_rust_opaque_flutter_rust_bridgefor_generated_rust_auto_opaque_inner_federation_selector_nwc_connection_info(
+    List<(FederationSelector, NWCConnectionInfo)> self,
+    SseSerializer serializer,
+  );
+
+  @protected
   void sse_encode_list_transaction(
     List<Transaction> self,
     SseSerializer serializer,
@@ -1466,6 +1536,12 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   @protected
   void sse_encode_multimint_creation(
     MultimintCreation self,
+    SseSerializer serializer,
+  );
+
+  @protected
+  void sse_encode_nwc_connection_info(
+    NWCConnectionInfo self,
     SseSerializer serializer,
   );
 
@@ -1498,6 +1574,20 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   void
   sse_encode_record_auto_owned_rust_opaque_flutter_rust_bridgefor_generated_rust_auto_opaque_inner_federation_selector_bool(
     (FederationSelector, bool) self,
+    SseSerializer serializer,
+  );
+
+  @protected
+  void
+  sse_encode_record_auto_owned_rust_opaque_flutter_rust_bridgefor_generated_rust_auto_opaque_inner_federation_selector_nwc_connection_info(
+    (FederationSelector, NWCConnectionInfo) self,
+    SseSerializer serializer,
+  );
+
+  @protected
+  void
+  sse_encode_record_auto_owned_rust_opaque_flutter_rust_bridgefor_generated_rust_auto_opaque_inner_final_send_operation_state_string(
+    (FinalSendOperationState, String) self,
     SseSerializer serializer,
   );
 

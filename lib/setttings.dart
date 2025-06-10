@@ -2,6 +2,7 @@ import 'package:carbine/discover.dart';
 import 'package:carbine/lib.dart';
 import 'package:carbine/mnemonic.dart';
 import 'package:carbine/multimint.dart';
+import 'package:carbine/nwc.dart';
 import 'package:carbine/theme.dart';
 import 'package:flutter/material.dart';
 
@@ -53,7 +54,16 @@ class _SettingsScreenState extends State<SettingsScreen> {
             icon: Icons.link,
             title: 'Nostr Wallet Connect',
             subtitle: 'Connect to NWC-compatible apps',
-            onTap: () {},
+            onTap: () async {
+              final feds = await federations();
+              print("NWC Federations Size: ${feds.length}");
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => NostrWalletConnect(federations: feds),
+                ),
+              );
+            },
           ),
           const SizedBox(height: 12),
           _SettingsOption(
