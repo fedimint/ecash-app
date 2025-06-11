@@ -10,7 +10,7 @@ dependencies:
   flutter:
     sdk: flutter
   flutter_rust_bridge: 2.9.0
-  mobile_scanner: ^3.5.1
+  mobile_scanner: ^7.0.1
   qr_flutter: ^4.1.0
   intl: ^0.18.1
   numpad_layout: ^0.0.3

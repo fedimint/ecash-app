@@ -56,7 +56,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
             subtitle: 'Connect to NWC-compatible apps',
             onTap: () async {
               final feds = await federations();
-              print("NWC Federations Size: ${feds.length}");
               Navigator.push(
                 context,
                 MaterialPageRoute(
@@ -64,13 +63,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 ),
               );
             },
-          ),
-          const SizedBox(height: 12),
-          _SettingsOption(
-            icon: Icons.flash_on,
-            title: 'Lightning Address',
-            subtitle: 'Set or update your LN address',
-            onTap: () {},
           ),
           const SizedBox(height: 12),
           _SettingsOption(

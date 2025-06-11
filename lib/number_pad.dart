@@ -6,6 +6,7 @@ import 'package:carbine/lib.dart';
 import 'package:carbine/multimint.dart';
 import 'package:carbine/request.dart';
 import 'package:carbine/theme.dart';
+import 'package:carbine/utils.dart';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:intl/intl.dart';
@@ -114,7 +115,7 @@ class _NumberPadState extends State<NumberPad> {
           child: EcashSend(fed: widget.fed, amountSats: amountSats),
         );
       } else if (widget.paymentType == PaymentType.onchain) {
-        print('Generate bitcoin address and QR code');
+        AppLogger.instance.i('Generate bitcoin address and QR code');
       }
     }
     setState(() => _creating = false);
