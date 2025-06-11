@@ -63,6 +63,8 @@ class _DashboardState extends State<Dashboard> {
       if (event.eventKind is DepositEventKind_Claimed) {
         if (!mounted) return;
         _loadBalance();
+        // this timeout is necessary to ensure the claimed on-chain deposit
+        // is in the operation log
         Timer(const Duration(milliseconds: 100), () {
           if (!mounted) return;
           _loadTransactions();
