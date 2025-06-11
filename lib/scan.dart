@@ -84,7 +84,6 @@ class _ScanQRPageState extends State<ScanQRPage> {
       // TODO: Dont support direct scan yet, fix this later
       if (widget.selectedFed != null) {
         try {
-          logToFile('Trying to parse ecash...');
           final amountMsats = await parseEcash(
             federationId: widget.selectedFed!.federationId,
             ecash: text,
@@ -99,10 +98,10 @@ class _ScanQRPageState extends State<ScanQRPage> {
             heightFactor: 0.25,
           );
         } catch (_) {
-          logToFile('Could not parse text as ecash');
+          AppLogger.instance.e('Could not parse text as ecash');
         }
       } else {
-        logToFile("Scanned unknown Text");
+        AppLogger.instance.w("Scanned unknown Text");
       }
     }
   }

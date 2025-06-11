@@ -9,8 +9,9 @@ import 'package:path_provider/path_provider.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  await AppLogger.init();
   await RustLib.init();
-  logToFile("Starting Carbine...");
+  AppLogger.instance.i("Starting Carbine...");
   final dir = await getApplicationDocumentsDirectory();
   runApp(Carbine(dir: dir));
 }

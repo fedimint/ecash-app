@@ -41,12 +41,12 @@ class _FederationPreviewState extends State<FederationPreview> {
           inviteCode: widget.inviteCode,
           recover: false,
         );
-        logToFile('Successfully joined federation');
+        AppLogger.instance.i('Successfully joined federation');
         if (mounted) {
           Navigator.of(context).pop((fed, false));
         }
       } catch (e) {
-        logToFile('Could not join federation $e');
+        AppLogger.instance.e('Could not join federation $e');
         setState(() {
           isJoining = false;
         });
@@ -205,7 +205,7 @@ class _FederationPreviewState extends State<FederationPreview> {
                           Navigator.of(context).pop((fed, true));
                         }
                       } catch (e) {
-                        logToFile('Could not recover federation $e');
+                        AppLogger.instance.e('Could not recover federation $e');
                         setState(() {
                           isJoining = false;
                         });

@@ -143,13 +143,12 @@ class _FederationListItemState extends State<FederationListItem> {
         guardians = meta.$1.guardians;
       });
     } catch (e) {
-      logToFile('Failed to load federation metadata: $e');
+      AppLogger.instance.e('Failed to load federation metadata: $e');
     }
   }
 
   Future<void> _loadBalance() async {
     if (!widget.isRecovering) {
-      logToFile("FederationListItemState: done recovering, getting balance");
       final bal = await balance(federationId: widget.fed.federationId);
       if (!mounted) return;
       setState(() {
@@ -157,7 +156,7 @@ class _FederationListItemState extends State<FederationListItem> {
         isLoading = false;
       });
     } else {
-      logToFile(
+      AppLogger.instance.w(
         "FederationListItemState: we are still recovering, not getting balance",
       );
     }

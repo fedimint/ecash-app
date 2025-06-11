@@ -55,7 +55,7 @@ class _EcashRedeemPromptState extends State<EcashRedeemPrompt> {
       Navigator.of(context).popUntil((route) => route.isFirst);
     } catch (e) {
       // Could not reissue ecash
-      logToFile("Could not reissue ecash $e");
+      AppLogger.instance.e("Could not reissue ecash $e");
       Navigator.of(context).popUntil((route) => route.isFirst);
     }
   }
