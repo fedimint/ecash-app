@@ -73,19 +73,19 @@ class _RequestState extends State<Request> with SingleTickerProviderStateMixin {
       federationId: widget.fed.federationId,
       operationId: widget.operationId,
     );
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder:
-            (context) => Success(
-              lightning: true,
-              received: true,
-              amountMsats: widget.requestedAmountMsats,
-            ),
-      ),
-    );
-    await Future.delayed(const Duration(seconds: 4));
     if (mounted) {
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder:
+              (context) => Success(
+                lightning: true,
+                received: true,
+                amountMsats: widget.requestedAmountMsats,
+              ),
+        ),
+      );
+      await Future.delayed(const Duration(seconds: 4));
       Navigator.of(context).popUntil((route) => route.isFirst);
     }
   }

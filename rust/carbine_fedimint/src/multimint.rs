@@ -11,7 +11,7 @@ use bitcoin::key::rand::{seq::SliceRandom, thread_rng};
 use fedimint_api_client::api::net::Connector;
 use fedimint_bip39::{Bip39RootSecretStrategy, Language, Mnemonic};
 use fedimint_client::{
-    db::ChronologicalOperationLogKey, module_init::ClientModuleInitRegistry, oplog::OperationLog,
+    db::ChronologicalOperationLogKey, module_init::ClientModuleInitRegistry,
     secret::RootSecretStrategy, Client, ClientHandleArc, OperationId,
 };
 use fedimint_core::{
@@ -247,12 +247,36 @@ impl Multimint {
                     ClientType::New,
                 )
                 .await?;
+
+            self.finish_active_subscriptions(&client, id.id).await;
+
             self.clients.write().await.insert(id.id, client);
         }
 
-        // TODO: Need to drive active operations to completion
-
         Ok(())
+    }
+
+    async fn finish_active_subscriptions(&self, client: &ClientHandleArc, federation_id: FederationId) {
+        let active_operations = client.get_active_operations().await;
+        let operation_log = client.operation_log();
+        for op_id in active_operations {
+            let entry = operation_log.get_operation(op_id).await;
+            if let Some(entry) = entry {
+                match entry .operation_module_kind() {
+                    "lnv2" | "ln" => {
+                        // We could check what type of operation this is, but `await_receive` and `await_send`
+                        // will do that internally. So we just spawn both here and let one fail since it is the wrong
+                        // operation type.
+                        self.spawn_await_receive(federation_id, op_id);
+                        self.spawn_await_send(federation_id, op_id);
+                    }
+                    // TODO: Need to drive active operations to completion
+                    module => {
+                        println!("Active operation needs to be driven to completion: {module}")
+                    }
+                }
+            }
+        }
     }
 
     async fn spawn_pegin_address_watcher(
@@ -876,7 +900,23 @@ impl Multimint {
         }
 
         println!("Using LNv1 for the actual invoice");
-        Self::receive_lnv1(&client, amount_with_fees, amount_without_fees, gateway).await
+        let (invoice, operation_id) = Self::receive_lnv1(&client, amount_with_fees, amount_without_fees, gateway).await?;
+
+        // Spawn new task that awaits the payment in case the user clicks away
+        self.spawn_await_receive(federation_id.clone(), operation_id.clone());
+
+        Ok((invoice, operation_id))
+    }
+
+    fn spawn_await_receive(&self, federation_id: FederationId, operation_id: OperationId) {
+        let self_copy = self.clone();
+        self.task_group.spawn_cancellable("await receive", async move {
+            match self_copy.await_receive(&federation_id, operation_id).await {
+                // TODO: Send over event bus
+                Ok(final_state) => println!("Receive completed: {final_state:?}"),
+                Err(e) => println!("Could not await receive {operation_id:?} {e:?}"),
+            }
+        });
     }
 
     async fn receive_lnv2(
@@ -1035,6 +1075,7 @@ impl Multimint {
         println!("Attempting to pay using LNv1...");
         let operation_id = Self::pay_lnv1(&client, invoice, gateway).await?;
         println!("Successfully initiated LNv1 payment");
+        self.spawn_await_send(federation_id.clone(), operation_id.clone());
         Ok(operation_id)
     }
 
@@ -1066,6 +1107,17 @@ impl Multimint {
         Ok(outgoing_lightning_payment.payment_type.operation_id())
     }
 
+    fn spawn_await_send(&self, federation_id: FederationId, operation_id: OperationId) {
+        let self_copy = self.clone();
+        self.task_group.spawn_cancellable("await send", async move {
+            match self_copy.await_send(&federation_id, operation_id).await {
+                // TODO: Send over event bus
+                Ok(final_state) => println!("Send completed: {final_state:?}"),
+                Err(e) => println!("Could not await send {operation_id:?} {e:?}"),
+            }
+        });
+    }
+
     pub async fn await_send(
         &self,
         federation_id: &FederationId,
@@ -1083,7 +1135,6 @@ impl Multimint {
             Ok(lnv2_final_state) => lnv2_final_state,
             Err(_) => Self::await_send_lnv1(&client, operation_id).await?,
         };
-        OperationLog::set_operation_outcome(client.db(), operation_id, &send_state).await?;
         Ok(send_state)
     }
 
@@ -1199,7 +1250,7 @@ impl Multimint {
             Ok(lnv2_final_state) => lnv2_final_state,
             Err(_) => Self::await_receive_lnv1(&client, operation_id).await?,
         };
-        OperationLog::set_operation_outcome(client.db(), operation_id, &receive_state).await?;
+
         Ok(receive_state)
     }
 
