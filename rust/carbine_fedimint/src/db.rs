@@ -13,7 +13,7 @@ pub(crate) enum DbKeyPrefix {
     FederationConfig = 0x00,
     ClientDatabase = 0x01,
     SeedPhraseAck = 0x02,
-    NostrKey = 0x03,
+    NWC = 0x03,
 }
 
 #[derive(Debug, Clone, Encodable, Decodable, Eq, PartialEq, Hash, Ord, PartialOrd)]
@@ -54,15 +54,26 @@ impl_db_record!(
 );
 
 #[derive(Debug, Encodable, Decodable)]
-pub(crate) struct NostrKey;
+pub(crate) struct NostrWalletConnectKey {
+    pub(crate) federation_id: FederationId,
+}
 
 #[derive(Debug, Encodable, Decodable)]
-pub(crate) struct NostrSecretKey {
-    pub(crate) secret_key_hex: String,
+pub(crate) struct NostrWalletConnectKeyPrefix;
+
+#[derive(Debug, Encodable, Decodable)]
+pub(crate) struct NostrWalletConnectConfig {
+    pub(crate) secret_key: [u8; 32],
+    pub(crate) relay: String,
 }
 
 impl_db_record!(
-    key = NostrKey,
-    value = NostrSecretKey,
-    db_prefix = DbKeyPrefix::NostrKey,
+    key = NostrWalletConnectKey,
+    value = NostrWalletConnectConfig,
+    db_prefix = DbKeyPrefix::NWC,
+);
+
+impl_db_lookup!(
+    key = NostrWalletConnectKey,
+    query_prefix = NostrWalletConnectKeyPrefix,
 );

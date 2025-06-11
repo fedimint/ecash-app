@@ -1070,7 +1070,7 @@ impl Multimint {
         &self,
         federation_id: &FederationId,
         operation_id: OperationId,
-    ) -> anyhow::Result<FinalSendOperationState> {
+    ) -> anyhow::Result<(FinalSendOperationState, String)> {
         let client = self
             .clients
             .read()
@@ -1090,17 +1090,19 @@ impl Multimint {
     async fn await_send_lnv2(
         client: &ClientHandleArc,
         operation_id: OperationId,
-    ) -> anyhow::Result<FinalSendOperationState> {
+    ) -> anyhow::Result<(FinalSendOperationState, String)> {
         let lnv2 = client.get_first_module::<fedimint_lnv2_client::LightningClientModule>()?;
         let mut updates = lnv2
             .subscribe_send_operation_state_updates(operation_id)
             .await?
             .into_stream();
         let mut final_state = FinalSendOperationState::Failure;
+        let mut preimage_str = "".to_string();
         while let Some(update) = updates.next().await {
             match update {
-                SendOperationState::Success(_) => {
+                SendOperationState::Success(preimage) => {
                     final_state = FinalSendOperationState::Success;
+                    preimage_str = preimage.consensus_encode_to_hex();
                 }
                 SendOperationState::Refunded => {
                     final_state = FinalSendOperationState::Refunded;
@@ -1111,22 +1113,24 @@ impl Multimint {
                 _ => {}
             }
         }
-        Ok(final_state)
+        Ok((final_state, preimage_str))
     }
 
     async fn await_send_lnv1(
         client: &ClientHandleArc,
         operation_id: OperationId,
-    ) -> anyhow::Result<FinalSendOperationState> {
+    ) -> anyhow::Result<(FinalSendOperationState, String)> {
         let lnv1 = client.get_first_module::<LightningClientModule>()?;
         // First check if its an internal payment
         let mut final_state = None;
+        let mut preimage_str = "".to_string();
         if let Ok(updates) = lnv1.subscribe_internal_pay(operation_id).await {
             let mut stream = updates.into_stream();
             while let Some(update) = stream.next().await {
                 match update {
-                    InternalPayState::Preimage(_) => {
+                    InternalPayState::Preimage(preimage) => {
                         final_state = Some(FinalSendOperationState::Success);
+                        preimage_str = preimage.0.consensus_encode_to_hex();
                     }
                     InternalPayState::RefundSuccess {
                         out_points: _,
@@ -1148,16 +1152,18 @@ impl Multimint {
         }
 
         if let Some(internal_final_state) = final_state {
-            return Ok(internal_final_state);
+            return Ok((internal_final_state, preimage_str));
         }
 
         // If internal fails, check if its an external payment
+        let mut preimage_str = "".to_string();
         if let Ok(updates) = lnv1.subscribe_ln_pay(operation_id).await {
             let mut stream = updates.into_stream();
             while let Some(update) = stream.next().await {
                 match update {
-                    LnPayState::Success { preimage: _ } => {
+                    LnPayState::Success { preimage } => {
                         final_state = Some(FinalSendOperationState::Success);
+                        preimage_str = preimage;
                     }
                     LnPayState::Refunded { gateway_error: _ } => {
                         final_state = Some(FinalSendOperationState::Refunded);
@@ -1171,10 +1177,10 @@ impl Multimint {
         }
 
         if let Some(external_final_state) = final_state {
-            return Ok(external_final_state);
+            return Ok((external_final_state, preimage_str));
         }
 
-        Ok(FinalSendOperationState::Failure)
+        Ok((FinalSendOperationState::Failure, preimage_str))
     }
 
     pub async fn await_receive(

@@ -8,10 +8,7 @@ import 'multimint.dart';
 import 'nostr.dart';
 import 'package:flutter_rust_bridge/flutter_rust_bridge_for_generated.dart';
 
-// These functions are ignored because they are not marked as `pub`: `get_database`, `get_multimint`, `get_nostr_client`
-
-Future<void> createNostrClient({required String path}) =>
-    RustLib.instance.api.crateCreateNostrClient(path: path);
+// These functions are ignored because they are not marked as `pub`: `create_nostr_client`, `get_database`, `get_multimint`, `get_nostr_client`
 
 Future<void> createNewMultimint({required String path}) =>
     RustLib.instance.api.crateCreateNewMultimint(path: path);
@@ -93,7 +90,7 @@ Future<OperationId> send({
   isLnv2: isLnv2,
 );
 
-Future<FinalSendOperationState> awaitSend({
+Future<(FinalSendOperationState, String)> awaitSend({
   required FederationId federationId,
   required OperationId operationId,
 }) => RustLib.instance.api.crateAwaitSend(
@@ -203,6 +200,19 @@ Future<String> allocateDepositAddress({required FederationId federationId}) =>
     RustLib.instance.api.crateAllocateDepositAddress(
       federationId: federationId,
     );
+
+Future<List<(FederationSelector, NWCConnectionInfo)>> getNwcConnectionInfo() =>
+    RustLib.instance.api.crateGetNwcConnectionInfo();
+
+Future<NWCConnectionInfo> setNwcConnectionInfo({
+  required FederationId federationId,
+  required String relay,
+}) => RustLib.instance.api.crateSetNwcConnectionInfo(
+  federationId: federationId,
+  relay: relay,
+);
+
+Future<List<String>> getRelays() => RustLib.instance.api.crateGetRelays();
 
 // Rust type: RustOpaqueMoi<flutter_rust_bridge::for_generated::RustAutoOpaqueInner<ClientConfig>>
 abstract class ClientConfig implements RustOpaqueInterface {}

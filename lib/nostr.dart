@@ -5,18 +5,31 @@
 
 import 'frb_generated.dart';
 import 'lib.dart';
+import 'multimint.dart';
 import 'package:flutter_rust_bridge/flutter_rust_bridge_for_generated.dart';
 
-// These functions are ignored because they are not marked as `pub`: `parse_content`, `parse_federation_id`, `parse_federation_name`, `parse_invite_codes`, `parse_modules`, `parse_network`, `parse_picture`
-// These function are ignored because they are on traits that is not defined in current crate (put an empty `#[frb]` on it to unignore): `assert_receiver_is_total_eq`, `clone`, `clone`, `eq`, `fmt`, `try_from`
+// These functions are ignored because they are not marked as `pub`: `broadcast_nwc_info`, `broadcast_response`, `handle_request`, `listen_for_nwc`, `parse_content`, `parse_federation_id`, `parse_federation_name`, `parse_invite_codes`, `parse_modules`, `parse_network`, `parse_picture`, `spawn_listen_for_nwc`, `update_federations_from_nostr`
+// These types are ignored because they are neither used by any `pub` functions nor (for structs and enums) marked `#[frb(unignore)]`: `WalletConnectRequest`, `WalletConnectResponse`
+// These function are ignored because they are on traits that is not defined in current crate (put an empty `#[frb]` on it to unignore): `assert_receiver_is_total_eq`, `clone`, `clone`, `clone`, `eq`, `fmt`, `fmt`, `fmt`, `fmt`, `try_from`
 
 // Rust type: RustOpaqueMoi<flutter_rust_bridge::for_generated::RustAutoOpaqueInner<NostrClient>>
 abstract class NostrClient implements RustOpaqueInterface {
+  Future<List<(FederationSelector, NWCConnectionInfo)>> getNwcConnectionInfo();
+
+  Future<List<PublicFederation>> getPublicFederations({
+    required bool forceUpdate,
+  });
+
+  Future<List<String>> getRelays();
+
   // HINT: Make it `#[frb(sync)]` to let it become the default constructor of Dart class.
   static Future<NostrClient> newInstance({required Database db}) =>
       RustLib.instance.api.crateNostrNostrClientNew(db: db);
 
-  Future<void> updateFederationsFromNostr();
+  Future<NWCConnectionInfo> setNwcConnectionInfo({
+    required FederationId federationId,
+    required String relay,
+  });
 }
 
 // Rust type: RustOpaqueMoi<flutter_rust_bridge::for_generated::RustAutoOpaqueInner<PublicFederation>>
@@ -48,4 +61,28 @@ abstract class PublicFederation implements RustOpaqueInterface {
   set network(String network);
 
   set picture(String? picture);
+}
+
+class NWCConnectionInfo {
+  final String publicKey;
+  final String relay;
+  final String secret;
+
+  const NWCConnectionInfo({
+    required this.publicKey,
+    required this.relay,
+    required this.secret,
+  });
+
+  @override
+  int get hashCode => publicKey.hashCode ^ relay.hashCode ^ secret.hashCode;
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is NWCConnectionInfo &&
+          runtimeType == other.runtimeType &&
+          publicKey == other.publicKey &&
+          relay == other.relay &&
+          secret == other.secret;
 }

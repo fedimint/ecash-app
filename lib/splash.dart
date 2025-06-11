@@ -26,8 +26,6 @@ class _SplashState extends State<Splash> {
 
     AppLogger.instance.i("Wallet exists: $exists");
 
-    await createNostrClient(path: widget.dir.path);
-
     if (!mounted) return;
     final Widget screen;
     if (exists) {

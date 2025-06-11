@@ -76,7 +76,7 @@ abstract class Multimint implements RustOpaqueInterface {
     required OperationId operationId,
   });
 
-  Future<FinalSendOperationState> awaitSend({
+  Future<(FinalSendOperationState, String)> awaitSend({
     required FederationId federationId,
     required OperationId operationId,
   });

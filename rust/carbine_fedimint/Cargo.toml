@@ -29,7 +29,7 @@ futures-timer = "3.0.3"
 futures-util = "0.3.30"
 lightning-invoice = { version = "0.32.0", features = ["std"] } # Needs to match fedimint's lightning-invoice
 lnurl-rs = { version = "0.9.0", default-features = false }
-nostr-sdk = "0.42.0"
+nostr-sdk = { version = "0.42.0", features = [ "nip04" ]}
 reqwest = { version = "0.12.18", features = [
   "rustls-tls",
 ], default-features = false }
