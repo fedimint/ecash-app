@@ -327,8 +327,18 @@ impl Multimint {
 
                     let client = reqwest::Client::new();
 
-                    let api_url = "https://mutinynet.com/api".to_string();
-                    // let api_url = "http://localhost:19610".to_string();
+                    let api_url = match wallet_module.get_network() {
+                        bitcoin::Network::Bitcoin => "https://mempool.space/api".to_string(),
+                        bitcoin::Network::Signet => "https://mutinynet.com/api".to_string(),
+                        bitcoin::Network::Regtest => {
+                            // referencing devimint, uncomment for regtest
+                            // "http://localhost:{FM_PORT_ESPLORA}".to_string()
+                            panic!("Regtest requires manually setting the connection params")
+                        }
+                        network => {
+                            panic!("{network} is not a supported network")
+                        }
+                    };
 
                     let tx_height = fedimint_core::util::retry(
                         "get confirmed block height",
