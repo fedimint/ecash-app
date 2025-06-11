@@ -1,6 +1,7 @@
 import 'package:carbine/multimint.dart';
 import 'package:carbine/scan.dart';
 import 'package:carbine/send.dart';
+import 'package:carbine/utils.dart';
 import 'package:flutter/material.dart';
 
 class PaymentMethodSelector extends StatefulWidget {
@@ -124,7 +125,7 @@ class _PaymentMethodSelectorState extends State<PaymentMethodSelector> {
       try {
         final address = _lightningAddressController.text;
         final amount = BigInt.parse(_amountController.text) * BigInt.from(1000);
-        print('Lightning Address: $address, Amount: $amount');
+        AppLogger.instance.i('Lightning Address: $address, Amount: $amount');
         await Navigator.push(
           context,
           MaterialPageRoute(
@@ -136,8 +137,8 @@ class _PaymentMethodSelectorState extends State<PaymentMethodSelector> {
                 ),
           ),
         );
-      } catch (_) {
-        print("Error paying lightning address");
+      } catch (e) {
+        AppLogger.instance.e("Error paying lightning address $e");
       }
     } else {
       await Navigator.push(

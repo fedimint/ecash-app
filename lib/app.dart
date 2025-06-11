@@ -5,6 +5,7 @@ import 'package:carbine/scan.dart';
 import 'package:carbine/setttings.dart';
 import 'package:carbine/sidebar.dart';
 import 'package:carbine/theme.dart';
+import 'package:carbine/utils.dart';
 import 'package:carbine/welcome.dart';
 import 'package:flutter/material.dart';
 
@@ -68,7 +69,7 @@ class _MyAppState extends State<MyApp> {
         SnackBar(content: Text("Joined ${result.$1.federationName}")),
       );
     } else {
-      print('Result is null, not updating federations');
+      AppLogger.instance.w('Scan result is null, not updating federations');
     }
   }
 

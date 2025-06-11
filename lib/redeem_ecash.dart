@@ -1,7 +1,7 @@
 import 'package:carbine/lib.dart';
-import 'package:carbine/main.dart';
 import 'package:carbine/multimint.dart';
 import 'package:carbine/success.dart';
+import 'package:carbine/utils.dart';
 import 'package:flutter/material.dart';
 
 class EcashRedeemPrompt extends StatefulWidget {
@@ -24,7 +24,6 @@ class _EcashRedeemPromptState extends State<EcashRedeemPrompt> {
   bool _isLoading = false;
 
   Future<void> _handleRedeem() async {
-    print("Handling redeem...");
     setState(() {
       _isLoading = true;
     });
@@ -54,9 +53,9 @@ class _EcashRedeemPromptState extends State<EcashRedeemPrompt> {
       );
       await Future.delayed(const Duration(seconds: 4));
       Navigator.of(context).popUntil((route) => route.isFirst);
-    } catch (_) {
+    } catch (e) {
       // Could not reissue ecash
-      print("Could not reissue ecash");
+      AppLogger.instance.e("Could not reissue ecash $e");
       Navigator.of(context).popUntil((route) => route.isFirst);
     }
   }

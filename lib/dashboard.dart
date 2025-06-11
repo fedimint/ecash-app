@@ -1,5 +1,4 @@
 import 'package:carbine/lib.dart';
-import 'package:carbine/main.dart';
 import 'package:carbine/multimint.dart';
 import 'package:carbine/number_pad.dart';
 import 'package:carbine/payment_selector.dart';
@@ -7,6 +6,7 @@ import 'package:carbine/onchain_receive.dart';
 import 'package:carbine/scan.dart';
 import 'package:carbine/theme.dart';
 import 'package:carbine/refund.dart';
+import 'package:carbine/utils.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_speed_dial/flutter_speed_dial.dart';
 import 'package:intl/intl.dart';
