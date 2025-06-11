@@ -76,6 +76,9 @@ pub(crate) struct NostrClient {
 
 impl NostrClient {
     pub async fn new(db: Database) -> anyhow::Result<NostrClient> {
+        // We need to derive a Nostr key from the Fedimint secret.
+        // Currently we are using 1/0 as the derivation path, as it does not clash with anything used internally in
+        // Fedimint.
         let entropy = Client::load_decodable_client_secret::<Vec<u8>>(&db).await?;
         let mnemonic = Mnemonic::from_entropy(&entropy)?;
         let global_root_secret = Bip39RootSecretStrategy::<12>::to_root_secret(&mnemonic);
