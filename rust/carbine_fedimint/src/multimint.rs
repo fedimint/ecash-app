@@ -270,6 +270,13 @@ impl Multimint {
                         self.spawn_await_receive(federation_id, op_id);
                         self.spawn_await_send(federation_id, op_id);
                     }
+                    "mint" => {
+                        // We could check what type of operation this is, but `await_ecash_reissue` and `await_ecash_send`
+                        // will do that internally. So we just spawn both here and let one fail since it is the wrong
+                        // operation type.
+                        self.spawn_await_ecash_reissue(federation_id, op_id);
+                        self.spawn_await_ecash_send(federation_id, op_id);
+                    }
                     // TODO: Need to drive active operations to completion
                     module => {
                         println!("Active operation needs to be driven to completion: {module}")
@@ -1570,7 +1577,20 @@ impl Multimint {
             .spend_notes_with_selector(&SelectNotesWithAtleastAmount, amount, timeout, true, ())
             .await?;
 
+        self.spawn_await_ecash_send(*federation_id, operation_id);
+
         Ok((operation_id, notes.to_string(), notes.total_amount().msats))
+    }
+
+    fn spawn_await_ecash_send(&self, federation_id: FederationId, operation_id: OperationId) {
+        let self_copy = self.clone();
+        self.task_group.spawn_cancellable("await ecash send", async move {
+            match self_copy.await_ecash_send(&federation_id, operation_id).await {
+                // TODO: Send over event bus
+                Ok(final_state) => println!("Ecash send completed: {final_state:?}"),
+                Err(e) => println!("Could not await receive {operation_id:?} {e:?}"),
+            }
+        });
     }
 
     pub async fn await_ecash_send(
@@ -1628,7 +1648,19 @@ impl Multimint {
         let notes = OOBNotes::from_str(&ecash)?;
         let total_amount = notes.total_amount();
         let operation_id = mint.reissue_external_notes(notes, total_amount).await?;
+        self.spawn_await_ecash_reissue(federation_id.clone(), operation_id);
         Ok(operation_id)
+    }
+
+    fn spawn_await_ecash_reissue(&self, federation_id: FederationId, operation_id: OperationId) {
+        let self_copy = self.clone();
+        self.task_group.spawn_cancellable("await ecash reissue", async move {
+            match self_copy.await_ecash_reissue(&federation_id, operation_id).await {
+                // TODO: Send over event bus
+                Ok(final_state) => println!("Ecash reissue completed: {final_state:?}"),
+                Err(e) => println!("Could not await receive {operation_id:?} {e:?}"),
+            }
+        });
     }
 
     pub async fn await_ecash_reissue(

@@ -51,6 +51,7 @@ class _ScanQRPageState extends State<ScanQRPage> {
           bolt11: text,
         );
         if (widget.selectedFed!.network != preview.network) {
+          AppLogger.instance.w("Widget network: ${widget.selectedFed!.network} Preview: ${preview.network}");
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
               content: Text("Cannot pay invoice from different network."),
