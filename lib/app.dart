@@ -1,4 +1,4 @@
-import 'package:carbine/dashboard.dart';
+import 'package:carbine/screens/dashboard.dart';
 import 'package:carbine/lib.dart';
 import 'package:carbine/multimint.dart';
 import 'package:carbine/scan.dart';

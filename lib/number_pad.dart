@@ -1,6 +1,7 @@
 import 'dart:convert';
 
-import 'package:carbine/dashboard.dart';
+// TODO: import these more cleanly, shared file, etc
+import 'package:carbine/screens/dashboard.dart';
 import 'package:carbine/ecash_send.dart';
 import 'package:carbine/lib.dart';
 import 'package:carbine/multimint.dart';
