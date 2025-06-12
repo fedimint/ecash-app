@@ -69,7 +69,7 @@ class _MyAppState extends State<MyApp> {
         SnackBar(content: Text("Joined ${result.$1.federationName}")),
       );
     } else {
-      AppLogger.instance.w('Scan result is null, not updating federations');
+      AppLogger.instance.warn('Scan result is null, not updating federations');
     }
   }
 

@@ -27,7 +27,7 @@ class AppLogger {
       await _logFile.create(recursive: true);
     }
 
-    instance.i("Logger initialized. Log file: ${_logFile.path}");
+    instance.info("Logger initialized. Log file: ${_logFile.path}");
   }
 
   void _log(String level, String message) {
@@ -45,10 +45,10 @@ class AppLogger {
     );
   }
 
-  void i(String message) => _log("INFO", message);
-  void w(String message) => _log("WARN", message);
-  void e(String message) => _log("ERROR", message);
-  void d(String message) => _log("DEBUG", message);
+  void info(String message) => _log("INFO", message);
+  void warn(String message) => _log("WARN", message);
+  void error(String message) => _log("ERROR", message);
+  void debug(String message) => _log("DEBUG", message);
 }
 
 int threshold(int totalPeers) {
