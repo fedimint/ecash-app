@@ -115,7 +115,7 @@ class _NumberPadState extends State<NumberPad> {
           child: EcashSend(fed: widget.fed, amountSats: amountSats),
         );
       } else if (widget.paymentType == PaymentType.onchain) {
-        AppLogger.instance.i('Generate bitcoin address and QR code');
+        AppLogger.instance.info('Generate bitcoin address and QR code');
       }
     }
     setState(() => _creating = false);

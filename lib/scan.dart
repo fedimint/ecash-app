@@ -98,10 +98,10 @@ class _ScanQRPageState extends State<ScanQRPage> {
             heightFactor: 0.25,
           );
         } catch (_) {
-          AppLogger.instance.e('Could not parse text as ecash');
+          AppLogger.instance.error('Could not parse text as ecash');
         }
       } else {
-        AppLogger.instance.w("Scanned unknown Text");
+        AppLogger.instance.warn("Scanned unknown Text");
       }
     }
   }

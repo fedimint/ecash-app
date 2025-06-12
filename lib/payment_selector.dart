@@ -125,7 +125,7 @@ class _PaymentMethodSelectorState extends State<PaymentMethodSelector> {
       try {
         final address = _lightningAddressController.text;
         final amount = BigInt.parse(_amountController.text) * BigInt.from(1000);
-        AppLogger.instance.i('Lightning Address: $address, Amount: $amount');
+        AppLogger.instance.info('Lightning Address: $address, Amount: $amount');
         await Navigator.push(
           context,
           MaterialPageRoute(
@@ -138,7 +138,7 @@ class _PaymentMethodSelectorState extends State<PaymentMethodSelector> {
           ),
         );
       } catch (e) {
-        AppLogger.instance.e("Error paying lightning address $e");
+        AppLogger.instance.error("Error paying lightning address $e");
       }
     } else {
       await Navigator.push(

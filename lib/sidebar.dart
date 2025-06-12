@@ -143,7 +143,7 @@ class _FederationListItemState extends State<FederationListItem> {
         guardians = meta.$1.guardians;
       });
     } catch (e) {
-      AppLogger.instance.e('Failed to load federation metadata: $e');
+      AppLogger.instance.error('Failed to load federation metadata: $e');
     }
   }
 
@@ -156,7 +156,7 @@ class _FederationListItemState extends State<FederationListItem> {
         isLoading = false;
       });
     } else {
-      AppLogger.instance.w(
+      AppLogger.instance.warn(
         "FederationListItemState: we are still recovering, not getting balance",
       );
     }

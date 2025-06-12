@@ -11,7 +11,7 @@ void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await AppLogger.init();
   await RustLib.init();
-  AppLogger.instance.i("Starting Carbine...");
+  AppLogger.instance.info("Starting Carbine...");
   final dir = await getApplicationDocumentsDirectory();
   runApp(Carbine(dir: dir));
 }
