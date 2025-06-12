@@ -249,19 +249,27 @@ impl Multimint {
 
             self.finish_active_subscriptions(&client, id.id).await;
 
+            if client.has_pending_recoveries() {
+                self.spawn_recovery_progress(client.clone());
+            }
+
             self.clients.write().await.insert(id.id, client);
         }
 
         Ok(())
     }
 
-    async fn finish_active_subscriptions(&self, client: &ClientHandleArc, federation_id: FederationId) {
+    async fn finish_active_subscriptions(
+        &self,
+        client: &ClientHandleArc,
+        federation_id: FederationId,
+    ) {
         let active_operations = client.get_active_operations().await;
         let operation_log = client.operation_log();
         for op_id in active_operations {
             let entry = operation_log.get_operation(op_id).await;
             if let Some(entry) = entry {
-                match entry .operation_module_kind() {
+                match entry.operation_module_kind() {
                     "lnv2" | "ln" => {
                         // We could check what type of operation this is, but `await_receive` and `await_send`
                         // will do that internally. So we just spawn both here and let one fail since it is the wrong
@@ -757,10 +765,12 @@ impl Multimint {
                         invite_code.api_secret(),
                     )
                     .await?;
-                client_builder
+                let client = client_builder
                     .recover(secret, client_config, invite_code.api_secret(), backup)
                     .await
-                    .map(Arc::new)?
+                    .map(Arc::new)?;
+                self.spawn_recovery_progress(client.clone());
+                client
             }
             client_type => {
                 let client = if Client::is_initialized(client_builder.db_no_decoders()).await {
@@ -786,10 +796,21 @@ impl Multimint {
         Ok(client)
     }
 
+    fn spawn_recovery_progress(&self, client: ClientHandleArc) {
+        self.task_group
+            .spawn_cancellable("recovery progress", async move {
+                let mut stream = client.subscribe_to_recovery_progress();
+                while let Some((module_id, progress)) = stream.next().await {
+                    println!("Module: {module_id} Progress: {progress}");
+                }
+            });
+    }
+
     pub async fn wait_for_recovery(
         &mut self,
         invite_code: String,
     ) -> anyhow::Result<FederationSelector> {
+        println!("Waiting for recovery...");
         let invite = InviteCode::from_str(&invite_code)?;
         let federation_id = invite.federation_id();
         let recovering_client = self
@@ -907,7 +928,8 @@ impl Multimint {
         }
 
         println!("Using LNv1 for the actual invoice");
-        let (invoice, operation_id) = Self::receive_lnv1(&client, amount_with_fees, amount_without_fees, gateway).await?;
+        let (invoice, operation_id) =
+            Self::receive_lnv1(&client, amount_with_fees, amount_without_fees, gateway).await?;
 
         // Spawn new task that awaits the payment in case the user clicks away
         self.spawn_await_receive(federation_id.clone(), operation_id.clone());
@@ -917,12 +939,13 @@ impl Multimint {
 
     fn spawn_await_receive(&self, federation_id: FederationId, operation_id: OperationId) {
         let self_copy = self.clone();
-        self.task_group.spawn_cancellable("await receive", async move {
-            match self_copy.await_receive(&federation_id, operation_id).await {
-                Ok(final_state) => println!("Receive completed: {final_state:?}"),
-                Err(e) => println!("Could not await receive {operation_id:?} {e:?}"),
-            }
-        });
+        self.task_group
+            .spawn_cancellable("await receive", async move {
+                match self_copy.await_receive(&federation_id, operation_id).await {
+                    Ok(final_state) => println!("Receive completed: {final_state:?}"),
+                    Err(e) => println!("Could not await receive {operation_id:?} {e:?}"),
+                }
+            });
     }
 
     async fn receive_lnv2(
@@ -1582,12 +1605,16 @@ impl Multimint {
 
     fn spawn_await_ecash_send(&self, federation_id: FederationId, operation_id: OperationId) {
         let self_copy = self.clone();
-        self.task_group.spawn_cancellable("await ecash send", async move {
-            match self_copy.await_ecash_send(&federation_id, operation_id).await {
-                Ok(final_state) => println!("Ecash send completed: {final_state:?}"),
-                Err(e) => println!("Could not await receive {operation_id:?} {e:?}"),
-            }
-        });
+        self.task_group
+            .spawn_cancellable("await ecash send", async move {
+                match self_copy
+                    .await_ecash_send(&federation_id, operation_id)
+                    .await
+                {
+                    Ok(final_state) => println!("Ecash send completed: {final_state:?}"),
+                    Err(e) => println!("Could not await receive {operation_id:?} {e:?}"),
+                }
+            });
     }
 
     pub async fn await_ecash_send(
@@ -1651,12 +1678,16 @@ impl Multimint {
 
     fn spawn_await_ecash_reissue(&self, federation_id: FederationId, operation_id: OperationId) {
         let self_copy = self.clone();
-        self.task_group.spawn_cancellable("await ecash reissue", async move {
-            match self_copy.await_ecash_reissue(&federation_id, operation_id).await {
-                Ok(final_state) => println!("Ecash reissue completed: {final_state:?}"),
-                Err(e) => println!("Could not await receive {operation_id:?} {e:?}"),
-            }
-        });
+        self.task_group
+            .spawn_cancellable("await ecash reissue", async move {
+                match self_copy
+                    .await_ecash_reissue(&federation_id, operation_id)
+                    .await
+                {
+                    Ok(final_state) => println!("Ecash reissue completed: {final_state:?}"),
+                    Err(e) => println!("Could not await receive {operation_id:?} {e:?}"),
+                }
+            });
     }
 
     pub async fn await_ecash_reissue(

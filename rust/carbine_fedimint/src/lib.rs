@@ -431,8 +431,12 @@ pub async fn subscribe_deposits(
     sink: StreamSink<DepositEvent>,
     federation_id: FederationId,
 ) -> anyhow::Result<()> {
-    let multimint = get_multimint().await;
-    let mm = multimint.read().await;
+    let mm = {
+        let multimint = get_multimint().await;
+        let mm = multimint.read().await.clone();
+        mm
+    };
+
     mm.subscribe_deposits(federation_id, sink).await
 }
 
