@@ -97,7 +97,6 @@ pub struct Multimint {
     event_bus: EventBus<DepositEvent>,
 }
 
-// TODO: I dont like that this is separate from federation selector
 #[derive(Debug, Serialize)]
 pub struct FederationMeta {
     pub picture: Option<String>,
@@ -277,7 +276,8 @@ impl Multimint {
                         self.spawn_await_ecash_reissue(federation_id, op_id);
                         self.spawn_await_ecash_send(federation_id, op_id);
                     }
-                    // TODO: Need to drive active operations to completion
+                    // Wallet operations are handled by the pegin monitor
+                    "wallet" => {}
                     module => {
                         println!("Active operation needs to be driven to completion: {module}")
                     }
@@ -919,7 +919,6 @@ impl Multimint {
         let self_copy = self.clone();
         self.task_group.spawn_cancellable("await receive", async move {
             match self_copy.await_receive(&federation_id, operation_id).await {
-                // TODO: Send over event bus
                 Ok(final_state) => println!("Receive completed: {final_state:?}"),
                 Err(e) => println!("Could not await receive {operation_id:?} {e:?}"),
             }
@@ -1118,7 +1117,6 @@ impl Multimint {
         let self_copy = self.clone();
         self.task_group.spawn_cancellable("await send", async move {
             match self_copy.await_send(&federation_id, operation_id).await {
-                // TODO: Send over event bus
                 Ok(final_state) => println!("Send completed: {final_state:?}"),
                 Err(e) => println!("Could not await send {operation_id:?} {e:?}"),
             }
@@ -1572,7 +1570,7 @@ impl Multimint {
         let amount = Amount::from_msats(amount_msats);
         // Default timeout after one day
         let timeout = Duration::from_secs(60 * 60 * 24);
-        // TODO: Should this be configurable?
+        // TODO: Fix overspend
         let (operation_id, notes) = mint
             .spend_notes_with_selector(&SelectNotesWithAtleastAmount, amount, timeout, true, ())
             .await?;
@@ -1586,7 +1584,6 @@ impl Multimint {
         let self_copy = self.clone();
         self.task_group.spawn_cancellable("await ecash send", async move {
             match self_copy.await_ecash_send(&federation_id, operation_id).await {
-                // TODO: Send over event bus
                 Ok(final_state) => println!("Ecash send completed: {final_state:?}"),
                 Err(e) => println!("Could not await receive {operation_id:?} {e:?}"),
             }
@@ -1656,7 +1653,6 @@ impl Multimint {
         let self_copy = self.clone();
         self.task_group.spawn_cancellable("await ecash reissue", async move {
             match self_copy.await_ecash_reissue(&federation_id, operation_id).await {
-                // TODO: Send over event bus
                 Ok(final_state) => println!("Ecash reissue completed: {final_state:?}"),
                 Err(e) => println!("Could not await receive {operation_id:?} {e:?}"),
             }
