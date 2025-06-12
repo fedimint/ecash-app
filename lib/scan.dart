@@ -51,7 +51,7 @@ class _ScanQRPageState extends State<ScanQRPage> {
           bolt11: text,
         );
         if (widget.selectedFed!.network != preview.network) {
-          AppLogger.instance.w(
+          AppLogger.instance.warn(
             "Widget network: ${widget.selectedFed!.network} Preview: ${preview.network}",
           );
           ScaffoldMessenger.of(context).showSnackBar(
