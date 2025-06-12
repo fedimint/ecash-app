@@ -35,11 +35,11 @@ use crate::db::{FederationConfig, FederationConfigKey, FederationConfigKeyPrefix
 use crate::frb_generated::StreamSink;
 use crate::multimint::DepositEvent;
 
-static MULTIMINT: OnceCell<Arc<RwLock<Multimint>>> = OnceCell::const_new();
+static MULTIMINT: OnceCell<Multimint> = OnceCell::const_new();
 static DATABASE: OnceCell<Database> = OnceCell::const_new();
 static NOSTR: OnceCell<Arc<RwLock<NostrClient>>> = OnceCell::const_new();
 
-async fn get_multimint() -> Arc<RwLock<Multimint>> {
+async fn get_multimint() -> Multimint {
     MULTIMINT.get().expect("Multimint not initialized").clone()
 }
 
@@ -79,11 +79,9 @@ pub async fn create_new_multimint(path: String) {
     let db = get_database(path).await;
     MULTIMINT
         .get_or_init(|| async {
-            Arc::new(RwLock::new(
-                Multimint::new(db.clone(), MultimintCreation::New)
-                    .await
-                    .expect("Could not create multimint"),
-            ))
+            Multimint::new(db.clone(), MultimintCreation::New)
+                .await
+                .expect("Could not create multimint")
         })
         .await;
     create_nostr_client(db).await;
@@ -94,11 +92,9 @@ pub async fn load_multimint(path: String) {
     let db = get_database(path).await;
     MULTIMINT
         .get_or_init(|| async {
-            Arc::new(RwLock::new(
-                Multimint::new(db.clone(), MultimintCreation::LoadExisting)
-                    .await
-                    .expect("Could not create multimint"),
-            ))
+            Multimint::new(db.clone(), MultimintCreation::LoadExisting)
+                .await
+                .expect("Could not create multimint")
         })
         .await;
     create_nostr_client(db).await;
@@ -109,11 +105,9 @@ pub async fn create_multimint_from_words(path: String, words: Vec<String>) {
     let db = get_database(path).await;
     MULTIMINT
         .get_or_init(|| async {
-            Arc::new(RwLock::new(
-                Multimint::new(db.clone(), MultimintCreation::NewFromMnemonic { words })
-                    .await
-                    .expect("Could not create multimint"),
-            ))
+            Multimint::new(db.clone(), MultimintCreation::NewFromMnemonic { words })
+                .await
+                .expect("Could not create multimint")
         })
         .await;
     create_nostr_client(db).await;
@@ -133,15 +127,13 @@ pub async fn wallet_exists(path: String) -> anyhow::Result<bool> {
 #[frb]
 pub async fn get_mnemonic() -> Vec<String> {
     let multimint = get_multimint().await;
-    let mm = multimint.read().await;
-    mm.get_mnemonic()
+    multimint.get_mnemonic()
 }
 
 #[frb]
 pub async fn wait_for_recovery(invite_code: String) -> anyhow::Result<FederationSelector> {
-    let multimint = get_multimint().await;
-    let mut mm = multimint.write().await;
-    mm.wait_for_recovery(invite_code).await
+    let mut multimint = get_multimint().await;
+    multimint.wait_for_recovery(invite_code).await
 }
 
 #[frb]
@@ -149,23 +141,22 @@ pub async fn join_federation(
     invite_code: String,
     recover: bool,
 ) -> anyhow::Result<FederationSelector> {
-    let multimint = get_multimint().await;
-    let mut mm = multimint.write().await;
-    mm.join_federation(invite_code.clone(), recover).await
+    let mut multimint = get_multimint().await;
+    multimint
+        .join_federation(invite_code.clone(), recover)
+        .await
 }
 
 #[frb]
 pub async fn federations() -> Vec<(FederationSelector, bool)> {
     let multimint = get_multimint().await;
-    let mm = multimint.read().await;
-    mm.federations().await
+    multimint.federations().await
 }
 
 #[frb]
 pub async fn balance(federation_id: &FederationId) -> u64 {
     let multimint = get_multimint().await;
-    let mm = multimint.read().await;
-    mm.balance(federation_id).await
+    multimint.balance(federation_id).await
 }
 
 #[frb]
@@ -178,8 +169,7 @@ pub async fn receive(
 ) -> anyhow::Result<(String, OperationId, String, String, u64)> {
     let gateway = SafeUrl::parse(&gateway)?;
     let multimint = get_multimint().await;
-    let mm = multimint.read().await;
-    let (invoice, operation_id) = mm
+    let (invoice, operation_id) = multimint
         .receive(
             federation_id,
             amount_msats_with_fees,
@@ -207,8 +197,9 @@ pub async fn select_receive_gateway(
 ) -> anyhow::Result<(String, u64, bool)> {
     let amount = Amount::from_msats(amount_msats);
     let multimint = get_multimint().await;
-    let mm = multimint.read().await;
-    mm.select_receive_gateway(federation_id, amount).await
+    multimint
+        .select_receive_gateway(federation_id, amount)
+        .await
 }
 
 #[frb]
@@ -227,9 +218,8 @@ pub async fn send_lnaddress(
                 .await?;
 
             let multimint = get_multimint().await;
-            let mm = multimint.read().await;
             let bolt11 = Bolt11Invoice::from_str(invoice.invoice())?;
-            let (gateway_url, _, is_lnv2) = mm
+            let (gateway_url, _, is_lnv2) = multimint
                 .select_send_gateway(
                     federation_id,
                     Amount::from_msats(amount_msats),
@@ -237,7 +227,7 @@ pub async fn send_lnaddress(
                 )
                 .await?;
             let gateway = SafeUrl::parse(&gateway_url)?;
-            return mm
+            return multimint
                 .send(federation_id, bolt11.to_string(), gateway, is_lnv2)
                 .await;
         }
@@ -253,9 +243,10 @@ pub async fn send(
     is_lnv2: bool,
 ) -> anyhow::Result<OperationId> {
     let multimint = get_multimint().await;
-    let mm = multimint.read().await;
     let gateway = SafeUrl::parse(&gateway)?;
-    mm.send(federation_id, invoice, gateway, is_lnv2).await
+    multimint
+        .send(federation_id, invoice, gateway, is_lnv2)
+        .await
 }
 
 #[frb]
@@ -264,8 +255,7 @@ pub async fn await_send(
     operation_id: OperationId,
 ) -> anyhow::Result<(FinalSendOperationState, String)> {
     let multimint = get_multimint().await;
-    let mm = multimint.read().await;
-    mm.await_send(federation_id, operation_id).await
+    multimint.await_send(federation_id, operation_id).await
 }
 
 #[frb]
@@ -274,8 +264,7 @@ pub async fn await_receive(
     operation_id: OperationId,
 ) -> anyhow::Result<FinalReceiveOperationState> {
     let multimint = get_multimint().await;
-    let mm = multimint.read().await;
-    mm.await_receive(federation_id, operation_id).await
+    multimint.await_receive(federation_id, operation_id).await
 }
 
 #[frb]
@@ -284,13 +273,12 @@ pub async fn list_federations_from_nostr(force_update: bool) -> Vec<PublicFedera
     let mut nostr = nostr_client.write().await;
 
     let multimint = get_multimint().await;
-    let mm = multimint.read().await;
 
     let public_federations = nostr.get_public_federations(force_update).await;
 
     let mut joinable_federations = Vec::new();
     for pub_fed in public_federations {
-        if !mm.contains_client(&pub_fed.federation_id).await {
+        if !multimint.contains_client(&pub_fed.federation_id).await {
             joinable_federations.push(pub_fed);
         }
     }
@@ -311,8 +299,7 @@ pub async fn payment_preview(
     let network = invoice.network().to_string();
 
     let multimint = get_multimint().await;
-    let mm = multimint.read().await;
-    let (gateway, amount_with_fees, is_lnv2) = mm
+    let (gateway, amount_with_fees, is_lnv2) = multimint
         .select_send_gateway(federation_id, Amount::from_msats(amount_msats), invoice)
         .await?;
 
@@ -332,8 +319,7 @@ pub async fn get_federation_meta(
     invite_code: String,
 ) -> anyhow::Result<(FederationMeta, FederationSelector)> {
     let multimint = get_multimint().await;
-    let mm = multimint.read().await;
-    mm.get_federation_meta(invite_code).await
+    multimint.get_federation_meta(invite_code).await
 }
 
 #[frb]
@@ -344,8 +330,8 @@ pub async fn transactions(
     modules: Vec<String>,
 ) -> Vec<Transaction> {
     let multimint = get_multimint().await;
-    let mm = multimint.read().await;
-    mm.transactions(federation_id, timestamp, operation_id, modules)
+    multimint
+        .transactions(federation_id, timestamp, operation_id, modules)
         .await
 }
 
@@ -355,8 +341,7 @@ pub async fn send_ecash(
     amount_msats: u64,
 ) -> anyhow::Result<(OperationId, String, u64)> {
     let multimint = get_multimint().await;
-    let mm = multimint.read().await;
-    mm.send_ecash(federation_id, amount_msats).await
+    multimint.send_ecash(federation_id, amount_msats).await
 }
 
 #[frb]
@@ -365,15 +350,15 @@ pub async fn await_ecash_send(
     operation_id: OperationId,
 ) -> anyhow::Result<SpendOOBState> {
     let multimint = get_multimint().await;
-    let mm = multimint.read().await;
-    mm.await_ecash_send(federation_id, operation_id).await
+    multimint
+        .await_ecash_send(federation_id, operation_id)
+        .await
 }
 
 #[frb]
 pub async fn parse_ecash(federation_id: &FederationId, ecash: String) -> anyhow::Result<u64> {
     let multimint = get_multimint().await;
-    let mm = multimint.read().await;
-    mm.parse_ecash(federation_id, ecash).await
+    multimint.parse_ecash(federation_id, ecash).await
 }
 
 #[frb]
@@ -382,8 +367,7 @@ pub async fn reissue_ecash(
     ecash: String,
 ) -> anyhow::Result<OperationId> {
     let multimint = get_multimint().await;
-    let mm = multimint.read().await;
-    mm.reissue_ecash(federation_id, ecash).await
+    multimint.reissue_ecash(federation_id, ecash).await
 }
 
 #[frb]
@@ -392,29 +376,27 @@ pub async fn await_ecash_reissue(
     operation_id: OperationId,
 ) -> anyhow::Result<ReissueExternalNotesState> {
     let multimint = get_multimint().await;
-    let mm = multimint.read().await;
-    mm.await_ecash_reissue(federation_id, operation_id).await
+    multimint
+        .await_ecash_reissue(federation_id, operation_id)
+        .await
 }
 
 #[frb]
 pub async fn refund(federation_id: &FederationId) -> anyhow::Result<(String, u64)> {
     let multimint = get_multimint().await;
-    let mm = multimint.read().await;
-    mm.refund(federation_id).await
+    multimint.refund(federation_id).await
 }
 
 #[frb]
 pub async fn has_seed_phrase_ack() -> bool {
     let multimint = get_multimint().await;
-    let mm = multimint.read().await;
-    mm.has_seed_phrase_ack().await
+    multimint.has_seed_phrase_ack().await
 }
 
 #[frb]
 pub async fn ack_seed_phrase() {
     let multimint = get_multimint().await;
-    let mm = multimint.read().await;
-    mm.ack_seed_phrase().await
+    multimint.ack_seed_phrase().await
 }
 
 #[frb]
@@ -431,13 +413,8 @@ pub async fn subscribe_deposits(
     sink: StreamSink<DepositEvent>,
     federation_id: FederationId,
 ) -> anyhow::Result<()> {
-    let mm = {
-        let multimint = get_multimint().await;
-        let mm = multimint.read().await.clone();
-        mm
-    };
-
-    mm.subscribe_deposits(federation_id, sink).await
+    let multimint = get_multimint().await;
+    multimint.subscribe_deposits(federation_id, sink).await
 }
 
 #[frb]
@@ -446,15 +423,15 @@ pub async fn monitor_deposit_address(
     address: String,
 ) -> anyhow::Result<()> {
     let multimint = get_multimint().await;
-    let mm = multimint.read().await;
-    mm.monitor_deposit_address(federation_id, address).await
+    multimint
+        .monitor_deposit_address(federation_id, address)
+        .await
 }
 
 #[frb]
 pub async fn allocate_deposit_address(federation_id: FederationId) -> anyhow::Result<String> {
     let multimint = get_multimint().await;
-    let mm = multimint.read().await;
-    mm.allocate_deposit_address(federation_id).await
+    multimint.allocate_deposit_address(federation_id).await
 }
 
 #[frb]
