@@ -125,44 +125,47 @@ class _DashboardState extends State<Dashboard> {
     final name = widget.fed.federationName;
 
     return Scaffold(
-      floatingActionButton: SpeedDial(
-        icon: Icons.add,
-        activeIcon: Icons.close,
-        backgroundColor: Theme.of(context).colorScheme.primary,
-        foregroundColor: Colors.white,
-        onClose: () async {
-          if (_pendingAction != null) {
-            await Future.delayed(const Duration(milliseconds: 200));
-            WidgetsBinding.instance.addPostFrameCallback((_) {
-              _pendingAction!();
-              _pendingAction = null;
-            });
-          }
-        },
-        children: [
-          SpeedDialChild(
-            child: const Icon(Icons.download),
-            label: 'Receive',
-            backgroundColor: Colors.green,
-            onTap: () => _scheduleAction(_onReceivePressed),
-          ),
-          if (balanceMsats != null && balanceMsats! > BigInt.zero)
-            if (_selectedPaymentType == PaymentType.onchain)
-              SpeedDialChild(
-                child: const Icon(Icons.reply),
-                label: 'Refund',
-                backgroundColor: Colors.orange,
-                onTap: () => _scheduleAction(_onRefundPressed),
-              )
-            else
-              SpeedDialChild(
-                child: const Icon(Icons.upload),
-                label: 'Send',
-                backgroundColor: Colors.blue,
-                onTap: () => _scheduleAction(_onSendPressed),
+      floatingActionButton:
+          recovering
+              ? null
+              : SpeedDial(
+                icon: Icons.add,
+                activeIcon: Icons.close,
+                backgroundColor: Theme.of(context).colorScheme.primary,
+                foregroundColor: Colors.white,
+                onClose: () async {
+                  if (_pendingAction != null) {
+                    await Future.delayed(const Duration(milliseconds: 200));
+                    WidgetsBinding.instance.addPostFrameCallback((_) {
+                      _pendingAction!();
+                      _pendingAction = null;
+                    });
+                  }
+                },
+                children: [
+                  SpeedDialChild(
+                    child: const Icon(Icons.download),
+                    label: 'Receive',
+                    backgroundColor: Colors.green,
+                    onTap: () => _scheduleAction(_onReceivePressed),
+                  ),
+                  if (balanceMsats != null && balanceMsats! > BigInt.zero)
+                    if (_selectedPaymentType == PaymentType.onchain)
+                      SpeedDialChild(
+                        child: const Icon(Icons.reply),
+                        label: 'Refund',
+                        backgroundColor: Colors.orange,
+                        onTap: () => _scheduleAction(_onRefundPressed),
+                      )
+                    else
+                      SpeedDialChild(
+                        child: const Icon(Icons.upload),
+                        label: 'Send',
+                        backgroundColor: Colors.blue,
+                        onTap: () => _scheduleAction(_onSendPressed),
+                      ),
+                ],
               ),
-        ],
-      ),
       body: Padding(
         padding: const EdgeInsets.all(24),
         child: Column(
