@@ -1,13 +1,12 @@
 import 'dart:convert';
 
-// TODO: import these more cleanly, shared file, etc
-import 'package:carbine/screens/dashboard.dart';
 import 'package:carbine/ecash_send.dart';
 import 'package:carbine/lib.dart';
 import 'package:carbine/multimint.dart';
 import 'package:carbine/request.dart';
 import 'package:carbine/theme.dart';
 import 'package:carbine/utils.dart';
+import 'package:carbine/models.dart';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:intl/intl.dart';
