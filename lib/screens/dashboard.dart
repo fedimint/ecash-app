@@ -124,27 +124,6 @@ class _DashboardState extends State<Dashboard> {
   Widget build(BuildContext context) {
     final name = widget.fed.federationName;
 
-    final children = <Widget>[
-      const SizedBox(height: 32),
-      DashboardHeader(name: name, network: widget.fed.network),
-      const SizedBox(height: 48),
-      DashboardBalance(
-        balanceMsats: balanceMsats,
-        isLoading: isLoadingBalance,
-        recovering: recovering,
-        showMsats: showMsats,
-        onToggle: () => setState(() => showMsats = !showMsats),
-      ),
-      const SizedBox(height: 48),
-      const RecentTransactionsHeader(),
-      TransactionsList(
-        fed: widget.fed,
-        selectedPaymentType: _selectedPaymentType,
-        recovering: recovering,
-        onClaimed: _loadBalance,
-      ),
-    ];
-
     return Scaffold(
       floatingActionButton: SpeedDial(
         icon: Icons.add,
@@ -184,7 +163,35 @@ class _DashboardState extends State<Dashboard> {
               ),
         ],
       ),
-      body: ListView(padding: const EdgeInsets.all(24), children: children),
+      body: Padding(
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          children: [
+            const SizedBox(height: 32),
+            DashboardHeader(name: name, network: widget.fed.network),
+            const SizedBox(height: 48),
+            DashboardBalance(
+              balanceMsats: balanceMsats,
+              isLoading: isLoadingBalance,
+              recovering: recovering,
+              showMsats: showMsats,
+              onToggle: () => setState(() => showMsats = !showMsats),
+            ),
+            const SizedBox(height: 48),
+            const RecentTransactionsHeader(),
+            // Expanded is necessary so only the tx list is scrollable, not the
+            // entire dashboard
+            Expanded(
+              child: TransactionsList(
+                fed: widget.fed,
+                selectedPaymentType: _selectedPaymentType,
+                recovering: recovering,
+                onClaimed: _loadBalance,
+              ),
+            ),
+          ],
+        ),
+      ),
       bottomNavigationBar: BottomNavigationBar(
         currentIndex: _selectedPaymentType.index,
         onTap: (index) {

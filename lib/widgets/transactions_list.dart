@@ -208,8 +208,10 @@ class _TransactionsListState extends State<TransactionsList> {
       return SizedBox(height: 20, child: Center(child: Text(message)));
     }
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
+    return ListView(
+      controller: _scrollController,
+      shrinkWrap: true,
+      physics: ClampingScrollPhysics(),
       children: [
         ...pending.map((e) => PendingDepositItem(event: e)),
         ..._transactions.map((tx) => TransactionItem(tx: tx)),
