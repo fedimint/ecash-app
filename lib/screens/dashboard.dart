@@ -186,6 +186,7 @@ class _DashboardState extends State<Dashboard> {
             // entire dashboard
             Expanded(
               child: TransactionsList(
+                key: ValueKey(balanceMsats),
                 fed: widget.fed,
                 selectedPaymentType: _selectedPaymentType,
                 recovering: recovering,
