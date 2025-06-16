@@ -33,7 +33,6 @@ class _MyAppState extends State<MyApp> {
   late StreamSubscription<MultimintEvent> _subscription;
 
   final GlobalKey<NavigatorState> _navigatorKey = ToastService().navigatorKey;
-  int _dashboardReloadTrigger = 0;
 
   @override
   void initState() {
@@ -80,10 +79,6 @@ class _MyAppState extends State<MyApp> {
 
           final name = selector.federationName;
           AppLogger.instance.info("$name received $amount");
-
-          setState(() {
-            _dashboardReloadTrigger++;
-          });
 
           ToastService().show(
             message: "$name received $amount",
@@ -148,9 +143,7 @@ class _MyAppState extends State<MyApp> {
 
     if (_selectedFederation != null) {
       bodyContent = Dashboard(
-        key: ValueKey(
-          '${_selectedFederation!.federationId}--$_dashboardReloadTrigger',
-        ),
+        key: ValueKey(_selectedFederation!.federationId),
         fed: _selectedFederation!,
         recovering: _isRecovering!,
       );
