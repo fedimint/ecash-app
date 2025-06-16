@@ -1875,11 +1875,12 @@ impl Multimint {
         let (client, _) = self.get_or_build_temp_client(invite).await?;
         let wallet_module = client.get_first_module::<WalletClientModule>()?;
         let wallet_summary = wallet_module.get_wallet_summary().await?;
-        let utxos = wallet_summary
+        let mut utxos: Vec<Utxo> = wallet_summary
             .spendable_utxos
             .into_iter()
             .map(Utxo::from)
             .collect();
+        utxos.sort_by_key(|u| std::cmp::Reverse(u.amount));
         Ok(utxos)
     }
 }

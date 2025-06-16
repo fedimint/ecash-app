@@ -237,7 +237,10 @@ class _FederationPreviewState extends State<FederationPreview> {
                   labelColor: theme.colorScheme.primary,
                   unselectedLabelColor: Colors.grey,
                   indicatorColor: theme.colorScheme.primary,
-                  tabs: const [Tab(text: 'Guardians'), Tab(text: 'UTXOs')],
+                  tabs: [
+                    Tab(text: 'Guardians ($thresh/$totalGuardians federation)'),
+                    Tab(text: 'UTXOs'),
+                  ],
                 ),
                 SizedBox(
                   height: 300,
