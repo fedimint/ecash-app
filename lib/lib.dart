@@ -98,7 +98,7 @@ Future<(FinalSendOperationState, String)> awaitSend({
   operationId: operationId,
 );
 
-Future<FinalReceiveOperationState> awaitReceive({
+Future<(FinalReceiveOperationState, BigInt)> awaitReceive({
   required FederationId federationId,
   required OperationId operationId,
 }) => RustLib.instance.api.crateAwaitReceive(
@@ -185,8 +185,9 @@ Future<void> ackSeedPhrase() => RustLib.instance.api.crateAckSeedPhrase();
 
 Future<List<String>> wordList() => RustLib.instance.api.crateWordList();
 
-Stream<DepositEvent> subscribeDeposits({required FederationId federationId}) =>
-    RustLib.instance.api.crateSubscribeDeposits(federationId: federationId);
+Stream<DepositEventKind> subscribeDeposits({
+  required FederationId federationId,
+}) => RustLib.instance.api.crateSubscribeDeposits(federationId: federationId);
 
 Future<void> monitorDepositAddress({
   required FederationId federationId,
@@ -216,6 +217,12 @@ Future<List<String>> getRelays() => RustLib.instance.api.crateGetRelays();
 
 Future<List<Utxo>> walletSummary({required String invite}) =>
     RustLib.instance.api.crateWalletSummary(invite: invite);
+
+Stream<MultimintEvent> subscribeMultimintEvents() =>
+    RustLib.instance.api.crateSubscribeMultimintEvents();
+
+Future<String> federationIdToString({required FederationId federationId}) =>
+    RustLib.instance.api.crateFederationIdToString(federationId: federationId);
 
 // Rust type: RustOpaqueMoi<flutter_rust_bridge::for_generated::RustAutoOpaqueInner<ClientConfig>>
 abstract class ClientConfig implements RustOpaqueInterface {}

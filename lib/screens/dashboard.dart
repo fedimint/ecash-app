@@ -36,12 +36,37 @@ class _DashboardState extends State<Dashboard> {
   PaymentType _selectedPaymentType = PaymentType.lightning;
   VoidCallback? _pendingAction;
 
+  late Stream<MultimintEvent> events;
+  late StreamSubscription<MultimintEvent> _subscription;
+
   @override
   void initState() {
     super.initState();
     recovering = widget.recovering;
     _loadBalance();
     if (recovering) _loadFederation();
+
+    events = subscribeMultimintEvents().asBroadcastStream();
+    _subscription = events.listen((event) async {
+      if (event.eventKind is MultimintEventKind_Lightning) {
+        final ln = event.eventKind as MultimintEventKind_Lightning;
+        if (ln.field0 is LightningEventKind_InvoicePaid) {
+          final federationIdString = await federationIdToString(
+            federationId: event.federationId,
+          );
+          final selectorIdString = await federationIdToString(federationId: widget.fed.federationId);
+          if (federationIdString == selectorIdString) {
+            _loadBalance();
+          }
+        }
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    super.dispose();
+    _subscription.cancel();
   }
 
   void _scheduleAction(VoidCallback action) {
@@ -186,6 +211,7 @@ class _DashboardState extends State<Dashboard> {
             // entire dashboard
             Expanded(
               child: TransactionsList(
+                key: ValueKey(balanceMsats),
                 fed: widget.fed,
                 selectedPaymentType: _selectedPaymentType,
                 recovering: recovering,
