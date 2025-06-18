@@ -316,11 +316,9 @@ pub async fn payment_preview(
 }
 
 #[frb]
-pub async fn get_federation_meta(
-    invite_code: String,
-) -> anyhow::Result<(FederationMeta, FederationSelector)> {
+pub async fn get_federation_meta(invite_code: String) -> anyhow::Result<FederationMeta> {
     let multimint = get_multimint().await;
-    multimint.get_federation_meta(invite_code).await
+    multimint.get_cached_federation_meta(invite_code).await
 }
 
 #[frb]

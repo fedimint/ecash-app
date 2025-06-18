@@ -7,6 +7,8 @@ use fedimint_core::{
 };
 use serde::{Deserialize, Serialize};
 
+use crate::multimint::FederationMeta;
+
 #[repr(u8)]
 #[derive(Clone, Debug)]
 pub(crate) enum DbKeyPrefix {
@@ -14,6 +16,7 @@ pub(crate) enum DbKeyPrefix {
     ClientDatabase = 0x01,
     SeedPhraseAck = 0x02,
     NWC = 0x03,
+    FederationMeta = 0x04,
 }
 
 #[derive(Debug, Clone, Encodable, Decodable, Eq, PartialEq, Hash, Ord, PartialOrd)]
@@ -76,4 +79,15 @@ impl_db_record!(
 impl_db_lookup!(
     key = NostrWalletConnectKey,
     query_prefix = NostrWalletConnectKeyPrefix,
+);
+
+#[derive(Debug, Encodable, Decodable)]
+pub(crate) struct FederationMetaKey {
+    pub(crate) federation_id: FederationId,
+}
+
+impl_db_record!(
+    key = FederationMetaKey,
+    value = FederationMeta,
+    db_prefix = DbKeyPrefix::FederationMeta,
 );

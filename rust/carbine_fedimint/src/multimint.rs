@@ -18,7 +18,7 @@ use fedimint_client::{
 use fedimint_core::{
     config::{ClientConfig, FederationId},
     db::{mem_impl::MemDatabase, Database, IDatabaseTransactionOpsCoreTyped},
-    encoding::Encodable,
+    encoding::{Decodable, Encodable},
     hex,
     invite_code::InviteCode,
     task::TaskGroup,
@@ -54,13 +54,14 @@ use serde_json::to_value;
 use tokio::sync::mpsc::{unbounded_channel, UnboundedReceiver, UnboundedSender};
 use tokio::sync::RwLock;
 
-use crate::event_bus::EventBus;
 use crate::frb_generated::StreamSink;
 use crate::{
     anyhow, FederationConfig, FederationConfigKey, FederationConfigKeyPrefix, SeedPhraseAckKey,
 };
+use crate::{db::FederationMetaKey, event_bus::EventBus};
 
 const DEFAULT_EXPIRY_TIME_SECS: u32 = 86400;
+const CACHE_UPDATE_INTERVAL_SECS: u64 = 60;
 
 #[derive(Clone, Eq, PartialEq, Serialize, Debug)]
 pub struct PaymentPreview {
@@ -73,7 +74,7 @@ pub struct PaymentPreview {
     pub is_lnv2: bool,
 }
 
-#[derive(Clone, Eq, PartialEq, Serialize, Debug)]
+#[derive(Clone, Eq, PartialEq, Serialize, Debug, Encodable, Decodable)]
 pub struct FederationSelector {
     pub federation_name: String,
     pub federation_id: FederationId,
@@ -98,14 +99,15 @@ pub struct Multimint {
     event_bus: EventBus<MultimintEvent>,
 }
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, Encodable, Decodable, Clone)]
 pub struct FederationMeta {
     pub picture: Option<String>,
     pub welcome: Option<String>,
     pub guardians: Vec<Guardian>,
+    pub selector: FederationSelector,
 }
 
-#[derive(Debug, Serialize, Clone, Eq, PartialEq)]
+#[derive(Debug, Serialize, Clone, Eq, PartialEq, Encodable, Decodable)]
 pub struct Guardian {
     pub name: String,
     pub version: Option<String>,
@@ -259,6 +261,7 @@ impl Multimint {
             .spawn_pegin_address_watcher(pegin_address_monitor_rx)
             .await?;
         multimint.monitor_all_unused_pegin_addresses().await?;
+        multimint.spawn_cache_task();
 
         Ok(multimint)
     }
@@ -577,11 +580,10 @@ impl Multimint {
 
     async fn get_or_build_temp_client(
         &self,
-        invite: String,
+        invite_code: InviteCode,
     ) -> anyhow::Result<(ClientHandleArc, FederationId)> {
         // Sometimes we want to get the federation meta before we've joined (i.e to show a preview).
         // In this case, we create a temprorary client and retrieve all the data
-        let invite_code = InviteCode::from_str(&invite)?;
         let federation_id = invite_code.federation_id();
         let maybe_client = self.clients.read().await.get(&federation_id).cloned();
         let client = if let Some(client) = maybe_client {
@@ -609,12 +611,53 @@ impl Multimint {
         Ok((client, federation_id))
     }
 
-    // TODO: Need to add caching for this
-    pub async fn get_federation_meta(
+    fn spawn_cache_task(&self) {
+        let self_copy = self.clone();
+        self.task_group
+            .spawn_cancellable("cache update", async move {
+                let mut interval =
+                    tokio::time::interval(Duration::from_secs(CACHE_UPDATE_INTERVAL_SECS));
+                loop {
+                    interval.tick().await;
+
+                    let mut dbtx = self_copy.db.begin_transaction_nc().await;
+                    let configs = dbtx
+                        .find_by_prefix(&FederationConfigKeyPrefix)
+                        .await
+                        .collect::<Vec<_>>()
+                        .await;
+                    for (_, config) in configs {
+                        let invite = config.invite_code;
+                        let federation_id = invite.federation_id();
+                        match self_copy.cache_federation_meta(invite).await {
+                            Ok(_) => println!("Updated meta for {federation_id}"),
+                            Err(e) => println!("Could not retrive federation meta: {e:?}"),
+                        }
+                    }
+                }
+            });
+    }
+
+    pub async fn get_cached_federation_meta(
         &self,
         invite: String,
-    ) -> anyhow::Result<(FederationMeta, FederationSelector)> {
-        let (client, federation_id) = self.get_or_build_temp_client(invite.clone()).await?;
+    ) -> anyhow::Result<FederationMeta> {
+        let mut dbtx = self.db.begin_transaction().await;
+        let invite_code = InviteCode::from_str(&invite)?;
+        let federation_id = invite_code.federation_id();
+        if let Some(cached_meta) = dbtx.get_value(&FederationMetaKey { federation_id }).await {
+            return Ok(cached_meta);
+        }
+
+        // Federation either has not been cached yet, or is a new federation
+        self.cache_federation_meta(invite_code).await
+    }
+
+    async fn cache_federation_meta(
+        &self,
+        invite_code: InviteCode,
+    ) -> anyhow::Result<FederationMeta> {
+        let (client, federation_id) = self.get_or_build_temp_client(invite_code.clone()).await?;
 
         let config = client.config().await;
         let wallet = client.get_first_module::<fedimint_wallet_client::WalletClientModule>()?;
@@ -634,11 +677,11 @@ impl Multimint {
             federation_name: config.global.federation_name().unwrap_or("").to_string(),
             federation_id,
             network: Some(network),
-            invite_code: invite,
+            invite_code: invite_code.to_string(),
         };
 
         let meta = client.get_first_module::<fedimint_meta_client::MetaClientModule>();
-        if let Ok(meta) = meta {
+        let federation_meta = if let Ok(meta) = meta {
             let consensus = meta.get_consensus_value(DEFAULT_META_KEY).await?;
             match consensus {
                 Some(value) => {
@@ -666,27 +709,35 @@ impl Multimint {
                         None
                     };
 
-                    return Ok((
-                        FederationMeta {
-                            picture,
-                            welcome,
-                            guardians,
-                        },
+                    FederationMeta {
+                        picture,
+                        welcome,
+                        guardians,
                         selector,
-                    ));
+                    }
                 }
-                None => {}
+                None => FederationMeta {
+                    picture: None,
+                    welcome: None,
+                    guardians,
+                    selector,
+                },
             }
-        }
-
-        Ok((
+        } else {
             FederationMeta {
                 picture: None,
                 welcome: None,
                 guardians,
-            },
-            selector,
-        ))
+                selector,
+            }
+        };
+
+        let mut dbtx = self.db.begin_transaction().await;
+        dbtx.insert_entry(&FederationMetaKey { federation_id }, &federation_meta)
+            .await;
+        dbtx.commit_tx().await;
+
+        Ok(federation_meta)
     }
 
     pub fn get_mnemonic(&self) -> Vec<String> {
@@ -1956,7 +2007,8 @@ impl Multimint {
     }
 
     pub async fn wallet_summary(&self, invite: String) -> anyhow::Result<Vec<Utxo>> {
-        let (client, _) = self.get_or_build_temp_client(invite).await?;
+        let invite_code = InviteCode::from_str(&invite)?;
+        let (client, _) = self.get_or_build_temp_client(invite_code).await?;
         let wallet_module = client.get_first_module::<WalletClientModule>()?;
         let wallet_summary = wallet_module.get_wallet_summary().await?;
         let mut utxos: Vec<Utxo> = wallet_summary

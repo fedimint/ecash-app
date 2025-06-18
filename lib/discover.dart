@@ -142,26 +142,28 @@ class _Discover extends State<Discover> {
                           final fed = await showCarbineModalBottomSheet(
                             context: context,
                             child: FederationPreview(
-                              federationName: meta.$2.federationName,
-                              inviteCode: meta.$2.inviteCode,
-                              welcomeMessage: meta.$1.welcome,
-                              imageUrl: meta.$1.picture,
+                              federationName: meta.selector.federationName,
+                              inviteCode: meta.selector.inviteCode,
+                              welcomeMessage: meta.welcome,
+                              imageUrl: meta.picture,
                               joinable: true,
-                              guardians: meta.$1.guardians,
-                              network: meta.$2.network!,
+                              guardians: meta.guardians,
+                              network: meta.selector.network!,
                             ),
                           );
 
-                          await Future.delayed(
-                            const Duration(milliseconds: 400),
-                          );
-                          widget.onJoin(fed.$1, fed.$2);
-                          if (context.mounted) Navigator.pop(context);
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(
-                              content: Text("Joined ${fed.federationName}"),
-                            ),
-                          );
+                          if (fed != null) {
+                            await Future.delayed(
+                              const Duration(milliseconds: 400),
+                            );
+                            widget.onJoin(fed.$1, fed.$2);
+                            if (context.mounted) Navigator.pop(context);
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Text("Joined ${fed.federationName}"),
+                              ),
+                            );
+                          }
                         },
                         child:
                             (_gettingMetadata != null &&

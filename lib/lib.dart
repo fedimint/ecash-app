@@ -120,9 +120,8 @@ Future<PaymentPreview> paymentPreview({
   bolt11: bolt11,
 );
 
-Future<(FederationMeta, FederationSelector)> getFederationMeta({
-  required String inviteCode,
-}) => RustLib.instance.api.crateGetFederationMeta(inviteCode: inviteCode);
+Future<FederationMeta> getFederationMeta({required String inviteCode}) =>
+    RustLib.instance.api.crateGetFederationMeta(inviteCode: inviteCode);
 
 Future<List<Transaction>> transactions({
   required FederationId federationId,

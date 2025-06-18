@@ -134,13 +134,13 @@ class _FederationListItemState extends State<FederationListItem> {
       final meta = await getFederationMeta(inviteCode: widget.fed.inviteCode);
       if (!mounted) return;
       setState(() {
-        if (meta.$1.picture?.isNotEmpty ?? false) {
-          federationImageUrl = meta.$1.picture;
+        if (meta.picture?.isNotEmpty ?? false) {
+          federationImageUrl = meta.picture;
         }
-        if (meta.$1.welcome?.isNotEmpty ?? false) {
-          welcomeMessage = meta.$1.welcome;
+        if (meta.welcome?.isNotEmpty ?? false) {
+          welcomeMessage = meta.welcome;
         }
-        guardians = meta.$1.guardians;
+        guardians = meta.guardians;
       });
     } catch (e) {
       AppLogger.instance.error('Failed to load federation metadata: $e');
