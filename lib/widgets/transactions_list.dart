@@ -91,9 +91,11 @@ class _TransactionsListState extends State<TransactionsList> {
       _hasMore = true;
       _lastTransaction = null;
       _isLoading = true;
-      if (_scrollController.hasClients) {
-        _scrollController.jumpTo(0);
-      }
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (_scrollController.hasClients) {
+          _scrollController.jumpTo(0);
+        }
+      });
       _loadTransactions();
     }
   }
