@@ -9,15 +9,34 @@ import 'package:flutter_rust_bridge/flutter_rust_bridge_for_generated.dart';
 import 'package:freezed_annotation/freezed_annotation.dart' hide protected;
 part 'multimint.freezed.dart';
 
-// These functions are ignored because they are not marked as `pub`: `_has_federation`, `await_receive_lnv1`, `await_receive_lnv2`, `await_send_lnv1`, `await_send_lnv2`, `build_client`, `compute_receive_amount`, `compute_send_amount`, `derive_federation_secret`, `finish_active_subscriptions`, `get_client_database`, `get_lnv1_amount_from_meta`, `get_lnv2_amount_from_meta`, `get_or_build_temp_client`, `invoice_routes_back_to_federation`, `lnv1_select_gateway`, `lnv1_update_gateway_cache`, `lnv2_select_gateway`, `load_clients`, `monitor_all_unused_pegin_addresses`, `pay_lnv1`, `pay_lnv2`, `receive_amount_after_fees`, `receive_lnv1`, `receive_lnv2`, `spawn_await_ecash_reissue`, `spawn_await_ecash_send`, `spawn_await_receive`, `spawn_await_send`, `spawn_pegin_address_watcher`, `spawn_recovery_progress`, `watch_pegin_address`
+// These functions are ignored because they are not marked as `pub`: `await_receive_lnv1`, `await_receive_lnv2`, `await_send_lnv1`, `await_send_lnv2`, `build_client`, `cache_federation_meta`, `compute_receive_amount`, `compute_send_amount`, `derive_federation_secret`, `finish_active_subscriptions`, `get_client_database`, `get_lnv1_amount_from_meta`, `get_lnv2_amount_from_meta`, `get_or_build_temp_client`, `has_federation`, `invoice_routes_back_to_federation`, `lnv1_select_gateway`, `lnv1_update_gateway_cache`, `lnv2_select_gateway`, `load_clients`, `monitor_all_unused_pegin_addresses`, `pay_lnv1`, `pay_lnv2`, `receive_amount_after_fees`, `receive_lnv1`, `receive_lnv2`, `spawn_await_ecash_reissue`, `spawn_await_ecash_send`, `spawn_await_receive`, `spawn_await_send`, `spawn_cache_task`, `spawn_pegin_address_watcher`, `spawn_recovery_progress`, `watch_pegin_address`
 // These types are ignored because they are neither used by any `pub` functions nor (for structs and enums) marked `#[frb(unignore)]`: `ClientType`
-// These function are ignored because they are on traits that is not defined in current crate (put an empty `#[frb]` on it to unignore): `assert_receiver_is_total_eq`, `assert_receiver_is_total_eq`, `assert_receiver_is_total_eq`, `assert_receiver_is_total_eq`, `assert_receiver_is_total_eq`, `assert_receiver_is_total_eq`, `assert_receiver_is_total_eq`, `assert_receiver_is_total_eq`, `assert_receiver_is_total_eq`, `assert_receiver_is_total_eq`, `assert_receiver_is_total_eq`, `assert_receiver_is_total_eq`, `assert_receiver_is_total_eq`, `assert_receiver_is_total_eq`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `eq`, `eq`, `eq`, `eq`, `eq`, `eq`, `eq`, `eq`, `eq`, `eq`, `eq`, `eq`, `eq`, `eq`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `from`
+// These function are ignored because they are on traits that is not defined in current crate (put an empty `#[frb]` on it to unignore): `assert_receiver_is_total_eq`, `assert_receiver_is_total_eq`, `assert_receiver_is_total_eq`, `assert_receiver_is_total_eq`, `assert_receiver_is_total_eq`, `assert_receiver_is_total_eq`, `assert_receiver_is_total_eq`, `assert_receiver_is_total_eq`, `assert_receiver_is_total_eq`, `assert_receiver_is_total_eq`, `assert_receiver_is_total_eq`, `assert_receiver_is_total_eq`, `assert_receiver_is_total_eq`, `assert_receiver_is_total_eq`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `consensus_decode_partial_from_finite_reader`, `consensus_decode_partial_from_finite_reader`, `consensus_decode_partial_from_finite_reader`, `consensus_encode`, `consensus_encode`, `consensus_encode`, `eq`, `eq`, `eq`, `eq`, `eq`, `eq`, `eq`, `eq`, `eq`, `eq`, `eq`, `eq`, `eq`, `eq`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `from`
 
 // Rust type: RustOpaqueMoi<flutter_rust_bridge::for_generated::RustAutoOpaqueInner<Amount>>
 abstract class Amount implements RustOpaqueInterface {}
 
 // Rust type: RustOpaqueMoi<flutter_rust_bridge::for_generated::RustAutoOpaqueInner<Bolt11Invoice>>
 abstract class Bolt11Invoice implements RustOpaqueInterface {}
+
+// Rust type: RustOpaqueMoi<flutter_rust_bridge::for_generated::RustAutoOpaqueInner<FederationMeta>>
+abstract class FederationMeta implements RustOpaqueInterface {
+  List<Guardian> get guardians;
+
+  String? get picture;
+
+  FederationSelector get selector;
+
+  String? get welcome;
+
+  set guardians(List<Guardian> guardians);
+
+  set picture(String? picture);
+
+  set selector(FederationSelector selector);
+
+  set welcome(String? welcome);
+}
 
 // Rust type: RustOpaqueMoi<flutter_rust_bridge::for_generated::RustAutoOpaqueInner<FederationSelector>>
 abstract class FederationSelector implements RustOpaqueInterface {
@@ -76,9 +95,7 @@ abstract class Multimint implements RustOpaqueInterface {
 
   Future<List<(FederationSelector, bool)>> federations();
 
-  Future<(FederationMeta, FederationSelector)> getFederationMeta({
-    required String invite,
-  });
+  Future<FederationMeta> getCachedFederationMeta({required String invite});
 
   Future<List<String>> getMnemonic();
 
@@ -267,26 +284,6 @@ sealed class DepositEventKind with _$DepositEventKind {
       DepositEventKind_Confirmed;
   const factory DepositEventKind.claimed(ClaimedEvent field0) =
       DepositEventKind_Claimed;
-}
-
-class FederationMeta {
-  final String? picture;
-  final String? welcome;
-  final List<Guardian> guardians;
-
-  const FederationMeta({this.picture, this.welcome, required this.guardians});
-
-  @override
-  int get hashCode => picture.hashCode ^ welcome.hashCode ^ guardians.hashCode;
-
-  @override
-  bool operator ==(Object other) =>
-      identical(this, other) ||
-      other is FederationMeta &&
-          runtimeType == other.runtimeType &&
-          picture == other.picture &&
-          welcome == other.welcome &&
-          guardians == other.guardians;
 }
 
 class Guardian {

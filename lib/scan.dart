@@ -30,13 +30,13 @@ class _ScanQRPageState extends State<ScanQRPage> {
       final fed = await showCarbineModalBottomSheet(
         context: context,
         child: FederationPreview(
-          federationName: meta.$2.federationName,
-          inviteCode: meta.$2.inviteCode,
-          welcomeMessage: meta.$1.welcome,
-          imageUrl: meta.$1.picture,
+          federationName: meta.selector.federationName,
+          inviteCode: meta.selector.inviteCode,
+          welcomeMessage: meta.welcome,
+          imageUrl: meta.picture,
           joinable: true,
-          guardians: meta.$1.guardians,
-          network: meta.$2.network!,
+          guardians: meta.guardians,
+          network: meta.selector.network!,
         ),
       );
 
