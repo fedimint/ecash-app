@@ -1,6 +1,6 @@
 use std::{
     collections::BTreeMap,
-    fmt::Display,
+    fmt::{self, Display},
     str::FromStr,
     sync::Arc,
     time::{Duration, UNIX_EPOCH},
@@ -55,7 +55,7 @@ use tokio::sync::mpsc::{unbounded_channel, UnboundedReceiver, UnboundedSender};
 use tokio::sync::RwLock;
 
 use crate::{
-    anyhow, db::FederationMetaKey, FederationConfig, FederationConfigKey, FederationConfigKeyPrefix, SeedPhraseAckKey
+    anyhow, log_to_flutter, db::FederationMetaKey, FederationConfig, FederationConfigKey, FederationConfigKeyPrefix, SeedPhraseAckKey
 };
 use crate::{event_bus::EventBus, get_event_bus};
 
@@ -150,6 +150,16 @@ pub enum ClientType {
     Recovery { client_config: ClientConfig },
 }
 
+impl fmt::Display for ClientType {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            ClientType::New => write!(f, "New"),
+            ClientType::Temporary => write!(f, "Temporary"),
+            ClientType::Recovery { .. } => write!(f, "Recovery"),
+        }
+    }
+}
+
 #[derive(Clone, Eq, PartialEq, Serialize, Debug)]
 pub struct MempoolEvent {
     pub amount: u64,
@@ -207,15 +217,15 @@ impl Multimint {
             MultimintCreation::New => {
                 let mnemonic = Bip39RootSecretStrategy::<12>::random(&mut thread_rng());
                 Client::store_encodable_client_secret(&db, mnemonic.to_entropy()).await?;
+                log_to_flutter("Created new multimint wallet").await;
                 mnemonic
             }
             MultimintCreation::LoadExisting => {
                 let entropy = Client::load_decodable_client_secret::<Vec<u8>>(&db)
                     .await
                     .expect("Could not load existing secret");
-                println!("Successfully loaded entropy from existing wallet");
                 let mnemonic = Mnemonic::from_entropy(&entropy)?;
-                println!("Created mnemonic from entropy");
+                log_to_flutter("Loaded existing multimint wallet").await;
                 mnemonic
             }
             MultimintCreation::NewFromMnemonic { words } => {
@@ -223,6 +233,7 @@ impl Multimint {
                 let mnemonic =
                     Mnemonic::parse_in_normalized(Language::English, all_words.as_str())?;
                 Client::store_encodable_client_secret(&db, mnemonic.to_entropy()).await?;
+                log_to_flutter("Created new multimint wallet from mnemonic").await;
                 mnemonic
             }
         };
@@ -259,7 +270,7 @@ impl Multimint {
     }
 
     async fn load_clients(&mut self) -> anyhow::Result<()> {
-        println!("Loading all clients...");
+        log_to_flutter("Loading all clients...").await;
         let mut dbtx = self.db.begin_transaction_nc().await;
         let configs = dbtx
             .find_by_prefix(&FederationConfigKeyPrefix)
@@ -316,7 +327,10 @@ impl Multimint {
                     // Wallet operations are handled by the pegin monitor
                     "wallet" => {}
                     module => {
-                        println!("Active operation needs to be driven to completion: {module}")
+                        log_to_flutter(format!(
+                            "Active operation needs to be driven to completion: {module}"
+                        ))
+                        .await;
                     }
                 }
             }
@@ -348,7 +362,11 @@ impl Multimint {
                         if let Err(e) =
                             Self::watch_pegin_address(fed_id, client, tweak_idx, event_bus).await
                         {
-                            eprintln!("watch_pegin_address({}) failed: {:?}", tweak_idx.0, e);
+                            log_to_flutter(format!(
+                                "watch_pegin_address({}) failed: {:?}",
+                                tweak_idx.0, e
+                            ))
+                            .await;
                         }
                     });
                 }
@@ -496,7 +514,7 @@ impl Multimint {
                     event_bus.publish(deposit_event).await;
                 }
                 DepositStateV2::Failed(e) => {
-                    println!("deposit failed: {:?}", e);
+                    log_to_flutter(format!("deposit failed: {:?}", e)).await;
                     break;
                 }
             };
@@ -533,10 +551,11 @@ impl Multimint {
                             // we found an allocated, unused address so we need to monitor
                             if let Err(_) = pegin_address_monitor_tx_clone.send((fed_id, tweak_idx))
                             {
-                                eprintln!(
+                                log_to_flutter(format!(
                                     "failed to monitor tweak index {:?} for fed {:?}",
                                     tweak_idx, fed_id
-                                );
+                                ))
+                                .await;
                             }
                         }
                         tweak_idx = tweak_idx.next();
@@ -820,19 +839,16 @@ impl Multimint {
         connector: Connector,
         client_type: ClientType,
     ) -> anyhow::Result<ClientHandleArc> {
+        log_to_flutter(format!("Building new client. type: {client_type}")).await;
         let client_db = match client_type {
             ClientType::Temporary => MemDatabase::new().into(),
             _ => self.get_client_database(&federation_id),
         };
 
-        println!("Getting derivation secret");
         let secret = Self::derive_federation_secret(&self.mnemonic, &federation_id);
-        println!("Got derivation secret");
-
         let mut client_builder = Client::builder(client_db).await?;
         client_builder.with_module_inits(self.modules.clone());
         client_builder.with_primary_module_kind(fedimint_mint_client::KIND);
-        println!("Created client builder");
 
         let client = match client_type {
             ClientType::Recovery { client_config } => {
@@ -852,10 +868,10 @@ impl Multimint {
             }
             client_type => {
                 let client = if Client::is_initialized(client_builder.db_no_decoders()).await {
-                    println!("Client is already initialized, opening using secret...");
+                    log_to_flutter("Client is already initialized, opening using secret...").await;
                     client_builder.open(secret).await
                 } else {
-                    println!("Client is not initialized, downloading invite code...");
+                    log_to_flutter("Client is not initialized, downloading invite code...").await;
                     let client_config = connector.download_from_invite_code(&invite_code).await?;
                     client_builder
                         .join(secret, client_config.clone(), invite_code.api_secret())
@@ -879,7 +895,7 @@ impl Multimint {
             .spawn_cancellable("recovery progress", async move {
                 let mut stream = client.subscribe_to_recovery_progress();
                 while let Some((module_id, progress)) = stream.next().await {
-                    println!("Module: {module_id} Progress: {progress}");
+                    log_to_flutter(format!("Module: {module_id} Progress: {progress}")).await;
                 }
             });
     }
@@ -888,7 +904,6 @@ impl Multimint {
         &mut self,
         invite_code: String,
     ) -> anyhow::Result<FederationSelector> {
-        println!("Waiting for recovery...");
         let invite = InviteCode::from_str(&invite_code)?;
         let federation_id = invite.federation_id();
         let recovering_client = self
@@ -899,7 +914,7 @@ impl Multimint {
             .expect("No federation exists")
             .clone();
 
-        println!("Waiting for all recoveries...");
+        log_to_flutter("Waiting for all recoveries...").await;
         recovering_client.wait_for_all_recoveries().await?;
         let selector = self.join_federation(invite_code, false).await?;
         let new_client = self
@@ -909,7 +924,7 @@ impl Multimint {
             .get(&federation_id)
             .expect("Client should be available")
             .clone();
-        println!("Waiting for all active state machines...");
+        log_to_flutter("Waiting for all active state machines...").await;
         new_client.wait_for_all_active_state_machines().await?;
 
         Ok(selector)
@@ -981,8 +996,8 @@ impl Multimint {
     ) -> anyhow::Result<(Bolt11Invoice, OperationId)> {
         let amount_with_fees = Amount::from_msats(amount_msats_with_fees);
         let amount_without_fees = Amount::from_msats(amount_msats_without_fees);
-        println!("Amount with fees: {amount_with_fees:?}");
-        println!("Amount without fees: {amount_without_fees:?}");
+        log_to_flutter(format!("Amount with fees: {amount_with_fees:?}")).await;
+        log_to_flutter(format!("Amount without fees: {amount_without_fees:?}")).await;
         let client = self
             .clients
             .read()
@@ -1000,12 +1015,12 @@ impl Multimint {
             )
             .await
             {
-                println!("Using LNv2 for the actual invoice");
+                log_to_flutter("Using LNv2 for the actual invoice").await;
                 return Ok((invoice, operation_id));
             }
         }
 
-        println!("Using LNv1 for the actual invoice");
+        log_to_flutter("Using LNv1 for the actual invoice").await;
         let (invoice, operation_id) =
             Self::receive_lnv1(&client, amount_with_fees, amount_without_fees, gateway).await?;
 
@@ -1023,12 +1038,15 @@ impl Multimint {
                     Ok((final_state, amount_msats)) => {
                         let lightning_event =
                             LightningEventKind::InvoicePaid(InvoicePaidEvent { amount_msats });
-                        println!("Receive completed: {final_state:?}");
+                        log_to_flutter(format!("Receive completed: {final_state:?}")).await;
                         let multimint_event =
                             MultimintEvent::Lightning((federation_id, lightning_event));
                         get_event_bus().publish(multimint_event).await;
                     }
-                    Err(e) => println!("Could not await receive {operation_id:?} {e:?}"),
+                    Err(e) => {
+                        log_to_flutter(format!("Could not await receive {operation_id:?} {e:?}"))
+                            .await
+                    }
                 }
             });
     }
@@ -1093,7 +1111,7 @@ impl Multimint {
             .clone();
         if let Ok((url, receive_fee)) = Self::lnv2_select_gateway(&client, None).await {
             // TODO: It is currently not possible to get the fed_base and fed_ppm from the config
-            println!("Using LNv2 for selecting receive gateway");
+            log_to_flutter("Using LNv2 for selecting receive gateway").await;
             let amount_with_fees = compute_receive_amount(
                 amount,
                 1_000,
@@ -1105,7 +1123,7 @@ impl Multimint {
         }
 
         // LNv1 does not have fees for receiving
-        println!("Using LNv1 for selecting receive gateway");
+        log_to_flutter("Using LNv1 for selecting receive gateway").await;
         let gateway = Self::lnv1_select_gateway(&client)
             .await
             .ok_or(anyhow!("No available gateways"))?;
@@ -1177,18 +1195,18 @@ impl Multimint {
         let invoice = Bolt11Invoice::from_str(&invoice)?;
 
         if is_lnv2 {
-            println!("Attempting to pay using LNv2...");
+            log_to_flutter("Attempting to pay using LNv2...").await;
             if let Ok(lnv2_operation_id) =
                 Self::pay_lnv2(&client, invoice.clone(), gateway.clone()).await
             {
-                println!("Successfully initated LNv2 payment");
+                log_to_flutter("Successfully initated LNv2 payment").await;
                 return Ok(lnv2_operation_id);
             }
         }
 
-        println!("Attempting to pay using LNv1...");
+        log_to_flutter("Attempting to pay using LNv1...").await;
         let operation_id = Self::pay_lnv1(&client, invoice, gateway).await?;
-        println!("Successfully initiated LNv1 payment");
+        log_to_flutter("Successfully initiated LNv1 payment").await;
         self.spawn_await_send(federation_id.clone(), operation_id.clone());
         Ok(operation_id)
     }
@@ -1225,8 +1243,10 @@ impl Multimint {
         let self_copy = self.clone();
         self.task_group.spawn_cancellable("await send", async move {
             match self_copy.await_send(&federation_id, operation_id).await {
-                Ok(final_state) => println!("Send completed: {final_state:?}"),
-                Err(e) => println!("Could not await send {operation_id:?} {e:?}"),
+                Ok(final_state) => log_to_flutter(format!("Send completed: {final_state:?}")).await,
+                Err(e) => {
+                    log_to_flutter(format!("Could not await send {operation_id:?} {e:?}")).await
+                }
             }
         });
     }
@@ -1464,8 +1484,8 @@ impl Multimint {
                     .get_first_module::<LightningClientModule>()
                     .expect("LNv1 should be present");
                 match lnv1.update_gateway_cache().await {
-                    Ok(_) => println!("Updated gateway cache"),
-                    Err(e) => println!("Could not update gateway cache {e}"),
+                    Ok(_) => log_to_flutter("Updated gateway cache").await,
+                    Err(e) => log_to_flutter(format!("Could not update gateway cache {e}")).await,
                 }
 
                 lnv1.update_gateway_cache_continuously(|gateway| async { gateway })
@@ -1739,8 +1759,13 @@ impl Multimint {
                     .await_ecash_send(&federation_id, operation_id)
                     .await
                 {
-                    Ok(final_state) => println!("Ecash send completed: {final_state:?}"),
-                    Err(e) => println!("Could not await receive {operation_id:?} {e:?}"),
+                    Ok(final_state) => {
+                        log_to_flutter(format!("Ecash send completed: {final_state:?}")).await
+                    }
+                    Err(e) => {
+                        log_to_flutter(format!("Could not await receive {operation_id:?} {e:?}"))
+                            .await
+                    }
                 }
             });
     }
@@ -1764,7 +1789,6 @@ impl Multimint {
             .into_stream();
         let mut final_state = SpendOOBState::UserCanceledFailure;
         while let Some(update) = updates.next().await {
-            println!("Ecash send state: {update:?}");
             final_state = update;
         }
         Ok(final_state)
@@ -1812,8 +1836,13 @@ impl Multimint {
                     .await_ecash_reissue(&federation_id, operation_id)
                     .await
                 {
-                    Ok(final_state) => println!("Ecash reissue completed: {final_state:?}"),
-                    Err(e) => println!("Could not await receive {operation_id:?} {e:?}"),
+                    Ok(final_state) => {
+                        log_to_flutter(format!("Ecash reissue completed: {final_state:?}")).await
+                    }
+                    Err(e) => {
+                        log_to_flutter(format!("Could not await receive {operation_id:?} {e:?}"))
+                            .await
+                    }
                 }
             });
     }
@@ -1880,7 +1909,7 @@ impl Multimint {
             .checked_sub(fees.amount())
             .context("Not enough funds to pay fees")?;
 
-        println!("Attempting withdraw with fees: {fees:?}");
+        log_to_flutter(format!("Attempting withdraw with fees: {fees:?}")).await;
 
         let operation_id = wallet_module.withdraw(&address, amount, fees, ()).await?;
 
@@ -1895,7 +1924,7 @@ impl Multimint {
                 .await
                 .ok_or_else(|| anyhow!("Update stream ended without outcome"))?;
 
-            println!("Withdraw state update: {:?}", update);
+            log_to_flutter(format!("Withdraw state update: {:?}", update)).await;
 
             match update {
                 WithdrawState::Succeeded(txid) => {

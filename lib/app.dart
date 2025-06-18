@@ -46,14 +46,9 @@ class _MyAppState extends State<MyApp> {
 
     events = subscribeMultimintEvents().asBroadcastStream();
     _subscription = events.listen((event) async {
-      AppLogger.instance.info("Received multimint event!");
       if (event is MultimintEvent_Lightning) {
-        AppLogger.instance.info("Received multimint (lightning) event!");
         final ln = event.field0.$2;
         if (ln is LightningEventKind_InvoicePaid) {
-          AppLogger.instance.info(
-            "Received multimint (lightning) (invoice paid) event!",
-          );
           if (!invoicePaidToastVisible.value) {
             AppLogger.instance.info("Request modal visible — skipping toast.");
             return;
@@ -93,6 +88,8 @@ class _MyAppState extends State<MyApp> {
             },
           );
         }
+      } else if (event is MultimintEvent_Log) {
+        AppLogger.instance.rustLog(event.field0);
       }
     });
   }

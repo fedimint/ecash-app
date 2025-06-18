@@ -91,14 +91,10 @@ async fn create_event_bus() {
         .await;
 }
 
-async fn log_to_flutter(message: &str) {
+async fn log_to_flutter<T: Into<String>>(message: T) {
     get_event_bus()
-        .publish(MultimintEvent::Log(message.to_string()))
+        .publish(MultimintEvent::Log(message.into()))
         .await;
-}
-
-async fn log_to_flutter_str(message: String) {
-    get_event_bus().publish(MultimintEvent::Log(message)).await;
 }
 
 #[frb]
