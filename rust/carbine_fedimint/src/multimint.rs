@@ -703,12 +703,6 @@ impl Multimint {
     ) -> anyhow::Result<FederationSelector> {
         let invite_code = InviteCode::from_str(&invite)?;
         let federation_id = invite_code.federation_id();
-        /*
-        if self.has_federation(&federation_id).await {
-            bail!("Already joined federation")
-        }
-        */
-
         let client_config = Connector::default()
             .download_from_invite_code(&invite_code)
             .await?;
@@ -732,6 +726,10 @@ impl Multimint {
             )
             .await?
         };
+
+        if !client.has_pending_recoveries() && self.has_federation(&federation_id).await {
+            bail!("Already joined federation")
+        }
 
         let federation_name = client_config
             .global
@@ -773,10 +771,7 @@ impl Multimint {
         })
     }
 
-    // TODO: This is not currently being used, because we re-join a federation after recovery from a seed
-    // However, we should probably be checking when joining a federation that we haven't already joined
-    // and are currently not recovering.
-    async fn _has_federation(&self, federation_id: &FederationId) -> bool {
+    async fn has_federation(&self, federation_id: &FederationId) -> bool {
         let mut dbtx = self.db.begin_transaction_nc().await;
         dbtx.get_value(&FederationConfigKey { id: *federation_id })
             .await
