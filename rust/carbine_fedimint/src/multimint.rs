@@ -54,11 +54,10 @@ use serde_json::to_value;
 use tokio::sync::mpsc::{unbounded_channel, UnboundedReceiver, UnboundedSender};
 use tokio::sync::RwLock;
 
-use crate::frb_generated::StreamSink;
 use crate::{
-    anyhow, FederationConfig, FederationConfigKey, FederationConfigKeyPrefix, SeedPhraseAckKey,
+    anyhow, db::FederationMetaKey, FederationConfig, FederationConfigKey, FederationConfigKeyPrefix, SeedPhraseAckKey
 };
-use crate::{db::FederationMetaKey, event_bus::EventBus};
+use crate::{event_bus::EventBus, get_event_bus};
 
 const DEFAULT_EXPIRY_TIME_SECS: u32 = 86400;
 const CACHE_UPDATE_INTERVAL_SECS: u64 = 60;
@@ -96,7 +95,6 @@ pub struct Multimint {
     clients: Arc<RwLock<BTreeMap<FederationId, ClientHandleArc>>>,
     task_group: TaskGroup,
     pegin_address_monitor_tx: UnboundedSender<(FederationId, TweakIdx)>,
-    event_bus: EventBus<MultimintEvent>,
 }
 
 #[derive(Debug, Serialize, Encodable, Decodable, Clone)]
@@ -248,7 +246,6 @@ impl Multimint {
             clients: clients.clone(),
             task_group: TaskGroup::new(),
             pegin_address_monitor_tx: pegin_address_monitor_tx.clone(),
-            event_bus: EventBus::new(100, 1000),
         };
 
         multimint.load_clients().await?;
@@ -330,7 +327,7 @@ impl Multimint {
         &self,
         mut monitor_rx: UnboundedReceiver<(FederationId, TweakIdx)>,
     ) -> anyhow::Result<()> {
-        let event_bus_clone = self.event_bus.clone();
+        let event_bus_clone = get_event_bus();
         let task_group_clone = self.task_group.clone();
         let clients_clone = self.clients.clone();
 
@@ -1029,7 +1026,7 @@ impl Multimint {
                         println!("Receive completed: {final_state:?}");
                         let multimint_event =
                             MultimintEvent::Lightning((federation_id, lightning_event));
-                        self_copy.event_bus.publish(multimint_event).await;
+                        get_event_bus().publish(multimint_event).await;
                     }
                     Err(e) => println!("Could not await receive {operation_id:?} {e:?}"),
                 }
@@ -1959,34 +1956,6 @@ impl Multimint {
             .await?;
 
         Ok(address.to_string())
-    }
-
-    pub async fn subscribe_deposits(
-        &self,
-        federation_id: FederationId,
-        sink: StreamSink<DepositEventKind>,
-    ) {
-        let mut stream = self.event_bus.subscribe();
-
-        while let Some(evt) = stream.next().await {
-            if let MultimintEvent::Deposit((evt_federation_id, deposit)) = evt {
-                if evt_federation_id == federation_id {
-                    if sink.add(deposit).is_err() {
-                        break;
-                    }
-                }
-            }
-        }
-    }
-
-    pub async fn subscribe_multimint_events(&self, sink: StreamSink<MultimintEvent>) {
-        let mut stream = self.event_bus.subscribe();
-
-        while let Some(mm_event) = stream.next().await {
-            if sink.add(mm_event).is_err() {
-                break;
-            }
-        }
     }
 
     pub async fn wallet_summary(&self, invite: String) -> anyhow::Result<Vec<Utxo>> {

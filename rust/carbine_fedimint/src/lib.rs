@@ -6,9 +6,11 @@ mod frb_generated;
 mod multimint;
 mod nostr;
 use db::SeedPhraseAckKey;
+use event_bus::EventBus;
 use fedimint_core::config::ClientConfig;
 /* AUTO INJECTED BY flutter_rust_bridge. This line may not be accurate, and you can change it according to your needs. */
 use flutter_rust_bridge::frb;
+use futures_util::StreamExt;
 use multimint::{
     FederationMeta, FederationSelector, Multimint, MultimintCreation, MultimintEvent,
     PaymentPreview, Transaction, Utxo,
@@ -39,6 +41,7 @@ use crate::multimint::DepositEventKind;
 static MULTIMINT: OnceCell<Multimint> = OnceCell::const_new();
 static DATABASE: OnceCell<Database> = OnceCell::const_new();
 static NOSTR: OnceCell<Arc<RwLock<NostrClient>>> = OnceCell::const_new();
+static EVENT_BUS: OnceCell<EventBus<MultimintEvent>> = OnceCell::const_new();
 
 fn get_multimint() -> Multimint {
     MULTIMINT.get().expect("Multimint not initialized").clone()
@@ -75,8 +78,32 @@ async fn create_nostr_client(db: Database) {
         .await;
 }
 
+pub fn get_event_bus() -> EventBus<MultimintEvent> {
+    EVENT_BUS
+        .get()
+        .expect("EventBus is not initialized")
+        .clone()
+}
+
+async fn create_event_bus() {
+    EVENT_BUS
+        .get_or_init(|| async { EventBus::new(100, 1000) })
+        .await;
+}
+
+async fn log_to_flutter(message: &str) {
+    get_event_bus()
+        .publish(MultimintEvent::Log(message.to_string()))
+        .await;
+}
+
+async fn log_to_flutter_str(message: String) {
+    get_event_bus().publish(MultimintEvent::Log(message)).await;
+}
+
 #[frb]
 pub async fn create_new_multimint(path: String) {
+    create_event_bus().await;
     let db = get_database(path).await;
     MULTIMINT
         .get_or_init(|| async {
@@ -90,6 +117,7 @@ pub async fn create_new_multimint(path: String) {
 
 #[frb]
 pub async fn load_multimint(path: String) {
+    create_event_bus().await;
     let db = get_database(path).await;
     MULTIMINT
         .get_or_init(|| async {
@@ -103,6 +131,7 @@ pub async fn load_multimint(path: String) {
 
 #[frb]
 pub async fn create_multimint_from_words(path: String, words: Vec<String>) {
+    create_event_bus().await;
     let db = get_database(path).await;
     MULTIMINT
         .get_or_init(|| async {
@@ -409,8 +438,18 @@ pub async fn word_list() -> Vec<String> {
 
 #[frb]
 pub async fn subscribe_deposits(sink: StreamSink<DepositEventKind>, federation_id: FederationId) {
-    let multimint = get_multimint();
-    multimint.subscribe_deposits(federation_id, sink).await;
+    let event_bus = get_event_bus();
+    let mut stream = event_bus.subscribe();
+
+    while let Some(evt) = stream.next().await {
+        if let MultimintEvent::Deposit((evt_fed_id, deposit)) = evt {
+            if evt_fed_id == federation_id {
+                if sink.add(deposit).is_err() {
+                    break;
+                }
+            }
+        }
+    }
 }
 
 #[frb]
@@ -462,8 +501,14 @@ pub async fn wallet_summary(invite: String) -> anyhow::Result<Vec<Utxo>> {
 
 #[frb]
 pub async fn subscribe_multimint_events(sink: StreamSink<MultimintEvent>) {
-    let multimint = get_multimint();
-    multimint.subscribe_multimint_events(sink).await
+    let event_bus = get_event_bus();
+    let mut stream = event_bus.subscribe();
+
+    while let Some(mm_event) = stream.next().await {
+        if sink.add(mm_event).is_err() {
+            break;
+        }
+    }
 }
 
 #[frb]

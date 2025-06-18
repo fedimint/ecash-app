@@ -167,12 +167,6 @@ abstract class Multimint implements RustOpaqueInterface {
     required BigInt amountMsats,
   });
 
-  Stream<DepositEventKind> subscribeDeposits({
-    required FederationId federationId,
-  });
-
-  Stream<MultimintEvent> subscribeMultimintEvents();
-
   Future<List<Transaction>> transactions({
     required FederationId federationId,
     BigInt? timestamp,
