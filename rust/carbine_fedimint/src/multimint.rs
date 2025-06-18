@@ -197,15 +197,10 @@ pub enum LightningEventKind {
 }
 
 #[derive(Clone, Eq, PartialEq, Serialize, Debug)]
-pub enum MultimintEventKind {
-    Deposit(DepositEventKind),
-    Lightning(LightningEventKind),
-}
-
-#[derive(Clone, Eq, PartialEq, Serialize, Debug)]
-pub struct MultimintEvent {
-    pub federation_id: FederationId,
-    pub event_kind: MultimintEventKind,
+pub enum MultimintEvent {
+    Deposit((FederationId, DepositEventKind)),
+    Lightning((FederationId, LightningEventKind)),
+    Log(String),
 }
 
 impl Multimint {
@@ -391,15 +386,13 @@ impl Multimint {
                     btc_deposited,
                     btc_out_point,
                 } => {
-                    let deposit_event = MultimintEvent {
+                    let deposit_event = MultimintEvent::Deposit((
                         federation_id,
-                        event_kind: MultimintEventKind::Deposit(DepositEventKind::Mempool(
-                            MempoolEvent {
-                                amount: Amount::from_sats(btc_deposited.to_sat()).msats,
-                                txid: btc_out_point.txid.to_string(),
-                            },
-                        )),
-                    };
+                        DepositEventKind::Mempool(MempoolEvent {
+                            amount: Amount::from_sats(btc_deposited.to_sat()).msats,
+                            txid: btc_out_point.txid.to_string(),
+                        }),
+                    ));
 
                     event_bus.publish(deposit_event).await;
 
@@ -456,17 +449,15 @@ impl Multimint {
 
                         let needed = tx_height.saturating_sub(consensus_height);
 
-                        let deposit_event = MultimintEvent {
+                        let deposit_event = MultimintEvent::Deposit((
                             federation_id,
-                            event_kind: MultimintEventKind::Deposit(
-                                DepositEventKind::AwaitingConfs(AwaitingConfsEvent {
-                                    amount: Amount::from_sats(btc_deposited.to_sat()).msats,
-                                    txid: btc_out_point.txid.to_string(),
-                                    block_height: tx_height,
-                                    needed,
-                                }),
-                            ),
-                        };
+                            DepositEventKind::AwaitingConfs(AwaitingConfsEvent {
+                                amount: Amount::from_sats(btc_deposited.to_sat()).msats,
+                                txid: btc_out_point.txid.to_string(),
+                                block_height: tx_height,
+                                needed,
+                            }),
+                        ));
 
                         event_bus.publish(deposit_event).await;
                         anyhow::ensure!(needed == 0, "{} more confs needed", needed);
@@ -483,15 +474,13 @@ impl Multimint {
                     btc_deposited,
                     btc_out_point,
                 } => {
-                    let deposit_event = MultimintEvent {
+                    let deposit_event = MultimintEvent::Deposit((
                         federation_id,
-                        event_kind: MultimintEventKind::Deposit(DepositEventKind::Confirmed(
-                            ConfirmedEvent {
-                                amount: Amount::from_sats(btc_deposited.to_sat()).msats,
-                                txid: btc_out_point.txid.to_string(),
-                            },
-                        )),
-                    };
+                        DepositEventKind::Confirmed(ConfirmedEvent {
+                            amount: Amount::from_sats(btc_deposited.to_sat()).msats,
+                            txid: btc_out_point.txid.to_string(),
+                        }),
+                    ));
 
                     event_bus.publish(deposit_event).await;
                 }
@@ -499,15 +488,13 @@ impl Multimint {
                     btc_deposited,
                     btc_out_point,
                 } => {
-                    let deposit_event = MultimintEvent {
+                    let deposit_event = MultimintEvent::Deposit((
                         federation_id,
-                        event_kind: MultimintEventKind::Deposit(DepositEventKind::Claimed(
-                            ClaimedEvent {
-                                amount: Amount::from_sats(btc_deposited.to_sat()).msats,
-                                txid: btc_out_point.txid.to_string(),
-                            },
-                        )),
-                    };
+                        DepositEventKind::Claimed(ClaimedEvent {
+                            amount: Amount::from_sats(btc_deposited.to_sat()).msats,
+                            txid: btc_out_point.txid.to_string(),
+                        }),
+                    ));
 
                     event_bus.publish(deposit_event).await;
                 }
@@ -1040,13 +1027,9 @@ impl Multimint {
                         let lightning_event =
                             LightningEventKind::InvoicePaid(InvoicePaidEvent { amount_msats });
                         println!("Receive completed: {final_state:?}");
-                        self_copy
-                            .event_bus
-                            .publish(MultimintEvent {
-                                federation_id,
-                                event_kind: MultimintEventKind::Lightning(lightning_event),
-                            })
-                            .await;
+                        let multimint_event =
+                            MultimintEvent::Lightning((federation_id, lightning_event));
+                        self_copy.event_bus.publish(multimint_event).await;
                     }
                     Err(e) => println!("Could not await receive {operation_id:?} {e:?}"),
                 }
@@ -1986,8 +1969,8 @@ impl Multimint {
         let mut stream = self.event_bus.subscribe();
 
         while let Some(evt) = stream.next().await {
-            if evt.federation_id == federation_id {
-                if let MultimintEventKind::Deposit(deposit) = evt.event_kind {
+            if let MultimintEvent::Deposit((evt_federation_id, deposit)) = evt {
+                if evt_federation_id == federation_id {
                     if sink.add(deposit).is_err() {
                         break;
                     }
