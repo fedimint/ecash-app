@@ -212,8 +212,8 @@ class _Discover extends State<Discover> {
                       );
                     }
                   },
-                  icon: const Icon(Icons.group_add, size: 18),
-                  label: const Text("Join"),
+                  icon: const Icon(Icons.info_outline, size: 18),
+                  label: const Text("Preview"),
                 ),
           ],
         ),
