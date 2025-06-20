@@ -46,19 +46,18 @@ class _MyAppState extends State<MyApp> {
 
     events = subscribeMultimintEvents().asBroadcastStream();
     _subscription = events.listen((event) async {
-      if (event.eventKind is MultimintEventKind_Lightning) {
-        final ln = event.eventKind as MultimintEventKind_Lightning;
-        if (ln.field0 is LightningEventKind_InvoicePaid) {
+      if (event is MultimintEvent_Lightning) {
+        final ln = event.field0.$2;
+        if (ln is LightningEventKind_InvoicePaid) {
           if (!invoicePaidToastVisible.value) {
             AppLogger.instance.info("Request modal visible — skipping toast.");
             return;
           }
 
-          final lnEvent = ln.field0 as LightningEventKind_InvoicePaid;
-          final amountMsats = lnEvent.field0.amountMsats;
+          final amountMsats = ln.field0.amountMsats;
           final amount = formatBalance(amountMsats, false);
           final federationIdString = await federationIdToString(
-            federationId: event.federationId,
+            federationId: event.field0.$1,
           );
           FederationSelector? selector;
           bool? recovering;
@@ -89,6 +88,8 @@ class _MyAppState extends State<MyApp> {
             },
           );
         }
+      } else if (event is MultimintEvent_Log) {
+        AppLogger.instance.rustLog(event.field0, event.field1);
       }
     });
   }

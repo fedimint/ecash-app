@@ -48,11 +48,11 @@ class _DashboardState extends State<Dashboard> {
 
     events = subscribeMultimintEvents().asBroadcastStream();
     _subscription = events.listen((event) async {
-      if (event.eventKind is MultimintEventKind_Lightning) {
-        final ln = event.eventKind as MultimintEventKind_Lightning;
-        if (ln.field0 is LightningEventKind_InvoicePaid) {
+      if (event is MultimintEvent_Lightning) {
+        final ln = event.field0.$2;
+        if (ln is LightningEventKind_InvoicePaid) {
           final federationIdString = await federationIdToString(
-            federationId: event.federationId,
+            federationId: event.field0.$1,
           );
           final selectorIdString = await federationIdToString(federationId: widget.fed.federationId);
           if (federationIdString == selectorIdString) {
