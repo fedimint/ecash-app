@@ -1,5 +1,6 @@
 import 'dart:io';
 
+import 'package:carbine/multimint.dart';
 import 'package:flutter/foundation.dart';
 import 'package:intl/intl.dart';
 import 'package:path_provider/path_provider.dart';
@@ -45,11 +46,45 @@ class AppLogger {
     );
   }
 
+  void _rustLog(LogLevel level, String message) {
+    String logLevel;
+    switch (level) {
+      case LogLevel.trace:
+        logLevel = "TRACE";
+        break;
+      case LogLevel.error:
+        logLevel = "ERROR";
+        break;
+      case LogLevel.info:
+        logLevel = "INFO";
+        break;
+      case LogLevel.debug:
+        logLevel = "DEBUG";
+        break;
+      case LogLevel.warn:
+        logLevel = "WARN";
+        break;
+    }
+
+    final timestamp = DateTime.now().toIso8601String();
+    final formatted = "[$timestamp] [RUST] [$logLevel] $message";
+
+    // Print to console
+    debugPrint(formatted);
+
+    // Write to file
+    _logFile.writeAsStringSync(
+      "$formatted\n",
+      mode: FileMode.append,
+      flush: true,
+    );
+  }
+
   void info(String message) => _log("INFO", message);
   void warn(String message) => _log("WARN", message);
   void error(String message) => _log("ERROR", message);
   void debug(String message) => _log("DEBUG", message);
-  void rustLog(String message) => _log("RUST", message);
+  void rustLog(LogLevel level, String message) => _rustLog(level, message);
 }
 
 int threshold(int totalPeers) {

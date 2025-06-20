@@ -3,7 +3,7 @@ use std::{collections::BTreeMap, str::FromStr, sync::Arc, time::Duration, u64};
 use crate::{
     anyhow, await_send, balance,
     db::{NostrWalletConnectConfig, NostrWalletConnectKey, NostrWalletConnectKeyPrefix},
-    federations, log_to_flutter,
+    federations, info_to_flutter,
     multimint::FederationSelector,
     payment_preview, send,
 };
@@ -92,10 +92,10 @@ impl NostrClient {
         for relay in DEFAULT_RELAYS {
             match client.add_relay(*relay).await {
                 Ok(_) => {
-                    log_to_flutter(format!("Successfully added relay: {relay}")).await;
+                    info_to_flutter(format!("Successfully added relay: {relay}")).await;
                 }
                 Err(err) => {
-                    log_to_flutter(format!(
+                    info_to_flutter(format!(
                         "Could not add relay {}: {}",
                         relay,
                         err.fmt_compact()
@@ -117,7 +117,7 @@ impl NostrClient {
         nostr_client
             .task_group
             .spawn_cancellable("update nostr feds", async move {
-                log_to_flutter("Updating federations from nostr in the background...").await;
+                info_to_flutter("Updating federations from nostr in the background...").await;
                 background_nostr.update_federations_from_nostr().await;
             });
 
@@ -145,10 +145,10 @@ impl NostrClient {
                 let hexid = event_id.to_hex();
                 let success = event_id.success;
                 let failed = event_id.failed;
-                log_to_flutter(format!("FederationId: {federation_id} Successfully broadcasted WalletConnectInfo: {hexid} Success: {success:?} Failed: {failed:?}")).await;
+                info_to_flutter(format!("FederationId: {federation_id} Successfully broadcasted WalletConnectInfo: {hexid} Success: {success:?} Failed: {failed:?}")).await;
             }
             Err(e) => {
-                log_to_flutter(format!("Error sending WalletConnectInfo event: {e:?}")).await;
+                info_to_flutter(format!("Error sending WalletConnectInfo event: {e:?}")).await;
             }
         }
     }
@@ -160,7 +160,7 @@ impl NostrClient {
     ) {
         let mut listeners = self.nwc_listeners.write().await;
         if let Some(listener) = listeners.remove(&federation_id) {
-            log_to_flutter("Sending shutdown signal to previous listening thread").await;
+            info_to_flutter("Sending shutdown signal to previous listening thread").await;
             let _ = listener.send(());
         }
         let (sender, receiver) = oneshot::channel::<()>();
@@ -184,7 +184,7 @@ impl NostrClient {
 
         let relay = nwc_config.relay.clone();
         if let Err(e) = nostr_client.add_relay(relay.clone()).await {
-            log_to_flutter(format!(
+            info_to_flutter(format!(
                 "Could not add NWC relay to NWC client {} {e:?}",
                 nwc_config.relay
             ))
@@ -193,67 +193,67 @@ impl NostrClient {
         }
 
         let Ok(relay) = nostr_client.relay(relay).await else {
-            log_to_flutter("Could not get relay").await;
+            info_to_flutter("Could not get relay").await;
             return;
         };
 
         let status = relay.status();
-        log_to_flutter(format!("Relay connection status: {status:?}")).await;
+        info_to_flutter(format!("Relay connection status: {status:?}")).await;
         relay.connect();
-        log_to_flutter("Waiting for connection to relay...").await;
+        info_to_flutter("Waiting for connection to relay...").await;
         relay
             .wait_for_connection(Duration::from_secs(u64::MAX))
             .await;
-        log_to_flutter("Connected to relay!").await;
+        info_to_flutter("Connected to relay!").await;
 
         let filter = nostr_sdk::Filter::new().kind(nostr_sdk::Kind::WalletConnectRequest);
         let Ok(subscription_id) = nostr_client.subscribe(filter, None).await else {
-            log_to_flutter("Error subscribing to WalletConnectRequest").await;
+            info_to_flutter("Error subscribing to WalletConnectRequest").await;
             return;
         };
 
         Self::broadcast_nwc_info(&nostr_client, federation_id).await;
 
         let mut notifications = nostr_client.notifications();
-        log_to_flutter(format!(
+        info_to_flutter(format!(
             "FederationId: {federation_id} Listening for NWC Requests..."
         ))
         .await;
         loop {
             tokio::select! {
                 _ = &mut receiver => {
-                    log_to_flutter(format!("Received shutdown signal for {federation_id}")).await;
+                    info_to_flutter(format!("Received shutdown signal for {federation_id}")).await;
                     break;
                 }
                 notification = notifications.recv() => {
                     let Ok(notification) = notification else {
-                        log_to_flutter(format!("Received shutdown signal from notifications stream for {federation_id}")).await;
+                        info_to_flutter(format!("Received shutdown signal from notifications stream for {federation_id}")).await;
                         break;
                     };
 
                     let nostr_sdk::RelayPoolNotification::Event { event, .. } = notification else {
-                        log_to_flutter("Notification was not an event, continuing...").await;
+                        info_to_flutter("Notification was not an event, continuing...").await;
                         continue;
                     };
 
                     if event.kind == nostr_sdk::Kind::WalletConnectRequest {
                         let sender_pubkey = event.pubkey;
                         let Ok(decrypted) = nostr_sdk::nips::nip04::decrypt(&secret_key, &sender_pubkey, &event.content) else {
-                            log_to_flutter("Could not decrypt WalletConnectRequest").await;
+                            info_to_flutter("Could not decrypt WalletConnectRequest").await;
                             continue;
                         };
 
                         let Ok(request) = serde_json::from_str::<WalletConnectRequest>(&decrypted) else {
-                            log_to_flutter("Error deserializing WalletConnectRequest").await;
+                            info_to_flutter("Error deserializing WalletConnectRequest").await;
                             continue;
                         };
 
-                        log_to_flutter(format!("WalletConnectRequest: {request:?}")).await;
+                        info_to_flutter(format!("WalletConnectRequest: {request:?}")).await;
                         if let Err(err) = Self::handle_request(federation_id, &nostr_client, &keys, request, sender_pubkey, event.id).await {
-                            log_to_flutter(format!("Error handling WalletConnectRequest: {err:?}")).await;
+                            info_to_flutter(format!("Error handling WalletConnectRequest: {err:?}")).await;
                         }
                     } else {
-                        log_to_flutter(format!("Event was not a WalletConnectRequest, continuing... {}", event.kind)).await;
+                        info_to_flutter(format!("Event was not a WalletConnectRequest, continuing... {}", event.kind)).await;
                     }
                 }
             }
@@ -261,7 +261,7 @@ impl NostrClient {
 
         nostr_client.unsubscribe(&subscription_id).await;
 
-        log_to_flutter(format!("FederationId: {federation_id} NWC Done listening")).await;
+        info_to_flutter(format!("FederationId: {federation_id} NWC Done listening")).await;
     }
 
     async fn broadcast_response(
@@ -288,7 +288,7 @@ impl NostrClient {
                 || async {
                     match nostr_client.send_event_builder(event_builder.clone()).await {
                         Ok(event_id) => {
-                            log_to_flutter(format!(
+                            info_to_flutter(format!(
                                 "Broadcasted WalletConnectResponse: {event_id:?}"
                             ))
                             .await;
@@ -297,7 +297,7 @@ impl NostrClient {
                             }
                         }
                         Err(e) => {
-                            log_to_flutter(format!(
+                            info_to_flutter(format!(
                                 "Error broadcasting WalletConnect response: {e:?}"
                             ))
                             .await;
@@ -379,7 +379,7 @@ impl NostrClient {
                     )
                     .await?;
                 } else {
-                    log_to_flutter(format!("NWC Payment Failure: {final_state:?}")).await;
+                    info_to_flutter(format!("NWC Payment Failure: {final_state:?}")).await;
                 }
             }
         }
@@ -426,12 +426,12 @@ impl NostrClient {
                     })
                     .collect::<Vec<_>>();
 
-                log_to_flutter(format!("Public Federations: {events:?}")).await;
+                info_to_flutter(format!("Public Federations: {events:?}")).await;
                 let mut public_federations = self.public_federations.write().await;
                 *public_federations = events;
             }
             Err(e) => {
-                log_to_flutter(format!("Failed to fetch events from nostr: {e}")).await;
+                info_to_flutter(format!("Failed to fetch events from nostr: {e}")).await;
             }
         }
     }

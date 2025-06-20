@@ -6425,6 +6425,13 @@ impl SseDecode for crate::multimint::Guardian {
     }
 }
 
+impl SseDecode for i32 {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
+        deserializer.cursor.read_i32::<NativeEndian>().unwrap()
+    }
+}
+
 impl SseDecode for crate::multimint::InvoicePaidEvent {
     // Codec=Sse (Serialization based), see doc to use other codecs
     fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
@@ -6549,6 +6556,21 @@ impl SseDecode for Vec<crate::multimint::Utxo> {
     }
 }
 
+impl SseDecode for crate::multimint::LogLevel {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
+        let mut inner = <i32>::sse_decode(deserializer);
+        return match inner {
+            0 => crate::multimint::LogLevel::Trace,
+            1 => crate::multimint::LogLevel::Debug,
+            2 => crate::multimint::LogLevel::Info,
+            3 => crate::multimint::LogLevel::Warn,
+            4 => crate::multimint::LogLevel::Error,
+            _ => unreachable!("Invalid variant for LogLevel: {}", inner),
+        };
+    }
+}
+
 impl SseDecode for crate::multimint::MempoolEvent {
     // Codec=Sse (Serialization based), see doc to use other codecs
     fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
@@ -6601,8 +6623,9 @@ impl SseDecode for crate::multimint::MultimintEvent {
                 return crate::multimint::MultimintEvent::Lightning(var_field0);
             }
             2 => {
-                let mut var_field0 = <String>::sse_decode(deserializer);
-                return crate::multimint::MultimintEvent::Log(var_field0);
+                let mut var_field0 = <crate::multimint::LogLevel>::sse_decode(deserializer);
+                let mut var_field1 = <String>::sse_decode(deserializer);
+                return crate::multimint::MultimintEvent::Log(var_field0, var_field1);
             }
             _ => {
                 unimplemented!("");
@@ -6846,13 +6869,6 @@ impl SseDecode for crate::multimint::Utxo {
             index: var_index,
             amount: var_amount,
         };
-    }
-}
-
-impl SseDecode for i32 {
-    // Codec=Sse (Serialization based), see doc to use other codecs
-    fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
-        deserializer.cursor.read_i32::<NativeEndian>().unwrap()
     }
 }
 
@@ -7716,6 +7732,25 @@ impl flutter_rust_bridge::IntoIntoDart<crate::multimint::LightningEventKind>
     }
 }
 // Codec=Dco (DartCObject based), see doc to use other codecs
+impl flutter_rust_bridge::IntoDart for crate::multimint::LogLevel {
+    fn into_dart(self) -> flutter_rust_bridge::for_generated::DartAbi {
+        match self {
+            Self::Trace => 0.into_dart(),
+            Self::Debug => 1.into_dart(),
+            Self::Info => 2.into_dart(),
+            Self::Warn => 3.into_dart(),
+            Self::Error => 4.into_dart(),
+            _ => unreachable!(),
+        }
+    }
+}
+impl flutter_rust_bridge::for_generated::IntoDartExceptPrimitive for crate::multimint::LogLevel {}
+impl flutter_rust_bridge::IntoIntoDart<crate::multimint::LogLevel> for crate::multimint::LogLevel {
+    fn into_into_dart(self) -> crate::multimint::LogLevel {
+        self
+    }
+}
+// Codec=Dco (DartCObject based), see doc to use other codecs
 impl flutter_rust_bridge::IntoDart for crate::multimint::MempoolEvent {
     fn into_dart(self) -> flutter_rust_bridge::for_generated::DartAbi {
         [
@@ -7772,9 +7807,12 @@ impl flutter_rust_bridge::IntoDart for crate::multimint::MultimintEvent {
             crate::multimint::MultimintEvent::Lightning(field0) => {
                 [1.into_dart(), field0.into_into_dart().into_dart()].into_dart()
             }
-            crate::multimint::MultimintEvent::Log(field0) => {
-                [2.into_dart(), field0.into_into_dart().into_dart()].into_dart()
-            }
+            crate::multimint::MultimintEvent::Log(field0, field1) => [
+                2.into_dart(),
+                field0.into_into_dart().into_dart(),
+                field1.into_into_dart().into_dart(),
+            ]
+            .into_dart(),
             _ => {
                 unimplemented!("");
             }
@@ -8363,6 +8401,13 @@ impl SseEncode for crate::multimint::Guardian {
     }
 }
 
+impl SseEncode for i32 {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
+        serializer.cursor.write_i32::<NativeEndian>(self).unwrap();
+    }
+}
+
 impl SseEncode for crate::multimint::InvoicePaidEvent {
     // Codec=Sse (Serialization based), see doc to use other codecs
     fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
@@ -8465,6 +8510,25 @@ impl SseEncode for Vec<crate::multimint::Utxo> {
     }
 }
 
+impl SseEncode for crate::multimint::LogLevel {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
+        <i32>::sse_encode(
+            match self {
+                crate::multimint::LogLevel::Trace => 0,
+                crate::multimint::LogLevel::Debug => 1,
+                crate::multimint::LogLevel::Info => 2,
+                crate::multimint::LogLevel::Warn => 3,
+                crate::multimint::LogLevel::Error => 4,
+                _ => {
+                    unimplemented!("");
+                }
+            },
+            serializer,
+        );
+    }
+}
+
 impl SseEncode for crate::multimint::MempoolEvent {
     // Codec=Sse (Serialization based), see doc to use other codecs
     fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
@@ -8510,9 +8574,10 @@ impl SseEncode for crate::multimint::MultimintEvent {
                     field0, serializer,
                 );
             }
-            crate::multimint::MultimintEvent::Log(field0) => {
+            crate::multimint::MultimintEvent::Log(field0, field1) => {
                 <i32>::sse_encode(2, serializer);
-                <String>::sse_encode(field0, serializer);
+                <crate::multimint::LogLevel>::sse_encode(field0, serializer);
+                <String>::sse_encode(field1, serializer);
             }
             _ => {
                 unimplemented!("");
@@ -8719,13 +8784,6 @@ impl SseEncode for crate::multimint::Utxo {
         <String>::sse_encode(self.txid, serializer);
         <u32>::sse_encode(self.index, serializer);
         <u64>::sse_encode(self.amount, serializer);
-    }
-}
-
-impl SseEncode for i32 {
-    // Codec=Sse (Serialization based), see doc to use other codecs
-    fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
-        serializer.cursor.write_i32::<NativeEndian>(self).unwrap();
     }
 }
 

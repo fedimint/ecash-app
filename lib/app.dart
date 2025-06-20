@@ -89,7 +89,7 @@ class _MyAppState extends State<MyApp> {
           );
         }
       } else if (event is MultimintEvent_Log) {
-        AppLogger.instance.rustLog(event.field0);
+        AppLogger.instance.rustLog(event.field0, event.field1);
       }
     });
   }

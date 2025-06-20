@@ -765,10 +765,11 @@ as (FederationId, LightningEventKind),
 
 
 class MultimintEvent_Log extends MultimintEvent {
-  const MultimintEvent_Log(this.field0): super._();
+  const MultimintEvent_Log(this.field0, this.field1): super._();
   
 
-@override final  String field0;
+@override final  LogLevel field0;
+ final  String field1;
 
 /// Create a copy of MultimintEvent
 /// with the given fields replaced by the non-null parameter values.
@@ -780,16 +781,16 @@ $MultimintEvent_LogCopyWith<MultimintEvent_Log> get copyWith => _$MultimintEvent
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is MultimintEvent_Log&&(identical(other.field0, field0) || other.field0 == field0));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is MultimintEvent_Log&&(identical(other.field0, field0) || other.field0 == field0)&&(identical(other.field1, field1) || other.field1 == field1));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,field0);
+int get hashCode => Object.hash(runtimeType,field0,field1);
 
 @override
 String toString() {
-  return 'MultimintEvent.log(field0: $field0)';
+  return 'MultimintEvent.log(field0: $field0, field1: $field1)';
 }
 
 
@@ -800,7 +801,7 @@ abstract mixin class $MultimintEvent_LogCopyWith<$Res> implements $MultimintEven
   factory $MultimintEvent_LogCopyWith(MultimintEvent_Log value, $Res Function(MultimintEvent_Log) _then) = _$MultimintEvent_LogCopyWithImpl;
 @useResult
 $Res call({
- String field0
+ LogLevel field0, String field1
 });
 
 
@@ -817,9 +818,10 @@ class _$MultimintEvent_LogCopyWithImpl<$Res>
 
 /// Create a copy of MultimintEvent
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') $Res call({Object? field0 = null,}) {
+@pragma('vm:prefer-inline') $Res call({Object? field0 = null,Object? field1 = null,}) {
   return _then(MultimintEvent_Log(
 null == field0 ? _self.field0 : field0 // ignore: cast_nullable_to_non_nullable
+as LogLevel,null == field1 ? _self.field1 : field1 // ignore: cast_nullable_to_non_nullable
 as String,
   ));
 }

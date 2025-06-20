@@ -5557,6 +5557,12 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   }
 
   @protected
+  int dco_decode_i_32(dynamic raw) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    return raw as int;
+  }
+
+  @protected
   InvoicePaidEvent dco_decode_invoice_paid_event(dynamic raw) {
     // Codec=Dco (DartCObject based), see doc to use other codecs
     final arr = raw as List<dynamic>;
@@ -5648,6 +5654,12 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   }
 
   @protected
+  LogLevel dco_decode_log_level(dynamic raw) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    return LogLevel.values[raw as int];
+  }
+
+  @protected
   MempoolEvent dco_decode_mempool_event(dynamic raw) {
     // Codec=Dco (DartCObject based), see doc to use other codecs
     final arr = raw as List<dynamic>;
@@ -5693,7 +5705,10 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           ),
         );
       case 2:
-        return MultimintEvent_Log(dco_decode_String(raw[1]));
+        return MultimintEvent_Log(
+          dco_decode_log_level(raw[1]),
+          dco_decode_String(raw[2]),
+        );
       default:
         throw Exception("unreachable");
     }
@@ -6812,6 +6827,12 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   }
 
   @protected
+  int sse_decode_i_32(SseDeserializer deserializer) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    return deserializer.buffer.getInt32();
+  }
+
+  @protected
   InvoicePaidEvent sse_decode_invoice_paid_event(SseDeserializer deserializer) {
     // Codec=Sse (Serialization based), see doc to use other codecs
     var var_amountMsats = sse_decode_u_64(deserializer);
@@ -6949,6 +6970,13 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   }
 
   @protected
+  LogLevel sse_decode_log_level(SseDeserializer deserializer) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    var inner = sse_decode_i_32(deserializer);
+    return LogLevel.values[inner];
+  }
+
+  @protected
   MempoolEvent sse_decode_mempool_event(SseDeserializer deserializer) {
     // Codec=Sse (Serialization based), see doc to use other codecs
     var var_amount = sse_decode_u_64(deserializer);
@@ -6995,8 +7023,9 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
             );
         return MultimintEvent_Lightning(var_field0);
       case 2:
-        var var_field0 = sse_decode_String(deserializer);
-        return MultimintEvent_Log(var_field0);
+        var var_field0 = sse_decode_log_level(deserializer);
+        var var_field1 = sse_decode_String(deserializer);
+        return MultimintEvent_Log(var_field0, var_field1);
       default:
         throw UnimplementedError('');
     }
@@ -7276,12 +7305,6 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
     var var_index = sse_decode_u_32(deserializer);
     var var_amount = sse_decode_u_64(deserializer);
     return Utxo(txid: var_txid, index: var_index, amount: var_amount);
-  }
-
-  @protected
-  int sse_decode_i_32(SseDeserializer deserializer) {
-    // Codec=Sse (Serialization based), see doc to use other codecs
-    return deserializer.buffer.getInt32();
   }
 
   @protected
@@ -8173,6 +8196,12 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   }
 
   @protected
+  void sse_encode_i_32(int self, SseSerializer serializer) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    serializer.buffer.putInt32(self);
+  }
+
+  @protected
   void sse_encode_invoice_paid_event(
     InvoicePaidEvent self,
     SseSerializer serializer,
@@ -8292,6 +8321,12 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   }
 
   @protected
+  void sse_encode_log_level(LogLevel self, SseSerializer serializer) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    sse_encode_i_32(self.index, serializer);
+  }
+
+  @protected
   void sse_encode_mempool_event(MempoolEvent self, SseSerializer serializer) {
     // Codec=Sse (Serialization based), see doc to use other codecs
     sse_encode_u_64(self.amount, serializer);
@@ -8334,9 +8369,10 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           field0,
           serializer,
         );
-      case MultimintEvent_Log(field0: final field0):
+      case MultimintEvent_Log(field0: final field0, field1: final field1):
         sse_encode_i_32(2, serializer);
-        sse_encode_String(field0, serializer);
+        sse_encode_log_level(field0, serializer);
+        sse_encode_String(field1, serializer);
     }
   }
 
@@ -8598,12 +8634,6 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
     sse_encode_String(self.txid, serializer);
     sse_encode_u_32(self.index, serializer);
     sse_encode_u_64(self.amount, serializer);
-  }
-
-  @protected
-  void sse_encode_i_32(int self, SseSerializer serializer) {
-    // Codec=Sse (Serialization based), see doc to use other codecs
-    serializer.buffer.putInt32(self);
   }
 }
 

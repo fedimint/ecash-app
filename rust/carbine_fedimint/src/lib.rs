@@ -12,7 +12,7 @@ use fedimint_core::config::ClientConfig;
 use flutter_rust_bridge::frb;
 use futures_util::StreamExt;
 use multimint::{
-    FederationMeta, FederationSelector, Multimint, MultimintCreation, MultimintEvent,
+    FederationMeta, FederationSelector, LogLevel, Multimint, MultimintCreation, MultimintEvent,
     PaymentPreview, Transaction, Utxo,
 };
 use nostr::{NWCConnectionInfo, NostrClient, PublicFederation};
@@ -91,9 +91,9 @@ async fn create_event_bus() {
         .await;
 }
 
-async fn log_to_flutter<T: Into<String>>(message: T) {
+async fn info_to_flutter<T: Into<String>>(message: T) {
     get_event_bus()
-        .publish(MultimintEvent::Log(message.into()))
+        .publish(MultimintEvent::Log(LogLevel::Info, message.into()))
         .await;
 }
 
