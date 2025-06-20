@@ -12,8 +12,8 @@ use fedimint_core::config::ClientConfig;
 use flutter_rust_bridge::frb;
 use futures_util::StreamExt;
 use multimint::{
-    FederationMeta, FederationSelector, LightningSendOutcome, LogLevel, Multimint, MultimintCreation,
-    MultimintEvent, PaymentPreview, Transaction, Utxo,
+    FederationMeta, FederationSelector, LightningSendOutcome, LogLevel, Multimint,
+    MultimintCreation, MultimintEvent, PaymentPreview, Transaction, Utxo,
 };
 use nostr::{NWCConnectionInfo, NostrClient, PublicFederation};
 use tokio::sync::{OnceCell, RwLock};
