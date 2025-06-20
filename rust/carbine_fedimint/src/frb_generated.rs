@@ -1690,7 +1690,7 @@ fn wire__crate__multimint__Multimint_await_send_impl(
             let api_operation_id = <OperationId>::sse_decode(&mut deserializer);
             deserializer.end();
             move |context| async move {
-                transform_result_sse::<_, flutter_rust_bridge::for_generated::anyhow::Error>(
+                transform_result_sse::<_, ()>(
                     (move || async move {
                         let mut api_that_guard = None;
                         let mut api_federation_id_guard = None;
@@ -1722,12 +1722,14 @@ fn wire__crate__multimint__Multimint_await_send_impl(
                         }
                         let api_that_guard = api_that_guard.unwrap();
                         let api_federation_id_guard = api_federation_id_guard.unwrap();
-                        let output_ok = crate::multimint::Multimint::await_send(
-                            &*api_that_guard,
-                            &*api_federation_id_guard,
-                            api_operation_id,
-                        )
-                        .await?;
+                        let output_ok = Result::<_, ()>::Ok(
+                            crate::multimint::Multimint::await_send(
+                                &*api_that_guard,
+                                &*api_federation_id_guard,
+                                api_operation_id,
+                            )
+                            .await,
+                        )?;
                         Ok(output_ok)
                     })()
                     .await,
@@ -4345,7 +4347,7 @@ fn wire__crate__await_send_impl(
             let api_operation_id = <OperationId>::sse_decode(&mut deserializer);
             deserializer.end();
             move |context| async move {
-                transform_result_sse::<_, flutter_rust_bridge::for_generated::anyhow::Error>(
+                transform_result_sse::<_, ()>(
                     (move || async move {
                         let mut api_federation_id_guard = None;
                         let decode_indices_ =
@@ -4366,8 +4368,9 @@ fn wire__crate__await_send_impl(
                             }
                         }
                         let api_federation_id_guard = api_federation_id_guard.unwrap();
-                        let output_ok =
-                            crate::await_send(&*api_federation_id_guard, api_operation_id).await?;
+                        let output_ok = Result::<_, ()>::Ok(
+                            crate::await_send(&*api_federation_id_guard, api_operation_id).await,
+                        )?;
                         Ok(output_ok)
                     })()
                     .await,
@@ -5868,9 +5871,6 @@ flutter_rust_bridge::frb_generated_moi_arc_impl_value!(
     flutter_rust_bridge::for_generated::RustAutoOpaqueInner<FinalReceiveOperationState>
 );
 flutter_rust_bridge::frb_generated_moi_arc_impl_value!(
-    flutter_rust_bridge::for_generated::RustAutoOpaqueInner<FinalSendOperationState>
-);
-flutter_rust_bridge::frb_generated_moi_arc_impl_value!(
     flutter_rust_bridge::for_generated::RustAutoOpaqueInner<InviteCode>
 );
 flutter_rust_bridge::frb_generated_moi_arc_impl_value!(
@@ -6010,16 +6010,6 @@ impl SseDecode for FinalReceiveOperationState {
     fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
         let mut inner = <RustOpaqueMoi<
             flutter_rust_bridge::for_generated::RustAutoOpaqueInner<FinalReceiveOperationState>,
-        >>::sse_decode(deserializer);
-        return flutter_rust_bridge::for_generated::rust_auto_opaque_decode_owned(inner);
-    }
-}
-
-impl SseDecode for FinalSendOperationState {
-    // Codec=Sse (Serialization based), see doc to use other codecs
-    fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
-        let mut inner = <RustOpaqueMoi<
-            flutter_rust_bridge::for_generated::RustAutoOpaqueInner<FinalSendOperationState>,
         >>::sse_decode(deserializer);
         return flutter_rust_bridge::for_generated::rust_auto_opaque_decode_owned(inner);
     }
@@ -6208,18 +6198,6 @@ impl SseDecode
 impl SseDecode
     for RustOpaqueMoi<
         flutter_rust_bridge::for_generated::RustAutoOpaqueInner<FinalReceiveOperationState>,
-    >
-{
-    // Codec=Sse (Serialization based), see doc to use other codecs
-    fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
-        let mut inner = <usize>::sse_decode(deserializer);
-        return decode_rust_opaque_moi(inner);
-    }
-}
-
-impl SseDecode
-    for RustOpaqueMoi<
-        flutter_rust_bridge::for_generated::RustAutoOpaqueInner<FinalSendOperationState>,
     >
 {
     // Codec=Sse (Serialization based), see doc to use other codecs
@@ -6450,6 +6428,25 @@ impl SseDecode for crate::multimint::LightningEventKind {
             0 => {
                 let mut var_field0 = <crate::multimint::InvoicePaidEvent>::sse_decode(deserializer);
                 return crate::multimint::LightningEventKind::InvoicePaid(var_field0);
+            }
+            _ => {
+                unimplemented!("");
+            }
+        }
+    }
+}
+
+impl SseDecode for crate::multimint::LightningSendOutcome {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
+        let mut tag_ = <i32>::sse_decode(deserializer);
+        match tag_ {
+            0 => {
+                let mut var_field0 = <String>::sse_decode(deserializer);
+                return crate::multimint::LightningSendOutcome::Success(var_field0);
+            }
+            1 => {
+                return crate::multimint::LightningSendOutcome::Failure;
             }
             _ => {
                 unimplemented!("");
@@ -6753,15 +6750,6 @@ impl SseDecode for (FinalReceiveOperationState, u64) {
     fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
         let mut var_field0 = <FinalReceiveOperationState>::sse_decode(deserializer);
         let mut var_field1 = <u64>::sse_decode(deserializer);
-        return (var_field0, var_field1);
-    }
-}
-
-impl SseDecode for (FinalSendOperationState, String) {
-    // Codec=Sse (Serialization based), see doc to use other codecs
-    fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
-        let mut var_field0 = <FinalSendOperationState>::sse_decode(deserializer);
-        let mut var_field1 = <String>::sse_decode(deserializer);
         return (var_field0, var_field1);
     }
 }
@@ -7432,26 +7420,6 @@ impl flutter_rust_bridge::IntoIntoDart<FrbWrapper<FinalReceiveOperationState>>
 }
 
 // Codec=Dco (DartCObject based), see doc to use other codecs
-impl flutter_rust_bridge::IntoDart for FrbWrapper<FinalSendOperationState> {
-    fn into_dart(self) -> flutter_rust_bridge::for_generated::DartAbi {
-        flutter_rust_bridge::for_generated::rust_auto_opaque_encode::<_, MoiArc<_>>(self.0)
-            .into_dart()
-    }
-}
-impl flutter_rust_bridge::for_generated::IntoDartExceptPrimitive
-    for FrbWrapper<FinalSendOperationState>
-{
-}
-
-impl flutter_rust_bridge::IntoIntoDart<FrbWrapper<FinalSendOperationState>>
-    for FinalSendOperationState
-{
-    fn into_into_dart(self) -> FrbWrapper<FinalSendOperationState> {
-        self.into()
-    }
-}
-
-// Codec=Dco (DartCObject based), see doc to use other codecs
 impl flutter_rust_bridge::IntoDart for FrbWrapper<InviteCode> {
     fn into_dart(self) -> flutter_rust_bridge::for_generated::DartAbi {
         flutter_rust_bridge::for_generated::rust_auto_opaque_encode::<_, MoiArc<_>>(self.0)
@@ -7728,6 +7696,31 @@ impl flutter_rust_bridge::IntoIntoDart<crate::multimint::LightningEventKind>
     for crate::multimint::LightningEventKind
 {
     fn into_into_dart(self) -> crate::multimint::LightningEventKind {
+        self
+    }
+}
+// Codec=Dco (DartCObject based), see doc to use other codecs
+impl flutter_rust_bridge::IntoDart for crate::multimint::LightningSendOutcome {
+    fn into_dart(self) -> flutter_rust_bridge::for_generated::DartAbi {
+        match self {
+            crate::multimint::LightningSendOutcome::Success(field0) => {
+                [0.into_dart(), field0.into_into_dart().into_dart()].into_dart()
+            }
+            crate::multimint::LightningSendOutcome::Failure => [1.into_dart()].into_dart(),
+            _ => {
+                unimplemented!("");
+            }
+        }
+    }
+}
+impl flutter_rust_bridge::for_generated::IntoDartExceptPrimitive
+    for crate::multimint::LightningSendOutcome
+{
+}
+impl flutter_rust_bridge::IntoIntoDart<crate::multimint::LightningSendOutcome>
+    for crate::multimint::LightningSendOutcome
+{
+    fn into_into_dart(self) -> crate::multimint::LightningSendOutcome {
         self
     }
 }
@@ -8011,18 +8004,6 @@ impl SseEncode for FinalReceiveOperationState {
     }
 }
 
-impl SseEncode for FinalSendOperationState {
-    // Codec=Sse (Serialization based), see doc to use other codecs
-    fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
-        <RustOpaqueMoi<
-            flutter_rust_bridge::for_generated::RustAutoOpaqueInner<FinalSendOperationState>,
-        >>::sse_encode(
-            flutter_rust_bridge::for_generated::rust_auto_opaque_encode::<_, MoiArc<_>>(self),
-            serializer,
-        );
-    }
-}
-
 impl SseEncode for InviteCode {
     // Codec=Sse (Serialization based), see doc to use other codecs
     fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
@@ -8197,19 +8178,6 @@ impl SseEncode
 impl SseEncode
     for RustOpaqueMoi<
         flutter_rust_bridge::for_generated::RustAutoOpaqueInner<FinalReceiveOperationState>,
-    >
-{
-    // Codec=Sse (Serialization based), see doc to use other codecs
-    fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
-        let (ptr, size) = self.sse_encode_raw();
-        <usize>::sse_encode(ptr, serializer);
-        <i32>::sse_encode(size, serializer);
-    }
-}
-
-impl SseEncode
-    for RustOpaqueMoi<
-        flutter_rust_bridge::for_generated::RustAutoOpaqueInner<FinalSendOperationState>,
     >
 {
     // Codec=Sse (Serialization based), see doc to use other codecs
@@ -8422,6 +8390,24 @@ impl SseEncode for crate::multimint::LightningEventKind {
             crate::multimint::LightningEventKind::InvoicePaid(field0) => {
                 <i32>::sse_encode(0, serializer);
                 <crate::multimint::InvoicePaidEvent>::sse_encode(field0, serializer);
+            }
+            _ => {
+                unimplemented!("");
+            }
+        }
+    }
+}
+
+impl SseEncode for crate::multimint::LightningSendOutcome {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
+        match self {
+            crate::multimint::LightningSendOutcome::Success(field0) => {
+                <i32>::sse_encode(0, serializer);
+                <String>::sse_encode(field0, serializer);
+            }
+            crate::multimint::LightningSendOutcome::Failure => {
+                <i32>::sse_encode(1, serializer);
             }
             _ => {
                 unimplemented!("");
@@ -8683,14 +8669,6 @@ impl SseEncode for (FinalReceiveOperationState, u64) {
     fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
         <FinalReceiveOperationState>::sse_encode(self.0, serializer);
         <u64>::sse_encode(self.1, serializer);
-    }
-}
-
-impl SseEncode for (FinalSendOperationState, String) {
-    // Codec=Sse (Serialization based), see doc to use other codecs
-    fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
-        <FinalSendOperationState>::sse_encode(self.0, serializer);
-        <String>::sse_encode(self.1, serializer);
     }
 }
 
@@ -8962,20 +8940,6 @@ mod io {
         ptr: *const std::ffi::c_void,
     ) {
         MoiArc::<flutter_rust_bridge::for_generated::RustAutoOpaqueInner<FinalReceiveOperationState>>::decrement_strong_count(ptr as _);
-    }
-
-    #[unsafe(no_mangle)]
-    pub extern "C" fn frbgen_carbine_rust_arc_increment_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerFinalSendOperationState(
-        ptr: *const std::ffi::c_void,
-    ) {
-        MoiArc::<flutter_rust_bridge::for_generated::RustAutoOpaqueInner<FinalSendOperationState>>::increment_strong_count(ptr as _);
-    }
-
-    #[unsafe(no_mangle)]
-    pub extern "C" fn frbgen_carbine_rust_arc_decrement_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerFinalSendOperationState(
-        ptr: *const std::ffi::c_void,
-    ) {
-        MoiArc::<flutter_rust_bridge::for_generated::RustAutoOpaqueInner<FinalSendOperationState>>::decrement_strong_count(ptr as _);
     }
 
     #[unsafe(no_mangle)]
@@ -9271,20 +9235,6 @@ mod web {
         ptr: *const std::ffi::c_void,
     ) {
         MoiArc::<flutter_rust_bridge::for_generated::RustAutoOpaqueInner<FinalReceiveOperationState>>::decrement_strong_count(ptr as _);
-    }
-
-    #[wasm_bindgen]
-    pub fn rust_arc_increment_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerFinalSendOperationState(
-        ptr: *const std::ffi::c_void,
-    ) {
-        MoiArc::<flutter_rust_bridge::for_generated::RustAutoOpaqueInner<FinalSendOperationState>>::increment_strong_count(ptr as _);
-    }
-
-    #[wasm_bindgen]
-    pub fn rust_arc_decrement_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerFinalSendOperationState(
-        ptr: *const std::ffi::c_void,
-    ) {
-        MoiArc::<flutter_rust_bridge::for_generated::RustAutoOpaqueInner<FinalSendOperationState>>::decrement_strong_count(ptr as _);
     }
 
     #[wasm_bindgen]

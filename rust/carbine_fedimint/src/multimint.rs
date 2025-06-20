@@ -27,13 +27,12 @@ use fedimint_core::{
 };
 use fedimint_derive_secret::{ChildId, DerivableSecret};
 use fedimint_ln_client::{
-    InternalPayState, LightningClientInit, LightningClientModule, LightningOperationMetaVariant,
-    LnPayState, LnReceiveState,
+    InternalPayState, LightningClientInit, LightningClientModule, LightningOperationMetaPay,
+    LightningOperationMetaVariant, LnPayState, LnReceiveState,
 };
 use fedimint_ln_common::LightningGateway;
 use fedimint_lnv2_client::{
-    FinalReceiveOperationState, FinalSendOperationState, LightningOperationMeta,
-    ReceiveOperationState, SendOperationState,
+    FinalReceiveOperationState, LightningOperationMeta, ReceiveOperationState, SendOperationState,
 };
 use fedimint_lnv2_common::{gateway_api::PaymentFee, Bolt11InvoiceDescription};
 use fedimint_meta_client::{common::DEFAULT_META_KEY, MetaClientInit};
@@ -55,8 +54,8 @@ use tokio::sync::mpsc::{unbounded_channel, UnboundedReceiver, UnboundedSender};
 use tokio::sync::RwLock;
 
 use crate::{
-    anyhow, db::FederationMetaKey, info_to_flutter, FederationConfig, FederationConfigKey,
-    FederationConfigKeyPrefix, SeedPhraseAckKey,
+    anyhow, db::FederationMetaKey, error_to_flutter, info_to_flutter, FederationConfig,
+    FederationConfigKey, FederationConfigKeyPrefix, SeedPhraseAckKey,
 };
 use crate::{event_bus::EventBus, get_event_bus};
 
@@ -112,7 +111,7 @@ pub struct Guardian {
     pub version: Option<String>,
 }
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, Clone)]
 pub struct Transaction {
     pub received: bool,
     pub amount: u64,
@@ -219,6 +218,12 @@ pub enum MultimintEvent {
     Deposit((FederationId, DepositEventKind)),
     Lightning((FederationId, LightningEventKind)),
     Log(LogLevel, String),
+}
+
+#[derive(Clone, Eq, PartialEq, Serialize, Debug)]
+pub enum LightningSendOutcome {
+    Success(String),
+    Failure,
 }
 
 impl Multimint {
@@ -643,8 +648,15 @@ impl Multimint {
                         let invite = config.invite_code;
                         let federation_id = invite.federation_id();
                         match self_copy.cache_federation_meta(invite).await {
-                            Ok(_) => println!("Updated meta for {federation_id}"),
-                            Err(e) => println!("Could not retrive federation meta: {e:?}"),
+                            Ok(_) => {
+                                info_to_flutter(format!("Updated meta for {federation_id}")).await
+                            }
+                            Err(e) => {
+                                error_to_flutter(format!(
+                                    "Could not retrive federation meta: {e:?}"
+                                ))
+                                .await
+                            }
                         }
                     }
                 }
@@ -1252,14 +1264,8 @@ impl Multimint {
     fn spawn_await_send(&self, federation_id: FederationId, operation_id: OperationId) {
         let self_copy = self.clone();
         self.task_group.spawn_cancellable("await send", async move {
-            match self_copy.await_send(&federation_id, operation_id).await {
-                Ok(final_state) => {
-                    info_to_flutter(format!("Send completed: {final_state:?}")).await
-                }
-                Err(e) => {
-                    info_to_flutter(format!("Could not await send {operation_id:?} {e:?}")).await
-                }
-            }
+            let final_state = self_copy.await_send(&federation_id, operation_id).await;
+            info_to_flutter(format!("Send completed: {final_state:?}")).await;
         });
     }
 
@@ -1267,7 +1273,7 @@ impl Multimint {
         &self,
         federation_id: &FederationId,
         operation_id: OperationId,
-    ) -> anyhow::Result<(FinalSendOperationState, String)> {
+    ) -> LightningSendOutcome {
         let client = self
             .clients
             .read()
@@ -1278,69 +1284,89 @@ impl Multimint {
 
         let send_state = match Self::await_send_lnv2(&client, operation_id).await {
             Ok(lnv2_final_state) => lnv2_final_state,
-            Err(_) => Self::await_send_lnv1(&client, operation_id).await?,
+            Err(_) => Self::await_send_lnv1(&client, operation_id).await,
         };
-        Ok(send_state)
+        send_state
     }
 
     async fn await_send_lnv2(
         client: &ClientHandleArc,
         operation_id: OperationId,
-    ) -> anyhow::Result<(FinalSendOperationState, String)> {
+    ) -> anyhow::Result<LightningSendOutcome> {
         let lnv2 = client.get_first_module::<fedimint_lnv2_client::LightningClientModule>()?;
         let mut updates = lnv2
             .subscribe_send_operation_state_updates(operation_id)
             .await?
             .into_stream();
-        let mut final_state = FinalSendOperationState::Failure;
-        let mut preimage_str = "".to_string();
+        let mut final_state = LightningSendOutcome::Failure;
         while let Some(update) = updates.next().await {
             match update {
                 SendOperationState::Success(preimage) => {
-                    final_state = FinalSendOperationState::Success;
-                    preimage_str = preimage.consensus_encode_to_hex();
+                    final_state = LightningSendOutcome::Success(preimage.consensus_encode_to_hex());
                 }
                 SendOperationState::Refunded => {
-                    final_state = FinalSendOperationState::Refunded;
+                    error_to_flutter("LNv2 payment was refunded").await;
+                    final_state = LightningSendOutcome::Failure;
                 }
                 SendOperationState::Failure => {
-                    final_state = FinalSendOperationState::Failure;
+                    error_to_flutter("LNv2 payment unrecoverable failure").await;
+                    final_state = LightningSendOutcome::Failure;
                 }
                 _ => {}
             }
         }
-        Ok((final_state, preimage_str))
+        Ok(final_state)
     }
 
     async fn await_send_lnv1(
         client: &ClientHandleArc,
         operation_id: OperationId,
-    ) -> anyhow::Result<(FinalSendOperationState, String)> {
-        let lnv1 = client.get_first_module::<LightningClientModule>()?;
+    ) -> LightningSendOutcome {
+        let lnv1 = client
+            .get_first_module::<LightningClientModule>()
+            .expect("LNv1 module not available");
         // First check if its an internal payment
         let mut final_state = None;
-        let mut preimage_str = "".to_string();
         if let Ok(updates) = lnv1.subscribe_internal_pay(operation_id).await {
             let mut stream = updates.into_stream();
             while let Some(update) = stream.next().await {
                 match update {
                     InternalPayState::Preimage(preimage) => {
-                        final_state = Some(FinalSendOperationState::Success);
-                        preimage_str = preimage.0.consensus_encode_to_hex();
+                        final_state = Some(LightningSendOutcome::Success(
+                            preimage.0.consensus_encode_to_hex(),
+                        ));
                     }
                     InternalPayState::RefundSuccess {
                         out_points: _,
-                        error: _,
+                        error,
                     } => {
-                        final_state = Some(FinalSendOperationState::Refunded);
+                        final_state = Some(LightningSendOutcome::Failure);
+                        error_to_flutter(format!("LNv1 internal payment was refunded: {error:?}"))
+                            .await;
                     }
-                    InternalPayState::FundingFailed { error: _ }
-                    | InternalPayState::RefundError {
-                        error_message: _,
-                        error: _,
+                    InternalPayState::FundingFailed { error } => {
+                        final_state = Some(LightningSendOutcome::Failure);
+                        error_to_flutter(format!(
+                            "LNv1 internal payment funding failed: {error:?}"
+                        ))
+                        .await;
                     }
-                    | InternalPayState::UnexpectedError(_) => {
-                        final_state = Some(FinalSendOperationState::Failure);
+                    InternalPayState::RefundError {
+                        error_message,
+                        error,
+                    } => {
+                        final_state = Some(LightningSendOutcome::Failure);
+                        error_to_flutter(format!(
+                            "LNv1 internal payment refund error: {error:?} {error_message}"
+                        ))
+                        .await;
+                    }
+                    InternalPayState::UnexpectedError(error) => {
+                        final_state = Some(LightningSendOutcome::Failure);
+                        error_to_flutter(format!(
+                            "LNv1 internal payment unexpected error: {error:?}"
+                        ))
+                        .await;
                     }
                     _ => {}
                 }
@@ -1348,24 +1374,30 @@ impl Multimint {
         }
 
         if let Some(internal_final_state) = final_state {
-            return Ok((internal_final_state, preimage_str));
+            return internal_final_state;
         }
 
         // If internal fails, check if its an external payment
-        let mut preimage_str = "".to_string();
         if let Ok(updates) = lnv1.subscribe_ln_pay(operation_id).await {
             let mut stream = updates.into_stream();
             while let Some(update) = stream.next().await {
                 match update {
                     LnPayState::Success { preimage } => {
-                        final_state = Some(FinalSendOperationState::Success);
-                        preimage_str = preimage;
+                        final_state = Some(LightningSendOutcome::Success(preimage));
                     }
-                    LnPayState::Refunded { gateway_error: _ } => {
-                        final_state = Some(FinalSendOperationState::Refunded);
+                    LnPayState::Refunded { gateway_error } => {
+                        final_state = Some(LightningSendOutcome::Failure);
+                        error_to_flutter(format!(
+                            "LNv1 external payment was refunded: {gateway_error:?}"
+                        ))
+                        .await;
                     }
-                    LnPayState::UnexpectedError { error_message: _ } => {
-                        final_state = Some(FinalSendOperationState::Failure);
+                    LnPayState::UnexpectedError { error_message } => {
+                        final_state = Some(LightningSendOutcome::Failure);
+                        error_to_flutter(format!(
+                            "LNv1 external payment unexpected error: {error_message}"
+                        ))
+                        .await;
                     }
                     _ => {}
                 }
@@ -1373,10 +1405,10 @@ impl Multimint {
         }
 
         if let Some(external_final_state) = final_state {
-            return Ok((external_final_state, preimage_str));
+            return external_final_state;
         }
 
-        Ok((FinalSendOperationState::Failure, preimage_str))
+        LightningSendOutcome::Failure
     }
 
     pub async fn await_receive(
@@ -1593,7 +1625,6 @@ impl Multimint {
                     continue;
                 }
 
-                let outcome = op_log_val.outcome::<serde_json::Value>();
                 let timestamp = key
                     .creation_time
                     .duration_since(UNIX_EPOCH)
@@ -1602,72 +1633,68 @@ impl Multimint {
 
                 let tx = match op_log_val.operation_module_kind() {
                     "lnv2" => {
-                        if outcome.is_none() {
-                            None
-                        } else {
-                            let meta = op_log_val.meta::<LightningOperationMeta>();
-                            match meta {
-                                LightningOperationMeta::Receive(receive) => Some(Transaction {
-                                    received: true,
-                                    amount: serde_json::from_value::<Amount>(receive.custom_meta)
+                        let meta = op_log_val.meta::<LightningOperationMeta>();
+                        match meta {
+                            LightningOperationMeta::Receive(receive) => {
+                                let outcome = op_log_val.outcome::<ReceiveOperationState>();
+                                if let Some(ReceiveOperationState::Claimed) = outcome {
+                                    Some(Transaction {
+                                        received: true,
+                                        amount: serde_json::from_value::<Amount>(
+                                            receive.custom_meta,
+                                        )
                                         .expect("Could not deserialize amount")
                                         .msats,
-                                    module: "lnv2".to_string(),
-                                    timestamp,
-                                    operation_id: key.operation_id.0.to_vec(),
-                                }),
-                                LightningOperationMeta::Send(send) => Some(Transaction {
-                                    received: false,
-                                    amount: send.contract.amount.msats,
-                                    module: "lnv2".to_string(),
-                                    timestamp,
-                                    operation_id: key.operation_id.0.to_vec(),
-                                }),
+                                        module: "lnv2".to_string(),
+                                        timestamp,
+                                        operation_id: key.operation_id.0.to_vec(),
+                                    })
+                                } else {
+                                    None
+                                }
+                            }
+                            LightningOperationMeta::Send(send) => {
+                                let outcome = op_log_val.outcome::<SendOperationState>();
+                                if matches!(outcome, Some(SendOperationState::Success(..))) {
+                                    Some(Transaction {
+                                        received: false,
+                                        amount: send.contract.amount.msats,
+                                        module: "lnv2".to_string(),
+                                        timestamp,
+                                        operation_id: key.operation_id.0.to_vec(),
+                                    })
+                                } else {
+                                    None
+                                }
                             }
                         }
                     }
                     "ln" => {
-                        if outcome.is_none() {
-                            None
-                        } else {
-                            let meta =
-                                op_log_val.meta::<fedimint_ln_client::LightningOperationMeta>();
-                            match meta.variant {
-                                LightningOperationMetaVariant::Pay(send) => Some(Transaction {
-                                    received: false,
-                                    amount: send
-                                        .invoice
-                                        .amount_milli_satoshis()
-                                        .expect("Cannot pay amountless invoice"),
-                                    module: "ln".to_string(),
+                        let meta = op_log_val.meta::<fedimint_ln_client::LightningOperationMeta>();
+                        match meta.variant {
+                            LightningOperationMetaVariant::Pay(send) => Self::get_lnv1_send_tx(
+                                send,
+                                op_log_val,
+                                timestamp,
+                                key.operation_id,
+                            ),
+                            LightningOperationMetaVariant::Receive { invoice, .. } => {
+                                Self::get_lnv1_receive_tx(
+                                    &invoice,
+                                    op_log_val,
                                     timestamp,
-                                    operation_id: key.operation_id.0.to_vec(),
-                                }),
-                                LightningOperationMetaVariant::Receive { invoice, .. } => {
-                                    Some(Transaction {
-                                        received: true,
-                                        amount: invoice
-                                            .amount_milli_satoshis()
-                                            .expect("Cannot receive amountless invoice"),
-                                        module: "ln".to_string(),
-                                        timestamp,
-                                        operation_id: key.operation_id.0.to_vec(),
-                                    })
-                                }
-                                LightningOperationMetaVariant::RecurringPaymentReceive(
-                                    recurring,
-                                ) => Some(Transaction {
-                                    received: true,
-                                    amount: recurring
-                                        .invoice
-                                        .amount_milli_satoshis()
-                                        .expect("Cannot receive amountless invoice"),
-                                    module: "ln".to_string(),
-                                    timestamp,
-                                    operation_id: key.operation_id.0.to_vec(),
-                                }),
-                                _ => None,
+                                    key.operation_id,
+                                )
                             }
+                            LightningOperationMetaVariant::RecurringPaymentReceive(recurring) => {
+                                Self::get_lnv1_receive_tx(
+                                    &recurring.invoice,
+                                    op_log_val,
+                                    timestamp,
+                                    key.operation_id,
+                                )
+                            }
+                            _ => None,
                         }
                     }
                     "mint" => {
@@ -1683,9 +1710,8 @@ impl Multimint {
                                 })
                             }
                             MintOperationMetaVariant::Reissuance { .. } => {
-                                if outcome.is_none() {
-                                    None
-                                } else {
+                                let outcome = op_log_val.outcome::<ReissueExternalNotesState>();
+                                if let Some(ReissueExternalNotesState::Done) = outcome {
                                     let amount: Amount = serde_json::from_value(meta.extra_meta)
                                         .expect("Could not get total amount");
                                     Some(Transaction {
@@ -1695,6 +1721,8 @@ impl Multimint {
                                         timestamp,
                                         operation_id: key.operation_id.0.to_vec(),
                                     })
+                                } else {
+                                    None
                                 }
                             }
                         }
@@ -1735,6 +1763,66 @@ impl Multimint {
         }
 
         collected
+    }
+
+    /// LNv1 has two different operation send types: external (over the Lightning network) and internal (ecash swap)
+    /// In order to check if the "send" was successful or not, we need to check both outcomes.
+    fn get_lnv1_send_tx(
+        meta: LightningOperationMetaPay,
+        ln_outcome: &OperationLogEntry,
+        timestamp: u64,
+        operation_id: OperationId,
+    ) -> Option<Transaction> {
+        let transaction = Transaction {
+            received: false,
+            amount: meta
+                .invoice
+                .amount_milli_satoshis()
+                .expect("Cannot pay amountless invoice"),
+            module: "ln".to_string(),
+            timestamp,
+            operation_id: operation_id.0.to_vec(),
+        };
+
+        // First check if the send was over the Lightning network
+        let external_outcome = ln_outcome.outcome::<LnPayState>();
+        match external_outcome {
+            Some(state) if matches!(state, LnPayState::Success { .. }) => Some(transaction),
+            Some(_) => None,
+            None => {
+                // If unsuccessful, check if the payment was an internal payment
+                let internal_outcome = ln_outcome.outcome::<InternalPayState>();
+                match internal_outcome {
+                    Some(state) if matches!(state, InternalPayState::Preimage(_)) => {
+                        Some(transaction)
+                    }
+                    _ => None,
+                }
+            }
+        }
+    }
+
+    /// Checks the outcome of an LNv1 receive operation and constructs the appropriate `Transaction`
+    /// for the transaction log.
+    fn get_lnv1_receive_tx(
+        invoice: &Bolt11Invoice,
+        ln_outcome: &OperationLogEntry,
+        timestamp: u64,
+        operation_id: OperationId,
+    ) -> Option<Transaction> {
+        let receive_outcome = ln_outcome.outcome::<LnReceiveState>();
+        match receive_outcome {
+            Some(state) if state == LnReceiveState::Claimed => Some(Transaction {
+                received: true,
+                amount: invoice
+                    .amount_milli_satoshis()
+                    .expect("Cannot receive amountless invoice"),
+                module: "ln".to_string(),
+                timestamp,
+                operation_id: operation_id.0.to_vec(),
+            }),
+            _ => None,
+        }
     }
 
     pub async fn send_ecash(

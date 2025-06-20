@@ -9,7 +9,7 @@ import 'multimint.dart';
 import 'nostr.dart';
 import 'package:flutter_rust_bridge/flutter_rust_bridge_for_generated.dart';
 
-// These functions are ignored because they are not marked as `pub`: `create_event_bus`, `create_nostr_client`, `get_database`, `get_multimint`, `get_nostr_client`, `info_to_flutter`
+// These functions are ignored because they are not marked as `pub`: `create_event_bus`, `create_nostr_client`, `error_to_flutter`, `get_database`, `get_multimint`, `get_nostr_client`, `info_to_flutter`
 
 Future<EventBusMultimintEvent> getEventBus() =>
     RustLib.instance.api.crateGetEventBus();
@@ -94,7 +94,7 @@ Future<OperationId> send({
   isLnv2: isLnv2,
 );
 
-Future<(FinalSendOperationState, String)> awaitSend({
+Future<LightningSendOutcome> awaitSend({
   required FederationId federationId,
   required OperationId operationId,
 }) => RustLib.instance.api.crateAwaitSend(
