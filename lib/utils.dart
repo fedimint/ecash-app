@@ -113,3 +113,9 @@ String getAbbreviatedInvoice(String invoice) {
   if (invoice.length <= 14) return invoice;
   return '${invoice.substring(0, 7)}...${invoice.substring(invoice.length - 7)}';
 }
+
+String calculateUsdValue(double? btcPrice, int sats) {
+  if (btcPrice == null) return '';
+  final usdValue = (btcPrice * sats) / 100000000;
+  return '\$${usdValue.toStringAsFixed(2)}';
+}

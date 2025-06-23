@@ -227,6 +227,8 @@ Stream<MultimintEvent> subscribeMultimintEvents() =>
 Future<String> federationIdToString({required FederationId federationId}) =>
     RustLib.instance.api.crateFederationIdToString(federationId: federationId);
 
+Future<BigInt?> getBtcPrice() => RustLib.instance.api.crateGetBtcPrice();
+
 // Rust type: RustOpaqueMoi<flutter_rust_bridge::for_generated::RustAutoOpaqueInner<ClientConfig>>
 abstract class ClientConfig implements RustOpaqueInterface {}
 

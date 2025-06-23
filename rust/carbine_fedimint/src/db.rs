@@ -1,3 +1,5 @@
+use std::time::SystemTime;
+
 use fedimint_api_client::api::net::Connector;
 use fedimint_core::{
     config::{ClientConfig, FederationId},
@@ -17,6 +19,7 @@ pub(crate) enum DbKeyPrefix {
     SeedPhraseAck = 0x02,
     NWC = 0x03,
     FederationMeta = 0x04,
+    BtcPrice = 0x05,
 }
 
 #[derive(Debug, Clone, Encodable, Decodable, Eq, PartialEq, Hash, Ord, PartialOrd)]
@@ -90,4 +93,19 @@ impl_db_record!(
     key = FederationMetaKey,
     value = FederationMeta,
     db_prefix = DbKeyPrefix::FederationMeta,
+);
+
+#[derive(Debug, Encodable, Decodable)]
+pub(crate) struct BtcPriceKey;
+
+#[derive(Debug, Encodable, Decodable)]
+pub(crate) struct BtcPrice {
+    pub(crate) price: u64,
+    pub(crate) last_updated: SystemTime,
+}
+
+impl_db_record!(
+    key = BtcPriceKey,
+    value = BtcPrice,
+    db_prefix = DbKeyPrefix::BtcPrice,
 );

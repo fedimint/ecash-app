@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:carbine/utils.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_speed_dial/flutter_speed_dial.dart';
 
@@ -35,6 +36,7 @@ class _DashboardState extends State<Dashboard> {
   late bool recovering;
   PaymentType _selectedPaymentType = PaymentType.lightning;
   VoidCallback? _pendingAction;
+  double? _btcPrice;
 
   late Stream<MultimintEvent> events;
   late StreamSubscription<MultimintEvent> _subscription;
@@ -44,6 +46,7 @@ class _DashboardState extends State<Dashboard> {
     super.initState();
     recovering = widget.recovering;
     _loadBalance();
+    _loadBtcPrice();
     if (recovering) _loadFederation();
 
     events = subscribeMultimintEvents().asBroadcastStream();
@@ -88,6 +91,19 @@ class _DashboardState extends State<Dashboard> {
     });
   }
 
+  Future<void> _loadBtcPrice() async {
+    try {
+      final price = await getBtcPrice();
+      if (price != null) {
+        setState(() {
+          _btcPrice = price.toDouble();
+        });
+      }
+    } catch (e) {
+      AppLogger.instance.error("Error fetching price: $e");
+    }
+  }
+
   void _onSendPressed() async {
     if (_selectedPaymentType == PaymentType.lightning) {
       await showCarbineModalBottomSheet(
@@ -100,7 +116,7 @@ class _DashboardState extends State<Dashboard> {
         MaterialPageRoute(
           builder:
               (_) =>
-                  NumberPad(fed: widget.fed, paymentType: _selectedPaymentType),
+                  NumberPad(fed: widget.fed, paymentType: _selectedPaymentType, btcPrice: _btcPrice),
         ),
       );
     }
@@ -114,7 +130,7 @@ class _DashboardState extends State<Dashboard> {
         MaterialPageRoute(
           builder:
               (_) =>
-                  NumberPad(fed: widget.fed, paymentType: _selectedPaymentType),
+                  NumberPad(fed: widget.fed, paymentType: _selectedPaymentType, btcPrice: _btcPrice),
         ),
       );
     } else if (_selectedPaymentType == PaymentType.onchain) {
@@ -204,6 +220,7 @@ class _DashboardState extends State<Dashboard> {
               recovering: recovering,
               showMsats: showMsats,
               onToggle: () => setState(() => showMsats = !showMsats),
+              btcPrice: _btcPrice,
             ),
             const SizedBox(height: 48),
             const RecentTransactionsHeader(),
