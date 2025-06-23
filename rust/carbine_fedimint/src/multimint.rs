@@ -54,13 +54,15 @@ use tokio::sync::mpsc::{unbounded_channel, UnboundedReceiver, UnboundedSender};
 use tokio::sync::RwLock;
 
 use crate::{
-    anyhow, db::FederationMetaKey, error_to_flutter, info_to_flutter, FederationConfig,
-    FederationConfigKey, FederationConfigKeyPrefix, SeedPhraseAckKey,
+    anyhow,
+    db::{BtcPrice, BtcPriceKey, FederationMetaKey},
+    error_to_flutter, info_to_flutter, FederationConfig, FederationConfigKey,
+    FederationConfigKeyPrefix, SeedPhraseAckKey,
 };
 use crate::{event_bus::EventBus, get_event_bus};
 
 const DEFAULT_EXPIRY_TIME_SECS: u32 = 86400;
-const CACHE_UPDATE_INTERVAL_SECS: u64 = 60;
+const CACHE_UPDATE_INTERVAL_SECS: u64 = 60 * 10;
 
 #[derive(Clone, Eq, PartialEq, Serialize, Debug)]
 pub struct PaymentPreview {
@@ -103,6 +105,7 @@ pub struct FederationMeta {
     pub welcome: Option<String>,
     pub guardians: Vec<Guardian>,
     pub selector: FederationSelector,
+    pub last_updated: u64,
 }
 
 #[derive(Debug, Serialize, Clone, Eq, PartialEq, Encodable, Decodable)]
@@ -633,11 +636,17 @@ impl Multimint {
         let self_copy = self.clone();
         self.task_group
             .spawn_cancellable("cache update", async move {
-                let mut interval =
-                    tokio::time::interval(Duration::from_secs(CACHE_UPDATE_INTERVAL_SECS));
+                // Every 5 seconds this thread will wake up to check if the cached federation meta or the cached bitcoin price
+                // needs updating
+                let mut interval = tokio::time::interval(Duration::from_secs(5));
+                interval.tick().await;
                 loop {
-                    interval.tick().await;
+                    let now = std::time::SystemTime::now();
+                    let threshold = now
+                        .checked_sub(Duration::from_secs(CACHE_UPDATE_INTERVAL_SECS))
+                        .expect("Cannot be negative");
 
+                    // First check if the federation meta needs updating
                     let mut dbtx = self_copy.db.begin_transaction_nc().await;
                     let configs = dbtx
                         .find_by_prefix(&FederationConfigKeyPrefix)
@@ -647,20 +656,73 @@ impl Multimint {
                     for (_, config) in configs {
                         let invite = config.invite_code;
                         let federation_id = invite.federation_id();
-                        match self_copy.cache_federation_meta(invite).await {
-                            Ok(_) => {
-                                info_to_flutter(format!("Updated meta for {federation_id}")).await
-                            }
-                            Err(e) => {
-                                error_to_flutter(format!(
-                                    "Could not retrive federation meta: {e:?}"
-                                ))
-                                .await
+
+                        let cached_meta =
+                            dbtx.get_value(&FederationMetaKey { federation_id }).await;
+                        if let Some(cached_meta) = cached_meta {
+                            let last_updated =
+                                UNIX_EPOCH + Duration::from_millis(cached_meta.last_updated);
+                            // Skip over caching this federation's meta if we cached it recently
+                            if last_updated >= threshold {
+                                continue;
                             }
                         }
+
+                        if let Err(e) = self_copy.cache_federation_meta(invite, now).await {
+                            error_to_flutter(format!("Could not cache federation meta {e:?}"))
+                                .await;
+                        }
                     }
+
+                    // Next check if the bitcoin price needs updating. Only update the price if it has not been cached yet, or if
+                    // it is out of date
+                    let cached_price = dbtx.get_value(&BtcPriceKey).await;
+                    if let Some(cached_price) = cached_price {
+                        if cached_price.last_updated < threshold {
+                            self_copy.cache_btc_price(now).await;
+                        }
+                    } else {
+                        self_copy.cache_btc_price(now).await;
+                    }
+
+                    interval.tick().await;
                 }
             });
+    }
+
+    async fn cache_btc_price(&self, now: std::time::SystemTime) {
+        let url = "https://mempool.space/api/v1/prices";
+        let Ok(response) = reqwest::get(url).await else {
+            error_to_flutter("BTC Price GET returned error").await;
+            return;
+        };
+
+        if response.status().is_success() {
+            let json: Result<serde_json::Value, reqwest::Error> = response.json().await;
+            if let Ok(json) = json {
+                if let Some(price) = json.get("USD").and_then(|v| v.as_u64()) {
+                    let mut dbtx = self.db.begin_transaction().await;
+                    dbtx.insert_entry(
+                        &BtcPriceKey,
+                        &BtcPrice {
+                            price,
+                            last_updated: now,
+                        },
+                    )
+                    .await;
+                    dbtx.commit_tx().await;
+                    info_to_flutter(format!("Updated BTC Price: {}", price)).await;
+                } else {
+                    error_to_flutter("USD price not found in response").await;
+                }
+            }
+        } else {
+            error_to_flutter(format!(
+                "Failed to load price data, status: {}",
+                response.status()
+            ))
+            .await;
+        }
     }
 
     pub async fn get_cached_federation_meta(
@@ -675,12 +737,14 @@ impl Multimint {
         }
 
         // Federation either has not been cached yet, or is a new federation
-        self.cache_federation_meta(invite_code).await
+        self.cache_federation_meta(invite_code, std::time::SystemTime::now())
+            .await
     }
 
     async fn cache_federation_meta(
         &self,
         invite_code: InviteCode,
+        now: std::time::SystemTime,
     ) -> anyhow::Result<FederationMeta> {
         let (client, federation_id) = self.get_or_build_temp_client(invite_code.clone()).await?;
 
@@ -739,6 +803,10 @@ impl Multimint {
                         welcome,
                         guardians,
                         selector,
+                        last_updated: now
+                            .duration_since(UNIX_EPOCH)
+                            .expect("Cannot be before epoch")
+                            .as_millis() as u64,
                     }
                 }
                 None => FederationMeta {
@@ -746,6 +814,10 @@ impl Multimint {
                     welcome: None,
                     guardians,
                     selector,
+                    last_updated: now
+                        .duration_since(UNIX_EPOCH)
+                        .expect("Cannot be before epoch")
+                        .as_millis() as u64,
                 },
             }
         } else {
@@ -754,6 +826,10 @@ impl Multimint {
                 welcome: None,
                 guardians,
                 selector,
+                last_updated: now
+                    .duration_since(UNIX_EPOCH)
+                    .expect("Cannot be before epoch")
+                    .as_millis() as u64,
             }
         };
 
@@ -761,6 +837,7 @@ impl Multimint {
         dbtx.insert_entry(&FederationMetaKey { federation_id }, &federation_meta)
             .await;
         dbtx.commit_tx().await;
+        info_to_flutter(format!("Updated meta for {federation_id}")).await;
 
         Ok(federation_meta)
     }
@@ -2099,6 +2176,11 @@ impl Multimint {
             .collect();
         utxos.sort_by_key(|u| std::cmp::Reverse(u.amount));
         Ok(utxos)
+    }
+
+    pub async fn get_btc_price(&self) -> Option<u64> {
+        let mut dbtx = self.db.begin_transaction_nc().await;
+        dbtx.get_value(&BtcPriceKey).await.map(|p| p.price)
     }
 }
 

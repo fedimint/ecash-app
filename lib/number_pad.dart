@@ -1,5 +1,3 @@
-import 'dart:convert';
-
 import 'package:carbine/app.dart';
 import 'package:carbine/ecash_send.dart';
 import 'package:carbine/lib.dart';
@@ -9,7 +7,6 @@ import 'package:carbine/theme.dart';
 import 'package:carbine/utils.dart';
 import 'package:carbine/models.dart';
 import 'package:flutter/material.dart';
-import 'package:http/http.dart' as http;
 import 'package:intl/intl.dart';
 import 'package:numpad_layout/widgets/numpad.dart';
 import 'package:flutter/services.dart';
@@ -17,7 +14,13 @@ import 'package:flutter/services.dart';
 class NumberPad extends StatefulWidget {
   final FederationSelector fed;
   final PaymentType paymentType;
-  const NumberPad({super.key, required this.fed, required this.paymentType});
+  final double? btcPrice;
+  const NumberPad({
+    super.key,
+    required this.fed,
+    required this.paymentType,
+    required this.btcPrice,
+  });
 
   @override
   State<NumberPad> createState() => _NumberPadState();
@@ -28,12 +31,10 @@ class _NumberPadState extends State<NumberPad> {
 
   String _rawAmount = '';
   bool _creating = false;
-  double? _btcPriceUsd;
 
   @override
   void initState() {
     super.initState();
-    _fetchPrice();
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _numpadFocus.requestFocus();
@@ -46,36 +47,11 @@ class _NumberPadState extends State<NumberPad> {
     super.dispose();
   }
 
-  Future<void> _fetchPrice() async {
-    try {
-      final uri = Uri.parse('https://mempool.space/api/v1/prices');
-      final response = await http.get(uri);
-
-      if (response.statusCode == 200) {
-        final data = json.decode(response.body);
-        setState(() {
-          _btcPriceUsd = (data['USD'] as num).toDouble();
-        });
-      } else {
-        debugPrint('Failed to load price data');
-      }
-    } catch (e) {
-      debugPrint('Error fetching price: $e');
-    }
-  }
-
   String _formatAmount(String value) {
     if (value.isEmpty) return '₿0';
     final number = int.tryParse(value) ?? 0;
     final formatter = NumberFormat('₿#,###', 'en_US');
     return formatter.format(number).replaceAll(',', ' ');
-  }
-
-  String _calculateUsdValue() {
-    if (_btcPriceUsd == null) return '';
-    final sats = int.tryParse(_rawAmount) ?? 0;
-    final usdValue = (_btcPriceUsd! * sats) / 100000000;
-    return '\$${usdValue.toStringAsFixed(2)}';
   }
 
   Future<void> _onConfirm() async {
@@ -191,7 +167,10 @@ class _NumberPadState extends State<NumberPad> {
 
   @override
   Widget build(BuildContext context) {
-    final usdText = _calculateUsdValue();
+    final usdText = calculateUsdValue(
+      widget.btcPrice,
+      int.tryParse(_rawAmount) ?? 0,
+    );
 
     return SafeArea(
       child: Scaffold(

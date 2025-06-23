@@ -517,3 +517,9 @@ pub async fn subscribe_multimint_events(sink: StreamSink<MultimintEvent>) {
 pub async fn federation_id_to_string(federation_id: FederationId) -> String {
     federation_id.to_string()
 }
+
+#[frb]
+pub async fn get_btc_price() -> Option<u64> {
+    let multimint = get_multimint();
+    multimint.get_btc_price().await
+}
