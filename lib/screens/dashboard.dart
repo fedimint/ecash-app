@@ -35,6 +35,7 @@ class _DashboardState extends State<Dashboard> {
   late bool recovering;
   PaymentType _selectedPaymentType = PaymentType.lightning;
   VoidCallback? _pendingAction;
+  VoidCallback? _refreshTransactionsList;
   double? _btcPrice;
 
   late Stream<MultimintEvent> events;
@@ -105,13 +106,18 @@ class _DashboardState extends State<Dashboard> {
     }
   }
 
+  void _refreshTransactions() {
+    _refreshTransactionsList?.call();
+  }
+
   void _onSendPressed() async {
     if (_selectedPaymentType == PaymentType.lightning) {
       await showCarbineModalBottomSheet(
         context: context,
         child: PaymentMethodSelector(fed: widget.fed),
       );
-    } else if (_selectedPaymentType == PaymentType.ecash) {
+    } else if (_selectedPaymentType == PaymentType.ecash ||
+        _selectedPaymentType == PaymentType.onchain) {
       await Navigator.push(
         context,
         MaterialPageRoute(
@@ -120,6 +126,10 @@ class _DashboardState extends State<Dashboard> {
                 fed: widget.fed,
                 paymentType: _selectedPaymentType,
                 btcPrice: _btcPrice,
+                onWithdrawCompleted:
+                    _selectedPaymentType == PaymentType.onchain
+                        ? _refreshTransactions
+                        : null,
               ),
         ),
       );
@@ -137,6 +147,7 @@ class _DashboardState extends State<Dashboard> {
                 fed: widget.fed,
                 paymentType: _selectedPaymentType,
                 btcPrice: _btcPrice,
+                onWithdrawCompleted: null,
               ),
         ),
       );
@@ -219,6 +230,10 @@ class _DashboardState extends State<Dashboard> {
                 selectedPaymentType: _selectedPaymentType,
                 recovering: recovering,
                 onClaimed: _loadBalance,
+                onWithdrawCompleted: _refreshTransactions,
+                onRefreshRequested: (refreshCallback) {
+                  _refreshTransactionsList = refreshCallback;
+                },
               ),
             ),
           ],

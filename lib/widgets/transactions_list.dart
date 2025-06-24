@@ -11,6 +11,8 @@ class TransactionsList extends StatefulWidget {
   final PaymentType selectedPaymentType;
   final bool recovering;
   final VoidCallback onClaimed;
+  final VoidCallback? onWithdrawCompleted;
+  final void Function(VoidCallback)? onRefreshRequested;
 
   const TransactionsList({
     super.key,
@@ -18,6 +20,8 @@ class TransactionsList extends StatefulWidget {
     required this.selectedPaymentType,
     required this.recovering,
     required this.onClaimed,
+    this.onWithdrawCompleted,
+    this.onRefreshRequested,
   });
 
   @override
@@ -40,6 +44,9 @@ class _TransactionsListState extends State<TransactionsList> {
     super.initState();
     _scrollController.addListener(_onScroll);
     _setupStreamsAndLoad();
+
+    // Register the refresh callback with the parent
+    widget.onRefreshRequested?.call(_loadTransactions);
   }
 
   void _setupStreamsAndLoad() {
@@ -171,13 +178,9 @@ class _TransactionsListState extends State<TransactionsList> {
       if (aM && !bM) return -1;
       if (!aM && bM) return 1;
       final na =
-          a is DepositEventKind_AwaitingConfs
-              ? a.field0.needed
-              : BigInt.zero;
+          a is DepositEventKind_AwaitingConfs ? a.field0.needed : BigInt.zero;
       final nb =
-          b is DepositEventKind_AwaitingConfs
-              ? b.field0.needed
-              : BigInt.zero;
+          b is DepositEventKind_AwaitingConfs ? b.field0.needed : BigInt.zero;
       return nb.compareTo(na);
     });
 
