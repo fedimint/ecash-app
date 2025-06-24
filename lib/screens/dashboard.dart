@@ -10,7 +10,6 @@ import 'package:carbine/number_pad.dart';
 import 'package:carbine/payment_selector.dart';
 import 'package:carbine/onchain_receive.dart';
 import 'package:carbine/scan.dart';
-import 'package:carbine/refund.dart';
 import 'package:carbine/theme.dart';
 import 'package:carbine/models.dart';
 
@@ -57,7 +56,9 @@ class _DashboardState extends State<Dashboard> {
           final federationIdString = await federationIdToString(
             federationId: event.field0.$1,
           );
-          final selectorIdString = await federationIdToString(federationId: widget.fed.federationId);
+          final selectorIdString = await federationIdToString(
+            federationId: widget.fed.federationId,
+          );
           if (federationIdString == selectorIdString) {
             _loadBalance();
           }
@@ -115,8 +116,11 @@ class _DashboardState extends State<Dashboard> {
         context,
         MaterialPageRoute(
           builder:
-              (_) =>
-                  NumberPad(fed: widget.fed, paymentType: _selectedPaymentType, btcPrice: _btcPrice),
+              (_) => NumberPad(
+                fed: widget.fed,
+                paymentType: _selectedPaymentType,
+                btcPrice: _btcPrice,
+              ),
         ),
       );
     }
@@ -129,8 +133,11 @@ class _DashboardState extends State<Dashboard> {
         context,
         MaterialPageRoute(
           builder:
-              (_) =>
-                  NumberPad(fed: widget.fed, paymentType: _selectedPaymentType, btcPrice: _btcPrice),
+              (_) => NumberPad(
+                fed: widget.fed,
+                paymentType: _selectedPaymentType,
+                btcPrice: _btcPrice,
+              ),
         ),
       );
     } else if (_selectedPaymentType == PaymentType.onchain) {
@@ -144,20 +151,6 @@ class _DashboardState extends State<Dashboard> {
         MaterialPageRoute(builder: (_) => ScanQRPage(selectedFed: widget.fed)),
       );
     }
-    _loadBalance();
-  }
-
-  void _onRefundPressed() async {
-    await Navigator.push<bool>(
-      context,
-      MaterialPageRoute(
-        builder:
-            (_) => RefundConfirmationPage(
-              fed: widget.fed,
-              balanceMsats: balanceMsats!,
-            ),
-      ),
-    );
     _loadBalance();
   }
 
@@ -190,21 +183,14 @@ class _DashboardState extends State<Dashboard> {
                     backgroundColor: Colors.green,
                     onTap: () => _scheduleAction(_onReceivePressed),
                   ),
-                  if (balanceMsats != null && balanceMsats! > BigInt.zero)
-                    if (_selectedPaymentType == PaymentType.onchain)
-                      SpeedDialChild(
-                        child: const Icon(Icons.reply),
-                        label: 'Refund',
-                        backgroundColor: Colors.orange,
-                        onTap: () => _scheduleAction(_onRefundPressed),
-                      )
-                    else
-                      SpeedDialChild(
-                        child: const Icon(Icons.upload),
-                        label: 'Send',
-                        backgroundColor: Colors.blue,
-                        onTap: () => _scheduleAction(_onSendPressed),
-                      ),
+                  if (balanceMsats != null && balanceMsats! > BigInt.zero) ...[
+                    SpeedDialChild(
+                      child: const Icon(Icons.upload),
+                      label: 'Send',
+                      backgroundColor: Colors.blue,
+                      onTap: () => _scheduleAction(_onSendPressed),
+                    ),
+                  ],
                 ],
               ),
       body: Padding(

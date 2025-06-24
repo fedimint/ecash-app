@@ -136,12 +136,6 @@ abstract class Multimint implements RustOpaqueInterface {
     required bool isLnv2,
   });
 
-  /// Refund the full balance on-chain to the Mutinynet faucet.
-  ///
-  /// This is a temporary method that assists with development and should
-  /// be removed before supporting mainnet.
-  Future<(String, BigInt)> refund({required FederationId federationId});
-
   Future<OperationId> reissueEcash({
     required FederationId federationId,
     required String ecash,

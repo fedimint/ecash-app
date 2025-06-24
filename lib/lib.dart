@@ -179,9 +179,6 @@ Future<ReissueExternalNotesState> awaitEcashReissue({
   operationId: operationId,
 );
 
-Future<(String, BigInt)> refund({required FederationId federationId}) =>
-    RustLib.instance.api.crateRefund(federationId: federationId);
-
 Future<bool> hasSeedPhraseAck() => RustLib.instance.api.crateHasSeedPhraseAck();
 
 Future<void> ackSeedPhrase() => RustLib.instance.api.crateAckSeedPhrase();

@@ -412,12 +412,6 @@ pub async fn await_ecash_reissue(
 }
 
 #[frb]
-pub async fn refund(federation_id: &FederationId) -> anyhow::Result<(String, u64)> {
-    let multimint = get_multimint();
-    multimint.refund(federation_id).await
-}
-
-#[frb]
 pub async fn has_seed_phrase_ack() -> bool {
     let multimint = get_multimint();
     multimint.has_seed_phrase_ack().await
