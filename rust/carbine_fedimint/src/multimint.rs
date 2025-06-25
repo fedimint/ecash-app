@@ -2015,7 +2015,11 @@ impl Multimint {
 
         self.spawn_await_ecash_send(*federation_id, operation_id);
 
-        Ok((operation_id, notes.to_string(), notes.total_amount().msats))
+        let serialized_notes = notes.to_string();
+
+        info_to_flutter(format!("Ecash note size: {}", serialized_notes.len())).await;
+
+        Ok((operation_id, serialized_notes, notes.total_amount().msats))
     }
 
     fn spawn_await_ecash_send(&self, federation_id: FederationId, operation_id: OperationId) {
@@ -2047,7 +2051,7 @@ impl Multimint {
             .read()
             .await
             .get(federation_id)
-            .expect("No federation exists")
+            .ok_or(anyhow!("No federation exists"))?
             .clone();
         let mint = client.get_first_module::<MintClientModule>()?;
         let mut updates = mint
@@ -2124,13 +2128,12 @@ impl Multimint {
             .read()
             .await
             .get(federation_id)
-            .expect("No federation exists")
+            .ok_or(anyhow!("No federation exists"))?
             .clone();
         let mint = client.get_first_module::<MintClientModule>()?;
         let mut updates = mint
             .subscribe_reissue_external_notes(operation_id)
-            .await
-            .unwrap()
+            .await?
             .into_stream();
         let mut final_state = ReissueExternalNotesState::Failed("Unexpected state".to_string());
         while let Some(update) = updates.next().await {

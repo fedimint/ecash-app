@@ -1,10 +1,16 @@
 import 'dart:async';
+import 'dart:convert';
+import 'dart:typed_data';
+import 'dart:ui';
+
 import 'package:carbine/lib.dart';
 import 'package:carbine/multimint.dart';
+import 'package:carbine/theme.dart';
 import 'package:carbine/utils.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:qr_flutter/qr_flutter.dart';
+import 'package:uuid/uuid.dart';
 
 class EcashSend extends StatefulWidget {
   final FederationSelector fed;
@@ -18,19 +24,27 @@ class EcashSend extends StatefulWidget {
 
 class _EcashSendState extends State<EcashSend> {
   String? _ecash;
-  bool _loading = true;
+  List<String> _qrChunks = [];
   BigInt _ecashAmountSats = BigInt.zero;
+  bool _loading = true;
+  bool _copied = false;
   bool _reclaiming = false;
 
-  double _progress = 0.0;
-  Timer? _holdTimer;
+  int _currentChunkIndex = 0;
+  Timer? _qrLoopTimer;
 
-  static const Duration _holdDuration = Duration(seconds: 1);
+  static const int _chunkSizeBytes = 40;
 
   @override
   void initState() {
     super.initState();
     _loadEcash();
+  }
+
+  @override
+  void dispose() {
+    _qrLoopTimer?.cancel();
+    super.dispose();
   }
 
   Future<void> _loadEcash() async {
@@ -40,17 +54,81 @@ class _EcashSendState extends State<EcashSend> {
         amountMsats: widget.amountSats * BigInt.from(1000),
       );
 
+      final ecashString = ecash.$2;
+      final chunked = _splitEcashIntoChunks(ecashString, _chunkSizeBytes);
+
       setState(() {
-        _ecash = ecash.$2;
+        _ecash = ecashString;
+        _qrChunks = chunked;
         _ecashAmountSats = ecash.$3.toSats;
         _loading = false;
       });
+
+      if (_qrChunks.length > 1) _startQrLoop();
     } catch (_) {
       setState(() {
         _ecash = null;
         _loading = false;
       });
     }
+  }
+
+  List<String> _splitEcashIntoChunks(String ecash, int chunkSize) {
+    final bytes = utf8.encode(ecash);
+    final totalChunks = (bytes.length / chunkSize).ceil();
+    final messageId = const Uuid().v4(); // generates a unique ID
+
+    final chunks = <String>[];
+    for (int i = 0; i < totalChunks; i++) {
+      final start = i * chunkSize;
+      final end = (start + chunkSize).clamp(0, bytes.length);
+      final chunkBytes = bytes.sublist(start, end);
+
+      final payload = utf8.decode(Uint8List.fromList(chunkBytes));
+
+      if (i == totalChunks - 1) {
+        AppLogger.instance.info("Last chunk size: ${payload.length}");
+      }
+
+      final chunkData = json.encode({
+        'id': messageId,
+        'total': totalChunks,
+        'index': i,
+        'payload': payload,
+      });
+
+      chunks.add(chunkData);
+    }
+
+    AppLogger.instance.info(
+      "Total Size: ${bytes.length} Total Chunks: $totalChunks",
+    );
+
+    return chunks;
+  }
+
+  void _startQrLoop() {
+    AppLogger.instance.info("QR Code chunks: ${_qrChunks.length}");
+    _qrLoopTimer = Timer.periodic(const Duration(milliseconds: 300), (_) {
+      setState(() {
+        _currentChunkIndex = (_currentChunkIndex + 1) % _qrChunks.length;
+      });
+    });
+  }
+
+  void _copyEcash() {
+    if (_ecash == null) return;
+    Clipboard.setData(ClipboardData(text: _ecash!));
+    setState(() => _copied = true);
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('✅ Ecash copied to clipboard'),
+        duration: Duration(seconds: 2),
+      ),
+    );
+    Future.delayed(const Duration(seconds: 2), () {
+      if (mounted) setState(() => _copied = false);
+    });
   }
 
   Future<void> _reclaimEcash() async {
@@ -76,50 +154,10 @@ class _EcashSendState extends State<EcashSend> {
     setState(() => _reclaiming = false);
   }
 
-  void _startHold() {
-    _progress = 0;
-    const tick = Duration(milliseconds: 20);
-    int elapsed = 0;
-    _holdTimer = Timer.periodic(tick, (timer) {
-      elapsed += tick.inMilliseconds;
-      final progress = elapsed / _holdDuration.inMilliseconds;
-      if (progress >= 1.0) {
-        timer.cancel();
-        _copyEcash();
-        setState(() => _progress = 1.0);
-      } else {
-        setState(() => _progress = progress);
-      }
-    });
-  }
-
-  void _cancelHold() {
-    _holdTimer?.cancel();
-    setState(() => _progress = 0.0);
-  }
-
-  void _copyEcash() {
-    Clipboard.setData(ClipboardData(text: _ecash!));
-    Navigator.of(context).popUntil((route) => route.isFirst);
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('✅ Ecash copied to clipboard')),
-    );
-  }
-
-  // TODO: Remove this, it is confusing when sending
-  String _abbreviate(String text, [int max = 30]) {
-    if (text.length <= max) return text;
-    return '${text.substring(0, 10)}...${text.substring(text.length - 10)}';
-  }
-
-  @override
-  void dispose() {
-    _holdTimer?.cancel();
-    super.dispose();
-  }
-
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
     if (_loading) {
       return const Center(child: CircularProgressIndicator());
     }
@@ -128,106 +166,164 @@ class _EcashSendState extends State<EcashSend> {
       return const Center(child: Text("⚠️ Failed to load ecash"));
     }
 
+    final abbreviatedEcash = getAbbreviatedInvoice(_ecash!);
+
     return Padding(
-      padding: const EdgeInsets.all(24),
-      child: SingleChildScrollView(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const Icon(Icons.lock_outline, size: 48),
-            const SizedBox(height: 12),
-            Text(
-              "Ecash Withdrawn",
-              style: Theme.of(context).textTheme.headlineSmall,
-              textAlign: TextAlign.center,
+      padding: const EdgeInsets.all(20),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          const Icon(Icons.lock_outline, size: 48),
+          const SizedBox(height: 12),
+          Text(
+            'Ecash Withdrawn',
+            style: theme.textTheme.headlineSmall?.copyWith(
+              color: theme.colorScheme.primary,
+              fontWeight: FontWeight.bold,
             ),
-            const SizedBox(height: 8),
-            Text(
-              "You’ve withdrawn ${_ecashAmountSats.toString()} sats.\n"
-              "You must now send this ecash string to the recipient.",
-              textAlign: TextAlign.center,
-              style: Theme.of(context).textTheme.bodyMedium,
-            ),
-            const SizedBox(height: 24),
+          ),
+          const SizedBox(height: 24),
 
-            // QR Code
-            Card(
-              margin: EdgeInsets.zero,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(16),
-              ),
-              child: Padding(
-                padding: const EdgeInsets.all(16),
-                child: QrImageView(
-                  data: _ecash!,
-                  version: QrVersions.auto,
-                  size: 240,
-                  backgroundColor: Colors.white,
+          // QR Loop container
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: theme.colorScheme.surface,
+              borderRadius: BorderRadius.circular(16),
+              boxShadow: [
+                BoxShadow(
+                  color: theme.colorScheme.primary.withOpacity(0.3),
+                  blurRadius: 12,
+                  spreadRadius: 1,
                 ),
+              ],
+              border: Border.all(
+                color: theme.colorScheme.primary.withOpacity(0.7),
+                width: 1.5,
               ),
             ),
-            const SizedBox(height: 24),
-
-            // Abbreviated text field
-            TextField(
-              readOnly: true,
-              controller: TextEditingController(text: _abbreviate(_ecash!)),
-              decoration: const InputDecoration(
-                labelText: 'Ecash (abbreviated)',
-                prefixIcon: Icon(Icons.key),
-              ),
-            ),
-            const SizedBox(height: 24),
-
-            // Hold-to-copy button
-            GestureDetector(
-              onTapDown: (_) => _startHold(),
-              onTapUp: (_) => _cancelHold(),
-              onTapCancel: () => _cancelHold(),
-              child: Stack(
-                alignment: Alignment.center,
-                children: [
-                  SizedBox(
-                    width: 80,
-                    height: 80,
-                    child: CircularProgressIndicator(
-                      value: _progress,
-                      strokeWidth: 6,
-                    ),
-                  ),
-                  Container(
-                    width: 60,
-                    height: 60,
-                    decoration: const BoxDecoration(
-                      shape: BoxShape.circle,
-                      color: Colors.green,
-                    ),
-                    alignment: Alignment.center,
-                    child: const Icon(Icons.copy, color: Colors.black),
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(height: 24),
-
-            // Reclaim button
-            _reclaiming
-                ? const CircularProgressIndicator()
-                : SizedBox(
-                  width: double.infinity,
-                  child: ElevatedButton.icon(
-                    onPressed: _reclaimEcash,
-                    icon: const Icon(Icons.undo),
-                    label: const Text("Reclaim"),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.red,
-                      foregroundColor: Colors.white,
-                      padding: const EdgeInsets.symmetric(vertical: 16),
-                    ),
+            child: Stack(
+              alignment: Alignment.topRight,
+              children: [
+                AspectRatio(
+                  aspectRatio: 1,
+                  child: QrImageView(
+                    data: _qrChunks[_currentChunkIndex],
+                    version: QrVersions.auto,
+                    backgroundColor: Colors.white,
+                    padding: EdgeInsets.zero,
                   ),
                 ),
-          ],
-        ),
+                /*
+                if (_qrChunks.length > 1)
+                  Padding(
+                    padding: const EdgeInsets.all(8.0),
+                    child: Text(
+                      '${_currentChunkIndex + 1}/${_qrChunks.length}',
+                      style: theme.textTheme.labelMedium?.copyWith(
+                        backgroundColor: Colors.white70,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                */
+              ],
+            ),
+          ),
+
+          const SizedBox(height: 24),
+
+          // Abbreviated ecash copy row
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+            decoration: BoxDecoration(
+              color: theme.colorScheme.surfaceContainerHighest,
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(
+                color: theme.colorScheme.primary.withOpacity(0.4),
+              ),
+            ),
+            child: Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    abbreviatedEcash,
+                    style: theme.textTheme.bodyLarge?.copyWith(
+                      color: theme.colorScheme.onSurface,
+                      fontWeight: FontWeight.w500,
+                    ),
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+                IconButton(
+                  icon: AnimatedSwitcher(
+                    duration: const Duration(milliseconds: 300),
+                    transitionBuilder:
+                        (child, anim) =>
+                            ScaleTransition(scale: anim, child: child),
+                    child:
+                        _copied
+                            ? Icon(
+                              Icons.check,
+                              key: const ValueKey('copied'),
+                              color: theme.colorScheme.primary,
+                            )
+                            : Icon(
+                              Icons.copy,
+                              key: const ValueKey('copy'),
+                              color: theme.colorScheme.primary,
+                            ),
+                  ),
+                  onPressed: _copyEcash,
+                ),
+              ],
+            ),
+          ),
+
+          const SizedBox(height: 16),
+
+          // Detail panel
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: theme.colorScheme.surfaceContainer,
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(
+                color: theme.colorScheme.primary.withOpacity(0.25),
+              ),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                buildDetailRow(
+                  theme,
+                  'Amount',
+                  formatBalance(_ecashAmountSats * BigInt.from(1000), true),
+                ),
+                buildDetailRow(theme, 'Federation', widget.fed.federationName),
+              ],
+            ),
+          ),
+
+          const SizedBox(height: 20),
+
+          _reclaiming
+              ? const CircularProgressIndicator()
+              : SizedBox(
+                width: double.infinity,
+                child: ElevatedButton.icon(
+                  onPressed: _reclaimEcash,
+                  icon: const Icon(Icons.undo),
+                  label: const Text("Reclaim Ecash"),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.red,
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(vertical: 16),
+                  ),
+                ),
+              ),
+        ],
       ),
     );
   }
