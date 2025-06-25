@@ -12,9 +12,9 @@ import 'package:uuid/uuid.dart';
 
 class EcashSend extends StatefulWidget {
   final FederationSelector fed;
-  final BigInt amountSats;
+  final BigInt amountMsats;
 
-  const EcashSend({super.key, required this.fed, required this.amountSats});
+  const EcashSend({super.key, required this.fed, required this.amountMsats});
 
   @override
   State<EcashSend> createState() => _EcashSendState();
@@ -23,7 +23,6 @@ class EcashSend extends StatefulWidget {
 class _EcashSendState extends State<EcashSend> {
   String? _ecash;
   List<String> _qrChunks = [];
-  BigInt _ecashAmountSats = BigInt.zero;
   bool _loading = true;
   bool _copied = false;
 
@@ -48,7 +47,7 @@ class _EcashSendState extends State<EcashSend> {
     try {
       final ecash = await sendEcash(
         federationId: widget.fed.federationId,
-        amountMsats: widget.amountSats * BigInt.from(1000),
+        amountMsats: widget.amountMsats,
       );
 
       final ecashString = ecash.$2;
@@ -57,7 +56,6 @@ class _EcashSendState extends State<EcashSend> {
       setState(() {
         _ecash = ecashString;
         _qrChunks = chunked;
-        _ecashAmountSats = ecash.$3.toSats;
         _loading = false;
       });
 
@@ -260,7 +258,7 @@ class _EcashSendState extends State<EcashSend> {
                 buildDetailRow(
                   theme,
                   'Amount',
-                  formatBalance(_ecashAmountSats * BigInt.from(1000), false),
+                  formatBalance(widget.amountMsats, false),
                 ),
                 buildDetailRow(theme, 'Federation', widget.fed.federationName),
               ],
@@ -278,7 +276,7 @@ class _EcashSendState extends State<EcashSend> {
                   ScaffoldMessenger.of(context).showSnackBar(
                     SnackBar(
                       content: Text(
-                        '${formatBalance(_ecashAmountSats * BigInt.from(1000), false)} spent',
+                        '${formatBalance(widget.amountMsats, false)} spent',
                       ),
                     ),
                   );
