@@ -1,7 +1,5 @@
 import 'dart:async';
 import 'dart:convert';
-import 'dart:typed_data';
-import 'dart:ui';
 
 import 'package:carbine/lib.dart';
 import 'package:carbine/multimint.dart';
@@ -28,7 +26,6 @@ class _EcashSendState extends State<EcashSend> {
   BigInt _ecashAmountSats = BigInt.zero;
   bool _loading = true;
   bool _copied = false;
-  bool _reclaiming = false;
 
   int _currentChunkIndex = 0;
   Timer? _qrLoopTimer;
@@ -131,29 +128,6 @@ class _EcashSendState extends State<EcashSend> {
     });
   }
 
-  Future<void> _reclaimEcash() async {
-    setState(() => _reclaiming = true);
-
-    if (_ecash != null) {
-      final opId = await reissueEcash(
-        federationId: widget.fed.federationId,
-        ecash: _ecash!,
-      );
-      await awaitEcashReissue(
-        federationId: widget.fed.federationId,
-        operationId: opId,
-      );
-      if (mounted) {
-        Navigator.of(context).popUntil((route) => route.isFirst);
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(const SnackBar(content: Text('✅ Ecash reclaimed')));
-      }
-    }
-
-    setState(() => _reclaiming = false);
-  }
-
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -214,19 +188,6 @@ class _EcashSendState extends State<EcashSend> {
                     padding: EdgeInsets.zero,
                   ),
                 ),
-                /*
-                if (_qrChunks.length > 1)
-                  Padding(
-                    padding: const EdgeInsets.all(8.0),
-                    child: Text(
-                      '${_currentChunkIndex + 1}/${_qrChunks.length}',
-                      style: theme.textTheme.labelMedium?.copyWith(
-                        backgroundColor: Colors.white70,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                  ),
-                */
               ],
             ),
           ),
@@ -299,7 +260,7 @@ class _EcashSendState extends State<EcashSend> {
                 buildDetailRow(
                   theme,
                   'Amount',
-                  formatBalance(_ecashAmountSats * BigInt.from(1000), true),
+                  formatBalance(_ecashAmountSats * BigInt.from(1000), false),
                 ),
                 buildDetailRow(theme, 'Federation', widget.fed.federationName),
               ],
@@ -308,21 +269,32 @@ class _EcashSendState extends State<EcashSend> {
 
           const SizedBox(height: 20),
 
-          _reclaiming
-              ? const CircularProgressIndicator()
-              : SizedBox(
-                width: double.infinity,
-                child: ElevatedButton.icon(
-                  onPressed: _reclaimEcash,
-                  icon: const Icon(Icons.undo),
-                  label: const Text("Reclaim Ecash"),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.red,
-                    foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(vertical: 16),
-                  ),
+          SizedBox(
+            width: double.infinity,
+            child: ElevatedButton(
+              onPressed: () {
+                if (mounted) {
+                  Navigator.of(context).popUntil((route) => route.isFirst);
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text(
+                        '${formatBalance(_ecashAmountSats * BigInt.from(1000), false)} spent',
+                      ),
+                    ),
+                  );
+                }
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: theme.colorScheme.primary,
+                foregroundColor: Colors.black,
+                padding: const EdgeInsets.symmetric(vertical: 16),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
                 ),
               ),
+              child: const Text("Confirm Payment"),
+            ),
+          ),
         ],
       ),
     );

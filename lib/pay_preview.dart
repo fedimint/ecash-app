@@ -63,10 +63,7 @@ class PaymentPreviewWidget extends StatelessWidget {
           width: double.infinity,
           child: ElevatedButton.icon(
             icon: const Icon(Icons.send, color: Colors.white),
-            label: const Text(
-              'Send Payment',
-              style: TextStyle(color: Colors.white),
-            ),
+            label: const Text('Send Payment'),
             style: ElevatedButton.styleFrom(
               backgroundColor: theme.colorScheme.primary,
               padding: const EdgeInsets.symmetric(vertical: 16),
