@@ -2,6 +2,7 @@ import 'package:carbine/app.dart';
 import 'package:carbine/ecash_send.dart';
 import 'package:carbine/lib.dart';
 import 'package:carbine/multimint.dart';
+import 'package:carbine/onchain_send.dart';
 import 'package:carbine/request.dart';
 import 'package:carbine/theme.dart';
 import 'package:carbine/utils.dart';
@@ -11,15 +12,19 @@ import 'package:intl/intl.dart';
 import 'package:numpad_layout/widgets/numpad.dart';
 import 'package:flutter/services.dart';
 
+enum WithdrawalMode { specificAmount, maxBalance }
+
 class NumberPad extends StatefulWidget {
   final FederationSelector fed;
   final PaymentType paymentType;
   final double? btcPrice;
+  final VoidCallback? onWithdrawCompleted;
   const NumberPad({
     super.key,
     required this.fed,
     required this.paymentType,
     required this.btcPrice,
+    this.onWithdrawCompleted,
   });
 
   @override
@@ -31,6 +36,8 @@ class _NumberPadState extends State<NumberPad> {
 
   String _rawAmount = '';
   bool _creating = false;
+  bool _loadingMax = false;
+  WithdrawalMode _withdrawalMode = WithdrawalMode.specificAmount;
 
   @override
   void initState() {
@@ -52,6 +59,29 @@ class _NumberPadState extends State<NumberPad> {
     final number = int.tryParse(value) ?? 0;
     final formatter = NumberFormat('₿#,###', 'en_US');
     return formatter.format(number).replaceAll(',', ' ');
+  }
+
+  Future<void> _onMaxPressed() async {
+    if (widget.paymentType != PaymentType.onchain) return;
+
+    setState(() => _loadingMax = true);
+
+    try {
+      final balanceMsats = await balance(federationId: widget.fed.federationId);
+      final balanceSats = balanceMsats.toSats;
+
+      setState(() {
+        _rawAmount = balanceSats.toString();
+        _withdrawalMode = WithdrawalMode.maxBalance;
+      });
+    } catch (e) {
+      AppLogger.instance.error('Failed to get balance: $e');
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Failed to get balance')));
+    } finally {
+      setState(() => _loadingMax = false);
+    }
   }
 
   Future<void> _onConfirm() async {
@@ -94,7 +124,15 @@ class _NumberPadState extends State<NumberPad> {
           child: EcashSend(fed: widget.fed, amountSats: amountSats),
         );
       } else if (widget.paymentType == PaymentType.onchain) {
-        AppLogger.instance.info('Generate bitcoin address and QR code');
+        showCarbineModalBottomSheet(
+          context: context,
+          child: OnchainSend(
+            fed: widget.fed,
+            amountSats: amountSats,
+            withdrawalMode: _withdrawalMode,
+            onWithdrawCompleted: widget.onWithdrawCompleted,
+          ),
+        );
       }
     }
     setState(() => _creating = false);
@@ -156,11 +194,15 @@ class _NumberPadState extends State<NumberPad> {
         setState(() {
           if (_rawAmount.isNotEmpty) {
             _rawAmount = _rawAmount.substring(0, _rawAmount.length - 1);
+            _withdrawalMode = WithdrawalMode.specificAmount;
           }
         });
       }
       if (digit != '') {
-        setState(() => _rawAmount += digit);
+        setState(() {
+          _rawAmount += digit;
+          _withdrawalMode = WithdrawalMode.specificAmount;
+        });
       }
     }
   }
@@ -216,12 +258,44 @@ class _NumberPadState extends State<NumberPad> {
                     onType: (value) {
                       setState(() {
                         _rawAmount += value.toString();
+                        _withdrawalMode = WithdrawalMode.specificAmount;
                       });
                     },
                     numberStyle: const TextStyle(
                       fontSize: 24,
                       color: Colors.grey,
                     ),
+                    leftWidget:
+                        widget.paymentType == PaymentType.onchain
+                            ? TextButton(
+                              onPressed: _loadingMax ? null : _onMaxPressed,
+                              style: TextButton.styleFrom(
+                                minimumSize: const Size(50, 40),
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 2,
+                                ),
+                              ),
+                              child:
+                                  _loadingMax
+                                      ? const SizedBox(
+                                        width: 16,
+                                        height: 16,
+                                        child: CircularProgressIndicator(
+                                          strokeWidth: 2,
+                                          color: Colors.grey,
+                                        ),
+                                      )
+                                      : const Text(
+                                        'MAX',
+                                        style: TextStyle(
+                                          fontSize: 14,
+                                          fontWeight: FontWeight.bold,
+                                        ),
+                                        maxLines: 1,
+                                        overflow: TextOverflow.clip,
+                                      ),
+                            )
+                            : null,
                     rightWidget: IconButton(
                       onPressed: () {
                         setState(() {
@@ -230,6 +304,7 @@ class _NumberPadState extends State<NumberPad> {
                               0,
                               _rawAmount.length - 1,
                             );
+                            _withdrawalMode = WithdrawalMode.specificAmount;
                           }
                         });
                       },

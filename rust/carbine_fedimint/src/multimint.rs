@@ -6,7 +6,8 @@ use std::{
     time::{Duration, UNIX_EPOCH},
 };
 
-use anyhow::{bail, Context};
+use anyhow::bail;
+use anyhow::Context;
 use bitcoin::key::rand::{seq::SliceRandom, thread_rng};
 use fedimint_api_client::api::net::Connector;
 use fedimint_bip39::{Bip39RootSecretStrategy, Language, Mnemonic};
@@ -41,10 +42,11 @@ use fedimint_mint_client::{
     ReissueExternalNotesState, SelectNotesWithAtleastAmount, SpendOOBState,
 };
 use fedimint_wallet_client::client_db::TweakIdx;
+use fedimint_wallet_client::WithdrawState;
 use fedimint_wallet_client::{api::WalletFederationApi, TxOutputSummary};
 use fedimint_wallet_client::{
-    DepositStateV2, WalletClientInit, WalletClientModule, WalletOperationMeta,
-    WalletOperationMetaVariant, WithdrawState,
+    DepositStateV2, PegOutFees, WalletClientInit, WalletClientModule, WalletOperationMeta,
+    WalletOperationMetaVariant,
 };
 use futures_util::StreamExt;
 use lightning_invoice::{Bolt11Invoice, Description};
@@ -87,6 +89,14 @@ impl Display for FederationSelector {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "{}", self.federation_name)
     }
+}
+
+#[derive(Clone, PartialEq, Serialize, Debug)]
+pub struct WithdrawFeesResponse {
+    pub fee_amount: u64,
+    pub fee_rate_sats_per_vb: f64,
+    pub tx_size_vbytes: u32,
+    pub peg_out_fees: PegOutFees,
 }
 
 #[derive(Clone)]
@@ -1806,9 +1816,9 @@ impl Multimint {
                     }
                     "wallet" => {
                         let meta = op_log_val.meta::<WalletOperationMeta>();
-                        let outcome = op_log_val.outcome::<DepositStateV2>();
                         match meta.variant {
                             WalletOperationMetaVariant::Deposit { .. } => {
+                                let outcome = op_log_val.outcome::<DepositStateV2>();
                                 if let Some(DepositStateV2::Claimed { btc_deposited, .. }) = outcome
                                 {
                                     let amount = Amount::from_sats(btc_deposited.to_sat()).msats;
@@ -1823,8 +1833,24 @@ impl Multimint {
                                     None
                                 }
                             }
-                            WalletOperationMetaVariant::Withdraw { .. } => None,
-                            WalletOperationMetaVariant::RbfWithdraw { .. } => None,
+                            WalletOperationMetaVariant::Withdraw { amount, .. } => {
+                                let outcome = op_log_val.outcome::<WithdrawState>();
+                                if let Some(WithdrawState::Succeeded(_txid)) = outcome {
+                                    Some(Transaction {
+                                        received: false,
+                                        amount: Amount::from_sats(amount.to_sat()).msats,
+                                        module: "wallet".to_string(),
+                                        timestamp,
+                                        operation_id: key.operation_id.0.to_vec(),
+                                    })
+                                } else {
+                                    None
+                                }
+                            }
+                            WalletOperationMetaVariant::RbfWithdraw { .. } => {
+                                // RbfWithdrawal isn't supported
+                                None
+                            }
                         }
                     }
                     _ => None,
@@ -2058,54 +2084,98 @@ impl Multimint {
         Ok(final_state)
     }
 
-    /// Refund the full balance on-chain to the Mutinynet faucet.
-    ///
-    /// This is a temporary method that assists with development and should
-    /// be removed before supporting mainnet.
-    pub async fn refund(&self, federation_id: &FederationId) -> anyhow::Result<(String, u64)> {
-        // hardcoded address for the Mutinynet faucet
-        // https://faucet.mutinynet.com/
-        let address =
-            bitcoin::address::Address::from_str("tb1qd28npep0s8frcm3y7dxqajkcy2m40eysplyr9v")?;
-
+    pub async fn calculate_withdraw_fees(
+        &self,
+        federation_id: &FederationId,
+        address: String,
+        amount_sats: u64,
+    ) -> anyhow::Result<WithdrawFeesResponse> {
         let client = self
             .clients
             .read()
             .await
             .get(federation_id)
-            .expect("No federation exists")
+            .context("No federation exists")?
             .clone();
         let wallet_module =
             client.get_first_module::<fedimint_wallet_client::WalletClientModule>()?;
 
+        let address = bitcoin::address::Address::from_str(&address)?;
         let address = address.require_network(wallet_module.get_network())?;
-        let balance = bitcoin::Amount::from_sat(client.get_balance().await.msats / 1000);
-        let fees = wallet_module.get_withdraw_fees(&address, balance).await?;
-        let absolute_fees = fees.amount();
-        let amount = balance
-            .checked_sub(fees.amount())
-            .context("Not enough funds to pay fees")?;
+        let amount = bitcoin::Amount::from_sat(amount_sats);
 
-        info_to_flutter(format!("Attempting withdraw with fees: {fees:?}")).await;
+        let fees = wallet_module.get_withdraw_fees(&address, amount).await?;
+        let fee_amount = fees.amount().to_sat();
+        let fee_rate_sats_per_vb = fees.fee_rate.sats_per_kvb as f64 / 1000.0;
+        // ceil(weight / 4) using only u32
+        let tx_size_vbytes = ((fees.total_weight + 3) / 4) as u32;
 
-        let operation_id = wallet_module.withdraw(&address, amount, fees, ()).await?;
+        Ok(WithdrawFeesResponse {
+            fee_amount,
+            fee_rate_sats_per_vb,
+            tx_size_vbytes,
+            peg_out_fees: fees,
+        })
+    }
+
+    pub async fn withdraw_to_address(
+        &self,
+        federation_id: &FederationId,
+        address: String,
+        amount_sats: u64,
+        peg_out_fees: PegOutFees,
+    ) -> anyhow::Result<OperationId> {
+        let client = self
+            .clients
+            .read()
+            .await
+            .get(federation_id)
+            .context("No federation exists")?
+            .clone();
+        let wallet_module =
+            client.get_first_module::<fedimint_wallet_client::WalletClientModule>()?;
+
+        let address = bitcoin::address::Address::from_str(&address)?;
+        let address = address.require_network(wallet_module.get_network())?;
+        let amount = bitcoin::Amount::from_sat(amount_sats);
+
+        let operation_id = wallet_module
+            .withdraw(&address, amount, peg_out_fees, ())
+            .await?;
+        Ok(operation_id)
+    }
+
+    pub async fn await_withdraw(
+        &self,
+        federation_id: &FederationId,
+        operation_id: OperationId,
+    ) -> anyhow::Result<String> {
+        let client = self
+            .clients
+            .read()
+            .await
+            .get(federation_id)
+            .context("No federation exists")?
+            .clone();
+        let wallet_module =
+            client.get_first_module::<fedimint_wallet_client::WalletClientModule>()?;
 
         let mut updates = wallet_module
             .subscribe_withdraw_updates(operation_id)
             .await?
             .into_stream();
 
-        let (txid, fees_sat) = loop {
+        let txid = loop {
             let update = updates
                 .next()
                 .await
                 .ok_or_else(|| anyhow!("Update stream ended without outcome"))?;
 
-            info_to_flutter(format!("Withdraw state update: {:?}", update)).await;
-
             match update {
                 WithdrawState::Succeeded(txid) => {
-                    break (txid.consensus_encode_to_hex(), absolute_fees.to_sat());
+                    // drive the update stream to completion so we get an outcome
+                    while updates.next().await.is_some() {}
+                    break txid.consensus_encode_to_hex();
                 }
                 WithdrawState::Failed(e) => {
                     bail!("Withdraw failed: {e}");
@@ -2116,7 +2186,33 @@ impl Multimint {
             }
         };
 
-        Ok((txid, fees_sat))
+        Ok(txid)
+    }
+
+    pub async fn get_max_withdrawable_amount(
+        &self,
+        federation_id: &FederationId,
+        address: String,
+    ) -> anyhow::Result<u64> {
+        let client = self
+            .clients
+            .read()
+            .await
+            .get(federation_id)
+            .context("No federation exists")?
+            .clone();
+        let wallet_module =
+            client.get_first_module::<fedimint_wallet_client::WalletClientModule>()?;
+
+        let address = bitcoin::address::Address::from_str(&address)?;
+        let address = address.require_network(wallet_module.get_network())?;
+        let balance = bitcoin::Amount::from_sat(client.get_balance().await.msats / 1000);
+        let fees = wallet_module.get_withdraw_fees(&address, balance).await?;
+        let max_withdrawable = balance
+            .checked_sub(fees.amount())
+            .context("Not enough funds to pay fees")?;
+
+        Ok(max_withdrawable.to_sat())
     }
 
     pub async fn monitor_deposit_address(

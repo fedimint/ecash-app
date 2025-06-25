@@ -11,7 +11,7 @@ part 'multimint.freezed.dart';
 
 // These functions are ignored because they are not marked as `pub`: `await_receive_lnv1`, `await_receive_lnv2`, `await_send_lnv1`, `await_send_lnv2`, `build_client`, `cache_btc_price`, `cache_federation_meta`, `compute_receive_amount`, `compute_send_amount`, `derive_federation_secret`, `finish_active_subscriptions`, `get_client_database`, `get_lnv1_amount_from_meta`, `get_lnv1_receive_tx`, `get_lnv1_send_tx`, `get_lnv2_amount_from_meta`, `get_or_build_temp_client`, `has_federation`, `invoice_routes_back_to_federation`, `lnv1_select_gateway`, `lnv1_update_gateway_cache`, `lnv2_select_gateway`, `load_clients`, `monitor_all_unused_pegin_addresses`, `pay_lnv1`, `pay_lnv2`, `receive_amount_after_fees`, `receive_lnv1`, `receive_lnv2`, `spawn_await_ecash_reissue`, `spawn_await_ecash_send`, `spawn_await_receive`, `spawn_await_send`, `spawn_cache_task`, `spawn_pegin_address_watcher`, `spawn_recovery_progress`, `watch_pegin_address`
 // These types are ignored because they are neither used by any `pub` functions nor (for structs and enums) marked `#[frb(unignore)]`: `ClientType`
-// These function are ignored because they are on traits that is not defined in current crate (put an empty `#[frb]` on it to unignore): `assert_receiver_is_total_eq`, `assert_receiver_is_total_eq`, `assert_receiver_is_total_eq`, `assert_receiver_is_total_eq`, `assert_receiver_is_total_eq`, `assert_receiver_is_total_eq`, `assert_receiver_is_total_eq`, `assert_receiver_is_total_eq`, `assert_receiver_is_total_eq`, `assert_receiver_is_total_eq`, `assert_receiver_is_total_eq`, `assert_receiver_is_total_eq`, `assert_receiver_is_total_eq`, `assert_receiver_is_total_eq`, `assert_receiver_is_total_eq`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `consensus_decode_partial_from_finite_reader`, `consensus_decode_partial_from_finite_reader`, `consensus_decode_partial_from_finite_reader`, `consensus_encode`, `consensus_encode`, `consensus_encode`, `eq`, `eq`, `eq`, `eq`, `eq`, `eq`, `eq`, `eq`, `eq`, `eq`, `eq`, `eq`, `eq`, `eq`, `eq`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `from`
+// These function are ignored because they are on traits that is not defined in current crate (put an empty `#[frb]` on it to unignore): `assert_receiver_is_total_eq`, `assert_receiver_is_total_eq`, `assert_receiver_is_total_eq`, `assert_receiver_is_total_eq`, `assert_receiver_is_total_eq`, `assert_receiver_is_total_eq`, `assert_receiver_is_total_eq`, `assert_receiver_is_total_eq`, `assert_receiver_is_total_eq`, `assert_receiver_is_total_eq`, `assert_receiver_is_total_eq`, `assert_receiver_is_total_eq`, `assert_receiver_is_total_eq`, `assert_receiver_is_total_eq`, `assert_receiver_is_total_eq`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `consensus_decode_partial_from_finite_reader`, `consensus_decode_partial_from_finite_reader`, `consensus_decode_partial_from_finite_reader`, `consensus_encode`, `consensus_encode`, `consensus_encode`, `eq`, `eq`, `eq`, `eq`, `eq`, `eq`, `eq`, `eq`, `eq`, `eq`, `eq`, `eq`, `eq`, `eq`, `eq`, `eq`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `from`
 
 // Rust type: RustOpaqueMoi<flutter_rust_bridge::for_generated::RustAutoOpaqueInner<Amount>>
 abstract class Amount implements RustOpaqueInterface {}
@@ -90,7 +90,18 @@ abstract class Multimint implements RustOpaqueInterface {
     required OperationId operationId,
   });
 
+  Future<String> awaitWithdraw({
+    required FederationId federationId,
+    required OperationId operationId,
+  });
+
   Future<BigInt> balance({required FederationId federationId});
+
+  Future<WithdrawFeesResponse> calculateWithdrawFees({
+    required FederationId federationId,
+    required String address,
+    required BigInt amountSats,
+  });
 
   Future<bool> containsClient({required FederationId federationId});
 
@@ -99,6 +110,11 @@ abstract class Multimint implements RustOpaqueInterface {
   Future<BigInt?> getBtcPrice();
 
   Future<FederationMeta> getCachedFederationMeta({required String invite});
+
+  Future<BigInt> getMaxWithdrawableAmount({
+    required FederationId federationId,
+    required String address,
+  });
 
   Future<List<String>> getMnemonic();
 
@@ -135,12 +151,6 @@ abstract class Multimint implements RustOpaqueInterface {
     required SafeUrl gateway,
     required bool isLnv2,
   });
-
-  /// Refund the full balance on-chain to the Mutinynet faucet.
-  ///
-  /// This is a temporary method that assists with development and should
-  /// be removed before supporting mainnet.
-  Future<(String, BigInt)> refund({required FederationId federationId});
 
   Future<OperationId> reissueEcash({
     required FederationId federationId,
@@ -180,6 +190,13 @@ abstract class Multimint implements RustOpaqueInterface {
   Future<FederationSelector> waitForRecovery({required String inviteCode});
 
   Future<List<Utxo>> walletSummary({required String invite});
+
+  Future<OperationId> withdrawToAddress({
+    required FederationId federationId,
+    required String address,
+    required BigInt amountSats,
+    required PegOutFees pegOutFees,
+  });
 }
 
 // Rust type: RustOpaqueMoi<flutter_rust_bridge::for_generated::RustAutoOpaqueInner<OperationId>>
@@ -193,6 +210,25 @@ abstract class SafeUrl implements RustOpaqueInterface {}
 
 // Rust type: RustOpaqueMoi<flutter_rust_bridge::for_generated::RustAutoOpaqueInner<SpendOOBState>>
 abstract class SpendOobState implements RustOpaqueInterface {}
+
+// Rust type: RustOpaqueMoi<flutter_rust_bridge::for_generated::RustAutoOpaqueInner<WithdrawFeesResponse>>
+abstract class WithdrawFeesResponse implements RustOpaqueInterface {
+  BigInt get feeAmount;
+
+  double get feeRateSatsPerVb;
+
+  PegOutFees get pegOutFees;
+
+  int get txSizeVbytes;
+
+  set feeAmount(BigInt feeAmount);
+
+  set feeRateSatsPerVb(double feeRateSatsPerVb);
+
+  set pegOutFees(PegOutFees pegOutFees);
+
+  set txSizeVbytes(int txSizeVbytes);
+}
 
 class AwaitingConfsEvent {
   final BigInt amount;

@@ -179,9 +179,6 @@ Future<ReissueExternalNotesState> awaitEcashReissue({
   operationId: operationId,
 );
 
-Future<(String, BigInt)> refund({required FederationId federationId}) =>
-    RustLib.instance.api.crateRefund(federationId: federationId);
-
 Future<bool> hasSeedPhraseAck() => RustLib.instance.api.crateHasSeedPhraseAck();
 
 Future<void> ackSeedPhrase() => RustLib.instance.api.crateAckSeedPhrase();
@@ -229,6 +226,44 @@ Future<String> federationIdToString({required FederationId federationId}) =>
 
 Future<BigInt?> getBtcPrice() => RustLib.instance.api.crateGetBtcPrice();
 
+Future<WithdrawFeesResponse> calculateWithdrawFees({
+  required FederationId federationId,
+  required String address,
+  required BigInt amountSats,
+}) => RustLib.instance.api.crateCalculateWithdrawFees(
+  federationId: federationId,
+  address: address,
+  amountSats: amountSats,
+);
+
+Future<OperationId> withdrawToAddress({
+  required FederationId federationId,
+  required String address,
+  required BigInt amountSats,
+  required PegOutFees pegOutFees,
+}) => RustLib.instance.api.crateWithdrawToAddress(
+  federationId: federationId,
+  address: address,
+  amountSats: amountSats,
+  pegOutFees: pegOutFees,
+);
+
+Future<String> awaitWithdraw({
+  required FederationId federationId,
+  required OperationId operationId,
+}) => RustLib.instance.api.crateAwaitWithdraw(
+  federationId: federationId,
+  operationId: operationId,
+);
+
+Future<BigInt> getMaxWithdrawableAmount({
+  required FederationId federationId,
+  required String address,
+}) => RustLib.instance.api.crateGetMaxWithdrawableAmount(
+  federationId: federationId,
+  address: address,
+);
+
 // Rust type: RustOpaqueMoi<flutter_rust_bridge::for_generated::RustAutoOpaqueInner<ClientConfig>>
 abstract class ClientConfig implements RustOpaqueInterface {}
 
@@ -243,3 +278,6 @@ abstract class FederationId implements RustOpaqueInterface {}
 
 // Rust type: RustOpaqueMoi<flutter_rust_bridge::for_generated::RustAutoOpaqueInner<InviteCode>>
 abstract class InviteCode implements RustOpaqueInterface {}
+
+// Rust type: RustOpaqueMoi<flutter_rust_bridge::for_generated::RustAutoOpaqueInner<PegOutFees>>
+abstract class PegOutFees implements RustOpaqueInterface {}

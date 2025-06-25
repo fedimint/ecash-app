@@ -13,8 +13,9 @@ use flutter_rust_bridge::frb;
 use futures_util::StreamExt;
 use multimint::{
     FederationMeta, FederationSelector, LightningSendOutcome, LogLevel, Multimint,
-    MultimintCreation, MultimintEvent, PaymentPreview, Transaction, Utxo,
+    MultimintCreation, MultimintEvent, PaymentPreview, Transaction, Utxo, WithdrawFeesResponse,
 };
+use fedimint_wallet_client::PegOutFees;
 use nostr::{NWCConnectionInfo, NostrClient, PublicFederation};
 use tokio::sync::{OnceCell, RwLock};
 
@@ -412,12 +413,6 @@ pub async fn await_ecash_reissue(
 }
 
 #[frb]
-pub async fn refund(federation_id: &FederationId) -> anyhow::Result<(String, u64)> {
-    let multimint = get_multimint();
-    multimint.refund(federation_id).await
-}
-
-#[frb]
 pub async fn has_seed_phrase_ack() -> bool {
     let multimint = get_multimint();
     multimint.has_seed_phrase_ack().await
@@ -522,4 +517,49 @@ pub async fn federation_id_to_string(federation_id: FederationId) -> String {
 pub async fn get_btc_price() -> Option<u64> {
     let multimint = get_multimint();
     multimint.get_btc_price().await
+}
+
+#[frb]
+pub async fn calculate_withdraw_fees(
+    federation_id: &FederationId,
+    address: String,
+    amount_sats: u64,
+) -> anyhow::Result<WithdrawFeesResponse> {
+    let multimint = get_multimint();
+    multimint
+        .calculate_withdraw_fees(federation_id, address, amount_sats)
+        .await
+}
+
+#[frb]
+pub async fn withdraw_to_address(
+    federation_id: &FederationId,
+    address: String,
+    amount_sats: u64,
+    peg_out_fees: PegOutFees,
+) -> anyhow::Result<OperationId> {
+    let multimint = get_multimint();
+    multimint
+        .withdraw_to_address(federation_id, address, amount_sats, peg_out_fees)
+        .await
+}
+
+#[frb]
+pub async fn await_withdraw(
+    federation_id: &FederationId,
+    operation_id: OperationId,
+) -> anyhow::Result<String> {
+    let multimint = get_multimint();
+    multimint.await_withdraw(federation_id, operation_id).await
+}
+
+#[frb]
+pub async fn get_max_withdrawable_amount(
+    federation_id: &FederationId,
+    address: String,
+) -> anyhow::Result<u64> {
+    let multimint = get_multimint();
+    multimint
+        .get_max_withdrawable_amount(federation_id, address)
+        .await
 }
