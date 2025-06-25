@@ -1,5 +1,5 @@
 use std::{
-    collections::BTreeMap,
+    collections::{BTreeMap, BTreeSet},
     fmt::{self, Display},
     str::FromStr,
     sync::Arc,
@@ -110,6 +110,7 @@ pub struct Multimint {
     task_group: TaskGroup,
     pegin_address_monitor_tx: UnboundedSender<(FederationId, TweakIdx)>,
     recovery_progress: Arc<RwLock<BTreeMap<FederationId, BTreeMap<u16, RecoveryProgress>>>>,
+    internal_ecash_spends: Arc<RwLock<BTreeSet<OperationId>>>,
 }
 
 #[derive(Debug, Serialize, Encodable, Decodable, Clone)]
@@ -291,6 +292,7 @@ impl Multimint {
             task_group: TaskGroup::new(),
             pegin_address_monitor_tx: pegin_address_monitor_tx.clone(),
             recovery_progress: Arc::new(RwLock::new(BTreeMap::new())),
+            internal_ecash_spends: Arc::new(RwLock::new(BTreeSet::new())),
         };
 
         multimint.load_clients().await?;
@@ -1852,6 +1854,10 @@ impl Multimint {
                         let meta = op_log_val.meta::<MintOperationMeta>();
                         match meta.variant {
                             MintOperationMetaVariant::SpendOOB { oob_notes, .. } => {
+                                let internal_spends = self.internal_ecash_spends.read().await;
+                                if internal_spends.contains(&key.operation_id) {
+                                    continue;
+                                }
                                 Some(Transaction {
                                     received: false,
                                     amount: oob_notes.total_amount().msats,
@@ -1861,6 +1867,16 @@ impl Multimint {
                                 })
                             }
                             MintOperationMetaVariant::Reissuance { .. } => {
+                                let extra_meta = meta.extra_meta.clone();
+                                if let Ok(operation_id) =
+                                    serde_json::from_value::<OperationId>(extra_meta)
+                                {
+                                    let mut internal_spends =
+                                        self.internal_ecash_spends.write().await;
+                                    internal_spends.insert(operation_id);
+                                    continue;
+                                }
+
                                 let outcome = op_log_val.outcome::<ReissueExternalNotesState>();
                                 if let Some(ReissueExternalNotesState::Done) = outcome {
                                     let amount: Amount = serde_json::from_value(meta.extra_meta)
@@ -1992,6 +2008,31 @@ impl Multimint {
         }
     }
 
+    async fn spend_until_exact_amount(
+        &self,
+        client: &ClientHandleArc,
+        amount_msats: u64,
+    ) -> anyhow::Result<(OOBNotes, OperationId)> {
+        let amount = Amount::from_msats(amount_msats);
+        let mint = client.get_first_module::<MintClientModule>()?;
+        // Default timeout after one day
+        let timeout = Duration::from_secs(60 * 60 * 24);
+        loop {
+            let (operation_id, notes) = mint
+                .spend_notes_with_selector(&SelectNotesWithAtleastAmount, amount, timeout, true, ())
+                .await?;
+
+            if notes.total_amount() == amount {
+                return Ok((notes, operation_id));
+            }
+
+            // reissue the notes back to ourselves
+            let reissue_op_id = mint.reissue_external_notes(notes, operation_id).await?;
+            self.await_ecash_reissue(&client.federation_id(), reissue_op_id)
+                .await?;
+        }
+    }
+
     pub async fn send_ecash(
         &self,
         federation_id: &FederationId,
@@ -2004,21 +2045,10 @@ impl Multimint {
             .get(federation_id)
             .expect("No federation exists")
             .clone();
-        let mint = client.get_first_module::<MintClientModule>()?;
-        let amount = Amount::from_msats(amount_msats);
-        // Default timeout after one day
-        let timeout = Duration::from_secs(60 * 60 * 24);
-        // TODO: Fix overspend
-        let (operation_id, notes) = mint
-            .spend_notes_with_selector(&SelectNotesWithAtleastAmount, amount, timeout, true, ())
-            .await?;
-
+        let (notes, operation_id) = self.spend_until_exact_amount(&client, amount_msats).await?;
         self.spawn_await_ecash_send(*federation_id, operation_id);
-
         let serialized_notes = notes.to_string();
-
         info_to_flutter(format!("Ecash note size: {}", serialized_notes.len())).await;
-
         Ok((operation_id, serialized_notes, notes.total_amount().msats))
     }
 

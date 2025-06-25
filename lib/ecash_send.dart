@@ -131,7 +131,19 @@ class _EcashSendState extends State<EcashSend> {
     final theme = Theme.of(context);
 
     if (_loading) {
-      return const Center(child: CircularProgressIndicator());
+      return const Center(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            CircularProgressIndicator(),
+            SizedBox(height: 16),
+            Text(
+              "Getting change from mint...",
+              style: TextStyle(color: Colors.white70),
+            ),
+          ],
+        ),
+      );
     }
 
     if (_ecash == null) {
