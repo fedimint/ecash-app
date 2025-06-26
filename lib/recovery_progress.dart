@@ -66,22 +66,28 @@ class _RecoveryStatusState extends State<RecoveryStatus> {
             style: Theme.of(context).textTheme.titleLarge,
           ),
           const SizedBox(height: 24),
-          Stack(
-            alignment: Alignment.center,
-            children: [
-              SizedBox(
-                width: 100,
-                height: 100,
-                child: CircularProgressIndicator(
-                  value: _progress,
-                  strokeWidth: 8,
-                ),
-              ),
-              Text(
-                '${(_progress * 100).toStringAsFixed(0)}%',
-                style: Theme.of(context).textTheme.titleMedium,
-              ),
-            ],
+          TweenAnimationBuilder<double>(
+            tween: Tween<double>(begin: 0, end: _progress),
+            duration: const Duration(milliseconds: 300),
+            builder: (context, value, child) {
+              return Stack(
+                alignment: Alignment.center,
+                children: [
+                  SizedBox(
+                    width: 180,
+                    height: 180,
+                    child: CircularProgressIndicator(
+                      value: value,
+                      strokeWidth: 12, // Thicker stroke
+                    ),
+                  ),
+                  Text(
+                    '${(value * 100).toStringAsFixed(0)}%',
+                    style: Theme.of(context).textTheme.titleMedium,
+                  ),
+                ],
+              );
+            },
           ),
         ],
       ),
