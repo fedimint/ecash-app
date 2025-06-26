@@ -48,9 +48,15 @@ class _FederationPreviewState extends State<FederationPreview> {
           recover: false,
         );
         AppLogger.instance.info('Successfully joined federation');
+
         if (mounted) {
           Navigator.of(context).pop((fed, false));
         }
+
+        // backup the federation's invite codes as a replaceable event to Nostr
+        final newFeds = await federations();
+        final inviteCodes = newFeds.map((f) => f.$1.inviteCode).toList();
+        backupInviteCodes(inviteCodes: inviteCodes);
       } catch (e) {
         AppLogger.instance.error('Could not join federation $e');
         setState(() {

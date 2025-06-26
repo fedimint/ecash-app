@@ -16,7 +16,12 @@ final invoicePaidToastVisible = ValueNotifier<bool>(true);
 
 class MyApp extends StatefulWidget {
   final List<(FederationSelector, bool)> initialFederations;
-  const MyApp({super.key, required this.initialFederations});
+  final bool recoverFederationInviteCodes;
+  const MyApp({
+    super.key,
+    required this.initialFederations,
+    required this.recoverFederationInviteCodes,
+  });
 
   @override
   State<MyApp> createState() => _MyAppState();
@@ -34,6 +39,8 @@ class _MyAppState extends State<MyApp> {
 
   final GlobalKey<NavigatorState> _navigatorKey = ToastService().navigatorKey;
 
+  bool recoverFederations = false;
+
   @override
   void initState() {
     super.initState();
@@ -42,6 +49,8 @@ class _MyAppState extends State<MyApp> {
     if (_feds.isNotEmpty) {
       _selectedFederation = _feds.first.$1;
       _isRecovering = _feds.first.$2;
+    } else if (_feds.isEmpty && widget.recoverFederationInviteCodes) {
+      _rejoinFederations();
     }
 
     events = subscribeMultimintEvents().asBroadcastStream();
@@ -94,6 +103,29 @@ class _MyAppState extends State<MyApp> {
     });
   }
 
+  Future<void> _rejoinFederations() async {
+    setState(() {
+      recoverFederations = true;
+    });
+    final inviteCodes = await getBackupInviteCodes();
+    final joinFutures =
+        inviteCodes.map((inviteCode) async {
+          await joinFederation(inviteCode: inviteCode, recover: true);
+        }).toList();
+
+    await Future.wait(joinFutures);
+    await _refreshFederations();
+
+    if (_feds.isNotEmpty) {
+      final first = _feds.first;
+      _setSelectedFederation(first.$1, first.$2);
+    }
+
+    setState(() {
+      recoverFederations = false;
+    });
+  }
+
   @override
   void dispose() {
     _subscription.cancel();
@@ -113,7 +145,7 @@ class _MyAppState extends State<MyApp> {
     });
   }
 
-  void _refreshFederations() async {
+  Future<void> _refreshFederations() async {
     final feds = await federations();
     setState(() {
       _feds = feds;
@@ -152,7 +184,23 @@ class _MyAppState extends State<MyApp> {
       if (_currentIndex == 1) {
         bodyContent = SettingsScreen(onJoin: _onJoinPressed);
       } else {
-        bodyContent = WelcomeWidget(onJoin: _onJoinPressed);
+        if (recoverFederations) {
+          bodyContent = const Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                CircularProgressIndicator(),
+                SizedBox(height: 16),
+                Text(
+                  'Retrieving federation backup from Nostr...',
+                  style: TextStyle(fontSize: 16),
+                ),
+              ],
+            ),
+          );
+        } else {
+          bodyContent = WelcomeWidget(onJoin: _onJoinPressed);
+        }
       }
     }
 

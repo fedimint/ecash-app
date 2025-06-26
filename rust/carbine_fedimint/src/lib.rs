@@ -9,13 +9,13 @@ use db::SeedPhraseAckKey;
 use event_bus::EventBus;
 use fedimint_core::config::ClientConfig;
 /* AUTO INJECTED BY flutter_rust_bridge. This line may not be accurate, and you can change it according to your needs. */
+use fedimint_wallet_client::PegOutFees;
 use flutter_rust_bridge::frb;
 use futures_util::StreamExt;
 use multimint::{
     FederationMeta, FederationSelector, LightningSendOutcome, LogLevel, Multimint,
     MultimintCreation, MultimintEvent, PaymentPreview, Transaction, Utxo, WithdrawFeesResponse,
 };
-use fedimint_wallet_client::PegOutFees;
 use nostr::{NWCConnectionInfo, NostrClient, PublicFederation};
 use tokio::sync::{OnceCell, RwLock};
 
@@ -164,12 +164,6 @@ pub async fn get_mnemonic() -> Vec<String> {
 }
 
 #[frb]
-pub async fn wait_for_recovery(invite_code: String) -> anyhow::Result<FederationSelector> {
-    let mut multimint = get_multimint();
-    multimint.wait_for_recovery(invite_code).await
-}
-
-#[frb]
 pub async fn join_federation(
     invite_code: String,
     recover: bool,
@@ -178,6 +172,20 @@ pub async fn join_federation(
     multimint
         .join_federation(invite_code.clone(), recover)
         .await
+}
+
+#[frb]
+pub async fn backup_invite_codes(invite_codes: Vec<String>) -> anyhow::Result<()> {
+    let nostr_client = get_nostr_client();
+    let nostr = nostr_client.read().await;
+    nostr.backup_invite_codes(invite_codes).await
+}
+
+#[frb]
+pub async fn get_backup_invite_codes() -> Vec<String> {
+    let nostr_client = get_nostr_client();
+    let nostr = nostr_client.read().await;
+    nostr.get_backup_invite_codes().await
 }
 
 #[frb]

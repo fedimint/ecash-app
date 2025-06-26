@@ -957,4 +957,70 @@ as String,
 
 }
 
+/// @nodoc
+
+
+class MultimintEvent_RecoveryDone extends MultimintEvent {
+  const MultimintEvent_RecoveryDone(this.field0): super._();
+  
+
+@override final  String field0;
+
+/// Create a copy of MultimintEvent
+/// with the given fields replaced by the non-null parameter values.
+@JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+$MultimintEvent_RecoveryDoneCopyWith<MultimintEvent_RecoveryDone> get copyWith => _$MultimintEvent_RecoveryDoneCopyWithImpl<MultimintEvent_RecoveryDone>(this, _$identity);
+
+
+
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is MultimintEvent_RecoveryDone&&(identical(other.field0, field0) || other.field0 == field0));
+}
+
+
+@override
+int get hashCode => Object.hash(runtimeType,field0);
+
+@override
+String toString() {
+  return 'MultimintEvent.recoveryDone(field0: $field0)';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class $MultimintEvent_RecoveryDoneCopyWith<$Res> implements $MultimintEventCopyWith<$Res> {
+  factory $MultimintEvent_RecoveryDoneCopyWith(MultimintEvent_RecoveryDone value, $Res Function(MultimintEvent_RecoveryDone) _then) = _$MultimintEvent_RecoveryDoneCopyWithImpl;
+@useResult
+$Res call({
+ String field0
+});
+
+
+
+
+}
+/// @nodoc
+class _$MultimintEvent_RecoveryDoneCopyWithImpl<$Res>
+    implements $MultimintEvent_RecoveryDoneCopyWith<$Res> {
+  _$MultimintEvent_RecoveryDoneCopyWithImpl(this._self, this._then);
+
+  final MultimintEvent_RecoveryDone _self;
+  final $Res Function(MultimintEvent_RecoveryDone) _then;
+
+/// Create a copy of MultimintEvent
+/// with the given fields replaced by the non-null parameter values.
+@pragma('vm:prefer-inline') $Res call({Object? field0 = null,}) {
+  return _then(MultimintEvent_RecoveryDone(
+null == field0 ? _self.field0 : field0 // ignore: cast_nullable_to_non_nullable
+as String,
+  ));
+}
+
+
+}
+
 // dart format on

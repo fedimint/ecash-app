@@ -231,6 +231,7 @@ pub enum MultimintEvent {
     Deposit((FederationId, DepositEventKind)),
     Lightning((FederationId, LightningEventKind)),
     Log(LogLevel, String),
+    RecoveryDone(String),
 }
 
 #[derive(Clone, Eq, PartialEq, Serialize, Debug)]
@@ -318,7 +319,7 @@ impl Multimint {
             self.finish_active_subscriptions(&client, id.id).await;
 
             if client.has_pending_recoveries() {
-                self.spawn_recovery_progress(client.clone());
+                self.spawn_recovery_progress(client.clone(), config.invite_code.to_string());
             }
 
             self.clients.write().await.insert(id.id, client);
@@ -890,10 +891,6 @@ impl Multimint {
             .await?
         };
 
-        if !client.has_pending_recoveries() && self.has_federation(&federation_id).await {
-            bail!("Already joined federation")
-        }
-
         let federation_name = client_config
             .global
             .federation_name()
@@ -934,13 +931,6 @@ impl Multimint {
         })
     }
 
-    async fn has_federation(&self, federation_id: &FederationId) -> bool {
-        let mut dbtx = self.db.begin_transaction_nc().await;
-        dbtx.get_value(&FederationConfigKey { id: *federation_id })
-            .await
-            .is_some()
-    }
-
     async fn build_client(
         &self,
         federation_id: &FederationId,
@@ -972,7 +962,7 @@ impl Multimint {
                     .recover(secret, client_config, invite_code.api_secret(), backup)
                     .await
                     .map(Arc::new)?;
-                self.spawn_recovery_progress(client.clone());
+                self.spawn_recovery_progress(client.clone(), invite_code.to_string());
                 client
             }
             client_type => {
@@ -999,7 +989,16 @@ impl Multimint {
         Ok(client)
     }
 
-    fn spawn_recovery_progress(&self, client: ClientHandleArc) {
+    fn spawn_recovery_progress(&self, client: ClientHandleArc, invite: String) {
+        let mut self_copy = self.clone();
+        let recovering_client = client.clone();
+        self.task_group
+            .spawn_cancellable("wait for recovery", async move {
+                if let Err(e) = self_copy.wait_for_recovery(recovering_client, invite).await {
+                    error_to_flutter(format!("Error waiting for recovery: {e:?}")).await;
+                }
+            });
+
         self.task_group
             .spawn_cancellable("recovery progress", async move {
                 let mut stream = client.subscribe_to_recovery_progress();
@@ -1009,23 +1008,15 @@ impl Multimint {
             });
     }
 
-    pub async fn wait_for_recovery(
+    async fn wait_for_recovery(
         &mut self,
-        invite_code: String,
-    ) -> anyhow::Result<FederationSelector> {
-        let invite = InviteCode::from_str(&invite_code)?;
-        let federation_id = invite.federation_id();
-        let recovering_client = self
-            .clients
-            .read()
-            .await
-            .get(&federation_id)
-            .expect("No federation exists")
-            .clone();
-
+        recovering_client: ClientHandleArc,
+        invite: String,
+    ) -> anyhow::Result<()> {
+        let federation_id = recovering_client.federation_id();
         info_to_flutter("Waiting for all recoveries...").await;
         recovering_client.wait_for_all_recoveries().await?;
-        let selector = self.join_federation(invite_code, false).await?;
+        self.join_federation(invite, false).await?;
         let new_client = self
             .clients
             .read()
@@ -1036,7 +1027,11 @@ impl Multimint {
         info_to_flutter("Waiting for all active state machines...").await;
         new_client.wait_for_all_active_state_machines().await?;
 
-        Ok(selector)
+        get_event_bus()
+            .publish(MultimintEvent::RecoveryDone(federation_id.to_string()))
+            .await;
+
+        Ok(())
     }
 
     fn get_client_database(&self, federation_id: &FederationId) -> Database {

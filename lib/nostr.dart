@@ -14,6 +14,10 @@ import 'package:flutter_rust_bridge/flutter_rust_bridge_for_generated.dart';
 
 // Rust type: RustOpaqueMoi<flutter_rust_bridge::for_generated::RustAutoOpaqueInner<NostrClient>>
 abstract class NostrClient implements RustOpaqueInterface {
+  Future<void> backupInviteCodes({required List<String> inviteCodes});
+
+  Future<List<String>> getBackupInviteCodes();
+
   Future<List<(FederationSelector, NWCConnectionInfo)>> getNwcConnectionInfo();
 
   Future<List<PublicFederation>> getPublicFederations({

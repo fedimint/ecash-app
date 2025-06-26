@@ -47,7 +47,6 @@ class _DashboardState extends State<Dashboard> {
     recovering = widget.recovering;
     _loadBalance();
     _loadBtcPrice();
-    if (recovering) _loadFederation();
 
     events = subscribeMultimintEvents().asBroadcastStream();
     _subscription = events.listen((event) async {
@@ -64,6 +63,13 @@ class _DashboardState extends State<Dashboard> {
             _loadBalance();
           }
         }
+      } else if (event is MultimintEvent_RecoveryDone) {
+        final recoveredFedId = event.field0;
+        final currFederationId = await federationIdToString(federationId: widget.fed.federationId);
+        if (currFederationId == recoveredFedId) {
+          setState(() => recovering = false);
+          _loadBalance();
+        }
       }
     });
   }
@@ -76,12 +82,6 @@ class _DashboardState extends State<Dashboard> {
 
   void _scheduleAction(VoidCallback action) {
     setState(() => _pendingAction = action);
-  }
-
-  Future<void> _loadFederation() async {
-    await waitForRecovery(inviteCode: widget.fed.inviteCode);
-    setState(() => recovering = false);
-    _loadBalance();
   }
 
   Future<void> _loadBalance() async {

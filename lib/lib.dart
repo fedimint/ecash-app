@@ -33,9 +33,6 @@ Future<bool> walletExists({required String path}) =>
 
 Future<List<String>> getMnemonic() => RustLib.instance.api.crateGetMnemonic();
 
-Future<FederationSelector> waitForRecovery({required String inviteCode}) =>
-    RustLib.instance.api.crateWaitForRecovery(inviteCode: inviteCode);
-
 Future<FederationSelector> joinFederation({
   required String inviteCode,
   required bool recover,
@@ -43,6 +40,12 @@ Future<FederationSelector> joinFederation({
   inviteCode: inviteCode,
   recover: recover,
 );
+
+Future<void> backupInviteCodes({required List<String> inviteCodes}) =>
+    RustLib.instance.api.crateBackupInviteCodes(inviteCodes: inviteCodes);
+
+Future<List<String>> getBackupInviteCodes() =>
+    RustLib.instance.api.crateGetBackupInviteCodes();
 
 Future<List<(FederationSelector, bool)>> federations() =>
     RustLib.instance.api.crateFederations();
