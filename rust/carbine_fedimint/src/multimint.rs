@@ -1012,7 +1012,7 @@ impl Multimint {
 
                 let mut stream = client.subscribe_to_recovery_progress();
                 while let Some((module_id, progress)) = stream.next().await {
-                    info_to_flutter(format!("Module: {module_id} Progress: {progress}")).await;
+                    //info_to_flutter(format!("Module: {module_id} Progress: {progress}")).await;
                     progress_copy
                         .update_recovery_progress_cache(
                             &client.federation_id(),

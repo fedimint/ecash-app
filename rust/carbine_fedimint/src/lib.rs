@@ -577,9 +577,10 @@ pub async fn get_max_withdrawable_amount(
 pub async fn get_module_recovery_progress(
     federation_id: &FederationId,
     module_id: u16,
-) -> RecoveryProgress {
+) -> (u32, u32) {
     let multimint = get_multimint();
-    multimint
+    let progress = multimint
         .get_recovery_progress(federation_id, module_id)
-        .await
+        .await;
+    (progress.complete, progress.total)
 }

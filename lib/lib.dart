@@ -267,7 +267,7 @@ Future<BigInt> getMaxWithdrawableAmount({
   address: address,
 );
 
-Future<RecoveryProgress> getModuleRecoveryProgress({
+Future<(int, int)> getModuleRecoveryProgress({
   required FederationId federationId,
   required int moduleId,
 }) => RustLib.instance.api.crateGetModuleRecoveryProgress(

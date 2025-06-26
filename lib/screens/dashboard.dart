@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:carbine/recovery_progress.dart';
 import 'package:carbine/utils.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_speed_dial/flutter_speed_dial.dart';
@@ -224,17 +225,23 @@ class _DashboardState extends State<Dashboard> {
             // Expanded is necessary so only the tx list is scrollable, not the
             // entire dashboard
             Expanded(
-              child: TransactionsList(
-                key: ValueKey(balanceMsats),
-                fed: widget.fed,
-                selectedPaymentType: _selectedPaymentType,
-                recovering: recovering,
-                onClaimed: _loadBalance,
-                onWithdrawCompleted: _refreshTransactions,
-                onRefreshRequested: (refreshCallback) {
-                  _refreshTransactionsList = refreshCallback;
-                },
-              ),
+              child: recovering
+                  ? RecoveryStatus(
+                      key: ValueKey(_selectedPaymentType),
+                      paymentType: _selectedPaymentType,
+                      fed: widget.fed
+                    )
+                  : TransactionsList(
+                      key: ValueKey(balanceMsats),
+                      fed: widget.fed,
+                      selectedPaymentType: _selectedPaymentType,
+                      recovering: recovering,
+                      onClaimed: _loadBalance,
+                      onWithdrawCompleted: _refreshTransactions,
+                      onRefreshRequested: (refreshCallback) {
+                        _refreshTransactionsList = refreshCallback;
+                      },
+                    ),
             ),
           ],
         ),

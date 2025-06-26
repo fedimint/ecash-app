@@ -572,7 +572,7 @@ abstract class RustLibApi extends BaseApi {
 
   Future<List<String>> crateGetMnemonic();
 
-  Future<RecoveryProgress> crateGetModuleRecoveryProgress({
+  Future<(int, int)> crateGetModuleRecoveryProgress({
     required FederationId federationId,
     required int moduleId,
   });
@@ -4831,7 +4831,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
       const TaskConstMeta(debugName: "get_mnemonic", argNames: []);
 
   @override
-  Future<RecoveryProgress> crateGetModuleRecoveryProgress({
+  Future<(int, int)> crateGetModuleRecoveryProgress({
     required FederationId federationId,
     required int moduleId,
   }) {
@@ -4852,8 +4852,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           );
         },
         codec: SseCodec(
-          decodeSuccessData:
-              sse_decode_Auto_Owned_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerRecoveryProgress,
+          decodeSuccessData: sse_decode_record_u_32_u_32,
           decodeErrorData: null,
         ),
         constMeta: kCrateGetModuleRecoveryProgressConstMeta,
@@ -6972,6 +6971,16 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   }
 
   @protected
+  (int, int) dco_decode_record_u_32_u_32(dynamic raw) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    final arr = raw as List<dynamic>;
+    if (arr.length != 2) {
+      throw Exception('Expected 2 elements, got ${arr.length}');
+    }
+    return (dco_decode_u_32(arr[0]), dco_decode_u_32(arr[1]));
+  }
+
+  @protected
   Transaction dco_decode_transaction(dynamic raw) {
     // Codec=Dco (DartCObject based), see doc to use other codecs
     final arr = raw as List<dynamic>;
@@ -8350,6 +8359,14 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
     var var_field1 = sse_decode_u_64(deserializer);
     var var_field2 = sse_decode_bool(deserializer);
     return (var_field0, var_field1, var_field2);
+  }
+
+  @protected
+  (int, int) sse_decode_record_u_32_u_32(SseDeserializer deserializer) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    var var_field0 = sse_decode_u_32(deserializer);
+    var var_field1 = sse_decode_u_32(deserializer);
+    return (var_field0, var_field1);
   }
 
   @protected
@@ -9771,6 +9788,13 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
     sse_encode_String(self.$1, serializer);
     sse_encode_u_64(self.$2, serializer);
     sse_encode_bool(self.$3, serializer);
+  }
+
+  @protected
+  void sse_encode_record_u_32_u_32((int, int) self, SseSerializer serializer) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    sse_encode_u_32(self.$1, serializer);
+    sse_encode_u_32(self.$2, serializer);
   }
 
   @protected
