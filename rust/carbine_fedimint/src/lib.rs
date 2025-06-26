@@ -7,6 +7,7 @@ mod multimint;
 mod nostr;
 use db::SeedPhraseAckKey;
 use event_bus::EventBus;
+use fedimint_client::module::module::recovery::RecoveryProgress;
 use fedimint_core::config::ClientConfig;
 /* AUTO INJECTED BY flutter_rust_bridge. This line may not be accurate, and you can change it according to your needs. */
 use fedimint_wallet_client::PegOutFees;
@@ -569,5 +570,16 @@ pub async fn get_max_withdrawable_amount(
     let multimint = get_multimint();
     multimint
         .get_max_withdrawable_amount(federation_id, address)
+        .await
+}
+
+#[frb]
+pub async fn get_module_recovery_progress(
+    federation_id: &FederationId,
+    module_id: u16,
+) -> RecoveryProgress {
+    let multimint = get_multimint();
+    multimint
+        .get_recovery_progress(federation_id, module_id)
         .await
 }

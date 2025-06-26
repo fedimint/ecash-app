@@ -267,6 +267,14 @@ Future<BigInt> getMaxWithdrawableAmount({
   address: address,
 );
 
+Future<RecoveryProgress> getModuleRecoveryProgress({
+  required FederationId federationId,
+  required int moduleId,
+}) => RustLib.instance.api.crateGetModuleRecoveryProgress(
+  federationId: federationId,
+  moduleId: moduleId,
+);
+
 // Rust type: RustOpaqueMoi<flutter_rust_bridge::for_generated::RustAutoOpaqueInner<ClientConfig>>
 abstract class ClientConfig implements RustOpaqueInterface {}
 

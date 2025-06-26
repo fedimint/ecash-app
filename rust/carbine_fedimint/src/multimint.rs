@@ -12,9 +12,11 @@ use bitcoin::key::rand::{seq::SliceRandom, thread_rng};
 use fedimint_api_client::api::net::Connector;
 use fedimint_bip39::{Bip39RootSecretStrategy, Language, Mnemonic};
 use fedimint_client::{
-    db::ChronologicalOperationLogKey, module::oplog::OperationLogEntry,
-    module_init::ClientModuleInitRegistry, secret::RootSecretStrategy, Client, ClientHandleArc,
-    OperationId,
+    db::ChronologicalOperationLogKey,
+    module::{module::recovery::RecoveryProgress, oplog::OperationLogEntry},
+    module_init::ClientModuleInitRegistry,
+    secret::RootSecretStrategy,
+    Client, ClientHandleArc, OperationId,
 };
 use fedimint_core::{
     config::{ClientConfig, FederationId},
@@ -107,6 +109,7 @@ pub struct Multimint {
     clients: Arc<RwLock<BTreeMap<FederationId, ClientHandleArc>>>,
     task_group: TaskGroup,
     pegin_address_monitor_tx: UnboundedSender<(FederationId, TweakIdx)>,
+    recovery_progress: Arc<RwLock<BTreeMap<FederationId, BTreeMap<u16, RecoveryProgress>>>>,
 }
 
 #[derive(Debug, Serialize, Encodable, Decodable, Clone)]
@@ -286,6 +289,7 @@ impl Multimint {
             clients: clients.clone(),
             task_group: TaskGroup::new(),
             pegin_address_monitor_tx: pegin_address_monitor_tx.clone(),
+            recovery_progress: Arc::new(RwLock::new(BTreeMap::new())),
         };
 
         multimint.load_clients().await?;
@@ -999,13 +1003,70 @@ impl Multimint {
                 }
             });
 
+        let progress_copy = self.clone();
         self.task_group
             .spawn_cancellable("recovery progress", async move {
+                progress_copy
+                    .init_recovery_progress_cache(client.federation_id())
+                    .await;
+
                 let mut stream = client.subscribe_to_recovery_progress();
                 while let Some((module_id, progress)) = stream.next().await {
                     info_to_flutter(format!("Module: {module_id} Progress: {progress}")).await;
+                    progress_copy
+                        .update_recovery_progress_cache(
+                            &client.federation_id(),
+                            module_id,
+                            progress,
+                        )
+                        .await;
                 }
+
+                progress_copy
+                    .remove_recovery_progress_cache(&client.federation_id())
+                    .await;
             });
+    }
+
+    async fn init_recovery_progress_cache(&self, federation_id: FederationId) {
+        let mut progress = self.recovery_progress.write().await;
+        progress.insert(federation_id, BTreeMap::new());
+    }
+
+    async fn remove_recovery_progress_cache(&self, federation_id: &FederationId) {
+        let mut progress = self.recovery_progress.write().await;
+        progress.remove(federation_id);
+    }
+
+    async fn update_recovery_progress_cache(
+        &self,
+        federation_id: &FederationId,
+        module_id: u16,
+        module_progress: RecoveryProgress,
+    ) {
+        let mut progress = self.recovery_progress.write().await;
+        if let Some(module_progress_cache) = progress.get_mut(federation_id) {
+            module_progress_cache.insert(module_id, module_progress);
+        }
+    }
+
+    pub async fn get_recovery_progress(
+        &self,
+        federation_id: &FederationId,
+        module_id: u16,
+    ) -> RecoveryProgress {
+        let progress = self.recovery_progress.read().await;
+        let module_progress = progress.get(federation_id);
+        if let Some(module_progress) = module_progress {
+            if let Some(progress) = module_progress.get(&module_id) {
+                return *progress;
+            }
+        }
+
+        RecoveryProgress {
+            complete: 0,
+            total: 0,
+        }
     }
 
     async fn wait_for_recovery(
