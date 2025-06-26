@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:carbine/fed_preview.dart';
 import 'package:carbine/lib.dart';
 import 'package:carbine/multimint.dart';
@@ -20,6 +22,8 @@ class ScanQRPage extends StatefulWidget {
 class _ScanQRPageState extends State<ScanQRPage> {
   bool _scanned = false;
   bool _isPasting = false;
+
+  _QrLoopSession? _currentSession;
 
   Future<void> _processText(String text) async {
     if (text.startsWith("fed") &&
@@ -84,7 +88,6 @@ class _ScanQRPageState extends State<ScanQRPage> {
         );
       }
     } else {
-      // TODO: Dont support direct scan yet, fix this later
       if (widget.selectedFed != null) {
         try {
           final amountMsats = await parseEcash(
@@ -98,7 +101,7 @@ class _ScanQRPageState extends State<ScanQRPage> {
               ecash: text,
               amount: amountMsats,
             ),
-            heightFactor: 0.25,
+            heightFactor: 0.33,
           );
         } catch (_) {
           AppLogger.instance.error('Could not parse text as ecash');
@@ -109,12 +112,50 @@ class _ScanQRPageState extends State<ScanQRPage> {
     }
   }
 
+  void _handleQrLoopChunk(String jsonChunk) {
+    try {
+      final Map<String, dynamic> parsed = json.decode(jsonChunk);
+      final id = parsed['id'];
+      final total = parsed['total'];
+      final index = parsed['index'];
+      final payload = parsed['payload'];
+
+      if (id is! String ||
+          total is! int ||
+          index is! int ||
+          payload is! String) {
+        AppLogger.instance.warn("Scanned QR has invalid data: $jsonChunk");
+        return;
+      }
+
+      AppLogger.instance.info("Scanned: index: $index / $total");
+
+      // Reset if new session
+      if (_currentSession == null || _currentSession!.id != id) {
+        _currentSession = _QrLoopSession(id: id, total: total);
+      }
+
+      final session = _currentSession!;
+      if (!session.receivedChunks.containsKey(index)) {
+        session.receivedChunks[index] = payload;
+        setState(() {}); // Triggers progress bar update
+      }
+
+      if (session.isComplete && !_scanned) {
+        _scanned = true;
+        final merged =
+            List.generate(total, (i) => session.receivedChunks[i] ?? '').join();
+        _processText(merged);
+      }
+    } catch (_) {
+      AppLogger.instance.info("NOT A CHUNKED QR: $jsonChunk");
+      if (!_scanned) _onQRCodeScanned(jsonChunk);
+    }
+  }
+
   void _onQRCodeScanned(String code) async {
     if (_scanned) return;
-    setState(() {
-      _scanned = true;
-    });
-
+    _scanned = true;
     await _processText(code);
   }
 
@@ -130,19 +171,18 @@ class _ScanQRPageState extends State<ScanQRPage> {
       ScaffoldMessenger.of(
         context,
       ).showSnackBar(const SnackBar(content: Text("Clipboard is empty")));
-
-      setState(() {
-        _isPasting = false;
-      });
-
+      setState(() => _isPasting = false);
       return;
     }
 
     await _processText(text);
+    setState(() => _isPasting = false);
+  }
 
-    setState(() {
-      _isPasting = false;
-    });
+  double? get _progress {
+    final session = _currentSession;
+    if (session == null || session.total <= 1) return null;
+    return session.receivedChunks.length / session.total;
   }
 
   @override
@@ -170,11 +210,53 @@ class _ScanQRPageState extends State<ScanQRPage> {
                   final barcode = capture.barcodes.first;
                   final String? code = barcode.rawValue;
                   if (code != null) {
-                    _onQRCodeScanned(code);
+                    _handleQrLoopChunk(code);
                   }
                 },
               ),
             ),
+            if (_progress != null)
+              Align(
+                alignment: Alignment.topCenter,
+                child: Padding(
+                  padding: const EdgeInsets.all(32.0),
+                  child: TweenAnimationBuilder<double>(
+                    duration: const Duration(milliseconds: 300),
+                    tween: Tween<double>(begin: 0, end: _progress!),
+                    builder: (context, value, child) {
+                      final received =
+                          _currentSession?.receivedChunks.length ?? 0;
+                      final total = _currentSession?.total ?? 0;
+
+                      return Stack(
+                        alignment: Alignment.center,
+                        children: [
+                          SizedBox(
+                            width: 100,
+                            height: 100,
+                            child: CircularProgressIndicator(
+                              value: value,
+                              strokeWidth: 8,
+                              backgroundColor: Colors.grey.shade800,
+                              valueColor: const AlwaysStoppedAnimation<Color>(
+                                Colors.greenAccent,
+                              ),
+                            ),
+                          ),
+                          Text(
+                            "$received / $total",
+                            style: const TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.white,
+                            ),
+                          ),
+                        ],
+                      );
+                    },
+                  ),
+                ),
+              ),
             Align(
               alignment: Alignment.bottomCenter,
               child: Padding(
@@ -203,4 +285,13 @@ class _ScanQRPageState extends State<ScanQRPage> {
       ),
     );
   }
+}
+
+class _QrLoopSession {
+  final String id;
+  final int total;
+  final Map<int, String> receivedChunks = {};
+  _QrLoopSession({required this.id, required this.total});
+
+  bool get isComplete => receivedChunks.length >= total;
 }

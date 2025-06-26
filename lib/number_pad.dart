@@ -62,7 +62,7 @@ class _NumberPadState extends State<NumberPad> {
   }
 
   Future<void> _onMaxPressed() async {
-    if (widget.paymentType != PaymentType.onchain) return;
+    if (widget.paymentType == PaymentType.lightning) return;
 
     setState(() => _loadingMax = true);
 
@@ -119,9 +119,13 @@ class _NumberPadState extends State<NumberPad> {
         );
         invoicePaidToastVisible.value = true;
       } else if (widget.paymentType == PaymentType.ecash) {
+        BigInt amount = amountSats * BigInt.from(1000);
+        if (_withdrawalMode == WithdrawalMode.maxBalance) {
+          amount = await balance(federationId: widget.fed.federationId);
+        }
         showCarbineModalBottomSheet(
           context: context,
-          child: EcashSend(fed: widget.fed, amountSats: amountSats),
+          child: EcashSend(fed: widget.fed, amountMsats: amount),
         );
       } else if (widget.paymentType == PaymentType.onchain) {
         showCarbineModalBottomSheet(
@@ -266,7 +270,8 @@ class _NumberPadState extends State<NumberPad> {
                       color: Colors.grey,
                     ),
                     leftWidget:
-                        widget.paymentType == PaymentType.onchain
+                        widget.paymentType == PaymentType.onchain ||
+                                widget.paymentType == PaymentType.ecash
                             ? TextButton(
                               onPressed: _loadingMax ? null : _onMaxPressed,
                               style: TextButton.styleFrom(
