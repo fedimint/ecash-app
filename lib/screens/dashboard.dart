@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:carbine/recovery_progress.dart';
 import 'package:carbine/utils.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_speed_dial/flutter_speed_dial.dart';
@@ -33,6 +34,7 @@ class _DashboardState extends State<Dashboard> {
   bool isLoadingBalance = true;
   bool showMsats = false;
   late bool recovering;
+  double _recoveryProgress = 0.0;
   PaymentType _selectedPaymentType = PaymentType.lightning;
   VoidCallback? _pendingAction;
   VoidCallback? _refreshTransactionsList;
@@ -47,7 +49,6 @@ class _DashboardState extends State<Dashboard> {
     recovering = widget.recovering;
     _loadBalance();
     _loadBtcPrice();
-    if (recovering) _loadFederation();
 
     events = subscribeMultimintEvents().asBroadcastStream();
     _subscription = events.listen((event) async {
@@ -64,6 +65,13 @@ class _DashboardState extends State<Dashboard> {
             _loadBalance();
           }
         }
+      } else if (event is MultimintEvent_RecoveryDone) {
+        final recoveredFedId = event.field0;
+        final currFederationId = await federationIdToString(federationId: widget.fed.federationId);
+        if (currFederationId == recoveredFedId) {
+          setState(() => recovering = false);
+          _loadBalance();
+        }
       }
     });
   }
@@ -76,12 +84,6 @@ class _DashboardState extends State<Dashboard> {
 
   void _scheduleAction(VoidCallback action) {
     setState(() => _pendingAction = action);
-  }
-
-  Future<void> _loadFederation() async {
-    await waitForRecovery(inviteCode: widget.fed.inviteCode);
-    setState(() => recovering = false);
-    _loadBalance();
   }
 
   Future<void> _loadBalance() async {
@@ -165,6 +167,24 @@ class _DashboardState extends State<Dashboard> {
     _loadBalance();
   }
 
+  Future<void> _loadProgress(PaymentType paymentType) async {
+    if (recovering) {
+      final progress = await getModuleRecoveryProgress(
+        federationId: widget.fed.federationId,
+        moduleId: getModuleIdForPaymentType(paymentType),
+      );
+
+      if (progress.$2 > 0) {
+        double rawProgress = progress.$1.toDouble() / progress.$2.toDouble();
+        setState(() => _recoveryProgress = rawProgress.clamp(0.0, 1.0));
+      }
+
+      AppLogger.instance.info(
+        "${_selectedPaymentType} progress: $_recoveryProgress complete: ${progress.$1} total: ${progress.$2}",
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final name = widget.fed.federationName;
@@ -224,24 +244,32 @@ class _DashboardState extends State<Dashboard> {
             // Expanded is necessary so only the tx list is scrollable, not the
             // entire dashboard
             Expanded(
-              child: TransactionsList(
-                key: ValueKey(balanceMsats),
-                fed: widget.fed,
-                selectedPaymentType: _selectedPaymentType,
-                recovering: recovering,
-                onClaimed: _loadBalance,
-                onWithdrawCompleted: _refreshTransactions,
-                onRefreshRequested: (refreshCallback) {
-                  _refreshTransactionsList = refreshCallback;
-                },
-              ),
+              child: recovering
+                  ? RecoveryStatus(
+                      key: ValueKey(_selectedPaymentType),
+                      paymentType: _selectedPaymentType,
+                      fed: widget.fed,
+                      initialProgress: _recoveryProgress,
+                    )
+                  : TransactionsList(
+                      key: ValueKey(balanceMsats),
+                      fed: widget.fed,
+                      selectedPaymentType: _selectedPaymentType,
+                      recovering: recovering,
+                      onClaimed: _loadBalance,
+                      onWithdrawCompleted: _refreshTransactions,
+                      onRefreshRequested: (refreshCallback) {
+                        _refreshTransactionsList = refreshCallback;
+                      },
+                    ),
             ),
           ],
         ),
       ),
       bottomNavigationBar: BottomNavigationBar(
         currentIndex: _selectedPaymentType.index,
-        onTap: (index) {
+        onTap: (index) async {
+          await _loadProgress(PaymentType.values[index]);
           setState(() => _selectedPaymentType = PaymentType.values[index]);
         },
         selectedItemColor: Theme.of(context).colorScheme.primary,

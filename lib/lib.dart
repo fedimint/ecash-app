@@ -33,9 +33,6 @@ Future<bool> walletExists({required String path}) =>
 
 Future<List<String>> getMnemonic() => RustLib.instance.api.crateGetMnemonic();
 
-Future<FederationSelector> waitForRecovery({required String inviteCode}) =>
-    RustLib.instance.api.crateWaitForRecovery(inviteCode: inviteCode);
-
 Future<FederationSelector> joinFederation({
   required String inviteCode,
   required bool recover,
@@ -43,6 +40,12 @@ Future<FederationSelector> joinFederation({
   inviteCode: inviteCode,
   recover: recover,
 );
+
+Future<void> backupInviteCodes({required List<String> inviteCodes}) =>
+    RustLib.instance.api.crateBackupInviteCodes(inviteCodes: inviteCodes);
+
+Future<List<String>> getBackupInviteCodes() =>
+    RustLib.instance.api.crateGetBackupInviteCodes();
 
 Future<List<(FederationSelector, bool)>> federations() =>
     RustLib.instance.api.crateFederations();
@@ -262,6 +265,22 @@ Future<BigInt> getMaxWithdrawableAmount({
 }) => RustLib.instance.api.crateGetMaxWithdrawableAmount(
   federationId: federationId,
   address: address,
+);
+
+Future<(int, int)> getModuleRecoveryProgress({
+  required FederationId federationId,
+  required int moduleId,
+}) => RustLib.instance.api.crateGetModuleRecoveryProgress(
+  federationId: federationId,
+  moduleId: moduleId,
+);
+
+Stream<(int, int)> subscribeRecoveryProgress({
+  required FederationId federationId,
+  required int moduleId,
+}) => RustLib.instance.api.crateSubscribeRecoveryProgress(
+  federationId: federationId,
+  moduleId: moduleId,
 );
 
 // Rust type: RustOpaqueMoi<flutter_rust_bridge::for_generated::RustAutoOpaqueInner<ClientConfig>>

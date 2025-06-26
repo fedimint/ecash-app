@@ -957,4 +957,142 @@ as String,
 
 }
 
+/// @nodoc
+
+
+class MultimintEvent_RecoveryDone extends MultimintEvent {
+  const MultimintEvent_RecoveryDone(this.field0): super._();
+  
+
+@override final  String field0;
+
+/// Create a copy of MultimintEvent
+/// with the given fields replaced by the non-null parameter values.
+@JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+$MultimintEvent_RecoveryDoneCopyWith<MultimintEvent_RecoveryDone> get copyWith => _$MultimintEvent_RecoveryDoneCopyWithImpl<MultimintEvent_RecoveryDone>(this, _$identity);
+
+
+
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is MultimintEvent_RecoveryDone&&(identical(other.field0, field0) || other.field0 == field0));
+}
+
+
+@override
+int get hashCode => Object.hash(runtimeType,field0);
+
+@override
+String toString() {
+  return 'MultimintEvent.recoveryDone(field0: $field0)';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class $MultimintEvent_RecoveryDoneCopyWith<$Res> implements $MultimintEventCopyWith<$Res> {
+  factory $MultimintEvent_RecoveryDoneCopyWith(MultimintEvent_RecoveryDone value, $Res Function(MultimintEvent_RecoveryDone) _then) = _$MultimintEvent_RecoveryDoneCopyWithImpl;
+@useResult
+$Res call({
+ String field0
+});
+
+
+
+
+}
+/// @nodoc
+class _$MultimintEvent_RecoveryDoneCopyWithImpl<$Res>
+    implements $MultimintEvent_RecoveryDoneCopyWith<$Res> {
+  _$MultimintEvent_RecoveryDoneCopyWithImpl(this._self, this._then);
+
+  final MultimintEvent_RecoveryDone _self;
+  final $Res Function(MultimintEvent_RecoveryDone) _then;
+
+/// Create a copy of MultimintEvent
+/// with the given fields replaced by the non-null parameter values.
+@pragma('vm:prefer-inline') $Res call({Object? field0 = null,}) {
+  return _then(MultimintEvent_RecoveryDone(
+null == field0 ? _self.field0 : field0 // ignore: cast_nullable_to_non_nullable
+as String,
+  ));
+}
+
+
+}
+
+/// @nodoc
+
+
+class MultimintEvent_RecoveryProgress extends MultimintEvent {
+  const MultimintEvent_RecoveryProgress(this.field0, this.field1, this.field2, this.field3): super._();
+  
+
+@override final  String field0;
+ final  int field1;
+ final  int field2;
+ final  int field3;
+
+/// Create a copy of MultimintEvent
+/// with the given fields replaced by the non-null parameter values.
+@JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+$MultimintEvent_RecoveryProgressCopyWith<MultimintEvent_RecoveryProgress> get copyWith => _$MultimintEvent_RecoveryProgressCopyWithImpl<MultimintEvent_RecoveryProgress>(this, _$identity);
+
+
+
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is MultimintEvent_RecoveryProgress&&(identical(other.field0, field0) || other.field0 == field0)&&(identical(other.field1, field1) || other.field1 == field1)&&(identical(other.field2, field2) || other.field2 == field2)&&(identical(other.field3, field3) || other.field3 == field3));
+}
+
+
+@override
+int get hashCode => Object.hash(runtimeType,field0,field1,field2,field3);
+
+@override
+String toString() {
+  return 'MultimintEvent.recoveryProgress(field0: $field0, field1: $field1, field2: $field2, field3: $field3)';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class $MultimintEvent_RecoveryProgressCopyWith<$Res> implements $MultimintEventCopyWith<$Res> {
+  factory $MultimintEvent_RecoveryProgressCopyWith(MultimintEvent_RecoveryProgress value, $Res Function(MultimintEvent_RecoveryProgress) _then) = _$MultimintEvent_RecoveryProgressCopyWithImpl;
+@useResult
+$Res call({
+ String field0, int field1, int field2, int field3
+});
+
+
+
+
+}
+/// @nodoc
+class _$MultimintEvent_RecoveryProgressCopyWithImpl<$Res>
+    implements $MultimintEvent_RecoveryProgressCopyWith<$Res> {
+  _$MultimintEvent_RecoveryProgressCopyWithImpl(this._self, this._then);
+
+  final MultimintEvent_RecoveryProgress _self;
+  final $Res Function(MultimintEvent_RecoveryProgress) _then;
+
+/// Create a copy of MultimintEvent
+/// with the given fields replaced by the non-null parameter values.
+@pragma('vm:prefer-inline') $Res call({Object? field0 = null,Object? field1 = null,Object? field2 = null,Object? field3 = null,}) {
+  return _then(MultimintEvent_RecoveryProgress(
+null == field0 ? _self.field0 : field0 // ignore: cast_nullable_to_non_nullable
+as String,null == field1 ? _self.field1 : field1 // ignore: cast_nullable_to_non_nullable
+as int,null == field2 ? _self.field2 : field2 // ignore: cast_nullable_to_non_nullable
+as int,null == field3 ? _self.field3 : field3 // ignore: cast_nullable_to_non_nullable
+as int,
+  ));
+}
+
+
+}
+
 // dart format on

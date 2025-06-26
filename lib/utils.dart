@@ -1,5 +1,6 @@
 import 'dart:io';
 
+import 'package:carbine/models.dart';
 import 'package:carbine/multimint.dart';
 import 'package:flutter/foundation.dart';
 import 'package:intl/intl.dart';
@@ -118,4 +119,15 @@ String calculateUsdValue(double? btcPrice, int sats) {
   if (btcPrice == null) return '';
   final usdValue = (btcPrice * sats) / 100000000;
   return '\$${usdValue.toStringAsFixed(2)}';
+}
+
+int getModuleIdForPaymentType(PaymentType paymentType) {
+  switch (paymentType) {
+    case PaymentType.lightning:
+      return 0;
+    case PaymentType.ecash:
+      return 1;
+    case PaymentType.onchain:
+      return 2;
+  }
 }

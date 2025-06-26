@@ -3,7 +3,7 @@ use std::{collections::BTreeMap, str::FromStr, sync::Arc, time::Duration, u64};
 use crate::{
     anyhow, await_send, balance,
     db::{NostrWalletConnectConfig, NostrWalletConnectKey, NostrWalletConnectKeyPrefix},
-    federations, info_to_flutter,
+    error_to_flutter, federations, info_to_flutter,
     multimint::{FederationSelector, LightningSendOutcome},
     payment_preview, send,
 };
@@ -14,6 +14,7 @@ use fedimint_core::{
     config::FederationId,
     db::{Database, IDatabaseTransactionOpsCoreTyped},
     encoding::Encodable,
+    invite_code::InviteCode,
     task::TaskGroup,
     util::{retry, FmtCompact, SafeUrl},
 };
@@ -71,6 +72,7 @@ pub(crate) struct NostrClient {
     task_group: TaskGroup,
     db: Database,
     nwc_listeners: Arc<RwLock<BTreeMap<FederationId, oneshot::Sender<()>>>>,
+    keys: nostr_sdk::Keys,
 }
 
 impl NostrClient {
@@ -86,7 +88,7 @@ impl NostrClient {
         let keypair = nostr_key_secret.to_secp_key(fedimint_core::secp256k1::SECP256K1);
         let keys = nostr_sdk::Keys::new(keypair.secret_key().into());
 
-        let client = nostr_sdk::Client::builder().signer(keys).build();
+        let client = nostr_sdk::Client::builder().signer(keys.clone()).build();
 
         for relay in DEFAULT_RELAYS {
             match client.add_relay(*relay).await {
@@ -110,6 +112,7 @@ impl NostrClient {
             task_group: TaskGroup::new(),
             db: db.clone(),
             nwc_listeners: Arc::new(RwLock::new(BTreeMap::new())),
+            keys,
         };
 
         let mut background_nostr = nostr_client.clone();
@@ -271,43 +274,38 @@ impl NostrClient {
         request_event_id: nostr_sdk::EventId,
     ) -> anyhow::Result<()> {
         let content = serde_json::to_string(&response)?;
-        if let Ok(encrypted_content) =
-            nostr_sdk::nips::nip04::encrypt(&keys.secret_key(), sender_pubkey, content.clone())
-        {
-            let event_builder = nostr_sdk::EventBuilder::new(
-                nostr_sdk::Kind::WalletConnectResponse,
-                encrypted_content,
-            )
-            .tag(nostr_sdk::Tag::public_key(keys.public_key))
-            .tag(nostr_sdk::Tag::event(request_event_id));
+        let encrypted_content =
+            nostr_sdk::nips::nip04::encrypt(&keys.secret_key(), sender_pubkey, content.clone())?;
 
-            retry(
-                "broadcast wallet response",
-                fedimint_core::util::backoff_util::background_backoff(),
-                || async {
-                    match nostr_client.send_event_builder(event_builder.clone()).await {
-                        Ok(event_id) => {
-                            info_to_flutter(format!(
-                                "Broadcasted WalletConnectResponse: {event_id:?}"
-                            ))
+        let event_builder =
+            nostr_sdk::EventBuilder::new(nostr_sdk::Kind::WalletConnectResponse, encrypted_content)
+                .tag(nostr_sdk::Tag::public_key(keys.public_key))
+                .tag(nostr_sdk::Tag::event(request_event_id));
+
+        retry(
+            "broadcast wallet response",
+            fedimint_core::util::backoff_util::background_backoff(),
+            || async {
+                match nostr_client.send_event_builder(event_builder.clone()).await {
+                    Ok(event_id) => {
+                        info_to_flutter(format!("Broadcasted WalletConnectResponse: {event_id:?}"))
                             .await;
-                            if event_id.failed.is_empty() && !event_id.success.is_empty() {
-                                return Ok(());
-                            }
-                        }
-                        Err(e) => {
-                            info_to_flutter(format!(
-                                "Error broadcasting WalletConnect response: {e:?}"
-                            ))
-                            .await;
+                        if event_id.failed.is_empty() && !event_id.success.is_empty() {
+                            return Ok(());
                         }
                     }
+                    Err(e) => {
+                        info_to_flutter(format!(
+                            "Error broadcasting WalletConnect response: {e:?}"
+                        ))
+                        .await;
+                    }
+                }
 
-                    Err(anyhow!("Error broadcasting WalletConnect response"))
-                },
-            )
-            .await?;
-        }
+                Err(anyhow!("Error broadcasting WalletConnect response"))
+            },
+        )
+        .await?;
         Ok(())
     }
 
@@ -433,9 +431,58 @@ impl NostrClient {
                 *public_federations = events;
             }
             Err(e) => {
-                info_to_flutter(format!("Failed to fetch events from nostr: {e}")).await;
+                error_to_flutter(format!("Failed to fetch events from nostr: {e}")).await;
             }
         }
+    }
+
+    pub async fn get_backup_invite_codes(&self) -> Vec<String> {
+        let pubkey = self.keys.public_key;
+        info_to_flutter(format!("Getting backup invite codes for {}", pubkey)).await;
+        self.nostr_client.connect().await;
+
+        let filter = nostr_sdk::Filter::new()
+            .author(pubkey)
+            .kind(nostr_sdk::Kind::from(30000))
+            .custom_tag(
+                nostr_sdk::SingleLetterTag {
+                    character: nostr_sdk::Alphabet::D,
+                    uppercase: false,
+                },
+                "fedimint-backup",
+            );
+        let mut invite_codes: Vec<String> = Vec::new();
+        match self
+            .nostr_client
+            .fetch_events(filter, Duration::from_secs(60))
+            .await
+        {
+            Ok(events) => {
+                let all_events = events.to_vec();
+                for event in all_events {
+                    if let Ok(decrypted) = nostr_sdk::nips::nip04::decrypt(
+                        self.keys.secret_key(),
+                        &pubkey,
+                        event.content,
+                    ) {
+                        let codes = decrypted.split(",");
+                        for code in codes {
+                            if let Ok(_) = InviteCode::from_str(code) {
+                                invite_codes.push(code.to_string());
+                            }
+                        }
+                    }
+                }
+            }
+            Err(e) => {
+                error_to_flutter(format!(
+                    "Failed to fetch replaceable events from nostr: {e}"
+                ))
+                .await;
+            }
+        }
+
+        invite_codes
     }
 
     pub async fn get_nwc_connection_info(&self) -> Vec<(FederationSelector, NWCConnectionInfo)> {
@@ -508,6 +555,51 @@ impl NostrClient {
             .iter()
             .map(|(k, _)| k.to_string())
             .collect()
+    }
+
+    pub async fn backup_invite_codes(&self, invite_codes: Vec<String>) -> anyhow::Result<()> {
+        self.nostr_client.connect().await;
+
+        let pubkey = self.keys.public_key;
+        let serialized_invite_codes = invite_codes.join(",");
+        let encrypted_content = nostr_sdk::nips::nip04::encrypt(
+            &self.keys.secret_key(),
+            &pubkey,
+            serialized_invite_codes,
+        )?;
+
+        let event_builder =
+            nostr_sdk::EventBuilder::new(nostr_sdk::Kind::from(30000), encrypted_content)
+                .tag(nostr_sdk::Tag::public_key(pubkey))
+                .tag(nostr_sdk::Tag::custom(
+                    nostr_sdk::TagKind::d(),
+                    ["fedimint-backup"],
+                ));
+
+        retry(
+            "broadcast fedimint backoff",
+            fedimint_core::util::backoff_util::background_backoff(),
+            || async {
+                match self
+                    .nostr_client
+                    .send_event_builder(event_builder.clone())
+                    .await
+                {
+                    Ok(event_id) => {
+                        info_to_flutter(format!("Broadcasted Fedimint Backup: {event_id:?}")).await;
+                        return Ok(());
+                    }
+                    Err(e) => {
+                        info_to_flutter(format!("Error broadcasting Fedimint backup: {e:?}")).await;
+                    }
+                }
+
+                Err(anyhow!("Error broadcasting Fedimint backup"))
+            },
+        )
+        .await?;
+
+        Ok(())
     }
 }
 

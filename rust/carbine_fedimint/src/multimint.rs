@@ -12,9 +12,11 @@ use bitcoin::key::rand::{seq::SliceRandom, thread_rng};
 use fedimint_api_client::api::net::Connector;
 use fedimint_bip39::{Bip39RootSecretStrategy, Language, Mnemonic};
 use fedimint_client::{
-    db::ChronologicalOperationLogKey, module::oplog::OperationLogEntry,
-    module_init::ClientModuleInitRegistry, secret::RootSecretStrategy, Client, ClientHandleArc,
-    OperationId,
+    db::ChronologicalOperationLogKey,
+    module::{module::recovery::RecoveryProgress, oplog::OperationLogEntry},
+    module_init::ClientModuleInitRegistry,
+    secret::RootSecretStrategy,
+    Client, ClientHandleArc, OperationId,
 };
 use fedimint_core::{
     config::{ClientConfig, FederationId},
@@ -107,6 +109,7 @@ pub struct Multimint {
     clients: Arc<RwLock<BTreeMap<FederationId, ClientHandleArc>>>,
     task_group: TaskGroup,
     pegin_address_monitor_tx: UnboundedSender<(FederationId, TweakIdx)>,
+    recovery_progress: Arc<RwLock<BTreeMap<FederationId, BTreeMap<u16, RecoveryProgress>>>>,
 }
 
 #[derive(Debug, Serialize, Encodable, Decodable, Clone)]
@@ -231,6 +234,8 @@ pub enum MultimintEvent {
     Deposit((FederationId, DepositEventKind)),
     Lightning((FederationId, LightningEventKind)),
     Log(LogLevel, String),
+    RecoveryDone(String),
+    RecoveryProgress(String, u16, u32, u32),
 }
 
 #[derive(Clone, Eq, PartialEq, Serialize, Debug)]
@@ -285,6 +290,7 @@ impl Multimint {
             clients: clients.clone(),
             task_group: TaskGroup::new(),
             pegin_address_monitor_tx: pegin_address_monitor_tx.clone(),
+            recovery_progress: Arc::new(RwLock::new(BTreeMap::new())),
         };
 
         multimint.load_clients().await?;
@@ -318,7 +324,7 @@ impl Multimint {
             self.finish_active_subscriptions(&client, id.id).await;
 
             if client.has_pending_recoveries() {
-                self.spawn_recovery_progress(client.clone());
+                self.spawn_recovery_progress(client.clone(), config.invite_code.to_string());
             }
 
             self.clients.write().await.insert(id.id, client);
@@ -890,10 +896,6 @@ impl Multimint {
             .await?
         };
 
-        if !client.has_pending_recoveries() && self.has_federation(&federation_id).await {
-            bail!("Already joined federation")
-        }
-
         let federation_name = client_config
             .global
             .federation_name()
@@ -934,13 +936,6 @@ impl Multimint {
         })
     }
 
-    async fn has_federation(&self, federation_id: &FederationId) -> bool {
-        let mut dbtx = self.db.begin_transaction_nc().await;
-        dbtx.get_value(&FederationConfigKey { id: *federation_id })
-            .await
-            .is_some()
-    }
-
     async fn build_client(
         &self,
         federation_id: &FederationId,
@@ -972,7 +967,7 @@ impl Multimint {
                     .recover(secret, client_config, invite_code.api_secret(), backup)
                     .await
                     .map(Arc::new)?;
-                self.spawn_recovery_progress(client.clone());
+                self.spawn_recovery_progress(client.clone(), invite_code.to_string());
                 client
             }
             client_type => {
@@ -999,33 +994,98 @@ impl Multimint {
         Ok(client)
     }
 
-    fn spawn_recovery_progress(&self, client: ClientHandleArc) {
+    fn spawn_recovery_progress(&self, client: ClientHandleArc, invite: String) {
+        let mut self_copy = self.clone();
+        let recovering_client = client.clone();
+        self.task_group
+            .spawn_cancellable("wait for recovery", async move {
+                if let Err(e) = self_copy.wait_for_recovery(recovering_client, invite).await {
+                    error_to_flutter(format!("Error waiting for recovery: {e:?}")).await;
+                }
+            });
+
+        let progress_copy = self.clone();
         self.task_group
             .spawn_cancellable("recovery progress", async move {
+                progress_copy
+                    .init_recovery_progress_cache(client.federation_id())
+                    .await;
+
                 let mut stream = client.subscribe_to_recovery_progress();
                 while let Some((module_id, progress)) = stream.next().await {
-                    info_to_flutter(format!("Module: {module_id} Progress: {progress}")).await;
+                    progress_copy
+                        .update_recovery_progress_cache(
+                            &client.federation_id(),
+                            module_id,
+                            progress,
+                        )
+                        .await;
                 }
+
+                progress_copy
+                    .remove_recovery_progress_cache(&client.federation_id())
+                    .await;
             });
     }
 
-    pub async fn wait_for_recovery(
-        &mut self,
-        invite_code: String,
-    ) -> anyhow::Result<FederationSelector> {
-        let invite = InviteCode::from_str(&invite_code)?;
-        let federation_id = invite.federation_id();
-        let recovering_client = self
-            .clients
-            .read()
-            .await
-            .get(&federation_id)
-            .expect("No federation exists")
-            .clone();
+    async fn init_recovery_progress_cache(&self, federation_id: FederationId) {
+        let mut progress = self.recovery_progress.write().await;
+        progress.insert(federation_id, BTreeMap::new());
+    }
 
+    async fn remove_recovery_progress_cache(&self, federation_id: &FederationId) {
+        let mut progress = self.recovery_progress.write().await;
+        progress.remove(federation_id);
+    }
+
+    async fn update_recovery_progress_cache(
+        &self,
+        federation_id: &FederationId,
+        module_id: u16,
+        module_progress: RecoveryProgress,
+    ) {
+        let mut progress = self.recovery_progress.write().await;
+        if let Some(module_progress_cache) = progress.get_mut(federation_id) {
+            module_progress_cache.insert(module_id, module_progress);
+        }
+        get_event_bus()
+            .publish(MultimintEvent::RecoveryProgress(
+                federation_id.to_string(),
+                module_id,
+                module_progress.complete,
+                module_progress.total,
+            ))
+            .await;
+    }
+
+    pub async fn get_recovery_progress(
+        &self,
+        federation_id: &FederationId,
+        module_id: u16,
+    ) -> RecoveryProgress {
+        let progress = self.recovery_progress.read().await;
+        let module_progress = progress.get(federation_id);
+        if let Some(module_progress) = module_progress {
+            if let Some(progress) = module_progress.get(&module_id) {
+                return *progress;
+            }
+        }
+
+        RecoveryProgress {
+            complete: 0,
+            total: 0,
+        }
+    }
+
+    async fn wait_for_recovery(
+        &mut self,
+        recovering_client: ClientHandleArc,
+        invite: String,
+    ) -> anyhow::Result<()> {
+        let federation_id = recovering_client.federation_id();
         info_to_flutter("Waiting for all recoveries...").await;
         recovering_client.wait_for_all_recoveries().await?;
-        let selector = self.join_federation(invite_code, false).await?;
+        self.join_federation(invite, false).await?;
         let new_client = self
             .clients
             .read()
@@ -1036,7 +1096,11 @@ impl Multimint {
         info_to_flutter("Waiting for all active state machines...").await;
         new_client.wait_for_all_active_state_machines().await?;
 
-        Ok(selector)
+        get_event_bus()
+            .publish(MultimintEvent::RecoveryDone(federation_id.to_string()))
+            .await;
+
+        Ok(())
     }
 
     fn get_client_database(&self, federation_id: &FederationId) -> Database {

@@ -31,7 +31,10 @@ class _SplashState extends State<Splash> {
     if (exists) {
       await loadMultimint(path: widget.dir.path);
       final initialFeds = await federations();
-      screen = MyApp(initialFederations: initialFeds);
+      screen = MyApp(
+        initialFederations: initialFeds,
+        recoverFederationInviteCodes: false,
+      );
     } else {
       screen = CreateWallet(dir: widget.dir);
     }

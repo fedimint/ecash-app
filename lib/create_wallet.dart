@@ -39,7 +39,13 @@ class _CreateWalletState extends State<CreateWallet> {
       await createNewMultimint(path: widget.dir.path);
       if (mounted) {
         Navigator.of(context).pushReplacement(
-          MaterialPageRoute(builder: (_) => MyApp(initialFederations: [])),
+          MaterialPageRoute(
+            builder:
+                (_) => MyApp(
+                  initialFederations: [],
+                  recoverFederationInviteCodes: false,
+                ),
+          ),
         );
       }
     } catch (e) {
@@ -55,7 +61,13 @@ class _CreateWalletState extends State<CreateWallet> {
       await createMultimintFromWords(path: widget.dir.path, words: words);
       if (mounted) {
         Navigator.of(context).pushReplacement(
-          MaterialPageRoute(builder: (_) => MyApp(initialFederations: [])),
+          MaterialPageRoute(
+            builder:
+                (_) => MyApp(
+                  initialFederations: [],
+                  recoverFederationInviteCodes: true,
+                ),
+          ),
         );
       }
     } catch (e) {
