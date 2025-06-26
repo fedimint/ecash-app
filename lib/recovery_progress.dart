@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:carbine/lib.dart';
 import 'package:carbine/models.dart';
 import 'package:carbine/multimint.dart';
@@ -21,10 +23,33 @@ class RecoveryStatus extends StatefulWidget {
 class _RecoveryStatusState extends State<RecoveryStatus> {
   double _progress = 0.0;
 
+  late final StreamSubscription<(int, int)> _progressSubscription;
+
   @override
   void initState() {
     super.initState();
     _loadProgress();
+
+    final progressEvents =
+        subscribeRecoveryProgress(
+          federationId: widget.fed.federationId,
+          moduleId: _getModuleId(),
+        ).asBroadcastStream();
+    _progressSubscription = progressEvents.listen((e) {
+      if (e.$2 > 0) {
+        double rawProgress = e.$1.toDouble() / e.$2.toDouble();
+        setState(() => _progress = rawProgress.clamp(0.0, 1.0));
+        AppLogger.instance.info(
+          "${widget.paymentType.name} progress: $_progress complete: ${e.$1} total: ${e.$2}",
+        );
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _progressSubscription.cancel();
+    super.dispose();
   }
 
   int _getModuleId() {
@@ -43,13 +68,15 @@ class _RecoveryStatusState extends State<RecoveryStatus> {
       federationId: widget.fed.federationId,
       moduleId: _getModuleId(),
     );
-    double rawProgress = 0.0;
+
     if (progress.$2 > 0) {
-      rawProgress = progress.$1.toDouble() / progress.$2.toDouble();
+      double rawProgress = progress.$1.toDouble() / progress.$2.toDouble();
       setState(() => _progress = rawProgress.clamp(0.0, 1.0));
     }
 
-    AppLogger.instance.info("${widget.paymentType.name} progress: $_progress");
+    AppLogger.instance.info(
+      "${widget.paymentType.name} progress: $_progress complete: ${progress.$1} total: ${progress.$2}",
+    );
   }
 
   @override

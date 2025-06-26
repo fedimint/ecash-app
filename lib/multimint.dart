@@ -411,6 +411,12 @@ sealed class MultimintEvent with _$MultimintEvent {
       MultimintEvent_Log;
   const factory MultimintEvent.recoveryDone(String field0) =
       MultimintEvent_RecoveryDone;
+  const factory MultimintEvent.recoveryProgress(
+    String field0,
+    int field1,
+    int field2,
+    int field3,
+  ) = MultimintEvent_RecoveryProgress;
 }
 
 class PaymentPreview {

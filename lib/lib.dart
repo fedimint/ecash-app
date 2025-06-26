@@ -275,6 +275,14 @@ Future<(int, int)> getModuleRecoveryProgress({
   moduleId: moduleId,
 );
 
+Stream<(int, int)> subscribeRecoveryProgress({
+  required FederationId federationId,
+  required int moduleId,
+}) => RustLib.instance.api.crateSubscribeRecoveryProgress(
+  federationId: federationId,
+  moduleId: moduleId,
+);
+
 // Rust type: RustOpaqueMoi<flutter_rust_bridge::for_generated::RustAutoOpaqueInner<ClientConfig>>
 abstract class ClientConfig implements RustOpaqueInterface {}
 

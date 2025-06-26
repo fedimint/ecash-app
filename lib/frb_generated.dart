@@ -66,7 +66,7 @@ class RustLib extends BaseEntrypoint<RustLibApi, RustLibApiImpl, RustLibWire> {
   String get codegenVersion => '2.9.0';
 
   @override
-  int get rustContentHash => -867309750;
+  int get rustContentHash => -1189864275;
 
   static const kDefaultExternalLibraryLoaderConfig =
       ExternalLibraryLoaderConfig(
@@ -656,6 +656,11 @@ abstract class RustLibApi extends BaseApi {
   });
 
   Stream<MultimintEvent> crateSubscribeMultimintEvents();
+
+  Stream<(int, int)> crateSubscribeRecoveryProgress({
+    required FederationId federationId,
+    required int moduleId,
+  });
 
   Future<List<Transaction>> crateTransactions({
     required FederationId federationId,
@@ -5523,6 +5528,49 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
       );
 
   @override
+  Stream<(int, int)> crateSubscribeRecoveryProgress({
+    required FederationId federationId,
+    required int moduleId,
+  }) {
+    final sink = RustStreamSink<(int, int)>();
+    unawaited(
+      handler.executeNormal(
+        NormalTask(
+          callFfi: (port_) {
+            final serializer = SseSerializer(generalizedFrbRustBinding);
+            sse_encode_StreamSink_record_u_32_u_32_Sse(sink, serializer);
+            sse_encode_Auto_Owned_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerFederationId(
+              federationId,
+              serializer,
+            );
+            sse_encode_u_16(moduleId, serializer);
+            pdeCallFfi(
+              generalizedFrbRustBinding,
+              serializer,
+              funcId: 127,
+              port: port_,
+            );
+          },
+          codec: SseCodec(
+            decodeSuccessData: sse_decode_unit,
+            decodeErrorData: null,
+          ),
+          constMeta: kCrateSubscribeRecoveryProgressConstMeta,
+          argValues: [sink, federationId, moduleId],
+          apiImpl: this,
+        ),
+      ),
+    );
+    return sink.stream;
+  }
+
+  TaskConstMeta get kCrateSubscribeRecoveryProgressConstMeta =>
+      const TaskConstMeta(
+        debugName: "subscribe_recovery_progress",
+        argNames: ["sink", "federationId", "moduleId"],
+      );
+
+  @override
   Future<List<Transaction>> crateTransactions({
     required FederationId federationId,
     BigInt? timestamp,
@@ -5543,7 +5591,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 127,
+            funcId: 128,
             port: port_,
           );
         },
@@ -5573,7 +5621,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 128,
+            funcId: 129,
             port: port_,
           );
         },
@@ -5601,7 +5649,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 129,
+            funcId: 130,
             port: port_,
           );
         },
@@ -5643,7 +5691,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 130,
+            funcId: 131,
             port: port_,
           );
         },
@@ -5673,7 +5721,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 131,
+            funcId: 132,
             port: port_,
           );
         },
@@ -6433,6 +6481,14 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   }
 
   @protected
+  RustStreamSink<(int, int)> dco_decode_StreamSink_record_u_32_u_32_Sse(
+    dynamic raw,
+  ) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    throw UnimplementedError();
+  }
+
+  @protected
   String dco_decode_String(dynamic raw) {
     // Codec=Dco (DartCObject based), see doc to use other codecs
     return raw as String;
@@ -6753,6 +6809,13 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
         );
       case 3:
         return MultimintEvent_RecoveryDone(dco_decode_String(raw[1]));
+      case 4:
+        return MultimintEvent_RecoveryProgress(
+          dco_decode_String(raw[1]),
+          dco_decode_u_16(raw[2]),
+          dco_decode_u_32(raw[3]),
+          dco_decode_u_32(raw[4]),
+        );
       default:
         throw Exception("unreachable");
     }
@@ -7776,6 +7839,14 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   }
 
   @protected
+  RustStreamSink<(int, int)> sse_decode_StreamSink_record_u_32_u_32_Sse(
+    SseDeserializer deserializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    throw UnimplementedError('Unreachable ()');
+  }
+
+  @protected
   String sse_decode_String(SseDeserializer deserializer) {
     // Codec=Sse (Serialization based), see doc to use other codecs
     var inner = sse_decode_list_prim_u_8_strict(deserializer);
@@ -8157,6 +8228,17 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
       case 3:
         var var_field0 = sse_decode_String(deserializer);
         return MultimintEvent_RecoveryDone(var_field0);
+      case 4:
+        var var_field0 = sse_decode_String(deserializer);
+        var var_field1 = sse_decode_u_16(deserializer);
+        var var_field2 = sse_decode_u_32(deserializer);
+        var var_field3 = sse_decode_u_32(deserializer);
+        return MultimintEvent_RecoveryProgress(
+          var_field0,
+          var_field1,
+          var_field2,
+          var_field3,
+        );
       default:
         throw UnimplementedError('');
     }
@@ -9241,6 +9323,23 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   }
 
   @protected
+  void sse_encode_StreamSink_record_u_32_u_32_Sse(
+    RustStreamSink<(int, int)> self,
+    SseSerializer serializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    sse_encode_String(
+      self.setupAndSerialize(
+        codec: SseCodec(
+          decodeSuccessData: sse_decode_record_u_32_u_32,
+          decodeErrorData: sse_decode_AnyhowException,
+        ),
+      ),
+      serializer,
+    );
+  }
+
+  @protected
   void sse_encode_String(String self, SseSerializer serializer) {
     // Codec=Sse (Serialization based), see doc to use other codecs
     sse_encode_list_prim_u_8_strict(utf8.encoder.convert(self), serializer);
@@ -9598,6 +9697,17 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
       case MultimintEvent_RecoveryDone(field0: final field0):
         sse_encode_i_32(3, serializer);
         sse_encode_String(field0, serializer);
+      case MultimintEvent_RecoveryProgress(
+        field0: final field0,
+        field1: final field1,
+        field2: final field2,
+        field3: final field3,
+      ):
+        sse_encode_i_32(4, serializer);
+        sse_encode_String(field0, serializer);
+        sse_encode_u_16(field1, serializer);
+        sse_encode_u_32(field2, serializer);
+        sse_encode_u_32(field3, serializer);
     }
   }
 

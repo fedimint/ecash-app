@@ -584,3 +584,25 @@ pub async fn get_module_recovery_progress(
         .await;
     (progress.complete, progress.total)
 }
+
+#[frb]
+pub async fn subscribe_recovery_progress(
+    sink: StreamSink<(u32, u32)>,
+    federation_id: FederationId,
+    module_id: u16,
+) {
+    let event_bus = get_event_bus();
+    let mut stream = event_bus.subscribe();
+
+    while let Some(evt) = stream.next().await {
+        if let MultimintEvent::RecoveryProgress(evt_fed_id, evt_module_id, complete, total) = evt {
+            let event_federation_id =
+                FederationId::from_str(&evt_fed_id).expect("Could not parse FederationId");
+            if event_federation_id == federation_id && evt_module_id == module_id {
+                if sink.add((complete, total)).is_err() {
+                    break;
+                }
+            }
+        }
+    }
+}

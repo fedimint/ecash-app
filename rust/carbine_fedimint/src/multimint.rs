@@ -235,6 +235,7 @@ pub enum MultimintEvent {
     Lightning((FederationId, LightningEventKind)),
     Log(LogLevel, String),
     RecoveryDone(String),
+    RecoveryProgress(String, u16, u32, u32),
 }
 
 #[derive(Clone, Eq, PartialEq, Serialize, Debug)]
@@ -1012,7 +1013,6 @@ impl Multimint {
 
                 let mut stream = client.subscribe_to_recovery_progress();
                 while let Some((module_id, progress)) = stream.next().await {
-                    //info_to_flutter(format!("Module: {module_id} Progress: {progress}")).await;
                     progress_copy
                         .update_recovery_progress_cache(
                             &client.federation_id(),
@@ -1048,6 +1048,14 @@ impl Multimint {
         if let Some(module_progress_cache) = progress.get_mut(federation_id) {
             module_progress_cache.insert(module_id, module_progress);
         }
+        get_event_bus()
+            .publish(MultimintEvent::RecoveryProgress(
+                federation_id.to_string(),
+                module_id,
+                module_progress.complete,
+                module_progress.total,
+            ))
+            .await;
     }
 
     pub async fn get_recovery_progress(
