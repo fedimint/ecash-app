@@ -240,29 +240,31 @@ class _DashboardState extends State<Dashboard> {
               btcPrice: _btcPrice,
             ),
             const SizedBox(height: 48),
-            const RecentTransactionsHeader(),
-            // Expanded is necessary so only the tx list is scrollable, not the
-            // entire dashboard
-            Expanded(
-              child: recovering
-                  ? RecoveryStatus(
-                      key: ValueKey(_selectedPaymentType),
-                      paymentType: _selectedPaymentType,
-                      fed: widget.fed,
-                      initialProgress: _recoveryProgress,
-                    )
-                  : TransactionsList(
-                      key: ValueKey(balanceMsats),
-                      fed: widget.fed,
-                      selectedPaymentType: _selectedPaymentType,
-                      recovering: recovering,
-                      onClaimed: _loadBalance,
-                      onWithdrawCompleted: _refreshTransactions,
-                      onRefreshRequested: (refreshCallback) {
-                        _refreshTransactionsList = refreshCallback;
-                      },
-                    ),
-            ),
+            if (recovering)...[
+              RecoveryStatus(
+                key: ValueKey(_selectedPaymentType),
+                paymentType: _selectedPaymentType,
+                fed: widget.fed,
+                initialProgress: _recoveryProgress,
+              )
+            ] else...[
+              const RecentTransactionsHeader(),
+              // Expanded is necessary so only the tx list is scrollable, not the
+              // entire dashboard
+              Expanded(
+                child: TransactionsList(
+                        key: ValueKey(balanceMsats),
+                        fed: widget.fed,
+                        selectedPaymentType: _selectedPaymentType,
+                        recovering: recovering,
+                        onClaimed: _loadBalance,
+                        onWithdrawCompleted: _refreshTransactions,
+                        onRefreshRequested: (refreshCallback) {
+                          _refreshTransactionsList = refreshCallback;
+                        },
+                      ), 
+              ),
+            ]
           ],
         ),
       ),
