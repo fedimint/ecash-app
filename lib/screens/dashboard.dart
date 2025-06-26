@@ -34,6 +34,7 @@ class _DashboardState extends State<Dashboard> {
   bool isLoadingBalance = true;
   bool showMsats = false;
   late bool recovering;
+  double _recoveryProgress = 0.0;
   PaymentType _selectedPaymentType = PaymentType.lightning;
   VoidCallback? _pendingAction;
   VoidCallback? _refreshTransactionsList;
@@ -166,6 +167,24 @@ class _DashboardState extends State<Dashboard> {
     _loadBalance();
   }
 
+  Future<void> _loadProgress(PaymentType paymentType) async {
+    if (recovering) {
+      final progress = await getModuleRecoveryProgress(
+        federationId: widget.fed.federationId,
+        moduleId: getModuleIdForPaymentType(paymentType),
+      );
+
+      if (progress.$2 > 0) {
+        double rawProgress = progress.$1.toDouble() / progress.$2.toDouble();
+        setState(() => _recoveryProgress = rawProgress.clamp(0.0, 1.0));
+      }
+
+      AppLogger.instance.info(
+        "${_selectedPaymentType} progress: $_recoveryProgress complete: ${progress.$1} total: ${progress.$2}",
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final name = widget.fed.federationName;
@@ -229,7 +248,8 @@ class _DashboardState extends State<Dashboard> {
                   ? RecoveryStatus(
                       key: ValueKey(_selectedPaymentType),
                       paymentType: _selectedPaymentType,
-                      fed: widget.fed
+                      fed: widget.fed,
+                      initialProgress: _recoveryProgress,
                     )
                   : TransactionsList(
                       key: ValueKey(balanceMsats),
@@ -248,7 +268,8 @@ class _DashboardState extends State<Dashboard> {
       ),
       bottomNavigationBar: BottomNavigationBar(
         currentIndex: _selectedPaymentType.index,
-        onTap: (index) {
+        onTap: (index) async {
+          await _loadProgress(PaymentType.values[index]);
           setState(() => _selectedPaymentType = PaymentType.values[index]);
         },
         selectedItemColor: Theme.of(context).colorScheme.primary,

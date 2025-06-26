@@ -9,11 +9,13 @@ import 'package:flutter/material.dart';
 class RecoveryStatus extends StatefulWidget {
   final PaymentType paymentType;
   final FederationSelector fed;
+  final double initialProgress;
 
   const RecoveryStatus({
     super.key,
     required this.paymentType,
     required this.fed,
+    required this.initialProgress,
   });
 
   @override
@@ -21,19 +23,20 @@ class RecoveryStatus extends StatefulWidget {
 }
 
 class _RecoveryStatusState extends State<RecoveryStatus> {
-  double _progress = 0.0;
+  late double _progress;
 
   late final StreamSubscription<(int, int)> _progressSubscription;
 
   @override
   void initState() {
     super.initState();
-    _loadProgress();
+
+    _progress = widget.initialProgress;
 
     final progressEvents =
         subscribeRecoveryProgress(
           federationId: widget.fed.federationId,
-          moduleId: _getModuleId(),
+          moduleId: getModuleIdForPaymentType(widget.paymentType),
         ).asBroadcastStream();
     _progressSubscription = progressEvents.listen((e) {
       if (e.$2 > 0) {
@@ -50,33 +53,6 @@ class _RecoveryStatusState extends State<RecoveryStatus> {
   void dispose() {
     _progressSubscription.cancel();
     super.dispose();
-  }
-
-  int _getModuleId() {
-    switch (widget.paymentType) {
-      case PaymentType.lightning:
-        return 0;
-      case PaymentType.ecash:
-        return 1;
-      case PaymentType.onchain:
-        return 2;
-    }
-  }
-
-  Future<void> _loadProgress() async {
-    final progress = await getModuleRecoveryProgress(
-      federationId: widget.fed.federationId,
-      moduleId: _getModuleId(),
-    );
-
-    if (progress.$2 > 0) {
-      double rawProgress = progress.$1.toDouble() / progress.$2.toDouble();
-      setState(() => _progress = rawProgress.clamp(0.0, 1.0));
-    }
-
-    AppLogger.instance.info(
-      "${widget.paymentType.name} progress: $_progress complete: ${progress.$1} total: ${progress.$2}",
-    );
   }
 
   @override
