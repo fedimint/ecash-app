@@ -68,7 +68,7 @@ class _EcashRedeemPromptState extends State<EcashRedeemPrompt> {
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         Text(
-          'Do you want to redeem the following ecash?',
+          'Do you want to redeem the following ecash to ${widget.fed.federationName}?',
           style: theme.textTheme.titleLarge,
           textAlign: TextAlign.center,
         ),
