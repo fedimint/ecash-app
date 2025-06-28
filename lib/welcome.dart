@@ -35,24 +35,77 @@ class _WelcomeWidgetState extends State<WelcomeWidget> {
     );
   }
 
-  Widget _buildRichTextPage(BuildContext context) {
+  Widget _buildFedimintIntroPage(BuildContext context) {
     return Column(
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
-        Icon(Icons.explore, size: 80, color: Theme.of(context).primaryColor),
+        Icon(Icons.security, size: 80, color: Theme.of(context).primaryColor),
         const SizedBox(height: 32),
         const Text(
-          'Discover Federations',
+          'What is Fedimint?',
           style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
         ),
         const SizedBox(height: 16),
         RichText(
           textAlign: TextAlign.center,
           text: TextSpan(
-            style: const TextStyle(fontSize: 16),
+            style: DefaultTextStyle.of(context).style.copyWith(fontSize: 16),
             children: [
               const TextSpan(
-                text: 'You can explore and discover new federations through ',
+                text:
+                    'Fedimint is an open-source protocol that lets communities securely and privately hold and spend Bitcoin together using federated Chaumian ecash.\n\n',
+              ),
+              const TextSpan(
+                text:
+                    'It enables scalable, community-based custody with privacy at its core. With Fedimint, you don’t need to trust a single custodian — you trust your community.\n\n',
+              ),
+              TextSpan(
+                text: 'Learn more at fedimint.org',
+                style: const TextStyle(
+                  color: Colors.blue,
+                  decoration: TextDecoration.underline,
+                ),
+                recognizer:
+                    TapGestureRecognizer()
+                      ..onTap = () async {
+                        const url = 'https://fedimint.org';
+                        if (await canLaunch(url)) {
+                          await launch(url);
+                        }
+                      },
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildDiscoverPage(BuildContext context) {
+    return Column(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        Icon(Icons.explore, size: 80, color: Theme.of(context).primaryColor),
+        const SizedBox(height: 32),
+        const Text(
+          'Getting Started',
+          style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+        ),
+        const SizedBox(height: 16),
+        const Text(
+          "To get started, you will need to join your community's federation by copying or scanning the join code.",
+          style: TextStyle(fontSize: 16),
+          textAlign: TextAlign.center,
+        ),
+        const SizedBox(height: 16),
+        RichText(
+          textAlign: TextAlign.center,
+          text: TextSpan(
+            style: DefaultTextStyle.of(context).style.copyWith(fontSize: 16),
+            children: [
+              const TextSpan(
+                text:
+                    'If your community does not have a federation, you can discover new federations through ',
               ),
               TextSpan(
                 text: 'Nostr',
@@ -104,33 +157,8 @@ class _WelcomeWidgetState extends State<WelcomeWidget> {
           child: PageView(
             controller: _controller,
             children: [
-              _buildPage(
-                content: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Icon(
-                      Icons.group_add,
-                      size: 80,
-                      color: Theme.of(context).primaryColor,
-                    ),
-                    const SizedBox(height: 32),
-                    const Text(
-                      'Welcome!',
-                      style: TextStyle(
-                        fontSize: 24,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    const SizedBox(height: 16),
-                    const Text(
-                      'You can join a community by scanning or copying a join code provided by a federation.',
-                      style: TextStyle(fontSize: 16),
-                      textAlign: TextAlign.center,
-                    ),
-                  ],
-                ),
-              ),
-              _buildPage(content: _buildRichTextPage(context)),
+              _buildPage(content: _buildFedimintIntroPage(context)),
+              _buildPage(content: _buildDiscoverPage(context)),
             ],
           ),
         ),

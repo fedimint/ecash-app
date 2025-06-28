@@ -8,7 +8,12 @@ import 'package:flutter/material.dart';
 
 class SettingsScreen extends StatefulWidget {
   final void Function(FederationSelector fed, bool recovering) onJoin;
-  const SettingsScreen({super.key, required this.onJoin});
+  final VoidCallback onGettingStarted;
+  const SettingsScreen({
+    super.key,
+    required this.onJoin,
+    required this.onGettingStarted,
+  });
 
   @override
   State<SettingsScreen> createState() => _SettingsScreenState();
@@ -37,6 +42,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [
+          _SettingsOption(
+            icon: Icons.group_add,
+            title: "Getting Started",
+            subtitle: "Learn how to get started with Fedimint",
+            onTap: widget.onGettingStarted,
+          ),
           _SettingsOption(
             icon: Icons.explore,
             title: "Discover",

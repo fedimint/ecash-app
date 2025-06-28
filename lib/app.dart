@@ -170,6 +170,13 @@ class _MyAppState extends State<MyApp> {
     }
   }
 
+  void _onGettingStarted() {
+    setState(() {
+      _selectedFederation = null;
+      _currentIndex = 0;
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     Widget bodyContent;
@@ -182,7 +189,10 @@ class _MyAppState extends State<MyApp> {
       );
     } else {
       if (_currentIndex == 1) {
-        bodyContent = SettingsScreen(onJoin: _onJoinPressed);
+        bodyContent = SettingsScreen(
+          onJoin: _onJoinPressed,
+          onGettingStarted: _onGettingStarted,
+        );
       } else {
         if (recoverFederations) {
           bodyContent = const Center(
