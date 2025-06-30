@@ -1,6 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
-
+import 'package:carbine/qr_export.dart';
 import 'package:carbine/lib.dart';
 import 'package:carbine/multimint.dart';
 import 'package:carbine/theme.dart';
@@ -8,7 +8,6 @@ import 'package:carbine/utils.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:qr_flutter/qr_flutter.dart';
-import 'package:uuid/uuid.dart';
 
 class EcashSend extends StatefulWidget {
   final FederationSelector fed;
@@ -28,8 +27,6 @@ class _EcashSendState extends State<EcashSend> {
 
   int _currentChunkIndex = 0;
   Timer? _qrLoopTimer;
-
-  static const int _chunkSizeBytes = 40;
 
   @override
   void initState() {
@@ -51,7 +48,7 @@ class _EcashSendState extends State<EcashSend> {
       );
 
       final ecashString = ecash.$2;
-      final chunked = _splitEcashIntoChunks(ecashString, _chunkSizeBytes);
+      final chunked = dataToFrames(utf8.encode(ecashString));
 
       setState(() {
         _ecash = ecashString;
@@ -68,42 +65,7 @@ class _EcashSendState extends State<EcashSend> {
     }
   }
 
-  List<String> _splitEcashIntoChunks(String ecash, int chunkSize) {
-    final bytes = utf8.encode(ecash);
-    final totalChunks = (bytes.length / chunkSize).ceil();
-    final messageId = const Uuid().v4(); // generates a unique ID
-
-    final chunks = <String>[];
-    for (int i = 0; i < totalChunks; i++) {
-      final start = i * chunkSize;
-      final end = (start + chunkSize).clamp(0, bytes.length);
-      final chunkBytes = bytes.sublist(start, end);
-
-      final payload = utf8.decode(Uint8List.fromList(chunkBytes));
-
-      if (i == totalChunks - 1) {
-        AppLogger.instance.info("Last chunk size: ${payload.length}");
-      }
-
-      final chunkData = json.encode({
-        'id': messageId,
-        'total': totalChunks,
-        'index': i,
-        'payload': payload,
-      });
-
-      chunks.add(chunkData);
-    }
-
-    AppLogger.instance.info(
-      "Total Size: ${bytes.length} Total Chunks: $totalChunks",
-    );
-
-    return chunks;
-  }
-
   void _startQrLoop() {
-    AppLogger.instance.info("QR Code chunks: ${_qrChunks.length}");
     _qrLoopTimer = Timer.periodic(const Duration(milliseconds: 300), (_) {
       setState(() {
         _currentChunkIndex = (_currentChunkIndex + 1) % _qrChunks.length;
@@ -167,8 +129,6 @@ class _EcashSendState extends State<EcashSend> {
             ),
           ),
           const SizedBox(height: 24),
-
-          // QR Loop container
           Container(
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
@@ -201,10 +161,7 @@ class _EcashSendState extends State<EcashSend> {
               ],
             ),
           ),
-
           const SizedBox(height: 24),
-
-          // Abbreviated ecash copy row
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
             decoration: BoxDecoration(
@@ -250,10 +207,7 @@ class _EcashSendState extends State<EcashSend> {
               ],
             ),
           ),
-
           const SizedBox(height: 16),
-
-          // Detail panel
           Container(
             width: double.infinity,
             padding: const EdgeInsets.all(16),
@@ -276,9 +230,7 @@ class _EcashSendState extends State<EcashSend> {
               ],
             ),
           ),
-
           const SizedBox(height: 20),
-
           SizedBox(
             width: double.infinity,
             child: ElevatedButton(
