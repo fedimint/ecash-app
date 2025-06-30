@@ -23,6 +23,7 @@ dependencies:
   path_provider: ^2.1.5
   freezed_annotation: ^3.0.0
   uuid: ^4.5.1
+  crypto: ^3.0.6
 
 dev_dependencies:
   flutter_test:
