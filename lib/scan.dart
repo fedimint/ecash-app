@@ -10,6 +10,8 @@ import 'package:carbine/pay_preview.dart';
 import 'package:carbine/redeem_ecash.dart';
 import 'package:carbine/theme.dart';
 import 'package:carbine/utils.dart';
+import 'package:collection/collection.dart';
+import 'package:crypto/crypto.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
@@ -17,6 +19,7 @@ import 'package:mobile_scanner/mobile_scanner.dart';
 class ScanQRPage extends StatefulWidget {
   final FederationSelector? selectedFed;
   final PaymentType? paymentType;
+
   const ScanQRPage({super.key, this.selectedFed, this.paymentType});
 
   @override
@@ -26,8 +29,69 @@ class ScanQRPage extends StatefulWidget {
 class _ScanQRPageState extends State<ScanQRPage> {
   bool _scanned = false;
   bool _isPasting = false;
-
   _QrLoopSession? _currentSession;
+
+  void _handleQrLoopChunk(String base64Str) {
+    try {
+      final bytes = base64Decode(base64Str);
+      if (bytes.length < 5) return;
+
+      final nonce = bytes[0];
+      final totalFrames = (bytes[1] << 8) + bytes[2];
+      final frameIndex = (bytes[3] << 8) + bytes[4];
+      final chunkData = bytes.sublist(5);
+
+      AppLogger.instance.info(
+        "Frame $frameIndex / $totalFrames (nonce=$nonce)",
+      );
+
+      if (_currentSession == null || _currentSession!.nonce != nonce) {
+        _currentSession = _QrLoopSession(
+          nonce: nonce,
+          totalFrames: totalFrames,
+        );
+      }
+
+      final session = _currentSession!;
+
+      if (!session.chunks.containsKey(frameIndex)) {
+        session.chunks[frameIndex] = chunkData;
+        setState(() {});
+      }
+
+      if (session.isComplete && !_scanned) {
+        _scanned = true;
+        final merged = session.mergeChunks();
+
+        final lengthBytes = merged.sublist(0, 4);
+        final declaredLength =
+            (lengthBytes[0] << 24) |
+            (lengthBytes[1] << 16) |
+            (lengthBytes[2] << 8) |
+            lengthBytes[3];
+
+        final hashBytes = merged.sublist(4, 20);
+        final payload = merged.sublist(20, 20 + declaredLength);
+
+        final actualHash = md5.convert(payload).bytes;
+        final isValid = const ListEquality().equals(actualHash, hashBytes);
+
+        if (!isValid) {
+          AppLogger.instance.warn("Expected hash: ${base64Encode(hashBytes)}");
+          AppLogger.instance.warn("Actual hash:   ${base64Encode(actualHash)}");
+          AppLogger.instance.warn("QR payload hash mismatch");
+          return;
+        }
+
+        final actualPayload = utf8.decode(payload);
+        AppLogger.instance.info("Decoded QR payload: $actualPayload");
+        _handleText(actualPayload);
+      }
+    } catch (e) {
+      AppLogger.instance.warn("Failed QR frame: $e");
+      if (!_scanned) _onQRCodeScanned(base64Str);
+    }
+  }
 
   Future<void> _handleText(String text) async {
     try {
@@ -47,10 +111,9 @@ class _ScanQRPageState extends State<ScanQRPage> {
       }
 
       switch (action) {
-        case ParsedText_InviteCode(field0: String inviteCode):
+        case ParsedText_InviteCode(:final field0):
           if (widget.paymentType == null) {
-            final meta = await getFederationMeta(inviteCode: inviteCode);
-
+            final meta = await getFederationMeta(inviteCode: field0);
             final fed = await showCarbineModalBottomSheet(
               context: context,
               child: FederationPreview(
@@ -63,21 +126,19 @@ class _ScanQRPageState extends State<ScanQRPage> {
                 network: meta.selector.network!,
               ),
             );
-
             if (fed != null) {
               await Future.delayed(const Duration(milliseconds: 400));
               Navigator.pop(context, fed);
             }
           }
           break;
-        case ParsedText_LightningInvoice(field0: String invoice):
+        case ParsedText_LightningInvoice(:final field0):
           if (widget.paymentType == null ||
               widget.paymentType! == PaymentType.lightning) {
             final preview = await paymentPreview(
               federationId: chosenFederation!.federationId,
-              bolt11: invoice,
+              bolt11: field0,
             );
-
             showCarbineModalBottomSheet(
               context: context,
               child: PaymentPreviewWidget(
@@ -87,24 +148,21 @@ class _ScanQRPageState extends State<ScanQRPage> {
             );
           }
           break;
-        case ParsedText_BitcoinAddress(
-          field0: String address,
-          field1: BigInt amountMsats,
-        ):
+        case ParsedText_BitcoinAddress(:final field0, :final field1):
           if (widget.paymentType == null ||
               widget.paymentType! == PaymentType.onchain) {
             showCarbineModalBottomSheet(
               context: context,
               child: OnchainSend(
                 fed: chosenFederation!,
-                amountSats: amountMsats.toSats,
+                amountSats: field1.toSats,
                 withdrawalMode: WithdrawalMode.specificAmount,
-                defaultAddress: address,
+                defaultAddress: field0,
               ),
             );
           }
           break;
-        case ParsedText_Ecash(field0: BigInt amountMsats):
+        case ParsedText_Ecash(:final field0):
           if (widget.paymentType == null ||
               widget.paymentType! == PaymentType.ecash) {
             showCarbineModalBottomSheet(
@@ -112,7 +170,7 @@ class _ScanQRPageState extends State<ScanQRPage> {
               child: EcashRedeemPrompt(
                 fed: chosenFederation!,
                 ecash: text,
-                amount: amountMsats,
+                amount: field0,
               ),
               heightFactor: 0.33,
             );
@@ -120,55 +178,7 @@ class _ScanQRPageState extends State<ScanQRPage> {
           break;
       }
     } catch (e) {
-      AppLogger.instance.warn("No available action for scanned text: $text");
-    }
-  }
-
-  void _handleQrLoopChunk(String jsonChunk) {
-    try {
-      if (widget.paymentType == null ||
-          widget.paymentType! == PaymentType.ecash) {
-        final Map<String, dynamic> parsed = json.decode(jsonChunk);
-        final id = parsed['id'];
-        final total = parsed['total'];
-        final index = parsed['index'];
-        final payload = parsed['payload'];
-
-        if (id is! String ||
-            total is! int ||
-            index is! int ||
-            payload is! String) {
-          AppLogger.instance.warn("Scanned QR has invalid data: $jsonChunk");
-          return;
-        }
-
-        AppLogger.instance.info("Scanned: index: $index / $total");
-
-        // Reset if new session
-        if (_currentSession == null || _currentSession!.id != id) {
-          _currentSession = _QrLoopSession(id: id, total: total);
-        }
-
-        final session = _currentSession!;
-        if (!session.receivedChunks.containsKey(index)) {
-          session.receivedChunks[index] = payload;
-          setState(() {}); // Triggers progress bar update
-        }
-
-        if (session.isComplete && !_scanned) {
-          _scanned = true;
-          final merged =
-              List.generate(
-                total,
-                (i) => session.receivedChunks[i] ?? '',
-              ).join();
-          _handleText(merged);
-        }
-      } else {
-        if (!_scanned) _onQRCodeScanned(jsonChunk);
-      }
-    } catch (_) {
-      if (!_scanned) _onQRCodeScanned(jsonChunk);
+      AppLogger.instance.warn("No action for scanned text: $text");
     }
   }
 
@@ -179,10 +189,7 @@ class _ScanQRPageState extends State<ScanQRPage> {
   }
 
   Future<void> _pasteFromClipboard() async {
-    setState(() {
-      _isPasting = true;
-    });
-
+    setState(() => _isPasting = true);
     final clipboardData = await Clipboard.getData('text/plain');
     final text = clipboardData?.text ?? '';
 
@@ -200,12 +207,15 @@ class _ScanQRPageState extends State<ScanQRPage> {
 
   double? get _progress {
     final session = _currentSession;
-    if (session == null || session.total <= 1) return null;
-    return session.receivedChunks.length / session.total;
+    if (session == null || session.totalFrames <= 1) return null;
+    return session.chunks.length / session.totalFrames;
   }
 
   @override
   Widget build(BuildContext context) {
+    final received = _currentSession?.chunks.length ?? 0;
+    final total = _currentSession?.totalFrames ?? 0;
+
     return SafeArea(
       child: Scaffold(
         appBar: AppBar(
@@ -228,9 +238,7 @@ class _ScanQRPageState extends State<ScanQRPage> {
                 onDetect: (capture) {
                   final barcode = capture.barcodes.first;
                   final String? code = barcode.rawValue;
-                  if (code != null) {
-                    _handleQrLoopChunk(code);
-                  }
+                  if (code != null) _handleQrLoopChunk(code);
                 },
               ),
             ),
@@ -243,10 +251,6 @@ class _ScanQRPageState extends State<ScanQRPage> {
                     duration: const Duration(milliseconds: 300),
                     tween: Tween<double>(begin: 0, end: _progress!),
                     builder: (context, value, child) {
-                      final received =
-                          _currentSession?.receivedChunks.length ?? 0;
-                      final total = _currentSession?.total ?? 0;
-
                       return Stack(
                         alignment: Alignment.center,
                         children: [
@@ -307,10 +311,18 @@ class _ScanQRPageState extends State<ScanQRPage> {
 }
 
 class _QrLoopSession {
-  final String id;
-  final int total;
-  final Map<int, String> receivedChunks = {};
-  _QrLoopSession({required this.id, required this.total});
+  final int nonce;
+  final int totalFrames;
+  final Map<int, Uint8List> chunks = {};
+  _QrLoopSession({required this.nonce, required this.totalFrames});
 
-  bool get isComplete => receivedChunks.length >= total;
+  bool get isComplete => chunks.length >= totalFrames;
+
+  Uint8List mergeChunks() {
+    final List<int> fullData = [];
+    for (int i = 0; i < totalFrames; i++) {
+      fullData.addAll(chunks[i]!);
+    }
+    return Uint8List.fromList(fullData);
+  }
 }
