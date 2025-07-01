@@ -1,12 +1,22 @@
-use std::{collections::BTreeMap, str::FromStr, sync::Arc, time::Duration, u64};
+use std::{
+    collections::BTreeMap,
+    str::FromStr,
+    sync::Arc,
+    time::{Duration, SystemTime},
+    u64,
+};
 
 use crate::{
     anyhow, await_send, balance,
-    db::{NostrWalletConnectConfig, NostrWalletConnectKey, NostrWalletConnectKeyPrefix},
+    db::{
+        NostrRelaysKey, NostrRelaysKeyPrefix, NostrWalletConnectConfig, NostrWalletConnectKey,
+        NostrWalletConnectKeyPrefix,
+    },
     error_to_flutter, federations, info_to_flutter,
     multimint::{FederationSelector, LightningSendOutcome},
     payment_preview, send,
 };
+use anyhow::bail;
 use bitcoin::Network;
 use fedimint_bip39::{Bip39RootSecretStrategy, Mnemonic};
 use fedimint_client::{secret::RootSecretStrategy, Client};
@@ -24,14 +34,17 @@ use serde::{Deserialize, Serialize};
 use tokio::sync::{oneshot, RwLock};
 
 pub const DEFAULT_RELAYS: &[&str] = &[
+    "wss://nostr.bitcoiner.social",
     "wss://relay.nostr.band",
-    "wss://nostr-pub.wellorder.net",
+    //"wss://relay.damus.io",
+    "wss://nostr.zebedee.cloud",
     "wss://relay.plebstr.com",
     "wss://relayer.fiatjaf.com",
     "wss://nostr-01.bolt.observer",
-    "wss://nostr.bitcoiner.social",
+    "wss://nostr-relay.wlvs.space",
     "wss://relay.nostr.info",
-    "wss://relay.damus.io",
+    "wss://nostr-pub.wellorder.net",
+    "wss://nostr1.tunnelsats.com",
 ];
 
 pub const NWC_SUPPORTED_METHODS: &[&str] = &["get_info", "get_balance", "pay_invoice"];
@@ -90,13 +103,16 @@ impl NostrClient {
 
         let client = nostr_sdk::Client::builder().signer(keys.clone()).build();
 
-        for relay in DEFAULT_RELAYS {
-            match client.add_relay(*relay).await {
-                Ok(_) => {
-                    info_to_flutter(format!("Successfully added relay: {relay}")).await;
+        let relays = Self::get_or_insert_default_relays(db.clone()).await;
+        for relay in relays {
+            match client.add_relay(relay.as_str()).await {
+                Ok(added) => {
+                    if added {
+                        info_to_flutter(format!("Successfully added relay: {relay}")).await;
+                    }
                 }
                 Err(err) => {
-                    info_to_flutter(format!(
+                    error_to_flutter(format!(
                         "Could not add relay {}: {}",
                         relay,
                         err.fmt_compact()
@@ -136,6 +152,53 @@ impl NostrClient {
         }
 
         Ok(nostr_client)
+    }
+
+    pub async fn insert_relay(&self, relay_uri: String) -> anyhow::Result<()> {
+        let added = self.nostr_client.add_relay(relay_uri.clone()).await?;
+        if !added {
+            bail!("Relay already added");
+        }
+
+        let Ok(relay) = self.nostr_client.relay(relay_uri.clone()).await else {
+            bail!("Could not get relay");
+        };
+
+        relay.connect();
+        relay.wait_for_connection(Duration::from_secs(15)).await;
+        info_to_flutter(format!("Connected to relay {}", relay_uri.clone())).await;
+
+        let mut dbtx = self.db.begin_transaction().await;
+        dbtx.insert_entry(&NostrRelaysKey { uri: relay_uri }, &SystemTime::now())
+            .await;
+        dbtx.commit_tx().await;
+
+        Ok(())
+    }
+
+    async fn get_or_insert_default_relays(db: Database) -> Vec<String> {
+        let mut dbtx = db.begin_transaction().await;
+        let relays = dbtx
+            .find_by_prefix(&NostrRelaysKeyPrefix)
+            .await
+            .map(|(k, _)| k.uri)
+            .collect::<Vec<_>>()
+            .await;
+        if !relays.is_empty() {
+            return relays;
+        }
+
+        for relay in DEFAULT_RELAYS {
+            dbtx.insert_new_entry(
+                &NostrRelaysKey {
+                    uri: relay.to_string(),
+                },
+                &SystemTime::now(),
+            )
+            .await;
+        }
+        dbtx.commit_tx().await;
+        DEFAULT_RELAYS.into_iter().map(|s| s.to_string()).collect()
     }
 
     async fn broadcast_nwc_info(nostr_client: &nostr_sdk::Client, federation_id: &FederationId) {
@@ -549,12 +612,7 @@ impl NostrClient {
     }
 
     pub async fn get_relays(&self) -> Vec<String> {
-        self.nostr_client
-            .relays()
-            .await
-            .iter()
-            .map(|(k, _)| k.to_string())
-            .collect()
+        Self::get_or_insert_default_relays(self.db.clone()).await
     }
 
     pub async fn backup_invite_codes(&self, invite_codes: Vec<String>) -> anyhow::Result<()> {

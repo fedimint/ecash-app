@@ -778,3 +778,10 @@ async fn handle_parsed_payment_instructions(
 
     Err(anyhow!("Cannot find payment method"))
 }
+
+#[frb]
+pub async fn insert_relay(relay_uri: String) -> anyhow::Result<()> {
+    let nostr_client = get_nostr_client();
+    let nostr = nostr_client.read().await;
+    nostr.insert_relay(relay_uri).await
+}

@@ -20,6 +20,7 @@ pub(crate) enum DbKeyPrefix {
     NWC = 0x03,
     FederationMeta = 0x04,
     BtcPrice = 0x05,
+    NostrRelays = 0x06,
 }
 
 #[derive(Debug, Clone, Encodable, Decodable, Eq, PartialEq, Hash, Ord, PartialOrd)]
@@ -109,3 +110,19 @@ impl_db_record!(
     value = BtcPrice,
     db_prefix = DbKeyPrefix::BtcPrice,
 );
+
+#[derive(Debug, Encodable, Decodable)]
+pub(crate) struct NostrRelaysKey {
+    pub uri: String,
+}
+
+#[derive(Debug, Encodable, Decodable)]
+pub(crate) struct NostrRelaysKeyPrefix;
+
+impl_db_record!(
+    key = NostrRelaysKey,
+    value = SystemTime,
+    db_prefix = DbKeyPrefix::NostrRelays,
+);
+
+impl_db_lookup!(key = NostrRelaysKey, query_prefix = NostrRelaysKeyPrefix,);
