@@ -178,11 +178,11 @@ as String,
 
 
 class ParsedText_BitcoinAddress extends ParsedText {
-  const ParsedText_BitcoinAddress(this.field0, this.field1): super._();
+  const ParsedText_BitcoinAddress(this.field0, [this.field1]): super._();
   
 
 @override final  String field0;
- final  BigInt field1;
+ final  BigInt? field1;
 
 /// Create a copy of ParsedText
 /// with the given fields replaced by the non-null parameter values.
@@ -214,7 +214,7 @@ abstract mixin class $ParsedText_BitcoinAddressCopyWith<$Res> implements $Parsed
   factory $ParsedText_BitcoinAddressCopyWith(ParsedText_BitcoinAddress value, $Res Function(ParsedText_BitcoinAddress) _then) = _$ParsedText_BitcoinAddressCopyWithImpl;
 @useResult
 $Res call({
- String field0, BigInt field1
+ String field0, BigInt? field1
 });
 
 
@@ -231,11 +231,11 @@ class _$ParsedText_BitcoinAddressCopyWithImpl<$Res>
 
 /// Create a copy of ParsedText
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') $Res call({Object? field0 = null,Object? field1 = null,}) {
+@pragma('vm:prefer-inline') $Res call({Object? field0 = null,Object? field1 = freezed,}) {
   return _then(ParsedText_BitcoinAddress(
 null == field0 ? _self.field0 : field0 // ignore: cast_nullable_to_non_nullable
-as String,null == field1 ? _self.field1 : field1 // ignore: cast_nullable_to_non_nullable
-as BigInt,
+as String,freezed == field1 ? _self.field1 : field1 // ignore: cast_nullable_to_non_nullable
+as BigInt?,
   ));
 }
 

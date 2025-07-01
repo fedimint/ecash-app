@@ -1,5 +1,6 @@
 import 'dart:io';
 
+import 'package:carbine/lib.dart';
 import 'package:carbine/models.dart';
 import 'package:carbine/multimint.dart';
 import 'package:flutter/foundation.dart';
@@ -130,4 +131,17 @@ int getModuleIdForPaymentType(PaymentType paymentType) {
     case PaymentType.onchain:
       return 2;
   }
+}
+
+Future<double?> fetchBtcPrice() async {
+  try {
+    final price = await getBtcPrice();
+    if (price != null) {
+      return price.toDouble();
+    }
+  } catch (e) {
+    AppLogger.instance.error("Error fetching price: $e");
+  }
+
+  return null;
 }

@@ -323,7 +323,7 @@ sealed class ParsedText with _$ParsedText {
   const factory ParsedText.inviteCode(String field0) = ParsedText_InviteCode;
   const factory ParsedText.lightningInvoice(String field0) =
       ParsedText_LightningInvoice;
-  const factory ParsedText.bitcoinAddress(String field0, BigInt field1) =
+  const factory ParsedText.bitcoinAddress(String field0, [BigInt? field1]) =
       ParsedText_BitcoinAddress;
   const factory ParsedText.ecash(BigInt field0) = ParsedText_Ecash;
 }

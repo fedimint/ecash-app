@@ -6966,7 +6966,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
       case 2:
         return ParsedText_BitcoinAddress(
           dco_decode_String(raw[1]),
-          dco_decode_u_64(raw[2]),
+          dco_decode_opt_box_autoadd_u_64(raw[2]),
         );
       case 3:
         return ParsedText_Ecash(dco_decode_u_64(raw[1]));
@@ -8492,7 +8492,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
         return ParsedText_LightningInvoice(var_field0);
       case 2:
         var var_field0 = sse_decode_String(deserializer);
-        var var_field1 = sse_decode_u_64(deserializer);
+        var var_field1 = sse_decode_opt_box_autoadd_u_64(deserializer);
         return ParsedText_BitcoinAddress(var_field0, var_field1);
       case 3:
         var var_field0 = sse_decode_u_64(deserializer);
@@ -10039,7 +10039,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
       ):
         sse_encode_i_32(2, serializer);
         sse_encode_String(field0, serializer);
-        sse_encode_u_64(field1, serializer);
+        sse_encode_opt_box_autoadd_u_64(field1, serializer);
       case ParsedText_Ecash(field0: final field0):
         sse_encode_i_32(3, serializer);
         sse_encode_u_64(field0, serializer);

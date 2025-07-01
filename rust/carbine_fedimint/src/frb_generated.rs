@@ -8195,7 +8195,7 @@ impl SseDecode for crate::ParsedText {
             }
             2 => {
                 let mut var_field0 = <String>::sse_decode(deserializer);
-                let mut var_field1 = <u64>::sse_decode(deserializer);
+                let mut var_field1 = <Option<u64>>::sse_decode(deserializer);
                 return crate::ParsedText::BitcoinAddress(var_field0, var_field1);
             }
             3 => {
@@ -10466,7 +10466,7 @@ impl SseEncode for crate::ParsedText {
             crate::ParsedText::BitcoinAddress(field0, field1) => {
                 <i32>::sse_encode(2, serializer);
                 <String>::sse_encode(field0, serializer);
-                <u64>::sse_encode(field1, serializer);
+                <Option<u64>>::sse_encode(field1, serializer);
             }
             crate::ParsedText::Ecash(field0) => {
                 <i32>::sse_encode(3, serializer);
