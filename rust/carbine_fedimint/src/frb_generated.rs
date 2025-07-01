@@ -8115,6 +8115,10 @@ impl SseDecode for crate::multimint::MultimintEvent {
                     var_field0, var_field1, var_field2, var_field3,
                 );
             }
+            5 => {
+                let mut var_field0 = <(FederationId, u64)>::sse_decode(deserializer);
+                return crate::multimint::MultimintEvent::Ecash(var_field0);
+            }
             _ => {
                 unimplemented!("");
             }
@@ -8258,6 +8262,15 @@ impl SseDecode for (FederationId, crate::multimint::LightningEventKind) {
     }
 }
 
+impl SseDecode for (FederationId, u64) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
+        let mut var_field0 = <FederationId>::sse_decode(deserializer);
+        let mut var_field1 = <u64>::sse_decode(deserializer);
+        return (var_field0, var_field1);
+    }
+}
+
 impl SseDecode for (FederationSelector, bool) {
     // Codec=Sse (Serialization based), see doc to use other codecs
     fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
@@ -8292,6 +8305,15 @@ impl SseDecode for (OperationId, String, u64) {
         let mut var_field1 = <String>::sse_decode(deserializer);
         let mut var_field2 = <u64>::sse_decode(deserializer);
         return (var_field0, var_field1, var_field2);
+    }
+}
+
+impl SseDecode for (ReissueExternalNotesState, Option<u64>) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
+        let mut var_field0 = <ReissueExternalNotesState>::sse_decode(deserializer);
+        let mut var_field1 = <Option<u64>>::sse_decode(deserializer);
+        return (var_field0, var_field1);
     }
 }
 
@@ -9521,6 +9543,9 @@ impl flutter_rust_bridge::IntoDart for crate::multimint::MultimintEvent {
                 field3.into_into_dart().into_dart(),
             ]
             .into_dart(),
+            crate::multimint::MultimintEvent::Ecash(field0) => {
+                [5.into_dart(), field0.into_into_dart().into_dart()].into_dart()
+            }
             _ => {
                 unimplemented!("");
             }
@@ -10395,6 +10420,10 @@ impl SseEncode for crate::multimint::MultimintEvent {
                 <u32>::sse_encode(field2, serializer);
                 <u32>::sse_encode(field3, serializer);
             }
+            crate::multimint::MultimintEvent::Ecash(field0) => {
+                <i32>::sse_encode(5, serializer);
+                <(FederationId, u64)>::sse_encode(field0, serializer);
+            }
             _ => {
                 unimplemented!("");
             }
@@ -10516,6 +10545,14 @@ impl SseEncode for (FederationId, crate::multimint::LightningEventKind) {
     }
 }
 
+impl SseEncode for (FederationId, u64) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
+        <FederationId>::sse_encode(self.0, serializer);
+        <u64>::sse_encode(self.1, serializer);
+    }
+}
+
 impl SseEncode for (FederationSelector, bool) {
     // Codec=Sse (Serialization based), see doc to use other codecs
     fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
@@ -10546,6 +10583,14 @@ impl SseEncode for (OperationId, String, u64) {
         <OperationId>::sse_encode(self.0, serializer);
         <String>::sse_encode(self.1, serializer);
         <u64>::sse_encode(self.2, serializer);
+    }
+}
+
+impl SseEncode for (ReissueExternalNotesState, Option<u64>) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
+        <ReissueExternalNotesState>::sse_encode(self.0, serializer);
+        <Option<u64>>::sse_encode(self.1, serializer);
     }
 }
 

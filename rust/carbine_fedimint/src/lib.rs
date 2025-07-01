@@ -418,7 +418,7 @@ pub async fn reissue_ecash(
 pub async fn await_ecash_reissue(
     federation_id: &FederationId,
     operation_id: OperationId,
-) -> anyhow::Result<ReissueExternalNotesState> {
+) -> anyhow::Result<(ReissueExternalNotesState, Option<u64>)> {
     let multimint = get_multimint();
     multimint
         .await_ecash_reissue(federation_id, operation_id)

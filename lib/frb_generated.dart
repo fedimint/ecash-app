@@ -210,7 +210,8 @@ abstract class RustLibApi extends BaseApi {
     required FederationId federationId,
   });
 
-  Future<ReissueExternalNotesState> crateMultimintMultimintAwaitEcashReissue({
+  Future<(ReissueExternalNotesState, BigInt?)>
+  crateMultimintMultimintAwaitEcashReissue({
     required Multimint that,
     required FederationId federationId,
     required OperationId operationId,
@@ -509,7 +510,7 @@ abstract class RustLibApi extends BaseApi {
     required FederationId federationId,
   });
 
-  Future<ReissueExternalNotesState> crateAwaitEcashReissue({
+  Future<(ReissueExternalNotesState, BigInt?)> crateAwaitEcashReissue({
     required FederationId federationId,
     required OperationId operationId,
   });
@@ -1915,7 +1916,8 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
       );
 
   @override
-  Future<ReissueExternalNotesState> crateMultimintMultimintAwaitEcashReissue({
+  Future<(ReissueExternalNotesState, BigInt?)>
+  crateMultimintMultimintAwaitEcashReissue({
     required Multimint that,
     required FederationId federationId,
     required OperationId operationId,
@@ -1945,7 +1947,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
         },
         codec: SseCodec(
           decodeSuccessData:
-              sse_decode_Auto_Owned_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerReissueExternalNotesState,
+              sse_decode_record_auto_owned_rust_opaque_flutter_rust_bridgefor_generated_rust_auto_opaque_inner_reissue_external_notes_state_opt_box_autoadd_u_64,
           decodeErrorData: sse_decode_AnyhowException,
         ),
         constMeta: kCrateMultimintMultimintAwaitEcashReissueConstMeta,
@@ -4235,7 +4237,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
       );
 
   @override
-  Future<ReissueExternalNotesState> crateAwaitEcashReissue({
+  Future<(ReissueExternalNotesState, BigInt?)> crateAwaitEcashReissue({
     required FederationId federationId,
     required OperationId operationId,
   }) {
@@ -4260,7 +4262,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
         },
         codec: SseCodec(
           decodeSuccessData:
-              sse_decode_Auto_Owned_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerReissueExternalNotesState,
+              sse_decode_record_auto_owned_rust_opaque_flutter_rust_bridgefor_generated_rust_auto_opaque_inner_reissue_external_notes_state_opt_box_autoadd_u_64,
           decodeErrorData: sse_decode_AnyhowException,
         ),
         constMeta: kCrateAwaitEcashReissueConstMeta,
@@ -6659,6 +6661,15 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   }
 
   @protected
+  (FederationId, BigInt)
+  dco_decode_box_autoadd_record_auto_owned_rust_opaque_flutter_rust_bridgefor_generated_rust_auto_opaque_inner_federation_id_u_64(
+    dynamic raw,
+  ) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    return raw as (FederationId, BigInt);
+  }
+
+  @protected
   BigInt dco_decode_box_autoadd_u_64(dynamic raw) {
     // Codec=Dco (DartCObject based), see doc to use other codecs
     return dco_decode_u_64(raw);
@@ -6906,6 +6917,12 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           dco_decode_u_32(raw[3]),
           dco_decode_u_32(raw[4]),
         );
+      case 5:
+        return MultimintEvent_Ecash(
+          dco_decode_box_autoadd_record_auto_owned_rust_opaque_flutter_rust_bridgefor_generated_rust_auto_opaque_inner_federation_id_u_64(
+            raw[1],
+          ),
+        );
       default:
         throw Exception("unreachable");
     }
@@ -7049,6 +7066,24 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   }
 
   @protected
+  (FederationId, BigInt)
+  dco_decode_record_auto_owned_rust_opaque_flutter_rust_bridgefor_generated_rust_auto_opaque_inner_federation_id_u_64(
+    dynamic raw,
+  ) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    final arr = raw as List<dynamic>;
+    if (arr.length != 2) {
+      throw Exception('Expected 2 elements, got ${arr.length}');
+    }
+    return (
+      dco_decode_Auto_Owned_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerFederationId(
+        arr[0],
+      ),
+      dco_decode_u_64(arr[1]),
+    );
+  }
+
+  @protected
   (FederationSelector, bool)
   dco_decode_record_auto_owned_rust_opaque_flutter_rust_bridgefor_generated_rust_auto_opaque_inner_federation_selector_bool(
     dynamic raw,
@@ -7118,6 +7153,24 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
       ),
       dco_decode_String(arr[1]),
       dco_decode_u_64(arr[2]),
+    );
+  }
+
+  @protected
+  (ReissueExternalNotesState, BigInt?)
+  dco_decode_record_auto_owned_rust_opaque_flutter_rust_bridgefor_generated_rust_auto_opaque_inner_reissue_external_notes_state_opt_box_autoadd_u_64(
+    dynamic raw,
+  ) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    final arr = raw as List<dynamic>;
+    if (arr.length != 2) {
+      throw Exception('Expected 2 elements, got ${arr.length}');
+    }
+    return (
+      dco_decode_Auto_Owned_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerReissueExternalNotesState(
+        arr[0],
+      ),
+      dco_decode_opt_box_autoadd_u_64(arr[1]),
     );
   }
 
@@ -8117,6 +8170,17 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   }
 
   @protected
+  (FederationId, BigInt)
+  sse_decode_box_autoadd_record_auto_owned_rust_opaque_flutter_rust_bridgefor_generated_rust_auto_opaque_inner_federation_id_u_64(
+    SseDeserializer deserializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    return (sse_decode_record_auto_owned_rust_opaque_flutter_rust_bridgefor_generated_rust_auto_opaque_inner_federation_id_u_64(
+      deserializer,
+    ));
+  }
+
+  @protected
   BigInt sse_decode_box_autoadd_u_64(SseDeserializer deserializer) {
     // Codec=Sse (Serialization based), see doc to use other codecs
     return (sse_decode_u_64(deserializer));
@@ -8409,6 +8473,12 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           var_field2,
           var_field3,
         );
+      case 5:
+        var var_field0 =
+            sse_decode_box_autoadd_record_auto_owned_rust_opaque_flutter_rust_bridgefor_generated_rust_auto_opaque_inner_federation_id_u_64(
+              deserializer,
+            );
+        return MultimintEvent_Ecash(var_field0);
       default:
         throw UnimplementedError('');
     }
@@ -8569,6 +8639,20 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   }
 
   @protected
+  (FederationId, BigInt)
+  sse_decode_record_auto_owned_rust_opaque_flutter_rust_bridgefor_generated_rust_auto_opaque_inner_federation_id_u_64(
+    SseDeserializer deserializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    var var_field0 =
+        sse_decode_Auto_Owned_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerFederationId(
+          deserializer,
+        );
+    var var_field1 = sse_decode_u_64(deserializer);
+    return (var_field0, var_field1);
+  }
+
+  @protected
   (FederationSelector, bool)
   sse_decode_record_auto_owned_rust_opaque_flutter_rust_bridgefor_generated_rust_auto_opaque_inner_federation_selector_bool(
     SseDeserializer deserializer,
@@ -8623,6 +8707,20 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
     var var_field1 = sse_decode_String(deserializer);
     var var_field2 = sse_decode_u_64(deserializer);
     return (var_field0, var_field1, var_field2);
+  }
+
+  @protected
+  (ReissueExternalNotesState, BigInt?)
+  sse_decode_record_auto_owned_rust_opaque_flutter_rust_bridgefor_generated_rust_auto_opaque_inner_reissue_external_notes_state_opt_box_autoadd_u_64(
+    SseDeserializer deserializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    var var_field0 =
+        sse_decode_Auto_Owned_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerReissueExternalNotesState(
+          deserializer,
+        );
+    var var_field1 = sse_decode_opt_box_autoadd_u_64(deserializer);
+    return (var_field0, var_field1);
   }
 
   @protected
@@ -9695,6 +9793,19 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   }
 
   @protected
+  void
+  sse_encode_box_autoadd_record_auto_owned_rust_opaque_flutter_rust_bridgefor_generated_rust_auto_opaque_inner_federation_id_u_64(
+    (FederationId, BigInt) self,
+    SseSerializer serializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    sse_encode_record_auto_owned_rust_opaque_flutter_rust_bridgefor_generated_rust_auto_opaque_inner_federation_id_u_64(
+      self,
+      serializer,
+    );
+  }
+
+  @protected
   void sse_encode_box_autoadd_u_64(BigInt self, SseSerializer serializer) {
     // Codec=Sse (Serialization based), see doc to use other codecs
     sse_encode_u_64(self, serializer);
@@ -9959,6 +10070,12 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
         sse_encode_u_16(field1, serializer);
         sse_encode_u_32(field2, serializer);
         sse_encode_u_32(field3, serializer);
+      case MultimintEvent_Ecash(field0: final field0):
+        sse_encode_i_32(5, serializer);
+        sse_encode_box_autoadd_record_auto_owned_rust_opaque_flutter_rust_bridgefor_generated_rust_auto_opaque_inner_federation_id_u_64(
+          field0,
+          serializer,
+        );
     }
   }
 
@@ -10108,6 +10225,20 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
 
   @protected
   void
+  sse_encode_record_auto_owned_rust_opaque_flutter_rust_bridgefor_generated_rust_auto_opaque_inner_federation_id_u_64(
+    (FederationId, BigInt) self,
+    SseSerializer serializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    sse_encode_Auto_Owned_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerFederationId(
+      self.$1,
+      serializer,
+    );
+    sse_encode_u_64(self.$2, serializer);
+  }
+
+  @protected
+  void
   sse_encode_record_auto_owned_rust_opaque_flutter_rust_bridgefor_generated_rust_auto_opaque_inner_federation_selector_bool(
     (FederationSelector, bool) self,
     SseSerializer serializer,
@@ -10161,6 +10292,20 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
     );
     sse_encode_String(self.$2, serializer);
     sse_encode_u_64(self.$3, serializer);
+  }
+
+  @protected
+  void
+  sse_encode_record_auto_owned_rust_opaque_flutter_rust_bridgefor_generated_rust_auto_opaque_inner_reissue_external_notes_state_opt_box_autoadd_u_64(
+    (ReissueExternalNotesState, BigInt?) self,
+    SseSerializer serializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    sse_encode_Auto_Owned_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerReissueExternalNotesState(
+      self.$1,
+      serializer,
+    );
+    sse_encode_opt_box_autoadd_u_64(self.$2, serializer);
   }
 
   @protected
@@ -10710,7 +10855,7 @@ class MultimintImpl extends RustOpaque implements Multimint {
         federationId: federationId,
       );
 
-  Future<ReissueExternalNotesState> awaitEcashReissue({
+  Future<(ReissueExternalNotesState, BigInt?)> awaitEcashReissue({
     required FederationId federationId,
     required OperationId operationId,
   }) => RustLib.instance.api.crateMultimintMultimintAwaitEcashReissue(

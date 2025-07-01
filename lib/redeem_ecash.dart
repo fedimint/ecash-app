@@ -54,10 +54,22 @@ class _EcashRedeemPromptState extends State<EcashRedeemPrompt> {
       await Future.delayed(const Duration(seconds: 4));
       Navigator.of(context).popUntil((route) => route.isFirst);
     } catch (e) {
-      // Could not reissue ecash
       AppLogger.instance.error("Could not reissue ecash $e");
       Navigator.of(context).popUntil((route) => route.isFirst);
     }
+  }
+
+  Future<void> _handleAsyncRedeem() async {
+    try {
+      await reissueEcash(
+        federationId: widget.fed.federationId,
+        ecash: widget.ecash,
+      );
+    } catch (e) {
+      AppLogger.instance.error("Could not reissue ecash $e");
+    }
+
+    Navigator.of(context).popUntil((route) => route.isFirst);
   }
 
   @override
@@ -91,30 +103,40 @@ class _EcashRedeemPromptState extends State<EcashRedeemPrompt> {
           ),
         ),
         const SizedBox(height: 32),
-        SizedBox(
-          width: double.infinity,
-          child: ElevatedButton(
-            onPressed: _isLoading ? null : _handleRedeem,
-            style: ElevatedButton.styleFrom(
-              backgroundColor: theme.colorScheme.primary,
-              foregroundColor: Colors.black,
-              padding: const EdgeInsets.symmetric(vertical: 16),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
-              ),
+        ElevatedButton(
+          onPressed: _isLoading ? null : _handleRedeem,
+          style: ElevatedButton.styleFrom(
+            backgroundColor: theme.colorScheme.primary,
+            foregroundColor: Colors.black,
+            padding: const EdgeInsets.symmetric(vertical: 16),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
             ),
-            child:
-                _isLoading
-                    ? const SizedBox(
-                      height: 20,
-                      width: 20,
-                      child: CircularProgressIndicator(
-                        strokeWidth: 2,
-                        valueColor: AlwaysStoppedAnimation<Color>(Colors.black),
-                      ),
-                    )
-                    : const Text('Confirm'),
           ),
+          child:
+              _isLoading
+                  ? const SizedBox(
+                    height: 20,
+                    width: 20,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      valueColor: AlwaysStoppedAnimation<Color>(Colors.black),
+                    ),
+                  )
+                  : const Text('Redeem now'),
+        ),
+        const SizedBox(height: 16),
+        OutlinedButton(
+          onPressed: _isLoading ? null : _handleAsyncRedeem,
+          style: OutlinedButton.styleFrom(
+            foregroundColor: theme.colorScheme.primary,
+            side: BorderSide(color: theme.colorScheme.primary),
+            padding: const EdgeInsets.symmetric(vertical: 16),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
+          ),
+          child: const Text('Redeem when online'),
         ),
       ],
     );

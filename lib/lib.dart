@@ -177,7 +177,7 @@ Future<OperationId> reissueEcash({
   ecash: ecash,
 );
 
-Future<ReissueExternalNotesState> awaitEcashReissue({
+Future<(ReissueExternalNotesState, BigInt?)> awaitEcashReissue({
   required FederationId federationId,
   required OperationId operationId,
 }) => RustLib.instance.api.crateAwaitEcashReissue(

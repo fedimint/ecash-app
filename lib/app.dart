@@ -99,6 +99,41 @@ class _MyAppState extends State<MyApp> {
         }
       } else if (event is MultimintEvent_Log) {
         AppLogger.instance.rustLog(event.field0, event.field1);
+      } else if (event is MultimintEvent_Ecash) {
+        final amountMsats = event.field0.$2;
+        final amount = formatBalance(amountMsats, false);
+        final federationIdString = await federationIdToString(
+          federationId: event.field0.$1,
+        );
+
+        FederationSelector? selector;
+        bool? recovering;
+        for (var sel in _feds) {
+          final idString = await federationIdToString(
+            federationId: sel.$1.federationId,
+          );
+          if (idString == federationIdString) {
+            selector = sel.$1;
+            recovering = sel.$2;
+            break;
+          }
+        }
+
+        if (selector == null) {
+          return;
+        }
+
+        final name = selector.federationName;
+        AppLogger.instance.info("$name received $amount");
+
+        ToastService().show(
+          message: "$name received $amount ecash",
+          duration: const Duration(seconds: 7),
+          onTap: () {
+            _navigatorKey.currentState?.popUntil((route) => route.isFirst);
+            _setSelectedFederation(selector!, recovering!);
+          },
+        );
       }
     });
   }

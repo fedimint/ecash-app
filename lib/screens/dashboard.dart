@@ -72,6 +72,13 @@ class _DashboardState extends State<Dashboard> {
           setState(() => recovering = false);
           _loadBalance();
         }
+      } else if (event is MultimintEvent_Ecash) {
+        final federationIdString = await federationIdToString(federationId: event.field0.$1);
+        final selectorIdString = await federationIdToString(federationId: widget.fed.federationId);
+        if (federationIdString == selectorIdString) {
+          _loadBalance();
+          _selectedPaymentType = PaymentType.ecash;
+        }
       }
     });
   }
