@@ -43,6 +43,10 @@ class _RelaysState extends State<Relays> {
     final statusText = isConnected ? "Connected" : "Disconnected";
 
     return ListTile(
+      leading: ColorFiltered(
+        colorFilter: ColorFilter.mode(statusColor, BlendMode.srcIn),
+        child: Image.asset('assets/images/nostr.png', width: 36, height: 36),
+      ),
       title: Text(relay, style: const TextStyle(color: Colors.white)),
       subtitle: Row(
         children: [
@@ -72,8 +76,6 @@ class _RelaysState extends State<Relays> {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Image.asset('assets/images/nostr.png', width: 48, height: 48),
-          const SizedBox(width: 12),
           Expanded(
             child: Text(
               "Carbine uses Nostr relays to back up which federations you have joined. You can customize them below.",
@@ -90,7 +92,7 @@ class _RelaysState extends State<Relays> {
     final theme = Theme.of(context);
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Relays')),
+      appBar: AppBar(title: const Text('Nostr Relays')),
       body: Column(
         children: [
           const SizedBox(height: 16),
