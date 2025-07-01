@@ -21,7 +21,7 @@ class _NostrWalletConnectState extends State<NostrWalletConnect> {
   bool _loading = true;
 
   NWCConnectionInfo? _nwc;
-  List<String> _relays = [];
+  List<(String, bool)> _relays = [];
   List<(FederationSelector, NWCConnectionInfo)> _existingConfigs = [];
 
   @override
@@ -173,8 +173,10 @@ class _NostrWalletConnectState extends State<NostrWalletConnect> {
           items:
               _relays
                   .map(
-                    (relay) =>
-                        DropdownMenuItem(value: relay, child: Text(relay)),
+                    (relay) => DropdownMenuItem(
+                      value: relay.$1,
+                      child: Text(relay.$1),
+                    ),
                   )
                   .toList(),
           onChanged: (value) {

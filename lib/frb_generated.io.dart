@@ -578,6 +578,9 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   );
 
   @protected
+  List<(String, bool)> dco_decode_list_record_string_bool(dynamic raw);
+
+  @protected
   List<Transaction> dco_decode_list_transaction(dynamic raw);
 
   @protected
@@ -678,6 +681,9 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   dco_decode_record_string_auto_owned_rust_opaque_flutter_rust_bridgefor_generated_rust_auto_opaque_inner_operation_id_string_string_u_64(
     dynamic raw,
   );
+
+  @protected
+  (String, bool) dco_decode_record_string_bool(dynamic raw);
 
   @protected
   (String, BigInt, bool) dco_decode_record_string_u_64_bool(dynamic raw);
@@ -1202,6 +1208,11 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   );
 
   @protected
+  List<(String, bool)> sse_decode_list_record_string_bool(
+    SseDeserializer deserializer,
+  );
+
+  @protected
   List<Transaction> sse_decode_list_transaction(SseDeserializer deserializer);
 
   @protected
@@ -1304,6 +1315,9 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   sse_decode_record_string_auto_owned_rust_opaque_flutter_rust_bridgefor_generated_rust_auto_opaque_inner_operation_id_string_string_u_64(
     SseDeserializer deserializer,
   );
+
+  @protected
+  (String, bool) sse_decode_record_string_bool(SseDeserializer deserializer);
 
   @protected
   (String, BigInt, bool) sse_decode_record_string_u_64_bool(
@@ -1922,6 +1936,12 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   );
 
   @protected
+  void sse_encode_list_record_string_bool(
+    List<(String, bool)> self,
+    SseSerializer serializer,
+  );
+
+  @protected
   void sse_encode_list_transaction(
     List<Transaction> self,
     SseSerializer serializer,
@@ -2049,6 +2069,12 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   void
   sse_encode_record_string_auto_owned_rust_opaque_flutter_rust_bridgefor_generated_rust_auto_opaque_inner_operation_id_string_string_u_64(
     (String, OperationId, String, String, BigInt) self,
+    SseSerializer serializer,
+  );
+
+  @protected
+  void sse_encode_record_string_bool(
+    (String, bool) self,
     SseSerializer serializer,
   );
 

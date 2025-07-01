@@ -8199,6 +8199,18 @@ impl SseDecode for Vec<(FederationSelector, crate::nostr::NWCConnectionInfo)> {
     }
 }
 
+impl SseDecode for Vec<(String, bool)> {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
+        let mut len_ = <i32>::sse_decode(deserializer);
+        let mut ans_ = vec![];
+        for idx_ in 0..len_ {
+            ans_.push(<(String, bool)>::sse_decode(deserializer));
+        }
+        return ans_;
+    }
+}
+
 impl SseDecode for Vec<crate::multimint::Transaction> {
     // Codec=Sse (Serialization based), see doc to use other codecs
     fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
@@ -8514,6 +8526,15 @@ impl SseDecode for (String, OperationId, String, String, u64) {
         let mut var_field3 = <String>::sse_decode(deserializer);
         let mut var_field4 = <u64>::sse_decode(deserializer);
         return (var_field0, var_field1, var_field2, var_field3, var_field4);
+    }
+}
+
+impl SseDecode for (String, bool) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
+        let mut var_field0 = <String>::sse_decode(deserializer);
+        let mut var_field1 = <bool>::sse_decode(deserializer);
+        return (var_field0, var_field1);
     }
 }
 
@@ -10491,6 +10512,16 @@ impl SseEncode for Vec<(FederationSelector, crate::nostr::NWCConnectionInfo)> {
     }
 }
 
+impl SseEncode for Vec<(String, bool)> {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
+        <i32>::sse_encode(self.len() as _, serializer);
+        for item in self {
+            <(String, bool)>::sse_encode(item, serializer);
+        }
+    }
+}
+
 impl SseEncode for Vec<crate::multimint::Transaction> {
     // Codec=Sse (Serialization based), see doc to use other codecs
     fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
@@ -10769,6 +10800,14 @@ impl SseEncode for (String, OperationId, String, String, u64) {
         <String>::sse_encode(self.2, serializer);
         <String>::sse_encode(self.3, serializer);
         <u64>::sse_encode(self.4, serializer);
+    }
+}
+
+impl SseEncode for (String, bool) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
+        <String>::sse_encode(self.0, serializer);
+        <bool>::sse_encode(self.1, serializer);
     }
 }
 

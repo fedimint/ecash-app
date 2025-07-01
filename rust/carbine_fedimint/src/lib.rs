@@ -499,7 +499,7 @@ pub async fn set_nwc_connection_info(
 }
 
 #[frb]
-pub async fn get_relays() -> Vec<String> {
+pub async fn get_relays() -> Vec<(String, bool)> {
     let nostr_client = get_nostr_client();
     let nostr = nostr_client.read().await;
     nostr.get_relays().await

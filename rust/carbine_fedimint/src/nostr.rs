@@ -166,14 +166,21 @@ impl NostrClient {
 
         relay.connect();
         relay.wait_for_connection(Duration::from_secs(15)).await;
-        info_to_flutter(format!("Connected to relay {}", relay_uri.clone())).await;
 
-        let mut dbtx = self.db.begin_transaction().await;
-        dbtx.insert_entry(&NostrRelaysKey { uri: relay_uri }, &SystemTime::now())
-            .await;
-        dbtx.commit_tx().await;
+        let status = relay.status();
+        match status {
+            nostr_sdk::RelayStatus::Connected => {
+                info_to_flutter(format!("Connected to relay {}", relay_uri.clone())).await;
 
-        Ok(())
+                let mut dbtx = self.db.begin_transaction().await;
+                dbtx.insert_entry(&NostrRelaysKey { uri: relay_uri }, &SystemTime::now())
+                    .await;
+                dbtx.commit_tx().await;
+
+                Ok(())
+            }
+            status => Err(anyhow!("Could not connect to relay: {status:?}")),
+        }
     }
 
     pub async fn remove_relay(&self, relay_uri: String) -> anyhow::Result<()> {
@@ -620,8 +627,18 @@ impl NostrClient {
         }
     }
 
-    pub async fn get_relays(&self) -> Vec<String> {
-        Self::get_or_insert_default_relays(self.db.clone()).await
+    pub async fn get_relays(&self) -> Vec<(String, bool)> {
+        let relays = Self::get_or_insert_default_relays(self.db.clone()).await;
+        let mut relays_and_status = Vec::new();
+        for uri in relays {
+            if let Ok(relay) = self.nostr_client.relay(uri.clone()).await {
+                relays_and_status.push((uri, relay.status() == nostr_sdk::RelayStatus::Connected));
+            } else {
+                relays_and_status.push((uri, false));
+            }
+        }
+
+        relays_and_status
     }
 
     pub async fn backup_invite_codes(&self, invite_codes: Vec<String>) -> anyhow::Result<()> {

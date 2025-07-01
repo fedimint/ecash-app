@@ -10,7 +10,7 @@ class Relays extends StatefulWidget {
 }
 
 class _RelaysState extends State<Relays> {
-  late Future<List<String>> _relaysFuture;
+  late Future<List<(String, bool)>> _relaysFuture;
   final TextEditingController _controller = TextEditingController();
 
   @override
@@ -38,16 +38,26 @@ class _RelaysState extends State<Relays> {
     }
   }
 
-  Widget _buildRelayTile(String relay) {
+  Widget _buildRelayTile(String relay, bool isConnected) {
+    final statusColor = isConnected ? Colors.greenAccent : Colors.redAccent;
+    final statusText = isConnected ? "Connected" : "Disconnected";
+
     return ListTile(
       title: Text(relay, style: const TextStyle(color: Colors.white)),
+      subtitle: Row(
+        children: [
+          Icon(Icons.circle, size: 10, color: statusColor),
+          const SizedBox(width: 6),
+          Text(statusText, style: TextStyle(color: statusColor)),
+        ],
+      ),
       trailing: IconButton(
         icon: const Icon(Icons.delete, color: Colors.redAccent),
         tooltip: 'Delete Relay',
         onPressed: () async {
           try {
             await removeRelay(relayUri: relay);
-            _fetchRelays(); // Refresh after deletion
+            _fetchRelays();
           } catch (e) {
             AppLogger.instance.error("Could not delete relay: $e");
           }
@@ -56,14 +66,38 @@ class _RelaysState extends State<Relays> {
     );
   }
 
+  Widget _buildHeader(ThemeData theme) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16.0),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Image.asset('assets/images/nostr.png', width: 48, height: 48),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Text(
+              "Carbine uses Nostr relays to back up which federations you have joined. You can customize them below.",
+              style: theme.textTheme.bodyMedium,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
     return Scaffold(
       appBar: AppBar(title: const Text('Relays')),
       body: Column(
         children: [
+          const SizedBox(height: 16),
+          _buildHeader(theme),
+          const SizedBox(height: 16),
           Expanded(
-            child: FutureBuilder<List<String>>(
+            child: FutureBuilder<List<(String, bool)>>(
               future: _relaysFuture,
               builder: (context, snapshot) {
                 if (snapshot.connectionState == ConnectionState.waiting) {
@@ -88,11 +122,14 @@ class _RelaysState extends State<Relays> {
                     );
                   }
                   return ListView.separated(
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
                     itemCount: relays.length,
                     separatorBuilder:
                         (_, __) => const Divider(color: Colors.white10),
-                    itemBuilder:
-                        (context, index) => _buildRelayTile(relays[index]),
+                    itemBuilder: (context, index) {
+                      final (relay, isConnected) = relays[index];
+                      return _buildRelayTile(relay, isConnected);
+                    },
                   );
                 }
               },

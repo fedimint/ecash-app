@@ -24,7 +24,7 @@ abstract class NostrClient implements RustOpaqueInterface {
     required bool forceUpdate,
   });
 
-  Future<List<String>> getRelays();
+  Future<List<(String, bool)>> getRelays();
 
   Future<void> insertRelay({required String relayUri});
 

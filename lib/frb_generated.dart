@@ -392,7 +392,7 @@ abstract class RustLibApi extends BaseApi {
     required bool forceUpdate,
   });
 
-  Future<List<String>> crateNostrNostrClientGetRelays({
+  Future<List<(String, bool)>> crateNostrNostrClientGetRelays({
     required NostrClient that,
   });
 
@@ -590,7 +590,7 @@ abstract class RustLibApi extends BaseApi {
   Future<List<(FederationSelector, NWCConnectionInfo)>>
   crateGetNwcConnectionInfo();
 
-  Future<List<String>> crateGetRelays();
+  Future<List<(String, bool)>> crateGetRelays();
 
   Future<bool> crateHasSeedPhraseAck();
 
@@ -3327,7 +3327,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
       );
 
   @override
-  Future<List<String>> crateNostrNostrClientGetRelays({
+  Future<List<(String, bool)>> crateNostrNostrClientGetRelays({
     required NostrClient that,
   }) {
     return handler.executeNormal(
@@ -3346,7 +3346,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           );
         },
         codec: SseCodec(
-          decodeSuccessData: sse_decode_list_String,
+          decodeSuccessData: sse_decode_list_record_string_bool,
           decodeErrorData: null,
         ),
         constMeta: kCrateNostrNostrClientGetRelaysConstMeta,
@@ -5002,7 +5002,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
       const TaskConstMeta(debugName: "get_nwc_connection_info", argNames: []);
 
   @override
-  Future<List<String>> crateGetRelays() {
+  Future<List<(String, bool)>> crateGetRelays() {
     return handler.executeNormal(
       NormalTask(
         callFfi: (port_) {
@@ -5015,7 +5015,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           );
         },
         codec: SseCodec(
-          decodeSuccessData: sse_decode_list_String,
+          decodeSuccessData: sse_decode_list_record_string_bool,
           decodeErrorData: null,
         ),
         constMeta: kCrateGetRelaysConstMeta,
@@ -6976,6 +6976,12 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   }
 
   @protected
+  List<(String, bool)> dco_decode_list_record_string_bool(dynamic raw) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    return (raw as List<dynamic>).map(dco_decode_record_string_bool).toList();
+  }
+
+  @protected
   List<Transaction> dco_decode_list_transaction(dynamic raw) {
     // Codec=Dco (DartCObject based), see doc to use other codecs
     return (raw as List<dynamic>).map(dco_decode_transaction).toList();
@@ -7322,6 +7328,16 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
       dco_decode_String(arr[3]),
       dco_decode_u_64(arr[4]),
     );
+  }
+
+  @protected
+  (String, bool) dco_decode_record_string_bool(dynamic raw) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    final arr = raw as List<dynamic>;
+    if (arr.length != 2) {
+      throw Exception('Expected 2 elements, got ${arr.length}');
+    }
+    return (dco_decode_String(arr[0]), dco_decode_bool(arr[1]));
   }
 
   @protected
@@ -8461,6 +8477,20 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   }
 
   @protected
+  List<(String, bool)> sse_decode_list_record_string_bool(
+    SseDeserializer deserializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+
+    var len_ = sse_decode_i_32(deserializer);
+    var ans_ = <(String, bool)>[];
+    for (var idx_ = 0; idx_ < len_; ++idx_) {
+      ans_.add(sse_decode_record_string_bool(deserializer));
+    }
+    return ans_;
+  }
+
+  @protected
   List<Transaction> sse_decode_list_transaction(SseDeserializer deserializer) {
     // Codec=Sse (Serialization based), see doc to use other codecs
 
@@ -8814,6 +8844,14 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
     var var_field3 = sse_decode_String(deserializer);
     var var_field4 = sse_decode_u_64(deserializer);
     return (var_field0, var_field1, var_field2, var_field3, var_field4);
+  }
+
+  @protected
+  (String, bool) sse_decode_record_string_bool(SseDeserializer deserializer) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    var var_field0 = sse_decode_String(deserializer);
+    var var_field1 = sse_decode_bool(deserializer);
+    return (var_field0, var_field1);
   }
 
   @protected
@@ -10018,6 +10056,18 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   }
 
   @protected
+  void sse_encode_list_record_string_bool(
+    List<(String, bool)> self,
+    SseSerializer serializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    sse_encode_i_32(self.length, serializer);
+    for (final item in self) {
+      sse_encode_record_string_bool(item, serializer);
+    }
+  }
+
+  @protected
   void sse_encode_list_transaction(
     List<Transaction> self,
     SseSerializer serializer,
@@ -10352,6 +10402,16 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
     sse_encode_String(self.$3, serializer);
     sse_encode_String(self.$4, serializer);
     sse_encode_u_64(self.$5, serializer);
+  }
+
+  @protected
+  void sse_encode_record_string_bool(
+    (String, bool) self,
+    SseSerializer serializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    sse_encode_String(self.$1, serializer);
+    sse_encode_bool(self.$2, serializer);
   }
 
   @protected
@@ -11123,7 +11183,7 @@ class NostrClientImpl extends RustOpaque implements NostrClient {
     forceUpdate: forceUpdate,
   );
 
-  Future<List<String>> getRelays() =>
+  Future<List<(String, bool)>> getRelays() =>
       RustLib.instance.api.crateNostrNostrClientGetRelays(that: this);
 
   Future<void> insertRelay({required String relayUri}) => RustLib.instance.api
