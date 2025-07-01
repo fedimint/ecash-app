@@ -6,7 +6,9 @@ mod frb_generated;
 mod multimint;
 mod nostr;
 use bitcoin_payment_instructions::http_resolver::HTTPHrnResolver;
-use bitcoin_payment_instructions::{PaymentInstructions, PaymentMethod};
+use bitcoin_payment_instructions::{
+    PaymentInstructions, PaymentMethod, PossiblyResolvedPaymentMethod,
+};
 use db::SeedPhraseAckKey;
 use event_bus::EventBus;
 use fedimint_client::module::module::recovery::RecoveryProgress;
@@ -615,7 +617,7 @@ pub async fn subscribe_recovery_progress(
 pub enum ParsedText {
     InviteCode(String),
     LightningInvoice(String),
-    BitcoinAddress(String, u64),
+    BitcoinAddress(String, Option<u64>),
     Ecash(u64),
 }
 
@@ -719,9 +721,21 @@ async fn handle_parsed_payment_instructions(
     instructions: &PaymentInstructions,
 ) -> anyhow::Result<(ParsedText, FederationSelector)> {
     match &instructions {
-        // We cannot currently pay configuable payment instructions
-        PaymentInstructions::ConfigurableAmount(_) => {
-            error_to_flutter("Configurable amount BIP321 is not supported").await;
+        // We currently only support Bitcoin addresses for configurable amounts
+        PaymentInstructions::ConfigurableAmount(configurable) => {
+            for method in configurable.methods() {
+                if let PossiblyResolvedPaymentMethod::Resolved(resolved) = method {
+                    match resolved {
+                        PaymentMethod::OnChain(address) => {
+                            return Ok((
+                                ParsedText::BitcoinAddress(address.to_string(), None),
+                                fed.clone(),
+                            ));
+                        }
+                        _ => {}
+                    }
+                }
+            }
         }
         PaymentInstructions::FixedAmount(fixed) => {
             let balance = balance(&fed.federation_id).await;
@@ -746,7 +760,7 @@ async fn handle_parsed_payment_instructions(
                                 return Ok((
                                     ParsedText::BitcoinAddress(
                                         address.to_string(),
-                                        onchain_amount.milli_sats(),
+                                        Some(onchain_amount.milli_sats()),
                                     ),
                                     fed.clone(),
                                 ));

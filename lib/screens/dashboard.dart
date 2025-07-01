@@ -96,15 +96,11 @@ class _DashboardState extends State<Dashboard> {
   }
 
   Future<void> _loadBtcPrice() async {
-    try {
-      final price = await getBtcPrice();
-      if (price != null) {
-        setState(() {
-          _btcPrice = price.toDouble();
-        });
-      }
-    } catch (e) {
-      AppLogger.instance.error("Error fetching price: $e");
+    final price = await fetchBtcPrice();
+    if (price != null) {
+      setState(() {
+        _btcPrice = price.toDouble();
+      });
     }
   }
 

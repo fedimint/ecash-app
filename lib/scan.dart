@@ -151,15 +151,32 @@ class _ScanQRPageState extends State<ScanQRPage> {
         case ParsedText_BitcoinAddress(:final field0, :final field1):
           if (widget.paymentType == null ||
               widget.paymentType! == PaymentType.onchain) {
-            showCarbineModalBottomSheet(
-              context: context,
-              child: OnchainSend(
-                fed: chosenFederation!,
-                amountSats: field1.toSats,
-                withdrawalMode: WithdrawalMode.specificAmount,
-                defaultAddress: field0,
-              ),
-            );
+            if (field1 != null) {
+              showCarbineModalBottomSheet(
+                context: context,
+                child: OnchainSend(
+                  fed: chosenFederation!,
+                  amountSats: field1.toSats,
+                  withdrawalMode: WithdrawalMode.specificAmount,
+                  defaultAddress: field0,
+                ),
+              );
+            } else {
+              final btcPrice = await fetchBtcPrice();
+              await Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder:
+                      (_) => NumberPad(
+                        fed: chosenFederation!,
+                        paymentType: PaymentType.onchain,
+                        btcPrice: btcPrice,
+                        onWithdrawCompleted: null,
+                        bitcoinAddress: field0,
+                      ),
+                ),
+              );
+            }
           }
           break;
         case ParsedText_Ecash(:final field0):

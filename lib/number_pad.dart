@@ -19,12 +19,14 @@ class NumberPad extends StatefulWidget {
   final PaymentType paymentType;
   final double? btcPrice;
   final VoidCallback? onWithdrawCompleted;
+  final String? bitcoinAddress;
   const NumberPad({
     super.key,
     required this.fed,
     required this.paymentType,
     required this.btcPrice,
     this.onWithdrawCompleted,
+    this.bitcoinAddress,
   });
 
   @override
@@ -135,6 +137,7 @@ class _NumberPadState extends State<NumberPad> {
             amountSats: amountSats,
             withdrawalMode: _withdrawalMode,
             onWithdrawCompleted: widget.onWithdrawCompleted,
+            defaultAddress: widget.bitcoinAddress,
           ),
         );
       }
