@@ -13,6 +13,7 @@ class ToastService {
     required String message,
     required Duration duration,
     required VoidCallback onTap,
+    Icon? icon,
   }) {
     final context = navigatorKey.currentContext;
     if (context == null) {
@@ -32,6 +33,7 @@ class ToastService {
               _currentToast?.remove();
               _currentToast = null;
             },
+            icon: icon ?? const Icon(Icons.flash_on, color: Colors.amber),
           ),
     );
 
@@ -45,12 +47,14 @@ class _ToastWidget extends StatefulWidget {
   final Duration duration;
   final VoidCallback onTap;
   final VoidCallback onDismissed;
+  final Icon icon;
 
   const _ToastWidget({
     required this.message,
     required this.duration,
     required this.onTap,
     required this.onDismissed,
+    required this.icon,
   });
 
   @override
@@ -146,7 +150,7 @@ class _ToastWidgetState extends State<_ToastWidget>
                   children: [
                     Row(
                       children: [
-                        const Icon(Icons.flash_on, color: Colors.amber),
+                        widget.icon,
                         const SizedBox(width: 8),
                         Expanded(
                           child: Text(
