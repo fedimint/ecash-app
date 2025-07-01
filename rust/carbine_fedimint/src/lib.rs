@@ -785,3 +785,10 @@ pub async fn insert_relay(relay_uri: String) -> anyhow::Result<()> {
     let nostr = nostr_client.read().await;
     nostr.insert_relay(relay_uri).await
 }
+
+#[frb]
+pub async fn remove_relay(relay_uri: String) -> anyhow::Result<()> {
+    let nostr_client = get_nostr_client();
+    let nostr = nostr_client.read().await;
+    nostr.remove_relay(relay_uri).await
+}

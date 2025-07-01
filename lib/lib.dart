@@ -301,6 +301,9 @@ Future<(ParsedText, FederationSelector?)> parsedScannedText({
 Future<void> insertRelay({required String relayUri}) =>
     RustLib.instance.api.crateInsertRelay(relayUri: relayUri);
 
+Future<void> removeRelay({required String relayUri}) =>
+    RustLib.instance.api.crateRemoveRelay(relayUri: relayUri);
+
 // Rust type: RustOpaqueMoi<flutter_rust_bridge::for_generated::RustAutoOpaqueInner<ClientConfig>>
 abstract class ClientConfig implements RustOpaqueInterface {}
 

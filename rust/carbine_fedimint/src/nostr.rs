@@ -36,7 +36,7 @@ use tokio::sync::{oneshot, RwLock};
 pub const DEFAULT_RELAYS: &[&str] = &[
     "wss://nostr.bitcoiner.social",
     "wss://relay.nostr.band",
-    //"wss://relay.damus.io",
+    "wss://relay.damus.io",
     "wss://nostr.zebedee.cloud",
     "wss://relay.plebstr.com",
     "wss://relayer.fiatjaf.com",
@@ -171,6 +171,15 @@ impl NostrClient {
         let mut dbtx = self.db.begin_transaction().await;
         dbtx.insert_entry(&NostrRelaysKey { uri: relay_uri }, &SystemTime::now())
             .await;
+        dbtx.commit_tx().await;
+
+        Ok(())
+    }
+
+    pub async fn remove_relay(&self, relay_uri: String) -> anyhow::Result<()> {
+        self.nostr_client.remove_relay(relay_uri.clone()).await?;
+        let mut dbtx = self.db.begin_transaction().await;
+        dbtx.remove_entry(&NostrRelaysKey { uri: relay_uri }).await;
         dbtx.commit_tx().await;
 
         Ok(())

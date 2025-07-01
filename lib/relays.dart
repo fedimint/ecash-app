@@ -3,7 +3,7 @@ import 'package:carbine/utils.dart';
 import 'package:flutter/material.dart';
 
 class Relays extends StatefulWidget {
-  const Relays({Key? key}) : super(key: key);
+  const Relays({super.key});
 
   @override
   State<Relays> createState() => _RelaysState();
@@ -41,7 +41,18 @@ class _RelaysState extends State<Relays> {
   Widget _buildRelayTile(String relay) {
     return ListTile(
       title: Text(relay, style: const TextStyle(color: Colors.white)),
-      trailing: const Icon(Icons.check_circle, color: Colors.greenAccent),
+      trailing: IconButton(
+        icon: const Icon(Icons.delete, color: Colors.redAccent),
+        tooltip: 'Delete Relay',
+        onPressed: () async {
+          try {
+            await removeRelay(relayUri: relay);
+            _fetchRelays(); // Refresh after deletion
+          } catch (e) {
+            AppLogger.instance.error("Could not delete relay: $e");
+          }
+        },
+      ),
     );
   }
 
@@ -108,11 +119,11 @@ class _RelaysState extends State<Relays> {
                 const SizedBox(width: 12),
                 ElevatedButton(
                   onPressed: _addRelay,
-                  child: const Text('Add Relay'),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: Colors.greenAccent,
                     foregroundColor: Colors.black,
                   ),
+                  child: const Text('Add Relay'),
                 ),
               ],
             ),

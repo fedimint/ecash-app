@@ -32,6 +32,8 @@ abstract class NostrClient implements RustOpaqueInterface {
   static Future<NostrClient> newInstance({required Database db}) =>
       RustLib.instance.api.crateNostrNostrClientNew(db: db);
 
+  Future<void> removeRelay({required String relayUri});
+
   Future<NWCConnectionInfo> setNwcConnectionInfo({
     required FederationId federationId,
     required String relay,
