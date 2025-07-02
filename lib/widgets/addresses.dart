@@ -3,7 +3,6 @@ import 'package:carbine/utils.dart';
 import 'package:flutter/material.dart';
 import 'package:carbine/lib.dart';
 import 'package:flutter/services.dart';
-import 'package:url_launcher/url_launcher.dart';
 
 class OnchainAddressesList extends StatefulWidget {
   final FederationSelector fed;
@@ -44,35 +43,7 @@ class _OnchainAddressesListState extends State<OnchainAddressesList> {
       default:
         return null;
     }
-  }
-
-  Future<void> _showExplorerConfirmation(BuildContext context, Uri url) async {
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('External Link Warning'),
-        content: const Text(
-          'You are about to navigate to an external block explorer. '
-          'Before accepting, please consider the privacy implications '
-          'and consider using a self hosted block explorer.',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(false),
-            child: const Text('Cancel'),
-          ),
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(true),
-            child: const Text('Confirm'),
-          ),
-        ],
-      ),
-    );
-
-    if (confirmed == true && await canLaunchUrl(url)) {
-      await launchUrl(url, mode: LaunchMode.externalApplication);
-    }
-  }
+  } 
 
   Future<void> _refreshAddress(BigInt tweakIdx, String address) async {
     try {
@@ -171,7 +142,7 @@ class _OnchainAddressesListState extends State<OnchainAddressesList> {
                             color: Theme.of(context).colorScheme.secondary,
                             onPressed: () async {
                               final url = Uri.parse(explorerUrl);
-                              await _showExplorerConfirmation(context, url);
+                              await showExplorerConfirmation(context, url);
                             },
                           ),
 

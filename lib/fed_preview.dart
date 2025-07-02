@@ -3,7 +3,6 @@ import 'package:carbine/multimint.dart';
 import 'package:carbine/utils.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:url_launcher/url_launcher.dart';
 
 class FederationPreview extends StatefulWidget {
   final String federationName;
@@ -398,6 +397,16 @@ class _FederationUtxoListState extends State<FederationUtxoList> {
                   ),
 
                   if (explorerUrl != null)
+                    IconButton(
+                      tooltip: 'View on mempool.space',
+                      icon: const Icon(Icons.open_in_new),
+                      color: Theme.of(context).colorScheme.secondary,
+                      onPressed: () async {
+                        final url = Uri.parse(explorerUrl);
+                        await showExplorerConfirmation(context, url);
+                      },
+                    ),
+                  /*
                     InkWell(
                       onTap:
                           () => launchUrl(
@@ -424,6 +433,7 @@ class _FederationUtxoListState extends State<FederationUtxoList> {
                         ],
                       ),
                     ),
+                    */
                 ],
               ),
 
