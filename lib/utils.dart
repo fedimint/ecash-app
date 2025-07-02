@@ -111,6 +111,7 @@ String formatBalance(BigInt? msats, bool showMsats) {
   }
 }
 
+// TODO: Change name
 String getAbbreviatedInvoice(String invoice) {
   if (invoice.length <= 14) return invoice;
   return '${invoice.substring(0, 7)}...${invoice.substring(invoice.length - 7)}';
