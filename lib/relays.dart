@@ -12,6 +12,8 @@ class Relays extends StatefulWidget {
 class _RelaysState extends State<Relays> {
   late Future<List<(String, bool)>> _relaysFuture;
   final TextEditingController _controller = TextEditingController();
+  bool _isInputValid = false;
+  String _inputText = '';
 
   @override
   void initState() {
@@ -25,13 +27,31 @@ class _RelaysState extends State<Relays> {
     });
   }
 
+  bool _isValidRelayUri(String input) {
+    if (input.isEmpty) return false;
+    try {
+      final uri = Uri.parse(input);
+      return uri.scheme == 'wss' && uri.hasAuthority;
+    } catch (_) {
+      return false;
+    }
+  }
+
+  void _onInputChanged(String value) {
+    setState(() {
+      _inputText = value.trim();
+      _isInputValid = _isValidRelayUri(_inputText);
+    });
+  }
+
   Future<void> _addRelay() async {
     final relay = _controller.text.trim();
-    if (relay.isEmpty) return;
+    if (!_isValidRelayUri(relay)) return;
 
     try {
       await insertRelay(relayUri: relay);
       _controller.clear();
+      _onInputChanged('');
       _fetchRelays();
     } catch (e) {
       AppLogger.instance.error("Could not add relay: $e");
@@ -87,9 +107,20 @@ class _RelaysState extends State<Relays> {
     );
   }
 
+  OutlineInputBorder _inputBorder(Color color) {
+    return OutlineInputBorder(borderSide: BorderSide(color: color));
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+
+    Color borderColor;
+    if (_inputText.isEmpty) {
+      borderColor = Colors.transparent;
+    } else {
+      borderColor = _isInputValid ? Colors.greenAccent : Colors.redAccent;
+    }
 
     return Scaffold(
       appBar: AppBar(title: const Text('Nostr Relays')),
@@ -145,19 +176,22 @@ class _RelaysState extends State<Relays> {
                 Expanded(
                   child: TextField(
                     controller: _controller,
+                    onChanged: _onInputChanged,
                     style: const TextStyle(color: Colors.white),
-                    decoration: const InputDecoration(
+                    decoration: InputDecoration(
                       hintText: 'wss://example.com',
-                      hintStyle: TextStyle(color: Colors.white38),
+                      hintStyle: const TextStyle(color: Colors.white38),
                       filled: true,
-                      fillColor: Color(0xFF111111),
-                      border: OutlineInputBorder(),
+                      fillColor: const Color(0xFF111111),
+                      border: _inputBorder(borderColor),
+                      enabledBorder: _inputBorder(borderColor),
+                      focusedBorder: _inputBorder(borderColor),
                     ),
                   ),
                 ),
                 const SizedBox(width: 12),
                 ElevatedButton(
-                  onPressed: _addRelay,
+                  onPressed: _isInputValid ? _addRelay : null,
                   style: ElevatedButton.styleFrom(
                     backgroundColor: Colors.greenAccent,
                     foregroundColor: Colors.black,
