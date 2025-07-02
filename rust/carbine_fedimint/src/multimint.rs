@@ -2472,6 +2472,27 @@ impl Multimint {
             Vec::new()
         }
     }
+
+    pub async fn recheck_address(
+        &self,
+        federation_id: &FederationId,
+        tweak_idx: u64,
+    ) -> anyhow::Result<()> {
+        let client = self
+            .clients
+            .read()
+            .await
+            .get(federation_id)
+            .context("No federation exists")?
+            .clone();
+        let wallet_module =
+            client.get_first_module::<fedimint_wallet_client::WalletClientModule>()?;
+
+        wallet_module
+            .recheck_pegin_address(TweakIdx(tweak_idx))
+            .await?;
+        Ok(())
+    }
 }
 
 /// Using the given federation (transaction) and gateway fees, compute the value `X` such that `X - total_fee == requested_amount`.

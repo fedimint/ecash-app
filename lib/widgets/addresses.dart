@@ -1,4 +1,5 @@
 import 'package:carbine/multimint.dart';
+import 'package:carbine/utils.dart';
 import 'package:flutter/material.dart';
 import 'package:carbine/lib.dart';
 import 'package:flutter/services.dart';
@@ -6,8 +7,9 @@ import 'package:url_launcher/url_launcher.dart';
 
 class OnchainAddressesList extends StatefulWidget {
   final FederationSelector fed;
+  final VoidCallback updateBalance;
 
-  const OnchainAddressesList({super.key, required this.fed});
+  const OnchainAddressesList({super.key, required this.fed, required this.updateBalance});
 
   @override
   State<OnchainAddressesList> createState() => _OnchainAddressesListState();
@@ -72,6 +74,28 @@ class _OnchainAddressesListState extends State<OnchainAddressesList> {
     }
   }
 
+  Future<void> _refreshAddress(BigInt tweakIdx, String address) async {
+    try {
+      // Call the Rust async function recheckAddress for the given address and federation
+      await recheckAddress(federationId: widget.fed.federationId, tweakIdx: tweakIdx);
+      widget.updateBalance();
+
+      // Reload the addresses list
+      //_addressesFuture = getAddresses(federationId: widget.fed.federationId);
+      //setState(() {});
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Rechecked ${abbreviateAddress(address)}')),
+      );
+    } catch (e) {
+      AppLogger.instance.error("Failed to refresh address: $e");
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Failed to refresh address')),
+      );
+    }
+  }
+
+
 
   @override
   Widget build(BuildContext context) {
@@ -101,7 +125,7 @@ class _OnchainAddressesListState extends State<OnchainAddressesList> {
         return ListView.builder(
           itemCount: addresses.length,
           itemBuilder: (context, index) {
-            final (address, _, amount) = addresses[index];
+            final (address, tweakIdx, amount) = addresses[index];
             final explorerUrl = _explorerUrl(address);
 
             return Card(
@@ -163,6 +187,16 @@ class _OnchainAddressesListState extends State<OnchainAddressesList> {
                                 content: Text('Address copied to clipboard'),
                               ),
                             );
+                          },
+                        ),
+
+                        // Refresh button
+                        IconButton(
+                          tooltip: 'Recheck address',
+                          icon: const Icon(Icons.refresh),
+                          color: Theme.of(context).colorScheme.primary,
+                          onPressed: () async {
+                            await _refreshAddress(tweakIdx, address);
                           },
                         ),
                       ],

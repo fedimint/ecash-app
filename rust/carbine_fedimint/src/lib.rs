@@ -798,3 +798,9 @@ pub async fn get_addresses(federation_id: &FederationId) -> Vec<(String, u64, Op
     let multimint = get_multimint();
     multimint.get_addresses(federation_id).await
 }
+
+#[frb]
+pub async fn recheck_address(federation_id: &FederationId, tweak_idx: u64) -> anyhow::Result<()> {
+    let multimint = get_multimint();
+    multimint.recheck_address(federation_id, tweak_idx).await
+}

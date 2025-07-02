@@ -283,7 +283,7 @@ class _DashboardState extends State<Dashboard> {
                               },
                             ),
                             if (_selectedPaymentType == PaymentType.onchain)
-                              OnchainAddressesList(fed: widget.fed),
+                              OnchainAddressesList(fed: widget.fed, updateBalance: _loadBalance),
                           ],
                         ),
                       ),

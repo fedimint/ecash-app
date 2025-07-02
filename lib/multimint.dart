@@ -161,6 +161,11 @@ abstract class Multimint implements RustOpaqueInterface {
     required bool isLnv2,
   });
 
+  Future<void> recheckAddress({
+    required FederationId federationId,
+    required BigInt tweakIdx,
+  });
+
   Future<OperationId> reissueEcash({
     required FederationId federationId,
     required String ecash,
