@@ -237,6 +237,7 @@ pub enum MultimintEvent {
     Log(LogLevel, String),
     RecoveryDone(String),
     RecoveryProgress(String, u16, u32, u32),
+    Ecash((FederationId, u64)),
 }
 
 #[derive(Clone, Eq, PartialEq, Serialize, Debug)]
@@ -2137,8 +2138,12 @@ impl Multimint {
                     .await_ecash_reissue(&federation_id, operation_id)
                     .await
                 {
-                    Ok(final_state) => {
+                    Ok((final_state, amount)) => {
                         info_to_flutter(format!("Ecash reissue completed: {final_state:?}")).await;
+                        if let Some(amount) = amount {
+                            let ecash_event = MultimintEvent::Ecash((federation_id, amount));
+                            get_event_bus().publish(ecash_event).await;
+                        }
                     }
                     Err(e) => {
                         info_to_flutter(format!("Could not await receive {operation_id:?} {e:?}"))
@@ -2152,7 +2157,7 @@ impl Multimint {
         &self,
         federation_id: &FederationId,
         operation_id: OperationId,
-    ) -> anyhow::Result<ReissueExternalNotesState> {
+    ) -> anyhow::Result<(ReissueExternalNotesState, Option<u64>)> {
         let client = self
             .clients
             .read()
@@ -2178,7 +2183,23 @@ impl Multimint {
             }
         }
 
-        Ok(final_state)
+        let operation = client.operation_log().get_operation(operation_id).await;
+        let amount = Self::get_ecash_amount_from_meta(operation);
+
+        Ok((final_state, amount))
+    }
+
+    fn get_ecash_amount_from_meta(op_log_val: Option<OperationLogEntry>) -> Option<u64> {
+        let Some(op_log_val) = op_log_val else {
+            return None;
+        };
+        let meta = op_log_val.meta::<MintOperationMeta>();
+        // Internal reissues will have an operation id in the extra meta, these should not generate events
+        if serde_json::from_value::<OperationId>(meta.extra_meta).is_ok() {
+            return None;
+        }
+
+        Some(meta.amount.msats)
     }
 
     pub async fn calculate_withdraw_fees(

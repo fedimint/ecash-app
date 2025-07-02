@@ -64,43 +64,66 @@ class _MyAppState extends State<MyApp> {
           }
 
           final amountMsats = ln.field0.amountMsats;
-          final amount = formatBalance(amountMsats, false);
-          final federationIdString = await federationIdToString(
+          await _handleFundsReceived(
             federationId: event.field0.$1,
-          );
-          FederationSelector? selector;
-          bool? recovering;
-          for (var sel in _feds) {
-            final idString = await federationIdToString(
-              federationId: sel.$1.federationId,
-            );
-            if (idString == federationIdString) {
-              selector = sel.$1;
-              recovering = sel.$2;
-              break;
-            }
-          }
-
-          if (selector == null) {
-            return;
-          }
-
-          final name = selector.federationName;
-          AppLogger.instance.info("$name received $amount");
-
-          ToastService().show(
-            message: "$name received $amount",
-            duration: const Duration(seconds: 7),
-            onTap: () {
-              _navigatorKey.currentState?.popUntil((route) => route.isFirst);
-              _setSelectedFederation(selector!, recovering!);
-            },
+            amountMsats: amountMsats,
           );
         }
       } else if (event is MultimintEvent_Log) {
         AppLogger.instance.rustLog(event.field0, event.field1);
+      } else if (event is MultimintEvent_Ecash) {
+        if (!invoicePaidToastVisible.value) {
+          AppLogger.instance.info("Request modal visible — skipping toast.");
+          return;
+        }
+        final amountMsats = event.field0.$2;
+        await _handleFundsReceived(
+          federationId: event.field0.$1,
+          amountMsats: amountMsats,
+          icon: Icon(Icons.currency_bitcoin, color: Colors.greenAccent),
+        );
       }
     });
+  }
+
+  Future<void> _handleFundsReceived({
+    required FederationId federationId,
+    required BigInt amountMsats,
+    Icon? icon,
+  }) async {
+    final amount = formatBalance(amountMsats, false);
+    final federationIdString = await federationIdToString(
+      federationId: federationId,
+    );
+
+    FederationSelector? selector;
+    bool? recovering;
+
+    for (var sel in _feds) {
+      final idString = await federationIdToString(
+        federationId: sel.$1.federationId,
+      );
+      if (idString == federationIdString) {
+        selector = sel.$1;
+        recovering = sel.$2;
+        break;
+      }
+    }
+
+    if (selector == null) return;
+
+    final name = selector.federationName;
+    AppLogger.instance.info("$name received $amount");
+
+    ToastService().show(
+      message: "$name received $amount",
+      duration: const Duration(seconds: 7),
+      onTap: () {
+        _navigatorKey.currentState?.popUntil((route) => route.isFirst);
+        _setSelectedFederation(selector!, recovering!);
+      },
+      icon: icon,
+    );
   }
 
   Future<void> _rejoinFederations() async {

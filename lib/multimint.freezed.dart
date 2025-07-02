@@ -1095,4 +1095,70 @@ as int,
 
 }
 
+/// @nodoc
+
+
+class MultimintEvent_Ecash extends MultimintEvent {
+  const MultimintEvent_Ecash(this.field0): super._();
+  
+
+@override final  (FederationId, BigInt) field0;
+
+/// Create a copy of MultimintEvent
+/// with the given fields replaced by the non-null parameter values.
+@JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+$MultimintEvent_EcashCopyWith<MultimintEvent_Ecash> get copyWith => _$MultimintEvent_EcashCopyWithImpl<MultimintEvent_Ecash>(this, _$identity);
+
+
+
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is MultimintEvent_Ecash&&(identical(other.field0, field0) || other.field0 == field0));
+}
+
+
+@override
+int get hashCode => Object.hash(runtimeType,field0);
+
+@override
+String toString() {
+  return 'MultimintEvent.ecash(field0: $field0)';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class $MultimintEvent_EcashCopyWith<$Res> implements $MultimintEventCopyWith<$Res> {
+  factory $MultimintEvent_EcashCopyWith(MultimintEvent_Ecash value, $Res Function(MultimintEvent_Ecash) _then) = _$MultimintEvent_EcashCopyWithImpl;
+@useResult
+$Res call({
+ (FederationId, BigInt) field0
+});
+
+
+
+
+}
+/// @nodoc
+class _$MultimintEvent_EcashCopyWithImpl<$Res>
+    implements $MultimintEvent_EcashCopyWith<$Res> {
+  _$MultimintEvent_EcashCopyWithImpl(this._self, this._then);
+
+  final MultimintEvent_Ecash _self;
+  final $Res Function(MultimintEvent_Ecash) _then;
+
+/// Create a copy of MultimintEvent
+/// with the given fields replaced by the non-null parameter values.
+@pragma('vm:prefer-inline') $Res call({Object? field0 = null,}) {
+  return _then(MultimintEvent_Ecash(
+null == field0 ? _self.field0 : field0 // ignore: cast_nullable_to_non_nullable
+as (FederationId, BigInt),
+  ));
+}
+
+
+}
+
 // dart format on

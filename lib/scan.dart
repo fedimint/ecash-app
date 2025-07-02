@@ -1,5 +1,6 @@
 import 'dart:convert';
 
+import 'package:carbine/app.dart';
 import 'package:carbine/fed_preview.dart';
 import 'package:carbine/lib.dart';
 import 'package:carbine/models.dart';
@@ -182,7 +183,8 @@ class _ScanQRPageState extends State<ScanQRPage> {
         case ParsedText_Ecash(:final field0):
           if (widget.paymentType == null ||
               widget.paymentType! == PaymentType.ecash) {
-            showCarbineModalBottomSheet(
+            invoicePaidToastVisible.value = false;
+            await showCarbineModalBottomSheet(
               context: context,
               child: EcashRedeemPrompt(
                 fed: chosenFederation!,
@@ -191,6 +193,7 @@ class _ScanQRPageState extends State<ScanQRPage> {
               ),
               heightFactor: 0.33,
             );
+            invoicePaidToastVisible.value = true;
           }
           break;
       }
