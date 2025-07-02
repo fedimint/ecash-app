@@ -111,7 +111,8 @@ pub struct Multimint {
     pegin_address_monitor_tx: UnboundedSender<(FederationId, TweakIdx)>,
     recovery_progress: Arc<RwLock<BTreeMap<FederationId, BTreeMap<u16, RecoveryProgress>>>>,
     internal_ecash_spends: Arc<RwLock<BTreeSet<OperationId>>>,
-    allocated_bitcoin_addresses: Arc<RwLock<BTreeMap<TweakIdx, (String, Option<u64>)>>>,
+    allocated_bitcoin_addresses:
+        Arc<RwLock<BTreeMap<FederationId, BTreeMap<TweakIdx, (String, Option<u64>)>>>>,
 }
 
 #[derive(Debug, Serialize, Encodable, Decodable, Clone)]
@@ -427,7 +428,7 @@ impl Multimint {
         client: ClientHandleArc,
         tweak_idx: TweakIdx,
         event_bus: EventBus<MultimintEvent>,
-        addresses: Arc<RwLock<BTreeMap<TweakIdx, (String, Option<u64>)>>>,
+        addresses: Arc<RwLock<BTreeMap<FederationId, BTreeMap<TweakIdx, (String, Option<u64>)>>>>,
     ) -> anyhow::Result<()> {
         let wallet_module = client.get_first_module::<WalletClientModule>()?;
 
@@ -538,8 +539,11 @@ impl Multimint {
                     btc_out_point,
                 } => {
                     let mut addresses = addresses.write().await;
-                    if let Some((address, _)) = addresses.remove(&tweak_idx) {
-                        addresses.insert(tweak_idx, (address, Some(btc_deposited.to_sat())));
+                    if let Some(fed_addresses) = addresses.get_mut(&federation_id) {
+                        if let Some((address, _)) = fed_addresses.remove(&tweak_idx) {
+                            fed_addresses
+                                .insert(tweak_idx, (address, Some(btc_deposited.to_sat())));
+                        }
                     }
 
                     let deposit_event = MultimintEvent::Deposit((
@@ -626,10 +630,12 @@ impl Multimint {
                             } = wallet_meta.variant
                             {
                                 let mut addresses = addresses_clone.write().await;
+                                let fed_addresses =
+                                    addresses.entry(fed_id).or_insert(BTreeMap::new());
                                 if let Some(DepositStateV2::Claimed { btc_deposited, .. }) =
                                     wallet_op.outcome()
                                 {
-                                    addresses.insert(
+                                    fed_addresses.insert(
                                         tweak_idx.expect("Tweak cannot be None"),
                                         (
                                             address.assume_checked().to_string(),
@@ -637,7 +643,7 @@ impl Multimint {
                                         ),
                                     );
                                 } else {
-                                    addresses.insert(
+                                    fed_addresses.insert(
                                         tweak_idx.expect("Tweak cannot be None"),
                                         (address.assume_checked().to_string(), None),
                                     );
@@ -2400,7 +2406,8 @@ impl Multimint {
             .find_tweak_idx_by_address(address.clone())
             .await?;
         let mut addresses = self.allocated_bitcoin_addresses.write().await;
-        addresses.insert(tweak_idx, (address.assume_checked().to_string(), None));
+        let fed_addresses = addresses.entry(federation_id).or_insert(BTreeMap::new());
+        fed_addresses.insert(tweak_idx, (address.assume_checked().to_string(), None));
 
         self.pegin_address_monitor_tx
             .send((federation_id, tweak_idx))
@@ -2449,12 +2456,21 @@ impl Multimint {
         dbtx.get_value(&BtcPriceKey).await.map(|p| p.price)
     }
 
-    pub async fn get_addresses(&self) -> Vec<(String, u64, Option<u64>)> {
+    pub async fn get_addresses(
+        &self,
+        federation_id: &FederationId,
+    ) -> Vec<(String, u64, Option<u64>)> {
         let addresses = self.allocated_bitcoin_addresses.read().await;
-        addresses
-            .iter()
-            .map(|(k, v)| (v.0.clone(), k.0, v.1))
-            .collect()
+        if let Some(fed_addresses) = addresses.get(federation_id) {
+            let mut res: Vec<_> = fed_addresses
+                .iter()
+                .map(|(k, v)| (v.0.clone(), k.0, v.1))
+                .collect();
+            res.sort_by_key(|entry| entry.1);
+            res
+        } else {
+            Vec::new()
+        }
     }
 }
 

@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:carbine/recovery_progress.dart';
 import 'package:carbine/utils.dart';
+import 'package:carbine/widgets/addresses.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_speed_dial/flutter_speed_dial.dart';
 
@@ -282,12 +283,7 @@ class _DashboardState extends State<Dashboard> {
                               },
                             ),
                             if (_selectedPaymentType == PaymentType.onchain)
-                              Center(
-                                child: Text(
-                                  'Addresses view coming soon',
-                                  style: Theme.of(context).textTheme.bodyMedium,
-                                ),
-                              ),
+                              OnchainAddressesList(fed: widget.fed),
                           ],
                         ),
                       ),

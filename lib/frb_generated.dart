@@ -265,6 +265,7 @@ abstract class RustLibApi extends BaseApi {
 
   Future<List<(String, BigInt, BigInt?)>> crateMultimintMultimintGetAddresses({
     required Multimint that,
+    required FederationId federationId,
   });
 
   Future<BigInt?> crateMultimintMultimintGetBtcPrice({required Multimint that});
@@ -572,7 +573,9 @@ abstract class RustLibApi extends BaseApi {
 
   Future<List<(FederationSelector, bool)>> crateFederations();
 
-  Future<List<(String, BigInt, BigInt?)>> crateGetAddresses();
+  Future<List<(String, BigInt, BigInt?)>> crateGetAddresses({
+    required FederationId federationId,
+  });
 
   Future<List<String>> crateGetBackupInviteCodes();
 
@@ -2338,6 +2341,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   @override
   Future<List<(String, BigInt, BigInt?)>> crateMultimintMultimintGetAddresses({
     required Multimint that,
+    required FederationId federationId,
   }) {
     return handler.executeNormal(
       NormalTask(
@@ -2345,6 +2349,10 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           final serializer = SseSerializer(generalizedFrbRustBinding);
           sse_encode_Auto_Ref_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerMultimint(
             that,
+            serializer,
+          );
+          sse_encode_Auto_Ref_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerFederationId(
+            federationId,
             serializer,
           );
           pdeCallFfi(
@@ -2360,7 +2368,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           decodeErrorData: null,
         ),
         constMeta: kCrateMultimintMultimintGetAddressesConstMeta,
-        argValues: [that],
+        argValues: [that, federationId],
         apiImpl: this,
       ),
     );
@@ -2369,7 +2377,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   TaskConstMeta get kCrateMultimintMultimintGetAddressesConstMeta =>
       const TaskConstMeta(
         debugName: "Multimint_get_addresses",
-        argNames: ["that"],
+        argNames: ["that", "federationId"],
       );
 
   @override
@@ -4802,11 +4810,17 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
       const TaskConstMeta(debugName: "federations", argNames: []);
 
   @override
-  Future<List<(String, BigInt, BigInt?)>> crateGetAddresses() {
+  Future<List<(String, BigInt, BigInt?)>> crateGetAddresses({
+    required FederationId federationId,
+  }) {
     return handler.executeNormal(
       NormalTask(
         callFfi: (port_) {
           final serializer = SseSerializer(generalizedFrbRustBinding);
+          sse_encode_Auto_Ref_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerFederationId(
+            federationId,
+            serializer,
+          );
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
@@ -4820,14 +4834,16 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           decodeErrorData: null,
         ),
         constMeta: kCrateGetAddressesConstMeta,
-        argValues: [],
+        argValues: [federationId],
         apiImpl: this,
       ),
     );
   }
 
-  TaskConstMeta get kCrateGetAddressesConstMeta =>
-      const TaskConstMeta(debugName: "get_addresses", argNames: []);
+  TaskConstMeta get kCrateGetAddressesConstMeta => const TaskConstMeta(
+    debugName: "get_addresses",
+    argNames: ["federationId"],
+  );
 
   @override
   Future<List<String>> crateGetBackupInviteCodes() {
@@ -11278,8 +11294,12 @@ class MultimintImpl extends RustOpaque implements Multimint {
   Future<List<(FederationSelector, bool)>> federations() =>
       RustLib.instance.api.crateMultimintMultimintFederations(that: this);
 
-  Future<List<(String, BigInt, BigInt?)>> getAddresses() =>
-      RustLib.instance.api.crateMultimintMultimintGetAddresses(that: this);
+  Future<List<(String, BigInt, BigInt?)>> getAddresses({
+    required FederationId federationId,
+  }) => RustLib.instance.api.crateMultimintMultimintGetAddresses(
+    that: this,
+    federationId: federationId,
+  );
 
   Future<BigInt?> getBtcPrice() =>
       RustLib.instance.api.crateMultimintMultimintGetBtcPrice(that: this);

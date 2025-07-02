@@ -107,7 +107,9 @@ abstract class Multimint implements RustOpaqueInterface {
 
   Future<List<(FederationSelector, bool)>> federations();
 
-  Future<List<(String, BigInt, BigInt?)>> getAddresses();
+  Future<List<(String, BigInt, BigInt?)>> getAddresses({
+    required FederationId federationId,
+  });
 
   Future<BigInt?> getBtcPrice();
 
