@@ -406,34 +406,6 @@ class _FederationUtxoListState extends State<FederationUtxoList> {
                         await showExplorerConfirmation(context, url);
                       },
                     ),
-                  /*
-                    InkWell(
-                      onTap:
-                          () => launchUrl(
-                            Uri.parse(explorerUrl),
-                            mode: LaunchMode.externalApplication,
-                          ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: const [
-                          Text(
-                            "View on mempool.space",
-                            style: TextStyle(
-                              color: Colors.tealAccent,
-                              decoration: TextDecoration.underline,
-                              fontSize: 13,
-                            ),
-                          ),
-                          SizedBox(width: 4),
-                          Icon(
-                            Icons.open_in_new,
-                            size: 16,
-                            color: Colors.tealAccent,
-                          ),
-                        ],
-                      ),
-                    ),
-                    */
                 ],
               ),
 

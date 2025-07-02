@@ -157,9 +157,10 @@ class _DashboardState extends State<Dashboard> {
         ),
       );
     } else if (_selectedPaymentType == PaymentType.onchain) {
-      await Navigator.push(
-        context,
-        MaterialPageRoute(builder: (_) => OnChainReceive(fed: widget.fed)),
+      await showCarbineModalBottomSheet(
+        context: context,
+        child: OnChainReceiveContent(fed: widget.fed),
+        heightFactor: 0.33,
       );
     } else if (_selectedPaymentType == PaymentType.ecash) {
       await Navigator.push(
