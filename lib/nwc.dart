@@ -21,7 +21,7 @@ class _NostrWalletConnectState extends State<NostrWalletConnect> {
   bool _loading = true;
 
   NWCConnectionInfo? _nwc;
-  List<String> _relays = [];
+  List<(String, bool)> _relays = [];
   List<(FederationSelector, NWCConnectionInfo)> _existingConfigs = [];
 
   @override
@@ -171,12 +171,36 @@ class _NostrWalletConnectState extends State<NostrWalletConnect> {
           decoration: const InputDecoration(labelText: 'Select a Relay'),
           value: _selectedRelay,
           items:
-              _relays
-                  .map(
-                    (relay) =>
-                        DropdownMenuItem(value: relay, child: Text(relay)),
-                  )
-                  .toList(),
+              _relays.map((relay) {
+                final (uri, connected) = relay;
+                final statusText = connected ? 'Connected' : 'Disconnected';
+                final statusColor =
+                    connected ? Colors.greenAccent : Colors.redAccent;
+
+                return DropdownMenuItem<String>(
+                  value: uri,
+                  child: Row(
+                    mainAxisSize:
+                        MainAxisSize.min, // prevent unbounded constraint issue
+                    children: [
+                      Flexible(
+                        child: Text(
+                          uri,
+                          overflow: TextOverflow.ellipsis,
+                          maxLines: 1,
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Icon(Icons.circle, size: 10, color: statusColor),
+                      const SizedBox(width: 4),
+                      Text(
+                        statusText,
+                        style: TextStyle(fontSize: 12, color: statusColor),
+                      ),
+                    ],
+                  ),
+                );
+              }).toList(),
           onChanged: (value) {
             setState(() => _selectedRelay = value);
           },

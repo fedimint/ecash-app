@@ -6,8 +6,6 @@ import 'package:carbine/theme.dart';
 import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
 
-// ... existing imports remain the same ...
-
 class Discover extends StatefulWidget {
   final void Function(FederationSelector fed, bool recovering) onJoin;
   const Discover({super.key, required this.onJoin});
@@ -30,10 +28,7 @@ class _Discover extends State<Discover> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Discover Federations'),
-        centerTitle: true,
-      ),
+      appBar: AppBar(title: const Text('Discover Federations')),
       body: FutureBuilder<List<PublicFederation>>(
         future: _futureFeds,
         builder: (context, snapshot) {

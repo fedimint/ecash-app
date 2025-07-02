@@ -3,6 +3,7 @@ import 'package:carbine/lib.dart';
 import 'package:carbine/mnemonic.dart';
 import 'package:carbine/multimint.dart';
 import 'package:carbine/nwc.dart';
+import 'package:carbine/relays.dart';
 import 'package:carbine/theme.dart';
 import 'package:flutter/material.dart';
 
@@ -75,7 +76,17 @@ class _SettingsScreenState extends State<SettingsScreen> {
               );
             },
           ),
-          const SizedBox(height: 12),
+          _SettingsOption(
+            icon: Icons.link,
+            title: 'Nostr Relays',
+            subtitle: 'Configure your Nostr Relays',
+            onTap: () async {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => Relays()),
+              );
+            },
+          ),
           _SettingsOption(
             icon: Icons.vpn_key,
             title: 'Mnemonic',

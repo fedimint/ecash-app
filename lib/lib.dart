@@ -219,7 +219,8 @@ Future<NWCConnectionInfo> setNwcConnectionInfo({
   relay: relay,
 );
 
-Future<List<String>> getRelays() => RustLib.instance.api.crateGetRelays();
+Future<List<(String, bool)>> getRelays() =>
+    RustLib.instance.api.crateGetRelays();
 
 Future<List<Utxo>> walletSummary({required String invite}) =>
     RustLib.instance.api.crateWalletSummary(invite: invite);
@@ -297,6 +298,12 @@ Future<(ParsedText, FederationSelector)> parseScannedTextForFederation({
 Future<(ParsedText, FederationSelector?)> parsedScannedText({
   required String text,
 }) => RustLib.instance.api.crateParsedScannedText(text: text);
+
+Future<void> insertRelay({required String relayUri}) =>
+    RustLib.instance.api.crateInsertRelay(relayUri: relayUri);
+
+Future<void> removeRelay({required String relayUri}) =>
+    RustLib.instance.api.crateRemoveRelay(relayUri: relayUri);
 
 // Rust type: RustOpaqueMoi<flutter_rust_bridge::for_generated::RustAutoOpaqueInner<ClientConfig>>
 abstract class ClientConfig implements RustOpaqueInterface {}
