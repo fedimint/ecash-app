@@ -1,6 +1,8 @@
 import 'package:carbine/lib.dart';
 import 'package:carbine/multimint.dart';
+import 'package:carbine/theme.dart';
 import 'package:carbine/utils.dart';
+import 'package:carbine/widgets/gateway_details.dart';
 import 'package:flutter/material.dart';
 
 class GatewaysList extends StatelessWidget {
@@ -57,6 +59,12 @@ class GatewaysList extends StatelessWidget {
                   style: theme.textTheme.bodyMedium?.copyWith(color: Colors.white60),
                   textAlign: TextAlign.right,
                 ),
+                onTap: () {
+                  showCarbineModalBottomSheet(
+                    context: context,
+                    child: GatewayDetailsSheet(gateway: g),
+                  );
+                },
               ),
             );
           },
