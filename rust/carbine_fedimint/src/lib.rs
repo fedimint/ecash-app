@@ -804,3 +804,9 @@ pub async fn recheck_address(federation_id: &FederationId, tweak_idx: u64) -> an
     let multimint = get_multimint();
     multimint.recheck_address(federation_id, tweak_idx).await
 }
+
+#[frb]
+pub async fn get_note_summary(federation_id: &FederationId) -> anyhow::Result<Vec<(u64, usize)>> {
+    let multimint = get_multimint();
+    multimint.get_note_summary(federation_id).await
+}

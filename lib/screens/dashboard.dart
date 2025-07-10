@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:carbine/recovery_progress.dart';
 import 'package:carbine/utils.dart';
 import 'package:carbine/widgets/addresses.dart';
+import 'package:carbine/widgets/note_summary.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_speed_dial/flutter_speed_dial.dart';
 
@@ -40,6 +41,7 @@ class _DashboardState extends State<Dashboard> {
   VoidCallback? _refreshTransactionsList;
   double? _btcPrice;
   int _addressRefreshKey = 0;
+  int _noteRefreshKey = 0;
 
   late Stream<MultimintEvent> events;
   late StreamSubscription<MultimintEvent> _subscription;
@@ -79,6 +81,7 @@ class _DashboardState extends State<Dashboard> {
         if (federationIdString == selectorIdString) {
           _loadBalance();
           _selectedPaymentType = PaymentType.ecash;
+          _loadNotes();
         }
       }
     });
@@ -97,6 +100,12 @@ class _DashboardState extends State<Dashboard> {
   Future<void> _loadAddresses() async {
     setState(() {
       _addressRefreshKey++;
+    });
+  }
+
+  Future<void> _loadNotes() async {
+    setState(() {
+      _noteRefreshKey++;
     });
   }
 
@@ -145,6 +154,7 @@ class _DashboardState extends State<Dashboard> {
               ),
         ),
       );
+      _loadNotes();
     }
     _loadBalance();
   }
@@ -262,7 +272,7 @@ class _DashboardState extends State<Dashboard> {
             ] else...[
               Expanded(
                 child: DefaultTabController(
-                  length: _selectedPaymentType == PaymentType.onchain ? 2 : 1,
+                  length: _selectedPaymentType == PaymentType.onchain || _selectedPaymentType == PaymentType.ecash ? 2 : 1,
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
@@ -274,6 +284,8 @@ class _DashboardState extends State<Dashboard> {
                           const Tab(text: 'Recent Transactions'),
                           if (_selectedPaymentType == PaymentType.onchain)
                             const Tab(text: 'Addresses'),
+                          if (_selectedPaymentType == PaymentType.ecash)
+                            const Tab(text: 'Notes'),
                         ],
                       ),
                       const SizedBox(height: 16),
@@ -296,6 +308,8 @@ class _DashboardState extends State<Dashboard> {
                                 _loadBalance();
                                 _loadAddresses();
                               }),
+                            if (_selectedPaymentType == PaymentType.ecash)
+                              NoteSummary(key: ValueKey(_noteRefreshKey), fed: widget.fed),
                           ],
                         ),
                       ),

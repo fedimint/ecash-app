@@ -317,6 +317,10 @@ Future<void> recheckAddress({
   tweakIdx: tweakIdx,
 );
 
+Future<List<(BigInt, BigInt)>> getNoteSummary({
+  required FederationId federationId,
+}) => RustLib.instance.api.crateGetNoteSummary(federationId: federationId);
+
 // Rust type: RustOpaqueMoi<flutter_rust_bridge::for_generated::RustAutoOpaqueInner<ClientConfig>>
 abstract class ClientConfig implements RustOpaqueInterface {}
 
