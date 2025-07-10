@@ -6,9 +6,9 @@ import 'package:flutter/services.dart';
 
 class OnchainAddressesList extends StatefulWidget {
   final FederationSelector fed;
-  final VoidCallback updateBalance;
+  final VoidCallback updateAddresses;
 
-  const OnchainAddressesList({super.key, required this.fed, required this.updateBalance});
+  const OnchainAddressesList({super.key, required this.fed, required this.updateAddresses});
 
   @override
   State<OnchainAddressesList> createState() => _OnchainAddressesListState();
@@ -49,11 +49,7 @@ class _OnchainAddressesListState extends State<OnchainAddressesList> {
     try {
       // Call the Rust async function recheckAddress for the given address and federation
       await recheckAddress(federationId: widget.fed.federationId, tweakIdx: tweakIdx);
-      widget.updateBalance();
-
-      // Reload the addresses list
-      //_addressesFuture = getAddresses(federationId: widget.fed.federationId);
-      //setState(() {});
+      widget.updateAddresses();
 
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Rechecked ${abbreviateAddress(address)}')),

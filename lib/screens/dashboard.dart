@@ -39,6 +39,7 @@ class _DashboardState extends State<Dashboard> {
   VoidCallback? _pendingAction;
   VoidCallback? _refreshTransactionsList;
   double? _btcPrice;
+  int _addressRefreshKey = 0;
 
   late Stream<MultimintEvent> events;
   late StreamSubscription<MultimintEvent> _subscription;
@@ -91,6 +92,12 @@ class _DashboardState extends State<Dashboard> {
 
   void _scheduleAction(VoidCallback action) {
     setState(() => _pendingAction = action);
+  }
+
+  Future<void> _loadAddresses() async {
+    setState(() {
+      _addressRefreshKey++;
+    });
   }
 
   Future<void> _loadBalance() async {
@@ -162,6 +169,7 @@ class _DashboardState extends State<Dashboard> {
         child: OnChainReceiveContent(fed: widget.fed),
         heightFactor: 0.33,
       );
+      _loadAddresses();
     } else if (_selectedPaymentType == PaymentType.ecash) {
       await Navigator.push(
         context,
@@ -284,7 +292,10 @@ class _DashboardState extends State<Dashboard> {
                               },
                             ),
                             if (_selectedPaymentType == PaymentType.onchain)
-                              OnchainAddressesList(fed: widget.fed, updateBalance: _loadBalance),
+                              OnchainAddressesList(key: ValueKey(_addressRefreshKey), fed: widget.fed, updateAddresses: () {
+                                _loadBalance();
+                                _loadAddresses();
+                              }),
                           ],
                         ),
                       ),
