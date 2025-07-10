@@ -251,6 +251,17 @@ pub enum LightningSendOutcome {
     Failure,
 }
 
+#[derive(Clone, Eq, PartialEq, Serialize, Debug)]
+pub struct FedimintGateway {
+    pub endpoint: String,
+    pub base_routing_fee: u64,
+    pub ppm_routing_fee: u64,
+    pub base_transaction_fee: u64,
+    pub ppm_transaction_fee: u64,
+    pub lightning_alias: Option<String>,
+    pub lightning_node: Option<String>,
+}
+
 impl Multimint {
     pub async fn new(db: Database, creation_type: MultimintCreation) -> anyhow::Result<Self> {
         let start = Instant::now();
@@ -2525,6 +2536,40 @@ impl Multimint {
             .map(|(amount, count)| (amount.msats, count))
             .collect::<Vec<_>>();
         Ok(notes)
+    }
+
+    pub async fn list_gateways(
+        &self,
+        federation_id: &FederationId,
+    ) -> anyhow::Result<Vec<FedimintGateway>> {
+        let client = self
+            .clients
+            .read()
+            .await
+            .get(federation_id)
+            .context("No federation exists")?
+            .clone();
+        let lnv1 = client.get_first_module::<LightningClientModule>()?;
+        let lnv1_gateways = lnv1.list_gateways().await;
+        let gateways = lnv1_gateways
+            .into_iter()
+            .map(|g| {
+                let info = g.info;
+                FedimintGateway {
+                    endpoint: info.api.to_string(),
+                    base_routing_fee: info.fees.base_msat as u64,
+                    ppm_routing_fee: info.fees.proportional_millionths as u64,
+                    base_transaction_fee: 0,
+                    ppm_transaction_fee: 0,
+                    lightning_alias: Some(info.lightning_alias),
+                    lightning_node: Some(info.node_pub_key.to_string()),
+                }
+            })
+            .collect::<Vec<_>>();
+
+        // TODO: Add LNv2 Gateways
+
+        Ok(gateways)
     }
 }
 

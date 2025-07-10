@@ -544,6 +544,9 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   double dco_decode_f_64(dynamic raw);
 
   @protected
+  FedimintGateway dco_decode_fedimint_gateway(dynamic raw);
+
+  @protected
   Guardian dco_decode_guardian(dynamic raw);
 
   @protected
@@ -566,6 +569,9 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
 
   @protected
   List<String> dco_decode_list_String(dynamic raw);
+
+  @protected
+  List<FedimintGateway> dco_decode_list_fedimint_gateway(dynamic raw);
 
   @protected
   List<Guardian> dco_decode_list_guardian(dynamic raw);
@@ -1203,6 +1209,9 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   double sse_decode_f_64(SseDeserializer deserializer);
 
   @protected
+  FedimintGateway sse_decode_fedimint_gateway(SseDeserializer deserializer);
+
+  @protected
   Guardian sse_decode_guardian(SseDeserializer deserializer);
 
   @protected
@@ -1229,6 +1238,11 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
 
   @protected
   List<String> sse_decode_list_String(SseDeserializer deserializer);
+
+  @protected
+  List<FedimintGateway> sse_decode_list_fedimint_gateway(
+    SseDeserializer deserializer,
+  );
 
   @protected
   List<Guardian> sse_decode_list_guardian(SseDeserializer deserializer);
@@ -1958,6 +1972,12 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   void sse_encode_f_64(double self, SseSerializer serializer);
 
   @protected
+  void sse_encode_fedimint_gateway(
+    FedimintGateway self,
+    SseSerializer serializer,
+  );
+
+  @protected
   void sse_encode_guardian(Guardian self, SseSerializer serializer);
 
   @protected
@@ -1990,6 +2010,12 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
 
   @protected
   void sse_encode_list_String(List<String> self, SseSerializer serializer);
+
+  @protected
+  void sse_encode_list_fedimint_gateway(
+    List<FedimintGateway> self,
+    SseSerializer serializer,
+  );
 
   @protected
   void sse_encode_list_guardian(List<Guardian> self, SseSerializer serializer);
