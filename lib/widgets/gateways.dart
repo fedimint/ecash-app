@@ -1,5 +1,6 @@
 import 'package:carbine/lib.dart';
 import 'package:carbine/multimint.dart';
+import 'package:carbine/utils.dart';
 import 'package:flutter/material.dart';
 
 class GatewaysList extends StatelessWidget {
@@ -13,6 +14,8 @@ class GatewaysList extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
     return FutureBuilder<List<FedimintGateway>>(
       future: _fetchGateways(),
       builder: (context, snapshot) {
@@ -29,20 +32,30 @@ class GatewaysList extends StatelessWidget {
           itemCount: gateways.length,
           itemBuilder: (context, index) {
             final g = gateways[index];
-            return Card(
+            return Container(
               margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              decoration: BoxDecoration(
+                color: theme.colorScheme.surface,
+                borderRadius: BorderRadius.circular(16),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.greenAccent.withOpacity(0.1),
+                    blurRadius: 8,
+                    offset: const Offset(0, 4),
+                  ),
+                ],
+              ),
               child: ListTile(
-                title: Text(g.endpoint),
-                subtitle: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    if (g.lightningAlias != null)
-                      Text("Alias: ${g.lightningAlias}"),
-                    if (g.lightningNode != null)
-                      Text("Node: ${g.lightningNode}"),
-                    Text("Routing Fee: ${g.baseRoutingFee} sats + ${g.ppmRoutingFee} ppm"),
-                    Text("Tx Fee: ${g.baseTransactionFee} sats + ${g.ppmTransactionFee} ppm"),
-                  ],
+                contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+                title: Text(
+                  g.endpoint,
+                  style: theme.textTheme.titleLarge,
+                ),
+                leading: const Icon(Icons.device_hub, color: Colors.greenAccent),
+                trailing: Text(
+                  "${formatBalance(g.baseRoutingFee, true)} + ${g.ppmRoutingFee} ppm",
+                  style: theme.textTheme.bodyMedium?.copyWith(color: Colors.white60),
+                  textAlign: TextAlign.right,
                 ),
               ),
             );
@@ -52,3 +65,5 @@ class GatewaysList extends StatelessWidget {
     );
   }
 }
+
+

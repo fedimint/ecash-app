@@ -273,7 +273,6 @@ class _DashboardState extends State<Dashboard> {
             ] else...[
               Expanded(
                 child: DefaultTabController(
-                  //length: _selectedPaymentType == PaymentType.onchain || _selectedPaymentType == PaymentType.ecash ? 2 : 1,
                   length: 2,
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
