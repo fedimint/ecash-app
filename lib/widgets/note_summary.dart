@@ -1,7 +1,7 @@
+import 'package:flutter/material.dart';
 import 'package:carbine/lib.dart';
 import 'package:carbine/multimint.dart';
-import 'package:flutter/material.dart';
-// Assumes get_note_summary is defined here
+import 'package:carbine/utils.dart'; // for formatBalance
 
 class NoteSummary extends StatefulWidget {
   final FederationSelector fed;
@@ -33,7 +33,12 @@ class _NoteSummaryState extends State<NoteSummary> {
         }
 
         if (snapshot.hasError) {
-          return Center(child: Text('Error loading note summary: ${snapshot.error}'));
+          return Center(
+            child: Text(
+              'Error loading note summary: ${snapshot.error}',
+              style: theme.textTheme.bodyMedium?.copyWith(color: Colors.redAccent),
+            ),
+          );
         }
 
         final summary = snapshot.data!;
@@ -42,8 +47,12 @@ class _NoteSummaryState extends State<NoteSummary> {
         }
 
         return SingleChildScrollView(
+          scrollDirection: Axis.vertical,
           child: DataTable(
-            headingRowColor: WidgetStatePropertyAll(theme.colorScheme.surfaceContainerHighest),
+            headingRowColor: WidgetStatePropertyAll(theme.colorScheme.surface),
+            dataRowColor: WidgetStatePropertyAll(const Color(0xFF1A1A1A)),
+            headingTextStyle: theme.textTheme.titleLarge,
+            dataTextStyle: theme.textTheme.bodyLarge,
             columns: const [
               DataColumn(label: Text('Denomination')),
               DataColumn(label: Text('Count')),
@@ -52,7 +61,7 @@ class _NoteSummaryState extends State<NoteSummary> {
               final (denom, count) = entry;
               return DataRow(
                 cells: [
-                  DataCell(Text('${denom.toString()} sats')),
+                  DataCell(Text(formatBalance(denom, true))),
                   DataCell(Text(count.toString())),
                 ],
               );
@@ -63,3 +72,4 @@ class _NoteSummaryState extends State<NoteSummary> {
     );
   }
 }
+

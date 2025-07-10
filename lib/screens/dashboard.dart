@@ -41,6 +41,7 @@ class _DashboardState extends State<Dashboard> {
   VoidCallback? _refreshTransactionsList;
   double? _btcPrice;
   int _addressRefreshKey = 0;
+  int _noteRefreshKey = 0;
 
   late Stream<MultimintEvent> events;
   late StreamSubscription<MultimintEvent> _subscription;
@@ -80,6 +81,7 @@ class _DashboardState extends State<Dashboard> {
         if (federationIdString == selectorIdString) {
           _loadBalance();
           _selectedPaymentType = PaymentType.ecash;
+          _loadNotes();
         }
       }
     });
@@ -98,6 +100,12 @@ class _DashboardState extends State<Dashboard> {
   Future<void> _loadAddresses() async {
     setState(() {
       _addressRefreshKey++;
+    });
+  }
+
+  Future<void> _loadNotes() async {
+    setState(() {
+      _noteRefreshKey++;
     });
   }
 
@@ -146,6 +154,7 @@ class _DashboardState extends State<Dashboard> {
               ),
         ),
       );
+      _loadNotes();
     }
     _loadBalance();
   }
@@ -300,7 +309,7 @@ class _DashboardState extends State<Dashboard> {
                                 _loadAddresses();
                               }),
                             if (_selectedPaymentType == PaymentType.ecash)
-                              NoteSummary(fed: widget.fed),
+                              NoteSummary(key: ValueKey(_noteRefreshKey), fed: widget.fed),
                           ],
                         ),
                       ),
