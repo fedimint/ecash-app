@@ -122,6 +122,10 @@ abstract class Multimint implements RustOpaqueInterface {
 
   Future<List<String>> getMnemonic();
 
+  Future<List<(BigInt, BigInt)>> getNoteSummary({
+    required FederationId federationId,
+  });
+
   Future<RecoveryProgress> getRecoveryProgress({
     required FederationId federationId,
     required int moduleId,

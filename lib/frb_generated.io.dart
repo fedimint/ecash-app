@@ -591,6 +591,9 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   dco_decode_list_record_string_u_64_opt_box_autoadd_u_64(dynamic raw);
 
   @protected
+  List<(BigInt, BigInt)> dco_decode_list_record_u_64_usize(dynamic raw);
+
+  @protected
   List<Transaction> dco_decode_list_transaction(dynamic raw);
 
   @protected
@@ -717,6 +720,9 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
 
   @protected
   (int, int) dco_decode_record_u_32_u_32(dynamic raw);
+
+  @protected
+  (BigInt, BigInt) dco_decode_record_u_64_usize(dynamic raw);
 
   @protected
   Transaction dco_decode_transaction(dynamic raw);
@@ -1252,6 +1258,11 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   );
 
   @protected
+  List<(BigInt, BigInt)> sse_decode_list_record_u_64_usize(
+    SseDeserializer deserializer,
+  );
+
+  @protected
   List<Transaction> sse_decode_list_transaction(SseDeserializer deserializer);
 
   @protected
@@ -1382,6 +1393,9 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
 
   @protected
   (int, int) sse_decode_record_u_32_u_32(SseDeserializer deserializer);
+
+  @protected
+  (BigInt, BigInt) sse_decode_record_u_64_usize(SseDeserializer deserializer);
 
   @protected
   Transaction sse_decode_transaction(SseDeserializer deserializer);
@@ -2011,6 +2025,12 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   );
 
   @protected
+  void sse_encode_list_record_u_64_usize(
+    List<(BigInt, BigInt)> self,
+    SseSerializer serializer,
+  );
+
+  @protected
   void sse_encode_list_transaction(
     List<Transaction> self,
     SseSerializer serializer,
@@ -2175,6 +2195,12 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
 
   @protected
   void sse_encode_record_u_32_u_32((int, int) self, SseSerializer serializer);
+
+  @protected
+  void sse_encode_record_u_64_usize(
+    (BigInt, BigInt) self,
+    SseSerializer serializer,
+  );
 
   @protected
   void sse_encode_transaction(Transaction self, SseSerializer serializer);

@@ -2502,6 +2502,32 @@ impl Multimint {
             .await?;
         Ok(())
     }
+
+    pub async fn get_note_summary(
+        &self,
+        federation_id: &FederationId,
+    ) -> anyhow::Result<Vec<(u64, usize)>> {
+        println!("GET NOTE SUMMARY");
+        let client = self
+            .clients
+            .read()
+            .await
+            .get(federation_id)
+            .context("No federation exists")?
+            .clone();
+
+        let mint = client.get_first_module::<MintClientModule>()?;
+        let mut dbtx = client.db().begin_transaction_nc().await;
+        let tiered_notes = mint
+            .get_note_counts_by_denomination(&mut dbtx.to_ref_with_prefix_module_id(1).0)
+            .await;
+        info_to_flutter(format!("Tiered Notes: {:?}", tiered_notes)).await;
+        let notes = tiered_notes
+            .iter()
+            .map(|(amount, count)| (amount.msats, count))
+            .collect::<Vec<_>>();
+        Ok(notes)
+    }
 }
 
 /// Using the given federation (transaction) and gateway fees, compute the value `X` such that `X - total_fee == requested_amount`.
