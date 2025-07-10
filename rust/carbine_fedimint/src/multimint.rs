@@ -54,8 +54,11 @@ use futures_util::StreamExt;
 use lightning_invoice::{Bolt11Invoice, Description};
 use serde::Serialize;
 use serde_json::to_value;
-use tokio::sync::mpsc::{unbounded_channel, UnboundedReceiver, UnboundedSender};
 use tokio::sync::RwLock;
+use tokio::{
+    sync::mpsc::{unbounded_channel, UnboundedReceiver, UnboundedSender},
+    time::Instant,
+};
 
 use crate::{
     anyhow,
@@ -250,6 +253,7 @@ pub enum LightningSendOutcome {
 
 impl Multimint {
     pub async fn new(db: Database, creation_type: MultimintCreation) -> anyhow::Result<Self> {
+        let start = Instant::now();
         let mnemonic = match creation_type {
             MultimintCreation::New => {
                 let mnemonic = Bip39RootSecretStrategy::<12>::random(&mut thread_rng());
@@ -306,6 +310,7 @@ impl Multimint {
         multimint.monitor_all_unused_pegin_addresses().await?;
         multimint.spawn_cache_task();
 
+        info_to_flutter(format!("Initialized Multimint in {:?}", start.elapsed())).await;
         Ok(multimint)
     }
 
@@ -327,13 +332,13 @@ impl Multimint {
                 )
                 .await?;
 
-            self.finish_active_subscriptions(&client, id.id).await;
+            self.clients.write().await.insert(id.id, client.clone());
 
+            self.finish_active_subscriptions(client.clone(), id.id)
+                .await;
             if client.has_pending_recoveries() {
                 self.spawn_recovery_progress(client.clone(), config.invite_code.to_string());
             }
-
-            self.clients.write().await.insert(id.id, client);
         }
 
         Ok(())
@@ -341,40 +346,44 @@ impl Multimint {
 
     async fn finish_active_subscriptions(
         &self,
-        client: &ClientHandleArc,
+        client: ClientHandleArc,
         federation_id: FederationId,
     ) {
-        let active_operations = client.get_active_operations().await;
-        let operation_log = client.operation_log();
-        for op_id in active_operations {
-            let entry = operation_log.get_operation(op_id).await;
-            if let Some(entry) = entry {
-                match entry.operation_module_kind() {
-                    "lnv2" | "ln" => {
-                        // We could check what type of operation this is, but `await_receive` and `await_send`
-                        // will do that internally. So we just spawn both here and let one fail since it is the wrong
-                        // operation type.
-                        self.spawn_await_receive(federation_id, op_id);
-                        self.spawn_await_send(federation_id, op_id);
-                    }
-                    "mint" => {
-                        // We could check what type of operation this is, but `await_ecash_reissue` and `await_ecash_send`
-                        // will do that internally. So we just spawn both here and let one fail since it is the wrong
-                        // operation type.
-                        self.spawn_await_ecash_reissue(federation_id, op_id);
-                        self.spawn_await_ecash_send(federation_id, op_id);
-                    }
-                    // Wallet operations are handled by the pegin monitor
-                    "wallet" => {}
-                    module => {
-                        info_to_flutter(format!(
-                            "Active operation needs to be driven to completion: {module}"
-                        ))
-                        .await;
+        let self_copy = self.clone();
+        self.task_group
+            .spawn_cancellable("finish active subscriptions", async move {
+                let active_operations = client.get_active_operations().await;
+                let operation_log = client.operation_log();
+                for op_id in active_operations {
+                    let entry = operation_log.get_operation(op_id).await;
+                    if let Some(entry) = entry {
+                        match entry.operation_module_kind() {
+                            "lnv2" | "ln" => {
+                                // We could check what type of operation this is, but `await_receive` and `await_send`
+                                // will do that internally. So we just spawn both here and let one fail since it is the wrong
+                                // operation type.
+                                self_copy.spawn_await_receive(federation_id, op_id);
+                                self_copy.spawn_await_send(federation_id, op_id);
+                            }
+                            "mint" => {
+                                // We could check what type of operation this is, but `await_ecash_reissue` and `await_ecash_send`
+                                // will do that internally. So we just spawn both here and let one fail since it is the wrong
+                                // operation type.
+                                self_copy.spawn_await_ecash_reissue(federation_id, op_id);
+                                self_copy.spawn_await_ecash_send(federation_id, op_id);
+                            }
+                            // Wallet operations are handled by the pegin monitor
+                            "wallet" => {}
+                            module => {
+                                info_to_flutter(format!(
+                                    "Active operation needs to be driven to completion: {module}"
+                                ))
+                                .await;
+                            }
+                        }
                     }
                 }
-            }
-        }
+            });
     }
 
     async fn spawn_pegin_address_watcher(
@@ -2098,7 +2107,7 @@ impl Multimint {
             .read()
             .await
             .get(federation_id)
-            .expect("No federation exists")
+            .ok_or(anyhow!("Federation does not exist"))?
             .clone();
         let (notes, operation_id) = self.spend_until_exact_amount(&client, amount_msats).await?;
         self.spawn_await_ecash_send(*federation_id, operation_id);

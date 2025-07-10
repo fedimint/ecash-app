@@ -31,7 +31,10 @@ use fedimint_core::{
 use fedimint_derive_secret::ChildId;
 use futures_util::StreamExt;
 use serde::{Deserialize, Serialize};
-use tokio::sync::{oneshot, RwLock};
+use tokio::{
+    sync::{oneshot, RwLock},
+    time::Instant,
+};
 
 pub const DEFAULT_RELAYS: &[&str] = &[
     "wss://nostr.bitcoiner.social",
@@ -90,6 +93,7 @@ pub(crate) struct NostrClient {
 
 impl NostrClient {
     pub async fn new(db: Database) -> anyhow::Result<NostrClient> {
+        let start = Instant::now();
         // We need to derive a Nostr key from the Fedimint secret.
         // Currently we are using 1/0 as the derivation path, as it does not clash with anything used internally in
         // Fedimint.
@@ -102,25 +106,6 @@ impl NostrClient {
         let keys = nostr_sdk::Keys::new(keypair.secret_key().into());
 
         let client = nostr_sdk::Client::builder().signer(keys.clone()).build();
-
-        let relays = Self::get_or_insert_default_relays(db.clone()).await;
-        for relay in relays {
-            match client.add_relay(relay.as_str()).await {
-                Ok(added) => {
-                    if added {
-                        info_to_flutter(format!("Successfully added relay: {relay}")).await;
-                    }
-                }
-                Err(err) => {
-                    error_to_flutter(format!(
-                        "Could not add relay {}: {}",
-                        relay,
-                        err.fmt_compact()
-                    ))
-                    .await;
-                }
-            }
-        }
 
         let mut nostr_client = NostrClient {
             nostr_client: client,
@@ -135,6 +120,9 @@ impl NostrClient {
         nostr_client
             .task_group
             .spawn_cancellable("update nostr feds", async move {
+                info_to_flutter("Initializing Nostr relays...").await;
+                background_nostr.add_relays_from_db().await;
+
                 info_to_flutter("Updating federations from nostr in the background...").await;
                 background_nostr.update_federations_from_nostr().await;
             });
@@ -151,7 +139,30 @@ impl NostrClient {
                 .await;
         }
 
+        info_to_flutter(format!("Initialized Nostr client in {:?}", start.elapsed())).await;
         Ok(nostr_client)
+    }
+
+    async fn add_relays_from_db(&self) {
+        let relays = Self::get_or_insert_default_relays(self.db.clone()).await;
+
+        for relay in relays {
+            match self.nostr_client.add_relay(relay.as_str()).await {
+                Ok(added) => {
+                    if added {
+                        info_to_flutter(format!("Successfully added relay: {relay}")).await;
+                    }
+                }
+                Err(err) => {
+                    error_to_flutter(format!(
+                        "Could not add relay {}: {}",
+                        relay,
+                        err.fmt_compact()
+                    ))
+                    .await;
+                }
+            }
+        }
     }
 
     pub async fn insert_relay(&self, relay_uri: String) -> anyhow::Result<()> {
@@ -516,6 +527,7 @@ impl NostrClient {
     }
 
     pub async fn get_backup_invite_codes(&self) -> Vec<String> {
+        self.add_relays_from_db().await;
         let pubkey = self.keys.public_key;
         info_to_flutter(format!("Getting backup invite codes for {}", pubkey)).await;
         self.nostr_client.connect().await;
