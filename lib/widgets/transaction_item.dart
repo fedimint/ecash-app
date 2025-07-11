@@ -47,8 +47,22 @@ class TransactionItem extends StatelessWidget {
           ),
         );
         break;
+      case TransactionKind_EcashSend(oobNotes: final oobNotes, fees: final fees):
+        showCarbineModalBottomSheet(
+          context: context,
+          child: TransactionDetails(
+            title: "Ecash Send",
+            details: {
+              'Amount': formattedAmount,
+              "Fees": formatBalance(fees, true),
+              "Ecash": oobNotes,
+              'Timestamp': formattedDate,
+            },
+            icon: icon,
+          ),
+        );
+        break;
       case TransactionKind_EcashReceive():
-      case TransactionKind_EcashSend():
       case TransactionKind_OnchainReceive():
       case TransactionKind_OnchainSend():
         // TODO: Remove this once all transaction types are done

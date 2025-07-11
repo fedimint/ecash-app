@@ -576,7 +576,10 @@ sealed class TransactionKind with _$TransactionKind {
       TransactionKind_OnchainReceive;
   const factory TransactionKind.onchainSend() = TransactionKind_OnchainSend;
   const factory TransactionKind.ecashReceive() = TransactionKind_EcashReceive;
-  const factory TransactionKind.ecashSend() = TransactionKind_EcashSend;
+  const factory TransactionKind.ecashSend({
+    required String oobNotes,
+    required BigInt fees,
+  }) = TransactionKind_EcashSend;
 }
 
 class Utxo {

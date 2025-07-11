@@ -158,7 +158,10 @@ pub enum TransactionKind {
     OnchainReceive,
     OnchainSend,
     EcashReceive,
-    EcashSend,
+    EcashSend {
+        oob_notes: String,
+        fees: u64,
+    },
 }
 
 #[derive(Debug, Serialize, Clone, Eq, PartialEq)]
@@ -2015,7 +2018,10 @@ impl Multimint {
                                     continue;
                                 }
                                 Some(Transaction {
-                                    kind: TransactionKind::EcashSend,
+                                    kind: TransactionKind::EcashSend {
+                                        oob_notes: oob_notes.to_string(),
+                                        fees: 0, // currently no fees for the mint module
+                                    },
                                     amount: oob_notes.total_amount().msats,
                                     timestamp,
                                     operation_id: key.operation_id.0.to_vec(),

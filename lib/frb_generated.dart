@@ -7894,7 +7894,10 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
       case 4:
         return TransactionKind_EcashReceive();
       case 5:
-        return TransactionKind_EcashSend();
+        return TransactionKind_EcashSend(
+          oobNotes: dco_decode_String(raw[1]),
+          fees: dco_decode_u_64(raw[2]),
+        );
       default:
         throw Exception("unreachable");
     }
@@ -9574,7 +9577,12 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
       case 4:
         return TransactionKind_EcashReceive();
       case 5:
-        return TransactionKind_EcashSend();
+        var var_oobNotes = sse_decode_String(deserializer);
+        var var_fees = sse_decode_u_64(deserializer);
+        return TransactionKind_EcashSend(
+          oobNotes: var_oobNotes,
+          fees: var_fees,
+        );
       default:
         throw UnimplementedError('');
     }
@@ -11285,8 +11293,13 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
         sse_encode_i_32(3, serializer);
       case TransactionKind_EcashReceive():
         sse_encode_i_32(4, serializer);
-      case TransactionKind_EcashSend():
+      case TransactionKind_EcashSend(
+        oobNotes: final oobNotes,
+        fees: final fees,
+      ):
         sse_encode_i_32(5, serializer);
+        sse_encode_String(oobNotes, serializer);
+        sse_encode_u_64(fees, serializer);
     }
   }
 
