@@ -1,3 +1,4 @@
+import 'package:carbine/utils.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
@@ -5,12 +6,14 @@ class CopyableDetailRow extends StatefulWidget {
   final String label;
   final String value;
   final bool showCopyButton;
+  final bool abbreviate; // NEW optional parameter
 
   const CopyableDetailRow({
     super.key,
     required this.label,
     required this.value,
     this.showCopyButton = true,
+    this.abbreviate = false, // default false
   });
 
   @override
@@ -21,7 +24,9 @@ class _CopyableDetailRowState extends State<CopyableDetailRow> {
   bool _isCopied = false;
 
   void _copyToClipboard() {
-    Clipboard.setData(ClipboardData(text: widget.value));
+    Clipboard.setData(
+      ClipboardData(text: widget.value),
+    ); // always copy full text
     setState(() => _isCopied = true);
     Future.delayed(const Duration(seconds: 2), () {
       if (mounted) setState(() => _isCopied = false);
@@ -31,6 +36,10 @@ class _CopyableDetailRowState extends State<CopyableDetailRow> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+
+    // Decide displayed text based on abbreviate flag
+    final displayValue =
+        widget.abbreviate ? getAbbreviatedText(widget.value) : widget.value;
 
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 6),
@@ -60,10 +69,10 @@ class _CopyableDetailRowState extends State<CopyableDetailRow> {
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // Value text
+                // Value text with possible abbreviation
                 Expanded(
                   child: Text(
-                    widget.value,
+                    displayValue,
                     style: theme.textTheme.bodyMedium?.copyWith(
                       color: theme.colorScheme.onSurface,
                       fontFamily: 'monospace',

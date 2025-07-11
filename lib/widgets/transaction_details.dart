@@ -133,9 +133,11 @@ class _TransactionDetailsState extends State<TransactionDetails> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: widget.details.entries.map((entry) {
+              final abbreviate = entry.key == "Ecash";
               return CopyableDetailRow(
                 label: entry.key,
                 value: entry.value,
+                abbreviate: abbreviate,
               );
             }).toList(),
           ),
