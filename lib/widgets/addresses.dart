@@ -1,4 +1,5 @@
 import 'package:carbine/multimint.dart';
+import 'package:carbine/toast.dart';
 import 'package:carbine/utils.dart';
 import 'package:flutter/material.dart';
 import 'package:carbine/lib.dart';
@@ -51,14 +52,10 @@ class _OnchainAddressesListState extends State<OnchainAddressesList> {
       await recheckAddress(federationId: widget.fed.federationId, tweakIdx: tweakIdx);
       widget.updateAddresses();
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Rechecked ${abbreviateAddress(address)}')),
-      );
+      ToastService().show(message: 'Rechecked ${abbreviateAddress(address)}', duration: const Duration(seconds: 5), onTap: () {}, icon: Icon(Icons.info));
     } catch (e) {
       AppLogger.instance.error("Failed to refresh address: $e");
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Failed to refresh address')),
-      );
+      ToastService().show(message: "Failed to refresh address", duration: const Duration(seconds: 5), onTap: () {}, icon: Icon(Icons.error));
     }
   }
 
@@ -149,11 +146,7 @@ class _OnchainAddressesListState extends State<OnchainAddressesList> {
                           color: Theme.of(context).colorScheme.primary,
                           onPressed: () {
                             Clipboard.setData(ClipboardData(text: address));
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(
-                                content: Text('Address copied to clipboard'),
-                              ),
-                            );
+                            ToastService().show(message: "Address copied to clipboard", duration: const Duration(seconds: 5), onTap: () {}, icon: Icon(Icons.check));
                           },
                         ),
 

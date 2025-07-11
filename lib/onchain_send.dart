@@ -4,6 +4,7 @@ import 'package:carbine/lib.dart';
 import 'package:carbine/multimint.dart';
 import 'package:carbine/number_pad.dart';
 import 'package:carbine/success.dart';
+import 'package:carbine/toast.dart';
 import 'package:carbine/utils.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -120,9 +121,12 @@ class _OnchainSendState extends State<OnchainSend> {
       _startQuoteTimer();
     } catch (e) {
       AppLogger.instance.error('Failed to calculate fees: $e');
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text('Failed to calculate fees: $e')));
+      ToastService().show(
+        message: "Failed to calculate fees",
+        duration: const Duration(seconds: 5),
+        onTap: () {},
+        icon: Icon(Icons.error),
+      );
     } finally {
       setState(() => _loadingFees = false);
     }
@@ -202,11 +206,12 @@ class _OnchainSendState extends State<OnchainSend> {
       }
     } catch (e) {
       AppLogger.instance.error('Failed to withdraw: $e');
-      if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text('Withdrawal failed: $e')));
-      }
+      ToastService().show(
+        message: "Withdrawl failed",
+        duration: const Duration(seconds: 5),
+        onTap: () {},
+        icon: Icon(Icons.error),
+      );
     } finally {
       if (mounted) {
         setState(() => _withdrawing = false);

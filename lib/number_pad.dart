@@ -5,6 +5,7 @@ import 'package:carbine/multimint.dart';
 import 'package:carbine/onchain_send.dart';
 import 'package:carbine/request.dart';
 import 'package:carbine/theme.dart';
+import 'package:carbine/toast.dart';
 import 'package:carbine/utils.dart';
 import 'package:carbine/models.dart';
 import 'package:flutter/material.dart';
@@ -78,9 +79,12 @@ class _NumberPadState extends State<NumberPad> {
       });
     } catch (e) {
       AppLogger.instance.error('Failed to get balance: $e');
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text('Failed to get balance')));
+      ToastService().show(
+        message: "Failed to get balance",
+        duration: const Duration(seconds: 5),
+        onTap: () {},
+        icon: Icon(Icons.error),
+      );
     } finally {
       setState(() => _loadingMax = false);
     }

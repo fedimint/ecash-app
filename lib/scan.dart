@@ -10,6 +10,7 @@ import 'package:carbine/onchain_send.dart';
 import 'package:carbine/pay_preview.dart';
 import 'package:carbine/redeem_ecash.dart';
 import 'package:carbine/theme.dart';
+import 'package:carbine/toast.dart';
 import 'package:carbine/utils.dart';
 import 'package:collection/collection.dart';
 import 'package:crypto/crypto.dart';
@@ -214,9 +215,12 @@ class _ScanQRPageState extends State<ScanQRPage> {
     final text = clipboardData?.text ?? '';
 
     if (text.isEmpty) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text("Clipboard is empty")));
+      ToastService().show(
+        message: "Clipboard is empty",
+        duration: const Duration(seconds: 5),
+        onTap: () {},
+        icon: Icon(Icons.warning),
+      );
       setState(() => _isPasting = false);
       return;
     }

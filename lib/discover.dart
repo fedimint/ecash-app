@@ -3,6 +3,7 @@ import 'package:carbine/lib.dart';
 import 'package:carbine/multimint.dart';
 import 'package:carbine/nostr.dart';
 import 'package:carbine/theme.dart';
+import 'package:carbine/toast.dart';
 import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
 
@@ -202,8 +203,11 @@ class _Discover extends State<Discover> {
                       await Future.delayed(const Duration(milliseconds: 400));
                       widget.onJoin(fed.$1, fed.$2);
                       if (context.mounted) Navigator.pop(context);
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(content: Text("Joined ${fed.federationName}")),
+                      ToastService().show(
+                        message: "Joined ${fed.federationName}",
+                        duration: const Duration(seconds: 5),
+                        onTap: () {},
+                        icon: Icon(Icons.info),
                       );
                     }
                   },

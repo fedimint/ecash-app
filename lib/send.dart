@@ -2,6 +2,7 @@ import 'package:carbine/failure.dart';
 import 'package:carbine/lib.dart';
 import 'package:carbine/multimint.dart';
 import 'package:carbine/success.dart';
+import 'package:carbine/toast.dart';
 import 'package:carbine/utils.dart';
 import 'package:flutter/material.dart';
 
@@ -108,9 +109,12 @@ class _SendPaymentState extends State<SendPayment> {
     } catch (e) {
       AppLogger.instance.error('Error while sending payment: $e');
       if (!mounted) return;
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text('Failed to send payment')));
+      ToastService().show(
+        message: "Failed to send payment",
+        duration: const Duration(seconds: 5),
+        onTap: () {},
+        icon: Icon(Icons.error),
+      );
       Navigator.of(context).pop(); // Close modal on failure
     }
 

@@ -67,6 +67,7 @@ class _MyAppState extends State<MyApp> {
           await _handleFundsReceived(
             federationId: event.field0.$1,
             amountMsats: amountMsats,
+            icon: Icon(Icons.flash_on, color: Colors.amber),
           );
         }
       } else if (event is MultimintEvent_Log) {
@@ -89,7 +90,7 @@ class _MyAppState extends State<MyApp> {
   Future<void> _handleFundsReceived({
     required FederationId federationId,
     required BigInt amountMsats,
-    Icon? icon,
+    required Icon icon,
   }) async {
     final amount = formatBalance(amountMsats, false);
     final federationIdString = await federationIdToString(
@@ -185,8 +186,11 @@ class _MyAppState extends State<MyApp> {
     if (result != null) {
       _setSelectedFederation(result.$1, result.$2);
       _refreshFederations();
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text("Joined ${result.$1.federationName}")),
+      ToastService().show(
+        message: "Joined ${result.$1.federationName}",
+        duration: const Duration(seconds: 5),
+        onTap: () {},
+        icon: Icon(Icons.info),
       );
     } else {
       AppLogger.instance.warn('Scan result is null, not updating federations');

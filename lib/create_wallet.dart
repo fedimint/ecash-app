@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:carbine/app.dart';
 import 'package:carbine/lib.dart';
 import 'package:carbine/seed_input.dart';
+import 'package:carbine/utils.dart';
 import 'package:flutter/material.dart';
 
 class CreateWallet extends StatefulWidget {
@@ -50,9 +51,7 @@ class _CreateWalletState extends State<CreateWallet> {
       }
     } catch (e) {
       setState(() => _isCreating = false);
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text("Error creating wallet: $e")));
+      AppLogger.instance.error("Error creating wallet: $e");
     }
   }
 
@@ -71,9 +70,7 @@ class _CreateWalletState extends State<CreateWallet> {
         );
       }
     } catch (e) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text("Error creating wallet: $e")));
+      AppLogger.instance.error("Error creating wallet: $e");
     }
   }
 
