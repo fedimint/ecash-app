@@ -44,7 +44,7 @@ use lightning_invoice::Bolt11Invoice;
 
 use crate::db::{FederationConfig, FederationConfigKey, FederationConfigKeyPrefix};
 use crate::frb_generated::StreamSink;
-use crate::multimint::DepositEventKind;
+use crate::multimint::{DepositEventKind, FedimintGateway};
 
 static MULTIMINT: OnceCell<Multimint> = OnceCell::const_new();
 static DATABASE: OnceCell<Database> = OnceCell::const_new();
@@ -809,4 +809,10 @@ pub async fn recheck_address(federation_id: &FederationId, tweak_idx: u64) -> an
 pub async fn get_note_summary(federation_id: &FederationId) -> anyhow::Result<Vec<(u64, usize)>> {
     let multimint = get_multimint();
     multimint.get_note_summary(federation_id).await
+}
+
+#[frb]
+pub async fn list_gateways(federation_id: &FederationId) -> anyhow::Result<Vec<FedimintGateway>> {
+    let multimint = get_multimint();
+    multimint.list_gateways(federation_id).await
 }
