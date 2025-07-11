@@ -195,6 +195,7 @@ abstract class Multimint implements RustOpaqueInterface {
     required String invoice,
     required SafeUrl gateway,
     required bool isLnv2,
+    required BigInt amountWithFees,
   });
 
   Future<(OperationId, String, BigInt)> sendEcash({
@@ -564,13 +565,17 @@ sealed class TransactionKind with _$TransactionKind {
   const TransactionKind._();
 
   const factory TransactionKind.lightningReceive({
-    required BigInt amountMsats,
     required BigInt fees,
     required String gateway,
     required String payeePubkey,
     required String paymentHash,
   }) = TransactionKind_LightningReceive;
-  const factory TransactionKind.lightningSend() = TransactionKind_LightningSend;
+  const factory TransactionKind.lightningSend({
+    required BigInt fees,
+    required String gateway,
+    required String paymentHash,
+    required String preimage,
+  }) = TransactionKind_LightningSend;
   const factory TransactionKind.onchainReceive() =
       TransactionKind_OnchainReceive;
   const factory TransactionKind.onchainSend() = TransactionKind_OnchainSend;

@@ -83,6 +83,7 @@ class PaymentPreviewWidget extends StatelessWidget {
                         amountMsats: amount,
                         gateway: paymentPreview.gateway,
                         isLnv2: paymentPreview.isLnv2,
+                        amountMsatsWithFees: paymentPreview.amountWithFees,
                       ),
                 ),
               );

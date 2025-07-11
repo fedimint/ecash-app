@@ -28,7 +28,22 @@ class TransactionItem extends StatelessWidget {
           ),
         );
         break;
-      case TransactionKind_LightningSend():
+      case TransactionKind_LightningSend(fees: final fees, gateway: final gateway, paymentHash: final paymentHash, preimage: final preimage):
+        showCarbineModalBottomSheet(
+          context: context,
+          child: TransactionDetails(
+            title: "Lightning Send",
+            details: {
+              'Amount': formattedAmount,
+              "Fees": formatBalance(fees, true),
+              "Gateway": gateway,
+              "Payment Hash": paymentHash,
+              "Preimage": preimage,
+              'Timestamp': formattedDate,
+            },
+          ),
+        );
+        break;
       case TransactionKind_EcashReceive():
       case TransactionKind_EcashSend():
       case TransactionKind_OnchainReceive():
@@ -50,7 +65,7 @@ class TransactionItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isIncoming = tx.kind == TransactionKind.lightningReceive || tx.kind == TransactionKind.onchainReceive || tx.kind == TransactionKind.ecashReceive;
+    final isIncoming = tx.kind is TransactionKind_LightningReceive || tx.kind is TransactionKind_OnchainReceive || tx.kind is TransactionKind_EcashReceive;
     final date = DateTime.fromMillisecondsSinceEpoch(tx.timestamp.toInt());
     final formattedDate = DateFormat.yMMMd().add_jm().format(date);
     final formattedAmount = formatBalance(tx.amount, false);
