@@ -2568,17 +2568,18 @@ impl Multimint {
             .collect::<Vec<_>>();
 
         // TODO: This only adds 1 LNv2 gateway. Good enough for now, but needs Fedimint changes to display all
-        let lnv2 = client.get_first_module::<fedimint_lnv2_client::LightningClientModule>()?;
-        if let Ok((lnv2_api, lnv2_routing_info)) = lnv2.select_gateway(None).await {
-            gateways.push(FedimintGateway {
-                endpoint: lnv2_api.to_string(),
-                base_routing_fee: lnv2_routing_info.send_fee_default.base.msats,
-                ppm_routing_fee: lnv2_routing_info.send_fee_default.parts_per_million,
-                base_transaction_fee: lnv2_routing_info.receive_fee.base.msats,
-                ppm_transaction_fee: lnv2_routing_info.receive_fee.parts_per_million,
-                lightning_alias: None,
-                lightning_node: Some(lnv2_routing_info.lightning_public_key.to_string()),
-            });
+        if let Ok(lnv2) = client.get_first_module::<fedimint_lnv2_client::LightningClientModule>() {
+            if let Ok((lnv2_api, lnv2_routing_info)) = lnv2.select_gateway(None).await {
+                gateways.push(FedimintGateway {
+                    endpoint: lnv2_api.to_string(),
+                    base_routing_fee: lnv2_routing_info.send_fee_default.base.msats,
+                    ppm_routing_fee: lnv2_routing_info.send_fee_default.parts_per_million,
+                    base_transaction_fee: lnv2_routing_info.receive_fee.base.msats,
+                    ppm_transaction_fee: lnv2_routing_info.receive_fee.parts_per_million,
+                    lightning_alias: None,
+                    lightning_node: Some(lnv2_routing_info.lightning_public_key.to_string()),
+                });
+            }
         }
 
         Ok(gateways)
