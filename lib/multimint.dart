@@ -528,14 +528,12 @@ class PaymentPreview {
 class Transaction {
   final TransactionKind kind;
   final BigInt amount;
-  final String module;
   final BigInt timestamp;
   final Uint8List operationId;
 
   const Transaction({
     required this.kind,
     required this.amount,
-    required this.module,
     required this.timestamp,
     required this.operationId,
   });
@@ -544,7 +542,6 @@ class Transaction {
   int get hashCode =>
       kind.hashCode ^
       amount.hashCode ^
-      module.hashCode ^
       timestamp.hashCode ^
       operationId.hashCode;
 
@@ -555,7 +552,6 @@ class Transaction {
           runtimeType == other.runtimeType &&
           kind == other.kind &&
           amount == other.amount &&
-          module == other.module &&
           timestamp == other.timestamp &&
           operationId == other.operationId;
 }

@@ -137,7 +137,6 @@ pub struct Guardian {
 pub struct Transaction {
     pub kind: TransactionKind,
     pub amount: u64,
-    pub module: String,
     pub timestamp: u64,
     pub operation_id: Vec<u8>,
 }
@@ -1937,7 +1936,6 @@ impl Multimint {
                                             payment_hash: bolt11.payment_hash().to_string(),
                                         },
                                         amount,
-                                        module: "lnv2".to_string(),
                                         timestamp,
                                         operation_id: key.operation_id.0.to_vec(),
                                     })
@@ -1968,7 +1966,6 @@ impl Multimint {
                                                 preimage: preimage.consensus_encode_to_hex(),
                                             },
                                             amount: send.contract.amount.msats,
-                                            module: "lnv2".to_string(),
                                             timestamp,
                                             operation_id: key.operation_id.0.to_vec(),
                                         })
@@ -2020,7 +2017,6 @@ impl Multimint {
                                 Some(Transaction {
                                     kind: TransactionKind::EcashSend,
                                     amount: oob_notes.total_amount().msats,
-                                    module: "mint".to_string(),
                                     timestamp,
                                     operation_id: key.operation_id.0.to_vec(),
                                 })
@@ -2043,7 +2039,6 @@ impl Multimint {
                                     Some(Transaction {
                                         kind: TransactionKind::EcashReceive,
                                         amount: amount.msats,
-                                        module: "mint".to_string(),
                                         timestamp,
                                         operation_id: key.operation_id.0.to_vec(),
                                     })
@@ -2064,7 +2059,6 @@ impl Multimint {
                                     Some(Transaction {
                                         kind: TransactionKind::OnchainReceive,
                                         amount,
-                                        module: "wallet".to_string(),
                                         timestamp,
                                         operation_id: key.operation_id.0.to_vec(),
                                     })
@@ -2078,7 +2072,6 @@ impl Multimint {
                                     Some(Transaction {
                                         kind: TransactionKind::OnchainSend,
                                         amount: Amount::from_sats(amount.to_sat()).msats,
-                                        module: "wallet".to_string(),
                                         timestamp,
                                         operation_id: key.operation_id.0.to_vec(),
                                     })
@@ -2149,7 +2142,6 @@ impl Multimint {
                         preimage,
                     },
                     amount,
-                    module: "ln".to_string(),
                     timestamp,
                     operation_id,
                 }),
@@ -2168,7 +2160,6 @@ impl Multimint {
                                 preimage: preimage.0.consensus_encode_to_hex(),
                             },
                             amount,
-                            module: "ln".to_string(),
                             timestamp,
                             operation_id,
                         }),
@@ -2223,7 +2214,6 @@ impl Multimint {
                     payment_hash: invoice.payment_hash().to_string(),
                 },
                 amount,
-                module: "ln".to_string(),
                 timestamp,
                 operation_id: operation_id.0.to_vec(),
             }),

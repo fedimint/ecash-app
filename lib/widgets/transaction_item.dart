@@ -71,19 +71,19 @@ class TransactionItem extends StatelessWidget {
     final formattedAmount = formatBalance(tx.amount, false);
 
     IconData moduleIcon;
-    switch (tx.module) {
-      case 'ln':
-      case 'lnv2':
+    switch (tx.kind) {
+      case TransactionKind_LightningReceive():
+      case TransactionKind_LightningSend():
         moduleIcon = Icons.flash_on;
         break;
-      case 'wallet':
+      case TransactionKind_OnchainReceive():
+      case TransactionKind_OnchainSend():
         moduleIcon = Icons.link;
         break;
-      case 'mint':
+      case TransactionKind_EcashReceive():
+      case TransactionKind_EcashSend():
         moduleIcon = Icons.currency_bitcoin;
         break;
-      default:
-        moduleIcon = Icons.help_outline;
     }
 
     final amountStyle = TextStyle(
