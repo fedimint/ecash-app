@@ -40,8 +40,9 @@ use fedimint_lnv2_client::{
 use fedimint_lnv2_common::{gateway_api::PaymentFee, Bolt11InvoiceDescription};
 use fedimint_meta_client::{common::DEFAULT_META_KEY, MetaClientInit};
 use fedimint_mint_client::{
-    MintClientInit, MintClientModule, MintOperationMeta, MintOperationMetaVariant, OOBNotes,
-    ReissueExternalNotesState, SelectNotesWithAtleastAmount, SpendOOBState,
+    api::MintFederationApi, MintClientInit, MintClientModule, MintOperationMeta,
+    MintOperationMetaVariant, OOBNotes, ReissueExternalNotesState, SelectNotesWithAtleastAmount,
+    SpendOOBState,
 };
 use fedimint_wallet_client::client_db::TweakIdx;
 use fedimint_wallet_client::WithdrawState;
@@ -2346,6 +2347,34 @@ impl Multimint {
         Ok(total_amount.msats)
     }
 
+    pub async fn check_ecash_spent(
+        &self,
+        federation_id: &FederationId,
+        ecash: String,
+    ) -> anyhow::Result<bool> {
+        let client = self
+            .clients
+            .read()
+            .await
+            .get(federation_id)
+            .ok_or(anyhow!("No federation exists"))?
+            .clone();
+        let mint = client.get_first_module::<MintClientModule>()?;
+        let oob_notes = OOBNotes::from_str(&ecash)?;
+        // We assume that if any note has been spent, all of the notes have been spent
+        for (amount, notes) in oob_notes.notes().iter() {
+            info_to_flutter(format!("Checking if notes in tier {:?} are spent", amount)).await;
+            for note in notes {
+                let nonce = note.nonce();
+                if mint.api.check_note_spent(nonce).await? {
+                    return Ok(true);
+                }
+            }
+        }
+
+        Ok(false)
+    }
+
     pub async fn reissue_ecash(
         &self,
         federation_id: &FederationId,
@@ -2356,7 +2385,7 @@ impl Multimint {
             .read()
             .await
             .get(federation_id)
-            .expect("No federation exists")
+            .ok_or(anyhow!("No federation exists"))?
             .clone();
         let mint = client.get_first_module::<MintClientModule>()?;
         let notes = OOBNotes::from_str(&ecash)?;

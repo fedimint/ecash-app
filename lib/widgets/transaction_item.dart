@@ -17,7 +17,7 @@ class TransactionItem extends StatelessWidget {
         showCarbineModalBottomSheet(
           context: context,
           child: TransactionDetails(
-            title: "Lightning Receive",
+            kind: tx.kind,
             details: {
               'Amount': formattedAmount,
               "Fees": formatBalance(fees, true),
@@ -34,7 +34,7 @@ class TransactionItem extends StatelessWidget {
         showCarbineModalBottomSheet(
           context: context,
           child: TransactionDetails(
-            title: "Lightning Send",
+            kind: tx.kind,
             details: {
               'Amount': formattedAmount,
               "Fees": formatBalance(fees, true),
@@ -51,7 +51,7 @@ class TransactionItem extends StatelessWidget {
         showCarbineModalBottomSheet(
           context: context,
           child: TransactionDetails(
-            title: "Ecash Send",
+            kind: tx.kind,
             details: {
               'Amount': formattedAmount,
               "Fees": formatBalance(fees, true),
@@ -66,7 +66,7 @@ class TransactionItem extends StatelessWidget {
         showCarbineModalBottomSheet(
           context: context,
           child: TransactionDetails(
-            title: "Ecash Receive",
+            kind: tx.kind,
             details: {
               'Amount': formattedAmount,
               "Fees": formatBalance(fees, true),
@@ -83,7 +83,7 @@ class TransactionItem extends StatelessWidget {
         showCarbineModalBottomSheet(
           context: context,
           child: TransactionDetails(
-            title: "Transaction",
+            kind: tx.kind,
             details: {
               'Amount': formattedAmount,
               'Timestamp': formattedDate,

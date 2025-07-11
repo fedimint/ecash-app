@@ -823,3 +823,12 @@ pub async fn list_gateways(federation_id: &FederationId) -> anyhow::Result<Vec<F
     let multimint = get_multimint();
     multimint.list_gateways(federation_id).await
 }
+
+#[frb]
+pub async fn check_ecash_spent(
+    federation_id: &FederationId,
+    ecash: String,
+) -> anyhow::Result<bool> {
+    let multimint = get_multimint();
+    multimint.check_ecash_spent(federation_id, ecash).await
+}

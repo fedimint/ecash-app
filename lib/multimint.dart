@@ -103,6 +103,11 @@ abstract class Multimint implements RustOpaqueInterface {
     required BigInt amountSats,
   });
 
+  Future<bool> checkEcashSpent({
+    required FederationId federationId,
+    required String ecash,
+  });
+
   Future<bool> containsClient({required FederationId federationId});
 
   Future<List<(FederationSelector, bool)>> federations();

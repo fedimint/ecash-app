@@ -1,17 +1,35 @@
 import 'package:carbine/detail_row.dart';
+import 'package:carbine/multimint.dart';
 import 'package:flutter/material.dart';
 
 class TransactionDetails extends StatelessWidget {
-  final String title;
+  final TransactionKind kind;
   final Icon icon;
   final Map<String, String> details;
 
   const TransactionDetails({
     super.key,
-    required this.title,
+    required this.kind,
     required this.icon,
     required this.details,
   });
+
+  String _getTitleFromKind() {
+    switch (kind) {
+      case TransactionKind_LightningReceive():
+        return "Lightning Receive";
+      case TransactionKind_LightningSend():
+        return "Lightning Send";
+      case TransactionKind_EcashReceive():
+        return "Ecash Receive";
+      case TransactionKind_EcashSend():
+        return "Ecash Send";
+      case TransactionKind_OnchainReceive():
+        return "Onchain Receive";
+      case TransactionKind_OnchainSend():
+        return "Onchain Send";
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -29,7 +47,7 @@ class TransactionDetails extends StatelessWidget {
             ),
             const SizedBox(width: 8),
             Text(
-              title,
+              _getTitleFromKind(),
               style: theme.textTheme.headlineSmall?.copyWith(
                 fontWeight: FontWeight.bold,
                 color: theme.colorScheme.primary,

@@ -327,6 +327,14 @@ Future<List<FedimintGateway>> listGateways({
   required FederationId federationId,
 }) => RustLib.instance.api.crateListGateways(federationId: federationId);
 
+Future<bool> checkEcashSpent({
+  required FederationId federationId,
+  required String ecash,
+}) => RustLib.instance.api.crateCheckEcashSpent(
+  federationId: federationId,
+  ecash: ecash,
+);
+
 // Rust type: RustOpaqueMoi<flutter_rust_bridge::for_generated::RustAutoOpaqueInner<ClientConfig>>
 abstract class ClientConfig implements RustOpaqueInterface {}
 
