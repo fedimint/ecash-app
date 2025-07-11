@@ -7836,12 +7836,39 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
     if (arr.length != 5)
       throw Exception('unexpected arr length: expect 5 but see ${arr.length}');
     return Transaction(
-      received: dco_decode_bool(arr[0]),
+      kind: dco_decode_transaction_kind(arr[0]),
       amount: dco_decode_u_64(arr[1]),
       module: dco_decode_String(arr[2]),
       timestamp: dco_decode_u_64(arr[3]),
       operationId: dco_decode_list_prim_u_8_strict(arr[4]),
     );
+  }
+
+  @protected
+  TransactionKind dco_decode_transaction_kind(dynamic raw) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    switch (raw[0]) {
+      case 0:
+        return TransactionKind_LightningReceive(
+          amountMsats: dco_decode_u_64(raw[1]),
+          fees: dco_decode_u_64(raw[2]),
+          gateway: dco_decode_String(raw[3]),
+          payeePubkey: dco_decode_String(raw[4]),
+          paymentHash: dco_decode_String(raw[5]),
+        );
+      case 1:
+        return TransactionKind_LightningSend();
+      case 2:
+        return TransactionKind_OnchainReceive();
+      case 3:
+        return TransactionKind_OnchainSend();
+      case 4:
+        return TransactionKind_EcashReceive();
+      case 5:
+        return TransactionKind_EcashSend();
+      default:
+        throw Exception("unreachable");
+    }
   }
 
   @protected
@@ -9471,18 +9498,52 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   @protected
   Transaction sse_decode_transaction(SseDeserializer deserializer) {
     // Codec=Sse (Serialization based), see doc to use other codecs
-    var var_received = sse_decode_bool(deserializer);
+    var var_kind = sse_decode_transaction_kind(deserializer);
     var var_amount = sse_decode_u_64(deserializer);
     var var_module = sse_decode_String(deserializer);
     var var_timestamp = sse_decode_u_64(deserializer);
     var var_operationId = sse_decode_list_prim_u_8_strict(deserializer);
     return Transaction(
-      received: var_received,
+      kind: var_kind,
       amount: var_amount,
       module: var_module,
       timestamp: var_timestamp,
       operationId: var_operationId,
     );
+  }
+
+  @protected
+  TransactionKind sse_decode_transaction_kind(SseDeserializer deserializer) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+
+    var tag_ = sse_decode_i_32(deserializer);
+    switch (tag_) {
+      case 0:
+        var var_amountMsats = sse_decode_u_64(deserializer);
+        var var_fees = sse_decode_u_64(deserializer);
+        var var_gateway = sse_decode_String(deserializer);
+        var var_payeePubkey = sse_decode_String(deserializer);
+        var var_paymentHash = sse_decode_String(deserializer);
+        return TransactionKind_LightningReceive(
+          amountMsats: var_amountMsats,
+          fees: var_fees,
+          gateway: var_gateway,
+          payeePubkey: var_payeePubkey,
+          paymentHash: var_paymentHash,
+        );
+      case 1:
+        return TransactionKind_LightningSend();
+      case 2:
+        return TransactionKind_OnchainReceive();
+      case 3:
+        return TransactionKind_OnchainSend();
+      case 4:
+        return TransactionKind_EcashReceive();
+      case 5:
+        return TransactionKind_EcashSend();
+      default:
+        throw UnimplementedError('');
+    }
   }
 
   @protected
@@ -11149,11 +11210,44 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   @protected
   void sse_encode_transaction(Transaction self, SseSerializer serializer) {
     // Codec=Sse (Serialization based), see doc to use other codecs
-    sse_encode_bool(self.received, serializer);
+    sse_encode_transaction_kind(self.kind, serializer);
     sse_encode_u_64(self.amount, serializer);
     sse_encode_String(self.module, serializer);
     sse_encode_u_64(self.timestamp, serializer);
     sse_encode_list_prim_u_8_strict(self.operationId, serializer);
+  }
+
+  @protected
+  void sse_encode_transaction_kind(
+    TransactionKind self,
+    SseSerializer serializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    switch (self) {
+      case TransactionKind_LightningReceive(
+        amountMsats: final amountMsats,
+        fees: final fees,
+        gateway: final gateway,
+        payeePubkey: final payeePubkey,
+        paymentHash: final paymentHash,
+      ):
+        sse_encode_i_32(0, serializer);
+        sse_encode_u_64(amountMsats, serializer);
+        sse_encode_u_64(fees, serializer);
+        sse_encode_String(gateway, serializer);
+        sse_encode_String(payeePubkey, serializer);
+        sse_encode_String(paymentHash, serializer);
+      case TransactionKind_LightningSend():
+        sse_encode_i_32(1, serializer);
+      case TransactionKind_OnchainReceive():
+        sse_encode_i_32(2, serializer);
+      case TransactionKind_OnchainSend():
+        sse_encode_i_32(3, serializer);
+      case TransactionKind_EcashReceive():
+        sse_encode_i_32(4, serializer);
+      case TransactionKind_EcashSend():
+        sse_encode_i_32(5, serializer);
+    }
   }
 
   @protected

@@ -1161,4 +1161,268 @@ as (FederationId, BigInt),
 
 }
 
+/// @nodoc
+mixin _$TransactionKind {
+
+
+
+
+
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is TransactionKind);
+}
+
+
+@override
+int get hashCode => runtimeType.hashCode;
+
+@override
+String toString() {
+  return 'TransactionKind()';
+}
+
+
+}
+
+/// @nodoc
+class $TransactionKindCopyWith<$Res>  {
+$TransactionKindCopyWith(TransactionKind _, $Res Function(TransactionKind) __);
+}
+
+
+/// @nodoc
+
+
+class TransactionKind_LightningReceive extends TransactionKind {
+  const TransactionKind_LightningReceive({required this.amountMsats, required this.fees, required this.gateway, required this.payeePubkey, required this.paymentHash}): super._();
+  
+
+ final  BigInt amountMsats;
+ final  BigInt fees;
+ final  String gateway;
+ final  String payeePubkey;
+ final  String paymentHash;
+
+/// Create a copy of TransactionKind
+/// with the given fields replaced by the non-null parameter values.
+@JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+$TransactionKind_LightningReceiveCopyWith<TransactionKind_LightningReceive> get copyWith => _$TransactionKind_LightningReceiveCopyWithImpl<TransactionKind_LightningReceive>(this, _$identity);
+
+
+
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is TransactionKind_LightningReceive&&(identical(other.amountMsats, amountMsats) || other.amountMsats == amountMsats)&&(identical(other.fees, fees) || other.fees == fees)&&(identical(other.gateway, gateway) || other.gateway == gateway)&&(identical(other.payeePubkey, payeePubkey) || other.payeePubkey == payeePubkey)&&(identical(other.paymentHash, paymentHash) || other.paymentHash == paymentHash));
+}
+
+
+@override
+int get hashCode => Object.hash(runtimeType,amountMsats,fees,gateway,payeePubkey,paymentHash);
+
+@override
+String toString() {
+  return 'TransactionKind.lightningReceive(amountMsats: $amountMsats, fees: $fees, gateway: $gateway, payeePubkey: $payeePubkey, paymentHash: $paymentHash)';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class $TransactionKind_LightningReceiveCopyWith<$Res> implements $TransactionKindCopyWith<$Res> {
+  factory $TransactionKind_LightningReceiveCopyWith(TransactionKind_LightningReceive value, $Res Function(TransactionKind_LightningReceive) _then) = _$TransactionKind_LightningReceiveCopyWithImpl;
+@useResult
+$Res call({
+ BigInt amountMsats, BigInt fees, String gateway, String payeePubkey, String paymentHash
+});
+
+
+
+
+}
+/// @nodoc
+class _$TransactionKind_LightningReceiveCopyWithImpl<$Res>
+    implements $TransactionKind_LightningReceiveCopyWith<$Res> {
+  _$TransactionKind_LightningReceiveCopyWithImpl(this._self, this._then);
+
+  final TransactionKind_LightningReceive _self;
+  final $Res Function(TransactionKind_LightningReceive) _then;
+
+/// Create a copy of TransactionKind
+/// with the given fields replaced by the non-null parameter values.
+@pragma('vm:prefer-inline') $Res call({Object? amountMsats = null,Object? fees = null,Object? gateway = null,Object? payeePubkey = null,Object? paymentHash = null,}) {
+  return _then(TransactionKind_LightningReceive(
+amountMsats: null == amountMsats ? _self.amountMsats : amountMsats // ignore: cast_nullable_to_non_nullable
+as BigInt,fees: null == fees ? _self.fees : fees // ignore: cast_nullable_to_non_nullable
+as BigInt,gateway: null == gateway ? _self.gateway : gateway // ignore: cast_nullable_to_non_nullable
+as String,payeePubkey: null == payeePubkey ? _self.payeePubkey : payeePubkey // ignore: cast_nullable_to_non_nullable
+as String,paymentHash: null == paymentHash ? _self.paymentHash : paymentHash // ignore: cast_nullable_to_non_nullable
+as String,
+  ));
+}
+
+
+}
+
+/// @nodoc
+
+
+class TransactionKind_LightningSend extends TransactionKind {
+  const TransactionKind_LightningSend(): super._();
+  
+
+
+
+
+
+
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is TransactionKind_LightningSend);
+}
+
+
+@override
+int get hashCode => runtimeType.hashCode;
+
+@override
+String toString() {
+  return 'TransactionKind.lightningSend()';
+}
+
+
+}
+
+
+
+
+/// @nodoc
+
+
+class TransactionKind_OnchainReceive extends TransactionKind {
+  const TransactionKind_OnchainReceive(): super._();
+  
+
+
+
+
+
+
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is TransactionKind_OnchainReceive);
+}
+
+
+@override
+int get hashCode => runtimeType.hashCode;
+
+@override
+String toString() {
+  return 'TransactionKind.onchainReceive()';
+}
+
+
+}
+
+
+
+
+/// @nodoc
+
+
+class TransactionKind_OnchainSend extends TransactionKind {
+  const TransactionKind_OnchainSend(): super._();
+  
+
+
+
+
+
+
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is TransactionKind_OnchainSend);
+}
+
+
+@override
+int get hashCode => runtimeType.hashCode;
+
+@override
+String toString() {
+  return 'TransactionKind.onchainSend()';
+}
+
+
+}
+
+
+
+
+/// @nodoc
+
+
+class TransactionKind_EcashReceive extends TransactionKind {
+  const TransactionKind_EcashReceive(): super._();
+  
+
+
+
+
+
+
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is TransactionKind_EcashReceive);
+}
+
+
+@override
+int get hashCode => runtimeType.hashCode;
+
+@override
+String toString() {
+  return 'TransactionKind.ecashReceive()';
+}
+
+
+}
+
+
+
+
+/// @nodoc
+
+
+class TransactionKind_EcashSend extends TransactionKind {
+  const TransactionKind_EcashSend(): super._();
+  
+
+
+
+
+
+
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is TransactionKind_EcashSend);
+}
+
+
+@override
+int get hashCode => runtimeType.hashCode;
+
+@override
+String toString() {
+  return 'TransactionKind.ecashSend()';
+}
+
+
+}
+
+
+
+
 // dart format on

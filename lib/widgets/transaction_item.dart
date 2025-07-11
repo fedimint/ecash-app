@@ -10,7 +10,7 @@ class TransactionItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isIncoming = tx.received;
+    final isIncoming = tx.kind == TransactionKind.lightningReceive || tx.kind == TransactionKind.onchainReceive || tx.kind == TransactionKind.ecashReceive;
     final date = DateTime.fromMillisecondsSinceEpoch(tx.timestamp.toInt());
     final formattedDate = DateFormat.yMMMd().add_jm().format(date);
     final formattedAmount = formatBalance(tx.amount, false);

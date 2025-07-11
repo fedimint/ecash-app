@@ -53,7 +53,7 @@ use fedimint_wallet_client::{
 use futures_util::StreamExt;
 use lightning_invoice::{Bolt11Invoice, Description};
 use serde::Serialize;
-use serde_json::to_value;
+use serde_json::{from_value, json};
 use tokio::sync::RwLock;
 use tokio::{
     sync::mpsc::{unbounded_channel, UnboundedReceiver, UnboundedSender},
@@ -135,11 +135,27 @@ pub struct Guardian {
 
 #[derive(Debug, Serialize, Clone)]
 pub struct Transaction {
-    pub received: bool,
+    pub kind: TransactionKind,
     pub amount: u64,
     pub module: String,
     pub timestamp: u64,
     pub operation_id: Vec<u8>,
+}
+
+#[derive(Debug, Serialize, Clone)]
+pub enum TransactionKind {
+    LightningReceive {
+        amount_msats: u64,
+        fees: u64,
+        gateway: String,
+        payee_pubkey: String,
+        payment_hash: String,
+    },
+    LightningSend,
+    OnchainReceive,
+    OnchainSend,
+    EcashReceive,
+    EcashSend,
 }
 
 #[derive(Debug, Serialize, Clone, Eq, PartialEq)]
@@ -1308,13 +1324,18 @@ impl Multimint {
         gateway: SafeUrl,
     ) -> anyhow::Result<(Bolt11Invoice, OperationId)> {
         let lnv2 = client.get_first_module::<fedimint_lnv2_client::LightningClientModule>()?;
+        let custom_meta = json!({
+            "amount": amount_without_fees,
+            "amount_with_fees": amount_with_fees,
+            "gateway_url": gateway,
+        });
         let (invoice, operation_id) = lnv2
             .receive(
                 amount_with_fees,
                 DEFAULT_EXPIRY_TIME_SECS,
                 Bolt11InvoiceDescription::Direct(String::new()),
                 Some(gateway),
-                to_value(amount_without_fees)?,
+                custom_meta,
             )
             .await?;
         Ok((invoice, operation_id))
@@ -1327,6 +1348,11 @@ impl Multimint {
         gateway_url: SafeUrl,
     ) -> anyhow::Result<(Bolt11Invoice, OperationId)> {
         let lnv1 = client.get_first_module::<LightningClientModule>()?;
+        let custom_meta = json!({
+            "amount": amount_without_fees,
+            "amount_with_fees": amount_with_fees,
+            "gateway_url": gateway_url,
+        });
         let gateways = lnv1.list_gateways().await;
         let gateway = gateways
             .iter()
@@ -1340,7 +1366,7 @@ impl Multimint {
                 amount_with_fees,
                 lightning_invoice::Bolt11InvoiceDescription::Direct(&desc),
                 Some(DEFAULT_EXPIRY_TIME_SECS as u64),
-                to_value(amount_without_fees)?,
+                custom_meta,
                 Some(gateway),
             )
             .await?;
@@ -1865,14 +1891,36 @@ impl Multimint {
                         match meta {
                             LightningOperationMeta::Receive(receive) => {
                                 let outcome = op_log_val.outcome::<ReceiveOperationState>();
+                                let fedimint_lnv2_common::LightningInvoice::Bolt11(bolt11) =
+                                    receive.invoice;
                                 if let Some(ReceiveOperationState::Claimed) = outcome {
+                                    let amount = from_value::<Amount>(
+                                        receive
+                                            .custom_meta
+                                            .get("amount")
+                                            .expect("Field missing lightning receive custom meta")
+                                            .clone(),
+                                    )
+                                    .expect("Could not parse to Amount")
+                                    .msats;
+                                    let amount_with_fees = from_value::<Amount>(
+                                        receive
+                                            .custom_meta
+                                            .get("amount_with_fees")
+                                            .expect("Field missing lightning receive custom meta")
+                                            .clone(),
+                                    )
+                                    .expect("Could not parse to Amount")
+                                    .msats;
                                     Some(Transaction {
-                                        received: true,
-                                        amount: serde_json::from_value::<Amount>(
-                                            receive.custom_meta,
-                                        )
-                                        .expect("Could not deserialize amount")
-                                        .msats,
+                                        kind: TransactionKind::LightningReceive {
+                                            amount_msats: amount,
+                                            fees: amount_with_fees - amount,
+                                            gateway: receive.gateway.to_string(),
+                                            payee_pubkey: bolt11.get_payee_pub_key().to_string(),
+                                            payment_hash: bolt11.payment_hash().to_string(),
+                                        },
+                                        amount,
                                         module: "lnv2".to_string(),
                                         timestamp,
                                         operation_id: key.operation_id.0.to_vec(),
@@ -1885,7 +1933,7 @@ impl Multimint {
                                 let outcome = op_log_val.outcome::<SendOperationState>();
                                 if matches!(outcome, Some(SendOperationState::Success(..))) {
                                     Some(Transaction {
-                                        received: false,
+                                        kind: TransactionKind::LightningSend,
                                         amount: send.contract.amount.msats,
                                         module: "lnv2".to_string(),
                                         timestamp,
@@ -1912,6 +1960,7 @@ impl Multimint {
                                     op_log_val,
                                     timestamp,
                                     key.operation_id,
+                                    meta.extra_meta,
                                 )
                             }
                             LightningOperationMetaVariant::RecurringPaymentReceive(recurring) => {
@@ -1920,6 +1969,7 @@ impl Multimint {
                                     op_log_val,
                                     timestamp,
                                     key.operation_id,
+                                    meta.extra_meta,
                                 )
                             }
                             _ => None,
@@ -1934,7 +1984,7 @@ impl Multimint {
                                     continue;
                                 }
                                 Some(Transaction {
-                                    received: false,
+                                    kind: TransactionKind::EcashSend,
                                     amount: oob_notes.total_amount().msats,
                                     module: "mint".to_string(),
                                     timestamp,
@@ -1957,7 +2007,7 @@ impl Multimint {
                                     let amount: Amount = serde_json::from_value(meta.extra_meta)
                                         .expect("Could not get total amount");
                                     Some(Transaction {
-                                        received: true,
+                                        kind: TransactionKind::EcashReceive,
                                         amount: amount.msats,
                                         module: "mint".to_string(),
                                         timestamp,
@@ -1978,7 +2028,7 @@ impl Multimint {
                                 {
                                     let amount = Amount::from_sats(btc_deposited.to_sat()).msats;
                                     Some(Transaction {
-                                        received: true,
+                                        kind: TransactionKind::OnchainReceive,
                                         amount,
                                         module: "wallet".to_string(),
                                         timestamp,
@@ -1992,7 +2042,7 @@ impl Multimint {
                                 let outcome = op_log_val.outcome::<WithdrawState>();
                                 if let Some(WithdrawState::Succeeded(_txid)) = outcome {
                                     Some(Transaction {
-                                        received: false,
+                                        kind: TransactionKind::OnchainSend,
                                         amount: Amount::from_sats(amount.to_sat()).msats,
                                         module: "wallet".to_string(),
                                         timestamp,
@@ -2032,7 +2082,7 @@ impl Multimint {
         operation_id: OperationId,
     ) -> Option<Transaction> {
         let transaction = Transaction {
-            received: false,
+            kind: TransactionKind::LightningSend,
             amount: meta
                 .invoice
                 .amount_milli_satoshis()
@@ -2067,14 +2117,43 @@ impl Multimint {
         ln_outcome: &OperationLogEntry,
         timestamp: u64,
         operation_id: OperationId,
+        custom_meta: serde_json::Value,
     ) -> Option<Transaction> {
         let receive_outcome = ln_outcome.outcome::<LnReceiveState>();
+        let amount = from_value::<Amount>(
+            custom_meta
+                .get("amount")
+                .expect("Field missing lightning receive custom meta")
+                .clone(),
+        )
+        .expect("Could not parse to Amount")
+        .msats;
+        let amount_with_fees = from_value::<Amount>(
+            custom_meta
+                .get("amount_with_fees")
+                .expect("Field missing lightning receive custom meta")
+                .clone(),
+        )
+        .expect("Could not parse to Amount")
+        .msats;
+        let gateway = from_value::<SafeUrl>(
+            custom_meta
+                .get("gateway_url")
+                .expect("Field missing lightning receive custom meta")
+                .clone(),
+        )
+        .expect("Could not parse SafeUrl")
+        .to_string();
         match receive_outcome {
             Some(state) if state == LnReceiveState::Claimed => Some(Transaction {
-                received: true,
-                amount: invoice
-                    .amount_milli_satoshis()
-                    .expect("Cannot receive amountless invoice"),
+                kind: TransactionKind::LightningReceive {
+                    amount_msats: amount,
+                    fees: amount_with_fees - amount,
+                    gateway,
+                    payee_pubkey: invoice.get_payee_pub_key().to_string(),
+                    payment_hash: invoice.payment_hash().to_string(),
+                },
+                amount,
                 module: "ln".to_string(),
                 timestamp,
                 operation_id: operation_id.0.to_vec(),

@@ -9198,18 +9198,59 @@ impl SseDecode for (u64, usize) {
 impl SseDecode for crate::multimint::Transaction {
     // Codec=Sse (Serialization based), see doc to use other codecs
     fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
-        let mut var_received = <bool>::sse_decode(deserializer);
+        let mut var_kind = <crate::multimint::TransactionKind>::sse_decode(deserializer);
         let mut var_amount = <u64>::sse_decode(deserializer);
         let mut var_module = <String>::sse_decode(deserializer);
         let mut var_timestamp = <u64>::sse_decode(deserializer);
         let mut var_operationId = <Vec<u8>>::sse_decode(deserializer);
         return crate::multimint::Transaction {
-            received: var_received,
+            kind: var_kind,
             amount: var_amount,
             module: var_module,
             timestamp: var_timestamp,
             operation_id: var_operationId,
         };
+    }
+}
+
+impl SseDecode for crate::multimint::TransactionKind {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
+        let mut tag_ = <i32>::sse_decode(deserializer);
+        match tag_ {
+            0 => {
+                let mut var_amountMsats = <u64>::sse_decode(deserializer);
+                let mut var_fees = <u64>::sse_decode(deserializer);
+                let mut var_gateway = <String>::sse_decode(deserializer);
+                let mut var_payeePubkey = <String>::sse_decode(deserializer);
+                let mut var_paymentHash = <String>::sse_decode(deserializer);
+                return crate::multimint::TransactionKind::LightningReceive {
+                    amount_msats: var_amountMsats,
+                    fees: var_fees,
+                    gateway: var_gateway,
+                    payee_pubkey: var_payeePubkey,
+                    payment_hash: var_paymentHash,
+                };
+            }
+            1 => {
+                return crate::multimint::TransactionKind::LightningSend;
+            }
+            2 => {
+                return crate::multimint::TransactionKind::OnchainReceive;
+            }
+            3 => {
+                return crate::multimint::TransactionKind::OnchainSend;
+            }
+            4 => {
+                return crate::multimint::TransactionKind::EcashReceive;
+            }
+            5 => {
+                return crate::multimint::TransactionKind::EcashSend;
+            }
+            _ => {
+                unimplemented!("");
+            }
+        }
     }
 }
 
@@ -10527,7 +10568,7 @@ impl flutter_rust_bridge::IntoIntoDart<crate::multimint::PaymentPreview>
 impl flutter_rust_bridge::IntoDart for crate::multimint::Transaction {
     fn into_dart(self) -> flutter_rust_bridge::for_generated::DartAbi {
         [
-            self.received.into_into_dart().into_dart(),
+            self.kind.into_into_dart().into_dart(),
             self.amount.into_into_dart().into_dart(),
             self.module.into_into_dart().into_dart(),
             self.timestamp.into_into_dart().into_dart(),
@@ -10541,6 +10582,47 @@ impl flutter_rust_bridge::IntoIntoDart<crate::multimint::Transaction>
     for crate::multimint::Transaction
 {
     fn into_into_dart(self) -> crate::multimint::Transaction {
+        self
+    }
+}
+// Codec=Dco (DartCObject based), see doc to use other codecs
+impl flutter_rust_bridge::IntoDart for crate::multimint::TransactionKind {
+    fn into_dart(self) -> flutter_rust_bridge::for_generated::DartAbi {
+        match self {
+            crate::multimint::TransactionKind::LightningReceive {
+                amount_msats,
+                fees,
+                gateway,
+                payee_pubkey,
+                payment_hash,
+            } => [
+                0.into_dart(),
+                amount_msats.into_into_dart().into_dart(),
+                fees.into_into_dart().into_dart(),
+                gateway.into_into_dart().into_dart(),
+                payee_pubkey.into_into_dart().into_dart(),
+                payment_hash.into_into_dart().into_dart(),
+            ]
+            .into_dart(),
+            crate::multimint::TransactionKind::LightningSend => [1.into_dart()].into_dart(),
+            crate::multimint::TransactionKind::OnchainReceive => [2.into_dart()].into_dart(),
+            crate::multimint::TransactionKind::OnchainSend => [3.into_dart()].into_dart(),
+            crate::multimint::TransactionKind::EcashReceive => [4.into_dart()].into_dart(),
+            crate::multimint::TransactionKind::EcashSend => [5.into_dart()].into_dart(),
+            _ => {
+                unimplemented!("");
+            }
+        }
+    }
+}
+impl flutter_rust_bridge::for_generated::IntoDartExceptPrimitive
+    for crate::multimint::TransactionKind
+{
+}
+impl flutter_rust_bridge::IntoIntoDart<crate::multimint::TransactionKind>
+    for crate::multimint::TransactionKind
+{
+    fn into_into_dart(self) -> crate::multimint::TransactionKind {
         self
     }
 }
@@ -11600,11 +11682,51 @@ impl SseEncode for (u64, usize) {
 impl SseEncode for crate::multimint::Transaction {
     // Codec=Sse (Serialization based), see doc to use other codecs
     fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
-        <bool>::sse_encode(self.received, serializer);
+        <crate::multimint::TransactionKind>::sse_encode(self.kind, serializer);
         <u64>::sse_encode(self.amount, serializer);
         <String>::sse_encode(self.module, serializer);
         <u64>::sse_encode(self.timestamp, serializer);
         <Vec<u8>>::sse_encode(self.operation_id, serializer);
+    }
+}
+
+impl SseEncode for crate::multimint::TransactionKind {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
+        match self {
+            crate::multimint::TransactionKind::LightningReceive {
+                amount_msats,
+                fees,
+                gateway,
+                payee_pubkey,
+                payment_hash,
+            } => {
+                <i32>::sse_encode(0, serializer);
+                <u64>::sse_encode(amount_msats, serializer);
+                <u64>::sse_encode(fees, serializer);
+                <String>::sse_encode(gateway, serializer);
+                <String>::sse_encode(payee_pubkey, serializer);
+                <String>::sse_encode(payment_hash, serializer);
+            }
+            crate::multimint::TransactionKind::LightningSend => {
+                <i32>::sse_encode(1, serializer);
+            }
+            crate::multimint::TransactionKind::OnchainReceive => {
+                <i32>::sse_encode(2, serializer);
+            }
+            crate::multimint::TransactionKind::OnchainSend => {
+                <i32>::sse_encode(3, serializer);
+            }
+            crate::multimint::TransactionKind::EcashReceive => {
+                <i32>::sse_encode(4, serializer);
+            }
+            crate::multimint::TransactionKind::EcashSend => {
+                <i32>::sse_encode(5, serializer);
+            }
+            _ => {
+                unimplemented!("");
+            }
+        }
     }
 }
 
