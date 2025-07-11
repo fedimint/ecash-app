@@ -1,3 +1,5 @@
+import 'package:carbine/theme.dart';
+import 'package:carbine/widgets/transaction_details.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:carbine/multimint.dart';
@@ -7,6 +9,44 @@ class TransactionItem extends StatelessWidget {
   final Transaction tx;
 
   const TransactionItem({super.key, required this.tx});
+
+  void _onTap(BuildContext context, String formattedAmount, String formattedDate) {
+    switch (tx.kind) {
+      case TransactionKind_LightningReceive(fees: final fees, gateway: final gateway, payeePubkey: final payeePubkey, paymentHash: final paymentHash):
+        showCarbineModalBottomSheet(
+          context: context,
+          child: TransactionDetails(
+            title: "Lightning Receive",
+            details: {
+              'Amount': formattedAmount,
+              "Fees": formatBalance(fees, true),
+              "Gateway": gateway,
+              "Payee Public Key": payeePubkey,
+              "Payment Hash": paymentHash,
+              'Timestamp': formattedDate,
+            },
+          ),
+        );
+        break;
+      case TransactionKind_LightningSend():
+      case TransactionKind_EcashReceive():
+      case TransactionKind_EcashSend():
+      case TransactionKind_OnchainReceive():
+      case TransactionKind_OnchainSend():
+        // TODO: Remove this once all transaction types are done
+        showCarbineModalBottomSheet(
+          context: context,
+          child: TransactionDetails(
+            title: "Transaction",
+            details: {
+              'Amount': formattedAmount,
+              'Timestamp': formattedDate,
+            },
+          ),
+        );
+        break;
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -41,6 +81,7 @@ class TransactionItem extends StatelessWidget {
       margin: const EdgeInsets.symmetric(vertical: 6),
       color: Theme.of(context).colorScheme.surface,
       child: ListTile(
+        onTap: () => _onTap(context, formattedAmount, formattedDate),
         leading: CircleAvatar(
           backgroundColor:
               isIncoming
