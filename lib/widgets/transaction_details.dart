@@ -59,9 +59,9 @@ class _TransactionDetailsState extends State<TransactionDetails> {
           ecash: ecash,
         );
         if (result) {
-          ToastService().show(message: "This ecash has been claimed", duration: const Duration(seconds: 5), onTap: () {});
+          ToastService().show(message: "This ecash has been claimed", duration: const Duration(seconds: 5), onTap: () {}, icon: Icon(Icons.info));
         } else {
-          ToastService().show(message: "This ecash has not been claimed yet", duration: const Duration(seconds: 5), onTap: () {});
+          ToastService().show(message: "This ecash has not been claimed yet", duration: const Duration(seconds: 5), onTap: () {}, icon: Icon(Icons.info));
         }
       }
     } catch (e) {

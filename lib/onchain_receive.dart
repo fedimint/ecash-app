@@ -1,5 +1,6 @@
 import 'package:carbine/lib.dart';
 import 'package:carbine/multimint.dart';
+import 'package:carbine/toast.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
@@ -35,11 +36,11 @@ class _OnChainReceiveContentState extends State<OnChainReceiveContent> {
 
   void _copyToClipboard(String text) {
     Clipboard.setData(ClipboardData(text: text));
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Address copied to clipboard'),
-        duration: Duration(milliseconds: 1200),
-      ),
+    ToastService().show(
+      message: "Address copied to clipboard",
+      duration: const Duration(seconds: 5),
+      onTap: () {},
+      icon: Icon(Icons.check),
     );
   }
 

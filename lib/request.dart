@@ -4,6 +4,7 @@ import 'package:carbine/detail_row.dart';
 import 'package:carbine/lib.dart';
 import 'package:carbine/multimint.dart';
 import 'package:carbine/success.dart';
+import 'package:carbine/toast.dart';
 import 'package:carbine/utils.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -93,11 +94,11 @@ class _RequestState extends State<Request> with SingleTickerProviderStateMixin {
   void _copyInvoice() {
     Clipboard.setData(ClipboardData(text: widget.invoice));
     setState(() => _copied = true);
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Invoice copied to clipboard'),
-        duration: Duration(seconds: 2),
-      ),
+    ToastService().show(
+      message: "Invoice copied to clipboard",
+      duration: const Duration(seconds: 5),
+      onTap: () {},
+      icon: Icon(Icons.check),
     );
     Future.delayed(const Duration(seconds: 2), () {
       if (mounted) setState(() => _copied = false);

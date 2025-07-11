@@ -4,6 +4,7 @@ import 'package:carbine/detail_row.dart';
 import 'package:carbine/qr_export.dart';
 import 'package:carbine/lib.dart';
 import 'package:carbine/multimint.dart';
+import 'package:carbine/toast.dart';
 import 'package:carbine/utils.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -77,11 +78,11 @@ class _EcashSendState extends State<EcashSend> {
     if (_ecash == null) return;
     Clipboard.setData(ClipboardData(text: _ecash!));
     setState(() => _copied = true);
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('✅ Ecash copied to clipboard'),
-        duration: Duration(seconds: 2),
-      ),
+    ToastService().show(
+      message: "Ecash copied to clipboard",
+      duration: const Duration(seconds: 5),
+      onTap: () {},
+      icon: Icon(Icons.check),
     );
     Future.delayed(const Duration(seconds: 2), () {
       if (mounted) setState(() => _copied = false);
@@ -239,12 +240,12 @@ class _EcashSendState extends State<EcashSend> {
               onPressed: () {
                 if (mounted) {
                   Navigator.of(context).popUntil((route) => route.isFirst);
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Text(
+                  ToastService().show(
+                    message:
                         '${formatBalance(widget.amountMsats, false)} spent',
-                      ),
-                    ),
+                    duration: const Duration(seconds: 5),
+                    onTap: () {},
+                    icon: Icon(Icons.currency_bitcoin),
                   );
                 }
               },

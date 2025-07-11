@@ -13,7 +13,7 @@ class ToastService {
     required String message,
     required Duration duration,
     required VoidCallback onTap,
-    Icon? icon,
+    required Icon icon,
   }) {
     final context = navigatorKey.currentContext;
     if (context == null) {
@@ -33,7 +33,7 @@ class ToastService {
               _currentToast?.remove();
               _currentToast = null;
             },
-            icon: icon ?? const Icon(Icons.flash_on, color: Colors.amber),
+            icon: icon,
           ),
     );
 
