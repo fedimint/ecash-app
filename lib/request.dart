@@ -119,7 +119,7 @@ class _RequestState extends State<Request> with SingleTickerProviderStateMixin {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final abbreviatedInvoice = getAbbreviatedInvoice(widget.invoice);
+    final abbreviatedInvoice = getAbbreviatedText(widget.invoice);
     final fees = widget.totalMsats - widget.requestedAmountMsats;
 
     return Padding(

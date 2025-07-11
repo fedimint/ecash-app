@@ -112,7 +112,7 @@ class _EcashSendState extends State<EcashSend> {
       return const Center(child: Text("⚠️ Failed to load ecash"));
     }
 
-    final abbreviatedEcash = getAbbreviatedInvoice(_ecash!);
+    final abbreviatedEcash = getAbbreviatedText(_ecash!);
 
     return Padding(
       padding: const EdgeInsets.all(20),
