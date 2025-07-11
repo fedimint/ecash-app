@@ -1,9 +1,9 @@
 import 'dart:async';
 import 'dart:convert';
+import 'package:carbine/detail_row.dart';
 import 'package:carbine/qr_export.dart';
 import 'package:carbine/lib.dart';
 import 'package:carbine/multimint.dart';
-import 'package:carbine/theme.dart';
 import 'package:carbine/utils.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -221,12 +221,14 @@ class _EcashSendState extends State<EcashSend> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                buildDetailRow(
-                  theme,
-                  'Amount',
-                  formatBalance(widget.amountMsats, false),
+                CopyableDetailRow(
+                  label: 'Amount',
+                  value: formatBalance(widget.amountMsats, false),
                 ),
-                buildDetailRow(theme, 'Federation', widget.fed.federationName),
+                CopyableDetailRow(
+                  label: 'Federation',
+                  value: widget.fed.federationName,
+                ),
               ],
             ),
           ),

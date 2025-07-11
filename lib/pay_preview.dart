@@ -1,6 +1,6 @@
+import 'package:carbine/detail_row.dart';
 import 'package:carbine/multimint.dart';
 import 'package:carbine/send.dart';
-import 'package:carbine/theme.dart';
 import 'package:carbine/utils.dart';
 import 'package:flutter/material.dart';
 
@@ -45,16 +45,30 @@ class PaymentPreviewWidget extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              buildDetailRow(theme, "Payer Federation", fed.federationName),
-              buildDetailRow(theme, 'Amount', formatBalance(amount, true)),
-              buildDetailRow(theme, 'Fees', formatBalance(fees, true)),
-              buildDetailRow(
-                theme,
-                'Total',
-                formatBalance(amountWithFees, true),
+              CopyableDetailRow(
+                label: "Payer Federation",
+                value: fed.federationName,
               ),
-              buildDetailRow(theme, 'Gateway', paymentPreview.gateway),
-              buildDetailRow(theme, 'Payment Hash', paymentPreview.paymentHash),
+              CopyableDetailRow(
+                label: 'Amount',
+                value: formatBalance(amount, true),
+              ),
+              CopyableDetailRow(
+                label: 'Fees',
+                value: formatBalance(fees, true),
+              ),
+              CopyableDetailRow(
+                label: 'Total',
+                value: formatBalance(amountWithFees, true),
+              ),
+              CopyableDetailRow(
+                label: 'Gateway',
+                value: paymentPreview.gateway,
+              ),
+              CopyableDetailRow(
+                label: 'Payment Hash',
+                value: paymentPreview.paymentHash,
+              ),
             ],
           ),
         ),

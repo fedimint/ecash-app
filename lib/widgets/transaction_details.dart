@@ -1,5 +1,5 @@
+import 'package:carbine/detail_row.dart';
 import 'package:flutter/material.dart';
-import 'package:carbine/theme.dart';
 
 class TransactionDetails extends StatelessWidget {
   final String title;
@@ -51,7 +51,10 @@ class TransactionDetails extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: details.entries.map((entry) {
-              return buildDetailRow(theme, entry.key, entry.value);
+              return CopyableDetailRow(
+                label: entry.key,
+                value: entry.value,
+              );
             }).toList(),
           ),
         ),
