@@ -1161,4 +1161,378 @@ as (FederationId, BigInt),
 
 }
 
+/// @nodoc
+mixin _$TransactionKind {
+
+
+
+
+
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is TransactionKind);
+}
+
+
+@override
+int get hashCode => runtimeType.hashCode;
+
+@override
+String toString() {
+  return 'TransactionKind()';
+}
+
+
+}
+
+/// @nodoc
+class $TransactionKindCopyWith<$Res>  {
+$TransactionKindCopyWith(TransactionKind _, $Res Function(TransactionKind) __);
+}
+
+
+/// @nodoc
+
+
+class TransactionKind_LightningReceive extends TransactionKind {
+  const TransactionKind_LightningReceive({required this.fees, required this.gateway, required this.payeePubkey, required this.paymentHash}): super._();
+  
+
+ final  BigInt fees;
+ final  String gateway;
+ final  String payeePubkey;
+ final  String paymentHash;
+
+/// Create a copy of TransactionKind
+/// with the given fields replaced by the non-null parameter values.
+@JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+$TransactionKind_LightningReceiveCopyWith<TransactionKind_LightningReceive> get copyWith => _$TransactionKind_LightningReceiveCopyWithImpl<TransactionKind_LightningReceive>(this, _$identity);
+
+
+
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is TransactionKind_LightningReceive&&(identical(other.fees, fees) || other.fees == fees)&&(identical(other.gateway, gateway) || other.gateway == gateway)&&(identical(other.payeePubkey, payeePubkey) || other.payeePubkey == payeePubkey)&&(identical(other.paymentHash, paymentHash) || other.paymentHash == paymentHash));
+}
+
+
+@override
+int get hashCode => Object.hash(runtimeType,fees,gateway,payeePubkey,paymentHash);
+
+@override
+String toString() {
+  return 'TransactionKind.lightningReceive(fees: $fees, gateway: $gateway, payeePubkey: $payeePubkey, paymentHash: $paymentHash)';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class $TransactionKind_LightningReceiveCopyWith<$Res> implements $TransactionKindCopyWith<$Res> {
+  factory $TransactionKind_LightningReceiveCopyWith(TransactionKind_LightningReceive value, $Res Function(TransactionKind_LightningReceive) _then) = _$TransactionKind_LightningReceiveCopyWithImpl;
+@useResult
+$Res call({
+ BigInt fees, String gateway, String payeePubkey, String paymentHash
+});
+
+
+
+
+}
+/// @nodoc
+class _$TransactionKind_LightningReceiveCopyWithImpl<$Res>
+    implements $TransactionKind_LightningReceiveCopyWith<$Res> {
+  _$TransactionKind_LightningReceiveCopyWithImpl(this._self, this._then);
+
+  final TransactionKind_LightningReceive _self;
+  final $Res Function(TransactionKind_LightningReceive) _then;
+
+/// Create a copy of TransactionKind
+/// with the given fields replaced by the non-null parameter values.
+@pragma('vm:prefer-inline') $Res call({Object? fees = null,Object? gateway = null,Object? payeePubkey = null,Object? paymentHash = null,}) {
+  return _then(TransactionKind_LightningReceive(
+fees: null == fees ? _self.fees : fees // ignore: cast_nullable_to_non_nullable
+as BigInt,gateway: null == gateway ? _self.gateway : gateway // ignore: cast_nullable_to_non_nullable
+as String,payeePubkey: null == payeePubkey ? _self.payeePubkey : payeePubkey // ignore: cast_nullable_to_non_nullable
+as String,paymentHash: null == paymentHash ? _self.paymentHash : paymentHash // ignore: cast_nullable_to_non_nullable
+as String,
+  ));
+}
+
+
+}
+
+/// @nodoc
+
+
+class TransactionKind_LightningSend extends TransactionKind {
+  const TransactionKind_LightningSend({required this.fees, required this.gateway, required this.paymentHash, required this.preimage}): super._();
+  
+
+ final  BigInt fees;
+ final  String gateway;
+ final  String paymentHash;
+ final  String preimage;
+
+/// Create a copy of TransactionKind
+/// with the given fields replaced by the non-null parameter values.
+@JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+$TransactionKind_LightningSendCopyWith<TransactionKind_LightningSend> get copyWith => _$TransactionKind_LightningSendCopyWithImpl<TransactionKind_LightningSend>(this, _$identity);
+
+
+
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is TransactionKind_LightningSend&&(identical(other.fees, fees) || other.fees == fees)&&(identical(other.gateway, gateway) || other.gateway == gateway)&&(identical(other.paymentHash, paymentHash) || other.paymentHash == paymentHash)&&(identical(other.preimage, preimage) || other.preimage == preimage));
+}
+
+
+@override
+int get hashCode => Object.hash(runtimeType,fees,gateway,paymentHash,preimage);
+
+@override
+String toString() {
+  return 'TransactionKind.lightningSend(fees: $fees, gateway: $gateway, paymentHash: $paymentHash, preimage: $preimage)';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class $TransactionKind_LightningSendCopyWith<$Res> implements $TransactionKindCopyWith<$Res> {
+  factory $TransactionKind_LightningSendCopyWith(TransactionKind_LightningSend value, $Res Function(TransactionKind_LightningSend) _then) = _$TransactionKind_LightningSendCopyWithImpl;
+@useResult
+$Res call({
+ BigInt fees, String gateway, String paymentHash, String preimage
+});
+
+
+
+
+}
+/// @nodoc
+class _$TransactionKind_LightningSendCopyWithImpl<$Res>
+    implements $TransactionKind_LightningSendCopyWith<$Res> {
+  _$TransactionKind_LightningSendCopyWithImpl(this._self, this._then);
+
+  final TransactionKind_LightningSend _self;
+  final $Res Function(TransactionKind_LightningSend) _then;
+
+/// Create a copy of TransactionKind
+/// with the given fields replaced by the non-null parameter values.
+@pragma('vm:prefer-inline') $Res call({Object? fees = null,Object? gateway = null,Object? paymentHash = null,Object? preimage = null,}) {
+  return _then(TransactionKind_LightningSend(
+fees: null == fees ? _self.fees : fees // ignore: cast_nullable_to_non_nullable
+as BigInt,gateway: null == gateway ? _self.gateway : gateway // ignore: cast_nullable_to_non_nullable
+as String,paymentHash: null == paymentHash ? _self.paymentHash : paymentHash // ignore: cast_nullable_to_non_nullable
+as String,preimage: null == preimage ? _self.preimage : preimage // ignore: cast_nullable_to_non_nullable
+as String,
+  ));
+}
+
+
+}
+
+/// @nodoc
+
+
+class TransactionKind_OnchainReceive extends TransactionKind {
+  const TransactionKind_OnchainReceive(): super._();
+  
+
+
+
+
+
+
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is TransactionKind_OnchainReceive);
+}
+
+
+@override
+int get hashCode => runtimeType.hashCode;
+
+@override
+String toString() {
+  return 'TransactionKind.onchainReceive()';
+}
+
+
+}
+
+
+
+
+/// @nodoc
+
+
+class TransactionKind_OnchainSend extends TransactionKind {
+  const TransactionKind_OnchainSend(): super._();
+  
+
+
+
+
+
+
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is TransactionKind_OnchainSend);
+}
+
+
+@override
+int get hashCode => runtimeType.hashCode;
+
+@override
+String toString() {
+  return 'TransactionKind.onchainSend()';
+}
+
+
+}
+
+
+
+
+/// @nodoc
+
+
+class TransactionKind_EcashReceive extends TransactionKind {
+  const TransactionKind_EcashReceive({required this.oobNotes, required this.fees}): super._();
+  
+
+ final  String oobNotes;
+ final  BigInt fees;
+
+/// Create a copy of TransactionKind
+/// with the given fields replaced by the non-null parameter values.
+@JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+$TransactionKind_EcashReceiveCopyWith<TransactionKind_EcashReceive> get copyWith => _$TransactionKind_EcashReceiveCopyWithImpl<TransactionKind_EcashReceive>(this, _$identity);
+
+
+
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is TransactionKind_EcashReceive&&(identical(other.oobNotes, oobNotes) || other.oobNotes == oobNotes)&&(identical(other.fees, fees) || other.fees == fees));
+}
+
+
+@override
+int get hashCode => Object.hash(runtimeType,oobNotes,fees);
+
+@override
+String toString() {
+  return 'TransactionKind.ecashReceive(oobNotes: $oobNotes, fees: $fees)';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class $TransactionKind_EcashReceiveCopyWith<$Res> implements $TransactionKindCopyWith<$Res> {
+  factory $TransactionKind_EcashReceiveCopyWith(TransactionKind_EcashReceive value, $Res Function(TransactionKind_EcashReceive) _then) = _$TransactionKind_EcashReceiveCopyWithImpl;
+@useResult
+$Res call({
+ String oobNotes, BigInt fees
+});
+
+
+
+
+}
+/// @nodoc
+class _$TransactionKind_EcashReceiveCopyWithImpl<$Res>
+    implements $TransactionKind_EcashReceiveCopyWith<$Res> {
+  _$TransactionKind_EcashReceiveCopyWithImpl(this._self, this._then);
+
+  final TransactionKind_EcashReceive _self;
+  final $Res Function(TransactionKind_EcashReceive) _then;
+
+/// Create a copy of TransactionKind
+/// with the given fields replaced by the non-null parameter values.
+@pragma('vm:prefer-inline') $Res call({Object? oobNotes = null,Object? fees = null,}) {
+  return _then(TransactionKind_EcashReceive(
+oobNotes: null == oobNotes ? _self.oobNotes : oobNotes // ignore: cast_nullable_to_non_nullable
+as String,fees: null == fees ? _self.fees : fees // ignore: cast_nullable_to_non_nullable
+as BigInt,
+  ));
+}
+
+
+}
+
+/// @nodoc
+
+
+class TransactionKind_EcashSend extends TransactionKind {
+  const TransactionKind_EcashSend({required this.oobNotes, required this.fees}): super._();
+  
+
+ final  String oobNotes;
+ final  BigInt fees;
+
+/// Create a copy of TransactionKind
+/// with the given fields replaced by the non-null parameter values.
+@JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+$TransactionKind_EcashSendCopyWith<TransactionKind_EcashSend> get copyWith => _$TransactionKind_EcashSendCopyWithImpl<TransactionKind_EcashSend>(this, _$identity);
+
+
+
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is TransactionKind_EcashSend&&(identical(other.oobNotes, oobNotes) || other.oobNotes == oobNotes)&&(identical(other.fees, fees) || other.fees == fees));
+}
+
+
+@override
+int get hashCode => Object.hash(runtimeType,oobNotes,fees);
+
+@override
+String toString() {
+  return 'TransactionKind.ecashSend(oobNotes: $oobNotes, fees: $fees)';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class $TransactionKind_EcashSendCopyWith<$Res> implements $TransactionKindCopyWith<$Res> {
+  factory $TransactionKind_EcashSendCopyWith(TransactionKind_EcashSend value, $Res Function(TransactionKind_EcashSend) _then) = _$TransactionKind_EcashSendCopyWithImpl;
+@useResult
+$Res call({
+ String oobNotes, BigInt fees
+});
+
+
+
+
+}
+/// @nodoc
+class _$TransactionKind_EcashSendCopyWithImpl<$Res>
+    implements $TransactionKind_EcashSendCopyWith<$Res> {
+  _$TransactionKind_EcashSendCopyWithImpl(this._self, this._then);
+
+  final TransactionKind_EcashSend _self;
+  final $Res Function(TransactionKind_EcashSend) _then;
+
+/// Create a copy of TransactionKind
+/// with the given fields replaced by the non-null parameter values.
+@pragma('vm:prefer-inline') $Res call({Object? oobNotes = null,Object? fees = null,}) {
+  return _then(TransactionKind_EcashSend(
+oobNotes: null == oobNotes ? _self.oobNotes : oobNotes // ignore: cast_nullable_to_non_nullable
+as String,fees: null == fees ? _self.fees : fees // ignore: cast_nullable_to_non_nullable
+as BigInt,
+  ));
+}
+
+
+}
+
 // dart format on

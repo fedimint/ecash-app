@@ -267,7 +267,7 @@ pub async fn send_lnaddress(
 
             let multimint = get_multimint();
             let bolt11 = Bolt11Invoice::from_str(invoice.invoice())?;
-            let (gateway_url, _, is_lnv2) = multimint
+            let (gateway_url, amount_with_fees, is_lnv2) = multimint
                 .select_send_gateway(
                     federation_id,
                     Amount::from_msats(amount_msats),
@@ -276,7 +276,13 @@ pub async fn send_lnaddress(
                 .await?;
             let gateway = SafeUrl::parse(&gateway_url)?;
             return multimint
-                .send(federation_id, bolt11.to_string(), gateway, is_lnv2)
+                .send(
+                    federation_id,
+                    bolt11.to_string(),
+                    gateway,
+                    is_lnv2,
+                    amount_with_fees,
+                )
                 .await;
         }
         other => bail!("Unexpected response from lnurl: {other:?}"),
@@ -289,11 +295,12 @@ pub async fn send(
     invoice: String,
     gateway: String,
     is_lnv2: bool,
+    amount_with_fees: u64,
 ) -> anyhow::Result<OperationId> {
     let multimint = get_multimint();
     let gateway = SafeUrl::parse(&gateway)?;
     multimint
-        .send(federation_id, invoice, gateway, is_lnv2)
+        .send(federation_id, invoice, gateway, is_lnv2, amount_with_fees)
         .await
 }
 
@@ -815,4 +822,13 @@ pub async fn get_note_summary(federation_id: &FederationId) -> anyhow::Result<Ve
 pub async fn list_gateways(federation_id: &FederationId) -> anyhow::Result<Vec<FedimintGateway>> {
     let multimint = get_multimint();
     multimint.list_gateways(federation_id).await
+}
+
+#[frb]
+pub async fn check_ecash_spent(
+    federation_id: &FederationId,
+    ecash: String,
+) -> anyhow::Result<bool> {
+    let multimint = get_multimint();
+    multimint.check_ecash_spent(federation_id, ecash).await
 }

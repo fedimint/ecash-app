@@ -93,11 +93,13 @@ Future<OperationId> send({
   required String invoice,
   required String gateway,
   required bool isLnv2,
+  required BigInt amountWithFees,
 }) => RustLib.instance.api.crateSend(
   federationId: federationId,
   invoice: invoice,
   gateway: gateway,
   isLnv2: isLnv2,
+  amountWithFees: amountWithFees,
 );
 
 Future<LightningSendOutcome> awaitSend({
@@ -324,6 +326,14 @@ Future<List<(BigInt, BigInt)>> getNoteSummary({
 Future<List<FedimintGateway>> listGateways({
   required FederationId federationId,
 }) => RustLib.instance.api.crateListGateways(federationId: federationId);
+
+Future<bool> checkEcashSpent({
+  required FederationId federationId,
+  required String ecash,
+}) => RustLib.instance.api.crateCheckEcashSpent(
+  federationId: federationId,
+  ecash: ecash,
+);
 
 // Rust type: RustOpaqueMoi<flutter_rust_bridge::for_generated::RustAutoOpaqueInner<ClientConfig>>
 abstract class ClientConfig implements RustOpaqueInterface {}

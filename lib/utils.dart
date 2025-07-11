@@ -112,10 +112,9 @@ String formatBalance(BigInt? msats, bool showMsats) {
   }
 }
 
-// TODO: Change name
-String getAbbreviatedInvoice(String invoice) {
-  if (invoice.length <= 14) return invoice;
-  return '${invoice.substring(0, 7)}...${invoice.substring(invoice.length - 7)}';
+String getAbbreviatedText(String text) {
+  if (text.length <= 14) return text;
+  return '${text.substring(0, 7)}...${text.substring(text.length - 7)}';
 }
 
 String calculateUsdValue(double? btcPrice, int sats) {

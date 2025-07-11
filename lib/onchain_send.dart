@@ -1,9 +1,9 @@
 import 'dart:async';
+import 'package:carbine/detail_row.dart';
 import 'package:carbine/lib.dart';
 import 'package:carbine/multimint.dart';
 import 'package:carbine/number_pad.dart';
 import 'package:carbine/success.dart';
-import 'package:carbine/theme.dart';
 import 'package:carbine/utils.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -327,36 +327,31 @@ class _OnchainSendState extends State<OnchainSend> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      buildDetailRow(
-                        Theme.of(context),
-                        'Amount',
-                        formatBalance(
+                      CopyableDetailRow(
+                        label: 'Amount',
+                        value: formatBalance(
                           _actualWithdrawalAmount! * BigInt.from(1000),
                           false,
                         ),
                       ),
-                      buildDetailRow(
-                        Theme.of(context),
-                        'Fee Rate',
-                        _formatFeeRate(_feeRateSatsPerVbyte),
+                      CopyableDetailRow(
+                        label: 'Fee Rate',
+                        value: _formatFeeRate(_feeRateSatsPerVbyte),
                       ),
-                      buildDetailRow(
-                        Theme.of(context),
-                        'Tx Size',
-                        '${_txSizeVbytes ?? 0} vB',
+                      CopyableDetailRow(
+                        label: 'Tx Size',
+                        value: '${_txSizeVbytes ?? 0} vB',
                       ),
-                      buildDetailRow(
-                        Theme.of(context),
-                        'Fee',
-                        formatBalance(
+                      CopyableDetailRow(
+                        label: 'Fee',
+                        value: formatBalance(
                           _feeAmountSats! * BigInt.from(1000),
                           false,
                         ),
                       ),
-                      buildDetailRow(
-                        Theme.of(context),
-                        'Total',
-                        formatBalance(
+                      CopyableDetailRow(
+                        label: 'Total',
+                        value: formatBalance(
                           (_actualWithdrawalAmount! + _feeAmountSats!) *
                               BigInt.from(1000),
                           false,

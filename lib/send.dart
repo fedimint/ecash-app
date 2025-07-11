@@ -12,6 +12,7 @@ class SendPayment extends StatefulWidget {
   final BigInt amountMsats;
   final String? gateway;
   final bool? isLnv2;
+  final BigInt? amountMsatsWithFees;
 
   const SendPayment({
     super.key,
@@ -21,6 +22,7 @@ class SendPayment extends StatefulWidget {
     this.isLnv2,
     this.invoice,
     this.lnAddress,
+    this.amountMsatsWithFees,
   });
 
   @override
@@ -43,6 +45,7 @@ class _SendPaymentState extends State<SendPayment> {
         invoice: widget.invoice!,
         gateway: widget.gateway!,
         isLnv2: widget.isLnv2!,
+        amountWithFees: widget.amountMsatsWithFees!,
       );
       return operationId;
     } else {

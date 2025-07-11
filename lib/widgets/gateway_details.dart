@@ -1,5 +1,5 @@
+import 'package:carbine/detail_row.dart';
 import 'package:carbine/multimint.dart';
-import 'package:carbine/theme.dart';
 import 'package:flutter/material.dart';
 import 'package:carbine/utils.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -44,21 +44,19 @@ class GatewayDetailsSheet extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              buildDetailRow(theme, 'Endpoint', gateway.endpoint),
-              buildDetailRow(
-                theme,
-                'Routing Fee',
-                "${formatBalance(gateway.baseRoutingFee, true)} + ${gateway.ppmRoutingFee} ppm",
+              CopyableDetailRow(label: 'Endpoint', value: gateway.endpoint),
+              CopyableDetailRow(
+                label: 'Routing Fee',
+                value: "${formatBalance(gateway.baseRoutingFee, true)} + ${gateway.ppmRoutingFee} ppm",
               ),
-              buildDetailRow(
-                theme,
-                'Transaction Fee',
-                "${formatBalance(gateway.baseTransactionFee, true)} + ${gateway.ppmTransactionFee} ppm",
+              CopyableDetailRow(
+                label: 'Transaction Fee',
+                value: "${formatBalance(gateway.baseTransactionFee, true)} + ${gateway.ppmTransactionFee} ppm",
               ),
               if (gateway.lightningAlias != null)
-                buildDetailRow(theme, 'Lightning Alias', gateway.lightningAlias!),
+                CopyableDetailRow(label: 'Lightning Alias', value: gateway.lightningAlias!),
               if (gateway.lightningNode != null) ...[
-                buildDetailRow(theme, 'Node Public Key', gateway.lightningNode!),
+                CopyableDetailRow(label: 'Node Public Key', value: gateway.lightningNode!),
                 const SizedBox(height: 4),
                 GestureDetector(
                   onTap: () => _launchAmboss(gateway.lightningNode!),

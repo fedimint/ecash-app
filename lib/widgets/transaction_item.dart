@@ -1,3 +1,5 @@
+import 'package:carbine/theme.dart';
+import 'package:carbine/widgets/transaction_details.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:carbine/multimint.dart';
@@ -5,30 +7,121 @@ import 'package:carbine/utils.dart';
 
 class TransactionItem extends StatelessWidget {
   final Transaction tx;
+  final FederationSelector fed;
 
-  const TransactionItem({super.key, required this.tx});
+  const TransactionItem({super.key, required this.tx, required this.fed});
+
+  void _onTap(BuildContext context, String formattedAmount, String formattedDate, IconData iconData) {
+    final icon = Icon(iconData, color: Colors.greenAccent);
+    switch (tx.kind) {
+      case TransactionKind_LightningReceive(fees: final fees, gateway: final gateway, payeePubkey: final payeePubkey, paymentHash: final paymentHash):
+        showCarbineModalBottomSheet(
+          context: context,
+          child: TransactionDetails(
+            tx: tx,
+            details: {
+              'Amount': formattedAmount,
+              "Fees": formatBalance(fees, true),
+              "Gateway": gateway,
+              "Payee Public Key": payeePubkey,
+              "Payment Hash": paymentHash,
+              'Timestamp': formattedDate,
+            },
+            icon: icon,
+            fed: fed,
+          ),
+        );
+        break;
+      case TransactionKind_LightningSend(fees: final fees, gateway: final gateway, paymentHash: final paymentHash, preimage: final preimage):
+        showCarbineModalBottomSheet(
+          context: context,
+          child: TransactionDetails(
+            tx: tx,
+            details: {
+              'Amount': formattedAmount,
+              "Fees": formatBalance(fees, true),
+              "Gateway": gateway,
+              "Payment Hash": paymentHash,
+              "Preimage": preimage,
+              'Timestamp': formattedDate,
+            },
+            icon: icon,
+            fed: fed,
+          ),
+        );
+        break;
+      case TransactionKind_EcashSend(oobNotes: final oobNotes, fees: final fees):
+        showCarbineModalBottomSheet(
+          context: context,
+          child: TransactionDetails(
+            tx: tx,
+            details: {
+              'Amount': formattedAmount,
+              "Fees": formatBalance(fees, true),
+              "Ecash": oobNotes,
+              'Timestamp': formattedDate,
+            },
+            icon: icon,
+            fed: fed,
+          ),
+        );
+        break;
+      case TransactionKind_EcashReceive(oobNotes: final oobNotes, fees: final fees):
+        showCarbineModalBottomSheet(
+          context: context,
+          child: TransactionDetails(
+            tx: tx,
+            details: {
+              'Amount': formattedAmount,
+              "Fees": formatBalance(fees, true),
+              "Ecash": oobNotes,
+              'Timestamp': formattedDate,
+            },
+            icon: icon,
+            fed: fed,
+          ),
+        );
+        break;
+      // TODO: Fill in with onchain data
+      case TransactionKind_OnchainReceive():
+      case TransactionKind_OnchainSend():
+        showCarbineModalBottomSheet(
+          context: context,
+          child: TransactionDetails(
+            tx: tx,
+            details: {
+              'Amount': formattedAmount,
+              'Timestamp': formattedDate,
+            },
+            icon: icon,
+            fed: fed,
+          ),
+        );
+        break;
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
-    final isIncoming = tx.received;
+    final isIncoming = tx.kind is TransactionKind_LightningReceive || tx.kind is TransactionKind_OnchainReceive || tx.kind is TransactionKind_EcashReceive;
     final date = DateTime.fromMillisecondsSinceEpoch(tx.timestamp.toInt());
     final formattedDate = DateFormat.yMMMd().add_jm().format(date);
     final formattedAmount = formatBalance(tx.amount, false);
 
     IconData moduleIcon;
-    switch (tx.module) {
-      case 'ln':
-      case 'lnv2':
+    switch (tx.kind) {
+      case TransactionKind_LightningReceive():
+      case TransactionKind_LightningSend():
         moduleIcon = Icons.flash_on;
         break;
-      case 'wallet':
+      case TransactionKind_OnchainReceive():
+      case TransactionKind_OnchainSend():
         moduleIcon = Icons.link;
         break;
-      case 'mint':
+      case TransactionKind_EcashReceive():
+      case TransactionKind_EcashSend():
         moduleIcon = Icons.currency_bitcoin;
         break;
-      default:
-        moduleIcon = Icons.help_outline;
     }
 
     final amountStyle = TextStyle(
@@ -41,6 +134,7 @@ class TransactionItem extends StatelessWidget {
       margin: const EdgeInsets.symmetric(vertical: 6),
       color: Theme.of(context).colorScheme.surface,
       child: ListTile(
+        onTap: () => _onTap(context, formattedAmount, formattedDate, moduleIcon),
         leading: CircleAvatar(
           backgroundColor:
               isIncoming

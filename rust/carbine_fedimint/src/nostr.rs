@@ -452,6 +452,7 @@ impl NostrClient {
                     invoice,
                     payment_preview.gateway,
                     payment_preview.is_lnv2,
+                    payment_preview.amount_with_fees,
                 )
                 .await?;
                 let final_state = await_send(federation_id, operation_id).await;

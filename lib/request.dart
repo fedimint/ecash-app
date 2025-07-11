@@ -1,9 +1,9 @@
 import 'dart:async';
 
+import 'package:carbine/detail_row.dart';
 import 'package:carbine/lib.dart';
 import 'package:carbine/multimint.dart';
 import 'package:carbine/success.dart';
-import 'package:carbine/theme.dart';
 import 'package:carbine/utils.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -119,7 +119,7 @@ class _RequestState extends State<Request> with SingleTickerProviderStateMixin {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final abbreviatedInvoice = getAbbreviatedInvoice(widget.invoice);
+    final abbreviatedInvoice = getAbbreviatedText(widget.invoice);
     final fees = widget.totalMsats - widget.requestedAmountMsats;
 
     return Padding(
@@ -248,15 +248,20 @@ class _RequestState extends State<Request> with SingleTickerProviderStateMixin {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                buildDetailRow(
-                  theme,
-                  'Amount',
-                  formatBalance(widget.requestedAmountMsats, true),
+                CopyableDetailRow(
+                  label: 'Amount',
+                  value: formatBalance(widget.requestedAmountMsats, true),
                 ),
-                buildDetailRow(theme, 'Fees', formatBalance(fees, true)),
-                buildDetailRow(theme, 'Gateway', widget.gateway),
-                buildDetailRow(theme, 'Payee Pubkey', widget.pubkey),
-                buildDetailRow(theme, 'Payment Hash', widget.paymentHash),
+                CopyableDetailRow(
+                  label: 'Fees',
+                  value: formatBalance(fees, true),
+                ),
+                CopyableDetailRow(label: 'Gateway', value: widget.gateway),
+                CopyableDetailRow(label: 'Payee Pubkey', value: widget.pubkey),
+                CopyableDetailRow(
+                  label: 'Payment Hash',
+                  value: widget.paymentHash,
+                ),
               ],
             ),
           ),
