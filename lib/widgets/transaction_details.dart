@@ -1,19 +1,22 @@
+import 'package:carbine/app.dart';
 import 'package:carbine/detail_row.dart';
 import 'package:carbine/lib.dart';
 import 'package:carbine/multimint.dart';
+import 'package:carbine/redeem_ecash.dart';
+import 'package:carbine/theme.dart';
 import 'package:carbine/toast.dart';
 import 'package:carbine/utils.dart';
 import 'package:flutter/material.dart';
 
 class TransactionDetails extends StatefulWidget {
-  final TransactionKind kind;
+  final Transaction tx;
   final Icon icon;
   final Map<String, String> details;
   final FederationSelector fed;
 
   const TransactionDetails({
     super.key,
-    required this.kind,
+    required this.tx,
     required this.icon,
     required this.details,
     required this.fed,
@@ -27,7 +30,7 @@ class _TransactionDetailsState extends State<TransactionDetails> {
   bool _checking = false;
 
   String _getTitleFromKind() {
-    switch (widget.kind) {
+    switch (widget.tx.kind) {
       case TransactionKind_LightningReceive():
         return "Lightning Receive";
       case TransactionKind_LightningSend():
@@ -67,6 +70,28 @@ class _TransactionDetailsState extends State<TransactionDetails> {
       setState(() {
         _checking = false;
       });
+    }
+  }
+
+  Future<void> _redeemEcash() async {
+    Navigator.of(context).pop(); // dismiss current modal
+    await Future.delayed(Duration.zero); // wait for pop to complete
+
+    final ecash = widget.details["Ecash"];
+    final amount = widget.tx.amount;
+
+    if (ecash != null && amount > BigInt.zero) {
+      invoicePaidToastVisible.value = false;
+      await showCarbineModalBottomSheet(
+        context: context,
+        child: EcashRedeemPrompt(
+          fed: widget.fed,
+          ecash: ecash,
+          amount: amount,
+        ),
+        heightFactor: 0.33,
+      );
+      invoicePaidToastVisible.value = true;
     }
   }
 
@@ -115,7 +140,7 @@ class _TransactionDetailsState extends State<TransactionDetails> {
             }).toList(),
           ),
         ),
-        if (widget.kind is TransactionKind_EcashSend) ...[
+        if (widget.tx.kind is TransactionKind_EcashSend) ...[
           const SizedBox(height: 24),
           Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -140,6 +165,19 @@ class _TransactionDetailsState extends State<TransactionDetails> {
                         ),
                       )
                     : const Text("Check Claim Status"),
+              ),
+              const SizedBox(height: 16),
+              OutlinedButton(
+                onPressed: _redeemEcash,
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: theme.colorScheme.primary,
+                  side: BorderSide(color: theme.colorScheme.primary),
+                  padding: const EdgeInsets.symmetric(vertical: 16),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
+                child: const Text("Redeem Ecash"),
               ),
             ],
           ),
