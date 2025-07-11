@@ -3,11 +3,13 @@ import 'package:carbine/theme.dart';
 
 class TransactionDetails extends StatelessWidget {
   final String title;
+  final Icon icon;
   final Map<String, String> details;
 
   const TransactionDetails({
     super.key,
     required this.title,
+    required this.icon,
     required this.details,
   });
 
@@ -18,12 +20,22 @@ class TransactionDetails extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          title,
-          style: theme.textTheme.headlineSmall?.copyWith(
-            fontWeight: FontWeight.bold,
-            color: theme.colorScheme.primary,
-          ),
+        Row(
+          children: [
+            Icon(
+              icon.icon,
+              color: theme.colorScheme.primary,
+              size: 24,
+            ),
+            const SizedBox(width: 8),
+            Text(
+              title,
+              style: theme.textTheme.headlineSmall?.copyWith(
+                fontWeight: FontWeight.bold,
+                color: theme.colorScheme.primary,
+              ),
+            ),
+          ],
         ),
         const SizedBox(height: 24),
         Container(
@@ -47,3 +59,4 @@ class TransactionDetails extends StatelessWidget {
     );
   }
 }
+

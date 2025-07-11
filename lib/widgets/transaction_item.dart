@@ -10,7 +10,8 @@ class TransactionItem extends StatelessWidget {
 
   const TransactionItem({super.key, required this.tx});
 
-  void _onTap(BuildContext context, String formattedAmount, String formattedDate) {
+  void _onTap(BuildContext context, String formattedAmount, String formattedDate, IconData iconData) {
+    final icon = Icon(iconData, color: Colors.greenAccent);
     switch (tx.kind) {
       case TransactionKind_LightningReceive(fees: final fees, gateway: final gateway, payeePubkey: final payeePubkey, paymentHash: final paymentHash):
         showCarbineModalBottomSheet(
@@ -25,6 +26,7 @@ class TransactionItem extends StatelessWidget {
               "Payment Hash": paymentHash,
               'Timestamp': formattedDate,
             },
+            icon: icon,
           ),
         );
         break;
@@ -41,6 +43,7 @@ class TransactionItem extends StatelessWidget {
               "Preimage": preimage,
               'Timestamp': formattedDate,
             },
+            icon: icon,
           ),
         );
         break;
@@ -57,6 +60,7 @@ class TransactionItem extends StatelessWidget {
               'Amount': formattedAmount,
               'Timestamp': formattedDate,
             },
+            icon: icon,
           ),
         );
         break;
@@ -96,7 +100,7 @@ class TransactionItem extends StatelessWidget {
       margin: const EdgeInsets.symmetric(vertical: 6),
       color: Theme.of(context).colorScheme.surface,
       child: ListTile(
-        onTap: () => _onTap(context, formattedAmount, formattedDate),
+        onTap: () => _onTap(context, formattedAmount, formattedDate, moduleIcon),
         leading: CircleAvatar(
           backgroundColor:
               isIncoming
