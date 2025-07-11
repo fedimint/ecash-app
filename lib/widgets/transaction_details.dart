@@ -1,21 +1,33 @@
 import 'package:carbine/detail_row.dart';
+import 'package:carbine/lib.dart';
 import 'package:carbine/multimint.dart';
+import 'package:carbine/toast.dart';
+import 'package:carbine/utils.dart';
 import 'package:flutter/material.dart';
 
-class TransactionDetails extends StatelessWidget {
+class TransactionDetails extends StatefulWidget {
   final TransactionKind kind;
   final Icon icon;
   final Map<String, String> details;
+  final FederationSelector fed;
 
   const TransactionDetails({
     super.key,
     required this.kind,
     required this.icon,
     required this.details,
+    required this.fed,
   });
 
+  @override
+  State<TransactionDetails> createState() => _TransactionDetailsState();
+}
+
+class _TransactionDetailsState extends State<TransactionDetails> {
+  bool _checking = false;
+
   String _getTitleFromKind() {
-    switch (kind) {
+    switch (widget.kind) {
       case TransactionKind_LightningReceive():
         return "Lightning Receive";
       case TransactionKind_LightningSend():
@@ -31,6 +43,33 @@ class TransactionDetails extends StatelessWidget {
     }
   }
 
+  Future<void> _checkClaimStatus() async {
+    setState(() {
+      _checking = true;
+    });
+
+    try {
+      final ecash = widget.details["Ecash"];
+      if (ecash != null) {
+        final result = await checkEcashSpent(
+          federationId: widget.fed.federationId,
+          ecash: ecash,
+        );
+        if (result) {
+          ToastService().show(message: "This ecash has been claimed", duration: const Duration(seconds: 5), onTap: () {});
+        } else {
+          ToastService().show(message: "This ecash has not been claimed yet", duration: const Duration(seconds: 5), onTap: () {});
+        }
+      }
+    } catch (e) {
+      AppLogger.instance.error("Error checking claim status: $e");
+    } finally {
+      setState(() {
+        _checking = false;
+      });
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -41,7 +80,7 @@ class TransactionDetails extends StatelessWidget {
         Row(
           children: [
             Icon(
-              icon.icon,
+              widget.icon.icon,
               color: theme.colorScheme.primary,
               size: 24,
             ),
@@ -68,7 +107,7 @@ class TransactionDetails extends StatelessWidget {
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
-            children: details.entries.map((entry) {
+            children: widget.details.entries.map((entry) {
               return CopyableDetailRow(
                 label: entry.key,
                 value: entry.value,
@@ -76,6 +115,35 @@ class TransactionDetails extends StatelessWidget {
             }).toList(),
           ),
         ),
+        if (widget.kind is TransactionKind_EcashSend) ...[
+          const SizedBox(height: 24),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              ElevatedButton(
+                onPressed: _checking ? null : _checkClaimStatus,
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: theme.colorScheme.primary,
+                  foregroundColor: Colors.black,
+                  padding: const EdgeInsets.symmetric(vertical: 16),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
+                child: _checking
+                    ? const SizedBox(
+                        width: 20,
+                        height: 20,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          valueColor: AlwaysStoppedAnimation<Color>(Colors.black),
+                        ),
+                      )
+                    : const Text("Check Claim Status"),
+              ),
+            ],
+          ),
+        ],
       ],
     );
   }

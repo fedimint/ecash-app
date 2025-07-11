@@ -219,7 +219,7 @@ class _TransactionsListState extends State<TransactionsList> {
       physics: ClampingScrollPhysics(),
       children: [
         ...pending.map((e) => PendingDepositItem(event: e)),
-        ..._transactions.map((tx) => TransactionItem(tx: tx)),
+        ..._transactions.map((tx) => TransactionItem(tx: tx, fed: widget.fed)),
         if (_hasMore)
           const Padding(
             padding: EdgeInsets.symmetric(vertical: 12.0),

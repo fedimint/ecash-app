@@ -7,8 +7,9 @@ import 'package:carbine/utils.dart';
 
 class TransactionItem extends StatelessWidget {
   final Transaction tx;
+  final FederationSelector fed;
 
-  const TransactionItem({super.key, required this.tx});
+  const TransactionItem({super.key, required this.tx, required this.fed});
 
   void _onTap(BuildContext context, String formattedAmount, String formattedDate, IconData iconData) {
     final icon = Icon(iconData, color: Colors.greenAccent);
@@ -27,6 +28,7 @@ class TransactionItem extends StatelessWidget {
               'Timestamp': formattedDate,
             },
             icon: icon,
+            fed: fed,
           ),
         );
         break;
@@ -44,6 +46,7 @@ class TransactionItem extends StatelessWidget {
               'Timestamp': formattedDate,
             },
             icon: icon,
+            fed: fed,
           ),
         );
         break;
@@ -55,10 +58,11 @@ class TransactionItem extends StatelessWidget {
             details: {
               'Amount': formattedAmount,
               "Fees": formatBalance(fees, true),
-              "Ecash": getAbbreviatedText(oobNotes),
+              "Ecash": oobNotes,
               'Timestamp': formattedDate,
             },
             icon: icon,
+            fed: fed,
           ),
         );
         break;
@@ -70,10 +74,11 @@ class TransactionItem extends StatelessWidget {
             details: {
               'Amount': formattedAmount,
               "Fees": formatBalance(fees, true),
-              "Ecash": getAbbreviatedText(oobNotes),
+              "Ecash": oobNotes,
               'Timestamp': formattedDate,
             },
             icon: icon,
+            fed: fed,
           ),
         );
         break;
@@ -89,6 +94,7 @@ class TransactionItem extends StatelessWidget {
               'Timestamp': formattedDate,
             },
             icon: icon,
+            fed: fed,
           ),
         );
         break;
