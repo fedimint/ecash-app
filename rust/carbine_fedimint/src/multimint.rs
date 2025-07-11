@@ -157,7 +157,10 @@ pub enum TransactionKind {
     },
     OnchainReceive,
     OnchainSend,
-    EcashReceive,
+    EcashReceive {
+        oob_notes: String,
+        fees: u64,
+    },
     EcashSend {
         oob_notes: String,
         fees: u64,
@@ -2040,10 +2043,25 @@ impl Multimint {
 
                                 let outcome = op_log_val.outcome::<ReissueExternalNotesState>();
                                 if let Some(ReissueExternalNotesState::Done) = outcome {
-                                    let amount: Amount = serde_json::from_value(meta.extra_meta)
-                                        .expect("Could not get total amount");
+                                    let amount = from_value::<Amount>(
+                                        meta.extra_meta
+                                            .get("total_amount")
+                                            .expect("Field missing ecash custom meta")
+                                            .clone(),
+                                    )
+                                    .expect("Could not parse to Amount");
+                                    let ecash = from_value::<String>(
+                                        meta.extra_meta
+                                            .get("ecash")
+                                            .expect("Field missing ecash custom meta")
+                                            .clone(),
+                                    )
+                                    .expect("Could not parse to Amount");
                                     Some(Transaction {
-                                        kind: TransactionKind::EcashReceive,
+                                        kind: TransactionKind::EcashReceive {
+                                            oob_notes: ecash,
+                                            fees: 0,
+                                        },
                                         amount: amount.msats,
                                         timestamp,
                                         operation_id: key.operation_id.0.to_vec(),
@@ -2343,7 +2361,11 @@ impl Multimint {
         let mint = client.get_first_module::<MintClientModule>()?;
         let notes = OOBNotes::from_str(&ecash)?;
         let total_amount = notes.total_amount();
-        let operation_id = mint.reissue_external_notes(notes, total_amount).await?;
+        let extra_meta = json!({
+            "total_amount": total_amount,
+            "ecash": ecash,
+        });
+        let operation_id = mint.reissue_external_notes(notes, extra_meta).await?;
         self.spawn_await_ecash_reissue(federation_id.clone(), operation_id);
         Ok(operation_id)
     }

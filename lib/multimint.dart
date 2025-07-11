@@ -575,7 +575,10 @@ sealed class TransactionKind with _$TransactionKind {
   const factory TransactionKind.onchainReceive() =
       TransactionKind_OnchainReceive;
   const factory TransactionKind.onchainSend() = TransactionKind_OnchainSend;
-  const factory TransactionKind.ecashReceive() = TransactionKind_EcashReceive;
+  const factory TransactionKind.ecashReceive({
+    required String oobNotes,
+    required BigInt fees,
+  }) = TransactionKind_EcashReceive;
   const factory TransactionKind.ecashSend({
     required String oobNotes,
     required BigInt fees,

@@ -9251,7 +9251,12 @@ impl SseDecode for crate::multimint::TransactionKind {
                 return crate::multimint::TransactionKind::OnchainSend;
             }
             4 => {
-                return crate::multimint::TransactionKind::EcashReceive;
+                let mut var_oobNotes = <String>::sse_decode(deserializer);
+                let mut var_fees = <u64>::sse_decode(deserializer);
+                return crate::multimint::TransactionKind::EcashReceive {
+                    oob_notes: var_oobNotes,
+                    fees: var_fees,
+                };
             }
             5 => {
                 let mut var_oobNotes = <String>::sse_decode(deserializer);
@@ -10630,7 +10635,12 @@ impl flutter_rust_bridge::IntoDart for crate::multimint::TransactionKind {
             .into_dart(),
             crate::multimint::TransactionKind::OnchainReceive => [2.into_dart()].into_dart(),
             crate::multimint::TransactionKind::OnchainSend => [3.into_dart()].into_dart(),
-            crate::multimint::TransactionKind::EcashReceive => [4.into_dart()].into_dart(),
+            crate::multimint::TransactionKind::EcashReceive { oob_notes, fees } => [
+                4.into_dart(),
+                oob_notes.into_into_dart().into_dart(),
+                fees.into_into_dart().into_dart(),
+            ]
+            .into_dart(),
             crate::multimint::TransactionKind::EcashSend { oob_notes, fees } => [
                 5.into_dart(),
                 oob_notes.into_into_dart().into_dart(),
@@ -11751,8 +11761,10 @@ impl SseEncode for crate::multimint::TransactionKind {
             crate::multimint::TransactionKind::OnchainSend => {
                 <i32>::sse_encode(3, serializer);
             }
-            crate::multimint::TransactionKind::EcashReceive => {
+            crate::multimint::TransactionKind::EcashReceive { oob_notes, fees } => {
                 <i32>::sse_encode(4, serializer);
+                <String>::sse_encode(oob_notes, serializer);
+                <u64>::sse_encode(fees, serializer);
             }
             crate::multimint::TransactionKind::EcashSend { oob_notes, fees } => {
                 <i32>::sse_encode(5, serializer);

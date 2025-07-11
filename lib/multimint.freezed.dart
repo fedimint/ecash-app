@@ -1403,33 +1403,69 @@ String toString() {
 
 
 class TransactionKind_EcashReceive extends TransactionKind {
-  const TransactionKind_EcashReceive(): super._();
+  const TransactionKind_EcashReceive({required this.oobNotes, required this.fees}): super._();
   
 
+ final  String oobNotes;
+ final  BigInt fees;
 
-
+/// Create a copy of TransactionKind
+/// with the given fields replaced by the non-null parameter values.
+@JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+$TransactionKind_EcashReceiveCopyWith<TransactionKind_EcashReceive> get copyWith => _$TransactionKind_EcashReceiveCopyWithImpl<TransactionKind_EcashReceive>(this, _$identity);
 
 
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is TransactionKind_EcashReceive);
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is TransactionKind_EcashReceive&&(identical(other.oobNotes, oobNotes) || other.oobNotes == oobNotes)&&(identical(other.fees, fees) || other.fees == fees));
 }
 
 
 @override
-int get hashCode => runtimeType.hashCode;
+int get hashCode => Object.hash(runtimeType,oobNotes,fees);
 
 @override
 String toString() {
-  return 'TransactionKind.ecashReceive()';
+  return 'TransactionKind.ecashReceive(oobNotes: $oobNotes, fees: $fees)';
 }
 
 
 }
 
+/// @nodoc
+abstract mixin class $TransactionKind_EcashReceiveCopyWith<$Res> implements $TransactionKindCopyWith<$Res> {
+  factory $TransactionKind_EcashReceiveCopyWith(TransactionKind_EcashReceive value, $Res Function(TransactionKind_EcashReceive) _then) = _$TransactionKind_EcashReceiveCopyWithImpl;
+@useResult
+$Res call({
+ String oobNotes, BigInt fees
+});
 
 
+
+
+}
+/// @nodoc
+class _$TransactionKind_EcashReceiveCopyWithImpl<$Res>
+    implements $TransactionKind_EcashReceiveCopyWith<$Res> {
+  _$TransactionKind_EcashReceiveCopyWithImpl(this._self, this._then);
+
+  final TransactionKind_EcashReceive _self;
+  final $Res Function(TransactionKind_EcashReceive) _then;
+
+/// Create a copy of TransactionKind
+/// with the given fields replaced by the non-null parameter values.
+@pragma('vm:prefer-inline') $Res call({Object? oobNotes = null,Object? fees = null,}) {
+  return _then(TransactionKind_EcashReceive(
+oobNotes: null == oobNotes ? _self.oobNotes : oobNotes // ignore: cast_nullable_to_non_nullable
+as String,fees: null == fees ? _self.fees : fees // ignore: cast_nullable_to_non_nullable
+as BigInt,
+  ));
+}
+
+
+}
 
 /// @nodoc
 
