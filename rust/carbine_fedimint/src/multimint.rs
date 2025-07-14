@@ -53,7 +53,7 @@ use fedimint_wallet_client::{
 };
 use futures_util::StreamExt;
 use lightning_invoice::{Bolt11Invoice, Description};
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 use serde_json::{from_value, json};
 use tokio::sync::RwLock;
 use tokio::{
@@ -63,8 +63,10 @@ use tokio::{
 
 use crate::{
     anyhow,
-    db::{BtcPrice, BtcPriceKey, FederationMetaKey},
-    error_to_flutter, info_to_flutter, FederationConfig, FederationConfigKey,
+    db::{
+        BtcPrice, BtcPriceKey, FederationMetaKey, LightningAddressConfig, LightningAddressKeyPrefix,
+    },
+    error_to_flutter, federations, info_to_flutter, FederationConfig, FederationConfigKey,
     FederationConfigKeyPrefix, SeedPhraseAckKey,
 };
 use crate::{event_bus::EventBus, get_event_bus};
@@ -286,6 +288,13 @@ pub struct FedimintGateway {
     pub ppm_transaction_fee: u64,
     pub lightning_alias: Option<String>,
     pub lightning_node: Option<String>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct LNAddressRegisterRequest {
+    pub domain: String,
+    pub username: String,
+    pub lnurl: String,
 }
 
 impl Multimint {
@@ -2779,6 +2788,98 @@ impl Multimint {
 
         Ok(gateways)
     }
+
+    /// Retreives currently configured Lightning Address
+    pub async fn get_ln_address_config(&self) -> Vec<(FederationSelector, LightningAddressConfig)> {
+        let feds = federations().await;
+        let mut dbtx = self.db.begin_transaction_nc().await;
+        let lightning_configs = dbtx
+            .find_by_prefix(&LightningAddressKeyPrefix)
+            .await
+            .collect::<Vec<_>>()
+            .await;
+        lightning_configs
+            .into_iter()
+            .map(|(key, config)| {
+                let selector = feds
+                    .iter()
+                    .find(|fed| fed.0.federation_id == key.federation_id)
+                    .expect("Federation should exist")
+                    .0
+                    .clone();
+                (selector, config)
+            })
+            .collect::<Vec<_>>()
+    }
+
+    /// Register LNURL/LN Address
+    pub async fn register_ln_address(
+        &self,
+        federation_id: &FederationId,
+        recurringd_api: String,
+        ln_address_api: String,
+        username: String,
+        domain: String,
+    ) -> anyhow::Result<()> {
+        let client = self
+            .clients
+            .read()
+            .await
+            .get(federation_id)
+            .context("No federation exists")?
+            .clone();
+        let lnv1 = client.get_first_module::<LightningClientModule>()?;
+
+        // Verify at least one LNv1 gateway is registered
+        let lnv1_gateways = lnv1.list_gateways().await;
+        if lnv1_gateways.is_empty() {
+            bail!("No LNv1 gateways");
+        }
+
+        // First, register an LNURL with recurringd
+        let safe_recurringd_api = SafeUrl::parse(&recurringd_api)?;
+        // TODO: Put JSON here
+        let lnurl = lnv1
+            .register_recurring_payment_code(
+                fedimint_ln_client::recurring::RecurringPaymentProtocol::LNURL,
+                safe_recurringd_api,
+                "",
+            )
+            .await?;
+
+        let safe_ln_address_api = SafeUrl::parse(&ln_address_api)?;
+        let register_request = LNAddressRegisterRequest {
+            username,
+            domain,
+            lnurl: lnurl.code,
+        };
+
+        let http_client = reqwest::Client::new();
+        let result = http_client
+            .post(format!(
+                "{}/lnaddress/register",
+                safe_ln_address_api
+                    .to_unsafe()
+                    .to_string()
+                    .trim_end_matches("/")
+            ))
+            .json(&register_request)
+            .send()
+            .await
+            .context("Failed to send register request")?;
+
+        if !result.status().is_success() {
+            let status = result.status();
+            let body = result.text().await.unwrap_or_default();
+            bail!("Failed to register LN address: {} - {}", status, body);
+        }
+
+        Ok(())
+    }
+
+    // Check LN Address status (registered or not)
+
+    // Remove LN Address
 }
 
 /// Using the given federation (transaction) and gateway fees, compute the value `X` such that `X - total_fee == requested_amount`.

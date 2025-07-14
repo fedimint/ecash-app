@@ -3,6 +3,7 @@
 
 // ignore_for_file: invalid_use_of_internal_member, unused_import, unnecessary_import
 
+import 'db.dart';
 import 'event_bus.dart';
 import 'frb_generated.dart';
 import 'multimint.dart';
@@ -334,6 +335,12 @@ Future<bool> checkEcashSpent({
   federationId: federationId,
   ecash: ecash,
 );
+
+Future<List<String>> listLnAddressDomains({required String lnAddressApi}) =>
+    RustLib.instance.api.crateListLnAddressDomains(lnAddressApi: lnAddressApi);
+
+Future<List<(FederationSelector, LightningAddressConfig)>>
+getLnAddressConfig() => RustLib.instance.api.crateGetLnAddressConfig();
 
 // Rust type: RustOpaqueMoi<flutter_rust_bridge::for_generated::RustAutoOpaqueInner<ClientConfig>>
 abstract class ClientConfig implements RustOpaqueInterface {}
