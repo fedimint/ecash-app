@@ -33,27 +33,28 @@ abstract class FederationConfig implements RustOpaqueInterface {
   set network(String? network);
 }
 
+// Rust type: RustOpaqueMoi<flutter_rust_bridge::for_generated::RustAutoOpaqueInner<LightningAddressConfig>>
+abstract class LightningAddressConfig implements RustOpaqueInterface {
+  String get domain;
+
+  SafeUrl get lnAddressApi;
+
+  SafeUrl get recurringdApi;
+
+  String get username;
+
+  set domain(String domain);
+
+  set lnAddressApi(SafeUrl lnAddressApi);
+
+  set recurringdApi(SafeUrl recurringdApi);
+
+  set username(String username);
+}
+
 // Rust type: RustOpaqueMoi<flutter_rust_bridge::for_generated::RustAutoOpaqueInner<LightningAddressKey>>
 abstract class LightningAddressKey implements RustOpaqueInterface {
   FederationId get federationId;
 
   set federationId(FederationId federationId);
-}
-
-class LightningAddressConfig {
-  final String username;
-  final String domain;
-
-  const LightningAddressConfig({required this.username, required this.domain});
-
-  @override
-  int get hashCode => username.hashCode ^ domain.hashCode;
-
-  @override
-  bool operator ==(Object other) =>
-      identical(this, other) ||
-      other is LightningAddressConfig &&
-          runtimeType == other.runtimeType &&
-          username == other.username &&
-          domain == other.domain;
 }

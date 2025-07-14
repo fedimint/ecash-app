@@ -21,6 +21,9 @@ class _LightningAddressScreenState extends State<LightningAddressScreen> {
   List<String> _domains = [];
   List<(FederationSelector, LightningAddressConfig)> _existingConfigs = [];
 
+  String? _selectedDomain;
+  final TextEditingController _usernameController = TextEditingController();
+
   @override
   void initState() {
     super.initState();
@@ -33,21 +36,25 @@ class _LightningAddressScreenState extends State<LightningAddressScreen> {
       final currentConfig = await getLnAddressConfig();
       _existingConfigs = currentConfig;
 
-      // TODO: Add matching logic for current config
-
       setState(() {
         _domains = domains;
+        _selectedDomain = domains.isNotEmpty ? domains.first : null;
         _loading = false;
       });
     } catch (e) {
       AppLogger.instance.error("Unable to get domains: $e");
-      // TODO: Set UI Error message
+      setState(() {
+        _domains = [];
+        _loading = false;
+      });
     }
   }
 
   Widget _buildSelectionForm() {
     final feds = widget.federations.map((f) => f.$1);
+
     return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         DropdownButtonFormField<FederationSelector>(
           decoration: const InputDecoration(labelText: 'Select a Federation'),
@@ -62,19 +69,46 @@ class _LightningAddressScreenState extends State<LightningAddressScreen> {
                   )
                   .toList(),
           onChanged: (value) {
-            /*
-            final match =
-                _existingConfigs
-                    .where((c) => c.$1.federationName == value?.federationName)
-                    .toList();
-
             setState(() {
               _selectedFederation = value;
-              _nwc = match.isNotEmpty ? match.first.$2 : null;
-              _selectedRelay = match.isNotEmpty ? match.first.$2.relay : null;
             });
-            */
           },
+        ),
+        const SizedBox(height: 24),
+        Row(
+          children: [
+            Expanded(
+              flex: 3,
+              child: TextFormField(
+                controller: _usernameController,
+                decoration: const InputDecoration(labelText: 'Username'),
+              ),
+            ),
+            const SizedBox(width: 8),
+            const Text('@', style: TextStyle(fontSize: 18)),
+            const SizedBox(width: 8),
+            Expanded(
+              flex: 3,
+              child: DropdownButtonFormField<String>(
+                decoration: const InputDecoration(labelText: 'Domain'),
+                value: _selectedDomain,
+                items:
+                    _domains
+                        .map(
+                          (domain) => DropdownMenuItem(
+                            value: domain,
+                            child: Text(domain),
+                          ),
+                        )
+                        .toList(),
+                onChanged: (value) {
+                  setState(() {
+                    _selectedDomain = value;
+                  });
+                },
+              ),
+            ),
+          ],
         ),
       ],
     );
@@ -106,6 +140,24 @@ class _LightningAddressScreenState extends State<LightningAddressScreen> {
       return Scaffold(
         appBar: AppBar(title: const Text('Lightning Address')),
         body: const Center(child: CircularProgressIndicator()),
+      );
+    }
+
+    if (_domains.isEmpty) {
+      return Scaffold(
+        appBar: AppBar(title: const Text("Lightning Address")),
+        body: Center(
+          child: Padding(
+            padding: const EdgeInsets.all(24),
+            child: Text(
+              'The Lightning Address server is offline.',
+              textAlign: TextAlign.center,
+              style: theme.textTheme.bodyLarge?.copyWith(
+                color: theme.colorScheme.error,
+              ),
+            ),
+          ),
+        ),
       );
     }
 

@@ -5,7 +5,7 @@ use fedimint_core::{
     config::{ClientConfig, FederationId},
     encoding::{Decodable, Encodable},
     impl_db_lookup, impl_db_record,
-    invite_code::InviteCode,
+    invite_code::InviteCode, util::SafeUrl,
 };
 use serde::{Deserialize, Serialize};
 
@@ -140,6 +140,8 @@ pub struct LightningAddressKeyPrefix;
 pub struct LightningAddressConfig {
     pub username: String,
     pub domain: String,
+    pub recurringd_api: SafeUrl,
+    pub ln_address_api: SafeUrl,
 }
 
 impl_db_record!(

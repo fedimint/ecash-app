@@ -248,9 +248,6 @@ abstract class RecoveryProgress implements RustOpaqueInterface {}
 // Rust type: RustOpaqueMoi<flutter_rust_bridge::for_generated::RustAutoOpaqueInner<ReissueExternalNotesState>>
 abstract class ReissueExternalNotesState implements RustOpaqueInterface {}
 
-// Rust type: RustOpaqueMoi<flutter_rust_bridge::for_generated::RustAutoOpaqueInner<SafeUrl>>
-abstract class SafeUrl implements RustOpaqueInterface {}
-
 // Rust type: RustOpaqueMoi<flutter_rust_bridge::for_generated::RustAutoOpaqueInner<SpendOOBState>>
 abstract class SpendOobState implements RustOpaqueInterface {}
 

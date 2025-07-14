@@ -360,6 +360,9 @@ abstract class InviteCode implements RustOpaqueInterface {}
 // Rust type: RustOpaqueMoi<flutter_rust_bridge::for_generated::RustAutoOpaqueInner<PegOutFees>>
 abstract class PegOutFees implements RustOpaqueInterface {}
 
+// Rust type: RustOpaqueMoi<flutter_rust_bridge::for_generated::RustAutoOpaqueInner<SafeUrl>>
+abstract class SafeUrl implements RustOpaqueInterface {}
+
 @freezed
 sealed class ParsedText with _$ParsedText {
   const ParsedText._();

@@ -840,7 +840,6 @@ pub async fn list_ln_address_domains(ln_address_api: String) -> anyhow::Result<V
     let safe_ln_address_api = SafeUrl::parse(&ln_address_api)?.join("domains")?;
     let http_client = reqwest::Client::new();
     let url = safe_ln_address_api.to_unsafe();
-    info_to_flutter(format!("Issuing GET to domain: {}", url.clone())).await;
     let result = http_client
         .get(url)
         .send()
