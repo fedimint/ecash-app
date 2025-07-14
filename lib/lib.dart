@@ -342,6 +342,16 @@ Future<List<String>> listLnAddressDomains({required String lnAddressApi}) =>
 Future<List<(FederationSelector, LightningAddressConfig)>>
 getLnAddressConfig() => RustLib.instance.api.crateGetLnAddressConfig();
 
+Future<LNAddressStatus> checkLnAddressAvailability({
+  required String username,
+  required String domain,
+  required String lnAddressApi,
+}) => RustLib.instance.api.crateCheckLnAddressAvailability(
+  username: username,
+  domain: domain,
+  lnAddressApi: lnAddressApi,
+);
+
 // Rust type: RustOpaqueMoi<flutter_rust_bridge::for_generated::RustAutoOpaqueInner<ClientConfig>>
 abstract class ClientConfig implements RustOpaqueInterface {}
 

@@ -14,7 +14,7 @@ class LightningAddressScreen extends StatefulWidget {
 }
 
 class _LightningAddressScreenState extends State<LightningAddressScreen> {
-  String lnAddressApi = "http://localhost:8080";
+  final String _lnAddressApi = "http://localhost:8080";
   bool _loading = true;
   FederationSelector? _selectedFederation;
 
@@ -32,7 +32,7 @@ class _LightningAddressScreenState extends State<LightningAddressScreen> {
 
   Future<void> _initialize() async {
     try {
-      final domains = await listLnAddressDomains(lnAddressApi: lnAddressApi);
+      final domains = await listLnAddressDomains(lnAddressApi: _lnAddressApi);
       final currentConfig = await getLnAddressConfig();
       _existingConfigs = currentConfig;
 
@@ -109,6 +109,19 @@ class _LightningAddressScreenState extends State<LightningAddressScreen> {
               ),
             ),
           ],
+        ),
+        const SizedBox(height: 32),
+        Center(
+          child: ElevatedButton(
+            onPressed: () {
+              checkLnAddressAvailability(
+                username: _usernameController.text.trim(),
+                domain: _selectedDomain!,
+                lnAddressApi: _lnAddressApi,
+              );
+            },
+            child: const Text('Register'),
+          ),
         ),
       ],
     );

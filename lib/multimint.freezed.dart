@@ -562,6 +562,134 @@ String toString() {
 
 
 /// @nodoc
+mixin _$LNAddressStatus {
+
+
+
+
+
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is LNAddressStatus);
+}
+
+
+@override
+int get hashCode => runtimeType.hashCode;
+
+@override
+String toString() {
+  return 'LNAddressStatus()';
+}
+
+
+}
+
+/// @nodoc
+class $LNAddressStatusCopyWith<$Res>  {
+$LNAddressStatusCopyWith(LNAddressStatus _, $Res Function(LNAddressStatus) __);
+}
+
+
+/// @nodoc
+
+
+class LNAddressStatus_Registered extends LNAddressStatus {
+  const LNAddressStatus_Registered({required this.lnurl}): super._();
+  
+
+ final  String lnurl;
+
+/// Create a copy of LNAddressStatus
+/// with the given fields replaced by the non-null parameter values.
+@JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+$LNAddressStatus_RegisteredCopyWith<LNAddressStatus_Registered> get copyWith => _$LNAddressStatus_RegisteredCopyWithImpl<LNAddressStatus_Registered>(this, _$identity);
+
+
+
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is LNAddressStatus_Registered&&(identical(other.lnurl, lnurl) || other.lnurl == lnurl));
+}
+
+
+@override
+int get hashCode => Object.hash(runtimeType,lnurl);
+
+@override
+String toString() {
+  return 'LNAddressStatus.registered(lnurl: $lnurl)';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class $LNAddressStatus_RegisteredCopyWith<$Res> implements $LNAddressStatusCopyWith<$Res> {
+  factory $LNAddressStatus_RegisteredCopyWith(LNAddressStatus_Registered value, $Res Function(LNAddressStatus_Registered) _then) = _$LNAddressStatus_RegisteredCopyWithImpl;
+@useResult
+$Res call({
+ String lnurl
+});
+
+
+
+
+}
+/// @nodoc
+class _$LNAddressStatus_RegisteredCopyWithImpl<$Res>
+    implements $LNAddressStatus_RegisteredCopyWith<$Res> {
+  _$LNAddressStatus_RegisteredCopyWithImpl(this._self, this._then);
+
+  final LNAddressStatus_Registered _self;
+  final $Res Function(LNAddressStatus_Registered) _then;
+
+/// Create a copy of LNAddressStatus
+/// with the given fields replaced by the non-null parameter values.
+@pragma('vm:prefer-inline') $Res call({Object? lnurl = null,}) {
+  return _then(LNAddressStatus_Registered(
+lnurl: null == lnurl ? _self.lnurl : lnurl // ignore: cast_nullable_to_non_nullable
+as String,
+  ));
+}
+
+
+}
+
+/// @nodoc
+
+
+class LNAddressStatus_Available extends LNAddressStatus {
+  const LNAddressStatus_Available(): super._();
+  
+
+
+
+
+
+
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is LNAddressStatus_Available);
+}
+
+
+@override
+int get hashCode => runtimeType.hashCode;
+
+@override
+String toString() {
+  return 'LNAddressStatus.available()';
+}
+
+
+}
+
+
+
+
+/// @nodoc
 mixin _$MultimintCreation {
 
 

@@ -53,6 +53,7 @@ use fedimint_wallet_client::{
 };
 use futures_util::StreamExt;
 use lightning_invoice::{Bolt11Invoice, Description};
+use reqwest::StatusCode;
 use serde::{Deserialize, Serialize};
 use serde_json::{from_value, json};
 use tokio::sync::RwLock;
@@ -295,6 +296,12 @@ pub struct LNAddressRegisterRequest {
     pub domain: String,
     pub username: String,
     pub lnurl: String,
+}
+
+#[derive(Debug, Clone, Serialize)]
+pub enum LNAddressStatus {
+    Registered { lnurl: String },
+    Available,
 }
 
 impl Multimint {
@@ -2878,6 +2885,44 @@ impl Multimint {
     }
 
     // Check LN Address status (registered or not)
+    pub async fn check_ln_address_availability(
+        &self,
+        username: String,
+        domain: String,
+        ln_address_api: String,
+    ) -> anyhow::Result<LNAddressStatus> {
+        let safe_url = SafeUrl::parse(&ln_address_api)?;
+        let endpoint = safe_url.join(&format!("lnaddress/{}/{}", domain, username))?;
+        let http_client = reqwest::Client::new();
+        let result = http_client
+            .get(endpoint.to_unsafe())
+            .send()
+            .await
+            .context("Failed to send GET request")?;
+
+        match result.status() {
+            StatusCode::OK => {
+                let json = result.json::<serde_json::Value>().await?;
+                let payment_code = json
+                    .get("url")
+                    .ok_or(anyhow!("url not in response"))?
+                    .as_str()
+                    .ok_or(anyhow!("response not a string"))?;
+                Ok(LNAddressStatus::Registered {
+                    lnurl: payment_code.to_string(),
+                })
+            }
+            StatusCode::NOT_FOUND => Ok(LNAddressStatus::Available),
+            _ => {
+                error_to_flutter(format!(
+                    "Error getting ln address availability: {:?}",
+                    result
+                ))
+                .await;
+                Err(anyhow!("Error getting ln address availability"))
+            }
+        }
+    }
 
     // Remove LN Address
 }

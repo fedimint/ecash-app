@@ -670,6 +670,9 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   List<Utxo> dco_decode_list_utxo(dynamic raw);
 
   @protected
+  LNAddressStatus dco_decode_ln_address_status(dynamic raw);
+
+  @protected
   LogLevel dco_decode_log_level(dynamic raw);
 
   @protected
@@ -1408,6 +1411,9 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
 
   @protected
   List<Utxo> sse_decode_list_utxo(SseDeserializer deserializer);
+
+  @protected
+  LNAddressStatus sse_decode_ln_address_status(SseDeserializer deserializer);
 
   @protected
   LogLevel sse_decode_log_level(SseDeserializer deserializer);
@@ -2263,6 +2269,12 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
 
   @protected
   void sse_encode_list_utxo(List<Utxo> self, SseSerializer serializer);
+
+  @protected
+  void sse_encode_ln_address_status(
+    LNAddressStatus self,
+    SseSerializer serializer,
+  );
 
   @protected
   void sse_encode_log_level(LogLevel self, SseSerializer serializer);

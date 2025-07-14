@@ -46,7 +46,7 @@ use crate::db::{
     FederationConfig, FederationConfigKey, FederationConfigKeyPrefix, LightningAddressConfig,
 };
 use crate::frb_generated::StreamSink;
-use crate::multimint::{DepositEventKind, FedimintGateway};
+use crate::multimint::{DepositEventKind, FedimintGateway, LNAddressStatus};
 
 static MULTIMINT: OnceCell<Multimint> = OnceCell::const_new();
 static DATABASE: OnceCell<Database> = OnceCell::const_new();
@@ -854,4 +854,16 @@ pub async fn list_ln_address_domains(ln_address_api: String) -> anyhow::Result<V
 pub async fn get_ln_address_config() -> Vec<(FederationSelector, LightningAddressConfig)> {
     let multimint = get_multimint();
     multimint.get_ln_address_config().await
+}
+
+#[frb]
+pub async fn check_ln_address_availability(
+    username: String,
+    domain: String,
+    ln_address_api: String,
+) -> anyhow::Result<LNAddressStatus> {
+    let multimint = get_multimint();
+    multimint
+        .check_ln_address_availability(username, domain, ln_address_api)
+        .await
 }

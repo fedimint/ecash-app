@@ -5,7 +5,8 @@ use fedimint_core::{
     config::{ClientConfig, FederationId},
     encoding::{Decodable, Encodable},
     impl_db_lookup, impl_db_record,
-    invite_code::InviteCode, util::SafeUrl,
+    invite_code::InviteCode,
+    util::SafeUrl,
 };
 use serde::{Deserialize, Serialize};
 
