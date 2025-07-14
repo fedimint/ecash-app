@@ -65,7 +65,8 @@ use tokio::{
 use crate::{
     anyhow,
     db::{
-        BtcPrice, BtcPriceKey, FederationMetaKey, LightningAddressConfig, LightningAddressKeyPrefix,
+        BtcPrice, BtcPriceKey, FederationMetaKey, LightningAddressConfig, LightningAddressKey,
+        LightningAddressKeyPrefix,
     },
     error_to_flutter, federations, info_to_flutter, FederationConfig, FederationConfigKey,
     FederationConfigKeyPrefix, SeedPhraseAckKey,
@@ -2845,31 +2846,32 @@ impl Multimint {
 
         // First, register an LNURL with recurringd
         let safe_recurringd_api = SafeUrl::parse(&recurringd_api)?;
-        // TODO: Put JSON here
+
+        let meta = serde_json::to_string(&json!([["text/plain", "Fedimint LNURL Pay"]]))
+            .expect("serialization can't fail");
+
         let lnurl = lnv1
             .register_recurring_payment_code(
                 fedimint_ln_client::recurring::RecurringPaymentProtocol::LNURL,
-                safe_recurringd_api,
-                "",
+                safe_recurringd_api.clone(),
+                meta.as_str(),
             )
             .await?;
+        info_to_flutter(format!("Registered LNURL {:?}", lnurl)).await;
+
+        // TODO: Listen for recurringd payments
 
         let safe_ln_address_api = SafeUrl::parse(&ln_address_api)?;
         let register_request = LNAddressRegisterRequest {
-            username,
-            domain,
+            username: username.clone(),
+            domain: domain.clone(),
             lnurl: lnurl.code,
         };
 
         let http_client = reqwest::Client::new();
+        let register_endpoint = safe_ln_address_api.join("lnaddress/register")?;
         let result = http_client
-            .post(format!(
-                "{}/lnaddress/register",
-                safe_ln_address_api
-                    .to_unsafe()
-                    .to_string()
-                    .trim_end_matches("/")
-            ))
+            .post(register_endpoint.to_unsafe())
             .json(&register_request)
             .send()
             .await
@@ -2880,6 +2882,23 @@ impl Multimint {
             let body = result.text().await.unwrap_or_default();
             bail!("Failed to register LN address: {} - {}", status, body);
         }
+
+        let mut dbtx = self.db.begin_transaction().await;
+        dbtx.insert_entry(
+            &LightningAddressKey {
+                federation_id: *federation_id,
+            },
+            &LightningAddressConfig {
+                username,
+                domain,
+                recurringd_api: safe_recurringd_api,
+                ln_address_api: safe_ln_address_api,
+            },
+        )
+        .await;
+        dbtx.commit_tx().await;
+
+        info_to_flutter("Successfully registered LN Address").await;
 
         Ok(())
     }

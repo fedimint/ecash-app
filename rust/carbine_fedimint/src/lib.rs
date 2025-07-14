@@ -867,3 +867,23 @@ pub async fn check_ln_address_availability(
         .check_ln_address_availability(username, domain, ln_address_api)
         .await
 }
+
+#[frb]
+pub async fn register_ln_address(
+    federation_id: &FederationId,
+    recurringd_api: String,
+    ln_address_api: String,
+    username: String,
+    domain: String,
+) -> anyhow::Result<()> {
+    let multimint = get_multimint();
+    multimint
+        .register_ln_address(
+            federation_id,
+            recurringd_api,
+            ln_address_api,
+            username,
+            domain,
+        )
+        .await
+}

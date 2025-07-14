@@ -352,6 +352,20 @@ Future<LNAddressStatus> checkLnAddressAvailability({
   lnAddressApi: lnAddressApi,
 );
 
+Future<void> registerLnAddress({
+  required FederationId federationId,
+  required String recurringdApi,
+  required String lnAddressApi,
+  required String username,
+  required String domain,
+}) => RustLib.instance.api.crateRegisterLnAddress(
+  federationId: federationId,
+  recurringdApi: recurringdApi,
+  lnAddressApi: lnAddressApi,
+  username: username,
+  domain: domain,
+);
+
 // Rust type: RustOpaqueMoi<flutter_rust_bridge::for_generated::RustAutoOpaqueInner<ClientConfig>>
 abstract class ClientConfig implements RustOpaqueInterface {}
 

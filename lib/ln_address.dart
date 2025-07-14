@@ -16,7 +16,8 @@ class LightningAddressScreen extends StatefulWidget {
 }
 
 class _LightningAddressScreenState extends State<LightningAddressScreen> {
-  final String _lnAddressApi = "http://localhost:8080";
+  String _lnAddressApi = "http://localhost:8080";
+  String _recurringdApi = "http://localhost:21634";
   bool _loading = true;
   FederationSelector? _selectedFederation;
 
@@ -206,9 +207,18 @@ class _LightningAddressScreenState extends State<LightningAddressScreen> {
         const SizedBox(height: 32),
         Center(
           child: ElevatedButton(
-            onPressed: () {
-              AppLogger.instance.info("Register LNURL and LNAddress");
-            },
+            onPressed:
+                (_selectedFederation != null && _isAvailable == true)
+                    ? () {
+                      registerLnAddress(
+                        federationId: _selectedFederation!.federationId,
+                        recurringdApi: _recurringdApi,
+                        lnAddressApi: _lnAddressApi,
+                        username: _usernameController.text.trim(),
+                        domain: _selectedDomain!,
+                      );
+                    }
+                    : null,
             child: const Text('Register'),
           ),
         ),
