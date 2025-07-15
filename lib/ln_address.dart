@@ -3,13 +3,20 @@ import 'dart:io';
 
 import 'package:carbine/lib.dart';
 import 'package:carbine/multimint.dart';
+import 'package:carbine/toast.dart';
 import 'package:carbine/utils.dart';
 import 'package:flutter/material.dart';
 
 class LightningAddressScreen extends StatefulWidget {
   final List<(FederationSelector, bool)> federations;
+  final void Function(FederationSelector fed, bool recovering)
+  onLnAddressRegistered;
 
-  const LightningAddressScreen({super.key, required this.federations});
+  const LightningAddressScreen({
+    super.key,
+    required this.federations,
+    required this.onLnAddressRegistered,
+  });
 
   @override
   State<LightningAddressScreen> createState() => _LightningAddressScreenState();
@@ -129,8 +136,38 @@ class _LightningAddressScreenState extends State<LightningAddressScreen> {
     });
   }
 
+  Future<void> _onRegisteredPressed() async {
+    try {
+      final username = _usernameController.text.trim();
+      await registerLnAddress(
+        federationId: _selectedFederation!.federationId,
+        recurringdApi: _recurringdApi,
+        lnAddressApi: _lnAddressApi,
+        username: username,
+        domain: _selectedDomain!,
+      );
+
+      widget.onLnAddressRegistered(_selectedFederation!, false);
+      Navigator.of(context).pop();
+      ToastService().show(
+        message: "Claimed $username@$_selectedDomain",
+        duration: const Duration(seconds: 5),
+        onTap: () {},
+        icon: Icon(Icons.check),
+      );
+    } catch (e) {
+      AppLogger.instance.error("Could not register Lightning Address: $e");
+      ToastService().show(
+        message: "Could not register Lightning Address",
+        duration: const Duration(seconds: 5),
+        onTap: () {},
+        icon: Icon(Icons.error),
+      );
+    }
+  }
+
   Widget _buildSelectionForm() {
-    final feds = widget.federations.map((f) => f.$1);
+    final feds = widget.federations.where((f) => !f.$2).map((f) => f.$1);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -253,14 +290,7 @@ class _LightningAddressScreenState extends State<LightningAddressScreen> {
                   (_selectedFederation != null &&
                           _status is LNAddressStatus_Available)
                       ? () {
-                        // TODO: Need to add try/catch, put in function
-                        registerLnAddress(
-                          federationId: _selectedFederation!.federationId,
-                          recurringdApi: _recurringdApi,
-                          lnAddressApi: _lnAddressApi,
-                          username: _usernameController.text.trim(),
-                          domain: _selectedDomain!,
-                        );
+                        _onRegisteredPressed();
                       }
                       : null,
               child: const Text('Register'),

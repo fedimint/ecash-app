@@ -73,7 +73,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 context,
                 MaterialPageRoute(
                   builder:
-                      (context) => LightningAddressScreen(federations: feds),
+                      (context) => LightningAddressScreen(
+                        federations: feds,
+                        onLnAddressRegistered: widget.onJoin,
+                      ),
                 ),
               );
             },
