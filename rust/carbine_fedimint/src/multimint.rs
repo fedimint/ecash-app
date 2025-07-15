@@ -310,6 +310,13 @@ pub enum LNAddressStatus {
     Invalid,
 }
 
+#[derive(Debug, Clone, Serialize)]
+pub struct LNAddressRemoveRequest {
+    pub domain: String,
+    pub username: String,
+    pub authentication_token: String,
+}
+
 impl Multimint {
     pub async fn new(db: Database, creation_type: MultimintCreation) -> anyhow::Result<Self> {
         let start = Instant::now();
@@ -2884,6 +2891,45 @@ impl Multimint {
         .await
     }
 
+    /// Removes an existing LN Address
+    async fn remove_existing_ln_address(
+        &self,
+        federation_id: &FederationId,
+        ln_address_api: String,
+    ) -> anyhow::Result<()> {
+        let mut dbtx = self.db.begin_transaction().await;
+        let existing_config = dbtx
+            .remove_entry(&LightningAddressKey {
+                federation_id: *federation_id,
+            })
+            .await;
+        if let Some(config) = existing_config {
+            let safe_ln_address_api = SafeUrl::parse(&ln_address_api)?;
+            let remove_request = LNAddressRemoveRequest {
+                username: config.username,
+                domain: config.domain,
+                authentication_token: config.authentication_token,
+            };
+
+            let http_client = reqwest::Client::new();
+            let remove_endpoint = safe_ln_address_api.join("lnaddress/remove")?;
+            let result = http_client
+                .post(remove_endpoint.to_unsafe())
+                .json(&remove_request)
+                .send()
+                .await
+                .context("Failed to send remove request")?;
+
+            if !result.status().is_success() {
+                let status = result.status();
+                let body = result.text().await.unwrap_or_default();
+                bail!("Failed to remove LN address: {} - {}", status, body);
+            }
+        }
+
+        Ok(())
+    }
+
     /// Register LNURL/LN Address
     pub async fn register_ln_address(
         &self,
@@ -2893,6 +2939,9 @@ impl Multimint {
         username: String,
         domain: String,
     ) -> anyhow::Result<()> {
+        self.remove_existing_ln_address(federation_id, ln_address_api.clone())
+            .await?;
+
         let client = self
             .clients
             .read()
