@@ -144,6 +144,7 @@ pub struct LightningAddressConfig {
     pub recurringd_api: SafeUrl,
     pub ln_address_api: SafeUrl,
     pub lnurl: String,
+    pub authentication_token: String,
 }
 
 impl_db_record!(

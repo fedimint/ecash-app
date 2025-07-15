@@ -2945,6 +2945,14 @@ impl Multimint {
             bail!("Failed to register LN address: {} - {}", status, body);
         }
 
+        let registration_result = result.json::<serde_json::Value>().await?;
+        let authentication_token = registration_result
+            .get("authentication_token")
+            .ok_or(anyhow!("No authentication token"))?
+            .as_str()
+            .expect("Authentication token is not a String");
+        info_to_flutter(format!("Registration result: {registration_result}")).await;
+
         let mut dbtx = self.db.begin_transaction().await;
         dbtx.insert_entry(
             &LightningAddressKey {
@@ -2956,6 +2964,7 @@ impl Multimint {
                 recurringd_api: safe_recurringd_api,
                 ln_address_api: safe_ln_address_api,
                 lnurl: lnurl.code.clone(),
+                authentication_token: authentication_token.to_string(),
             },
         )
         .await;
