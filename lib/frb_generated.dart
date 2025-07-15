@@ -310,6 +310,7 @@ abstract class RustLibApi extends BaseApi {
     required String username,
     required String domain,
     required String lnAddressApi,
+    required String recurringdApi,
     required FederationId federationId,
   });
 
@@ -659,6 +660,7 @@ abstract class RustLibApi extends BaseApi {
     required String username,
     required String domain,
     required String lnAddressApi,
+    required String recurringdApi,
     required FederationId federationId,
   });
 
@@ -2809,6 +2811,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
     required String username,
     required String domain,
     required String lnAddressApi,
+    required String recurringdApi,
     required FederationId federationId,
   }) {
     return handler.executeNormal(
@@ -2822,6 +2825,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           sse_encode_String(username, serializer);
           sse_encode_String(domain, serializer);
           sse_encode_String(lnAddressApi, serializer);
+          sse_encode_String(recurringdApi, serializer);
           sse_encode_Auto_Ref_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerFederationId(
             federationId,
             serializer,
@@ -2838,7 +2842,14 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           decodeErrorData: sse_decode_AnyhowException,
         ),
         constMeta: kCrateMultimintMultimintCheckLnAddressAvailabilityConstMeta,
-        argValues: [that, username, domain, lnAddressApi, federationId],
+        argValues: [
+          that,
+          username,
+          domain,
+          lnAddressApi,
+          recurringdApi,
+          federationId,
+        ],
         apiImpl: this,
       ),
     );
@@ -2853,6 +2864,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           "username",
           "domain",
           "lnAddressApi",
+          "recurringdApi",
           "federationId",
         ],
       );
@@ -5598,6 +5610,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
     required String username,
     required String domain,
     required String lnAddressApi,
+    required String recurringdApi,
     required FederationId federationId,
   }) {
     return handler.executeNormal(
@@ -5607,6 +5620,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           sse_encode_String(username, serializer);
           sse_encode_String(domain, serializer);
           sse_encode_String(lnAddressApi, serializer);
+          sse_encode_String(recurringdApi, serializer);
           sse_encode_Auto_Ref_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerFederationId(
             federationId,
             serializer,
@@ -5623,7 +5637,13 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           decodeErrorData: sse_decode_AnyhowException,
         ),
         constMeta: kCrateCheckLnAddressAvailabilityConstMeta,
-        argValues: [username, domain, lnAddressApi, federationId],
+        argValues: [
+          username,
+          domain,
+          lnAddressApi,
+          recurringdApi,
+          federationId,
+        ],
         apiImpl: this,
       ),
     );
@@ -5632,7 +5652,13 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   TaskConstMeta get kCrateCheckLnAddressAvailabilityConstMeta =>
       const TaskConstMeta(
         debugName: "check_ln_address_availability",
-        argNames: ["username", "domain", "lnAddressApi", "federationId"],
+        argNames: [
+          "username",
+          "domain",
+          "lnAddressApi",
+          "recurringdApi",
+          "federationId",
+        ],
       );
 
   @override
@@ -8438,6 +8464,8 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
         return LNAddressStatus_Available();
       case 2:
         return LNAddressStatus_CurrentConfig();
+      case 3:
+        return LNAddressStatus_UnsupportedFederation();
       default:
         throw Exception("unreachable");
     }
@@ -10278,6 +10306,8 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
         return LNAddressStatus_Available();
       case 2:
         return LNAddressStatus_CurrentConfig();
+      case 3:
+        return LNAddressStatus_UnsupportedFederation();
       default:
         throw UnimplementedError('');
     }
@@ -12170,6 +12200,8 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
         sse_encode_i_32(1, serializer);
       case LNAddressStatus_CurrentConfig():
         sse_encode_i_32(2, serializer);
+      case LNAddressStatus_UnsupportedFederation():
+        sse_encode_i_32(3, serializer);
     }
   }
 
@@ -13305,12 +13337,14 @@ class MultimintImpl extends RustOpaque implements Multimint {
     required String username,
     required String domain,
     required String lnAddressApi,
+    required String recurringdApi,
     required FederationId federationId,
   }) => RustLib.instance.api.crateMultimintMultimintCheckLnAddressAvailability(
     that: this,
     username: username,
     domain: domain,
     lnAddressApi: lnAddressApi,
+    recurringdApi: recurringdApi,
     federationId: federationId,
   );
 

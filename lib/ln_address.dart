@@ -111,6 +111,7 @@ class _LightningAddressScreenState extends State<LightningAddressScreen> {
           username: username,
           domain: domain,
           lnAddressApi: _lnAddressApi,
+          recurringdApi: _recurringdApi,
           federationId: _selectedFederation!.federationId,
         );
         // result is true = available, false = taken
@@ -218,6 +219,9 @@ class _LightningAddressScreenState extends State<LightningAddressScreen> {
                           return "Already registered";
                         } else if (_status is LNAddressStatus_CurrentConfig) {
                           return "This is your current Lightning Address";
+                        } else if (_status
+                            is LNAddressStatus_UnsupportedFederation) {
+                          return "Sorry, this federation is not currently supported";
                         } else {
                           return "Unavailable";
                         }
@@ -227,7 +231,9 @@ class _LightningAddressScreenState extends State<LightningAddressScreen> {
                           if (_status is LNAddressStatus_Available) {
                             return Colors.green;
                           } else if (_status is LNAddressStatus_CurrentConfig ||
-                              _status is LNAddressStatus_Registered) {
+                              _status is LNAddressStatus_Registered ||
+                              _status
+                                  is LNAddressStatus_UnsupportedFederation) {
                             return Colors.red;
                           }
                         }(),

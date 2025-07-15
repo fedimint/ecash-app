@@ -2658,6 +2658,7 @@ fn wire__crate__multimint__Multimint_check_ln_address_availability_impl(
             let api_username = <String>::sse_decode(&mut deserializer);
             let api_domain = <String>::sse_decode(&mut deserializer);
             let api_ln_address_api = <String>::sse_decode(&mut deserializer);
+            let api_recurringd_api = <String>::sse_decode(&mut deserializer);
             let api_federation_id = <RustOpaqueMoi<
                 flutter_rust_bridge::for_generated::RustAutoOpaqueInner<FederationId>,
             >>::sse_decode(&mut deserializer);
@@ -2700,6 +2701,7 @@ fn wire__crate__multimint__Multimint_check_ln_address_availability_impl(
                             api_username,
                             api_domain,
                             api_ln_address_api,
+                            api_recurringd_api,
                             &*api_federation_id_guard,
                         )
                         .await?;
@@ -6828,6 +6830,7 @@ fn wire__crate__check_ln_address_availability_impl(
             let api_username = <String>::sse_decode(&mut deserializer);
             let api_domain = <String>::sse_decode(&mut deserializer);
             let api_ln_address_api = <String>::sse_decode(&mut deserializer);
+            let api_recurringd_api = <String>::sse_decode(&mut deserializer);
             let api_federation_id = <RustOpaqueMoi<
                 flutter_rust_bridge::for_generated::RustAutoOpaqueInner<FederationId>,
             >>::sse_decode(&mut deserializer);
@@ -6858,6 +6861,7 @@ fn wire__crate__check_ln_address_availability_impl(
                             api_username,
                             api_domain,
                             api_ln_address_api,
+                            api_recurringd_api,
                             &*api_federation_id_guard,
                         )
                         .await?;
@@ -9990,6 +9994,9 @@ impl SseDecode for crate::multimint::LNAddressStatus {
             2 => {
                 return crate::multimint::LNAddressStatus::CurrentConfig;
             }
+            3 => {
+                return crate::multimint::LNAddressStatus::UnsupportedFederation;
+            }
             _ => {
                 unimplemented!("");
             }
@@ -11689,6 +11696,7 @@ impl flutter_rust_bridge::IntoDart for crate::multimint::LNAddressStatus {
             }
             crate::multimint::LNAddressStatus::Available => [1.into_dart()].into_dart(),
             crate::multimint::LNAddressStatus::CurrentConfig => [2.into_dart()].into_dart(),
+            crate::multimint::LNAddressStatus::UnsupportedFederation => [3.into_dart()].into_dart(),
             _ => {
                 unimplemented!("");
             }
@@ -12765,6 +12773,9 @@ impl SseEncode for crate::multimint::LNAddressStatus {
             }
             crate::multimint::LNAddressStatus::CurrentConfig => {
                 <i32>::sse_encode(2, serializer);
+            }
+            crate::multimint::LNAddressStatus::UnsupportedFederation => {
+                <i32>::sse_encode(3, serializer);
             }
             _ => {
                 unimplemented!("");

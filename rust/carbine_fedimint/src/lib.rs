@@ -861,11 +861,18 @@ pub async fn check_ln_address_availability(
     username: String,
     domain: String,
     ln_address_api: String,
+    recurringd_api: String,
     federation_id: &FederationId,
 ) -> anyhow::Result<LNAddressStatus> {
     let multimint = get_multimint();
     multimint
-        .check_ln_address_availability(username, domain, ln_address_api, federation_id)
+        .check_ln_address_availability(
+            username,
+            domain,
+            ln_address_api,
+            recurringd_api,
+            federation_id,
+        )
         .await
 }
 

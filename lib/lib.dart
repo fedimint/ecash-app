@@ -347,11 +347,13 @@ Future<LNAddressStatus> checkLnAddressAvailability({
   required String username,
   required String domain,
   required String lnAddressApi,
+  required String recurringdApi,
   required FederationId federationId,
 }) => RustLib.instance.api.crateCheckLnAddressAvailability(
   username: username,
   domain: domain,
   lnAddressApi: lnAddressApi,
+  recurringdApi: recurringdApi,
   federationId: federationId,
 );
 

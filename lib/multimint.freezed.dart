@@ -722,6 +722,38 @@ String toString() {
 
 
 /// @nodoc
+
+
+class LNAddressStatus_UnsupportedFederation extends LNAddressStatus {
+  const LNAddressStatus_UnsupportedFederation(): super._();
+  
+
+
+
+
+
+
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is LNAddressStatus_UnsupportedFederation);
+}
+
+
+@override
+int get hashCode => runtimeType.hashCode;
+
+@override
+String toString() {
+  return 'LNAddressStatus.unsupportedFederation()';
+}
+
+
+}
+
+
+
+
+/// @nodoc
 mixin _$MultimintCreation {
 
 

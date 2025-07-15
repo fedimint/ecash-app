@@ -301,6 +301,7 @@ pub enum LNAddressStatus {
     Registered { lnurl: String },
     Available,
     CurrentConfig,
+    UnsupportedFederation,
 }
 
 impl Multimint {
@@ -2894,6 +2895,7 @@ impl Multimint {
         username: String,
         domain: String,
         ln_address_api: String,
+        recurringd_api: String,
         federation_id: &FederationId,
     ) -> anyhow::Result<LNAddressStatus> {
         // First check if the current config is equivalent
@@ -2903,9 +2905,13 @@ impl Multimint {
             }
         }
 
-        // TODO: Add validation check against username
+        // Check that the selected federation is supported by recurringd
+        let supported_federations = self.get_recurringd_federations(recurringd_api).await?;
+        if !supported_federations.contains(federation_id) {
+            return Ok(LNAddressStatus::UnsupportedFederation);
+        }
 
-        // TODO: Add validation check against recurringd
+        // TODO: Add validation check against username
 
         let safe_url = SafeUrl::parse(&ln_address_api)?;
         let endpoint = safe_url.join(&format!("lnaddress/{}/{}", domain, username))?;
@@ -2940,7 +2946,22 @@ impl Multimint {
         }
     }
 
-    // Remove LN Address
+    async fn get_recurringd_federations(
+        &self,
+        recurringd_api: String,
+    ) -> anyhow::Result<Vec<FederationId>> {
+        let endpoint = SafeUrl::parse(&recurringd_api)?.join("lnv1/federations")?;
+
+        let http_client = reqwest::Client::new();
+        let result = http_client
+            .get(endpoint.to_unsafe())
+            .send()
+            .await
+            .context("Failed to send domains request")?;
+
+        let feds = result.json::<Vec<FederationId>>().await?;
+        Ok(feds)
+    }
 }
 
 /// Using the given federation (transaction) and gateway fees, compute the value `X` such that `X - total_fee == requested_amount`.
