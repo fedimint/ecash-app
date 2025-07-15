@@ -180,7 +180,9 @@ class _MyAppState extends State<MyApp> {
   void _onScanPressed(BuildContext context) async {
     final result = await Navigator.push<(FederationSelector, bool)>(
       context,
-      MaterialPageRoute(builder: (context) => const ScanQRPage()),
+      MaterialPageRoute(
+        builder: (context) => ScanQRPage(onPay: _onJoinPressed),
+      ),
     );
 
     if (result != null) {

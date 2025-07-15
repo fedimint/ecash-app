@@ -149,6 +149,7 @@ class _PaymentMethodSelectorState extends State<PaymentMethodSelector> {
               (context) => ScanQRPage(
                 selectedFed: widget.fed,
                 paymentType: PaymentType.lightning,
+                onPay: (_, _) {},
               ),
         ),
       );
