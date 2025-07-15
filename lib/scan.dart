@@ -21,8 +21,14 @@ import 'package:mobile_scanner/mobile_scanner.dart';
 class ScanQRPage extends StatefulWidget {
   final FederationSelector? selectedFed;
   final PaymentType? paymentType;
+  final void Function(FederationSelector fed, bool recovering) onPay;
 
-  const ScanQRPage({super.key, this.selectedFed, this.paymentType});
+  const ScanQRPage({
+    super.key,
+    this.selectedFed,
+    this.paymentType,
+    required this.onPay,
+  });
 
   @override
   State<ScanQRPage> createState() => _ScanQRPageState();
@@ -141,13 +147,15 @@ class _ScanQRPageState extends State<ScanQRPage> {
               federationId: chosenFederation!.federationId,
               bolt11: field0,
             );
-            showCarbineModalBottomSheet(
+            await showCarbineModalBottomSheet(
               context: context,
               child: PaymentPreviewWidget(
                 fed: chosenFederation,
                 paymentPreview: preview,
               ),
             );
+
+            widget.onPay(chosenFederation, false);
           }
           break;
         case ParsedText_BitcoinAddress(:final field0, :final field1):
@@ -179,6 +187,7 @@ class _ScanQRPageState extends State<ScanQRPage> {
                 ),
               );
             }
+            widget.onPay(chosenFederation!, false);
           }
           break;
         case ParsedText_Ecash(:final field0):
@@ -195,6 +204,7 @@ class _ScanQRPageState extends State<ScanQRPage> {
               heightFactor: 0.33,
             );
             invoicePaidToastVisible.value = true;
+            widget.onPay(chosenFederation, false);
           }
           break;
       }

@@ -111,8 +111,8 @@ class _DashboardState extends State<Dashboard> {
   }
 
   Future<void> _loadBalance() async {
-    if (!mounted || recovering) return;
     final bal = await balance(federationId: widget.fed.federationId);
+    if (!mounted || recovering) return;
     setState(() {
       balanceMsats = bal;
       isLoadingBalance = false;
@@ -184,7 +184,7 @@ class _DashboardState extends State<Dashboard> {
     } else if (_selectedPaymentType == PaymentType.ecash) {
       await Navigator.push(
         context,
-        MaterialPageRoute(builder: (_) => ScanQRPage(selectedFed: widget.fed, paymentType: _selectedPaymentType)),
+        MaterialPageRoute(builder: (_) => ScanQRPage(selectedFed: widget.fed, paymentType: _selectedPaymentType, onPay: (_, _) {})),
       );
     }
     _loadBalance();
