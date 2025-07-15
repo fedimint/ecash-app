@@ -461,6 +461,7 @@ sealed class LNAddressStatus with _$LNAddressStatus {
   const factory LNAddressStatus.currentConfig() = LNAddressStatus_CurrentConfig;
   const factory LNAddressStatus.unsupportedFederation() =
       LNAddressStatus_UnsupportedFederation;
+  const factory LNAddressStatus.invalid() = LNAddressStatus_Invalid;
 }
 
 enum LogLevel { trace, debug, info, warn, error }

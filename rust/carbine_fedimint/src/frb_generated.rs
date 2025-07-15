@@ -9997,6 +9997,9 @@ impl SseDecode for crate::multimint::LNAddressStatus {
             3 => {
                 return crate::multimint::LNAddressStatus::UnsupportedFederation;
             }
+            4 => {
+                return crate::multimint::LNAddressStatus::Invalid;
+            }
             _ => {
                 unimplemented!("");
             }
@@ -11697,6 +11700,7 @@ impl flutter_rust_bridge::IntoDart for crate::multimint::LNAddressStatus {
             crate::multimint::LNAddressStatus::Available => [1.into_dart()].into_dart(),
             crate::multimint::LNAddressStatus::CurrentConfig => [2.into_dart()].into_dart(),
             crate::multimint::LNAddressStatus::UnsupportedFederation => [3.into_dart()].into_dart(),
+            crate::multimint::LNAddressStatus::Invalid => [4.into_dart()].into_dart(),
             _ => {
                 unimplemented!("");
             }
@@ -12776,6 +12780,9 @@ impl SseEncode for crate::multimint::LNAddressStatus {
             }
             crate::multimint::LNAddressStatus::UnsupportedFederation => {
                 <i32>::sse_encode(3, serializer);
+            }
+            crate::multimint::LNAddressStatus::Invalid => {
+                <i32>::sse_encode(4, serializer);
             }
             _ => {
                 unimplemented!("");

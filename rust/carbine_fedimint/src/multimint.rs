@@ -302,6 +302,7 @@ pub enum LNAddressStatus {
     Available,
     CurrentConfig,
     UnsupportedFederation,
+    Invalid,
 }
 
 impl Multimint {
@@ -2911,7 +2912,17 @@ impl Multimint {
             return Ok(LNAddressStatus::UnsupportedFederation);
         }
 
-        // TODO: Add validation check against username
+        // Validate that the given username and domain are a valid Lightning Address
+        let username_re = regex::Regex::new(r"^[a-z0-9](?:[a-z0-9._-]*[a-z0-9])?$")?;
+        let domain_re = regex::Regex::new(r"^[a-z0-9.-]+\.[a-z]{2,}$")?;
+
+        if !username_re.is_match(&username) {
+            return Ok(LNAddressStatus::Invalid);
+        }
+
+        if !domain_re.is_match(&domain) {
+            return Ok(LNAddressStatus::Invalid);
+        }
 
         let safe_url = SafeUrl::parse(&ln_address_api)?;
         let endpoint = safe_url.join(&format!("lnaddress/{}/{}", domain, username))?;

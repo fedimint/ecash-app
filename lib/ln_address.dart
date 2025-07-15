@@ -222,6 +222,8 @@ class _LightningAddressScreenState extends State<LightningAddressScreen> {
                         } else if (_status
                             is LNAddressStatus_UnsupportedFederation) {
                           return "Sorry, this federation is not currently supported";
+                        } else if (_status is LNAddressStatus_Invalid) {
+                          return "Invalid Lightning Address";
                         } else {
                           return "Unavailable";
                         }
@@ -233,7 +235,8 @@ class _LightningAddressScreenState extends State<LightningAddressScreen> {
                           } else if (_status is LNAddressStatus_CurrentConfig ||
                               _status is LNAddressStatus_Registered ||
                               _status
-                                  is LNAddressStatus_UnsupportedFederation) {
+                                  is LNAddressStatus_UnsupportedFederation ||
+                              _status is LNAddressStatus_Invalid) {
                             return Colors.red;
                           }
                         }(),

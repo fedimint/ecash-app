@@ -754,6 +754,38 @@ String toString() {
 
 
 /// @nodoc
+
+
+class LNAddressStatus_Invalid extends LNAddressStatus {
+  const LNAddressStatus_Invalid(): super._();
+  
+
+
+
+
+
+
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is LNAddressStatus_Invalid);
+}
+
+
+@override
+int get hashCode => runtimeType.hashCode;
+
+@override
+String toString() {
+  return 'LNAddressStatus.invalid()';
+}
+
+
+}
+
+
+
+
+/// @nodoc
 mixin _$MultimintCreation {
 
 

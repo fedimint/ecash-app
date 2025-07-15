@@ -8466,6 +8466,8 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
         return LNAddressStatus_CurrentConfig();
       case 3:
         return LNAddressStatus_UnsupportedFederation();
+      case 4:
+        return LNAddressStatus_Invalid();
       default:
         throw Exception("unreachable");
     }
@@ -10308,6 +10310,8 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
         return LNAddressStatus_CurrentConfig();
       case 3:
         return LNAddressStatus_UnsupportedFederation();
+      case 4:
+        return LNAddressStatus_Invalid();
       default:
         throw UnimplementedError('');
     }
@@ -12202,6 +12206,8 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
         sse_encode_i_32(2, serializer);
       case LNAddressStatus_UnsupportedFederation():
         sse_encode_i_32(3, serializer);
+      case LNAddressStatus_Invalid():
+        sse_encode_i_32(4, serializer);
     }
   }
 
