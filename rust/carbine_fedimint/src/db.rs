@@ -134,9 +134,6 @@ pub struct LightningAddressKey {
     pub federation_id: FederationId,
 }
 
-#[derive(Debug, Encodable, Decodable)]
-pub struct LightningAddressKeyPrefix;
-
 #[derive(Debug, Clone, Encodable, Decodable, Serialize)]
 pub struct LightningAddressConfig {
     pub username: String,
@@ -149,9 +146,4 @@ impl_db_record!(
     key = LightningAddressKey,
     value = LightningAddressConfig,
     db_prefix = DbKeyPrefix::LightningAddress,
-);
-
-impl_db_lookup!(
-    key = LightningAddressKey,
-    query_prefix = LightningAddressKeyPrefix,
 );

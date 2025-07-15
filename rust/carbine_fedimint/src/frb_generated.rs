@@ -2658,16 +2658,27 @@ fn wire__crate__multimint__Multimint_check_ln_address_availability_impl(
             let api_username = <String>::sse_decode(&mut deserializer);
             let api_domain = <String>::sse_decode(&mut deserializer);
             let api_ln_address_api = <String>::sse_decode(&mut deserializer);
+            let api_federation_id = <RustOpaqueMoi<
+                flutter_rust_bridge::for_generated::RustAutoOpaqueInner<FederationId>,
+            >>::sse_decode(&mut deserializer);
             deserializer.end();
             move |context| async move {
                 transform_result_sse::<_, flutter_rust_bridge::for_generated::anyhow::Error>(
                     (move || async move {
                         let mut api_that_guard = None;
+                        let mut api_federation_id_guard = None;
                         let decode_indices_ =
                             flutter_rust_bridge::for_generated::lockable_compute_decode_order(
-                                vec![flutter_rust_bridge::for_generated::LockableOrderInfo::new(
-                                    &api_that, 0, false,
-                                )],
+                                vec![
+                                    flutter_rust_bridge::for_generated::LockableOrderInfo::new(
+                                        &api_that, 0, false,
+                                    ),
+                                    flutter_rust_bridge::for_generated::LockableOrderInfo::new(
+                                        &api_federation_id,
+                                        1,
+                                        false,
+                                    ),
+                                ],
                             );
                         for i in decode_indices_ {
                             match i {
@@ -2675,15 +2686,21 @@ fn wire__crate__multimint__Multimint_check_ln_address_availability_impl(
                                     api_that_guard =
                                         Some(api_that.lockable_decode_async_ref().await)
                                 }
+                                1 => {
+                                    api_federation_id_guard =
+                                        Some(api_federation_id.lockable_decode_async_ref().await)
+                                }
                                 _ => unreachable!(),
                             }
                         }
                         let api_that_guard = api_that_guard.unwrap();
+                        let api_federation_id_guard = api_federation_id_guard.unwrap();
                         let output_ok = crate::multimint::Multimint::check_ln_address_availability(
                             &*api_that_guard,
                             api_username,
                             api_domain,
                             api_ln_address_api,
+                            &*api_federation_id_guard,
                         )
                         .await?;
                         Ok(output_ok)
@@ -3047,16 +3064,27 @@ fn wire__crate__multimint__Multimint_get_ln_address_config_impl(
             let api_that = <RustOpaqueMoi<
                 flutter_rust_bridge::for_generated::RustAutoOpaqueInner<Multimint>,
             >>::sse_decode(&mut deserializer);
+            let api_federation_id = <RustOpaqueMoi<
+                flutter_rust_bridge::for_generated::RustAutoOpaqueInner<FederationId>,
+            >>::sse_decode(&mut deserializer);
             deserializer.end();
             move |context| async move {
                 transform_result_sse::<_, ()>(
                     (move || async move {
                         let mut api_that_guard = None;
+                        let mut api_federation_id_guard = None;
                         let decode_indices_ =
                             flutter_rust_bridge::for_generated::lockable_compute_decode_order(
-                                vec![flutter_rust_bridge::for_generated::LockableOrderInfo::new(
-                                    &api_that, 0, false,
-                                )],
+                                vec![
+                                    flutter_rust_bridge::for_generated::LockableOrderInfo::new(
+                                        &api_that, 0, false,
+                                    ),
+                                    flutter_rust_bridge::for_generated::LockableOrderInfo::new(
+                                        &api_federation_id,
+                                        1,
+                                        false,
+                                    ),
+                                ],
                             );
                         for i in decode_indices_ {
                             match i {
@@ -3064,13 +3092,21 @@ fn wire__crate__multimint__Multimint_get_ln_address_config_impl(
                                     api_that_guard =
                                         Some(api_that.lockable_decode_async_ref().await)
                                 }
+                                1 => {
+                                    api_federation_id_guard =
+                                        Some(api_federation_id.lockable_decode_async_ref().await)
+                                }
                                 _ => unreachable!(),
                             }
                         }
                         let api_that_guard = api_that_guard.unwrap();
+                        let api_federation_id_guard = api_federation_id_guard.unwrap();
                         let output_ok = Result::<_, ()>::Ok(
-                            crate::multimint::Multimint::get_ln_address_config(&*api_that_guard)
-                                .await,
+                            crate::multimint::Multimint::get_ln_address_config(
+                                &*api_that_guard,
+                                &*api_federation_id_guard,
+                            )
+                            .await,
                         )?;
                         Ok(output_ok)
                     })()
@@ -6792,14 +6828,37 @@ fn wire__crate__check_ln_address_availability_impl(
             let api_username = <String>::sse_decode(&mut deserializer);
             let api_domain = <String>::sse_decode(&mut deserializer);
             let api_ln_address_api = <String>::sse_decode(&mut deserializer);
+            let api_federation_id = <RustOpaqueMoi<
+                flutter_rust_bridge::for_generated::RustAutoOpaqueInner<FederationId>,
+            >>::sse_decode(&mut deserializer);
             deserializer.end();
             move |context| async move {
                 transform_result_sse::<_, flutter_rust_bridge::for_generated::anyhow::Error>(
                     (move || async move {
+                        let mut api_federation_id_guard = None;
+                        let decode_indices_ =
+                            flutter_rust_bridge::for_generated::lockable_compute_decode_order(
+                                vec![flutter_rust_bridge::for_generated::LockableOrderInfo::new(
+                                    &api_federation_id,
+                                    0,
+                                    false,
+                                )],
+                            );
+                        for i in decode_indices_ {
+                            match i {
+                                0 => {
+                                    api_federation_id_guard =
+                                        Some(api_federation_id.lockable_decode_async_ref().await)
+                                }
+                                _ => unreachable!(),
+                            }
+                        }
+                        let api_federation_id_guard = api_federation_id_guard.unwrap();
                         let output_ok = crate::check_ln_address_availability(
                             api_username,
                             api_domain,
                             api_ln_address_api,
+                            &*api_federation_id_guard,
                         )
                         .await?;
                         Ok(output_ok)
@@ -7180,11 +7239,35 @@ fn wire__crate__get_ln_address_config_impl(
             };
             let mut deserializer =
                 flutter_rust_bridge::for_generated::SseDeserializer::new(message);
+            let api_federation_id = <RustOpaqueMoi<
+                flutter_rust_bridge::for_generated::RustAutoOpaqueInner<FederationId>,
+            >>::sse_decode(&mut deserializer);
             deserializer.end();
             move |context| async move {
                 transform_result_sse::<_, ()>(
                     (move || async move {
-                        let output_ok = Result::<_, ()>::Ok(crate::get_ln_address_config().await)?;
+                        let mut api_federation_id_guard = None;
+                        let decode_indices_ =
+                            flutter_rust_bridge::for_generated::lockable_compute_decode_order(
+                                vec![flutter_rust_bridge::for_generated::LockableOrderInfo::new(
+                                    &api_federation_id,
+                                    0,
+                                    false,
+                                )],
+                            );
+                        for i in decode_indices_ {
+                            match i {
+                                0 => {
+                                    api_federation_id_guard =
+                                        Some(api_federation_id.lockable_decode_async_ref().await)
+                                }
+                                _ => unreachable!(),
+                            }
+                        }
+                        let api_federation_id_guard = api_federation_id_guard.unwrap();
+                        let output_ok = Result::<_, ()>::Ok(
+                            crate::get_ln_address_config(&*api_federation_id_guard).await,
+                        )?;
                         Ok(output_ok)
                     })()
                     .await,
@@ -9806,20 +9889,6 @@ impl SseDecode for Vec<u8> {
     }
 }
 
-impl SseDecode for Vec<(FederationSelector, LightningAddressConfig)> {
-    // Codec=Sse (Serialization based), see doc to use other codecs
-    fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
-        let mut len_ = <i32>::sse_decode(deserializer);
-        let mut ans_ = vec![];
-        for idx_ in 0..len_ {
-            ans_.push(<(FederationSelector, LightningAddressConfig)>::sse_decode(
-                deserializer,
-            ));
-        }
-        return ans_;
-    }
-}
-
 impl SseDecode for Vec<(FederationSelector, bool)> {
     // Codec=Sse (Serialization based), see doc to use other codecs
     fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
@@ -9917,6 +9986,9 @@ impl SseDecode for crate::multimint::LNAddressStatus {
             }
             1 => {
                 return crate::multimint::LNAddressStatus::Available;
+            }
+            2 => {
+                return crate::multimint::LNAddressStatus::CurrentConfig;
             }
             _ => {
                 unimplemented!("");
@@ -10056,6 +10128,17 @@ impl SseDecode for Option<FederationSelector> {
     }
 }
 
+impl SseDecode for Option<LightningAddressConfig> {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
+        if (<bool>::sse_decode(deserializer)) {
+            return Some(<LightningAddressConfig>::sse_decode(deserializer));
+        } else {
+            return None;
+        }
+    }
+}
+
 impl SseDecode for Option<u64> {
     // Codec=Sse (Serialization based), see doc to use other codecs
     fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
@@ -10161,15 +10244,6 @@ impl SseDecode for (FederationId, u64) {
     fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
         let mut var_field0 = <FederationId>::sse_decode(deserializer);
         let mut var_field1 = <u64>::sse_decode(deserializer);
-        return (var_field0, var_field1);
-    }
-}
-
-impl SseDecode for (FederationSelector, LightningAddressConfig) {
-    // Codec=Sse (Serialization based), see doc to use other codecs
-    fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
-        let mut var_field0 = <FederationSelector>::sse_decode(deserializer);
-        let mut var_field1 = <LightningAddressConfig>::sse_decode(deserializer);
         return (var_field0, var_field1);
     }
 }
@@ -11614,6 +11688,7 @@ impl flutter_rust_bridge::IntoDart for crate::multimint::LNAddressStatus {
                 [0.into_dart(), lnurl.into_into_dart().into_dart()].into_dart()
             }
             crate::multimint::LNAddressStatus::Available => [1.into_dart()].into_dart(),
+            crate::multimint::LNAddressStatus::CurrentConfig => [2.into_dart()].into_dart(),
             _ => {
                 unimplemented!("");
             }
@@ -12607,16 +12682,6 @@ impl SseEncode for Vec<u8> {
     }
 }
 
-impl SseEncode for Vec<(FederationSelector, LightningAddressConfig)> {
-    // Codec=Sse (Serialization based), see doc to use other codecs
-    fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
-        <i32>::sse_encode(self.len() as _, serializer);
-        for item in self {
-            <(FederationSelector, LightningAddressConfig)>::sse_encode(item, serializer);
-        }
-    }
-}
-
 impl SseEncode for Vec<(FederationSelector, bool)> {
     // Codec=Sse (Serialization based), see doc to use other codecs
     fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
@@ -12697,6 +12762,9 @@ impl SseEncode for crate::multimint::LNAddressStatus {
             }
             crate::multimint::LNAddressStatus::Available => {
                 <i32>::sse_encode(1, serializer);
+            }
+            crate::multimint::LNAddressStatus::CurrentConfig => {
+                <i32>::sse_encode(2, serializer);
             }
             _ => {
                 unimplemented!("");
@@ -12825,6 +12893,16 @@ impl SseEncode for Option<FederationSelector> {
     }
 }
 
+impl SseEncode for Option<LightningAddressConfig> {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
+        <bool>::sse_encode(self.is_some(), serializer);
+        if let Some(value) = self {
+            <LightningAddressConfig>::sse_encode(value, serializer);
+        }
+    }
+}
+
 impl SseEncode for Option<u64> {
     // Codec=Sse (Serialization based), see doc to use other codecs
     fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
@@ -12915,14 +12993,6 @@ impl SseEncode for (FederationId, u64) {
     fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
         <FederationId>::sse_encode(self.0, serializer);
         <u64>::sse_encode(self.1, serializer);
-    }
-}
-
-impl SseEncode for (FederationSelector, LightningAddressConfig) {
-    // Codec=Sse (Serialization based), see doc to use other codecs
-    fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
-        <FederationSelector>::sse_encode(self.0, serializer);
-        <LightningAddressConfig>::sse_encode(self.1, serializer);
     }
 }
 

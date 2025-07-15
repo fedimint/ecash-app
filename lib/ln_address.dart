@@ -1,7 +1,6 @@
 import 'dart:async';
 import 'dart:io';
 
-import 'package:carbine/db.dart';
 import 'package:carbine/lib.dart';
 import 'package:carbine/multimint.dart';
 import 'package:carbine/utils.dart';
@@ -23,13 +22,12 @@ class _LightningAddressScreenState extends State<LightningAddressScreen> {
   FederationSelector? _selectedFederation;
 
   List<String> _domains = [];
-  List<(FederationSelector, LightningAddressConfig)> _existingConfigs = [];
 
   String? _selectedDomain;
   final TextEditingController _usernameController = TextEditingController();
 
   Timer? _debounceTimer;
-  bool? _isAvailable;
+  LNAddressStatus? _status;
   String? _lastCheckedAddress;
 
   // Advanced state
@@ -58,12 +56,29 @@ class _LightningAddressScreenState extends State<LightningAddressScreen> {
     _usernameController.addListener(_onUsernameChanged);
     try {
       final domains = await listLnAddressDomains(lnAddressApi: _lnAddressApi);
-      final currentConfig = await getLnAddressConfig();
-      _existingConfigs = currentConfig;
+
+      FederationSelector? firstSelector;
+      String firstUsername = "";
+      String? firstDomain;
+      if (widget.federations.isNotEmpty) {
+        for (final fed in widget.federations) {
+          final config = await getLnAddressConfig(
+            federationId: fed.$1.federationId,
+          );
+          if (config != null) {
+            firstSelector = fed.$1;
+            firstUsername = config.username;
+            firstDomain = config.domain;
+          }
+        }
+      }
 
       setState(() {
         _domains = domains;
-        _selectedDomain = domains.isNotEmpty ? domains.first : null;
+        _selectedDomain =
+            firstDomain ?? (domains.isNotEmpty ? domains.first : null);
+        _selectedFederation = firstSelector;
+        _usernameController.text = firstUsername;
         _loading = false;
       });
     } catch (e) {
@@ -82,37 +97,32 @@ class _LightningAddressScreenState extends State<LightningAddressScreen> {
       final username = _usernameController.text.trim();
       final domain = _selectedDomain;
 
-      if (username.isEmpty || domain == null) {
-        setState(() => _isAvailable = null);
+      if (_selectedFederation == null || username.isEmpty || domain == null) {
+        setState(() => _status = null);
         return;
       }
 
       final address = '$username@$domain';
       _lastCheckedAddress = address;
-      setState(() => _isAvailable = null); // Show spinner or pending
+      setState(() => _status = null); // Show spinner or pending
 
       try {
         final result = await checkLnAddressAvailability(
           username: username,
           domain: domain,
           lnAddressApi: _lnAddressApi,
+          federationId: _selectedFederation!.federationId,
         );
         // result is true = available, false = taken
         if (_lastCheckedAddress == address) {
-          if (result is LNAddressStatus_Available) {
-            setState(() {
-              _isAvailable = true;
-            });
-          } else {
-            setState(() {
-              _isAvailable = false;
-            });
-          }
+          setState(() {
+            _status = result;
+          });
         }
       } catch (e) {
         AppLogger.instance.error("Error checking availability: $e");
         if (_lastCheckedAddress == address) {
-          setState(() => _isAvailable = false);
+          setState(() => _status = null);
         }
       }
     });
@@ -187,28 +197,40 @@ class _LightningAddressScreenState extends State<LightningAddressScreen> {
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    if (_isAvailable == null)
+                    if (_status == null)
                       const SizedBox(
                         height: 20,
                         width: 20,
                         child: CircularProgressIndicator(strokeWidth: 2),
                       )
-                    else if (_isAvailable == true)
+                    else if (_status is LNAddressStatus_Available)
                       const Icon(Icons.check_circle, color: Colors.green)
                     else
                       const Icon(Icons.cancel, color: Colors.red),
                     const SizedBox(width: 8),
                     Text(
-                      _isAvailable == null
-                          ? "Checking availability..."
-                          : _isAvailable == true
-                          ? "Available"
-                          : "Already registered",
+                      () {
+                        if (_status == null) {
+                          return "Checking availability...";
+                        } else if (_status is LNAddressStatus_Available) {
+                          return "Available";
+                        } else if (_status is LNAddressStatus_Registered) {
+                          return "Already registered";
+                        } else if (_status is LNAddressStatus_CurrentConfig) {
+                          return "This is your current Lightning Address";
+                        } else {
+                          return "Unavailable";
+                        }
+                      }(),
                       style: TextStyle(
-                        color:
-                            _isAvailable == true
-                                ? Colors.green
-                                : (_isAvailable == false ? Colors.red : null),
+                        color: () {
+                          if (_status is LNAddressStatus_Available) {
+                            return Colors.green;
+                          } else if (_status is LNAddressStatus_CurrentConfig ||
+                              _status is LNAddressStatus_Registered) {
+                            return Colors.red;
+                          }
+                        }(),
                       ),
                     ),
                   ],
@@ -219,7 +241,8 @@ class _LightningAddressScreenState extends State<LightningAddressScreen> {
           Center(
             child: ElevatedButton(
               onPressed:
-                  (_selectedFederation != null && _isAvailable == true)
+                  (_selectedFederation != null &&
+                          _status is LNAddressStatus_Available)
                       ? () {
                         // TODO: Need to add try/catch, put in function
                         registerLnAddress(
@@ -345,7 +368,7 @@ class _LightningAddressScreenState extends State<LightningAddressScreen> {
       try {
         final uri = Uri.parse(url);
         final res =
-            await Uri.base.scheme == 'https'
+            Uri.base.scheme == 'https'
                 ? await HttpClient().getUrl(uri).then((req) => req.close())
                 : await HttpClient().getUrl(uri).then((req) => req.close());
         return res.statusCode == 200;

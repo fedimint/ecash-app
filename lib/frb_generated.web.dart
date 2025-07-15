@@ -549,6 +549,12 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   );
 
   @protected
+  LightningAddressConfig
+  dco_decode_box_autoadd_Auto_Owned_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerLightningAddressConfig(
+    dynamic raw,
+  );
+
+  @protected
   AwaitingConfsEvent dco_decode_box_autoadd_awaiting_confs_event(dynamic raw);
 
   @protected
@@ -636,12 +642,6 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   Uint8List dco_decode_list_prim_u_8_strict(dynamic raw);
 
   @protected
-  List<(FederationSelector, LightningAddressConfig)>
-  dco_decode_list_record_auto_owned_rust_opaque_flutter_rust_bridgefor_generated_rust_auto_opaque_inner_federation_selector_auto_owned_rust_opaque_flutter_rust_bridgefor_generated_rust_auto_opaque_inner_lightning_address_config(
-    dynamic raw,
-  );
-
-  @protected
   List<(FederationSelector, bool)>
   dco_decode_list_record_auto_owned_rust_opaque_flutter_rust_bridgefor_generated_rust_auto_opaque_inner_federation_selector_bool(
     dynamic raw,
@@ -697,6 +697,12 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   );
 
   @protected
+  LightningAddressConfig?
+  dco_decode_opt_box_autoadd_Auto_Owned_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerLightningAddressConfig(
+    dynamic raw,
+  );
+
+  @protected
   BigInt? dco_decode_opt_box_autoadd_u_64(dynamic raw);
 
   @protected
@@ -729,12 +735,6 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   @protected
   (FederationId, BigInt)
   dco_decode_record_auto_owned_rust_opaque_flutter_rust_bridgefor_generated_rust_auto_opaque_inner_federation_id_u_64(
-    dynamic raw,
-  );
-
-  @protected
-  (FederationSelector, LightningAddressConfig)
-  dco_decode_record_auto_owned_rust_opaque_flutter_rust_bridgefor_generated_rust_auto_opaque_inner_federation_selector_auto_owned_rust_opaque_flutter_rust_bridgefor_generated_rust_auto_opaque_inner_lightning_address_config(
     dynamic raw,
   );
 
@@ -1268,6 +1268,12 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   );
 
   @protected
+  LightningAddressConfig
+  sse_decode_box_autoadd_Auto_Owned_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerLightningAddressConfig(
+    SseDeserializer deserializer,
+  );
+
+  @protected
   AwaitingConfsEvent sse_decode_box_autoadd_awaiting_confs_event(
     SseDeserializer deserializer,
   );
@@ -1373,12 +1379,6 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   Uint8List sse_decode_list_prim_u_8_strict(SseDeserializer deserializer);
 
   @protected
-  List<(FederationSelector, LightningAddressConfig)>
-  sse_decode_list_record_auto_owned_rust_opaque_flutter_rust_bridgefor_generated_rust_auto_opaque_inner_federation_selector_auto_owned_rust_opaque_flutter_rust_bridgefor_generated_rust_auto_opaque_inner_lightning_address_config(
-    SseDeserializer deserializer,
-  );
-
-  @protected
   List<(FederationSelector, bool)>
   sse_decode_list_record_auto_owned_rust_opaque_flutter_rust_bridgefor_generated_rust_auto_opaque_inner_federation_selector_bool(
     SseDeserializer deserializer,
@@ -1442,6 +1442,12 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   );
 
   @protected
+  LightningAddressConfig?
+  sse_decode_opt_box_autoadd_Auto_Owned_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerLightningAddressConfig(
+    SseDeserializer deserializer,
+  );
+
+  @protected
   BigInt? sse_decode_opt_box_autoadd_u_64(SseDeserializer deserializer);
 
   @protected
@@ -1474,12 +1480,6 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   @protected
   (FederationId, BigInt)
   sse_decode_record_auto_owned_rust_opaque_flutter_rust_bridgefor_generated_rust_auto_opaque_inner_federation_id_u_64(
-    SseDeserializer deserializer,
-  );
-
-  @protected
-  (FederationSelector, LightningAddressConfig)
-  sse_decode_record_auto_owned_rust_opaque_flutter_rust_bridgefor_generated_rust_auto_opaque_inner_federation_selector_auto_owned_rust_opaque_flutter_rust_bridgefor_generated_rust_auto_opaque_inner_lightning_address_config(
     SseDeserializer deserializer,
   );
 
@@ -2090,6 +2090,13 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   );
 
   @protected
+  void
+  sse_encode_box_autoadd_Auto_Owned_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerLightningAddressConfig(
+    LightningAddressConfig self,
+    SseSerializer serializer,
+  );
+
+  @protected
   void sse_encode_box_autoadd_awaiting_confs_event(
     AwaitingConfsEvent self,
     SseSerializer serializer,
@@ -2224,13 +2231,6 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
 
   @protected
   void
-  sse_encode_list_record_auto_owned_rust_opaque_flutter_rust_bridgefor_generated_rust_auto_opaque_inner_federation_selector_auto_owned_rust_opaque_flutter_rust_bridgefor_generated_rust_auto_opaque_inner_lightning_address_config(
-    List<(FederationSelector, LightningAddressConfig)> self,
-    SseSerializer serializer,
-  );
-
-  @protected
-  void
   sse_encode_list_record_auto_owned_rust_opaque_flutter_rust_bridgefor_generated_rust_auto_opaque_inner_federation_selector_bool(
     List<(FederationSelector, bool)> self,
     SseSerializer serializer,
@@ -2311,6 +2311,13 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   );
 
   @protected
+  void
+  sse_encode_opt_box_autoadd_Auto_Owned_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerLightningAddressConfig(
+    LightningAddressConfig? self,
+    SseSerializer serializer,
+  );
+
+  @protected
   void sse_encode_opt_box_autoadd_u_64(BigInt? self, SseSerializer serializer);
 
   @protected
@@ -2353,13 +2360,6 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   void
   sse_encode_record_auto_owned_rust_opaque_flutter_rust_bridgefor_generated_rust_auto_opaque_inner_federation_id_u_64(
     (FederationId, BigInt) self,
-    SseSerializer serializer,
-  );
-
-  @protected
-  void
-  sse_encode_record_auto_owned_rust_opaque_flutter_rust_bridgefor_generated_rust_auto_opaque_inner_federation_selector_auto_owned_rust_opaque_flutter_rust_bridgefor_generated_rust_auto_opaque_inner_lightning_address_config(
-    (FederationSelector, LightningAddressConfig) self,
     SseSerializer serializer,
   );
 

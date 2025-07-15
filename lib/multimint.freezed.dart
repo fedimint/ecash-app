@@ -690,6 +690,38 @@ String toString() {
 
 
 /// @nodoc
+
+
+class LNAddressStatus_CurrentConfig extends LNAddressStatus {
+  const LNAddressStatus_CurrentConfig(): super._();
+  
+
+
+
+
+
+
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is LNAddressStatus_CurrentConfig);
+}
+
+
+@override
+int get hashCode => runtimeType.hashCode;
+
+@override
+String toString() {
+  return 'LNAddressStatus.currentConfig()';
+}
+
+
+}
+
+
+
+
+/// @nodoc
 mixin _$MultimintCreation {
 
 

@@ -310,6 +310,7 @@ abstract class RustLibApi extends BaseApi {
     required String username,
     required String domain,
     required String lnAddressApi,
+    required FederationId federationId,
   });
 
   Future<bool> crateMultimintMultimintContainsClient({
@@ -333,8 +334,10 @@ abstract class RustLibApi extends BaseApi {
     required String invite,
   });
 
-  Future<List<(FederationSelector, LightningAddressConfig)>>
-  crateMultimintMultimintGetLnAddressConfig({required Multimint that});
+  Future<LightningAddressConfig?> crateMultimintMultimintGetLnAddressConfig({
+    required Multimint that,
+    required FederationId federationId,
+  });
 
   Future<BigInt> crateMultimintMultimintGetMaxWithdrawableAmount({
     required Multimint that,
@@ -656,6 +659,7 @@ abstract class RustLibApi extends BaseApi {
     required String username,
     required String domain,
     required String lnAddressApi,
+    required FederationId federationId,
   });
 
   Future<void> crateCreateMultimintFromWords({
@@ -683,8 +687,9 @@ abstract class RustLibApi extends BaseApi {
 
   Future<FederationMeta> crateGetFederationMeta({required String inviteCode});
 
-  Future<List<(FederationSelector, LightningAddressConfig)>>
-  crateGetLnAddressConfig();
+  Future<LightningAddressConfig?> crateGetLnAddressConfig({
+    required FederationId federationId,
+  });
 
   Future<BigInt> crateGetMaxWithdrawableAmount({
     required FederationId federationId,
@@ -2804,6 +2809,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
     required String username,
     required String domain,
     required String lnAddressApi,
+    required FederationId federationId,
   }) {
     return handler.executeNormal(
       NormalTask(
@@ -2816,6 +2822,10 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           sse_encode_String(username, serializer);
           sse_encode_String(domain, serializer);
           sse_encode_String(lnAddressApi, serializer);
+          sse_encode_Auto_Ref_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerFederationId(
+            federationId,
+            serializer,
+          );
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
@@ -2828,7 +2838,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           decodeErrorData: sse_decode_AnyhowException,
         ),
         constMeta: kCrateMultimintMultimintCheckLnAddressAvailabilityConstMeta,
-        argValues: [that, username, domain, lnAddressApi],
+        argValues: [that, username, domain, lnAddressApi, federationId],
         apiImpl: this,
       ),
     );
@@ -2838,7 +2848,13 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   get kCrateMultimintMultimintCheckLnAddressAvailabilityConstMeta =>
       const TaskConstMeta(
         debugName: "Multimint_check_ln_address_availability",
-        argNames: ["that", "username", "domain", "lnAddressApi"],
+        argNames: [
+          "that",
+          "username",
+          "domain",
+          "lnAddressApi",
+          "federationId",
+        ],
       );
 
   @override
@@ -3037,14 +3053,20 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
       );
 
   @override
-  Future<List<(FederationSelector, LightningAddressConfig)>>
-  crateMultimintMultimintGetLnAddressConfig({required Multimint that}) {
+  Future<LightningAddressConfig?> crateMultimintMultimintGetLnAddressConfig({
+    required Multimint that,
+    required FederationId federationId,
+  }) {
     return handler.executeNormal(
       NormalTask(
         callFfi: (port_) {
           final serializer = SseSerializer(generalizedFrbRustBinding);
           sse_encode_Auto_Ref_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerMultimint(
             that,
+            serializer,
+          );
+          sse_encode_Auto_Ref_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerFederationId(
+            federationId,
             serializer,
           );
           pdeCallFfi(
@@ -3056,11 +3078,11 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
         },
         codec: SseCodec(
           decodeSuccessData:
-              sse_decode_list_record_auto_owned_rust_opaque_flutter_rust_bridgefor_generated_rust_auto_opaque_inner_federation_selector_auto_owned_rust_opaque_flutter_rust_bridgefor_generated_rust_auto_opaque_inner_lightning_address_config,
+              sse_decode_opt_box_autoadd_Auto_Owned_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerLightningAddressConfig,
           decodeErrorData: null,
         ),
         constMeta: kCrateMultimintMultimintGetLnAddressConfigConstMeta,
-        argValues: [that],
+        argValues: [that, federationId],
         apiImpl: this,
       ),
     );
@@ -3069,7 +3091,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   TaskConstMeta get kCrateMultimintMultimintGetLnAddressConfigConstMeta =>
       const TaskConstMeta(
         debugName: "Multimint_get_ln_address_config",
-        argNames: ["that"],
+        argNames: ["that", "federationId"],
       );
 
   @override
@@ -5576,6 +5598,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
     required String username,
     required String domain,
     required String lnAddressApi,
+    required FederationId federationId,
   }) {
     return handler.executeNormal(
       NormalTask(
@@ -5584,6 +5607,10 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           sse_encode_String(username, serializer);
           sse_encode_String(domain, serializer);
           sse_encode_String(lnAddressApi, serializer);
+          sse_encode_Auto_Ref_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerFederationId(
+            federationId,
+            serializer,
+          );
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
@@ -5596,7 +5623,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           decodeErrorData: sse_decode_AnyhowException,
         ),
         constMeta: kCrateCheckLnAddressAvailabilityConstMeta,
-        argValues: [username, domain, lnAddressApi],
+        argValues: [username, domain, lnAddressApi, federationId],
         apiImpl: this,
       ),
     );
@@ -5605,7 +5632,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   TaskConstMeta get kCrateCheckLnAddressAvailabilityConstMeta =>
       const TaskConstMeta(
         debugName: "check_ln_address_availability",
-        argNames: ["username", "domain", "lnAddressApi"],
+        argNames: ["username", "domain", "lnAddressApi", "federationId"],
       );
 
   @override
@@ -5886,12 +5913,17 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   );
 
   @override
-  Future<List<(FederationSelector, LightningAddressConfig)>>
-  crateGetLnAddressConfig() {
+  Future<LightningAddressConfig?> crateGetLnAddressConfig({
+    required FederationId federationId,
+  }) {
     return handler.executeNormal(
       NormalTask(
         callFfi: (port_) {
           final serializer = SseSerializer(generalizedFrbRustBinding);
+          sse_encode_Auto_Ref_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerFederationId(
+            federationId,
+            serializer,
+          );
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
@@ -5901,18 +5933,20 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
         },
         codec: SseCodec(
           decodeSuccessData:
-              sse_decode_list_record_auto_owned_rust_opaque_flutter_rust_bridgefor_generated_rust_auto_opaque_inner_federation_selector_auto_owned_rust_opaque_flutter_rust_bridgefor_generated_rust_auto_opaque_inner_lightning_address_config,
+              sse_decode_opt_box_autoadd_Auto_Owned_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerLightningAddressConfig,
           decodeErrorData: null,
         ),
         constMeta: kCrateGetLnAddressConfigConstMeta,
-        argValues: [],
+        argValues: [federationId],
         apiImpl: this,
       ),
     );
   }
 
-  TaskConstMeta get kCrateGetLnAddressConfigConstMeta =>
-      const TaskConstMeta(debugName: "get_ln_address_config", argNames: []);
+  TaskConstMeta get kCrateGetLnAddressConfigConstMeta => const TaskConstMeta(
+    debugName: "get_ln_address_config",
+    argNames: ["federationId"],
+  );
 
   @override
   Future<BigInt> crateGetMaxWithdrawableAmount({
@@ -8094,6 +8128,17 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   }
 
   @protected
+  LightningAddressConfig
+  dco_decode_box_autoadd_Auto_Owned_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerLightningAddressConfig(
+    dynamic raw,
+  ) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    return dco_decode_Auto_Owned_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerLightningAddressConfig(
+      raw,
+    );
+  }
+
+  @protected
   AwaitingConfsEvent dco_decode_box_autoadd_awaiting_confs_event(dynamic raw) {
     // Codec=Dco (DartCObject based), see doc to use other codecs
     return dco_decode_awaiting_confs_event(raw);
@@ -8325,19 +8370,6 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   }
 
   @protected
-  List<(FederationSelector, LightningAddressConfig)>
-  dco_decode_list_record_auto_owned_rust_opaque_flutter_rust_bridgefor_generated_rust_auto_opaque_inner_federation_selector_auto_owned_rust_opaque_flutter_rust_bridgefor_generated_rust_auto_opaque_inner_lightning_address_config(
-    dynamic raw,
-  ) {
-    // Codec=Dco (DartCObject based), see doc to use other codecs
-    return (raw as List<dynamic>)
-        .map(
-          dco_decode_record_auto_owned_rust_opaque_flutter_rust_bridgefor_generated_rust_auto_opaque_inner_federation_selector_auto_owned_rust_opaque_flutter_rust_bridgefor_generated_rust_auto_opaque_inner_lightning_address_config,
-        )
-        .toList();
-  }
-
-  @protected
   List<(FederationSelector, bool)>
   dco_decode_list_record_auto_owned_rust_opaque_flutter_rust_bridgefor_generated_rust_auto_opaque_inner_federation_selector_bool(
     dynamic raw,
@@ -8404,6 +8436,8 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
         return LNAddressStatus_Registered(lnurl: dco_decode_String(raw[1]));
       case 1:
         return LNAddressStatus_Available();
+      case 2:
+        return LNAddressStatus_CurrentConfig();
       default:
         throw Exception("unreachable");
     }
@@ -8513,6 +8547,19 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
     return raw == null
         ? null
         : dco_decode_box_autoadd_Auto_Owned_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerFederationSelector(
+          raw,
+        );
+  }
+
+  @protected
+  LightningAddressConfig?
+  dco_decode_opt_box_autoadd_Auto_Owned_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerLightningAddressConfig(
+    dynamic raw,
+  ) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    return raw == null
+        ? null
+        : dco_decode_box_autoadd_Auto_Owned_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerLightningAddressConfig(
           raw,
         );
   }
@@ -8637,26 +8684,6 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
         arr[0],
       ),
       dco_decode_u_64(arr[1]),
-    );
-  }
-
-  @protected
-  (FederationSelector, LightningAddressConfig)
-  dco_decode_record_auto_owned_rust_opaque_flutter_rust_bridgefor_generated_rust_auto_opaque_inner_federation_selector_auto_owned_rust_opaque_flutter_rust_bridgefor_generated_rust_auto_opaque_inner_lightning_address_config(
-    dynamic raw,
-  ) {
-    // Codec=Dco (DartCObject based), see doc to use other codecs
-    final arr = raw as List<dynamic>;
-    if (arr.length != 2) {
-      throw Exception('Expected 2 elements, got ${arr.length}');
-    }
-    return (
-      dco_decode_Auto_Owned_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerFederationSelector(
-        arr[0],
-      ),
-      dco_decode_Auto_Owned_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerLightningAddressConfig(
-        arr[1],
-      ),
     );
   }
 
@@ -9845,6 +9872,17 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   }
 
   @protected
+  LightningAddressConfig
+  sse_decode_box_autoadd_Auto_Owned_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerLightningAddressConfig(
+    SseDeserializer deserializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    return (sse_decode_Auto_Owned_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerLightningAddressConfig(
+      deserializer,
+    ));
+  }
+
+  @protected
   AwaitingConfsEvent sse_decode_box_autoadd_awaiting_confs_event(
     SseDeserializer deserializer,
   ) {
@@ -10121,25 +10159,6 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   }
 
   @protected
-  List<(FederationSelector, LightningAddressConfig)>
-  sse_decode_list_record_auto_owned_rust_opaque_flutter_rust_bridgefor_generated_rust_auto_opaque_inner_federation_selector_auto_owned_rust_opaque_flutter_rust_bridgefor_generated_rust_auto_opaque_inner_lightning_address_config(
-    SseDeserializer deserializer,
-  ) {
-    // Codec=Sse (Serialization based), see doc to use other codecs
-
-    var len_ = sse_decode_i_32(deserializer);
-    var ans_ = <(FederationSelector, LightningAddressConfig)>[];
-    for (var idx_ = 0; idx_ < len_; ++idx_) {
-      ans_.add(
-        sse_decode_record_auto_owned_rust_opaque_flutter_rust_bridgefor_generated_rust_auto_opaque_inner_federation_selector_auto_owned_rust_opaque_flutter_rust_bridgefor_generated_rust_auto_opaque_inner_lightning_address_config(
-          deserializer,
-        ),
-      );
-    }
-    return ans_;
-  }
-
-  @protected
   List<(FederationSelector, bool)>
   sse_decode_list_record_auto_owned_rust_opaque_flutter_rust_bridgefor_generated_rust_auto_opaque_inner_federation_selector_bool(
     SseDeserializer deserializer,
@@ -10257,6 +10276,8 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
         return LNAddressStatus_Registered(lnurl: var_lnurl);
       case 1:
         return LNAddressStatus_Available();
+      case 2:
+        return LNAddressStatus_CurrentConfig();
       default:
         throw UnimplementedError('');
     }
@@ -10387,6 +10408,22 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   }
 
   @protected
+  LightningAddressConfig?
+  sse_decode_opt_box_autoadd_Auto_Owned_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerLightningAddressConfig(
+    SseDeserializer deserializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+
+    if (sse_decode_bool(deserializer)) {
+      return (sse_decode_box_autoadd_Auto_Owned_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerLightningAddressConfig(
+        deserializer,
+      ));
+    } else {
+      return null;
+    }
+  }
+
+  @protected
   BigInt? sse_decode_opt_box_autoadd_u_64(SseDeserializer deserializer) {
     // Codec=Sse (Serialization based), see doc to use other codecs
 
@@ -10509,23 +10546,6 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           deserializer,
         );
     var var_field1 = sse_decode_u_64(deserializer);
-    return (var_field0, var_field1);
-  }
-
-  @protected
-  (FederationSelector, LightningAddressConfig)
-  sse_decode_record_auto_owned_rust_opaque_flutter_rust_bridgefor_generated_rust_auto_opaque_inner_federation_selector_auto_owned_rust_opaque_flutter_rust_bridgefor_generated_rust_auto_opaque_inner_lightning_address_config(
-    SseDeserializer deserializer,
-  ) {
-    // Codec=Sse (Serialization based), see doc to use other codecs
-    var var_field0 =
-        sse_decode_Auto_Owned_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerFederationSelector(
-          deserializer,
-        );
-    var var_field1 =
-        sse_decode_Auto_Owned_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerLightningAddressConfig(
-          deserializer,
-        );
     return (var_field0, var_field1);
   }
 
@@ -11770,6 +11790,19 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   }
 
   @protected
+  void
+  sse_encode_box_autoadd_Auto_Owned_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerLightningAddressConfig(
+    LightningAddressConfig self,
+    SseSerializer serializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    sse_encode_Auto_Owned_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerLightningAddressConfig(
+      self,
+      serializer,
+    );
+  }
+
+  @protected
   void sse_encode_box_autoadd_awaiting_confs_event(
     AwaitingConfsEvent self,
     SseSerializer serializer,
@@ -12036,22 +12069,6 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
 
   @protected
   void
-  sse_encode_list_record_auto_owned_rust_opaque_flutter_rust_bridgefor_generated_rust_auto_opaque_inner_federation_selector_auto_owned_rust_opaque_flutter_rust_bridgefor_generated_rust_auto_opaque_inner_lightning_address_config(
-    List<(FederationSelector, LightningAddressConfig)> self,
-    SseSerializer serializer,
-  ) {
-    // Codec=Sse (Serialization based), see doc to use other codecs
-    sse_encode_i_32(self.length, serializer);
-    for (final item in self) {
-      sse_encode_record_auto_owned_rust_opaque_flutter_rust_bridgefor_generated_rust_auto_opaque_inner_federation_selector_auto_owned_rust_opaque_flutter_rust_bridgefor_generated_rust_auto_opaque_inner_lightning_address_config(
-        item,
-        serializer,
-      );
-    }
-  }
-
-  @protected
-  void
   sse_encode_list_record_auto_owned_rust_opaque_flutter_rust_bridgefor_generated_rust_auto_opaque_inner_federation_selector_bool(
     List<(FederationSelector, bool)> self,
     SseSerializer serializer,
@@ -12151,6 +12168,8 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
         sse_encode_String(lnurl, serializer);
       case LNAddressStatus_Available():
         sse_encode_i_32(1, serializer);
+      case LNAddressStatus_CurrentConfig():
+        sse_encode_i_32(2, serializer);
     }
   }
 
@@ -12262,6 +12281,23 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
     sse_encode_bool(self != null, serializer);
     if (self != null) {
       sse_encode_box_autoadd_Auto_Owned_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerFederationSelector(
+        self,
+        serializer,
+      );
+    }
+  }
+
+  @protected
+  void
+  sse_encode_opt_box_autoadd_Auto_Owned_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerLightningAddressConfig(
+    LightningAddressConfig? self,
+    SseSerializer serializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+
+    sse_encode_bool(self != null, serializer);
+    if (self != null) {
+      sse_encode_box_autoadd_Auto_Owned_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerLightningAddressConfig(
         self,
         serializer,
       );
@@ -12386,23 +12422,6 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
       serializer,
     );
     sse_encode_u_64(self.$2, serializer);
-  }
-
-  @protected
-  void
-  sse_encode_record_auto_owned_rust_opaque_flutter_rust_bridgefor_generated_rust_auto_opaque_inner_federation_selector_auto_owned_rust_opaque_flutter_rust_bridgefor_generated_rust_auto_opaque_inner_lightning_address_config(
-    (FederationSelector, LightningAddressConfig) self,
-    SseSerializer serializer,
-  ) {
-    // Codec=Sse (Serialization based), see doc to use other codecs
-    sse_encode_Auto_Owned_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerFederationSelector(
-      self.$1,
-      serializer,
-    );
-    sse_encode_Auto_Owned_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerLightningAddressConfig(
-      self.$2,
-      serializer,
-    );
   }
 
   @protected
@@ -13286,11 +13305,13 @@ class MultimintImpl extends RustOpaque implements Multimint {
     required String username,
     required String domain,
     required String lnAddressApi,
+    required FederationId federationId,
   }) => RustLib.instance.api.crateMultimintMultimintCheckLnAddressAvailability(
     that: this,
     username: username,
     domain: domain,
     lnAddressApi: lnAddressApi,
+    federationId: federationId,
   );
 
   Future<bool> containsClient({required FederationId federationId}) =>
@@ -13319,9 +13340,12 @@ class MultimintImpl extends RustOpaque implements Multimint {
       );
 
   /// Retreives currently configured Lightning Address
-  Future<List<(FederationSelector, LightningAddressConfig)>>
-  getLnAddressConfig() => RustLib.instance.api
-      .crateMultimintMultimintGetLnAddressConfig(that: this);
+  Future<LightningAddressConfig?> getLnAddressConfig({
+    required FederationId federationId,
+  }) => RustLib.instance.api.crateMultimintMultimintGetLnAddressConfig(
+    that: this,
+    federationId: federationId,
+  );
 
   Future<BigInt> getMaxWithdrawableAmount({
     required FederationId federationId,

@@ -113,6 +113,7 @@ abstract class Multimint implements RustOpaqueInterface {
     required String username,
     required String domain,
     required String lnAddressApi,
+    required FederationId federationId,
   });
 
   Future<bool> containsClient({required FederationId federationId});
@@ -128,8 +129,9 @@ abstract class Multimint implements RustOpaqueInterface {
   Future<FederationMeta> getCachedFederationMeta({required String invite});
 
   /// Retreives currently configured Lightning Address
-  Future<List<(FederationSelector, LightningAddressConfig)>>
-  getLnAddressConfig();
+  Future<LightningAddressConfig?> getLnAddressConfig({
+    required FederationId federationId,
+  });
 
   Future<BigInt> getMaxWithdrawableAmount({
     required FederationId federationId,
@@ -455,6 +457,7 @@ sealed class LNAddressStatus with _$LNAddressStatus {
   const factory LNAddressStatus.registered({required String lnurl}) =
       LNAddressStatus_Registered;
   const factory LNAddressStatus.available() = LNAddressStatus_Available;
+  const factory LNAddressStatus.currentConfig() = LNAddressStatus_CurrentConfig;
 }
 
 enum LogLevel { trace, debug, info, warn, error }

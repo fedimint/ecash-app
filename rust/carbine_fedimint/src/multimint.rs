@@ -64,11 +64,8 @@ use tokio::{
 
 use crate::{
     anyhow,
-    db::{
-        BtcPrice, BtcPriceKey, FederationMetaKey, LightningAddressConfig, LightningAddressKey,
-        LightningAddressKeyPrefix,
-    },
-    error_to_flutter, federations, info_to_flutter, FederationConfig, FederationConfigKey,
+    db::{BtcPrice, BtcPriceKey, FederationMetaKey, LightningAddressConfig, LightningAddressKey},
+    error_to_flutter, info_to_flutter, FederationConfig, FederationConfigKey,
     FederationConfigKeyPrefix, SeedPhraseAckKey,
 };
 use crate::{event_bus::EventBus, get_event_bus};
@@ -303,6 +300,7 @@ pub struct LNAddressRegisterRequest {
 pub enum LNAddressStatus {
     Registered { lnurl: String },
     Available,
+    CurrentConfig,
 }
 
 impl Multimint {
@@ -2798,26 +2796,15 @@ impl Multimint {
     }
 
     /// Retreives currently configured Lightning Address
-    pub async fn get_ln_address_config(&self) -> Vec<(FederationSelector, LightningAddressConfig)> {
-        let feds = federations().await;
+    pub async fn get_ln_address_config(
+        &self,
+        federation_id: &FederationId,
+    ) -> Option<LightningAddressConfig> {
         let mut dbtx = self.db.begin_transaction_nc().await;
-        let lightning_configs = dbtx
-            .find_by_prefix(&LightningAddressKeyPrefix)
-            .await
-            .collect::<Vec<_>>()
-            .await;
-        lightning_configs
-            .into_iter()
-            .map(|(key, config)| {
-                let selector = feds
-                    .iter()
-                    .find(|fed| fed.0.federation_id == key.federation_id)
-                    .expect("Federation should exist")
-                    .0
-                    .clone();
-                (selector, config)
-            })
-            .collect::<Vec<_>>()
+        dbtx.get_value(&LightningAddressKey {
+            federation_id: *federation_id,
+        })
+        .await
     }
 
     /// Register LNURL/LN Address
@@ -2858,8 +2845,6 @@ impl Multimint {
             )
             .await?;
         info_to_flutter(format!("Registered LNURL {:?}", lnurl)).await;
-
-        // TODO: Listen for recurringd payments
 
         let safe_ln_address_api = SafeUrl::parse(&ln_address_api)?;
         let register_request = LNAddressRegisterRequest {
@@ -2909,7 +2894,19 @@ impl Multimint {
         username: String,
         domain: String,
         ln_address_api: String,
+        federation_id: &FederationId,
     ) -> anyhow::Result<LNAddressStatus> {
+        // First check if the current config is equivalent
+        if let Some(current_config) = self.get_ln_address_config(federation_id).await {
+            if username == current_config.username && domain == current_config.domain {
+                return Ok(LNAddressStatus::CurrentConfig);
+            }
+        }
+
+        // TODO: Add validation check against username
+
+        // TODO: Add validation check against recurringd
+
         let safe_url = SafeUrl::parse(&ln_address_api)?;
         let endpoint = safe_url.join(&format!("lnaddress/{}/{}", domain, username))?;
         let http_client = reqwest::Client::new();

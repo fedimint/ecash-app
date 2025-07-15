@@ -851,9 +851,9 @@ pub async fn list_ln_address_domains(ln_address_api: String) -> anyhow::Result<V
 }
 
 #[frb]
-pub async fn get_ln_address_config() -> Vec<(FederationSelector, LightningAddressConfig)> {
+pub async fn get_ln_address_config(federation_id: &FederationId) -> Option<LightningAddressConfig> {
     let multimint = get_multimint();
-    multimint.get_ln_address_config().await
+    multimint.get_ln_address_config(federation_id).await
 }
 
 #[frb]
@@ -861,10 +861,11 @@ pub async fn check_ln_address_availability(
     username: String,
     domain: String,
     ln_address_api: String,
+    federation_id: &FederationId,
 ) -> anyhow::Result<LNAddressStatus> {
     let multimint = get_multimint();
     multimint
-        .check_ln_address_availability(username, domain, ln_address_api)
+        .check_ln_address_availability(username, domain, ln_address_api, federation_id)
         .await
 }
 

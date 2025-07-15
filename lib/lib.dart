@@ -339,17 +339,20 @@ Future<bool> checkEcashSpent({
 Future<List<String>> listLnAddressDomains({required String lnAddressApi}) =>
     RustLib.instance.api.crateListLnAddressDomains(lnAddressApi: lnAddressApi);
 
-Future<List<(FederationSelector, LightningAddressConfig)>>
-getLnAddressConfig() => RustLib.instance.api.crateGetLnAddressConfig();
+Future<LightningAddressConfig?> getLnAddressConfig({
+  required FederationId federationId,
+}) => RustLib.instance.api.crateGetLnAddressConfig(federationId: federationId);
 
 Future<LNAddressStatus> checkLnAddressAvailability({
   required String username,
   required String domain,
   required String lnAddressApi,
+  required FederationId federationId,
 }) => RustLib.instance.api.crateCheckLnAddressAvailability(
   username: username,
   domain: domain,
   lnAddressApi: lnAddressApi,
+  federationId: federationId,
 );
 
 Future<void> registerLnAddress({
