@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:io';
 
 import 'package:carbine/db.dart';
 import 'package:carbine/lib.dart';
@@ -31,9 +32,18 @@ class _LightningAddressScreenState extends State<LightningAddressScreen> {
   bool? _isAvailable;
   String? _lastCheckedAddress;
 
+  // Advanced state
+  bool _showAdvanced = false;
+  bool? _lnAddressApiOnline;
+  bool? _recurringdApiOnline;
+  final _lnApiController = TextEditingController();
+  final _recurringdApiController = TextEditingController();
+
   @override
   void initState() {
     super.initState();
+    _lnApiController.text = _lnAddressApi;
+    _recurringdApiController.text = _recurringdApi;
     _initialize();
   }
 
@@ -114,116 +124,242 @@ class _LightningAddressScreenState extends State<LightningAddressScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        DropdownButtonFormField<FederationSelector>(
-          decoration: const InputDecoration(labelText: 'Select a Federation'),
-          value: _selectedFederation,
-          items:
-              feds
-                  .map(
-                    (f) => DropdownMenuItem(
-                      value: f,
-                      child: Text(f.federationName),
+        if (_domains.isNotEmpty) ...[
+          DropdownButtonFormField<FederationSelector>(
+            decoration: const InputDecoration(labelText: 'Select a Federation'),
+            value: _selectedFederation,
+            items:
+                feds
+                    .map(
+                      (f) => DropdownMenuItem(
+                        value: f,
+                        child: Text(f.federationName),
+                      ),
+                    )
+                    .toList(),
+            onChanged: (value) {
+              setState(() {
+                _selectedFederation = value;
+              });
+              _onUsernameChanged();
+            },
+          ),
+          const SizedBox(height: 24),
+          Row(
+            children: [
+              Expanded(
+                flex: 3,
+                child: TextFormField(
+                  controller: _usernameController,
+                  decoration: const InputDecoration(labelText: 'Username'),
+                ),
+              ),
+              const SizedBox(width: 8),
+              const Text('@', style: TextStyle(fontSize: 18)),
+              const SizedBox(width: 8),
+              Expanded(
+                flex: 3,
+                child: DropdownButtonFormField<String>(
+                  decoration: const InputDecoration(labelText: 'Domain'),
+                  value: _selectedDomain,
+                  items:
+                      _domains
+                          .map(
+                            (domain) => DropdownMenuItem(
+                              value: domain,
+                              child: Text(domain),
+                            ),
+                          )
+                          .toList(),
+                  onChanged: (value) {
+                    setState(() {
+                      _selectedDomain = value;
+                    });
+                  },
+                ),
+              ),
+            ],
+          ),
+          if (_usernameController.text.isNotEmpty && _selectedDomain != null)
+            Padding(
+              padding: const EdgeInsets.only(top: 8),
+              child: Center(
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    if (_isAvailable == null)
+                      const SizedBox(
+                        height: 20,
+                        width: 20,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
+                    else if (_isAvailable == true)
+                      const Icon(Icons.check_circle, color: Colors.green)
+                    else
+                      const Icon(Icons.cancel, color: Colors.red),
+                    const SizedBox(width: 8),
+                    Text(
+                      _isAvailable == null
+                          ? "Checking availability..."
+                          : _isAvailable == true
+                          ? "Available"
+                          : "Already registered",
+                      style: TextStyle(
+                        color:
+                            _isAvailable == true
+                                ? Colors.green
+                                : (_isAvailable == false ? Colors.red : null),
+                      ),
                     ),
-                  )
-                  .toList(),
-          onChanged: (value) {
+                  ],
+                ),
+              ),
+            ),
+          const SizedBox(height: 32),
+          Center(
+            child: ElevatedButton(
+              onPressed:
+                  (_selectedFederation != null && _isAvailable == true)
+                      ? () {
+                        // TODO: Need to add try/catch, put in function
+                        registerLnAddress(
+                          federationId: _selectedFederation!.federationId,
+                          recurringdApi: _recurringdApi,
+                          lnAddressApi: _lnAddressApi,
+                          username: _usernameController.text.trim(),
+                          domain: _selectedDomain!,
+                        );
+                      }
+                      : null,
+              child: const Text('Register'),
+            ),
+          ),
+          const SizedBox(height: 16),
+        ] else ...[
+          Padding(
+            padding: const EdgeInsets.only(bottom: 24),
+            child: Center(
+              child: Text(
+                "Could not contact Lightning Address Server.",
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  color: Theme.of(context).colorScheme.error,
+                  fontSize: 16,
+                ),
+              ),
+            ),
+          ),
+        ],
+        GestureDetector(
+          onTap: () {
             setState(() {
-              _selectedFederation = value;
+              _showAdvanced = !_showAdvanced;
             });
-            _onUsernameChanged();
+            if (!_showAdvanced) return;
+            _checkApiOnline();
           },
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              const Text('Advanced'),
+              Icon(
+                _showAdvanced
+                    ? Icons.keyboard_arrow_up
+                    : Icons.keyboard_arrow_down,
+              ),
+            ],
+          ),
         ),
-        const SizedBox(height: 24),
-        Row(
+        if (_showAdvanced) _buildAdvancedSection(),
+      ],
+    );
+  }
+
+  Widget _buildAdvancedSection() {
+    Widget buildRow({
+      required String label,
+      required TextEditingController controller,
+      required VoidCallback onSet,
+      required bool? isOnline,
+    }) {
+      return Padding(
+        padding: const EdgeInsets.symmetric(vertical: 8),
+        child: Row(
           children: [
             Expanded(
-              flex: 3,
               child: TextFormField(
-                controller: _usernameController,
-                decoration: const InputDecoration(labelText: 'Username'),
+                controller: controller,
+                decoration: InputDecoration(labelText: label),
               ),
             ),
             const SizedBox(width: 8),
-            const Text('@', style: TextStyle(fontSize: 18)),
+            ElevatedButton(onPressed: onSet, child: Text('Set $label')),
             const SizedBox(width: 8),
-            Expanded(
-              flex: 3,
-              child: DropdownButtonFormField<String>(
-                decoration: const InputDecoration(labelText: 'Domain'),
-                value: _selectedDomain,
-                items:
-                    _domains
-                        .map(
-                          (domain) => DropdownMenuItem(
-                            value: domain,
-                            child: Text(domain),
-                          ),
-                        )
-                        .toList(),
-                onChanged: (value) {
-                  setState(() {
-                    _selectedDomain = value;
-                  });
-                },
-              ),
-            ),
+            if (isOnline == null)
+              const SizedBox(
+                height: 20,
+                width: 20,
+                child: CircularProgressIndicator(strokeWidth: 2),
+              )
+            else if (isOnline)
+              const Icon(Icons.check_circle, color: Colors.green)
+            else
+              const Icon(Icons.cancel, color: Colors.red),
           ],
         ),
-        if (_usernameController.text.isNotEmpty && _selectedDomain != null)
-          Padding(
-            padding: const EdgeInsets.only(top: 8),
-            child: Center(
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  if (_isAvailable == null)
-                    const SizedBox(
-                      height: 20,
-                      width: 20,
-                      child: CircularProgressIndicator(strokeWidth: 2),
-                    )
-                  else if (_isAvailable == true)
-                    const Icon(Icons.check_circle, color: Colors.green)
-                  else
-                    const Icon(Icons.cancel, color: Colors.red),
-                  const SizedBox(width: 8),
-                  Text(
-                    _isAvailable == null
-                        ? "Checking availability..."
-                        : _isAvailable == true
-                        ? "Available"
-                        : "Already registered",
-                    style: TextStyle(
-                      color:
-                          _isAvailable == true
-                              ? Colors.green
-                              : (_isAvailable == false ? Colors.red : null),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-        const SizedBox(height: 32),
-        Center(
-          child: ElevatedButton(
-            onPressed:
-                (_selectedFederation != null && _isAvailable == true)
-                    ? () {
-                      registerLnAddress(
-                        federationId: _selectedFederation!.federationId,
-                        recurringdApi: _recurringdApi,
-                        lnAddressApi: _lnAddressApi,
-                        username: _usernameController.text.trim(),
-                        domain: _selectedDomain!,
-                      );
-                    }
-                    : null,
-            child: const Text('Register'),
-          ),
+      );
+    }
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        buildRow(
+          label: 'Lightning Address API',
+          controller: _lnApiController,
+          onSet: () {
+            setState(() {
+              _lnAddressApi = _lnApiController.text;
+            });
+            _checkApiOnline();
+            _onUsernameChanged();
+          },
+          isOnline: _lnAddressApiOnline,
+        ),
+        buildRow(
+          label: 'Recurringd API',
+          controller: _recurringdApiController,
+          onSet: () {
+            setState(() {
+              _recurringdApi = _recurringdApiController.text;
+            });
+            _checkApiOnline();
+          },
+          isOnline: _recurringdApiOnline,
         ),
       ],
     );
+  }
+
+  Future<void> _checkApiOnline() async {
+    Future<bool> check(String url) async {
+      try {
+        final uri = Uri.parse(url);
+        final res =
+            await Uri.base.scheme == 'https'
+                ? await HttpClient().getUrl(uri).then((req) => req.close())
+                : await HttpClient().getUrl(uri).then((req) => req.close());
+        return res.statusCode == 200;
+      } catch (_) {
+        return false;
+      }
+    }
+
+    final lnOnline = await check(_lnAddressApi);
+    final recOnline = await check("$_recurringdApi/lnv1/federations");
+    setState(() {
+      _lnAddressApiOnline = lnOnline;
+      _recurringdApiOnline = recOnline;
+    });
   }
 
   @override
@@ -252,24 +388,6 @@ class _LightningAddressScreenState extends State<LightningAddressScreen> {
       return Scaffold(
         appBar: AppBar(title: const Text('Lightning Address')),
         body: const Center(child: CircularProgressIndicator()),
-      );
-    }
-
-    if (_domains.isEmpty) {
-      return Scaffold(
-        appBar: AppBar(title: const Text("Lightning Address")),
-        body: Center(
-          child: Padding(
-            padding: const EdgeInsets.all(24),
-            child: Text(
-              'The Lightning Address server is offline.',
-              textAlign: TextAlign.center,
-              style: theme.textTheme.bodyLarge?.copyWith(
-                color: theme.colorScheme.error,
-              ),
-            ),
-          ),
-        ),
       );
     }
 
