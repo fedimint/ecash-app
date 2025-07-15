@@ -83,6 +83,7 @@ class TransactionItem extends StatelessWidget {
         );
         break;
       // TODO: Fill in with onchain data
+      case TransactionKind_LightningRecurring():
       case TransactionKind_OnchainReceive():
       case TransactionKind_OnchainSend():
         showCarbineModalBottomSheet(
@@ -103,13 +104,14 @@ class TransactionItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isIncoming = tx.kind is TransactionKind_LightningReceive || tx.kind is TransactionKind_OnchainReceive || tx.kind is TransactionKind_EcashReceive;
+    final isIncoming = tx.kind is TransactionKind_LightningReceive || tx.kind is TransactionKind_OnchainReceive || tx.kind is TransactionKind_EcashReceive || tx.kind is TransactionKind_LightningRecurring;
     final date = DateTime.fromMillisecondsSinceEpoch(tx.timestamp.toInt());
     final formattedDate = DateFormat.yMMMd().add_jm().format(date);
     final formattedAmount = formatBalance(tx.amount, false);
 
     IconData moduleIcon;
     switch (tx.kind) {
+      case TransactionKind_LightningRecurring():
       case TransactionKind_LightningReceive():
       case TransactionKind_LightningSend():
         moduleIcon = Icons.flash_on;

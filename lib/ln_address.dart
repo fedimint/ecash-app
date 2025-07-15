@@ -24,7 +24,7 @@ class LightningAddressScreen extends StatefulWidget {
 
 class _LightningAddressScreenState extends State<LightningAddressScreen> {
   String _lnAddressApi = "http://localhost:8080";
-  String _recurringdApi = "http://localhost:21634";
+  String _recurringdApi = "http://localhost:21665";
   bool _loading = true;
   FederationSelector? _selectedFederation;
 

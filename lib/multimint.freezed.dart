@@ -1562,6 +1562,38 @@ as String,
 /// @nodoc
 
 
+class TransactionKind_LightningRecurring extends TransactionKind {
+  const TransactionKind_LightningRecurring(): super._();
+  
+
+
+
+
+
+
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is TransactionKind_LightningRecurring);
+}
+
+
+@override
+int get hashCode => runtimeType.hashCode;
+
+@override
+String toString() {
+  return 'TransactionKind.lightningRecurring()';
+}
+
+
+}
+
+
+
+
+/// @nodoc
+
+
 class TransactionKind_OnchainReceive extends TransactionKind {
   const TransactionKind_OnchainReceive(): super._();
   

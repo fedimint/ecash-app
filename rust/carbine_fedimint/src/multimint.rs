@@ -64,7 +64,10 @@ use tokio::{
 
 use crate::{
     anyhow,
-    db::{BtcPrice, BtcPriceKey, FederationMetaKey, LightningAddressConfig, LightningAddressKey},
+    db::{
+        BtcPrice, BtcPriceKey, FederationMetaKey, LightningAddressConfig, LightningAddressKey,
+        LightningAddressKeyPrefix,
+    },
     error_to_flutter, info_to_flutter, FederationConfig, FederationConfigKey,
     FederationConfigKeyPrefix, SeedPhraseAckKey,
 };
@@ -118,6 +121,7 @@ pub struct Multimint {
     internal_ecash_spends: Arc<RwLock<BTreeSet<OperationId>>>,
     allocated_bitcoin_addresses:
         Arc<RwLock<BTreeMap<FederationId, BTreeMap<TweakIdx, (String, Option<u64>)>>>>,
+    recurringd_invoices: Arc<RwLock<BTreeSet<OperationId>>>,
 }
 
 #[derive(Debug, Serialize, Encodable, Decodable, Clone)]
@@ -157,6 +161,7 @@ pub enum TransactionKind {
         payment_hash: String,
         preimage: String,
     },
+    LightningRecurring,
     OnchainReceive,
     OnchainSend,
     EcashReceive {
@@ -355,6 +360,7 @@ impl Multimint {
             recovery_progress: Arc::new(RwLock::new(BTreeMap::new())),
             internal_ecash_spends: Arc::new(RwLock::new(BTreeSet::new())),
             allocated_bitcoin_addresses: Arc::new(RwLock::new(BTreeMap::new())),
+            recurringd_invoices: Arc::new(RwLock::new(BTreeSet::new())),
         };
 
         multimint.load_clients().await?;
@@ -363,6 +369,7 @@ impl Multimint {
             .await?;
         multimint.monitor_all_unused_pegin_addresses().await?;
         multimint.spawn_cache_task();
+        multimint.spawn_recurring_invoice_listener();
 
         info_to_flutter(format!("Initialized Multimint in {:?}", start.elapsed())).await;
         Ok(multimint)
@@ -1791,6 +1798,71 @@ impl Multimint {
         Ok((final_state, amount))
     }
 
+    async fn spawn_await_recurringd_receive(
+        &self,
+        client: ClientHandleArc,
+        operation_id: OperationId,
+        federation_id: FederationId,
+    ) {
+        self.task_group
+            .spawn_cancellable("recurringd invoice", async move {
+                info_to_flutter(format!(
+                    "Checking invoice with operation id: {operation_id:?}"
+                ))
+                .await;
+                if let Ok(lnv1) = client.get_first_module::<LightningClientModule>() {
+                    if let Ok(updates) = lnv1.subscribe_ln_recurring_receive(operation_id).await {
+                        let mut stream = updates.into_stream();
+                        let mut final_state = FinalReceiveOperationState::Failure;
+                        let operation = client
+                            .operation_log()
+                            .get_operation(operation_id)
+                            .await
+                            .expect("operation must exist");
+                        while let Some(update) = stream.next().await {
+                            match update {
+                                LnReceiveState::Claimed => {
+                                    final_state = FinalReceiveOperationState::Claimed;
+                                    if let LightningOperationMetaVariant::RecurringPaymentReceive(
+                                        meta,
+                                    ) = operation
+                                        .meta::<fedimint_ln_client::LightningOperationMeta>()
+                                        .variant
+                                    {
+                                        let amount_msats = meta
+                                            .invoice
+                                            .amount_milli_satoshis()
+                                            .expect("Amount not present");
+                                        let lightning_event =
+                                            LightningEventKind::InvoicePaid(InvoicePaidEvent {
+                                                amount_msats,
+                                            });
+                                        info_to_flutter(format!(
+                                            "Recurringd receive completed: {final_state:?}"
+                                        ))
+                                        .await;
+                                        let multimint_event = MultimintEvent::Lightning((
+                                            federation_id,
+                                            lightning_event,
+                                        ));
+                                        get_event_bus().publish(multimint_event).await;
+                                    }
+                                }
+                                _ => {}
+                            }
+                        }
+                        info_to_flutter(format!(
+                            "Final state of recurringd receive: {final_state:?}"
+                        ))
+                        .await;
+                    }
+                }
+            });
+
+        let mut recurringd_invoices = self.recurringd_invoices.write().await;
+        recurringd_invoices.insert(operation_id);
+    }
+
     fn get_lnv1_amount_from_meta(op_log_val: Option<OperationLogEntry>) -> u64 {
         let Some(op_log_val) = op_log_val else {
             return 0;
@@ -2019,13 +2091,16 @@ impl Multimint {
                                 )
                             }
                             LightningOperationMetaVariant::RecurringPaymentReceive(recurring) => {
-                                Self::get_lnv1_receive_tx(
-                                    &recurring.invoice,
-                                    op_log_val,
+                                let amount_msat = recurring
+                                    .invoice
+                                    .amount_milli_satoshis()
+                                    .expect("Amountless invoice");
+                                Some(Transaction {
+                                    kind: TransactionKind::LightningRecurring,
+                                    amount: amount_msat,
                                     timestamp,
-                                    key.operation_id,
-                                    meta.extra_meta,
-                                )
+                                    operation_id: key.operation_id.0.to_vec(),
+                                })
                             }
                             _ => None,
                         }
@@ -2852,7 +2927,7 @@ impl Multimint {
         let register_request = LNAddressRegisterRequest {
             username: username.clone(),
             domain: domain.clone(),
-            lnurl: lnurl.code,
+            lnurl: lnurl.code.clone(),
         };
 
         let http_client = reqwest::Client::new();
@@ -2880,12 +2955,17 @@ impl Multimint {
                 domain,
                 recurringd_api: safe_recurringd_api,
                 ln_address_api: safe_ln_address_api,
+                lnurl: lnurl.code.clone(),
             },
         )
         .await;
         dbtx.commit_tx().await;
 
-        info_to_flutter("Successfully registered LN Address").await;
+        info_to_flutter(format!(
+            "Successfully registered LN Address. LNURL: {}",
+            lnurl.code
+        ))
+        .await;
 
         Ok(())
     }
@@ -2957,6 +3037,7 @@ impl Multimint {
         }
     }
 
+    /// Returns a vector of `FederationId`s that recurringd supports
     async fn get_recurringd_federations(
         &self,
         recurringd_api: String,
@@ -2972,6 +3053,66 @@ impl Multimint {
 
         let feds = result.json::<Vec<FederationId>>().await?;
         Ok(feds)
+    }
+
+    fn spawn_recurring_invoice_listener(&self) {
+        let self_copy = self.clone();
+        self.task_group
+            .spawn_cancellable("recurringd listener", async move {
+                info_to_flutter("Spawning recurringd invoice listener").await;
+                let mut interval = tokio::time::interval(Duration::from_secs(20));
+                interval.tick().await;
+                loop {
+                    let mut dbtx = self_copy.db.begin_transaction_nc().await;
+                    let lightning_configs = dbtx
+                        .find_by_prefix(&LightningAddressKeyPrefix)
+                        .await
+                        .collect::<Vec<_>>()
+                        .await;
+                    for (key, config) in lightning_configs {
+                        let federation_id = key.federation_id;
+                        if let Some(client) = self_copy.clients.read().await.get(&federation_id) {
+                            let lnv1 = client
+                                .get_first_module::<LightningClientModule>()
+                                .expect("No LNv1 module");
+                            let payment_codes = lnv1.list_recurring_payment_codes().await;
+                            if let Some((index, _)) = payment_codes
+                                .into_iter()
+                                .find(|(_, entry)| entry.code == config.lnurl)
+                            {
+                                if let Some(invoices) =
+                                    lnv1.list_recurring_payment_code_invoices(index).await
+                                {
+                                    for (_, operation_id) in invoices {
+                                        let operation = client
+                                            .operation_log()
+                                            .get_operation(operation_id)
+                                            .await
+                                            .expect("operation must exist");
+                                        if operation.outcome::<serde_json::Value>().is_none()
+                                            && !self_copy
+                                                .recurringd_invoices
+                                                .read()
+                                                .await
+                                                .contains(&operation_id)
+                                        {
+                                            self_copy
+                                                .spawn_await_recurringd_receive(
+                                                    client.clone(),
+                                                    operation_id,
+                                                    federation_id,
+                                                )
+                                                .await;
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+
+                    interval.tick().await;
+                }
+            });
     }
 }
 
