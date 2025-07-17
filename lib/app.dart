@@ -131,13 +131,7 @@ class _MyAppState extends State<MyApp> {
     setState(() {
       recoverFederations = true;
     });
-    final inviteCodes = await getBackupInviteCodes();
-    final joinFutures =
-        inviteCodes.map((inviteCode) async {
-          await joinFederation(inviteCode: inviteCode, recover: true);
-        }).toList();
-
-    await Future.wait(joinFutures);
+    await rejoinFromBackupInvites();
     await _refreshFederations();
 
     if (_feds.isNotEmpty) {

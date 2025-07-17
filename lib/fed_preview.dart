@@ -1,27 +1,27 @@
 import 'package:carbine/lib.dart';
 import 'package:carbine/multimint.dart';
+import 'package:carbine/toast.dart';
 import 'package:carbine/utils.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:qr_flutter/qr_flutter.dart';
 
 class FederationPreview extends StatefulWidget {
-  final String federationName;
-  final String inviteCode;
+  final FederationSelector fed;
+  final String? inviteCode;
   final String? welcomeMessage;
   final String? imageUrl;
   final bool joinable;
   final List<Guardian>? guardians;
-  final String network;
 
   const FederationPreview({
     super.key,
-    required this.federationName,
-    required this.inviteCode,
+    required this.fed,
+    this.inviteCode,
     this.welcomeMessage,
     this.imageUrl,
     required this.joinable,
     this.guardians,
-    required this.network,
   });
 
   @override
@@ -43,7 +43,7 @@ class _FederationPreviewState extends State<FederationPreview> {
       });
       try {
         final fed = await joinFederation(
-          inviteCode: widget.inviteCode,
+          inviteCode: widget.inviteCode!,
           recover: false,
         );
         AppLogger.instance.info('Successfully joined federation');
@@ -53,17 +53,13 @@ class _FederationPreviewState extends State<FederationPreview> {
         }
 
         // backup the federation's invite codes as a replaceable event to Nostr
-        final newFeds = await federations();
-        final inviteCodes = newFeds.map((f) => f.$1.inviteCode).toList();
-        backupInviteCodes(inviteCodes: inviteCodes);
+        backupInviteCodes();
       } catch (e) {
         AppLogger.instance.error('Could not join federation $e');
         setState(() {
           isJoining = false;
         });
       }
-    } else {
-      Clipboard.setData(ClipboardData(text: widget.inviteCode));
     }
   }
 
@@ -85,7 +81,7 @@ class _FederationPreviewState extends State<FederationPreview> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              if (widget.network.toLowerCase() != 'bitcoin') ...[
+              if (widget.fed.network?.toLowerCase() != 'bitcoin') ...[
                 Container(
                   margin: const EdgeInsets.only(bottom: 16),
                   padding: const EdgeInsets.all(12),
@@ -99,7 +95,7 @@ class _FederationPreviewState extends State<FederationPreview> {
                       const SizedBox(width: 8),
                       Expanded(
                         child: Text(
-                          'Warning: This is a test network (${widget.network}) and is not worth anything.',
+                          'Warning: This is a test network (${widget.fed.network}) and is not worth anything.',
                           style: const TextStyle(color: Colors.orange),
                         ),
                       ),
@@ -138,7 +134,7 @@ class _FederationPreviewState extends State<FederationPreview> {
               const SizedBox(height: 16),
 
               Text(
-                widget.federationName,
+                widget.fed.federationName,
                 style: theme.textTheme.headlineSmall?.copyWith(
                   fontWeight: FontWeight.bold,
                 ),
@@ -157,40 +153,37 @@ class _FederationPreviewState extends State<FederationPreview> {
               const SizedBox(height: 24),
 
               if (isFederationOnline) ...[
-                SizedBox(
-                  width: double.infinity,
-                  child: ElevatedButton(
-                    onPressed: _onButtonPressed,
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: theme.colorScheme.primary,
-                      foregroundColor: Colors.black,
-                      padding: const EdgeInsets.symmetric(vertical: 16),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
+                if (widget.joinable) ...[
+                  SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton(
+                      onPressed: _onButtonPressed,
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: theme.colorScheme.primary,
+                        foregroundColor: Colors.black,
+                        padding: const EdgeInsets.symmetric(vertical: 16),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        textStyle: const TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                        ),
                       ),
-                      textStyle: const TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
-                      ),
+                      child:
+                          isJoining
+                              ? const SizedBox(
+                                height: 20,
+                                width: 20,
+                                child: CircularProgressIndicator(
+                                  color: Colors.black,
+                                  strokeWidth: 2,
+                                ),
+                              )
+                              : Text("Join Federation"),
                     ),
-                    child:
-                        isJoining
-                            ? const SizedBox(
-                              height: 20,
-                              width: 20,
-                              child: CircularProgressIndicator(
-                                color: Colors.black,
-                                strokeWidth: 2,
-                              ),
-                            )
-                            : Text(
-                              widget.joinable
-                                  ? "Join Federation"
-                                  : "Copy Invite Code",
-                            ),
                   ),
-                ),
-
+                ],
                 if (widget.joinable && !isJoining) ...[
                   const SizedBox(height: 12),
                   SizedBox(
@@ -202,7 +195,7 @@ class _FederationPreviewState extends State<FederationPreview> {
                         });
                         try {
                           final fed = await joinFederation(
-                            inviteCode: widget.inviteCode,
+                            inviteCode: widget.inviteCode!,
                             recover: true,
                           );
                           if (mounted) {
@@ -254,7 +247,7 @@ class _FederationPreviewState extends State<FederationPreview> {
                       _buildGuardianList(thresh, totalGuardians),
                       FederationUtxoList(
                         invite: widget.inviteCode,
-                        network: widget.network,
+                        fed: widget.fed,
                       ),
                     ],
                   ),
@@ -275,6 +268,7 @@ class _FederationPreviewState extends State<FederationPreview> {
   }
 
   Widget _buildGuardianList(int thresh, int total) {
+    final theme = Theme.of(context);
     return widget.guardians != null && widget.guardians!.isNotEmpty
         ? ListView.builder(
           padding: const EdgeInsets.only(top: 8),
@@ -282,6 +276,7 @@ class _FederationPreviewState extends State<FederationPreview> {
           itemBuilder: (context, index) {
             final guardian = widget.guardians![index];
             final isOnline = guardian.version != null;
+
             return ListTile(
               dense: true,
               contentPadding: EdgeInsets.zero,
@@ -295,6 +290,107 @@ class _FederationPreviewState extends State<FederationPreview> {
                   isOnline
                       ? Text('Version: ${guardian.version}')
                       : const Text('Offline'),
+              trailing: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  // Copy invite code button
+                  IconButton(
+                    tooltip: "Copy invite code",
+                    icon: const Icon(Icons.copy, size: 20),
+                    onPressed: () async {
+                      try {
+                        final inviteCode = await getInviteCode(
+                          federationId: widget.fed.federationId,
+                          peer: index,
+                        );
+                        if (!context.mounted) return;
+                        await Clipboard.setData(
+                          ClipboardData(text: inviteCode),
+                        );
+                        ToastService().show(
+                          message: "Invite code for ${guardian.name} copied",
+                          duration: const Duration(seconds: 5),
+                          onTap: () {},
+                          icon: Icon(Icons.check),
+                        );
+                      } catch (e) {
+                        AppLogger.instance.error(
+                          "Error getting invite code: $e",
+                        );
+                      }
+                    },
+                  ),
+
+                  // Show invite code popup button
+                  IconButton(
+                    tooltip: "View invite code",
+                    icon: const Icon(Icons.qr_code, size: 20),
+                    onPressed: () async {
+                      try {
+                        final inviteCode = await getInviteCode(
+                          federationId: widget.fed.federationId,
+                          peer: index,
+                        );
+                        if (!context.mounted) return;
+                        showDialog(
+                          context: context,
+                          builder:
+                              (context) => AlertDialog(
+                                title: const Center(
+                                  child: Text(
+                                    "Invite Code",
+                                    textAlign: TextAlign.center,
+                                  ),
+                                ),
+                                content: Container(
+                                  padding: const EdgeInsets.all(12),
+                                  decoration: BoxDecoration(
+                                    color: theme.colorScheme.surface,
+                                    borderRadius: BorderRadius.circular(16),
+                                    boxShadow: [
+                                      BoxShadow(
+                                        color: theme.colorScheme.primary
+                                            .withOpacity(0.3),
+                                        blurRadius: 12,
+                                        spreadRadius: 1,
+                                      ),
+                                    ],
+                                    border: Border.all(
+                                      color: theme.colorScheme.primary
+                                          .withOpacity(0.7),
+                                      width: 1.5,
+                                    ),
+                                  ),
+                                  child: AspectRatio(
+                                    aspectRatio: 1,
+                                    child: QrImageView(
+                                      data: inviteCode,
+                                      version: QrVersions.auto,
+                                      backgroundColor: Colors.white,
+                                      padding: EdgeInsets.zero,
+                                    ),
+                                  ),
+                                ),
+                                actions: [
+                                  TextButton(
+                                    onPressed:
+                                        () => Navigator.of(context).pop(),
+                                    child: const Text("Close"),
+                                  ),
+                                ],
+                              ),
+                        );
+                      } catch (e) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text("Error loading invite code: $e"),
+                          ),
+                        );
+                      }
+                    },
+                  ),
+                ],
+              ),
             );
           },
         )
@@ -303,13 +399,13 @@ class _FederationPreviewState extends State<FederationPreview> {
 }
 
 class FederationUtxoList extends StatefulWidget {
-  final String invite;
-  final String network;
+  final String? invite;
+  final FederationSelector fed;
 
   const FederationUtxoList({
     super.key,
     required this.invite,
-    required this.network,
+    required this.fed,
   });
 
   @override
@@ -326,14 +422,17 @@ class _FederationUtxoListState extends State<FederationUtxoList> {
   }
 
   Future<void> _loadWalletSummary() async {
-    final summary = await walletSummary(invite: widget.invite);
+    final summary = await walletSummary(
+      invite: widget.invite,
+      federationId: widget.fed.federationId,
+    );
     setState(() {
       utxos = summary;
     });
   }
 
   String? _explorerUrl(String txid) {
-    switch (widget.network) {
+    switch (widget.fed.network) {
       case 'bitcoin':
         return 'https://mempool.space/tx/$txid';
       case 'signet':

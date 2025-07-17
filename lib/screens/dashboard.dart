@@ -114,8 +114,9 @@ class _DashboardState extends State<Dashboard> {
   }
 
   Future<void> _loadBalance() async {
+    if (recovering) return;
     final bal = await balance(federationId: widget.fed.federationId);
-    if (!mounted || recovering) return;
+    if (!mounted) return;
     setState(() {
       balanceMsats = bal;
       isLoadingBalance = false;

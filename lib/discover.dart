@@ -189,22 +189,22 @@ class _Discover extends State<Discover> {
                     final fed = await showCarbineModalBottomSheet(
                       context: context,
                       child: FederationPreview(
-                        federationName: meta.selector.federationName,
-                        inviteCode: meta.selector.inviteCode,
+                        fed: meta.selector,
+                        inviteCode: federation.inviteCodes.first,
                         welcomeMessage: meta.welcome,
                         imageUrl: meta.picture,
                         joinable: true,
                         guardians: meta.guardians,
-                        network: meta.selector.network!,
                       ),
                     );
 
                     if (fed != null) {
+                      final name = fed.$1.federationName;
                       await Future.delayed(const Duration(milliseconds: 400));
                       widget.onJoin(fed.$1, fed.$2);
                       if (context.mounted) Navigator.pop(context);
                       ToastService().show(
-                        message: "Joined ${fed.federationName}",
+                        message: "Joined $name",
                         duration: const Duration(seconds: 5),
                         onTap: () {},
                         icon: Icon(Icons.info),

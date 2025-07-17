@@ -184,17 +184,21 @@ pub async fn join_federation(
 }
 
 #[frb]
-pub async fn backup_invite_codes(invite_codes: Vec<String>) -> anyhow::Result<()> {
+pub async fn backup_invite_codes() -> anyhow::Result<()> {
+    let multimint = get_multimint();
+    let invite_codes = multimint.get_all_invite_codes().await;
     let nostr_client = get_nostr_client();
     let nostr = nostr_client.read().await;
     nostr.backup_invite_codes(invite_codes).await
 }
 
 #[frb]
-pub async fn get_backup_invite_codes() -> Vec<String> {
+pub async fn rejoin_from_backup_invites() {
     let nostr_client = get_nostr_client();
     let nostr = nostr_client.read().await;
-    nostr.get_backup_invite_codes().await
+    let backup_invites = nostr.get_backup_invite_codes().await;
+    let mut multimint = get_multimint();
+    multimint.rejoin_from_backup_invites(backup_invites).await;
 }
 
 #[frb]
@@ -372,9 +376,14 @@ pub async fn payment_preview(
 }
 
 #[frb]
-pub async fn get_federation_meta(invite_code: String) -> anyhow::Result<FederationMeta> {
+pub async fn get_federation_meta(
+    invite_code: Option<String>,
+    federation_id: Option<FederationId>,
+) -> anyhow::Result<FederationMeta> {
     let multimint = get_multimint();
-    multimint.get_cached_federation_meta(invite_code).await
+    multimint
+        .get_cached_federation_meta(invite_code, federation_id)
+        .await
 }
 
 #[frb]
@@ -515,9 +524,12 @@ pub async fn get_relays() -> Vec<(String, bool)> {
 }
 
 #[frb]
-pub async fn wallet_summary(invite: String) -> anyhow::Result<Vec<Utxo>> {
+pub async fn wallet_summary(
+    invite: Option<String>,
+    federation_id: Option<FederationId>,
+) -> anyhow::Result<Vec<Utxo>> {
     let multimint = get_multimint();
-    multimint.wallet_summary(invite).await
+    multimint.wallet_summary(invite, federation_id).await
 }
 
 #[frb]
@@ -894,4 +906,10 @@ pub async fn register_ln_address(
             domain,
         )
         .await
+}
+
+#[frb]
+pub async fn get_invite_code(federation_id: &FederationId, peer: u16) -> anyhow::Result<String> {
+    let multimint = get_multimint();
+    multimint.get_invite_code(federation_id, peer).await
 }
