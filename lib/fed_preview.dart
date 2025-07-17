@@ -308,7 +308,7 @@ class _FederationPreviewState extends State<FederationPreview> {
                           ClipboardData(text: inviteCode),
                         );
                         ToastService().show(
-                          message: "Invite code copied $inviteCode",
+                          message: "Invite code for ${guardian.name} copied",
                           duration: const Duration(seconds: 5),
                           onTap: () {},
                           icon: Icon(Icons.check),
