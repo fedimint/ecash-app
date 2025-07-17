@@ -4,7 +4,7 @@ use fedimint_api_client::api::net::Connector;
 use fedimint_core::{
     config::{ClientConfig, FederationId},
     encoding::{Decodable, Encodable},
-    impl_db_lookup, impl_db_record,
+    impl_db_lookup, impl_db_record, util::SafeUrl,
 };
 use serde::{Deserialize, Serialize};
 

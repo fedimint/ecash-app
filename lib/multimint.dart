@@ -121,6 +121,8 @@ abstract class Multimint implements RustOpaqueInterface {
     required FederationId federationId,
   });
 
+  Future<List<String>> getAllInviteCodes();
+
   Future<BigInt?> getBtcPrice();
 
   Future<FederationMeta> getCachedFederationMeta({
@@ -204,6 +206,10 @@ abstract class Multimint implements RustOpaqueInterface {
   Future<OperationId> reissueEcash({
     required FederationId federationId,
     required String ecash,
+  });
+
+  Future<void> rejoinFromBackupInvites({
+    required List<String> backupInviteCodes,
   });
 
   Future<(String, BigInt, bool)> selectReceiveGateway({

@@ -45,11 +45,11 @@ Future<FederationSelector> joinFederation({
   recover: recover,
 );
 
-Future<void> backupInviteCodes({required List<String> inviteCodes}) =>
-    RustLib.instance.api.crateBackupInviteCodes(inviteCodes: inviteCodes);
+Future<void> backupInviteCodes() =>
+    RustLib.instance.api.crateBackupInviteCodes();
 
-Future<List<String>> getBackupInviteCodes() =>
-    RustLib.instance.api.crateGetBackupInviteCodes();
+Future<void> rejoinFromBackupInvites() =>
+    RustLib.instance.api.crateRejoinFromBackupInvites();
 
 Future<List<(FederationSelector, bool)>> federations() =>
     RustLib.instance.api.crateFederations();

@@ -815,11 +815,15 @@ impl Multimint {
                         }
 
                         if let Some(client) = self_copy.clients.read().await.get(&federation_id) {
-                            if let Err(e) =
-                                self_copy.cache_federation_meta(client.clone(), now).await
-                            {
-                                error_to_flutter(format!("Could not cache federation meta {e:?}"))
+                            if !client.has_pending_recoveries() {
+                                if let Err(e) =
+                                    self_copy.cache_federation_meta(client.clone(), now).await
+                                {
+                                    error_to_flutter(format!(
+                                        "Could not cache federation meta {e:?}"
+                                    ))
                                     .await;
+                                }
                             }
                         }
                     }
@@ -3215,6 +3219,64 @@ impl Multimint {
                     interval.tick().await;
                 }
             });
+    }
+
+    pub async fn get_all_invite_codes(&self) -> Vec<String> {
+        let mut dbtx = self.db.begin_transaction_nc().await;
+        let configs = dbtx
+            .find_by_prefix(&FederationConfigKeyPrefix)
+            .await
+            .collect::<Vec<_>>()
+            .await;
+        let clients = self.clients.read().await;
+        let mut all_invite_codes = Vec::new();
+        for (key, config) in configs {
+            let client = clients.get(&key.id);
+            if let Some(client) = client {
+                let peers = config
+                    .client_config
+                    .global
+                    .api_endpoints
+                    .keys()
+                    .collect::<Vec<_>>();
+                for peer in peers {
+                    let invite_code = client
+                        .invite_code(*peer)
+                        .await
+                        .expect("Invalid peer")
+                        .to_string();
+                    all_invite_codes.push(invite_code);
+                }
+            }
+        }
+
+        all_invite_codes
+    }
+
+    pub async fn rejoin_from_backup_invites(&mut self, backup_invite_codes: Vec<String>) {
+        let mut already_joined_feds = BTreeSet::new();
+        for invite in backup_invite_codes {
+            if let Ok(invite_code) = InviteCode::from_str(&invite) {
+                if !already_joined_feds.contains(&invite_code.federation_id()) {
+                    if let Err(e) = self.join_federation(invite.clone(), true).await {
+                        error_to_flutter(format!(
+                            "Rejoining federation {} with invite code {} failed {}",
+                            invite_code.federation_id(),
+                            invite,
+                            e
+                        ))
+                        .await;
+                    } else {
+                        already_joined_feds.insert(invite_code.federation_id());
+                        info_to_flutter(format!(
+                            "Successfully rejoined {} after recovery",
+                            invite_code.federation_id()
+                        ))
+                        .await;
+                    }
+                }
+            }
+        }
     }
 }
 

@@ -184,17 +184,21 @@ pub async fn join_federation(
 }
 
 #[frb]
-pub async fn backup_invite_codes(invite_codes: Vec<String>) -> anyhow::Result<()> {
+pub async fn backup_invite_codes() -> anyhow::Result<()> {
+    let multimint = get_multimint();
+    let invite_codes = multimint.get_all_invite_codes().await;
     let nostr_client = get_nostr_client();
     let nostr = nostr_client.read().await;
     nostr.backup_invite_codes(invite_codes).await
 }
 
 #[frb]
-pub async fn get_backup_invite_codes() -> Vec<String> {
+pub async fn rejoin_from_backup_invites() {
     let nostr_client = get_nostr_client();
     let nostr = nostr_client.read().await;
-    nostr.get_backup_invite_codes().await
+    let backup_invites = nostr.get_backup_invite_codes().await;
+    let mut multimint = get_multimint();
+    multimint.rejoin_from_backup_invites(backup_invites).await;
 }
 
 #[frb]
