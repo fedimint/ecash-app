@@ -1,5 +1,6 @@
 import 'package:carbine/discover.dart';
 import 'package:carbine/lib.dart';
+import 'package:carbine/ln_address.dart';
 import 'package:carbine/mnemonic.dart';
 import 'package:carbine/multimint.dart';
 import 'package:carbine/nwc.dart';
@@ -58,6 +59,24 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 context,
                 MaterialPageRoute(
                   builder: (context) => Discover(onJoin: widget.onJoin),
+                ),
+              );
+            },
+          ),
+          _SettingsOption(
+            icon: Icons.flash_on,
+            title: 'Lightning Address',
+            subtitle: 'Claim and configure your Lightning Address',
+            onTap: () async {
+              final feds = await federations();
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder:
+                      (context) => LightningAddressScreen(
+                        federations: feds,
+                        onLnAddressRegistered: widget.onJoin,
+                      ),
                 ),
               );
             },

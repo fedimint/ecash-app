@@ -35,6 +35,8 @@ class _TransactionDetailsState extends State<TransactionDetails> {
         return "Lightning Receive";
       case TransactionKind_LightningSend():
         return "Lightning Send";
+      case TransactionKind_LightningRecurring():
+        return "Lightning Address Receive";
       case TransactionKind_EcashReceive():
         return "Ecash Receive";
       case TransactionKind_EcashSend():

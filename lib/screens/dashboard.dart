@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:carbine/db.dart';
 import 'package:carbine/recovery_progress.dart';
 import 'package:carbine/utils.dart';
 import 'package:carbine/widgets/addresses.dart';
@@ -43,6 +44,7 @@ class _DashboardState extends State<Dashboard> {
   double? _btcPrice;
   int _addressRefreshKey = 0;
   int _noteRefreshKey = 0;
+  LightningAddressConfig? _lnAddressConfig;
 
   late Stream<MultimintEvent> events;
   late StreamSubscription<MultimintEvent> _subscription;
@@ -53,6 +55,7 @@ class _DashboardState extends State<Dashboard> {
     recovering = widget.recovering;
     _loadBalance();
     _loadBtcPrice();
+    _loadLightningAddress();
 
     events = subscribeMultimintEvents().asBroadcastStream();
     _subscription = events.listen((event) async {
@@ -126,6 +129,14 @@ class _DashboardState extends State<Dashboard> {
         _btcPrice = price.toDouble();
       });
     }
+  }
+
+  Future<void> _loadLightningAddress() async {
+    final config = await getLnAddressConfig(federationId: widget.fed.federationId);
+      if (!mounted) return;
+    setState(() {
+      _lnAddressConfig = config;
+    });
   }
 
   void _refreshTransactions() {
@@ -253,6 +264,31 @@ class _DashboardState extends State<Dashboard> {
           children: [
             const SizedBox(height: 32),
             DashboardHeader(name: name, network: widget.fed.network),
+            if (_lnAddressConfig != null) ...[
+              const SizedBox(height: 8),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                decoration: BoxDecoration(
+                  color: Colors.black.withOpacity(0.7),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: Colors.greenAccent.withOpacity(0.6)),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Icon(Icons.flash_on, color: Colors.amber, size: 18),
+                    const SizedBox(width: 8),
+                    Text(
+                      '${_lnAddressConfig!.username}@${_lnAddressConfig!.domain}',
+                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                            color: Colors.greenAccent,
+                            fontWeight: FontWeight.w500,
+                          ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
             const SizedBox(height: 48),
             DashboardBalance(
               balanceMsats: balanceMsats,

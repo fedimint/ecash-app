@@ -66,7 +66,7 @@ class RustLib extends BaseEntrypoint<RustLibApi, RustLibApiImpl, RustLibWire> {
   String get codegenVersion => '2.9.0';
 
   @override
-  int get rustContentHash => 956182182;
+  int get rustContentHash => -1733362634;
 
   static const kDefaultExternalLibraryLoaderConfig =
       ExternalLibraryLoaderConfig(
@@ -203,6 +203,60 @@ abstract class RustLibApi extends BaseApi {
     String? network,
   });
 
+  String crateDbLightningAddressConfigAutoAccessorGetDomain({
+    required LightningAddressConfig that,
+  });
+
+  SafeUrl crateDbLightningAddressConfigAutoAccessorGetLnAddressApi({
+    required LightningAddressConfig that,
+  });
+
+  String crateDbLightningAddressConfigAutoAccessorGetLnurl({
+    required LightningAddressConfig that,
+  });
+
+  SafeUrl crateDbLightningAddressConfigAutoAccessorGetRecurringdApi({
+    required LightningAddressConfig that,
+  });
+
+  String crateDbLightningAddressConfigAutoAccessorGetUsername({
+    required LightningAddressConfig that,
+  });
+
+  void crateDbLightningAddressConfigAutoAccessorSetDomain({
+    required LightningAddressConfig that,
+    required String domain,
+  });
+
+  void crateDbLightningAddressConfigAutoAccessorSetLnAddressApi({
+    required LightningAddressConfig that,
+    required SafeUrl lnAddressApi,
+  });
+
+  void crateDbLightningAddressConfigAutoAccessorSetLnurl({
+    required LightningAddressConfig that,
+    required String lnurl,
+  });
+
+  void crateDbLightningAddressConfigAutoAccessorSetRecurringdApi({
+    required LightningAddressConfig that,
+    required SafeUrl recurringdApi,
+  });
+
+  void crateDbLightningAddressConfigAutoAccessorSetUsername({
+    required LightningAddressConfig that,
+    required String username,
+  });
+
+  FederationId crateDbLightningAddressKeyAutoAccessorGetFederationId({
+    required LightningAddressKey that,
+  });
+
+  void crateDbLightningAddressKeyAutoAccessorSetFederationId({
+    required LightningAddressKey that,
+    required FederationId federationId,
+  });
+
   Future<void> crateMultimintMultimintAckSeedPhrase({required Multimint that});
 
   Future<String> crateMultimintMultimintAllocateDepositAddress({
@@ -260,6 +314,15 @@ abstract class RustLibApi extends BaseApi {
     required String ecash,
   });
 
+  Future<LNAddressStatus> crateMultimintMultimintCheckLnAddressAvailability({
+    required Multimint that,
+    required String username,
+    required String domain,
+    required String lnAddressApi,
+    required String recurringdApi,
+    required FederationId federationId,
+  });
+
   Future<bool> crateMultimintMultimintContainsClient({
     required Multimint that,
     required FederationId federationId,
@@ -279,6 +342,11 @@ abstract class RustLibApi extends BaseApi {
   Future<FederationMeta> crateMultimintMultimintGetCachedFederationMeta({
     required Multimint that,
     required String invite,
+  });
+
+  Future<LightningAddressConfig?> crateMultimintMultimintGetLnAddressConfig({
+    required Multimint that,
+    required FederationId federationId,
   });
 
   Future<BigInt> crateMultimintMultimintGetMaxWithdrawableAmount({
@@ -347,6 +415,15 @@ abstract class RustLibApi extends BaseApi {
     required Multimint that,
     required FederationId federationId,
     required BigInt tweakIdx,
+  });
+
+  Future<void> crateMultimintMultimintRegisterLnAddress({
+    required Multimint that,
+    required FederationId federationId,
+    required String recurringdApi,
+    required String lnAddressApi,
+    required String username,
+    required String domain,
   });
 
   Future<OperationId> crateMultimintMultimintReissueEcash({
@@ -588,6 +665,14 @@ abstract class RustLibApi extends BaseApi {
     required String ecash,
   });
 
+  Future<LNAddressStatus> crateCheckLnAddressAvailability({
+    required String username,
+    required String domain,
+    required String lnAddressApi,
+    required String recurringdApi,
+    required FederationId federationId,
+  });
+
   Future<void> crateCreateMultimintFromWords({
     required String path,
     required List<String> words,
@@ -612,6 +697,10 @@ abstract class RustLibApi extends BaseApi {
   Future<EventBusMultimintEvent> crateGetEventBus();
 
   Future<FederationMeta> crateGetFederationMeta({required String inviteCode});
+
+  Future<LightningAddressConfig?> crateGetLnAddressConfig({
+    required FederationId federationId,
+  });
 
   Future<BigInt> crateGetMaxWithdrawableAmount({
     required FederationId federationId,
@@ -651,6 +740,10 @@ abstract class RustLibApi extends BaseApi {
     required FederationId federationId,
   });
 
+  Future<List<String>> crateListLnAddressDomains({
+    required String lnAddressApi,
+  });
+
   Future<void> crateLoadMultimint({required String path});
 
   Future<void> crateMonitorDepositAddress({
@@ -688,6 +781,14 @@ abstract class RustLibApi extends BaseApi {
   Future<void> crateRecheckAddress({
     required FederationId federationId,
     required BigInt tweakIdx,
+  });
+
+  Future<void> crateRegisterLnAddress({
+    required FederationId federationId,
+    required String recurringdApi,
+    required String lnAddressApi,
+    required String username,
+    required String domain,
   });
 
   Future<OperationId> crateReissueEcash({
@@ -856,6 +957,24 @@ abstract class RustLibApi extends BaseApi {
   get rust_arc_decrement_strong_count_InviteCode;
 
   CrossPlatformFinalizerArg get rust_arc_decrement_strong_count_InviteCodePtr;
+
+  RustArcIncrementStrongCountFnType
+  get rust_arc_increment_strong_count_LightningAddressConfig;
+
+  RustArcDecrementStrongCountFnType
+  get rust_arc_decrement_strong_count_LightningAddressConfig;
+
+  CrossPlatformFinalizerArg
+  get rust_arc_decrement_strong_count_LightningAddressConfigPtr;
+
+  RustArcIncrementStrongCountFnType
+  get rust_arc_increment_strong_count_LightningAddressKey;
+
+  RustArcDecrementStrongCountFnType
+  get rust_arc_decrement_strong_count_LightningAddressKey;
+
+  CrossPlatformFinalizerArg
+  get rust_arc_decrement_strong_count_LightningAddressKeyPtr;
 
   RustArcIncrementStrongCountFnType
   get rust_arc_increment_strong_count_Multimint;
@@ -1906,6 +2025,422 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
       );
 
   @override
+  String crateDbLightningAddressConfigAutoAccessorGetDomain({
+    required LightningAddressConfig that,
+  }) {
+    return handler.executeSync(
+      SyncTask(
+        callFfi: () {
+          final serializer = SseSerializer(generalizedFrbRustBinding);
+          sse_encode_Auto_Ref_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerLightningAddressConfig(
+            that,
+            serializer,
+          );
+          return pdeCallFfi(generalizedFrbRustBinding, serializer, funcId: 29)!;
+        },
+        codec: SseCodec(
+          decodeSuccessData: sse_decode_String,
+          decodeErrorData: null,
+        ),
+        constMeta: kCrateDbLightningAddressConfigAutoAccessorGetDomainConstMeta,
+        argValues: [that],
+        apiImpl: this,
+      ),
+    );
+  }
+
+  TaskConstMeta
+  get kCrateDbLightningAddressConfigAutoAccessorGetDomainConstMeta =>
+      const TaskConstMeta(
+        debugName: "LightningAddressConfig_auto_accessor_get_domain",
+        argNames: ["that"],
+      );
+
+  @override
+  SafeUrl crateDbLightningAddressConfigAutoAccessorGetLnAddressApi({
+    required LightningAddressConfig that,
+  }) {
+    return handler.executeSync(
+      SyncTask(
+        callFfi: () {
+          final serializer = SseSerializer(generalizedFrbRustBinding);
+          sse_encode_Auto_Ref_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerLightningAddressConfig(
+            that,
+            serializer,
+          );
+          return pdeCallFfi(generalizedFrbRustBinding, serializer, funcId: 30)!;
+        },
+        codec: SseCodec(
+          decodeSuccessData:
+              sse_decode_Auto_Owned_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerSafeUrl,
+          decodeErrorData: null,
+        ),
+        constMeta:
+            kCrateDbLightningAddressConfigAutoAccessorGetLnAddressApiConstMeta,
+        argValues: [that],
+        apiImpl: this,
+      ),
+    );
+  }
+
+  TaskConstMeta
+  get kCrateDbLightningAddressConfigAutoAccessorGetLnAddressApiConstMeta =>
+      const TaskConstMeta(
+        debugName: "LightningAddressConfig_auto_accessor_get_ln_address_api",
+        argNames: ["that"],
+      );
+
+  @override
+  String crateDbLightningAddressConfigAutoAccessorGetLnurl({
+    required LightningAddressConfig that,
+  }) {
+    return handler.executeSync(
+      SyncTask(
+        callFfi: () {
+          final serializer = SseSerializer(generalizedFrbRustBinding);
+          sse_encode_Auto_Ref_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerLightningAddressConfig(
+            that,
+            serializer,
+          );
+          return pdeCallFfi(generalizedFrbRustBinding, serializer, funcId: 31)!;
+        },
+        codec: SseCodec(
+          decodeSuccessData: sse_decode_String,
+          decodeErrorData: null,
+        ),
+        constMeta: kCrateDbLightningAddressConfigAutoAccessorGetLnurlConstMeta,
+        argValues: [that],
+        apiImpl: this,
+      ),
+    );
+  }
+
+  TaskConstMeta
+  get kCrateDbLightningAddressConfigAutoAccessorGetLnurlConstMeta =>
+      const TaskConstMeta(
+        debugName: "LightningAddressConfig_auto_accessor_get_lnurl",
+        argNames: ["that"],
+      );
+
+  @override
+  SafeUrl crateDbLightningAddressConfigAutoAccessorGetRecurringdApi({
+    required LightningAddressConfig that,
+  }) {
+    return handler.executeSync(
+      SyncTask(
+        callFfi: () {
+          final serializer = SseSerializer(generalizedFrbRustBinding);
+          sse_encode_Auto_Ref_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerLightningAddressConfig(
+            that,
+            serializer,
+          );
+          return pdeCallFfi(generalizedFrbRustBinding, serializer, funcId: 32)!;
+        },
+        codec: SseCodec(
+          decodeSuccessData:
+              sse_decode_Auto_Owned_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerSafeUrl,
+          decodeErrorData: null,
+        ),
+        constMeta:
+            kCrateDbLightningAddressConfigAutoAccessorGetRecurringdApiConstMeta,
+        argValues: [that],
+        apiImpl: this,
+      ),
+    );
+  }
+
+  TaskConstMeta
+  get kCrateDbLightningAddressConfigAutoAccessorGetRecurringdApiConstMeta =>
+      const TaskConstMeta(
+        debugName: "LightningAddressConfig_auto_accessor_get_recurringd_api",
+        argNames: ["that"],
+      );
+
+  @override
+  String crateDbLightningAddressConfigAutoAccessorGetUsername({
+    required LightningAddressConfig that,
+  }) {
+    return handler.executeSync(
+      SyncTask(
+        callFfi: () {
+          final serializer = SseSerializer(generalizedFrbRustBinding);
+          sse_encode_Auto_Ref_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerLightningAddressConfig(
+            that,
+            serializer,
+          );
+          return pdeCallFfi(generalizedFrbRustBinding, serializer, funcId: 33)!;
+        },
+        codec: SseCodec(
+          decodeSuccessData: sse_decode_String,
+          decodeErrorData: null,
+        ),
+        constMeta:
+            kCrateDbLightningAddressConfigAutoAccessorGetUsernameConstMeta,
+        argValues: [that],
+        apiImpl: this,
+      ),
+    );
+  }
+
+  TaskConstMeta
+  get kCrateDbLightningAddressConfigAutoAccessorGetUsernameConstMeta =>
+      const TaskConstMeta(
+        debugName: "LightningAddressConfig_auto_accessor_get_username",
+        argNames: ["that"],
+      );
+
+  @override
+  void crateDbLightningAddressConfigAutoAccessorSetDomain({
+    required LightningAddressConfig that,
+    required String domain,
+  }) {
+    return handler.executeSync(
+      SyncTask(
+        callFfi: () {
+          final serializer = SseSerializer(generalizedFrbRustBinding);
+          sse_encode_Auto_RefMut_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerLightningAddressConfig(
+            that,
+            serializer,
+          );
+          sse_encode_String(domain, serializer);
+          return pdeCallFfi(generalizedFrbRustBinding, serializer, funcId: 34)!;
+        },
+        codec: SseCodec(
+          decodeSuccessData: sse_decode_unit,
+          decodeErrorData: null,
+        ),
+        constMeta: kCrateDbLightningAddressConfigAutoAccessorSetDomainConstMeta,
+        argValues: [that, domain],
+        apiImpl: this,
+      ),
+    );
+  }
+
+  TaskConstMeta
+  get kCrateDbLightningAddressConfigAutoAccessorSetDomainConstMeta =>
+      const TaskConstMeta(
+        debugName: "LightningAddressConfig_auto_accessor_set_domain",
+        argNames: ["that", "domain"],
+      );
+
+  @override
+  void crateDbLightningAddressConfigAutoAccessorSetLnAddressApi({
+    required LightningAddressConfig that,
+    required SafeUrl lnAddressApi,
+  }) {
+    return handler.executeSync(
+      SyncTask(
+        callFfi: () {
+          final serializer = SseSerializer(generalizedFrbRustBinding);
+          sse_encode_Auto_RefMut_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerLightningAddressConfig(
+            that,
+            serializer,
+          );
+          sse_encode_Auto_Owned_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerSafeUrl(
+            lnAddressApi,
+            serializer,
+          );
+          return pdeCallFfi(generalizedFrbRustBinding, serializer, funcId: 35)!;
+        },
+        codec: SseCodec(
+          decodeSuccessData: sse_decode_unit,
+          decodeErrorData: null,
+        ),
+        constMeta:
+            kCrateDbLightningAddressConfigAutoAccessorSetLnAddressApiConstMeta,
+        argValues: [that, lnAddressApi],
+        apiImpl: this,
+      ),
+    );
+  }
+
+  TaskConstMeta
+  get kCrateDbLightningAddressConfigAutoAccessorSetLnAddressApiConstMeta =>
+      const TaskConstMeta(
+        debugName: "LightningAddressConfig_auto_accessor_set_ln_address_api",
+        argNames: ["that", "lnAddressApi"],
+      );
+
+  @override
+  void crateDbLightningAddressConfigAutoAccessorSetLnurl({
+    required LightningAddressConfig that,
+    required String lnurl,
+  }) {
+    return handler.executeSync(
+      SyncTask(
+        callFfi: () {
+          final serializer = SseSerializer(generalizedFrbRustBinding);
+          sse_encode_Auto_RefMut_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerLightningAddressConfig(
+            that,
+            serializer,
+          );
+          sse_encode_String(lnurl, serializer);
+          return pdeCallFfi(generalizedFrbRustBinding, serializer, funcId: 36)!;
+        },
+        codec: SseCodec(
+          decodeSuccessData: sse_decode_unit,
+          decodeErrorData: null,
+        ),
+        constMeta: kCrateDbLightningAddressConfigAutoAccessorSetLnurlConstMeta,
+        argValues: [that, lnurl],
+        apiImpl: this,
+      ),
+    );
+  }
+
+  TaskConstMeta
+  get kCrateDbLightningAddressConfigAutoAccessorSetLnurlConstMeta =>
+      const TaskConstMeta(
+        debugName: "LightningAddressConfig_auto_accessor_set_lnurl",
+        argNames: ["that", "lnurl"],
+      );
+
+  @override
+  void crateDbLightningAddressConfigAutoAccessorSetRecurringdApi({
+    required LightningAddressConfig that,
+    required SafeUrl recurringdApi,
+  }) {
+    return handler.executeSync(
+      SyncTask(
+        callFfi: () {
+          final serializer = SseSerializer(generalizedFrbRustBinding);
+          sse_encode_Auto_RefMut_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerLightningAddressConfig(
+            that,
+            serializer,
+          );
+          sse_encode_Auto_Owned_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerSafeUrl(
+            recurringdApi,
+            serializer,
+          );
+          return pdeCallFfi(generalizedFrbRustBinding, serializer, funcId: 37)!;
+        },
+        codec: SseCodec(
+          decodeSuccessData: sse_decode_unit,
+          decodeErrorData: null,
+        ),
+        constMeta:
+            kCrateDbLightningAddressConfigAutoAccessorSetRecurringdApiConstMeta,
+        argValues: [that, recurringdApi],
+        apiImpl: this,
+      ),
+    );
+  }
+
+  TaskConstMeta
+  get kCrateDbLightningAddressConfigAutoAccessorSetRecurringdApiConstMeta =>
+      const TaskConstMeta(
+        debugName: "LightningAddressConfig_auto_accessor_set_recurringd_api",
+        argNames: ["that", "recurringdApi"],
+      );
+
+  @override
+  void crateDbLightningAddressConfigAutoAccessorSetUsername({
+    required LightningAddressConfig that,
+    required String username,
+  }) {
+    return handler.executeSync(
+      SyncTask(
+        callFfi: () {
+          final serializer = SseSerializer(generalizedFrbRustBinding);
+          sse_encode_Auto_RefMut_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerLightningAddressConfig(
+            that,
+            serializer,
+          );
+          sse_encode_String(username, serializer);
+          return pdeCallFfi(generalizedFrbRustBinding, serializer, funcId: 38)!;
+        },
+        codec: SseCodec(
+          decodeSuccessData: sse_decode_unit,
+          decodeErrorData: null,
+        ),
+        constMeta:
+            kCrateDbLightningAddressConfigAutoAccessorSetUsernameConstMeta,
+        argValues: [that, username],
+        apiImpl: this,
+      ),
+    );
+  }
+
+  TaskConstMeta
+  get kCrateDbLightningAddressConfigAutoAccessorSetUsernameConstMeta =>
+      const TaskConstMeta(
+        debugName: "LightningAddressConfig_auto_accessor_set_username",
+        argNames: ["that", "username"],
+      );
+
+  @override
+  FederationId crateDbLightningAddressKeyAutoAccessorGetFederationId({
+    required LightningAddressKey that,
+  }) {
+    return handler.executeSync(
+      SyncTask(
+        callFfi: () {
+          final serializer = SseSerializer(generalizedFrbRustBinding);
+          sse_encode_Auto_Ref_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerLightningAddressKey(
+            that,
+            serializer,
+          );
+          return pdeCallFfi(generalizedFrbRustBinding, serializer, funcId: 39)!;
+        },
+        codec: SseCodec(
+          decodeSuccessData:
+              sse_decode_Auto_Owned_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerFederationId,
+          decodeErrorData: null,
+        ),
+        constMeta:
+            kCrateDbLightningAddressKeyAutoAccessorGetFederationIdConstMeta,
+        argValues: [that],
+        apiImpl: this,
+      ),
+    );
+  }
+
+  TaskConstMeta
+  get kCrateDbLightningAddressKeyAutoAccessorGetFederationIdConstMeta =>
+      const TaskConstMeta(
+        debugName: "LightningAddressKey_auto_accessor_get_federation_id",
+        argNames: ["that"],
+      );
+
+  @override
+  void crateDbLightningAddressKeyAutoAccessorSetFederationId({
+    required LightningAddressKey that,
+    required FederationId federationId,
+  }) {
+    return handler.executeSync(
+      SyncTask(
+        callFfi: () {
+          final serializer = SseSerializer(generalizedFrbRustBinding);
+          sse_encode_Auto_RefMut_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerLightningAddressKey(
+            that,
+            serializer,
+          );
+          sse_encode_Auto_Owned_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerFederationId(
+            federationId,
+            serializer,
+          );
+          return pdeCallFfi(generalizedFrbRustBinding, serializer, funcId: 40)!;
+        },
+        codec: SseCodec(
+          decodeSuccessData: sse_decode_unit,
+          decodeErrorData: null,
+        ),
+        constMeta:
+            kCrateDbLightningAddressKeyAutoAccessorSetFederationIdConstMeta,
+        argValues: [that, federationId],
+        apiImpl: this,
+      ),
+    );
+  }
+
+  TaskConstMeta
+  get kCrateDbLightningAddressKeyAutoAccessorSetFederationIdConstMeta =>
+      const TaskConstMeta(
+        debugName: "LightningAddressKey_auto_accessor_set_federation_id",
+        argNames: ["that", "federationId"],
+      );
+
+  @override
   Future<void> crateMultimintMultimintAckSeedPhrase({required Multimint that}) {
     return handler.executeNormal(
       NormalTask(
@@ -1918,7 +2453,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 29,
+            funcId: 41,
             port: port_,
           );
         },
@@ -1959,7 +2494,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 30,
+            funcId: 42,
             port: port_,
           );
         },
@@ -2006,7 +2541,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 31,
+            funcId: 43,
             port: port_,
           );
         },
@@ -2053,7 +2588,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 32,
+            funcId: 44,
             port: port_,
           );
         },
@@ -2101,7 +2636,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 33,
+            funcId: 45,
             port: port_,
           );
         },
@@ -2148,7 +2683,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 34,
+            funcId: 46,
             port: port_,
           );
         },
@@ -2194,7 +2729,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 35,
+            funcId: 47,
             port: port_,
           );
         },
@@ -2235,7 +2770,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 36,
+            funcId: 48,
             port: port_,
           );
         },
@@ -2280,7 +2815,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 37,
+            funcId: 49,
             port: port_,
           );
         },
@@ -2324,7 +2859,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 38,
+            funcId: 50,
             port: port_,
           );
         },
@@ -2343,6 +2878,70 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
       const TaskConstMeta(
         debugName: "Multimint_check_ecash_spent",
         argNames: ["that", "federationId", "ecash"],
+      );
+
+  @override
+  Future<LNAddressStatus> crateMultimintMultimintCheckLnAddressAvailability({
+    required Multimint that,
+    required String username,
+    required String domain,
+    required String lnAddressApi,
+    required String recurringdApi,
+    required FederationId federationId,
+  }) {
+    return handler.executeNormal(
+      NormalTask(
+        callFfi: (port_) {
+          final serializer = SseSerializer(generalizedFrbRustBinding);
+          sse_encode_Auto_Ref_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerMultimint(
+            that,
+            serializer,
+          );
+          sse_encode_String(username, serializer);
+          sse_encode_String(domain, serializer);
+          sse_encode_String(lnAddressApi, serializer);
+          sse_encode_String(recurringdApi, serializer);
+          sse_encode_Auto_Ref_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerFederationId(
+            federationId,
+            serializer,
+          );
+          pdeCallFfi(
+            generalizedFrbRustBinding,
+            serializer,
+            funcId: 51,
+            port: port_,
+          );
+        },
+        codec: SseCodec(
+          decodeSuccessData: sse_decode_ln_address_status,
+          decodeErrorData: sse_decode_AnyhowException,
+        ),
+        constMeta: kCrateMultimintMultimintCheckLnAddressAvailabilityConstMeta,
+        argValues: [
+          that,
+          username,
+          domain,
+          lnAddressApi,
+          recurringdApi,
+          federationId,
+        ],
+        apiImpl: this,
+      ),
+    );
+  }
+
+  TaskConstMeta
+  get kCrateMultimintMultimintCheckLnAddressAvailabilityConstMeta =>
+      const TaskConstMeta(
+        debugName: "Multimint_check_ln_address_availability",
+        argNames: [
+          "that",
+          "username",
+          "domain",
+          "lnAddressApi",
+          "recurringdApi",
+          "federationId",
+        ],
       );
 
   @override
@@ -2365,7 +2964,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 39,
+            funcId: 52,
             port: port_,
           );
         },
@@ -2401,7 +3000,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 40,
+            funcId: 53,
             port: port_,
           );
         },
@@ -2443,7 +3042,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 41,
+            funcId: 54,
             port: port_,
           );
         },
@@ -2480,7 +3079,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 42,
+            funcId: 55,
             port: port_,
           );
         },
@@ -2518,7 +3117,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 43,
+            funcId: 56,
             port: port_,
           );
         },
@@ -2538,6 +3137,48 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
       const TaskConstMeta(
         debugName: "Multimint_get_cached_federation_meta",
         argNames: ["that", "invite"],
+      );
+
+  @override
+  Future<LightningAddressConfig?> crateMultimintMultimintGetLnAddressConfig({
+    required Multimint that,
+    required FederationId federationId,
+  }) {
+    return handler.executeNormal(
+      NormalTask(
+        callFfi: (port_) {
+          final serializer = SseSerializer(generalizedFrbRustBinding);
+          sse_encode_Auto_Ref_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerMultimint(
+            that,
+            serializer,
+          );
+          sse_encode_Auto_Ref_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerFederationId(
+            federationId,
+            serializer,
+          );
+          pdeCallFfi(
+            generalizedFrbRustBinding,
+            serializer,
+            funcId: 57,
+            port: port_,
+          );
+        },
+        codec: SseCodec(
+          decodeSuccessData:
+              sse_decode_opt_box_autoadd_Auto_Owned_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerLightningAddressConfig,
+          decodeErrorData: null,
+        ),
+        constMeta: kCrateMultimintMultimintGetLnAddressConfigConstMeta,
+        argValues: [that, federationId],
+        apiImpl: this,
+      ),
+    );
+  }
+
+  TaskConstMeta get kCrateMultimintMultimintGetLnAddressConfigConstMeta =>
+      const TaskConstMeta(
+        debugName: "Multimint_get_ln_address_config",
+        argNames: ["that", "federationId"],
       );
 
   @override
@@ -2562,7 +3203,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 44,
+            funcId: 58,
             port: port_,
           );
         },
@@ -2598,7 +3239,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 45,
+            funcId: 59,
             port: port_,
           );
         },
@@ -2639,7 +3280,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 46,
+            funcId: 60,
             port: port_,
           );
         },
@@ -2682,7 +3323,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 47,
+            funcId: 61,
             port: port_,
           );
         },
@@ -2719,7 +3360,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 48,
+            funcId: 62,
             port: port_,
           );
         },
@@ -2759,7 +3400,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 49,
+            funcId: 63,
             port: port_,
           );
         },
@@ -2801,7 +3442,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 50,
+            funcId: 64,
             port: port_,
           );
         },
@@ -2844,7 +3485,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 51,
+            funcId: 65,
             port: port_,
           );
         },
@@ -2882,7 +3523,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 52,
+            funcId: 66,
             port: port_,
           );
         },
@@ -2925,7 +3566,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 53,
+            funcId: 67,
             port: port_,
           );
         },
@@ -2977,7 +3618,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 54,
+            funcId: 68,
             port: port_,
           );
         },
@@ -3035,7 +3676,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 55,
+            funcId: 69,
             port: port_,
           );
         },
@@ -3054,6 +3695,69 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
       const TaskConstMeta(
         debugName: "Multimint_recheck_address",
         argNames: ["that", "federationId", "tweakIdx"],
+      );
+
+  @override
+  Future<void> crateMultimintMultimintRegisterLnAddress({
+    required Multimint that,
+    required FederationId federationId,
+    required String recurringdApi,
+    required String lnAddressApi,
+    required String username,
+    required String domain,
+  }) {
+    return handler.executeNormal(
+      NormalTask(
+        callFfi: (port_) {
+          final serializer = SseSerializer(generalizedFrbRustBinding);
+          sse_encode_Auto_Ref_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerMultimint(
+            that,
+            serializer,
+          );
+          sse_encode_Auto_Ref_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerFederationId(
+            federationId,
+            serializer,
+          );
+          sse_encode_String(recurringdApi, serializer);
+          sse_encode_String(lnAddressApi, serializer);
+          sse_encode_String(username, serializer);
+          sse_encode_String(domain, serializer);
+          pdeCallFfi(
+            generalizedFrbRustBinding,
+            serializer,
+            funcId: 70,
+            port: port_,
+          );
+        },
+        codec: SseCodec(
+          decodeSuccessData: sse_decode_unit,
+          decodeErrorData: sse_decode_AnyhowException,
+        ),
+        constMeta: kCrateMultimintMultimintRegisterLnAddressConstMeta,
+        argValues: [
+          that,
+          federationId,
+          recurringdApi,
+          lnAddressApi,
+          username,
+          domain,
+        ],
+        apiImpl: this,
+      ),
+    );
+  }
+
+  TaskConstMeta get kCrateMultimintMultimintRegisterLnAddressConstMeta =>
+      const TaskConstMeta(
+        debugName: "Multimint_register_ln_address",
+        argNames: [
+          "that",
+          "federationId",
+          "recurringdApi",
+          "lnAddressApi",
+          "username",
+          "domain",
+        ],
       );
 
   @override
@@ -3078,7 +3782,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 56,
+            funcId: 71,
             port: port_,
           );
         },
@@ -3125,7 +3829,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 57,
+            funcId: 72,
             port: port_,
           );
         },
@@ -3176,7 +3880,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 58,
+            funcId: 73,
             port: port_,
           );
         },
@@ -3228,7 +3932,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 59,
+            funcId: 74,
             port: port_,
           );
         },
@@ -3286,7 +3990,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 60,
+            funcId: 75,
             port: port_,
           );
         },
@@ -3334,7 +4038,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 61,
+            funcId: 76,
             port: port_,
           );
         },
@@ -3378,7 +4082,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 62,
+            funcId: 77,
             port: port_,
           );
         },
@@ -3428,7 +4132,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 63,
+            funcId: 78,
             port: port_,
           );
         },
@@ -3473,7 +4177,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 64,
+            funcId: 79,
             port: port_,
           );
         },
@@ -3509,7 +4213,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 65,
+            funcId: 80,
             port: port_,
           );
         },
@@ -3544,7 +4248,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 66,
+            funcId: 81,
             port: port_,
           );
         },
@@ -3583,7 +4287,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 67,
+            funcId: 82,
             port: port_,
           );
         },
@@ -3620,7 +4324,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 68,
+            funcId: 83,
             port: port_,
           );
         },
@@ -3658,7 +4362,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 69,
+            funcId: 84,
             port: port_,
           );
         },
@@ -3692,7 +4396,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 70,
+            funcId: 85,
             port: port_,
           );
         },
@@ -3728,7 +4432,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 71,
+            funcId: 86,
             port: port_,
           );
         },
@@ -3771,7 +4475,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 72,
+            funcId: 87,
             port: port_,
           );
         },
@@ -3804,7 +4508,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
             that,
             serializer,
           );
-          return pdeCallFfi(generalizedFrbRustBinding, serializer, funcId: 73)!;
+          return pdeCallFfi(generalizedFrbRustBinding, serializer, funcId: 88)!;
         },
         codec: SseCodec(
           decodeSuccessData: sse_decode_opt_String,
@@ -3835,7 +4539,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
             that,
             serializer,
           );
-          return pdeCallFfi(generalizedFrbRustBinding, serializer, funcId: 74)!;
+          return pdeCallFfi(generalizedFrbRustBinding, serializer, funcId: 89)!;
         },
         codec: SseCodec(
           decodeSuccessData:
@@ -3869,7 +4573,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
             that,
             serializer,
           );
-          return pdeCallFfi(generalizedFrbRustBinding, serializer, funcId: 75)!;
+          return pdeCallFfi(generalizedFrbRustBinding, serializer, funcId: 90)!;
         },
         codec: SseCodec(
           decodeSuccessData: sse_decode_String,
@@ -3902,7 +4606,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
             that,
             serializer,
           );
-          return pdeCallFfi(generalizedFrbRustBinding, serializer, funcId: 76)!;
+          return pdeCallFfi(generalizedFrbRustBinding, serializer, funcId: 91)!;
         },
         codec: SseCodec(
           decodeSuccessData: sse_decode_list_String,
@@ -3935,7 +4639,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
             that,
             serializer,
           );
-          return pdeCallFfi(generalizedFrbRustBinding, serializer, funcId: 77)!;
+          return pdeCallFfi(generalizedFrbRustBinding, serializer, funcId: 92)!;
         },
         codec: SseCodec(
           decodeSuccessData: sse_decode_list_String,
@@ -3967,7 +4671,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
             that,
             serializer,
           );
-          return pdeCallFfi(generalizedFrbRustBinding, serializer, funcId: 78)!;
+          return pdeCallFfi(generalizedFrbRustBinding, serializer, funcId: 93)!;
         },
         codec: SseCodec(
           decodeSuccessData: sse_decode_String,
@@ -3999,7 +4703,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
             that,
             serializer,
           );
-          return pdeCallFfi(generalizedFrbRustBinding, serializer, funcId: 79)!;
+          return pdeCallFfi(generalizedFrbRustBinding, serializer, funcId: 94)!;
         },
         codec: SseCodec(
           decodeSuccessData: sse_decode_opt_String,
@@ -4033,7 +4737,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
             serializer,
           );
           sse_encode_opt_String(about, serializer);
-          return pdeCallFfi(generalizedFrbRustBinding, serializer, funcId: 80)!;
+          return pdeCallFfi(generalizedFrbRustBinding, serializer, funcId: 95)!;
         },
         codec: SseCodec(
           decodeSuccessData: sse_decode_unit,
@@ -4069,7 +4773,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
             federationId,
             serializer,
           );
-          return pdeCallFfi(generalizedFrbRustBinding, serializer, funcId: 81)!;
+          return pdeCallFfi(generalizedFrbRustBinding, serializer, funcId: 96)!;
         },
         codec: SseCodec(
           decodeSuccessData: sse_decode_unit,
@@ -4104,7 +4808,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
             serializer,
           );
           sse_encode_String(federationName, serializer);
-          return pdeCallFfi(generalizedFrbRustBinding, serializer, funcId: 82)!;
+          return pdeCallFfi(generalizedFrbRustBinding, serializer, funcId: 97)!;
         },
         codec: SseCodec(
           decodeSuccessData: sse_decode_unit,
@@ -4139,7 +4843,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
             serializer,
           );
           sse_encode_list_String(inviteCodes, serializer);
-          return pdeCallFfi(generalizedFrbRustBinding, serializer, funcId: 83)!;
+          return pdeCallFfi(generalizedFrbRustBinding, serializer, funcId: 98)!;
         },
         codec: SseCodec(
           decodeSuccessData: sse_decode_unit,
@@ -4174,7 +4878,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
             serializer,
           );
           sse_encode_list_String(modules, serializer);
-          return pdeCallFfi(generalizedFrbRustBinding, serializer, funcId: 84)!;
+          return pdeCallFfi(generalizedFrbRustBinding, serializer, funcId: 99)!;
         },
         codec: SseCodec(
           decodeSuccessData: sse_decode_unit,
@@ -4208,7 +4912,11 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
             serializer,
           );
           sse_encode_String(network, serializer);
-          return pdeCallFfi(generalizedFrbRustBinding, serializer, funcId: 85)!;
+          return pdeCallFfi(
+            generalizedFrbRustBinding,
+            serializer,
+            funcId: 100,
+          )!;
         },
         codec: SseCodec(
           decodeSuccessData: sse_decode_unit,
@@ -4242,7 +4950,11 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
             serializer,
           );
           sse_encode_opt_String(picture, serializer);
-          return pdeCallFfi(generalizedFrbRustBinding, serializer, funcId: 86)!;
+          return pdeCallFfi(
+            generalizedFrbRustBinding,
+            serializer,
+            funcId: 101,
+          )!;
         },
         codec: SseCodec(
           decodeSuccessData: sse_decode_unit,
@@ -4274,7 +4986,11 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
             that,
             serializer,
           );
-          return pdeCallFfi(generalizedFrbRustBinding, serializer, funcId: 87)!;
+          return pdeCallFfi(
+            generalizedFrbRustBinding,
+            serializer,
+            funcId: 102,
+          )!;
         },
         codec: SseCodec(
           decodeSuccessData: sse_decode_u_64,
@@ -4307,7 +5023,11 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
             that,
             serializer,
           );
-          return pdeCallFfi(generalizedFrbRustBinding, serializer, funcId: 88)!;
+          return pdeCallFfi(
+            generalizedFrbRustBinding,
+            serializer,
+            funcId: 103,
+          )!;
         },
         codec: SseCodec(
           decodeSuccessData: sse_decode_f_64,
@@ -4341,7 +5061,11 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
             that,
             serializer,
           );
-          return pdeCallFfi(generalizedFrbRustBinding, serializer, funcId: 89)!;
+          return pdeCallFfi(
+            generalizedFrbRustBinding,
+            serializer,
+            funcId: 104,
+          )!;
         },
         codec: SseCodec(
           decodeSuccessData:
@@ -4375,7 +5099,11 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
             that,
             serializer,
           );
-          return pdeCallFfi(generalizedFrbRustBinding, serializer, funcId: 90)!;
+          return pdeCallFfi(
+            generalizedFrbRustBinding,
+            serializer,
+            funcId: 105,
+          )!;
         },
         codec: SseCodec(
           decodeSuccessData: sse_decode_u_32,
@@ -4410,7 +5138,11 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
             serializer,
           );
           sse_encode_u_64(feeAmount, serializer);
-          return pdeCallFfi(generalizedFrbRustBinding, serializer, funcId: 91)!;
+          return pdeCallFfi(
+            generalizedFrbRustBinding,
+            serializer,
+            funcId: 106,
+          )!;
         },
         codec: SseCodec(
           decodeSuccessData: sse_decode_unit,
@@ -4445,7 +5177,11 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
             serializer,
           );
           sse_encode_f_64(feeRateSatsPerVb, serializer);
-          return pdeCallFfi(generalizedFrbRustBinding, serializer, funcId: 92)!;
+          return pdeCallFfi(
+            generalizedFrbRustBinding,
+            serializer,
+            funcId: 107,
+          )!;
         },
         codec: SseCodec(
           decodeSuccessData: sse_decode_unit,
@@ -4484,7 +5220,11 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
             pegOutFees,
             serializer,
           );
-          return pdeCallFfi(generalizedFrbRustBinding, serializer, funcId: 93)!;
+          return pdeCallFfi(
+            generalizedFrbRustBinding,
+            serializer,
+            funcId: 108,
+          )!;
         },
         codec: SseCodec(
           decodeSuccessData: sse_decode_unit,
@@ -4519,7 +5259,11 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
             serializer,
           );
           sse_encode_u_32(txSizeVbytes, serializer);
-          return pdeCallFfi(generalizedFrbRustBinding, serializer, funcId: 94)!;
+          return pdeCallFfi(
+            generalizedFrbRustBinding,
+            serializer,
+            funcId: 109,
+          )!;
         },
         codec: SseCodec(
           decodeSuccessData: sse_decode_unit,
@@ -4549,7 +5293,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 95,
+            funcId: 110,
             port: port_,
           );
         },
@@ -4582,7 +5326,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 96,
+            funcId: 111,
             port: port_,
           );
         },
@@ -4623,7 +5367,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 97,
+            funcId: 112,
             port: port_,
           );
         },
@@ -4664,7 +5408,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 98,
+            funcId: 113,
             port: port_,
           );
         },
@@ -4705,7 +5449,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 99,
+            funcId: 114,
             port: port_,
           );
         },
@@ -4746,7 +5490,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 100,
+            funcId: 115,
             port: port_,
           );
         },
@@ -4786,7 +5530,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 101,
+            funcId: 116,
             port: port_,
           );
         },
@@ -4816,7 +5560,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 102,
+            funcId: 117,
             port: port_,
           );
         },
@@ -4849,7 +5593,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 103,
+            funcId: 118,
             port: port_,
           );
         },
@@ -4886,7 +5630,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 104,
+            funcId: 119,
             port: port_,
           );
         },
@@ -4924,7 +5668,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 105,
+            funcId: 120,
             port: port_,
           );
         },
@@ -4945,6 +5689,62 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   );
 
   @override
+  Future<LNAddressStatus> crateCheckLnAddressAvailability({
+    required String username,
+    required String domain,
+    required String lnAddressApi,
+    required String recurringdApi,
+    required FederationId federationId,
+  }) {
+    return handler.executeNormal(
+      NormalTask(
+        callFfi: (port_) {
+          final serializer = SseSerializer(generalizedFrbRustBinding);
+          sse_encode_String(username, serializer);
+          sse_encode_String(domain, serializer);
+          sse_encode_String(lnAddressApi, serializer);
+          sse_encode_String(recurringdApi, serializer);
+          sse_encode_Auto_Ref_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerFederationId(
+            federationId,
+            serializer,
+          );
+          pdeCallFfi(
+            generalizedFrbRustBinding,
+            serializer,
+            funcId: 121,
+            port: port_,
+          );
+        },
+        codec: SseCodec(
+          decodeSuccessData: sse_decode_ln_address_status,
+          decodeErrorData: sse_decode_AnyhowException,
+        ),
+        constMeta: kCrateCheckLnAddressAvailabilityConstMeta,
+        argValues: [
+          username,
+          domain,
+          lnAddressApi,
+          recurringdApi,
+          federationId,
+        ],
+        apiImpl: this,
+      ),
+    );
+  }
+
+  TaskConstMeta get kCrateCheckLnAddressAvailabilityConstMeta =>
+      const TaskConstMeta(
+        debugName: "check_ln_address_availability",
+        argNames: [
+          "username",
+          "domain",
+          "lnAddressApi",
+          "recurringdApi",
+          "federationId",
+        ],
+      );
+
+  @override
   Future<void> crateCreateMultimintFromWords({
     required String path,
     required List<String> words,
@@ -4958,7 +5758,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 106,
+            funcId: 122,
             port: port_,
           );
         },
@@ -4989,7 +5789,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 107,
+            funcId: 123,
             port: port_,
           );
         },
@@ -5024,7 +5824,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 108,
+            funcId: 124,
             port: port_,
           );
         },
@@ -5053,7 +5853,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 109,
+            funcId: 125,
             port: port_,
           );
         },
@@ -5087,7 +5887,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 110,
+            funcId: 126,
             port: port_,
           );
         },
@@ -5117,7 +5917,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 111,
+            funcId: 127,
             port: port_,
           );
         },
@@ -5144,7 +5944,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 112,
+            funcId: 128,
             port: port_,
           );
         },
@@ -5171,7 +5971,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 113,
+            funcId: 129,
             port: port_,
           );
         },
@@ -5200,7 +6000,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 114,
+            funcId: 130,
             port: port_,
           );
         },
@@ -5222,6 +6022,42 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   );
 
   @override
+  Future<LightningAddressConfig?> crateGetLnAddressConfig({
+    required FederationId federationId,
+  }) {
+    return handler.executeNormal(
+      NormalTask(
+        callFfi: (port_) {
+          final serializer = SseSerializer(generalizedFrbRustBinding);
+          sse_encode_Auto_Ref_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerFederationId(
+            federationId,
+            serializer,
+          );
+          pdeCallFfi(
+            generalizedFrbRustBinding,
+            serializer,
+            funcId: 131,
+            port: port_,
+          );
+        },
+        codec: SseCodec(
+          decodeSuccessData:
+              sse_decode_opt_box_autoadd_Auto_Owned_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerLightningAddressConfig,
+          decodeErrorData: null,
+        ),
+        constMeta: kCrateGetLnAddressConfigConstMeta,
+        argValues: [federationId],
+        apiImpl: this,
+      ),
+    );
+  }
+
+  TaskConstMeta get kCrateGetLnAddressConfigConstMeta => const TaskConstMeta(
+    debugName: "get_ln_address_config",
+    argNames: ["federationId"],
+  );
+
+  @override
   Future<BigInt> crateGetMaxWithdrawableAmount({
     required FederationId federationId,
     required String address,
@@ -5238,7 +6074,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 115,
+            funcId: 132,
             port: port_,
           );
         },
@@ -5268,7 +6104,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 116,
+            funcId: 133,
             port: port_,
           );
         },
@@ -5303,7 +6139,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 117,
+            funcId: 134,
             port: port_,
           );
         },
@@ -5339,7 +6175,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 118,
+            funcId: 135,
             port: port_,
           );
         },
@@ -5369,7 +6205,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 119,
+            funcId: 136,
             port: port_,
           );
         },
@@ -5397,7 +6233,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 120,
+            funcId: 137,
             port: port_,
           );
         },
@@ -5424,7 +6260,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 121,
+            funcId: 138,
             port: port_,
           );
         },
@@ -5452,7 +6288,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 122,
+            funcId: 139,
             port: port_,
           );
         },
@@ -5484,7 +6320,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 123,
+            funcId: 140,
             port: port_,
           );
         },
@@ -5517,7 +6353,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 124,
+            funcId: 141,
             port: port_,
           );
         },
@@ -5554,7 +6390,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 125,
+            funcId: 142,
             port: port_,
           );
         },
@@ -5575,6 +6411,38 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   );
 
   @override
+  Future<List<String>> crateListLnAddressDomains({
+    required String lnAddressApi,
+  }) {
+    return handler.executeNormal(
+      NormalTask(
+        callFfi: (port_) {
+          final serializer = SseSerializer(generalizedFrbRustBinding);
+          sse_encode_String(lnAddressApi, serializer);
+          pdeCallFfi(
+            generalizedFrbRustBinding,
+            serializer,
+            funcId: 143,
+            port: port_,
+          );
+        },
+        codec: SseCodec(
+          decodeSuccessData: sse_decode_list_String,
+          decodeErrorData: sse_decode_AnyhowException,
+        ),
+        constMeta: kCrateListLnAddressDomainsConstMeta,
+        argValues: [lnAddressApi],
+        apiImpl: this,
+      ),
+    );
+  }
+
+  TaskConstMeta get kCrateListLnAddressDomainsConstMeta => const TaskConstMeta(
+    debugName: "list_ln_address_domains",
+    argNames: ["lnAddressApi"],
+  );
+
+  @override
   Future<void> crateLoadMultimint({required String path}) {
     return handler.executeNormal(
       NormalTask(
@@ -5584,7 +6452,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 126,
+            funcId: 144,
             port: port_,
           );
         },
@@ -5619,7 +6487,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 127,
+            funcId: 145,
             port: port_,
           );
         },
@@ -5656,7 +6524,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 128,
+            funcId: 146,
             port: port_,
           );
         },
@@ -5693,7 +6561,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 129,
+            funcId: 147,
             port: port_,
           );
         },
@@ -5727,7 +6595,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 130,
+            funcId: 148,
             port: port_,
           );
         },
@@ -5763,7 +6631,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 131,
+            funcId: 149,
             port: port_,
           );
         },
@@ -5806,7 +6674,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 132,
+            funcId: 150,
             port: port_,
           );
         },
@@ -5856,7 +6724,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 133,
+            funcId: 151,
             port: port_,
           );
         },
@@ -5877,6 +6745,61 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   );
 
   @override
+  Future<void> crateRegisterLnAddress({
+    required FederationId federationId,
+    required String recurringdApi,
+    required String lnAddressApi,
+    required String username,
+    required String domain,
+  }) {
+    return handler.executeNormal(
+      NormalTask(
+        callFfi: (port_) {
+          final serializer = SseSerializer(generalizedFrbRustBinding);
+          sse_encode_Auto_Ref_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerFederationId(
+            federationId,
+            serializer,
+          );
+          sse_encode_String(recurringdApi, serializer);
+          sse_encode_String(lnAddressApi, serializer);
+          sse_encode_String(username, serializer);
+          sse_encode_String(domain, serializer);
+          pdeCallFfi(
+            generalizedFrbRustBinding,
+            serializer,
+            funcId: 152,
+            port: port_,
+          );
+        },
+        codec: SseCodec(
+          decodeSuccessData: sse_decode_unit,
+          decodeErrorData: sse_decode_AnyhowException,
+        ),
+        constMeta: kCrateRegisterLnAddressConstMeta,
+        argValues: [
+          federationId,
+          recurringdApi,
+          lnAddressApi,
+          username,
+          domain,
+        ],
+        apiImpl: this,
+      ),
+    );
+  }
+
+  TaskConstMeta get kCrateRegisterLnAddressConstMeta => const TaskConstMeta(
+    debugName: "register_ln_address",
+    argNames: [
+      "federationId",
+      "recurringdApi",
+      "lnAddressApi",
+      "username",
+      "domain",
+    ],
+  );
+
+  @override
   Future<OperationId> crateReissueEcash({
     required FederationId federationId,
     required String ecash,
@@ -5893,7 +6816,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 134,
+            funcId: 153,
             port: port_,
           );
         },
@@ -5924,7 +6847,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 135,
+            funcId: 154,
             port: port_,
           );
         },
@@ -5959,7 +6882,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 136,
+            funcId: 155,
             port: port_,
           );
         },
@@ -6002,7 +6925,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 137,
+            funcId: 156,
             port: port_,
           );
         },
@@ -6046,7 +6969,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 138,
+            funcId: 157,
             port: port_,
           );
         },
@@ -6086,7 +7009,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 139,
+            funcId: 158,
             port: port_,
           );
         },
@@ -6124,7 +7047,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 140,
+            funcId: 159,
             port: port_,
           );
         },
@@ -6162,7 +7085,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
             pdeCallFfi(
               generalizedFrbRustBinding,
               serializer,
-              funcId: 141,
+              funcId: 160,
               port: port_,
             );
           },
@@ -6196,7 +7119,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
             pdeCallFfi(
               generalizedFrbRustBinding,
               serializer,
-              funcId: 142,
+              funcId: 161,
               port: port_,
             );
           },
@@ -6239,7 +7162,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
             pdeCallFfi(
               generalizedFrbRustBinding,
               serializer,
-              funcId: 143,
+              funcId: 162,
               port: port_,
             );
           },
@@ -6283,7 +7206,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 144,
+            funcId: 163,
             port: port_,
           );
         },
@@ -6313,7 +7236,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 145,
+            funcId: 164,
             port: port_,
           );
         },
@@ -6341,7 +7264,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 146,
+            funcId: 165,
             port: port_,
           );
         },
@@ -6383,7 +7306,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 147,
+            funcId: 166,
             port: port_,
           );
         },
@@ -6413,7 +7336,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 148,
+            funcId: 167,
             port: port_,
           );
         },
@@ -6526,6 +7449,22 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   RustArcDecrementStrongCountFnType
   get rust_arc_decrement_strong_count_InviteCode =>
       wire.rust_arc_decrement_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerInviteCode;
+
+  RustArcIncrementStrongCountFnType
+  get rust_arc_increment_strong_count_LightningAddressConfig =>
+      wire.rust_arc_increment_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerLightningAddressConfig;
+
+  RustArcDecrementStrongCountFnType
+  get rust_arc_decrement_strong_count_LightningAddressConfig =>
+      wire.rust_arc_decrement_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerLightningAddressConfig;
+
+  RustArcIncrementStrongCountFnType
+  get rust_arc_increment_strong_count_LightningAddressKey =>
+      wire.rust_arc_increment_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerLightningAddressKey;
+
+  RustArcDecrementStrongCountFnType
+  get rust_arc_decrement_strong_count_LightningAddressKey =>
+      wire.rust_arc_decrement_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerLightningAddressKey;
 
   RustArcIncrementStrongCountFnType
   get rust_arc_increment_strong_count_Multimint =>
@@ -6726,6 +7665,26 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   }
 
   @protected
+  LightningAddressConfig
+  dco_decode_Auto_Owned_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerLightningAddressConfig(
+    dynamic raw,
+  ) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    return LightningAddressConfigImpl.frbInternalDcoDecode(
+      raw as List<dynamic>,
+    );
+  }
+
+  @protected
+  LightningAddressKey
+  dco_decode_Auto_Owned_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerLightningAddressKey(
+    dynamic raw,
+  ) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    return LightningAddressKeyImpl.frbInternalDcoDecode(raw as List<dynamic>);
+  }
+
+  @protected
   Multimint
   dco_decode_Auto_Owned_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerMultimint(
     dynamic raw,
@@ -6845,6 +7804,26 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   }
 
   @protected
+  LightningAddressConfig
+  dco_decode_Auto_RefMut_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerLightningAddressConfig(
+    dynamic raw,
+  ) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    return LightningAddressConfigImpl.frbInternalDcoDecode(
+      raw as List<dynamic>,
+    );
+  }
+
+  @protected
+  LightningAddressKey
+  dco_decode_Auto_RefMut_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerLightningAddressKey(
+    dynamic raw,
+  ) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    return LightningAddressKeyImpl.frbInternalDcoDecode(raw as List<dynamic>);
+  }
+
+  @protected
   Multimint
   dco_decode_Auto_RefMut_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerMultimint(
     dynamic raw,
@@ -6914,6 +7893,26 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   ) {
     // Codec=Dco (DartCObject based), see doc to use other codecs
     return FederationSelectorImpl.frbInternalDcoDecode(raw as List<dynamic>);
+  }
+
+  @protected
+  LightningAddressConfig
+  dco_decode_Auto_Ref_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerLightningAddressConfig(
+    dynamic raw,
+  ) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    return LightningAddressConfigImpl.frbInternalDcoDecode(
+      raw as List<dynamic>,
+    );
+  }
+
+  @protected
+  LightningAddressKey
+  dco_decode_Auto_Ref_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerLightningAddressKey(
+    dynamic raw,
+  ) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    return LightningAddressKeyImpl.frbInternalDcoDecode(raw as List<dynamic>);
   }
 
   @protected
@@ -7065,6 +8064,26 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   }
 
   @protected
+  LightningAddressConfig
+  dco_decode_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerLightningAddressConfig(
+    dynamic raw,
+  ) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    return LightningAddressConfigImpl.frbInternalDcoDecode(
+      raw as List<dynamic>,
+    );
+  }
+
+  @protected
+  LightningAddressKey
+  dco_decode_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerLightningAddressKey(
+    dynamic raw,
+  ) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    return LightningAddressKeyImpl.frbInternalDcoDecode(raw as List<dynamic>);
+  }
+
+  @protected
   Multimint
   dco_decode_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerMultimint(
     dynamic raw,
@@ -7213,6 +8232,17 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   ) {
     // Codec=Dco (DartCObject based), see doc to use other codecs
     return dco_decode_Auto_Owned_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerFederationSelector(
+      raw,
+    );
+  }
+
+  @protected
+  LightningAddressConfig
+  dco_decode_box_autoadd_Auto_Owned_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerLightningAddressConfig(
+    dynamic raw,
+  ) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    return dco_decode_Auto_Owned_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerLightningAddressConfig(
       raw,
     );
   }
@@ -7508,6 +8538,25 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   }
 
   @protected
+  LNAddressStatus dco_decode_ln_address_status(dynamic raw) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    switch (raw[0]) {
+      case 0:
+        return LNAddressStatus_Registered(lnurl: dco_decode_String(raw[1]));
+      case 1:
+        return LNAddressStatus_Available();
+      case 2:
+        return LNAddressStatus_CurrentConfig();
+      case 3:
+        return LNAddressStatus_UnsupportedFederation();
+      case 4:
+        return LNAddressStatus_Invalid();
+      default:
+        throw Exception("unreachable");
+    }
+  }
+
+  @protected
   LogLevel dco_decode_log_level(dynamic raw) {
     // Codec=Dco (DartCObject based), see doc to use other codecs
     return LogLevel.values[raw as int];
@@ -7611,6 +8660,19 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
     return raw == null
         ? null
         : dco_decode_box_autoadd_Auto_Owned_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerFederationSelector(
+          raw,
+        );
+  }
+
+  @protected
+  LightningAddressConfig?
+  dco_decode_opt_box_autoadd_Auto_Owned_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerLightningAddressConfig(
+    dynamic raw,
+  ) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    return raw == null
+        ? null
+        : dco_decode_box_autoadd_Auto_Owned_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerLightningAddressConfig(
           raw,
         );
   }
@@ -7979,15 +9041,17 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           preimage: dco_decode_String(raw[4]),
         );
       case 2:
-        return TransactionKind_OnchainReceive();
+        return TransactionKind_LightningRecurring();
       case 3:
-        return TransactionKind_OnchainSend();
+        return TransactionKind_OnchainReceive();
       case 4:
+        return TransactionKind_OnchainSend();
+      case 5:
         return TransactionKind_EcashReceive(
           oobNotes: dco_decode_String(raw[1]),
           fees: dco_decode_u_64(raw[2]),
         );
-      case 5:
+      case 6:
         return TransactionKind_EcashSend(
           oobNotes: dco_decode_String(raw[1]),
           fees: dco_decode_u_64(raw[2]),
@@ -8198,6 +9262,30 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   }
 
   @protected
+  LightningAddressConfig
+  sse_decode_Auto_Owned_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerLightningAddressConfig(
+    SseDeserializer deserializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    return LightningAddressConfigImpl.frbInternalSseDecode(
+      sse_decode_usize(deserializer),
+      sse_decode_i_32(deserializer),
+    );
+  }
+
+  @protected
+  LightningAddressKey
+  sse_decode_Auto_Owned_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerLightningAddressKey(
+    SseDeserializer deserializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    return LightningAddressKeyImpl.frbInternalSseDecode(
+      sse_decode_usize(deserializer),
+      sse_decode_i_32(deserializer),
+    );
+  }
+
+  @protected
   Multimint
   sse_decode_Auto_Owned_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerMultimint(
     SseDeserializer deserializer,
@@ -8354,6 +9442,30 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   }
 
   @protected
+  LightningAddressConfig
+  sse_decode_Auto_RefMut_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerLightningAddressConfig(
+    SseDeserializer deserializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    return LightningAddressConfigImpl.frbInternalSseDecode(
+      sse_decode_usize(deserializer),
+      sse_decode_i_32(deserializer),
+    );
+  }
+
+  @protected
+  LightningAddressKey
+  sse_decode_Auto_RefMut_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerLightningAddressKey(
+    SseDeserializer deserializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    return LightningAddressKeyImpl.frbInternalSseDecode(
+      sse_decode_usize(deserializer),
+      sse_decode_i_32(deserializer),
+    );
+  }
+
+  @protected
   Multimint
   sse_decode_Auto_RefMut_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerMultimint(
     SseDeserializer deserializer,
@@ -8444,6 +9556,30 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   ) {
     // Codec=Sse (Serialization based), see doc to use other codecs
     return FederationSelectorImpl.frbInternalSseDecode(
+      sse_decode_usize(deserializer),
+      sse_decode_i_32(deserializer),
+    );
+  }
+
+  @protected
+  LightningAddressConfig
+  sse_decode_Auto_Ref_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerLightningAddressConfig(
+    SseDeserializer deserializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    return LightningAddressConfigImpl.frbInternalSseDecode(
+      sse_decode_usize(deserializer),
+      sse_decode_i_32(deserializer),
+    );
+  }
+
+  @protected
+  LightningAddressKey
+  sse_decode_Auto_Ref_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerLightningAddressKey(
+    SseDeserializer deserializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    return LightningAddressKeyImpl.frbInternalSseDecode(
       sse_decode_usize(deserializer),
       sse_decode_i_32(deserializer),
     );
@@ -8642,6 +9778,30 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   }
 
   @protected
+  LightningAddressConfig
+  sse_decode_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerLightningAddressConfig(
+    SseDeserializer deserializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    return LightningAddressConfigImpl.frbInternalSseDecode(
+      sse_decode_usize(deserializer),
+      sse_decode_i_32(deserializer),
+    );
+  }
+
+  @protected
+  LightningAddressKey
+  sse_decode_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerLightningAddressKey(
+    SseDeserializer deserializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    return LightningAddressKeyImpl.frbInternalSseDecode(
+      sse_decode_usize(deserializer),
+      sse_decode_i_32(deserializer),
+    );
+  }
+
+  @protected
   Multimint
   sse_decode_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerMultimint(
     SseDeserializer deserializer,
@@ -8822,6 +9982,17 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   ) {
     // Codec=Sse (Serialization based), see doc to use other codecs
     return (sse_decode_Auto_Owned_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerFederationSelector(
+      deserializer,
+    ));
+  }
+
+  @protected
+  LightningAddressConfig
+  sse_decode_box_autoadd_Auto_Owned_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerLightningAddressConfig(
+    SseDeserializer deserializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    return (sse_decode_Auto_Owned_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerLightningAddressConfig(
       deserializer,
     ));
   }
@@ -9210,6 +10381,28 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   }
 
   @protected
+  LNAddressStatus sse_decode_ln_address_status(SseDeserializer deserializer) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+
+    var tag_ = sse_decode_i_32(deserializer);
+    switch (tag_) {
+      case 0:
+        var var_lnurl = sse_decode_String(deserializer);
+        return LNAddressStatus_Registered(lnurl: var_lnurl);
+      case 1:
+        return LNAddressStatus_Available();
+      case 2:
+        return LNAddressStatus_CurrentConfig();
+      case 3:
+        return LNAddressStatus_UnsupportedFederation();
+      case 4:
+        return LNAddressStatus_Invalid();
+      default:
+        throw UnimplementedError('');
+    }
+  }
+
+  @protected
   LogLevel sse_decode_log_level(SseDeserializer deserializer) {
     // Codec=Sse (Serialization based), see doc to use other codecs
     var inner = sse_decode_i_32(deserializer);
@@ -9326,6 +10519,22 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
 
     if (sse_decode_bool(deserializer)) {
       return (sse_decode_box_autoadd_Auto_Owned_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerFederationSelector(
+        deserializer,
+      ));
+    } else {
+      return null;
+    }
+  }
+
+  @protected
+  LightningAddressConfig?
+  sse_decode_opt_box_autoadd_Auto_Owned_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerLightningAddressConfig(
+    SseDeserializer deserializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+
+    if (sse_decode_bool(deserializer)) {
+      return (sse_decode_box_autoadd_Auto_Owned_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerLightningAddressConfig(
         deserializer,
       ));
     } else {
@@ -9665,17 +10874,19 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           preimage: var_preimage,
         );
       case 2:
-        return TransactionKind_OnchainReceive();
+        return TransactionKind_LightningRecurring();
       case 3:
-        return TransactionKind_OnchainSend();
+        return TransactionKind_OnchainReceive();
       case 4:
+        return TransactionKind_OnchainSend();
+      case 5:
         var var_oobNotes = sse_decode_String(deserializer);
         var var_fees = sse_decode_u_64(deserializer);
         return TransactionKind_EcashReceive(
           oobNotes: var_oobNotes,
           fees: var_fees,
         );
-      case 5:
+      case 6:
         var var_oobNotes = sse_decode_String(deserializer);
         var var_fees = sse_decode_u_64(deserializer);
         return TransactionKind_EcashSend(
@@ -9898,6 +11109,32 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
 
   @protected
   void
+  sse_encode_Auto_Owned_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerLightningAddressConfig(
+    LightningAddressConfig self,
+    SseSerializer serializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    sse_encode_usize(
+      (self as LightningAddressConfigImpl).frbInternalSseEncode(move: true),
+      serializer,
+    );
+  }
+
+  @protected
+  void
+  sse_encode_Auto_Owned_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerLightningAddressKey(
+    LightningAddressKey self,
+    SseSerializer serializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    sse_encode_usize(
+      (self as LightningAddressKeyImpl).frbInternalSseEncode(move: true),
+      serializer,
+    );
+  }
+
+  @protected
+  void
   sse_encode_Auto_Owned_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerMultimint(
     Multimint self,
     SseSerializer serializer,
@@ -10067,6 +11304,32 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
 
   @protected
   void
+  sse_encode_Auto_RefMut_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerLightningAddressConfig(
+    LightningAddressConfig self,
+    SseSerializer serializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    sse_encode_usize(
+      (self as LightningAddressConfigImpl).frbInternalSseEncode(move: false),
+      serializer,
+    );
+  }
+
+  @protected
+  void
+  sse_encode_Auto_RefMut_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerLightningAddressKey(
+    LightningAddressKey self,
+    SseSerializer serializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    sse_encode_usize(
+      (self as LightningAddressKeyImpl).frbInternalSseEncode(move: false),
+      serializer,
+    );
+  }
+
+  @protected
+  void
   sse_encode_Auto_RefMut_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerMultimint(
     Multimint self,
     SseSerializer serializer,
@@ -10165,6 +11428,32 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
     // Codec=Sse (Serialization based), see doc to use other codecs
     sse_encode_usize(
       (self as FederationSelectorImpl).frbInternalSseEncode(move: false),
+      serializer,
+    );
+  }
+
+  @protected
+  void
+  sse_encode_Auto_Ref_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerLightningAddressConfig(
+    LightningAddressConfig self,
+    SseSerializer serializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    sse_encode_usize(
+      (self as LightningAddressConfigImpl).frbInternalSseEncode(move: false),
+      serializer,
+    );
+  }
+
+  @protected
+  void
+  sse_encode_Auto_Ref_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerLightningAddressKey(
+    LightningAddressKey self,
+    SseSerializer serializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    sse_encode_usize(
+      (self as LightningAddressKeyImpl).frbInternalSseEncode(move: false),
       serializer,
     );
   }
@@ -10373,6 +11662,32 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
     // Codec=Sse (Serialization based), see doc to use other codecs
     sse_encode_usize(
       (self as InviteCodeImpl).frbInternalSseEncode(move: null),
+      serializer,
+    );
+  }
+
+  @protected
+  void
+  sse_encode_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerLightningAddressConfig(
+    LightningAddressConfig self,
+    SseSerializer serializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    sse_encode_usize(
+      (self as LightningAddressConfigImpl).frbInternalSseEncode(move: null),
+      serializer,
+    );
+  }
+
+  @protected
+  void
+  sse_encode_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerLightningAddressKey(
+    LightningAddressKey self,
+    SseSerializer serializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    sse_encode_usize(
+      (self as LightningAddressKeyImpl).frbInternalSseEncode(move: null),
       serializer,
     );
   }
@@ -10590,6 +11905,19 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   ) {
     // Codec=Sse (Serialization based), see doc to use other codecs
     sse_encode_Auto_Owned_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerFederationSelector(
+      self,
+      serializer,
+    );
+  }
+
+  @protected
+  void
+  sse_encode_box_autoadd_Auto_Owned_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerLightningAddressConfig(
+    LightningAddressConfig self,
+    SseSerializer serializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    sse_encode_Auto_Owned_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerLightningAddressConfig(
       self,
       serializer,
     );
@@ -10950,6 +12278,27 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   }
 
   @protected
+  void sse_encode_ln_address_status(
+    LNAddressStatus self,
+    SseSerializer serializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    switch (self) {
+      case LNAddressStatus_Registered(lnurl: final lnurl):
+        sse_encode_i_32(0, serializer);
+        sse_encode_String(lnurl, serializer);
+      case LNAddressStatus_Available():
+        sse_encode_i_32(1, serializer);
+      case LNAddressStatus_CurrentConfig():
+        sse_encode_i_32(2, serializer);
+      case LNAddressStatus_UnsupportedFederation():
+        sse_encode_i_32(3, serializer);
+      case LNAddressStatus_Invalid():
+        sse_encode_i_32(4, serializer);
+    }
+  }
+
+  @protected
   void sse_encode_log_level(LogLevel self, SseSerializer serializer) {
     // Codec=Sse (Serialization based), see doc to use other codecs
     sse_encode_i_32(self.index, serializer);
@@ -11057,6 +12406,23 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
     sse_encode_bool(self != null, serializer);
     if (self != null) {
       sse_encode_box_autoadd_Auto_Owned_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerFederationSelector(
+        self,
+        serializer,
+      );
+    }
+  }
+
+  @protected
+  void
+  sse_encode_opt_box_autoadd_Auto_Owned_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerLightningAddressConfig(
+    LightningAddressConfig? self,
+    SseSerializer serializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+
+    sse_encode_bool(self != null, serializer);
+    if (self != null) {
+      sse_encode_box_autoadd_Auto_Owned_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerLightningAddressConfig(
         self,
         serializer,
       );
@@ -11386,22 +12752,24 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
         sse_encode_String(gateway, serializer);
         sse_encode_String(paymentHash, serializer);
         sse_encode_String(preimage, serializer);
-      case TransactionKind_OnchainReceive():
+      case TransactionKind_LightningRecurring():
         sse_encode_i_32(2, serializer);
-      case TransactionKind_OnchainSend():
+      case TransactionKind_OnchainReceive():
         sse_encode_i_32(3, serializer);
+      case TransactionKind_OnchainSend():
+        sse_encode_i_32(4, serializer);
       case TransactionKind_EcashReceive(
         oobNotes: final oobNotes,
         fees: final fees,
       ):
-        sse_encode_i_32(4, serializer);
+        sse_encode_i_32(5, serializer);
         sse_encode_String(oobNotes, serializer);
         sse_encode_u_64(fees, serializer);
       case TransactionKind_EcashSend(
         oobNotes: final oobNotes,
         fees: final fees,
       ):
-        sse_encode_i_32(5, serializer);
+        sse_encode_i_32(6, serializer);
         sse_encode_String(oobNotes, serializer);
         sse_encode_u_64(fees, serializer);
     }
@@ -11854,6 +13222,124 @@ class InviteCodeImpl extends RustOpaque implements InviteCode {
 }
 
 @sealed
+class LightningAddressConfigImpl extends RustOpaque
+    implements LightningAddressConfig {
+  // Not to be used by end users
+  LightningAddressConfigImpl.frbInternalDcoDecode(List<dynamic> wire)
+    : super.frbInternalDcoDecode(wire, _kStaticData);
+
+  // Not to be used by end users
+  LightningAddressConfigImpl.frbInternalSseDecode(
+    BigInt ptr,
+    int externalSizeOnNative,
+  ) : super.frbInternalSseDecode(ptr, externalSizeOnNative, _kStaticData);
+
+  static final _kStaticData = RustArcStaticData(
+    rustArcIncrementStrongCount:
+        RustLib
+            .instance
+            .api
+            .rust_arc_increment_strong_count_LightningAddressConfig,
+    rustArcDecrementStrongCount:
+        RustLib
+            .instance
+            .api
+            .rust_arc_decrement_strong_count_LightningAddressConfig,
+    rustArcDecrementStrongCountPtr:
+        RustLib
+            .instance
+            .api
+            .rust_arc_decrement_strong_count_LightningAddressConfigPtr,
+  );
+
+  String get domain => RustLib.instance.api
+      .crateDbLightningAddressConfigAutoAccessorGetDomain(that: this);
+
+  SafeUrl get lnAddressApi => RustLib.instance.api
+      .crateDbLightningAddressConfigAutoAccessorGetLnAddressApi(that: this);
+
+  String get lnurl => RustLib.instance.api
+      .crateDbLightningAddressConfigAutoAccessorGetLnurl(that: this);
+
+  SafeUrl get recurringdApi => RustLib.instance.api
+      .crateDbLightningAddressConfigAutoAccessorGetRecurringdApi(that: this);
+
+  String get username => RustLib.instance.api
+      .crateDbLightningAddressConfigAutoAccessorGetUsername(that: this);
+
+  set domain(String domain) =>
+      RustLib.instance.api.crateDbLightningAddressConfigAutoAccessorSetDomain(
+        that: this,
+        domain: domain,
+      );
+
+  set lnAddressApi(SafeUrl lnAddressApi) => RustLib.instance.api
+      .crateDbLightningAddressConfigAutoAccessorSetLnAddressApi(
+        that: this,
+        lnAddressApi: lnAddressApi,
+      );
+
+  set lnurl(String lnurl) =>
+      RustLib.instance.api.crateDbLightningAddressConfigAutoAccessorSetLnurl(
+        that: this,
+        lnurl: lnurl,
+      );
+
+  set recurringdApi(SafeUrl recurringdApi) => RustLib.instance.api
+      .crateDbLightningAddressConfigAutoAccessorSetRecurringdApi(
+        that: this,
+        recurringdApi: recurringdApi,
+      );
+
+  set username(String username) =>
+      RustLib.instance.api.crateDbLightningAddressConfigAutoAccessorSetUsername(
+        that: this,
+        username: username,
+      );
+}
+
+@sealed
+class LightningAddressKeyImpl extends RustOpaque
+    implements LightningAddressKey {
+  // Not to be used by end users
+  LightningAddressKeyImpl.frbInternalDcoDecode(List<dynamic> wire)
+    : super.frbInternalDcoDecode(wire, _kStaticData);
+
+  // Not to be used by end users
+  LightningAddressKeyImpl.frbInternalSseDecode(
+    BigInt ptr,
+    int externalSizeOnNative,
+  ) : super.frbInternalSseDecode(ptr, externalSizeOnNative, _kStaticData);
+
+  static final _kStaticData = RustArcStaticData(
+    rustArcIncrementStrongCount:
+        RustLib
+            .instance
+            .api
+            .rust_arc_increment_strong_count_LightningAddressKey,
+    rustArcDecrementStrongCount:
+        RustLib
+            .instance
+            .api
+            .rust_arc_decrement_strong_count_LightningAddressKey,
+    rustArcDecrementStrongCountPtr:
+        RustLib
+            .instance
+            .api
+            .rust_arc_decrement_strong_count_LightningAddressKeyPtr,
+  );
+
+  FederationId get federationId => RustLib.instance.api
+      .crateDbLightningAddressKeyAutoAccessorGetFederationId(that: this);
+
+  set federationId(FederationId federationId) => RustLib.instance.api
+      .crateDbLightningAddressKeyAutoAccessorSetFederationId(
+        that: this,
+        federationId: federationId,
+      );
+}
+
+@sealed
 class MultimintImpl extends RustOpaque implements Multimint {
   // Not to be used by end users
   MultimintImpl.frbInternalDcoDecode(List<dynamic> wire)
@@ -11951,6 +13437,21 @@ class MultimintImpl extends RustOpaque implements Multimint {
     ecash: ecash,
   );
 
+  Future<LNAddressStatus> checkLnAddressAvailability({
+    required String username,
+    required String domain,
+    required String lnAddressApi,
+    required String recurringdApi,
+    required FederationId federationId,
+  }) => RustLib.instance.api.crateMultimintMultimintCheckLnAddressAvailability(
+    that: this,
+    username: username,
+    domain: domain,
+    lnAddressApi: lnAddressApi,
+    recurringdApi: recurringdApi,
+    federationId: federationId,
+  );
+
   Future<bool> containsClient({required FederationId federationId}) =>
       RustLib.instance.api.crateMultimintMultimintContainsClient(
         that: this,
@@ -11975,6 +13476,14 @@ class MultimintImpl extends RustOpaque implements Multimint {
         that: this,
         invite: invite,
       );
+
+  /// Retreives currently configured Lightning Address
+  Future<LightningAddressConfig?> getLnAddressConfig({
+    required FederationId federationId,
+  }) => RustLib.instance.api.crateMultimintMultimintGetLnAddressConfig(
+    that: this,
+    federationId: federationId,
+  );
 
   Future<BigInt> getMaxWithdrawableAmount({
     required FederationId federationId,
@@ -12063,6 +13572,22 @@ class MultimintImpl extends RustOpaque implements Multimint {
     that: this,
     federationId: federationId,
     tweakIdx: tweakIdx,
+  );
+
+  /// Register LNURL/LN Address
+  Future<void> registerLnAddress({
+    required FederationId federationId,
+    required String recurringdApi,
+    required String lnAddressApi,
+    required String username,
+    required String domain,
+  }) => RustLib.instance.api.crateMultimintMultimintRegisterLnAddress(
+    that: this,
+    federationId: federationId,
+    recurringdApi: recurringdApi,
+    lnAddressApi: lnAddressApi,
+    username: username,
+    domain: domain,
   );
 
   Future<OperationId> reissueEcash({

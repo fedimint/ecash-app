@@ -29,7 +29,7 @@ use std::collections::BTreeMap;
 use std::path::PathBuf;
 use std::{str::FromStr, sync::Arc};
 
-use anyhow::{anyhow, bail};
+use anyhow::{anyhow, bail, Context};
 use fedimint_api_client::api::net::Connector;
 use fedimint_bip39::Language;
 use fedimint_client::{Client, OperationId};
@@ -42,9 +42,11 @@ use fedimint_mint_client::{ReissueExternalNotesState, SpendOOBState};
 use fedimint_rocksdb::RocksDb;
 use lightning_invoice::Bolt11Invoice;
 
-use crate::db::{FederationConfig, FederationConfigKey, FederationConfigKeyPrefix};
+use crate::db::{
+    FederationConfig, FederationConfigKey, FederationConfigKeyPrefix, LightningAddressConfig,
+};
 use crate::frb_generated::StreamSink;
-use crate::multimint::{DepositEventKind, FedimintGateway};
+use crate::multimint::{DepositEventKind, FedimintGateway, LNAddressStatus};
 
 static MULTIMINT: OnceCell<Multimint> = OnceCell::const_new();
 static DATABASE: OnceCell<Database> = OnceCell::const_new();
@@ -831,4 +833,65 @@ pub async fn check_ecash_spent(
 ) -> anyhow::Result<bool> {
     let multimint = get_multimint();
     multimint.check_ecash_spent(federation_id, ecash).await
+}
+
+#[frb]
+pub async fn list_ln_address_domains(ln_address_api: String) -> anyhow::Result<Vec<String>> {
+    let safe_ln_address_api = SafeUrl::parse(&ln_address_api)?.join("domains")?;
+    let http_client = reqwest::Client::new();
+    let url = safe_ln_address_api.to_unsafe();
+    let result = http_client
+        .get(url)
+        .send()
+        .await
+        .context("Failed to send domains request")?;
+
+    let domains = result.json::<Vec<String>>().await?;
+    Ok(domains)
+}
+
+#[frb]
+pub async fn get_ln_address_config(federation_id: &FederationId) -> Option<LightningAddressConfig> {
+    let multimint = get_multimint();
+    multimint.get_ln_address_config(federation_id).await
+}
+
+#[frb]
+pub async fn check_ln_address_availability(
+    username: String,
+    domain: String,
+    ln_address_api: String,
+    recurringd_api: String,
+    federation_id: &FederationId,
+) -> anyhow::Result<LNAddressStatus> {
+    let multimint = get_multimint();
+    multimint
+        .check_ln_address_availability(
+            username,
+            domain,
+            ln_address_api,
+            recurringd_api,
+            federation_id,
+        )
+        .await
+}
+
+#[frb]
+pub async fn register_ln_address(
+    federation_id: &FederationId,
+    recurringd_api: String,
+    ln_address_api: String,
+    username: String,
+    domain: String,
+) -> anyhow::Result<()> {
+    let multimint = get_multimint();
+    multimint
+        .register_ln_address(
+            federation_id,
+            recurringd_api,
+            ln_address_api,
+            username,
+            domain,
+        )
+        .await
 }

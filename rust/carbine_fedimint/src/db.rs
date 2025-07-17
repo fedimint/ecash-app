@@ -6,6 +6,7 @@ use fedimint_core::{
     encoding::{Decodable, Encodable},
     impl_db_lookup, impl_db_record,
     invite_code::InviteCode,
+    util::SafeUrl,
 };
 use serde::{Deserialize, Serialize};
 
@@ -21,6 +22,7 @@ pub(crate) enum DbKeyPrefix {
     FederationMeta = 0x04,
     BtcPrice = 0x05,
     NostrRelays = 0x06,
+    LightningAddress = 0x07,
 }
 
 #[derive(Debug, Clone, Encodable, Decodable, Eq, PartialEq, Hash, Ord, PartialOrd)]
@@ -126,3 +128,32 @@ impl_db_record!(
 );
 
 impl_db_lookup!(key = NostrRelaysKey, query_prefix = NostrRelaysKeyPrefix,);
+
+#[derive(Debug, Encodable, Decodable)]
+pub struct LightningAddressKey {
+    pub federation_id: FederationId,
+}
+
+#[derive(Debug, Encodable, Decodable)]
+pub struct LightningAddressKeyPrefix;
+
+#[derive(Debug, Clone, Encodable, Decodable, Serialize)]
+pub struct LightningAddressConfig {
+    pub username: String,
+    pub domain: String,
+    pub recurringd_api: SafeUrl,
+    pub ln_address_api: SafeUrl,
+    pub lnurl: String,
+    pub authentication_token: String,
+}
+
+impl_db_record!(
+    key = LightningAddressKey,
+    value = LightningAddressConfig,
+    db_prefix = DbKeyPrefix::LightningAddress,
+);
+
+impl_db_lookup!(
+    key = LightningAddressKey,
+    query_prefix = LightningAddressKeyPrefix,
+);

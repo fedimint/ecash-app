@@ -3,6 +3,7 @@
 
 // ignore_for_file: invalid_use_of_internal_member, unused_import, unnecessary_import
 
+import 'db.dart';
 import 'event_bus.dart';
 import 'frb_generated.dart';
 import 'multimint.dart';
@@ -335,6 +336,41 @@ Future<bool> checkEcashSpent({
   ecash: ecash,
 );
 
+Future<List<String>> listLnAddressDomains({required String lnAddressApi}) =>
+    RustLib.instance.api.crateListLnAddressDomains(lnAddressApi: lnAddressApi);
+
+Future<LightningAddressConfig?> getLnAddressConfig({
+  required FederationId federationId,
+}) => RustLib.instance.api.crateGetLnAddressConfig(federationId: federationId);
+
+Future<LNAddressStatus> checkLnAddressAvailability({
+  required String username,
+  required String domain,
+  required String lnAddressApi,
+  required String recurringdApi,
+  required FederationId federationId,
+}) => RustLib.instance.api.crateCheckLnAddressAvailability(
+  username: username,
+  domain: domain,
+  lnAddressApi: lnAddressApi,
+  recurringdApi: recurringdApi,
+  federationId: federationId,
+);
+
+Future<void> registerLnAddress({
+  required FederationId federationId,
+  required String recurringdApi,
+  required String lnAddressApi,
+  required String username,
+  required String domain,
+}) => RustLib.instance.api.crateRegisterLnAddress(
+  federationId: federationId,
+  recurringdApi: recurringdApi,
+  lnAddressApi: lnAddressApi,
+  username: username,
+  domain: domain,
+);
+
 // Rust type: RustOpaqueMoi<flutter_rust_bridge::for_generated::RustAutoOpaqueInner<ClientConfig>>
 abstract class ClientConfig implements RustOpaqueInterface {}
 
@@ -352,6 +388,9 @@ abstract class InviteCode implements RustOpaqueInterface {}
 
 // Rust type: RustOpaqueMoi<flutter_rust_bridge::for_generated::RustAutoOpaqueInner<PegOutFees>>
 abstract class PegOutFees implements RustOpaqueInterface {}
+
+// Rust type: RustOpaqueMoi<flutter_rust_bridge::for_generated::RustAutoOpaqueInner<SafeUrl>>
+abstract class SafeUrl implements RustOpaqueInterface {}
 
 @freezed
 sealed class ParsedText with _$ParsedText {

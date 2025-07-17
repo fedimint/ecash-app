@@ -7,8 +7,8 @@ import 'frb_generated.dart';
 import 'lib.dart';
 import 'package:flutter_rust_bridge/flutter_rust_bridge_for_generated.dart';
 
-// These types are ignored because they are neither used by any `pub` functions nor (for structs and enums) marked `#[frb(unignore)]`: `BtcPriceKey`, `BtcPrice`, `DbKeyPrefix`, `FederationConfigKeyPrefix`, `FederationConfigKey`, `FederationMetaKey`, `NostrRelaysKeyPrefix`, `NostrRelaysKey`, `NostrWalletConnectConfig`, `NostrWalletConnectKeyPrefix`, `NostrWalletConnectKey`, `SeedPhraseAckKey`
-// These function are ignored because they are on traits that is not defined in current crate (put an empty `#[frb]` on it to unignore): `assert_receiver_is_total_eq`, `assert_receiver_is_total_eq`, `clone`, `clone`, `clone`, `cmp`, `consensus_decode_partial_from_finite_reader`, `consensus_decode_partial_from_finite_reader`, `consensus_decode_partial_from_finite_reader`, `consensus_decode_partial_from_finite_reader`, `consensus_decode_partial_from_finite_reader`, `consensus_decode_partial_from_finite_reader`, `consensus_decode_partial_from_finite_reader`, `consensus_decode_partial_from_finite_reader`, `consensus_decode_partial_from_finite_reader`, `consensus_decode_partial_from_finite_reader`, `consensus_decode_partial_from_finite_reader`, `consensus_decode_partial_from_finite_reader`, `consensus_encode`, `consensus_encode`, `consensus_encode`, `consensus_encode`, `consensus_encode`, `consensus_encode`, `consensus_encode`, `consensus_encode`, `consensus_encode`, `consensus_encode`, `consensus_encode`, `consensus_encode`, `eq`, `eq`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `hash`, `partial_cmp`
+// These types are ignored because they are neither used by any `pub` functions nor (for structs and enums) marked `#[frb(unignore)]`: `BtcPriceKey`, `BtcPrice`, `DbKeyPrefix`, `FederationConfigKeyPrefix`, `FederationConfigKey`, `FederationMetaKey`, `LightningAddressKeyPrefix`, `NostrRelaysKeyPrefix`, `NostrRelaysKey`, `NostrWalletConnectConfig`, `NostrWalletConnectKeyPrefix`, `NostrWalletConnectKey`, `SeedPhraseAckKey`
+// These function are ignored because they are on traits that is not defined in current crate (put an empty `#[frb]` on it to unignore): `assert_receiver_is_total_eq`, `assert_receiver_is_total_eq`, `clone`, `clone`, `clone`, `clone`, `cmp`, `consensus_decode_partial_from_finite_reader`, `consensus_decode_partial_from_finite_reader`, `consensus_decode_partial_from_finite_reader`, `consensus_decode_partial_from_finite_reader`, `consensus_decode_partial_from_finite_reader`, `consensus_decode_partial_from_finite_reader`, `consensus_decode_partial_from_finite_reader`, `consensus_decode_partial_from_finite_reader`, `consensus_decode_partial_from_finite_reader`, `consensus_decode_partial_from_finite_reader`, `consensus_decode_partial_from_finite_reader`, `consensus_decode_partial_from_finite_reader`, `consensus_decode_partial_from_finite_reader`, `consensus_decode_partial_from_finite_reader`, `consensus_decode_partial_from_finite_reader`, `consensus_encode`, `consensus_encode`, `consensus_encode`, `consensus_encode`, `consensus_encode`, `consensus_encode`, `consensus_encode`, `consensus_encode`, `consensus_encode`, `consensus_encode`, `consensus_encode`, `consensus_encode`, `consensus_encode`, `consensus_encode`, `consensus_encode`, `eq`, `eq`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `hash`, `partial_cmp`
 
 // Rust type: RustOpaqueMoi<flutter_rust_bridge::for_generated::RustAutoOpaqueInner<FederationConfig>>
 abstract class FederationConfig implements RustOpaqueInterface {
@@ -31,4 +31,34 @@ abstract class FederationConfig implements RustOpaqueInterface {
   set inviteCode(InviteCode inviteCode);
 
   set network(String? network);
+}
+
+// Rust type: RustOpaqueMoi<flutter_rust_bridge::for_generated::RustAutoOpaqueInner<LightningAddressConfig>>
+abstract class LightningAddressConfig implements RustOpaqueInterface {
+  String get domain;
+
+  SafeUrl get lnAddressApi;
+
+  String get lnurl;
+
+  SafeUrl get recurringdApi;
+
+  String get username;
+
+  set domain(String domain);
+
+  set lnAddressApi(SafeUrl lnAddressApi);
+
+  set lnurl(String lnurl);
+
+  set recurringdApi(SafeUrl recurringdApi);
+
+  set username(String username);
+}
+
+// Rust type: RustOpaqueMoi<flutter_rust_bridge::for_generated::RustAutoOpaqueInner<LightningAddressKey>>
+abstract class LightningAddressKey implements RustOpaqueInterface {
+  FederationId get federationId;
+
+  set federationId(FederationId federationId);
 }

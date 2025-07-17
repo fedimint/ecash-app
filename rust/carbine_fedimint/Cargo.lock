@@ -807,6 +807,7 @@ dependencies = [
  "lightning-invoice 0.32.0",
  "lnurl-rs",
  "nostr-sdk",
+ "regex",
  "reqwest 0.12.18",
  "serde",
  "serde_json",
