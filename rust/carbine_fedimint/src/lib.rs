@@ -372,9 +372,14 @@ pub async fn payment_preview(
 }
 
 #[frb]
-pub async fn get_federation_meta(invite_code: String) -> anyhow::Result<FederationMeta> {
+pub async fn get_federation_meta(
+    invite_code: Option<String>,
+    federation_id: Option<FederationId>,
+) -> anyhow::Result<FederationMeta> {
     let multimint = get_multimint();
-    multimint.get_cached_federation_meta(invite_code).await
+    multimint
+        .get_cached_federation_meta(invite_code, federation_id)
+        .await
 }
 
 #[frb]
@@ -515,9 +520,12 @@ pub async fn get_relays() -> Vec<(String, bool)> {
 }
 
 #[frb]
-pub async fn wallet_summary(invite: String) -> anyhow::Result<Vec<Utxo>> {
+pub async fn wallet_summary(
+    invite: Option<String>,
+    federation_id: Option<FederationId>,
+) -> anyhow::Result<Vec<Utxo>> {
     let multimint = get_multimint();
-    multimint.wallet_summary(invite).await
+    multimint.wallet_summary(invite, federation_id).await
 }
 
 #[frb]

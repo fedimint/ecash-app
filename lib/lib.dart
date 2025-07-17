@@ -133,8 +133,13 @@ Future<PaymentPreview> paymentPreview({
   bolt11: bolt11,
 );
 
-Future<FederationMeta> getFederationMeta({required String inviteCode}) =>
-    RustLib.instance.api.crateGetFederationMeta(inviteCode: inviteCode);
+Future<FederationMeta> getFederationMeta({
+  String? inviteCode,
+  FederationId? federationId,
+}) => RustLib.instance.api.crateGetFederationMeta(
+  inviteCode: inviteCode,
+  federationId: federationId,
+);
 
 Future<List<Transaction>> transactions({
   required FederationId federationId,
@@ -225,8 +230,13 @@ Future<NWCConnectionInfo> setNwcConnectionInfo({
 Future<List<(String, bool)>> getRelays() =>
     RustLib.instance.api.crateGetRelays();
 
-Future<List<Utxo>> walletSummary({required String invite}) =>
-    RustLib.instance.api.crateWalletSummary(invite: invite);
+Future<List<Utxo>> walletSummary({
+  String? invite,
+  FederationId? federationId,
+}) => RustLib.instance.api.crateWalletSummary(
+  invite: invite,
+  federationId: federationId,
+);
 
 Stream<MultimintEvent> subscribeMultimintEvents() =>
     RustLib.instance.api.crateSubscribeMultimintEvents();
@@ -382,9 +392,6 @@ abstract class Database implements RustOpaqueInterface {}
 
 // Rust type: RustOpaqueMoi<flutter_rust_bridge::for_generated::RustAutoOpaqueInner<FederationId>>
 abstract class FederationId implements RustOpaqueInterface {}
-
-// Rust type: RustOpaqueMoi<flutter_rust_bridge::for_generated::RustAutoOpaqueInner<InviteCode>>
-abstract class InviteCode implements RustOpaqueInterface {}
 
 // Rust type: RustOpaqueMoi<flutter_rust_bridge::for_generated::RustAutoOpaqueInner<PegOutFees>>
 abstract class PegOutFees implements RustOpaqueInterface {}

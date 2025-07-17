@@ -92,7 +92,6 @@ pub struct FederationSelector {
     pub federation_name: String,
     pub federation_id: FederationId,
     pub network: Option<String>,
-    pub invite_code: String,
 }
 
 impl Display for FederationSelector {
@@ -390,22 +389,20 @@ impl Multimint {
             .await
             .collect::<BTreeMap<FederationConfigKey, FederationConfig>>()
             .await;
-        for (id, config) in configs {
-            let client = self
-                .build_client(
-                    &id.id,
-                    &config.invite_code,
-                    config.connector,
-                    ClientType::New,
-                )
-                .await?;
+        for (id, _) in configs {
+            let client_db = self.get_client_database(&id.id);
+            let mut client_builder = Client::builder(client_db).await?;
+            client_builder.with_module_inits(self.modules.clone());
+            client_builder.with_primary_module_kind(fedimint_mint_client::KIND);
+            let secret = Self::derive_federation_secret(&self.mnemonic, &id.id);
+            let client = client_builder.open(secret).await.map(Arc::new)?;
 
             self.clients.write().await.insert(id.id, client.clone());
 
             self.finish_active_subscriptions(client.clone(), id.id)
                 .await;
             if client.has_pending_recoveries() {
-                self.spawn_recovery_progress(client.clone(), config.invite_code.to_string());
+                self.spawn_recovery_progress(client.clone());
             }
         }
 
@@ -803,9 +800,8 @@ impl Multimint {
                         .await
                         .collect::<Vec<_>>()
                         .await;
-                    for (_, config) in configs {
-                        let invite = config.invite_code;
-                        let federation_id = invite.federation_id();
+                    for (key, _) in configs {
+                        let federation_id = key.id;
 
                         let cached_meta =
                             dbtx.get_value(&FederationMetaKey { federation_id }).await;
@@ -818,9 +814,13 @@ impl Multimint {
                             }
                         }
 
-                        if let Err(e) = self_copy.cache_federation_meta(invite, now).await {
-                            error_to_flutter(format!("Could not cache federation meta {e:?}"))
-                                .await;
+                        if let Some(client) = self_copy.clients.read().await.get(&federation_id) {
+                            if let Err(e) =
+                                self_copy.cache_federation_meta(client.clone(), now).await
+                            {
+                                error_to_flutter(format!("Could not cache federation meta {e:?}"))
+                                    .await;
+                            }
                         }
                     }
 
@@ -877,26 +877,42 @@ impl Multimint {
 
     pub async fn get_cached_federation_meta(
         &self,
-        invite: String,
+        invite: Option<String>,
+        federation_id: Option<FederationId>,
     ) -> anyhow::Result<FederationMeta> {
+        let (client, federation_id) = match federation_id {
+            Some(federation_id) => {
+                let clients = self.clients.read().await;
+                let client = clients
+                    .get(&federation_id)
+                    .ok_or(anyhow!("No federation exists"))?
+                    .clone();
+                (client, federation_id)
+            }
+            None => {
+                let invite =
+                    invite.ok_or(anyhow!("Federation ID and Invite cannot both be None"))?;
+                let invite_code = InviteCode::from_str(&invite)?;
+                self.get_or_build_temp_client(invite_code).await?
+            }
+        };
+
         let mut dbtx = self.db.begin_transaction().await;
-        let invite_code = InviteCode::from_str(&invite)?;
-        let federation_id = invite_code.federation_id();
         if let Some(cached_meta) = dbtx.get_value(&FederationMetaKey { federation_id }).await {
             return Ok(cached_meta);
         }
 
         // Federation either has not been cached yet, or is a new federation
-        self.cache_federation_meta(invite_code, std::time::SystemTime::now())
+        self.cache_federation_meta(client, std::time::SystemTime::now())
             .await
     }
 
     async fn cache_federation_meta(
         &self,
-        invite_code: InviteCode,
+        client: ClientHandleArc,
         now: std::time::SystemTime,
     ) -> anyhow::Result<FederationMeta> {
-        let (client, federation_id) = self.get_or_build_temp_client(invite_code.clone()).await?;
+        let federation_id = client.federation_id();
 
         let config = client.config().await;
         let wallet = client.get_first_module::<fedimint_wallet_client::WalletClientModule>()?;
@@ -916,7 +932,6 @@ impl Multimint {
             federation_name: config.global.federation_name().unwrap_or("").to_string(),
             federation_id,
             network: Some(network),
-            invite_code: invite_code.to_string(),
         };
 
         let meta = client.get_first_module::<fedimint_meta_client::MetaClientModule>();
@@ -1045,7 +1060,6 @@ impl Multimint {
         };
 
         let federation_config = FederationConfig {
-            invite_code,
             connector: Connector::default(),
             federation_name: federation_name.clone(),
             network: network.clone(),
@@ -1066,7 +1080,6 @@ impl Multimint {
             federation_name,
             federation_id,
             network,
-            invite_code: invite,
         })
     }
 
@@ -1101,7 +1114,7 @@ impl Multimint {
                     .recover(secret, client_config, invite_code.api_secret(), backup)
                     .await
                     .map(Arc::new)?;
-                self.spawn_recovery_progress(client.clone(), invite_code.to_string());
+                self.spawn_recovery_progress(client.clone());
                 client
             }
             client_type => {
@@ -1128,12 +1141,12 @@ impl Multimint {
         Ok(client)
     }
 
-    fn spawn_recovery_progress(&self, client: ClientHandleArc, invite: String) {
+    fn spawn_recovery_progress(&self, client: ClientHandleArc) {
         let mut self_copy = self.clone();
         let recovering_client = client.clone();
         self.task_group
             .spawn_cancellable("wait for recovery", async move {
-                if let Err(e) = self_copy.wait_for_recovery(recovering_client, invite).await {
+                if let Err(e) = self_copy.wait_for_recovery(recovering_client).await {
                     error_to_flutter(format!("Error waiting for recovery: {e:?}")).await;
                 }
             });
@@ -1214,12 +1227,27 @@ impl Multimint {
     async fn wait_for_recovery(
         &mut self,
         recovering_client: ClientHandleArc,
-        invite: String,
     ) -> anyhow::Result<()> {
         let federation_id = recovering_client.federation_id();
         info_to_flutter("Waiting for all recoveries...").await;
         recovering_client.wait_for_all_recoveries().await?;
-        self.join_federation(invite, false).await?;
+
+        // Try all federation invite codes in case some peers are down
+        let config = recovering_client.config().await;
+        let peers = config.global.api_endpoints.keys().collect::<Vec<_>>();
+        let mut joined = false;
+        for peer in peers {
+            if let Some(invite_code) = recovering_client.invite_code(peer.clone()).await {
+                self.join_federation(invite_code.to_string(), false).await?;
+                joined = true;
+                break;
+            }
+        }
+
+        if !joined {
+            bail!("Could not re-join federation after recovering");
+        }
+
         let new_client = self
             .clients
             .read()
@@ -1273,7 +1301,6 @@ impl Multimint {
                         federation_name: config.federation_name,
                         federation_id: id.id,
                         network: config.network,
-                        invite_code: config.invite_code.to_string(),
                     };
                     (selector, client.has_pending_recoveries())
                 }
@@ -2751,9 +2778,26 @@ impl Multimint {
         Ok(address.to_string())
     }
 
-    pub async fn wallet_summary(&self, invite: String) -> anyhow::Result<Vec<Utxo>> {
-        let invite_code = InviteCode::from_str(&invite)?;
-        let (client, _) = self.get_or_build_temp_client(invite_code).await?;
+    pub async fn wallet_summary(
+        &self,
+        invite: Option<String>,
+        federation_id: Option<FederationId>,
+    ) -> anyhow::Result<Vec<Utxo>> {
+        let client = match invite {
+            Some(invite) => {
+                let invite_code = InviteCode::from_str(&invite)?;
+                self.get_or_build_temp_client(invite_code).await?.0
+            }
+            None => {
+                let federation_id =
+                    federation_id.expect("Invite code and federation ID cannot both be None");
+                let clients = self.clients.read().await;
+                clients
+                    .get(&federation_id)
+                    .ok_or(anyhow!("No federation exists"))?
+                    .clone()
+            }
+        };
         let wallet_module = client.get_first_module::<WalletClientModule>()?;
         let wallet_summary = wallet_module.get_wallet_summary().await?;
         let mut utxos: Vec<Utxo> = wallet_summary

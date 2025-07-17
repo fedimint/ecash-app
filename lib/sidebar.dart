@@ -131,7 +131,9 @@ class _FederationListItemState extends State<FederationListItem> {
 
   Future<void> _loadFederationMeta() async {
     try {
-      final meta = await getFederationMeta(inviteCode: widget.fed.inviteCode);
+      final meta = await getFederationMeta(
+        federationId: widget.fed.federationId,
+      );
       if (!mounted) return;
       setState(() {
         if (meta.picture?.isNotEmpty ?? false) {
@@ -262,13 +264,11 @@ class _FederationListItemState extends State<FederationListItem> {
                     showCarbineModalBottomSheet(
                       context: context,
                       child: FederationPreview(
-                        federationName: widget.fed.federationName,
-                        inviteCode: widget.fed.inviteCode,
+                        fed: widget.fed,
                         welcomeMessage: welcomeMessage,
                         imageUrl: federationImageUrl,
                         joinable: false,
                         guardians: guardians,
-                        network: widget.fed.network!,
                       ),
                     );
                   },

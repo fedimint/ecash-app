@@ -5,8 +5,6 @@ use fedimint_core::{
     config::{ClientConfig, FederationId},
     encoding::{Decodable, Encodable},
     impl_db_lookup, impl_db_record,
-    invite_code::InviteCode,
-    util::SafeUrl,
 };
 use serde::{Deserialize, Serialize};
 
@@ -32,7 +30,6 @@ pub(crate) struct FederationConfigKey {
 
 #[derive(Debug, Clone, Eq, PartialEq, Encodable, Decodable, Serialize, Deserialize)]
 pub(crate) struct FederationConfig {
-    pub invite_code: InviteCode,
     pub connector: Connector,
     pub federation_name: String,
     pub network: Option<String>,

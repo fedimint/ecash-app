@@ -18,8 +18,6 @@ abstract class FederationConfig implements RustOpaqueInterface {
 
   String get federationName;
 
-  InviteCode get inviteCode;
-
   String? get network;
 
   set clientConfig(ClientConfig clientConfig);
@@ -28,13 +26,13 @@ abstract class FederationConfig implements RustOpaqueInterface {
 
   set federationName(String federationName);
 
-  set inviteCode(InviteCode inviteCode);
-
   set network(String? network);
 }
 
 // Rust type: RustOpaqueMoi<flutter_rust_bridge::for_generated::RustAutoOpaqueInner<LightningAddressConfig>>
 abstract class LightningAddressConfig implements RustOpaqueInterface {
+  String get authenticationToken;
+
   String get domain;
 
   SafeUrl get lnAddressApi;
@@ -44,6 +42,8 @@ abstract class LightningAddressConfig implements RustOpaqueInterface {
   SafeUrl get recurringdApi;
 
   String get username;
+
+  set authenticationToken(String authenticationToken);
 
   set domain(String domain);
 
