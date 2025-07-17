@@ -907,3 +907,9 @@ pub async fn register_ln_address(
         )
         .await
 }
+
+#[frb]
+pub async fn get_invite_code(federation_id: &FederationId, peer: u16) -> anyhow::Result<String> {
+    let multimint = get_multimint();
+    multimint.get_invite_code(federation_id, peer).await
+}

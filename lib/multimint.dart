@@ -130,6 +130,11 @@ abstract class Multimint implements RustOpaqueInterface {
     FederationId? federationId,
   });
 
+  Future<String> getInviteCode({
+    required FederationId federationId,
+    required int peer,
+  });
+
   /// Retreives currently configured Lightning Address
   Future<LightningAddressConfig?> getLnAddressConfig({
     required FederationId federationId,

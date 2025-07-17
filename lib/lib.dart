@@ -381,6 +381,14 @@ Future<void> registerLnAddress({
   domain: domain,
 );
 
+Future<String> getInviteCode({
+  required FederationId federationId,
+  required int peer,
+}) => RustLib.instance.api.crateGetInviteCode(
+  federationId: federationId,
+  peer: peer,
+);
+
 // Rust type: RustOpaqueMoi<flutter_rust_bridge::for_generated::RustAutoOpaqueInner<ClientConfig>>
 abstract class ClientConfig implements RustOpaqueInterface {}
 

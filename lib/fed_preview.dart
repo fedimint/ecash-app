@@ -1,7 +1,10 @@
 import 'package:carbine/lib.dart';
 import 'package:carbine/multimint.dart';
+import 'package:carbine/toast.dart';
 import 'package:carbine/utils.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:qr_flutter/qr_flutter.dart';
 
 class FederationPreview extends StatefulWidget {
   final FederationSelector fed;
@@ -265,6 +268,7 @@ class _FederationPreviewState extends State<FederationPreview> {
   }
 
   Widget _buildGuardianList(int thresh, int total) {
+    final theme = Theme.of(context);
     return widget.guardians != null && widget.guardians!.isNotEmpty
         ? ListView.builder(
           padding: const EdgeInsets.only(top: 8),
@@ -272,6 +276,7 @@ class _FederationPreviewState extends State<FederationPreview> {
           itemBuilder: (context, index) {
             final guardian = widget.guardians![index];
             final isOnline = guardian.version != null;
+
             return ListTile(
               dense: true,
               contentPadding: EdgeInsets.zero,
@@ -285,6 +290,107 @@ class _FederationPreviewState extends State<FederationPreview> {
                   isOnline
                       ? Text('Version: ${guardian.version}')
                       : const Text('Offline'),
+              trailing: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  // Copy invite code button
+                  IconButton(
+                    tooltip: "Copy invite code",
+                    icon: const Icon(Icons.copy, size: 20),
+                    onPressed: () async {
+                      try {
+                        final inviteCode = await getInviteCode(
+                          federationId: widget.fed.federationId,
+                          peer: index,
+                        );
+                        if (!context.mounted) return;
+                        await Clipboard.setData(
+                          ClipboardData(text: inviteCode),
+                        );
+                        ToastService().show(
+                          message: "Invite code copied $inviteCode",
+                          duration: const Duration(seconds: 5),
+                          onTap: () {},
+                          icon: Icon(Icons.check),
+                        );
+                      } catch (e) {
+                        AppLogger.instance.error(
+                          "Error getting invite code: $e",
+                        );
+                      }
+                    },
+                  ),
+
+                  // Show invite code popup button
+                  IconButton(
+                    tooltip: "View invite code",
+                    icon: const Icon(Icons.qr_code, size: 20),
+                    onPressed: () async {
+                      try {
+                        final inviteCode = await getInviteCode(
+                          federationId: widget.fed.federationId,
+                          peer: index,
+                        );
+                        if (!context.mounted) return;
+                        showDialog(
+                          context: context,
+                          builder:
+                              (context) => AlertDialog(
+                                title: const Center(
+                                  child: Text(
+                                    "Invite Code",
+                                    textAlign: TextAlign.center,
+                                  ),
+                                ),
+                                content: Container(
+                                  padding: const EdgeInsets.all(12),
+                                  decoration: BoxDecoration(
+                                    color: theme.colorScheme.surface,
+                                    borderRadius: BorderRadius.circular(16),
+                                    boxShadow: [
+                                      BoxShadow(
+                                        color: theme.colorScheme.primary
+                                            .withOpacity(0.3),
+                                        blurRadius: 12,
+                                        spreadRadius: 1,
+                                      ),
+                                    ],
+                                    border: Border.all(
+                                      color: theme.colorScheme.primary
+                                          .withOpacity(0.7),
+                                      width: 1.5,
+                                    ),
+                                  ),
+                                  child: AspectRatio(
+                                    aspectRatio: 1,
+                                    child: QrImageView(
+                                      data: inviteCode,
+                                      version: QrVersions.auto,
+                                      backgroundColor: Colors.white,
+                                      padding: EdgeInsets.zero,
+                                    ),
+                                  ),
+                                ),
+                                actions: [
+                                  TextButton(
+                                    onPressed:
+                                        () => Navigator.of(context).pop(),
+                                    child: const Text("Close"),
+                                  ),
+                                ],
+                              ),
+                        );
+                      } catch (e) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text("Error loading invite code: $e"),
+                          ),
+                        );
+                      }
+                    },
+                  ),
+                ],
+              ),
             );
           },
         )

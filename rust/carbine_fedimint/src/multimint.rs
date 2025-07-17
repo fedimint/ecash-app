@@ -3278,6 +3278,22 @@ impl Multimint {
             }
         }
     }
+
+    pub async fn get_invite_code(
+        &self,
+        federation_id: &FederationId,
+        peer: u16,
+    ) -> anyhow::Result<String> {
+        let clients = self.clients.read().await;
+        let client = clients
+            .get(federation_id)
+            .ok_or(anyhow!("Federation does not exist"))?;
+        Ok(client
+            .invite_code(peer.into())
+            .await
+            .ok_or(anyhow!("Peer does not exist"))?
+            .to_string())
+    }
 }
 
 /// Using the given federation (transaction) and gateway fees, compute the value `X` such that `X - total_fee == requested_amount`.
