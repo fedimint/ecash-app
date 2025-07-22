@@ -12,7 +12,7 @@ import 'package:flutter_rust_bridge/flutter_rust_bridge_for_generated.dart';
 import 'package:freezed_annotation/freezed_annotation.dart' hide protected;
 part 'lib.freezed.dart';
 
-// These functions are ignored because they are not marked as `pub`: `create_event_bus`, `create_nostr_client`, `error_to_flutter`, `get_database`, `get_multimint`, `get_nostr_client`, `handle_parsed_payment_instructions`, `info_to_flutter`
+// These functions are ignored because they are not marked as `pub`: `create_event_bus`, `create_nostr_client`, `error_to_flutter`, `get_database`, `get_multimint`, `get_nostr_client`, `handle_parsed_payment_instructions`, `info_to_flutter`, `parse_ecash`
 // These function are ignored because they are on traits that is not defined in current crate (put an empty `#[frb]` on it to unignore): `assert_receiver_is_total_eq`, `clone`, `eq`, `fmt`
 
 Future<EventBusMultimintEvent> getEventBus() =>
@@ -167,14 +167,6 @@ Future<SpendOobState> awaitEcashSend({
 }) => RustLib.instance.api.crateAwaitEcashSend(
   federationId: federationId,
   operationId: operationId,
-);
-
-Future<BigInt> parseEcash({
-  required FederationId federationId,
-  required String ecash,
-}) => RustLib.instance.api.crateParseEcash(
-  federationId: federationId,
-  ecash: ecash,
 );
 
 Future<OperationId> reissueEcash({

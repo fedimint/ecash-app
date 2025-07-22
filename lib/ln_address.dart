@@ -90,6 +90,12 @@ class _LightningAddressScreenState extends State<LightningAddressScreen> {
       });
     } catch (e) {
       AppLogger.instance.error("Unable to get domains: $e");
+      ToastService().show(
+        message: "Unable to get Lightning Address domains",
+        duration: const Duration(seconds: 5),
+        onTap: () {},
+        icon: Icon(Icons.error),
+      );
       setState(() {
         _domains = [];
         _loading = false;
@@ -129,6 +135,12 @@ class _LightningAddressScreenState extends State<LightningAddressScreen> {
         }
       } catch (e) {
         AppLogger.instance.error("Error checking availability: $e");
+        ToastService().show(
+          message: "Unable to get check Lightning Address availability",
+          duration: const Duration(seconds: 5),
+          onTap: () {},
+          icon: Icon(Icons.error),
+        );
         if (_lastCheckedAddress == address) {
           setState(() => _status = null);
         }

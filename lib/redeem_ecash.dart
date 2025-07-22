@@ -1,6 +1,7 @@
 import 'package:carbine/lib.dart';
 import 'package:carbine/multimint.dart';
 import 'package:carbine/success.dart';
+import 'package:carbine/toast.dart';
 import 'package:carbine/utils.dart';
 import 'package:flutter/material.dart';
 
@@ -55,6 +56,12 @@ class _EcashRedeemPromptState extends State<EcashRedeemPrompt> {
       Navigator.of(context).popUntil((route) => route.isFirst);
     } catch (e) {
       AppLogger.instance.error("Could not reissue ecash $e");
+      ToastService().show(
+        message: "Could not claim ecash",
+        duration: const Duration(seconds: 5),
+        onTap: () {},
+        icon: Icon(Icons.error),
+      );
       Navigator.of(context).popUntil((route) => route.isFirst);
     }
   }
@@ -67,6 +74,12 @@ class _EcashRedeemPromptState extends State<EcashRedeemPrompt> {
       );
     } catch (e) {
       AppLogger.instance.error("Could not reissue ecash $e");
+      ToastService().show(
+        message: "Could not claim ecash",
+        duration: const Duration(seconds: 5),
+        onTap: () {},
+        icon: Icon(Icons.error),
+      );
     }
 
     Navigator.of(context).popUntil((route) => route.isFirst);

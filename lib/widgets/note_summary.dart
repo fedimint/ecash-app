@@ -33,9 +33,10 @@ class _NoteSummaryState extends State<NoteSummary> {
         }
 
         if (snapshot.hasError) {
+          AppLogger.instance.error("Error loading note summary: ${snapshot.error}");
           return Center(
             child: Text(
-              'Error loading note summary: ${snapshot.error}',
+              'Could not load note summary',
               style: theme.textTheme.bodyMedium?.copyWith(color: Colors.redAccent),
             ),
           );

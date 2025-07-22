@@ -420,8 +420,7 @@ pub async fn await_ecash_send(
         .await
 }
 
-#[frb]
-pub async fn parse_ecash(federation_id: &FederationId, ecash: String) -> anyhow::Result<u64> {
+async fn parse_ecash(federation_id: &FederationId, ecash: String) -> anyhow::Result<u64> {
     let multimint = get_multimint();
     multimint.parse_ecash(federation_id, ecash).await
 }
