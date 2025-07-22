@@ -2519,7 +2519,10 @@ impl Multimint {
             .clone();
         let mint = client.get_first_module::<MintClientModule>()?;
         let notes = OOBNotes::from_str(&ecash)?;
-        let total_amount = notes.total_amount();
+
+        // Validate the notes before attempting to reissue
+        let total_amount = mint.validate_notes(&notes)?;
+
         let extra_meta = json!({
             "total_amount": total_amount,
             "ecash": ecash,
