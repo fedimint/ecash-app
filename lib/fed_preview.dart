@@ -56,6 +56,12 @@ class _FederationPreviewState extends State<FederationPreview> {
         backupInviteCodes();
       } catch (e) {
         AppLogger.instance.error('Could not join federation $e');
+        ToastService().show(
+          message: "Could not join federation",
+          duration: const Duration(seconds: 5),
+          onTap: () {},
+          icon: Icon(Icons.error),
+        );
         setState(() {
           isJoining = false;
         });
@@ -317,6 +323,12 @@ class _FederationPreviewState extends State<FederationPreview> {
                         AppLogger.instance.error(
                           "Error getting invite code: $e",
                         );
+                        ToastService().show(
+                          message: "Could not get invite code",
+                          duration: const Duration(seconds: 5),
+                          onTap: () {},
+                          icon: Icon(Icons.error),
+                        );
                       }
                     },
                   ),
@@ -381,10 +393,14 @@ class _FederationPreviewState extends State<FederationPreview> {
                               ),
                         );
                       } catch (e) {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(
-                            content: Text("Error loading invite code: $e"),
-                          ),
+                        AppLogger.instance.error(
+                          "Error getting invite code: $e",
+                        );
+                        ToastService().show(
+                          message: "Could not get invite code",
+                          duration: const Duration(seconds: 5),
+                          onTap: () {},
+                          icon: Icon(Icons.error),
                         );
                       }
                     },

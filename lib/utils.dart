@@ -130,7 +130,7 @@ String formatBalance(BigInt? msats, bool showMsats) {
     return switch (setting) {
       DisplaySetting.bip177 => '₿$formatted',
       DisplaySetting.sats => '$formatted sats',
-      DisplaySetting.nothing => '$formatted',
+      DisplaySetting.nothing => formatted,
     };
   } else {
     final sats = msats.toSats;
@@ -139,7 +139,7 @@ String formatBalance(BigInt? msats, bool showMsats) {
     return switch (setting) {
       DisplaySetting.bip177 => '₿$formatted',
       DisplaySetting.sats => '$formatted sats',
-      DisplaySetting.nothing => '$formatted',
+      DisplaySetting.nothing => formatted,
     };
   }
 }

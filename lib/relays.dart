@@ -1,4 +1,5 @@
 import 'package:carbine/lib.dart';
+import 'package:carbine/toast.dart';
 import 'package:carbine/utils.dart';
 import 'package:flutter/material.dart';
 
@@ -55,6 +56,12 @@ class _RelaysState extends State<Relays> {
       _fetchRelays();
     } catch (e) {
       AppLogger.instance.error("Could not add relay: $e");
+      ToastService().show(
+        message: "Could not add relay",
+        duration: const Duration(seconds: 5),
+        onTap: () {},
+        icon: Icon(Icons.error),
+      );
     }
   }
 
@@ -84,6 +91,12 @@ class _RelaysState extends State<Relays> {
             _fetchRelays();
           } catch (e) {
             AppLogger.instance.error("Could not delete relay: $e");
+            ToastService().show(
+              message: "Could not delete relay",
+              duration: const Duration(seconds: 5),
+              onTap: () {},
+              icon: Icon(Icons.error),
+            );
           }
         },
       ),

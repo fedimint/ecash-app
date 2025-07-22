@@ -68,6 +68,7 @@ class _TransactionDetailsState extends State<TransactionDetails> {
       }
     } catch (e) {
       AppLogger.instance.error("Error checking claim status: $e");
+      ToastService().show(message: "Unable to check ecash status", duration: const Duration(seconds: 5), onTap: () {}, icon: Icon(Icons.error));
     } finally {
       setState(() {
         _checking = false;

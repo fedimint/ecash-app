@@ -58,7 +58,14 @@ class _EcashSendState extends State<EcashSend> {
       });
 
       if (_qrChunks.length > 1) _startQrLoop();
-    } catch (_) {
+    } catch (e) {
+      AppLogger.instance.error("Could not send ecash: $e");
+      ToastService().show(
+        message: "Could not send ecash",
+        duration: const Duration(seconds: 5),
+        onTap: () {},
+        icon: Icon(Icons.error),
+      );
       setState(() {
         _ecash = null;
         _loading = false;
