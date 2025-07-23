@@ -438,13 +438,23 @@ class _FederationUtxoListState extends State<FederationUtxoList> {
   }
 
   Future<void> _loadWalletSummary() async {
-    final summary = await walletSummary(
-      invite: widget.invite,
-      federationId: widget.fed.federationId,
-    );
-    setState(() {
-      utxos = summary;
-    });
+    try {
+      final summary = await walletSummary(
+        invite: widget.invite,
+        federationId: widget.fed.federationId,
+      );
+      setState(() {
+        utxos = summary;
+      });
+    } catch (e) {
+      AppLogger.instance.error("Could not load wallet summary: $e");
+      ToastService().show(
+        message: "Could not load Federation's UTXOs",
+        duration: const Duration(seconds: 5),
+        onTap: () {},
+        icon: Icon(Icons.error),
+      );
+    }
   }
 
   String? _explorerUrl(String txid) {
