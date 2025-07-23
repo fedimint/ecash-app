@@ -95,35 +95,46 @@ class _NumberPadState extends State<NumberPad> {
     final amountSats = BigInt.tryParse(_rawAmount);
     if (amountSats != null) {
       if (widget.paymentType == PaymentType.lightning) {
-        final requestedAmountMsats = amountSats * BigInt.from(1000);
-        final gateway = await selectReceiveGateway(
-          federationId: widget.fed.federationId,
-          amountMsats: requestedAmountMsats,
-        );
-        final contractAmount = gateway.$2;
-        final invoice = await receive(
-          federationId: widget.fed.federationId,
-          amountMsatsWithFees: contractAmount,
-          amountMsatsWithoutFees: requestedAmountMsats,
-          gateway: gateway.$1,
-          isLnv2: gateway.$3,
-        );
-        invoicePaidToastVisible.value = false;
-        await showCarbineModalBottomSheet(
-          context: context,
-          child: Request(
-            invoice: invoice.$1,
-            fed: widget.fed,
-            operationId: invoice.$2,
-            requestedAmountMsats: requestedAmountMsats,
-            totalMsats: contractAmount,
+        try {
+          final requestedAmountMsats = amountSats * BigInt.from(1000);
+          final gateway = await selectReceiveGateway(
+            federationId: widget.fed.federationId,
+            amountMsats: requestedAmountMsats,
+          );
+          final contractAmount = gateway.$2;
+          final invoice = await receive(
+            federationId: widget.fed.federationId,
+            amountMsatsWithFees: contractAmount,
+            amountMsatsWithoutFees: requestedAmountMsats,
             gateway: gateway.$1,
-            pubkey: invoice.$3,
-            paymentHash: invoice.$4,
-            expiry: invoice.$5,
-          ),
-        );
-        invoicePaidToastVisible.value = true;
+            isLnv2: gateway.$3,
+          );
+          invoicePaidToastVisible.value = false;
+          await showCarbineModalBottomSheet(
+            context: context,
+            child: Request(
+              invoice: invoice.$1,
+              fed: widget.fed,
+              operationId: invoice.$2,
+              requestedAmountMsats: requestedAmountMsats,
+              totalMsats: contractAmount,
+              gateway: gateway.$1,
+              pubkey: invoice.$3,
+              paymentHash: invoice.$4,
+              expiry: invoice.$5,
+            ),
+          );
+        } catch (e) {
+          AppLogger.instance.error("Could not create invoice: $e");
+          ToastService().show(
+            message: "Could not create invoice",
+            duration: const Duration(seconds: 5),
+            onTap: () {},
+            icon: Icon(Icons.error),
+          );
+        } finally {
+          invoicePaidToastVisible.value = true;
+        }
       } else if (widget.paymentType == PaymentType.ecash) {
         BigInt amount = amountSats * BigInt.from(1000);
         if (_withdrawalMode == WithdrawalMode.maxBalance) {

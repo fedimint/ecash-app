@@ -157,13 +157,18 @@ pub async fn create_multimint_from_words(path: String, words: Vec<String>) {
 }
 
 #[frb]
-pub async fn wallet_exists(path: String) -> anyhow::Result<bool> {
-    let db_path = PathBuf::from_str(&path)?.join("client.db");
-    let db: Database = RocksDb::open(db_path).await?.into();
+pub async fn wallet_exists(path: String) -> bool {
+    let db_path = PathBuf::from_str(&path)
+        .expect("Invalid application directory for wallet")
+        .join("client.db");
+    let db: Database = RocksDb::open(db_path)
+        .await
+        .expect("Could not open database")
+        .into();
     if let Ok(_) = Client::load_decodable_client_secret::<Vec<u8>>(&db).await {
-        Ok(true)
+        true
     } else {
-        Ok(false)
+        false
     }
 }
 
@@ -407,17 +412,6 @@ pub async fn send_ecash(
 ) -> anyhow::Result<(OperationId, String, u64)> {
     let multimint = get_multimint();
     multimint.send_ecash(federation_id, amount_msats).await
-}
-
-#[frb]
-pub async fn await_ecash_send(
-    federation_id: &FederationId,
-    operation_id: OperationId,
-) -> anyhow::Result<SpendOOBState> {
-    let multimint = get_multimint();
-    multimint
-        .await_ecash_send(federation_id, operation_id)
-        .await
 }
 
 async fn parse_ecash(federation_id: &FederationId, ecash: String) -> anyhow::Result<u64> {

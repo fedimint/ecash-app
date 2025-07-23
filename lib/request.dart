@@ -70,23 +70,34 @@ class _RequestState extends State<Request> with SingleTickerProviderStateMixin {
   }
 
   void _waitForPayment() async {
-    await awaitReceive(
-      federationId: widget.fed.federationId,
-      operationId: widget.operationId,
-    );
-    if (mounted) {
-      Navigator.push(
-        context,
-        MaterialPageRoute(
-          builder:
-              (context) => Success(
-                lightning: true,
-                received: true,
-                amountMsats: widget.requestedAmountMsats,
-              ),
-        ),
+    try {
+      await awaitReceive(
+        federationId: widget.fed.federationId,
+        operationId: widget.operationId,
       );
-      await Future.delayed(const Duration(seconds: 4));
+      if (mounted) {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder:
+                (context) => Success(
+                  lightning: true,
+                  received: true,
+                  amountMsats: widget.requestedAmountMsats,
+                ),
+          ),
+        );
+        await Future.delayed(const Duration(seconds: 4));
+      }
+    } catch (e) {
+      AppLogger.instance.error("Error occurred while receiving payment: $e");
+      ToastService().show(
+        message: "Could not receive payment",
+        duration: const Duration(seconds: 5),
+        onTap: () {},
+        icon: Icon(Icons.error),
+      );
+    } finally {
       Navigator.of(context).popUntil((route) => route.isFirst);
     }
   }

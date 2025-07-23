@@ -161,14 +161,6 @@ Future<(OperationId, String, BigInt)> sendEcash({
   amountMsats: amountMsats,
 );
 
-Future<SpendOobState> awaitEcashSend({
-  required FederationId federationId,
-  required OperationId operationId,
-}) => RustLib.instance.api.crateAwaitEcashSend(
-  federationId: federationId,
-  operationId: operationId,
-);
-
 Future<OperationId> reissueEcash({
   required FederationId federationId,
   required String ecash,
