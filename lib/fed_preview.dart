@@ -41,6 +41,7 @@ class _FederationPreviewState extends State<FederationPreview> {
       setState(() {
         isJoining = true;
       });
+
       try {
         final fed = await joinFederation(
           inviteCode: widget.inviteCode!,
@@ -51,9 +52,6 @@ class _FederationPreviewState extends State<FederationPreview> {
         if (mounted) {
           Navigator.of(context).pop((fed, false));
         }
-
-        // backup the federation's invite codes as a replaceable event to Nostr
-        backupInviteCodes();
       } catch (e) {
         AppLogger.instance.error('Could not join federation $e');
         ToastService().show(
@@ -62,9 +60,17 @@ class _FederationPreviewState extends State<FederationPreview> {
           onTap: () {},
           icon: Icon(Icons.error),
         );
+      } finally {
         setState(() {
           isJoining = false;
         });
+      }
+
+      try {
+        // backup the federation's invite codes as a replaceable event to Nostr
+        backupInviteCodes();
+      } catch (e) {
+        AppLogger.instance.error("Could not backup Nostr invite codes: $e");
       }
     }
   }
