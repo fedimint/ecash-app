@@ -1,6 +1,7 @@
 import 'package:carbine/lib.dart';
 import 'package:carbine/multimint.dart';
 import 'package:carbine/toast.dart';
+import 'package:carbine/utils.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
@@ -24,14 +25,25 @@ class _OnChainReceiveContentState extends State<OnChainReceiveContent> {
   }
 
   Future<void> _fetchAddress() async {
-    final address = await allocateDepositAddress(
-      federationId: widget.fed.federationId,
-    );
-    if (!mounted) return;
-    setState(() {
-      _address = address;
-      _isLoading = false;
-    });
+    try {
+      final address = await allocateDepositAddress(
+        federationId: widget.fed.federationId,
+      );
+      if (!mounted) return;
+      setState(() {
+        _address = address;
+        _isLoading = false;
+      });
+    } catch (e) {
+      AppLogger.instance.error("Could not allocate deposit address: $e");
+      ToastService().show(
+        message: "Could not get new address",
+        duration: const Duration(seconds: 5),
+        onTap: () {},
+        icon: Icon(Icons.error),
+      );
+      Navigator.of(context).pop();
+    }
   }
 
   void _copyToClipboard(String text) {

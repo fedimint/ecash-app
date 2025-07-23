@@ -187,14 +187,6 @@ Stream<DepositEventKind> subscribeDeposits({
   required FederationId federationId,
 }) => RustLib.instance.api.crateSubscribeDeposits(federationId: federationId);
 
-Future<void> monitorDepositAddress({
-  required FederationId federationId,
-  required String address,
-}) => RustLib.instance.api.crateMonitorDepositAddress(
-  federationId: federationId,
-  address: address,
-);
-
 Future<String> allocateDepositAddress({required FederationId federationId}) =>
     RustLib.instance.api.crateAllocateDepositAddress(
       federationId: federationId,
