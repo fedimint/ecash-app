@@ -371,6 +371,16 @@ Future<DisplaySetting> getDisplaySetting() =>
 Future<void> setDisplaySetting({required DisplaySetting displaySetting}) =>
     RustLib.instance.api.crateSetDisplaySetting(displaySetting: displaySetting);
 
+Future<(String, String)> claimRandomLnAddress({
+  required FederationId federationId,
+  required String lnAddressApi,
+  required String recurringdApi,
+}) => RustLib.instance.api.crateClaimRandomLnAddress(
+  federationId: federationId,
+  lnAddressApi: lnAddressApi,
+  recurringdApi: recurringdApi,
+);
+
 // Rust type: RustOpaqueMoi<flutter_rust_bridge::for_generated::RustAutoOpaqueInner<ClientConfig>>
 abstract class ClientConfig implements RustOpaqueInterface {}
 
