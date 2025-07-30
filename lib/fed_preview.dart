@@ -36,7 +36,30 @@ class _FederationPreviewState extends State<FederationPreview> {
     super.initState();
   }
 
-  Future<void> _onButtonPressed() async {
+  Future<void> _backupToNostr() async {
+    try {
+      // backup the federation's invite codes as a replaceable event to Nostr
+      backupInviteCodes();
+    } catch (e) {
+      AppLogger.instance.error("Could not backup Nostr invite codes: $e");
+    }
+  }
+
+  Future<void> _claimLnAddress(FederationSelector fed) async {
+    String defaultRecurringd = "https://recurringd.mplsfed.xyz";
+    String defaultLnAddress = "https://lnaddress.mplsfed.xyz";
+    try {
+      await claimRandomLnAddress(
+        federationId: fed.federationId,
+        lnAddressApi: defaultLnAddress,
+        recurringdApi: defaultRecurringd,
+      );
+    } catch (e) {
+      AppLogger.instance.error("Could not claim random LN Address: $e");
+    }
+  }
+
+  Future<void> _onJoinPressed(bool recover) async {
     if (widget.joinable) {
       setState(() {
         isJoining = true;
@@ -45,9 +68,12 @@ class _FederationPreviewState extends State<FederationPreview> {
       try {
         final fed = await joinFederation(
           inviteCode: widget.inviteCode!,
-          recover: false,
+          recover: recover,
         );
         AppLogger.instance.info('Successfully joined federation');
+
+        _backupToNostr();
+        await _claimLnAddress(fed);
 
         if (mounted) {
           Navigator.of(context).pop((fed, false));
@@ -64,13 +90,6 @@ class _FederationPreviewState extends State<FederationPreview> {
         setState(() {
           isJoining = false;
         });
-      }
-
-      try {
-        // backup the federation's invite codes as a replaceable event to Nostr
-        backupInviteCodes();
-      } catch (e) {
-        AppLogger.instance.error("Could not backup Nostr invite codes: $e");
       }
     }
   }
@@ -169,7 +188,9 @@ class _FederationPreviewState extends State<FederationPreview> {
                   SizedBox(
                     width: double.infinity,
                     child: ElevatedButton(
-                      onPressed: _onButtonPressed,
+                      onPressed: () {
+                        _onJoinPressed(false);
+                      },
                       style: ElevatedButton.styleFrom(
                         backgroundColor: theme.colorScheme.primary,
                         foregroundColor: Colors.black,
@@ -201,26 +222,8 @@ class _FederationPreviewState extends State<FederationPreview> {
                   SizedBox(
                     width: double.infinity,
                     child: OutlinedButton.icon(
-                      onPressed: () async {
-                        setState(() {
-                          isJoining = true;
-                        });
-                        try {
-                          final fed = await joinFederation(
-                            inviteCode: widget.inviteCode!,
-                            recover: true,
-                          );
-                          if (mounted) {
-                            Navigator.of(context).pop((fed, true));
-                          }
-                        } catch (e) {
-                          AppLogger.instance.error(
-                            'Could not recover federation $e',
-                          );
-                          setState(() {
-                            isJoining = false;
-                          });
-                        }
+                      onPressed: () {
+                        _onJoinPressed(true);
                       },
                       icon: const Icon(Icons.history),
                       label: const Text('Recover'),

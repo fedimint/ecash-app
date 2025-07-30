@@ -5,6 +5,10 @@ mod event_bus;
 mod frb_generated;
 mod multimint;
 mod nostr;
+mod words;
+use bitcoin::key::rand::rngs::OsRng;
+use bitcoin::key::rand::seq::SliceRandom;
+use bitcoin::key::rand::Rng;
 use bitcoin_payment_instructions::http_resolver::HTTPHrnResolver;
 use bitcoin_payment_instructions::{
     PaymentInstructions, PaymentMethod, PossiblyResolvedPaymentMethod,
@@ -48,6 +52,7 @@ use crate::db::{
 };
 use crate::frb_generated::StreamSink;
 use crate::multimint::{DepositEventKind, FedimintGateway, LNAddressStatus};
+use crate::words::{ADJECTIVES, NOUNS};
 
 static MULTIMINT: OnceCell<Multimint> = OnceCell::const_new();
 static DATABASE: OnceCell<Database> = OnceCell::const_new();
@@ -907,4 +912,60 @@ pub async fn get_display_setting() -> DisplaySetting {
 pub async fn set_display_setting(display_setting: DisplaySetting) {
     let multimint = get_multimint();
     multimint.set_display_setting(display_setting).await;
+}
+
+#[frb]
+pub async fn claim_random_ln_address(
+    federation_id: &FederationId,
+    ln_address_api: String,
+    recurringd_api: String,
+) -> anyhow::Result<(String, String)> {
+    let mut rng = OsRng;
+    let domains = list_ln_address_domains(ln_address_api.clone()).await?;
+    loop {
+        let domain = domains
+            .choose(&mut rng)
+            .ok_or(anyhow!("No domains available"))?;
+        let adjective = ADJECTIVES
+            .choose(&mut rng)
+            .ok_or(anyhow!("No adjectives"))?;
+        let noun = NOUNS.choose(&mut rng).ok_or(anyhow!("No nouns"))?;
+        let number: u32 = rng.gen_range(1..=99999);
+
+        let username = format!("{adjective}{noun}{number}");
+        let availability = check_ln_address_availability(
+            username.clone(),
+            domain.clone(),
+            ln_address_api.clone(),
+            recurringd_api.clone(),
+            federation_id,
+        )
+        .await?;
+
+        match availability {
+            LNAddressStatus::Available => {
+                register_ln_address(
+                    federation_id,
+                    recurringd_api.clone(),
+                    ln_address_api.clone(),
+                    username.clone(),
+                    domain.clone(),
+                )
+                .await?;
+                return Ok((username, domain.clone()));
+            }
+            LNAddressStatus::UnsupportedFederation => {
+                return Err(anyhow!("Unsupported federation"))
+            }
+            LNAddressStatus::CurrentConfig => {
+                return Ok((username, domain.clone()));
+            }
+            _ => {
+                info_to_flutter(format!(
+                    "Could not claim {username}@{domain} Trying again..."
+                ))
+                .await;
+            }
+        }
+    }
 }

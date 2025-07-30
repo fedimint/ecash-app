@@ -1,6 +1,7 @@
 import 'package:carbine/db.dart';
 import 'package:carbine/discover.dart';
 import 'package:carbine/lib.dart';
+import 'package:carbine/ln_address.dart';
 import 'package:carbine/mnemonic.dart';
 import 'package:carbine/multimint.dart';
 import 'package:carbine/nwc.dart';
@@ -65,7 +66,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
               );
             },
           ),
-          /*
           _SettingsOption(
             icon: Icons.flash_on,
             title: 'Lightning Address',
@@ -84,7 +84,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
               );
             },
           ),
-          */
           _SettingsOption(
             icon: Icons.link,
             title: 'Nostr Wallet Connect',
