@@ -19,7 +19,7 @@ use fedimint_client::{
     Client, ClientHandleArc, OperationId,
 };
 use fedimint_core::{
-    config::{ClientConfig, FederationId},
+    config::FederationId,
     db::{mem_impl::MemDatabase, Database, IDatabaseTransactionOpsCoreTyped},
     encoding::{Decodable, Encodable},
     hex,
@@ -28,7 +28,6 @@ use fedimint_core::{
     util::SafeUrl,
     Amount,
 };
-use fedimint_derive_secret::{ChildId, DerivableSecret};
 use fedimint_ln_client::{
     InternalPayState, LightningClientInit, LightningClientModule, LightningOperationMetaPay,
     LightningOperationMetaVariant, LnPayState, LnReceiveState,
@@ -200,7 +199,7 @@ pub enum MultimintCreation {
 pub enum ClientType {
     New,
     Temporary,
-    Recovery { client_config: ClientConfig },
+    Recovery,
 }
 
 impl fmt::Display for ClientType {
@@ -394,8 +393,13 @@ impl Multimint {
             let mut client_builder = Client::builder(client_db).await?;
             client_builder.with_module_inits(self.modules.clone());
             client_builder.with_primary_module_kind(fedimint_mint_client::KIND);
-            let secret = Self::derive_federation_secret(&self.mnemonic, &id.id);
-            let client = client_builder.open(secret).await.map(Arc::new)?;
+            let global_root_secret = Bip39RootSecretStrategy::<12>::to_root_secret(&self.mnemonic);
+            let client = client_builder
+                .open(fedimint_client::RootSecret::StandardDoubleDerive(
+                    global_root_secret,
+                ))
+                .await
+                .map(Arc::new)?;
 
             self.clients.write().await.insert(id.id, client.clone());
 
@@ -758,22 +762,12 @@ impl Multimint {
             if !client.has_pending_recoveries() {
                 client
             } else {
-                self.build_client(
-                    &federation_id,
-                    &invite_code,
-                    Connector::Tcp,
-                    ClientType::Temporary,
-                )
-                .await?
+                self.build_client(&federation_id, &invite_code, ClientType::Temporary)
+                    .await?
             }
         } else {
-            self.build_client(
-                &federation_id,
-                &invite_code,
-                Connector::Tcp,
-                ClientType::Temporary,
-            )
-            .await?
+            self.build_client(&federation_id, &invite_code, ClientType::Temporary)
+                .await?
         };
 
         Ok((client, federation_id))
@@ -1025,30 +1019,16 @@ impl Multimint {
     ) -> anyhow::Result<FederationSelector> {
         let invite_code = InviteCode::from_str(&invite)?;
         let federation_id = invite_code.federation_id();
-        let client_config = Connector::default()
-            .download_from_invite_code(&invite_code)
-            .await?;
 
         let client = if recover {
-            self.build_client(
-                &federation_id,
-                &invite_code,
-                Connector::Tcp,
-                ClientType::Recovery {
-                    client_config: client_config.clone(),
-                },
-            )
-            .await?
+            self.build_client(&federation_id, &invite_code, ClientType::Recovery)
+                .await?
         } else {
-            self.build_client(
-                &federation_id,
-                &invite_code,
-                Connector::Tcp,
-                ClientType::New,
-            )
-            .await?
+            self.build_client(&federation_id, &invite_code, ClientType::New)
+                .await?
         };
 
+        let client_config = client.config().await;
         let federation_name = client_config
             .global
             .federation_name()
@@ -1091,7 +1071,6 @@ impl Multimint {
         &self,
         federation_id: &FederationId,
         invite_code: &InviteCode,
-        connector: Connector,
         client_type: ClientType,
     ) -> anyhow::Result<ClientHandleArc> {
         info_to_flutter(format!("Building new client. type: {client_type}")).await;
@@ -1100,22 +1079,20 @@ impl Multimint {
             _ => self.get_client_database(&federation_id),
         };
 
-        let secret = Self::derive_federation_secret(&self.mnemonic, &federation_id);
+        let global_root_secret = Bip39RootSecretStrategy::<12>::to_root_secret(&self.mnemonic);
         let mut client_builder = Client::builder(client_db).await?;
         client_builder.with_module_inits(self.modules.clone());
         client_builder.with_primary_module_kind(fedimint_mint_client::KIND);
 
         let client = match client_type {
-            ClientType::Recovery { client_config } => {
-                let backup = client_builder
-                    .download_backup_from_federation(
-                        &secret,
-                        &client_config,
-                        invite_code.api_secret(),
-                    )
-                    .await?;
+            ClientType::Recovery => {
                 let client = client_builder
-                    .recover(secret, client_config, invite_code.api_secret(), backup)
+                    .preview(invite_code)
+                    .await?
+                    .recover(
+                        fedimint_client::RootSecret::StandardDoubleDerive(global_root_secret),
+                        None,
+                    )
                     .await
                     .map(Arc::new)?;
                 self.spawn_recovery_progress(client.clone());
@@ -1124,12 +1101,19 @@ impl Multimint {
             client_type => {
                 let client = if Client::is_initialized(client_builder.db_no_decoders()).await {
                     info_to_flutter("Client is already initialized, opening using secret...").await;
-                    client_builder.open(secret).await
+                    client_builder
+                        .open(fedimint_client::RootSecret::StandardDoubleDerive(
+                            global_root_secret,
+                        ))
+                        .await
                 } else {
                     info_to_flutter("Client is not initialized, downloading invite code...").await;
-                    let client_config = connector.download_from_invite_code(&invite_code).await?;
                     client_builder
-                        .join(secret, client_config.clone(), invite_code.api_secret())
+                        .preview(invite_code)
+                        .await?
+                        .join(fedimint_client::RootSecret::StandardDoubleDerive(
+                            global_root_secret,
+                        ))
                         .await
                 }
                 .map(Arc::new)?;
@@ -1273,19 +1257,6 @@ impl Multimint {
         let mut prefix = vec![crate::db::DbKeyPrefix::ClientDatabase as u8];
         prefix.append(&mut federation_id.consensus_encode_to_vec());
         self.db.with_prefix(prefix)
-    }
-
-    /// Derives a per-federation secret according to Fedimint's multi-federation
-    /// secret derivation policy.
-    fn derive_federation_secret(
-        mnemonic: &Mnemonic,
-        federation_id: &FederationId,
-    ) -> DerivableSecret {
-        let global_root_secret = Bip39RootSecretStrategy::<12>::to_root_secret(mnemonic);
-        let multi_federation_root_secret = global_root_secret.child_key(ChildId(0));
-        let federation_root_secret = multi_federation_root_secret.federation_key(federation_id);
-        let federation_wallet_root_secret = federation_root_secret.child_key(ChildId(0));
-        federation_wallet_root_secret.child_key(ChildId(0))
     }
 
     pub async fn federations(&self) -> Vec<(FederationSelector, bool)> {
@@ -1436,7 +1407,7 @@ impl Multimint {
         let (operation_id, invoice, _) = lnv1
             .create_bolt11_invoice(
                 amount_with_fees,
-                lightning_invoice::Bolt11InvoiceDescription::Direct(&desc),
+                lightning_invoice::Bolt11InvoiceDescription::Direct(desc),
                 Some(DEFAULT_EXPIRY_TIME_SECS as u64),
                 custom_meta,
                 Some(gateway),
@@ -1455,15 +1426,16 @@ impl Multimint {
             .read()
             .await
             .get(federation_id)
-            .expect("No federation exists")
+            .ok_or(anyhow!("No federation exists"))?
             .clone();
-        if let Ok((url, receive_fee)) = Self::lnv2_select_gateway(&client, None).await {
-            // TODO: It is currently not possible to get the fed_base and fed_ppm from the config
+        if let Ok((url, receive_fee, fed_base, fed_ppm)) =
+            Self::lnv2_select_gateway(&client, None).await
+        {
             info_to_flutter("Using LNv2 for selecting receive gateway").await;
             let amount_with_fees = compute_receive_amount(
                 amount,
-                1_000,
-                100,
+                fed_base,
+                fed_ppm,
                 receive_fee.base.msats,
                 receive_fee.parts_per_million,
             );
@@ -1491,9 +1463,10 @@ impl Multimint {
             .get(federation_id)
             .expect("No federation exists")
             .clone();
-        if let Ok((url, send_fee)) = Self::lnv2_select_gateway(&client, Some(bolt11.clone())).await
+        if let Ok((url, send_fee, fed_base, fed_ppm)) =
+            Self::lnv2_select_gateway(&client, Some(bolt11.clone())).await
         {
-            let amount_with_fees = compute_send_amount(amount, 1_000, 100, send_fee);
+            let amount_with_fees = compute_send_amount(amount, fed_base, fed_ppm, send_fee);
             return Ok((url.to_string(), amount_with_fees, true));
         }
 
@@ -1964,7 +1937,7 @@ impl Multimint {
     async fn lnv2_select_gateway(
         client: &ClientHandleArc,
         invoice: Option<Bolt11Invoice>,
-    ) -> anyhow::Result<(SafeUrl, PaymentFee)> {
+    ) -> anyhow::Result<(SafeUrl, PaymentFee, u64, u64)> {
         let lnv2 = client.get_first_module::<fedimint_lnv2_client::LightningClientModule>()?;
         let (gateway, routing_info) = lnv2.select_gateway(invoice.clone()).await?;
         let fee = if let Some(bolt11) = invoice {
@@ -1977,7 +1950,15 @@ impl Multimint {
             routing_info.receive_fee
         };
 
-        Ok((gateway, fee))
+        let client_module_config = client.config().await.modules;
+        let config = client_module_config
+            .get(&lnv2.id)
+            .ok_or(anyhow!("Could not get LNv2 config"))?
+            .cast::<fedimint_lnv2_common::config::LightningClientConfig>()?;
+        let fed_base = config.fee_consensus.base.msats;
+        let fed_ppm = config.fee_consensus.parts_per_million;
+
+        Ok((gateway, fee, fed_base, fed_ppm))
     }
 
     pub async fn transactions(
