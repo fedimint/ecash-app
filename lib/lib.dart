@@ -381,6 +381,9 @@ Future<(String, String)> claimRandomLnAddress({
   recurringdApi: recurringdApi,
 );
 
+Future<void> leaveFederation({required FederationId federationId}) =>
+    RustLib.instance.api.crateLeaveFederation(federationId: federationId);
+
 // Rust type: RustOpaqueMoi<flutter_rust_bridge::for_generated::RustAutoOpaqueInner<ClientConfig>>
 abstract class ClientConfig implements RustOpaqueInterface {}
 

@@ -8,11 +8,13 @@ import 'package:flutter/material.dart';
 class FederationSidebar extends StatefulWidget {
   final List<(FederationSelector, bool)> initialFederations;
   final void Function(FederationSelector, bool) onFederationSelected;
+  final VoidCallback onLeaveFederation;
 
   const FederationSidebar({
     super.key,
     required this.initialFederations,
     required this.onFederationSelected,
+    required this.onLeaveFederation,
   });
 
   @override
@@ -82,6 +84,7 @@ class FederationSidebarState extends State<FederationSidebar> {
                           Navigator.of(context).pop();
                           widget.onFederationSelected(selector.$1, selector.$2);
                         },
+                        onLeaveFederation: widget.onLeaveFederation,
                       ),
                     ),
                   ],
@@ -95,12 +98,14 @@ class FederationListItem extends StatefulWidget {
   final FederationSelector fed;
   final bool isRecovering;
   final VoidCallback onTap;
+  final VoidCallback onLeaveFederation;
 
   const FederationListItem({
     super.key,
     required this.fed,
     required this.onTap,
     required this.isRecovering,
+    required this.onLeaveFederation,
   });
 
   @override
@@ -269,6 +274,7 @@ class _FederationListItemState extends State<FederationListItem> {
                         imageUrl: federationImageUrl,
                         joinable: false,
                         guardians: guardians,
+                        onLeaveFederation: widget.onLeaveFederation,
                       ),
                     );
                   },

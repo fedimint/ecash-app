@@ -969,3 +969,9 @@ pub async fn claim_random_ln_address(
         }
     }
 }
+
+#[frb]
+pub async fn leave_federation(federation_id: &FederationId) {
+    let mut multimint = get_multimint();
+    multimint.leave_federation(federation_id).await;
+}
