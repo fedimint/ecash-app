@@ -53,7 +53,7 @@ final ThemeData cypherpunkNinjaTheme = ThemeData(
   ),
 );
 
-Future<T?> showCarbineModalBottomSheet<T>({
+Future<T?> showAppModalBottomSheet<T>({
   required BuildContext context,
   required Widget child,
   double? heightFactor,

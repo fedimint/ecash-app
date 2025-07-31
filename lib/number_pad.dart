@@ -1,13 +1,13 @@
-import 'package:carbine/app.dart';
-import 'package:carbine/ecash_send.dart';
-import 'package:carbine/lib.dart';
-import 'package:carbine/multimint.dart';
-import 'package:carbine/onchain_send.dart';
-import 'package:carbine/request.dart';
-import 'package:carbine/theme.dart';
-import 'package:carbine/toast.dart';
-import 'package:carbine/utils.dart';
-import 'package:carbine/models.dart';
+import 'package:ecashapp/app.dart';
+import 'package:ecashapp/ecash_send.dart';
+import 'package:ecashapp/lib.dart';
+import 'package:ecashapp/multimint.dart';
+import 'package:ecashapp/onchain_send.dart';
+import 'package:ecashapp/request.dart';
+import 'package:ecashapp/theme.dart';
+import 'package:ecashapp/toast.dart';
+import 'package:ecashapp/utils.dart';
+import 'package:ecashapp/models.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:numpad_layout/widgets/numpad.dart';
@@ -110,7 +110,7 @@ class _NumberPadState extends State<NumberPad> {
             isLnv2: gateway.$3,
           );
           invoicePaidToastVisible.value = false;
-          await showCarbineModalBottomSheet(
+          await showAppModalBottomSheet(
             context: context,
             child: Request(
               invoice: invoice.$1,
@@ -140,12 +140,12 @@ class _NumberPadState extends State<NumberPad> {
         if (_withdrawalMode == WithdrawalMode.maxBalance) {
           amount = await balance(federationId: widget.fed.federationId);
         }
-        showCarbineModalBottomSheet(
+        showAppModalBottomSheet(
           context: context,
           child: EcashSend(fed: widget.fed, amountMsats: amount),
         );
       } else if (widget.paymentType == PaymentType.onchain) {
-        showCarbineModalBottomSheet(
+        showAppModalBottomSheet(
           context: context,
           child: OnchainSend(
             fed: widget.fed,

@@ -1,5 +1,5 @@
 import 'dart:async';
-import 'package:carbine/utils.dart';
+import 'package:ecashapp/utils.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:lottie/lottie.dart';

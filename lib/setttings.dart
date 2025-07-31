@@ -1,14 +1,14 @@
-import 'package:carbine/db.dart';
-import 'package:carbine/discover.dart';
-import 'package:carbine/lib.dart';
-import 'package:carbine/ln_address.dart';
-import 'package:carbine/mnemonic.dart';
-import 'package:carbine/multimint.dart';
-import 'package:carbine/nwc.dart';
-import 'package:carbine/relays.dart';
-import 'package:carbine/theme.dart';
-import 'package:carbine/toast.dart';
-import 'package:carbine/utils.dart';
+import 'package:ecashapp/db.dart';
+import 'package:ecashapp/discover.dart';
+import 'package:ecashapp/lib.dart';
+import 'package:ecashapp/ln_address.dart';
+import 'package:ecashapp/mnemonic.dart';
+import 'package:ecashapp/multimint.dart';
+import 'package:ecashapp/nwc.dart';
+import 'package:ecashapp/relays.dart';
+import 'package:ecashapp/theme.dart';
+import 'package:ecashapp/toast.dart';
+import 'package:ecashapp/utils.dart';
 import 'package:flutter/material.dart';
 
 class SettingsScreen extends StatefulWidget {
@@ -124,7 +124,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
             warning: hasAck == false,
             onTap: () async {
               final words = await getMnemonic();
-              await showCarbineModalBottomSheet(
+              await showAppModalBottomSheet(
                 context: context,
                 child: Mnemonic(words: words, hasAck: hasAck!),
               );

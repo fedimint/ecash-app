@@ -1,9 +1,9 @@
-import 'package:carbine/theme.dart';
-import 'package:carbine/widgets/transaction_details.dart';
+import 'package:ecashapp/theme.dart';
+import 'package:ecashapp/widgets/transaction_details.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
-import 'package:carbine/multimint.dart';
-import 'package:carbine/utils.dart';
+import 'package:ecashapp/multimint.dart';
+import 'package:ecashapp/utils.dart';
 
 class TransactionItem extends StatelessWidget {
   final Transaction tx;
@@ -15,7 +15,7 @@ class TransactionItem extends StatelessWidget {
     final icon = Icon(iconData, color: Theme.of(context).colorScheme.primary);
     switch (tx.kind) {
       case TransactionKind_LightningReceive(fees: final fees, gateway: final gateway, payeePubkey: final payeePubkey, paymentHash: final paymentHash):
-        showCarbineModalBottomSheet(
+        showAppModalBottomSheet(
           context: context,
           child: TransactionDetails(
             tx: tx,
@@ -33,7 +33,7 @@ class TransactionItem extends StatelessWidget {
         );
         break;
       case TransactionKind_LightningSend(fees: final fees, gateway: final gateway, paymentHash: final paymentHash, preimage: final preimage):
-        showCarbineModalBottomSheet(
+        showAppModalBottomSheet(
           context: context,
           child: TransactionDetails(
             tx: tx,
@@ -51,7 +51,7 @@ class TransactionItem extends StatelessWidget {
         );
         break;
       case TransactionKind_EcashSend(oobNotes: final oobNotes, fees: final fees):
-        showCarbineModalBottomSheet(
+        showAppModalBottomSheet(
           context: context,
           child: TransactionDetails(
             tx: tx,
@@ -67,7 +67,7 @@ class TransactionItem extends StatelessWidget {
         );
         break;
       case TransactionKind_EcashReceive(oobNotes: final oobNotes, fees: final fees):
-        showCarbineModalBottomSheet(
+        showAppModalBottomSheet(
           context: context,
           child: TransactionDetails(
             tx: tx,
@@ -86,7 +86,7 @@ class TransactionItem extends StatelessWidget {
       case TransactionKind_LightningRecurring():
       case TransactionKind_OnchainReceive():
       case TransactionKind_OnchainSend():
-        showCarbineModalBottomSheet(
+        showAppModalBottomSheet(
           context: context,
           child: TransactionDetails(
             tx: tx,

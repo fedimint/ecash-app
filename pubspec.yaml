@@ -1,5 +1,5 @@
-name: carbine
-description: "A new Flutter project."
+name: ecashapp
+description: "A Fedimint Wallet"
 publish_to: 'none'
 version: 0.1.0
 

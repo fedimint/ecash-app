@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:carbine/multimint.dart';
-import 'package:carbine/utils.dart';
+import 'package:ecashapp/multimint.dart';
+import 'package:ecashapp/utils.dart';
 
 class PendingDepositItem extends StatelessWidget {
   final DepositEventKind event;

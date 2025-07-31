@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:carbine/utils.dart';
+import 'package:ecashapp/utils.dart';
 
 class DashboardBalance extends StatelessWidget {
   final BigInt? balanceMsats;

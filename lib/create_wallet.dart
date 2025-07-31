@@ -1,9 +1,9 @@
 import 'dart:io';
 
-import 'package:carbine/app.dart';
-import 'package:carbine/lib.dart';
-import 'package:carbine/seed_input.dart';
-import 'package:carbine/utils.dart';
+import 'package:ecashapp/app.dart';
+import 'package:ecashapp/lib.dart';
+import 'package:ecashapp/seed_input.dart';
+import 'package:ecashapp/utils.dart';
 import 'package:flutter/material.dart';
 
 class CreateWallet extends StatefulWidget {
@@ -89,7 +89,7 @@ class _CreateWalletState extends State<CreateWallet> {
               Icon(Icons.shield, size: 64, color: theme.colorScheme.primary),
               const SizedBox(height: 24),
               Text(
-                'Welcome to Carbine Wallet',
+                'Welcome to e-cash app',
                 style: theme.textTheme.headlineSmall?.copyWith(
                   fontWeight: FontWeight.bold,
                   color: theme.colorScheme.primary,

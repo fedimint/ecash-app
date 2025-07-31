@@ -1,8 +1,8 @@
-import 'package:carbine/lib.dart';
-import 'package:carbine/multimint.dart';
-import 'package:carbine/theme.dart';
-import 'package:carbine/utils.dart';
-import 'package:carbine/widgets/gateway_details.dart';
+import 'package:ecashapp/lib.dart';
+import 'package:ecashapp/multimint.dart';
+import 'package:ecashapp/theme.dart';
+import 'package:ecashapp/utils.dart';
+import 'package:ecashapp/widgets/gateway_details.dart';
 import 'package:flutter/material.dart';
 
 class GatewaysList extends StatelessWidget {
@@ -61,7 +61,7 @@ class GatewaysList extends StatelessWidget {
                   textAlign: TextAlign.right,
                 ),
                 onTap: () {
-                  showCarbineModalBottomSheet(
+                  showAppModalBottomSheet(
                     context: context,
                     child: GatewayDetailsSheet(gateway: g),
                   );

@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:carbine/lib.dart';
-import 'package:carbine/multimint.dart';
-import 'package:carbine/utils.dart'; // for formatBalance
+import 'package:ecashapp/lib.dart';
+import 'package:ecashapp/multimint.dart';
+import 'package:ecashapp/utils.dart'; // for formatBalance
 
 class NoteSummary extends StatefulWidget {
   final FederationSelector fed;

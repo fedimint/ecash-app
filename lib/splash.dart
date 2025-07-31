@@ -1,8 +1,8 @@
 import 'dart:io';
 
-import 'package:carbine/app.dart';
-import 'package:carbine/lib.dart';
-import 'package:carbine/utils.dart';
+import 'package:ecashapp/app.dart';
+import 'package:ecashapp/lib.dart';
+import 'package:ecashapp/utils.dart';
 import 'package:flutter/material.dart';
 import 'create_wallet.dart';
 

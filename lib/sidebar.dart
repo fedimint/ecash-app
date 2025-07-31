@@ -1,8 +1,8 @@
-import 'package:carbine/fed_preview.dart';
-import 'package:carbine/lib.dart';
-import 'package:carbine/multimint.dart';
-import 'package:carbine/theme.dart';
-import 'package:carbine/utils.dart';
+import 'package:ecashapp/fed_preview.dart';
+import 'package:ecashapp/lib.dart';
+import 'package:ecashapp/multimint.dart';
+import 'package:ecashapp/theme.dart';
+import 'package:ecashapp/utils.dart';
 import 'package:flutter/material.dart';
 
 class FederationSidebar extends StatefulWidget {
@@ -266,7 +266,7 @@ class _FederationListItemState extends State<FederationListItem> {
                   icon: const Icon(Icons.groups_outlined),
                   color: Theme.of(context).colorScheme.primary,
                   onPressed: () {
-                    showCarbineModalBottomSheet(
+                    showAppModalBottomSheet(
                       context: context,
                       child: FederationPreview(
                         fed: widget.fed,
