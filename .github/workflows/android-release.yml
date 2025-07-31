@@ -61,7 +61,7 @@ jobs:
         run: |
           # Set up directories
           ROOT="$(pwd)"
-          RUST_DIR="$ROOT/rust/carbine_fedimint"
+          RUST_DIR="$ROOT/rust/ecashapp"
           JNI_LIBS_DIR="$ROOT/android/app/src/main/jniLibs/arm64-v8a"
           mkdir -p "$JNI_LIBS_DIR"
           

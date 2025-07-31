@@ -784,41 +784,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "carbine_fedimint"
-version = "0.1.0"
-dependencies = [
- "anyhow",
- "async-stream",
- "async-trait",
- "bitcoin",
- "bitcoin-payment-instructions",
- "fedimint-api-client",
- "fedimint-bip39",
- "fedimint-client",
- "fedimint-core",
- "fedimint-derive-secret",
- "fedimint-ln-client",
- "fedimint-ln-common",
- "fedimint-lnv2-client",
- "fedimint-lnv2-common",
- "fedimint-meta-client",
- "fedimint-mint-client",
- "fedimint-rocksdb",
- "fedimint-wallet-client",
- "flutter_rust_bridge",
- "futures-timer",
- "futures-util",
- "lightning-invoice",
- "lnurl-rs",
- "nostr-sdk",
- "regex",
- "reqwest 0.12.18",
- "serde",
- "serde_json",
- "tokio",
-]
-
-[[package]]
 name = "cbc"
 version = "0.1.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1315,6 +1280,41 @@ name = "dyn-clone"
 version = "1.0.19"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "1c7a8fb8a9fbf66c1f703fe16184d10ca0ee9d23be5b4436400408ba54a95005"
+
+[[package]]
+name = "ecashapp"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "async-stream",
+ "async-trait",
+ "bitcoin",
+ "bitcoin-payment-instructions",
+ "fedimint-api-client",
+ "fedimint-bip39",
+ "fedimint-client",
+ "fedimint-core",
+ "fedimint-derive-secret",
+ "fedimint-ln-client",
+ "fedimint-ln-common",
+ "fedimint-lnv2-client",
+ "fedimint-lnv2-common",
+ "fedimint-meta-client",
+ "fedimint-mint-client",
+ "fedimint-rocksdb",
+ "fedimint-wallet-client",
+ "flutter_rust_bridge",
+ "futures-timer",
+ "futures-util",
+ "lightning-invoice",
+ "lnurl-rs",
+ "nostr-sdk",
+ "regex",
+ "reqwest 0.12.18",
+ "serde",
+ "serde_json",
+ "tokio",
+]
 
 [[package]]
 name = "ed25519"

@@ -1,5 +1,5 @@
 [package]
-name = "carbine_fedimint"
+name = "ecashapp"
 version = "0.1.0"
 edition = "2021"
 
