@@ -104,12 +104,12 @@ class _EcashRedeemPromptState extends State<EcashRedeemPrompt> {
           style: theme.textTheme.displaySmall?.copyWith(
             fontWeight: FontWeight.bold,
             fontSize: 32,
-            color: Colors.greenAccent,
+            color: Theme.of(context).colorScheme.primary,
             letterSpacing: 1.5,
             shadows: [
               Shadow(
                 blurRadius: 8,
-                color: Colors.greenAccent.withOpacity(0.4),
+                color: Theme.of(context).colorScheme.primary.withOpacity(0.4),
                 offset: const Offset(0, 0),
               ),
             ],

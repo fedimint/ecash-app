@@ -82,7 +82,10 @@ class _MyAppState extends State<MyApp> {
         await _handleFundsReceived(
           federationId: event.field0.$1,
           amountMsats: amountMsats,
-          icon: Icon(Icons.currency_bitcoin, color: Colors.greenAccent),
+          icon: Icon(
+            Icons.currency_bitcoin,
+            color: Theme.of(context).colorScheme.primary,
+          ),
         );
       }
     });

@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
 
+const Color vibrantBlue = Color(0xFF42CFFF);
+
 final ThemeData cypherpunkNinjaTheme = ThemeData(
   brightness: Brightness.dark,
   scaffoldBackgroundColor: Colors.black,
-  primaryColor: Colors.greenAccent,
+  primaryColor: vibrantBlue,
   colorScheme: const ColorScheme.dark(
-    primary: Colors.greenAccent,
+    primary: vibrantBlue,
     secondary: Colors.tealAccent,
     surface: Color(0xFF111111),
     error: Colors.redAccent,
@@ -17,35 +19,32 @@ final ThemeData cypherpunkNinjaTheme = ThemeData(
   appBarTheme: const AppBarTheme(
     backgroundColor: Colors.black,
     elevation: 0,
-    iconTheme: IconThemeData(color: Colors.greenAccent),
+    iconTheme: IconThemeData(color: vibrantBlue),
     titleTextStyle: TextStyle(
-      color: Colors.greenAccent,
+      color: vibrantBlue,
       fontSize: 20,
       fontWeight: FontWeight.bold,
     ),
   ),
   bottomNavigationBarTheme: const BottomNavigationBarThemeData(
     backgroundColor: Colors.black,
-    selectedItemColor: Colors.greenAccent,
+    selectedItemColor: vibrantBlue,
     unselectedItemColor: Colors.grey,
   ),
   textTheme: const TextTheme(
     bodyLarge: TextStyle(color: Colors.white),
     bodyMedium: TextStyle(color: Colors.white70),
-    titleLarge: TextStyle(
-      color: Colors.greenAccent,
-      fontWeight: FontWeight.bold,
-    ),
+    titleLarge: TextStyle(color: vibrantBlue, fontWeight: FontWeight.bold),
   ),
   buttonTheme: const ButtonThemeData(
-    buttonColor: Colors.greenAccent,
+    buttonColor: vibrantBlue,
     textTheme: ButtonTextTheme.primary,
   ),
   floatingActionButtonTheme: const FloatingActionButtonThemeData(
-    backgroundColor: Colors.greenAccent,
+    backgroundColor: vibrantBlue,
     foregroundColor: Colors.black,
   ),
-  iconTheme: const IconThemeData(color: Colors.greenAccent),
+  iconTheme: const IconThemeData(color: vibrantBlue),
   bottomSheetTheme: const BottomSheetThemeData(
     backgroundColor: Color(0xFF111111),
     shape: RoundedRectangleBorder(

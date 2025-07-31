@@ -12,7 +12,7 @@ class TransactionItem extends StatelessWidget {
   const TransactionItem({super.key, required this.tx, required this.fed});
 
   void _onTap(BuildContext context, String formattedAmount, String formattedDate, IconData iconData) {
-    final icon = Icon(iconData, color: Colors.greenAccent);
+    final icon = Icon(iconData, color: Theme.of(context).colorScheme.primary);
     switch (tx.kind) {
       case TransactionKind_LightningReceive(fees: final fees, gateway: final gateway, payeePubkey: final payeePubkey, paymentHash: final paymentHash):
         showCarbineModalBottomSheet(
@@ -128,7 +128,7 @@ class TransactionItem extends StatelessWidget {
 
     final amountStyle = TextStyle(
       fontWeight: FontWeight.bold,
-      color: isIncoming ? Colors.greenAccent : Colors.redAccent,
+      color: isIncoming ? Theme.of(context).colorScheme.primary : Colors.redAccent,
     );
 
     return Card(
@@ -140,11 +140,11 @@ class TransactionItem extends StatelessWidget {
         leading: CircleAvatar(
           backgroundColor:
               isIncoming
-                  ? Colors.greenAccent.withOpacity(0.1)
+                  ? Theme.of(context).colorScheme.primary.withOpacity(0.1)
                   : Colors.redAccent.withOpacity(0.1),
           child: Icon(
             moduleIcon,
-            color: isIncoming ? Colors.greenAccent : Colors.redAccent,
+            color: isIncoming ? Theme.of(context).colorScheme.primary : Colors.redAccent,
           ),
         ),
         title: Text(

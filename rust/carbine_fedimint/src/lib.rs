@@ -709,9 +709,7 @@ pub async fn parsed_scanned_text(
                     }
                 }
             }
-            Err(e) => {
-                error_to_flutter(format!("Error parsing payment instructions: {e:?}")).await;
-            }
+            _ => {} // Try another network
         }
     }
 

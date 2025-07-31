@@ -37,5 +37,6 @@ flutter:
   uses-material-design: true
   assets:
     - assets/images/fedimint.png
+    - assets/images/e-cash-app.png
     - assets/images/nostr.png
     - assets/animations/lightning.json

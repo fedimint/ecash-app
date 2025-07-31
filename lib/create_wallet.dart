@@ -112,13 +112,13 @@ class _CreateWalletState extends State<CreateWallet> {
                 onTap: _isCreating ? null : _handleCreateWallet,
                 trailing:
                     _isCreating
-                        ? const SizedBox(
+                        ? SizedBox(
                           height: 20,
                           width: 20,
                           child: CircularProgressIndicator(
                             strokeWidth: 2,
                             valueColor: AlwaysStoppedAnimation<Color>(
-                              Colors.greenAccent,
+                              Theme.of(context).colorScheme.primary,
                             ),
                           ),
                         )

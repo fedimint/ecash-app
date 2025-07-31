@@ -32,7 +32,7 @@ class PendingDepositItem extends StatelessWidget {
     final formatted = formatBalance(amount, false);
     final amountStyle = TextStyle(
       fontWeight: FontWeight.bold,
-      color: Colors.greenAccent,
+      color: Theme.of(context).colorScheme.primary,
     );
 
     return Card(
@@ -41,7 +41,7 @@ class PendingDepositItem extends StatelessWidget {
       color: Theme.of(context).colorScheme.surface,
       child: ListTile(
         leading: CircleAvatar(
-          backgroundColor: Colors.greenAccent.withOpacity(0.1),
+          backgroundColor: Theme.of(context).colorScheme.primary.withOpacity(0.1),
           child: const Icon(Icons.link, color: Colors.yellowAccent),
         ),
         title: Text(

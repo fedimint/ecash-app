@@ -294,8 +294,8 @@ class _ScanQRPageState extends State<ScanQRPage> {
                               value: value,
                               strokeWidth: 8,
                               backgroundColor: Colors.grey.shade800,
-                              valueColor: const AlwaysStoppedAnimation<Color>(
-                                Colors.greenAccent,
+                              valueColor: AlwaysStoppedAnimation<Color>(
+                                Theme.of(context).colorScheme.primary,
                               ),
                             ),
                           ),

@@ -272,7 +272,7 @@ class _DashboardState extends State<Dashboard> {
                 decoration: BoxDecoration(
                   color: Colors.black.withOpacity(0.7),
                   borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: Colors.greenAccent.withOpacity(0.6)),
+                  border: Border.all(color: Theme.of(context).colorScheme.secondary.withOpacity(0.6)),
                 ),
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
@@ -282,7 +282,7 @@ class _DashboardState extends State<Dashboard> {
                     Text(
                       '${_lnAddressConfig!.username}@${_lnAddressConfig!.domain}',
                       style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                            color: Colors.greenAccent,
+                            color: Theme.of(context).colorScheme.secondary,
                             fontWeight: FontWeight.w500,
                           ),
                     ),

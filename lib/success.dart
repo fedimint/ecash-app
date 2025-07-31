@@ -86,11 +86,13 @@ class _SuccessState extends State<Success> {
                   mainAxisSize: MainAxisSize.min,
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    // Green Circle with Check Icon
+                    // Blue Circle with Check Icon
                     Container(
                       decoration: BoxDecoration(
                         shape: BoxShape.circle,
-                        color: Colors.greenAccent.withOpacity(0.8),
+                        color: Theme.of(
+                          context,
+                        ).colorScheme.primary.withOpacity(0.8),
                       ),
                       padding: const EdgeInsets.all(24),
                       child: const Icon(
