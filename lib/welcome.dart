@@ -39,7 +39,7 @@ class _WelcomeWidgetState extends State<WelcomeWidget> {
     return Column(
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
-        Icon(Icons.security, size: 80, color: Theme.of(context).primaryColor),
+        Image.asset('assets/images/e-cash-app.png', width: 64, height: 64),
         const SizedBox(height: 32),
         const Text(
           'What is Fedimint?',

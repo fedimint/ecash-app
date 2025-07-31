@@ -1,4 +1,4 @@
-package com.example.carbine
+package app.ecash
 
 import io.flutter.embedding.android.FlutterActivity
 

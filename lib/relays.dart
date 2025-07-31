@@ -111,7 +111,7 @@ class _RelaysState extends State<Relays> {
         children: [
           Expanded(
             child: Text(
-              "ecashapp uses Nostr relays to back up which federations you have joined. You can customize them below.",
+              "e-cash app uses Nostr relays to back up which federations you have joined. You can customize them below.",
               style: theme.textTheme.bodyMedium,
             ),
           ),
