@@ -43,6 +43,7 @@ class _LightningAddressScreenState extends State<LightningAddressScreen> {
   bool? _recurringdApiOnline;
   final _lnApiController = TextEditingController();
   final _recurringdApiController = TextEditingController();
+  bool _registering = false;
 
   @override
   void initState() {
@@ -149,6 +150,7 @@ class _LightningAddressScreenState extends State<LightningAddressScreen> {
   }
 
   Future<void> _onRegisteredPressed() async {
+    setState(() => _registering = true);
     try {
       final username = _usernameController.text.trim();
       await registerLnAddress(
@@ -175,6 +177,8 @@ class _LightningAddressScreenState extends State<LightningAddressScreen> {
         onTap: () {},
         icon: Icon(Icons.error),
       );
+    } finally {
+      setState(() => _registering = false);
     }
   }
 
@@ -300,12 +304,23 @@ class _LightningAddressScreenState extends State<LightningAddressScreen> {
             child: ElevatedButton(
               onPressed:
                   (_selectedFederation != null &&
-                          _status is LNAddressStatus_Available)
+                          _status is LNAddressStatus_Available &&
+                          !_registering)
                       ? () {
                         _onRegisteredPressed();
                       }
                       : null,
-              child: const Text('Register'),
+              child:
+                  _registering
+                      ? const SizedBox(
+                        width: 20,
+                        height: 20,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          color: Colors.white,
+                        ),
+                      )
+                      : const Text('Register'),
             ),
           ),
           const SizedBox(height: 16),

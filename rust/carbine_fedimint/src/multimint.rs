@@ -2954,7 +2954,7 @@ impl Multimint {
             let http_client = reqwest::Client::new();
             let remove_endpoint = safe_ln_address_api.join("lnaddress/remove")?;
             let result = http_client
-                .post(remove_endpoint.to_unsafe())
+                .delete(remove_endpoint.to_unsafe())
                 .json(&remove_request)
                 .send()
                 .await
