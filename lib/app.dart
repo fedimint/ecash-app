@@ -128,6 +128,18 @@ class _MyAppState extends State<MyApp> {
     );
   }
 
+  Future<void> _leaveFederation() async {
+    await _refreshFederations();
+    if (_feds.isNotEmpty) {
+      _selectedFederation = _feds.first.$1;
+      _isRecovering = _feds.first.$2;
+    } else {
+      _selectedFederation = null;
+      _isRecovering = null;
+      _currentIndex = 0;
+    }
+  }
+
   Future<void> _rejoinFederations() async {
     setState(() {
       recoverFederations = true;
@@ -270,6 +282,7 @@ class _MyAppState extends State<MyApp> {
                   key: ValueKey(_refreshTrigger),
                   initialFederations: _feds,
                   onFederationSelected: _setSelectedFederation,
+                  onLeaveFederation: _leaveFederation,
                 ),
               ),
               body: SafeArea(child: bodyContent),

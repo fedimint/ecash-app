@@ -13,6 +13,7 @@ class FederationPreview extends StatefulWidget {
   final String? imageUrl;
   final bool joinable;
   final List<Guardian>? guardians;
+  final VoidCallback? onLeaveFederation;
 
   const FederationPreview({
     super.key,
@@ -22,6 +23,7 @@ class FederationPreview extends StatefulWidget {
     this.imageUrl,
     required this.joinable,
     this.guardians,
+    this.onLeaveFederation,
   });
 
   @override
@@ -30,10 +32,41 @@ class FederationPreview extends StatefulWidget {
 
 class _FederationPreviewState extends State<FederationPreview> {
   bool isJoining = false;
+  bool _showAdvanced = false;
 
   @override
   void initState() {
     super.initState();
+  }
+
+  Future<void> _onLeavePressed() async {
+    final bottomSheetContext = context;
+    await showDialog(
+      context: context,
+      builder:
+          (dialogContext) => AlertDialog(
+            title: const Text("Leave Federation"),
+            content: const Text(
+              "Are you sure you want to leave this federation? You will need to re-join this federation to access any remaining funds.",
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(context).pop(),
+                child: const Text("Cancel"),
+              ),
+              TextButton(
+                onPressed: () async {
+                  await leaveFederation(federationId: widget.fed.federationId);
+                  widget.onLeaveFederation!();
+                  Navigator.of(dialogContext).pop();
+                  Navigator.of(bottomSheetContext).pop();
+                  Navigator.of(context).pop();
+                },
+                child: const Text("Confirm"),
+              ),
+            ],
+          ),
+    );
   }
 
   Future<void> _backupToNostr() async {
@@ -267,6 +300,57 @@ class _FederationPreviewState extends State<FederationPreview> {
                     ],
                   ),
                 ),
+
+                // Advanced section
+                if (!widget.joinable) ...[
+                  const SizedBox(height: 24),
+
+                  GestureDetector(
+                    onTap: () {
+                      setState(() {
+                        _showAdvanced = !_showAdvanced;
+                      });
+                    },
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(
+                          _showAdvanced ? Icons.expand_less : Icons.expand_more,
+                          color: theme.colorScheme.secondary,
+                        ),
+                        const SizedBox(width: 8),
+                        Text(
+                          "Advanced",
+                          style: theme.textTheme.labelLarge?.copyWith(
+                            color: theme.colorScheme.secondary,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+
+                  if (_showAdvanced) ...[
+                    const SizedBox(height: 12),
+                    OutlinedButton.icon(
+                      onPressed: _onLeavePressed,
+                      icon: const Icon(Icons.logout),
+                      label: const Text("Leave Federation"),
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: Colors.red,
+                        side: const BorderSide(color: Colors.red),
+                        padding: const EdgeInsets.symmetric(vertical: 14),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        textStyle: const TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ),
+                  ],
+                ],
               ] else ...[
                 const SizedBox(height: 16),
                 const Text(

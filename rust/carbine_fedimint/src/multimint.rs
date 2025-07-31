@@ -1067,6 +1067,14 @@ impl Multimint {
         })
     }
 
+    pub async fn leave_federation(&mut self, federation_id: &FederationId) {
+        self.clients.write().await.remove(federation_id);
+        let mut dbtx = self.db.begin_transaction().await;
+        dbtx.remove_entry(&FederationConfigKey { id: *federation_id })
+            .await;
+        dbtx.commit_tx().await;
+    }
+
     async fn build_client(
         &self,
         federation_id: &FederationId,

@@ -165,6 +165,8 @@ abstract class Multimint implements RustOpaqueInterface {
     required bool recover,
   });
 
+  Future<void> leaveFederation({required FederationId federationId});
+
   Future<List<FedimintGateway>> listGateways({
     required FederationId federationId,
   });
