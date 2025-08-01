@@ -1,26 +1,26 @@
 import 'dart:async';
 
-import 'package:carbine/db.dart';
-import 'package:carbine/recovery_progress.dart';
-import 'package:carbine/utils.dart';
-import 'package:carbine/widgets/addresses.dart';
-import 'package:carbine/widgets/gateways.dart';
-import 'package:carbine/widgets/note_summary.dart';
+import 'package:ecashapp/db.dart';
+import 'package:ecashapp/recovery_progress.dart';
+import 'package:ecashapp/utils.dart';
+import 'package:ecashapp/widgets/addresses.dart';
+import 'package:ecashapp/widgets/gateways.dart';
+import 'package:ecashapp/widgets/note_summary.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_speed_dial/flutter_speed_dial.dart';
 
-import 'package:carbine/lib.dart';
-import 'package:carbine/multimint.dart';
-import 'package:carbine/number_pad.dart';
-import 'package:carbine/payment_selector.dart';
-import 'package:carbine/onchain_receive.dart';
-import 'package:carbine/scan.dart';
-import 'package:carbine/theme.dart';
-import 'package:carbine/models.dart';
+import 'package:ecashapp/lib.dart';
+import 'package:ecashapp/multimint.dart';
+import 'package:ecashapp/number_pad.dart';
+import 'package:ecashapp/payment_selector.dart';
+import 'package:ecashapp/onchain_receive.dart';
+import 'package:ecashapp/scan.dart';
+import 'package:ecashapp/theme.dart';
+import 'package:ecashapp/models.dart';
 
-import 'package:carbine/widgets/dashboard_header.dart';
-import 'package:carbine/widgets/dashboard_balance.dart';
-import 'package:carbine/widgets/transactions_list.dart';
+import 'package:ecashapp/widgets/dashboard_header.dart';
+import 'package:ecashapp/widgets/dashboard_balance.dart';
+import 'package:ecashapp/widgets/transactions_list.dart';
 
 class Dashboard extends StatefulWidget {
   final FederationSelector fed;
@@ -146,7 +146,7 @@ class _DashboardState extends State<Dashboard> {
 
   void _onSendPressed() async {
     if (_selectedPaymentType == PaymentType.lightning) {
-      await showCarbineModalBottomSheet(
+      await showAppModalBottomSheet(
         context: context,
         child: PaymentMethodSelector(fed: widget.fed),
       );
@@ -187,7 +187,7 @@ class _DashboardState extends State<Dashboard> {
         ),
       );
     } else if (_selectedPaymentType == PaymentType.onchain) {
-      await showCarbineModalBottomSheet(
+      await showAppModalBottomSheet(
         context: context,
         child: OnChainReceiveContent(fed: widget.fed),
         heightFactor: 0.33,
@@ -272,7 +272,7 @@ class _DashboardState extends State<Dashboard> {
                 decoration: BoxDecoration(
                   color: Colors.black.withOpacity(0.7),
                   borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: Colors.greenAccent.withOpacity(0.6)),
+                  border: Border.all(color: Theme.of(context).colorScheme.secondary.withOpacity(0.6)),
                 ),
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
@@ -282,7 +282,7 @@ class _DashboardState extends State<Dashboard> {
                     Text(
                       '${_lnAddressConfig!.username}@${_lnAddressConfig!.domain}',
                       style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                            color: Colors.greenAccent,
+                            color: Theme.of(context).colorScheme.secondary,
                             fontWeight: FontWeight.w500,
                           ),
                     ),

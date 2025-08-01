@@ -1,4 +1,4 @@
-import 'package:carbine/lib.dart';
+import 'package:ecashapp/lib.dart';
 import 'package:flutter/material.dart';
 import 'dart:async';
 
@@ -58,8 +58,8 @@ class _MnemonicState extends State<Mnemonic> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final Color baseColor = theme.colorScheme.primary; // greenAccent
-    final Color fillColor = const Color(0xFF0B610B); // darker green for fill
+    final Color baseColor = theme.colorScheme.primary;
+    final Color fillColor = Color(0xFF001F3F);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,

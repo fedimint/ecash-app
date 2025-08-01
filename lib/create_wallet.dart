@@ -1,9 +1,9 @@
 import 'dart:io';
 
-import 'package:carbine/app.dart';
-import 'package:carbine/lib.dart';
-import 'package:carbine/seed_input.dart';
-import 'package:carbine/utils.dart';
+import 'package:ecashapp/app.dart';
+import 'package:ecashapp/lib.dart';
+import 'package:ecashapp/seed_input.dart';
+import 'package:ecashapp/utils.dart';
 import 'package:flutter/material.dart';
 
 class CreateWallet extends StatefulWidget {
@@ -86,10 +86,14 @@ class _CreateWalletState extends State<CreateWallet> {
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
               const SizedBox(height: 48),
-              Icon(Icons.shield, size: 64, color: theme.colorScheme.primary),
+              Image.asset(
+                'assets/images/e-cash-app.png',
+                width: 64,
+                height: 64,
+              ),
               const SizedBox(height: 24),
               Text(
-                'Welcome to Carbine Wallet',
+                'Welcome to e-cash app',
                 style: theme.textTheme.headlineSmall?.copyWith(
                   fontWeight: FontWeight.bold,
                   color: theme.colorScheme.primary,
@@ -112,13 +116,13 @@ class _CreateWalletState extends State<CreateWallet> {
                 onTap: _isCreating ? null : _handleCreateWallet,
                 trailing:
                     _isCreating
-                        ? const SizedBox(
+                        ? SizedBox(
                           height: 20,
                           width: 20,
                           child: CircularProgressIndicator(
                             strokeWidth: 2,
                             valueColor: AlwaysStoppedAnimation<Color>(
-                              Colors.greenAccent,
+                              Theme.of(context).colorScheme.primary,
                             ),
                           ),
                         )

@@ -1,15 +1,15 @@
 import 'dart:async';
 
-import 'package:carbine/screens/dashboard.dart';
-import 'package:carbine/lib.dart';
-import 'package:carbine/multimint.dart';
-import 'package:carbine/scan.dart';
-import 'package:carbine/setttings.dart';
-import 'package:carbine/sidebar.dart';
-import 'package:carbine/theme.dart';
-import 'package:carbine/toast.dart';
-import 'package:carbine/utils.dart';
-import 'package:carbine/welcome.dart';
+import 'package:ecashapp/screens/dashboard.dart';
+import 'package:ecashapp/lib.dart';
+import 'package:ecashapp/multimint.dart';
+import 'package:ecashapp/scan.dart';
+import 'package:ecashapp/setttings.dart';
+import 'package:ecashapp/sidebar.dart';
+import 'package:ecashapp/theme.dart';
+import 'package:ecashapp/toast.dart';
+import 'package:ecashapp/utils.dart';
+import 'package:ecashapp/welcome.dart';
 import 'package:flutter/material.dart';
 
 final invoicePaidToastVisible = ValueNotifier<bool>(true);
@@ -82,7 +82,10 @@ class _MyAppState extends State<MyApp> {
         await _handleFundsReceived(
           federationId: event.field0.$1,
           amountMsats: amountMsats,
-          icon: Icon(Icons.currency_bitcoin, color: Colors.greenAccent),
+          icon: Icon(
+            Icons.currency_bitcoin,
+            color: Theme.of(context).colorScheme.primary,
+          ),
         );
       }
     });
@@ -251,7 +254,7 @@ class _MyAppState extends State<MyApp> {
     }
 
     return MaterialApp(
-      title: 'Carbine',
+      title: 'e-cash app',
       debugShowCheckedModeBanner: false,
       theme: cypherpunkNinjaTheme,
       navigatorKey: _navigatorKey,

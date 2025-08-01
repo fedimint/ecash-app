@@ -1,8 +1,8 @@
-import 'package:carbine/models.dart';
-import 'package:carbine/multimint.dart';
-import 'package:carbine/scan.dart';
-import 'package:carbine/send.dart';
-import 'package:carbine/utils.dart';
+import 'package:ecashapp/models.dart';
+import 'package:ecashapp/multimint.dart';
+import 'package:ecashapp/scan.dart';
+import 'package:ecashapp/send.dart';
+import 'package:ecashapp/utils.dart';
 import 'package:flutter/material.dart';
 
 class PaymentMethodSelector extends StatefulWidget {
@@ -202,7 +202,11 @@ class _PaymentMethodSelectorState extends State<PaymentMethodSelector> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.center,
       children: [
-        Icon(Icons.qr_code, size: 64, color: Colors.greenAccent),
+        Icon(
+          Icons.qr_code,
+          size: 64,
+          color: Theme.of(context).colorScheme.primary,
+        ),
         const SizedBox(height: 16),
         Text(
           'Scan or paste a Bolt11 invoice.',

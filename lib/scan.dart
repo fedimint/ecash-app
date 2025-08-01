@@ -1,17 +1,17 @@
 import 'dart:convert';
 
-import 'package:carbine/app.dart';
-import 'package:carbine/fed_preview.dart';
-import 'package:carbine/lib.dart';
-import 'package:carbine/models.dart';
-import 'package:carbine/multimint.dart';
-import 'package:carbine/number_pad.dart';
-import 'package:carbine/onchain_send.dart';
-import 'package:carbine/pay_preview.dart';
-import 'package:carbine/redeem_ecash.dart';
-import 'package:carbine/theme.dart';
-import 'package:carbine/toast.dart';
-import 'package:carbine/utils.dart';
+import 'package:ecashapp/app.dart';
+import 'package:ecashapp/fed_preview.dart';
+import 'package:ecashapp/lib.dart';
+import 'package:ecashapp/models.dart';
+import 'package:ecashapp/multimint.dart';
+import 'package:ecashapp/number_pad.dart';
+import 'package:ecashapp/onchain_send.dart';
+import 'package:ecashapp/pay_preview.dart';
+import 'package:ecashapp/redeem_ecash.dart';
+import 'package:ecashapp/theme.dart';
+import 'package:ecashapp/toast.dart';
+import 'package:ecashapp/utils.dart';
 import 'package:collection/collection.dart';
 import 'package:crypto/crypto.dart';
 import 'package:flutter/material.dart';
@@ -122,7 +122,7 @@ class _ScanQRPageState extends State<ScanQRPage> {
         case ParsedText_InviteCode(:final field0):
           if (widget.paymentType == null) {
             final meta = await getFederationMeta(inviteCode: field0);
-            final fed = await showCarbineModalBottomSheet(
+            final fed = await showAppModalBottomSheet(
               context: context,
               child: FederationPreview(
                 fed: meta.selector,
@@ -146,7 +146,7 @@ class _ScanQRPageState extends State<ScanQRPage> {
               federationId: chosenFederation!.federationId,
               bolt11: field0,
             );
-            await showCarbineModalBottomSheet(
+            await showAppModalBottomSheet(
               context: context,
               child: PaymentPreviewWidget(
                 fed: chosenFederation,
@@ -161,7 +161,7 @@ class _ScanQRPageState extends State<ScanQRPage> {
           if (widget.paymentType == null ||
               widget.paymentType! == PaymentType.onchain) {
             if (field1 != null) {
-              showCarbineModalBottomSheet(
+              showAppModalBottomSheet(
                 context: context,
                 child: OnchainSend(
                   fed: chosenFederation!,
@@ -193,7 +193,7 @@ class _ScanQRPageState extends State<ScanQRPage> {
           if (widget.paymentType == null ||
               widget.paymentType! == PaymentType.ecash) {
             invoicePaidToastVisible.value = false;
-            await showCarbineModalBottomSheet(
+            await showAppModalBottomSheet(
               context: context,
               child: EcashRedeemPrompt(
                 fed: chosenFederation!,
@@ -294,8 +294,8 @@ class _ScanQRPageState extends State<ScanQRPage> {
                               value: value,
                               strokeWidth: 8,
                               backgroundColor: Colors.grey.shade800,
-                              valueColor: const AlwaysStoppedAnimation<Color>(
-                                Colors.greenAccent,
+                              valueColor: AlwaysStoppedAnimation<Color>(
+                                Theme.of(context).colorScheme.primary,
                               ),
                             ),
                           ),

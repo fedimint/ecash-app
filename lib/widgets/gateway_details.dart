@@ -1,7 +1,7 @@
-import 'package:carbine/detail_row.dart';
-import 'package:carbine/multimint.dart';
+import 'package:ecashapp/detail_row.dart';
+import 'package:ecashapp/multimint.dart';
 import 'package:flutter/material.dart';
-import 'package:carbine/utils.dart';
+import 'package:ecashapp/utils.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 class GatewayDetailsSheet extends StatelessWidget {

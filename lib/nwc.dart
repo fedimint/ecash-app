@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:qr_flutter/qr_flutter.dart';
-import 'package:carbine/lib.dart';
-import 'package:carbine/multimint.dart';
-import 'package:carbine/nostr.dart';
+import 'package:ecashapp/lib.dart';
+import 'package:ecashapp/multimint.dart';
+import 'package:ecashapp/nostr.dart';
 
 class NostrWalletConnect extends StatefulWidget {
   final List<(FederationSelector, bool)> federations;

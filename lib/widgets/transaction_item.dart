@@ -1,9 +1,9 @@
-import 'package:carbine/theme.dart';
-import 'package:carbine/widgets/transaction_details.dart';
+import 'package:ecashapp/theme.dart';
+import 'package:ecashapp/widgets/transaction_details.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
-import 'package:carbine/multimint.dart';
-import 'package:carbine/utils.dart';
+import 'package:ecashapp/multimint.dart';
+import 'package:ecashapp/utils.dart';
 
 class TransactionItem extends StatelessWidget {
   final Transaction tx;
@@ -12,10 +12,10 @@ class TransactionItem extends StatelessWidget {
   const TransactionItem({super.key, required this.tx, required this.fed});
 
   void _onTap(BuildContext context, String formattedAmount, String formattedDate, IconData iconData) {
-    final icon = Icon(iconData, color: Colors.greenAccent);
+    final icon = Icon(iconData, color: Theme.of(context).colorScheme.primary);
     switch (tx.kind) {
       case TransactionKind_LightningReceive(fees: final fees, gateway: final gateway, payeePubkey: final payeePubkey, paymentHash: final paymentHash):
-        showCarbineModalBottomSheet(
+        showAppModalBottomSheet(
           context: context,
           child: TransactionDetails(
             tx: tx,
@@ -33,7 +33,7 @@ class TransactionItem extends StatelessWidget {
         );
         break;
       case TransactionKind_LightningSend(fees: final fees, gateway: final gateway, paymentHash: final paymentHash, preimage: final preimage):
-        showCarbineModalBottomSheet(
+        showAppModalBottomSheet(
           context: context,
           child: TransactionDetails(
             tx: tx,
@@ -51,7 +51,7 @@ class TransactionItem extends StatelessWidget {
         );
         break;
       case TransactionKind_EcashSend(oobNotes: final oobNotes, fees: final fees):
-        showCarbineModalBottomSheet(
+        showAppModalBottomSheet(
           context: context,
           child: TransactionDetails(
             tx: tx,
@@ -67,7 +67,7 @@ class TransactionItem extends StatelessWidget {
         );
         break;
       case TransactionKind_EcashReceive(oobNotes: final oobNotes, fees: final fees):
-        showCarbineModalBottomSheet(
+        showAppModalBottomSheet(
           context: context,
           child: TransactionDetails(
             tx: tx,
@@ -86,7 +86,7 @@ class TransactionItem extends StatelessWidget {
       case TransactionKind_LightningRecurring():
       case TransactionKind_OnchainReceive():
       case TransactionKind_OnchainSend():
-        showCarbineModalBottomSheet(
+        showAppModalBottomSheet(
           context: context,
           child: TransactionDetails(
             tx: tx,
@@ -128,7 +128,7 @@ class TransactionItem extends StatelessWidget {
 
     final amountStyle = TextStyle(
       fontWeight: FontWeight.bold,
-      color: isIncoming ? Colors.greenAccent : Colors.redAccent,
+      color: isIncoming ? Theme.of(context).colorScheme.primary : Colors.redAccent,
     );
 
     return Card(
@@ -140,11 +140,11 @@ class TransactionItem extends StatelessWidget {
         leading: CircleAvatar(
           backgroundColor:
               isIncoming
-                  ? Colors.greenAccent.withOpacity(0.1)
+                  ? Theme.of(context).colorScheme.primary.withOpacity(0.1)
                   : Colors.redAccent.withOpacity(0.1),
           child: Icon(
             moduleIcon,
-            color: isIncoming ? Colors.greenAccent : Colors.redAccent,
+            color: isIncoming ? Theme.of(context).colorScheme.primary : Colors.redAccent,
           ),
         ),
         title: Text(

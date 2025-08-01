@@ -1,9 +1,9 @@
 import 'dart:async';
 
-import 'package:carbine/lib.dart';
-import 'package:carbine/models.dart';
-import 'package:carbine/multimint.dart';
-import 'package:carbine/utils.dart';
+import 'package:ecashapp/lib.dart';
+import 'package:ecashapp/models.dart';
+import 'package:ecashapp/multimint.dart';
+import 'package:ecashapp/utils.dart';
 import 'package:flutter/material.dart';
 
 class RecoveryStatus extends StatefulWidget {

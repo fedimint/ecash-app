@@ -1,9 +1,9 @@
-import 'package:carbine/fed_preview.dart';
-import 'package:carbine/lib.dart';
-import 'package:carbine/multimint.dart';
-import 'package:carbine/nostr.dart';
-import 'package:carbine/theme.dart';
-import 'package:carbine/toast.dart';
+import 'package:ecashapp/fed_preview.dart';
+import 'package:ecashapp/lib.dart';
+import 'package:ecashapp/multimint.dart';
+import 'package:ecashapp/nostr.dart';
+import 'package:ecashapp/theme.dart';
+import 'package:ecashapp/toast.dart';
 import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
 
@@ -186,7 +186,7 @@ class _Discover extends State<Discover> {
                     );
                     setState(() => _gettingMetadata = null);
 
-                    final fed = await showCarbineModalBottomSheet(
+                    final fed = await showAppModalBottomSheet(
                       context: context,
                       child: FederationPreview(
                         fed: meta.selector,

@@ -1,8 +1,8 @@
-import 'package:carbine/fed_preview.dart';
-import 'package:carbine/lib.dart';
-import 'package:carbine/multimint.dart';
-import 'package:carbine/theme.dart';
-import 'package:carbine/utils.dart';
+import 'package:ecashapp/fed_preview.dart';
+import 'package:ecashapp/lib.dart';
+import 'package:ecashapp/multimint.dart';
+import 'package:ecashapp/theme.dart';
+import 'package:ecashapp/utils.dart';
 import 'package:flutter/material.dart';
 
 class FederationSidebar extends StatefulWidget {
@@ -67,10 +67,10 @@ class FederationSidebarState extends State<FederationSidebar> {
                         ),
                       ),
                       alignment: Alignment.centerLeft,
-                      child: const Text(
+                      child: Text(
                         'Federations',
                         style: TextStyle(
-                          color: Colors.greenAccent,
+                          color: Theme.of(context).colorScheme.primary,
                           fontSize: 18,
                           fontWeight: FontWeight.bold,
                         ),
@@ -223,7 +223,7 @@ class _FederationListItemState extends State<FederationListItem> {
                         widget.fed.federationName,
                         style: Theme.of(context).textTheme.bodyLarge!.copyWith(
                           fontWeight: FontWeight.bold,
-                          color: Colors.greenAccent,
+                          color: Theme.of(context).colorScheme.primary,
                         ),
                       ),
                       const SizedBox(height: 4),
@@ -237,11 +237,11 @@ class _FederationListItemState extends State<FederationListItem> {
                       ),
                       const SizedBox(height: 4),
                       guardians == null
-                          ? const SizedBox(
+                          ? SizedBox(
                             width: 16,
                             height: 16,
                             child: CircularProgressIndicator(
-                              color: Colors.greenAccent,
+                              color: Theme.of(context).colorScheme.primary,
                               strokeWidth: 2,
                             ),
                           )
@@ -264,9 +264,9 @@ class _FederationListItemState extends State<FederationListItem> {
                 ),
                 IconButton(
                   icon: const Icon(Icons.groups_outlined),
-                  color: Colors.greenAccent,
+                  color: Theme.of(context).colorScheme.primary,
                   onPressed: () {
-                    showCarbineModalBottomSheet(
+                    showAppModalBottomSheet(
                       context: context,
                       child: FederationPreview(
                         fed: widget.fed,

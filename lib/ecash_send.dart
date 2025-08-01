@@ -1,11 +1,11 @@
 import 'dart:async';
 import 'dart:convert';
-import 'package:carbine/detail_row.dart';
-import 'package:carbine/qr_export.dart';
-import 'package:carbine/lib.dart';
-import 'package:carbine/multimint.dart';
-import 'package:carbine/toast.dart';
-import 'package:carbine/utils.dart';
+import 'package:ecashapp/detail_row.dart';
+import 'package:ecashapp/qr_export.dart';
+import 'package:ecashapp/lib.dart';
+import 'package:ecashapp/multimint.dart';
+import 'package:ecashapp/toast.dart';
+import 'package:ecashapp/utils.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:qr_flutter/qr_flutter.dart';

@@ -1,10 +1,10 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
-import 'package:carbine/multimint.dart';
-import 'package:carbine/lib.dart';
-import 'package:carbine/models.dart';
-import 'package:carbine/widgets/pending_deposit_item.dart';
-import 'package:carbine/widgets/transaction_item.dart';
+import 'package:ecashapp/multimint.dart';
+import 'package:ecashapp/lib.dart';
+import 'package:ecashapp/models.dart';
+import 'package:ecashapp/widgets/pending_deposit_item.dart';
+import 'package:ecashapp/widgets/transaction_item.dart';
 
 class TransactionsList extends StatefulWidget {
   final FederationSelector fed;

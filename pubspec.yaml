@@ -1,5 +1,5 @@
-name: carbine
-description: "A new Flutter project."
+name: ecashapp
+description: "A Fedimint Wallet"
 publish_to: 'none'
 version: 0.1.0
 
@@ -32,10 +32,19 @@ dev_dependencies:
   flutter_lints: ^5.0.0
   freezed: ^3.0.6
   build_runner: ^2.4.15
+  flutter_launcher_icons: ^0.14.4
 
 flutter:
   uses-material-design: true
   assets:
     - assets/images/fedimint.png
+    - assets/images/e-cash-app.png
     - assets/images/nostr.png
     - assets/animations/lightning.json
+
+flutter_launcher_icons:
+  android: true
+  ios: false
+  image_path: "assets/images/e-cash-app.png"
+  adaptive_icon_background: "#000000"
+  adaptive_icon_foreground: "assets/images/e-cash-app.png"

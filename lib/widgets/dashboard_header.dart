@@ -45,7 +45,7 @@ class DashboardHeader extends StatelessWidget {
               child: Text(
                 "This is a test network and is not worth anything.",
                 style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                      color: Colors.amberAccent,
+                      color: Theme.of(context).colorScheme.secondary,
                       fontStyle: FontStyle.italic,
                     ),
                 textAlign: TextAlign.center,

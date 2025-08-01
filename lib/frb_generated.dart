@@ -70,8 +70,8 @@ class RustLib extends BaseEntrypoint<RustLibApi, RustLibApiImpl, RustLibWire> {
 
   static const kDefaultExternalLibraryLoaderConfig =
       ExternalLibraryLoaderConfig(
-        stem: 'carbine_fedimint',
-        ioDirectory: 'rust/carbine_fedimint/target/release/',
+        stem: 'ecashapp',
+        ioDirectory: 'rust/ecashapp/target/release/',
         webPrefix: 'pkg/',
       );
 }

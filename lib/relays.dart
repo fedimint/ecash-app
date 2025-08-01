@@ -1,6 +1,6 @@
-import 'package:carbine/lib.dart';
-import 'package:carbine/toast.dart';
-import 'package:carbine/utils.dart';
+import 'package:ecashapp/lib.dart';
+import 'package:ecashapp/toast.dart';
+import 'package:ecashapp/utils.dart';
 import 'package:flutter/material.dart';
 
 class Relays extends StatefulWidget {
@@ -111,7 +111,7 @@ class _RelaysState extends State<Relays> {
         children: [
           Expanded(
             child: Text(
-              "Carbine uses Nostr relays to back up which federations you have joined. You can customize them below.",
+              "e-cash app uses Nostr relays to back up which federations you have joined. You can customize them below.",
               style: theme.textTheme.bodyMedium,
             ),
           ),

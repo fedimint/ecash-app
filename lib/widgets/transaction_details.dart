@@ -1,11 +1,11 @@
-import 'package:carbine/app.dart';
-import 'package:carbine/detail_row.dart';
-import 'package:carbine/lib.dart';
-import 'package:carbine/multimint.dart';
-import 'package:carbine/redeem_ecash.dart';
-import 'package:carbine/theme.dart';
-import 'package:carbine/toast.dart';
-import 'package:carbine/utils.dart';
+import 'package:ecashapp/app.dart';
+import 'package:ecashapp/detail_row.dart';
+import 'package:ecashapp/lib.dart';
+import 'package:ecashapp/multimint.dart';
+import 'package:ecashapp/redeem_ecash.dart';
+import 'package:ecashapp/theme.dart';
+import 'package:ecashapp/toast.dart';
+import 'package:ecashapp/utils.dart';
 import 'package:flutter/material.dart';
 
 class TransactionDetails extends StatefulWidget {
@@ -85,7 +85,7 @@ class _TransactionDetailsState extends State<TransactionDetails> {
 
     if (ecash != null && amount > BigInt.zero) {
       invoicePaidToastVisible.value = false;
-      await showCarbineModalBottomSheet(
+      await showAppModalBottomSheet(
         context: context,
         child: EcashRedeemPrompt(
           fed: widget.fed,

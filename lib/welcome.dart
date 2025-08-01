@@ -1,5 +1,5 @@
-import 'package:carbine/discover.dart';
-import 'package:carbine/multimint.dart';
+import 'package:ecashapp/discover.dart';
+import 'package:ecashapp/multimint.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/gestures.dart';
@@ -39,7 +39,7 @@ class _WelcomeWidgetState extends State<WelcomeWidget> {
     return Column(
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
-        Icon(Icons.security, size: 80, color: Theme.of(context).primaryColor),
+        Image.asset('assets/images/e-cash-app.png', width: 64, height: 64),
         const SizedBox(height: 32),
         const Text(
           'What is Fedimint?',

@@ -1,8 +1,8 @@
-import 'package:carbine/lib.dart';
-import 'package:carbine/multimint.dart';
-import 'package:carbine/success.dart';
-import 'package:carbine/toast.dart';
-import 'package:carbine/utils.dart';
+import 'package:ecashapp/lib.dart';
+import 'package:ecashapp/multimint.dart';
+import 'package:ecashapp/success.dart';
+import 'package:ecashapp/toast.dart';
+import 'package:ecashapp/utils.dart';
 import 'package:flutter/material.dart';
 
 class EcashRedeemPrompt extends StatefulWidget {
@@ -104,12 +104,12 @@ class _EcashRedeemPromptState extends State<EcashRedeemPrompt> {
           style: theme.textTheme.displaySmall?.copyWith(
             fontWeight: FontWeight.bold,
             fontSize: 32,
-            color: Colors.greenAccent,
+            color: Theme.of(context).colorScheme.primary,
             letterSpacing: 1.5,
             shadows: [
               Shadow(
                 blurRadius: 8,
-                color: Colors.greenAccent.withOpacity(0.4),
+                color: Theme.of(context).colorScheme.primary.withOpacity(0.4),
                 offset: const Offset(0, 0),
               ),
             ],

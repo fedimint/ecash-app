@@ -1,9 +1,9 @@
 import 'dart:io';
 
-import 'package:carbine/db.dart';
-import 'package:carbine/lib.dart';
-import 'package:carbine/models.dart';
-import 'package:carbine/multimint.dart';
+import 'package:ecashapp/db.dart';
+import 'package:ecashapp/lib.dart';
+import 'package:ecashapp/models.dart';
+import 'package:ecashapp/multimint.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:path_provider/path_provider.dart';
@@ -26,7 +26,7 @@ class AppLogger {
     } else {
       dir = await getApplicationDocumentsDirectory();
     }
-    _logFile = File('${dir!.path}/carbine/carbine.txt');
+    _logFile = File('${dir!.path}/ecashapp/ecashapp.txt');
 
     if (!(await _logFile.exists())) {
       await _logFile.create(recursive: true);
