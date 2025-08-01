@@ -73,7 +73,8 @@ use crate::{
 use crate::{event_bus::EventBus, get_event_bus};
 
 const DEFAULT_EXPIRY_TIME_SECS: u32 = 86400;
-const CACHE_UPDATE_INTERVAL_SECS: u64 = 60 * 10;
+const CACHE_UPDATE_INTERVAL_SECS: u64 = 30;
+const PRICE_CACHE_UPDATE_INTERVAL_SECS: u64 = 60 * 5;
 
 #[derive(Clone, Eq, PartialEq, Serialize, Debug)]
 pub struct PaymentPreview {
@@ -824,6 +825,9 @@ impl Multimint {
 
                     // Next check if the bitcoin price needs updating. Only update the price if it has not been cached yet, or if
                     // it is out of date
+                    let threshold = now
+                        .checked_sub(Duration::from_secs(PRICE_CACHE_UPDATE_INTERVAL_SECS))
+                        .expect("Cannot be negative");
                     let cached_price = dbtx.get_value(&BtcPriceKey).await;
                     if let Some(cached_price) = cached_price {
                         if cached_price.last_updated < threshold {
