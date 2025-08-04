@@ -93,7 +93,7 @@ class _CreateWalletState extends State<CreateWallet> {
               ),
               const SizedBox(height: 24),
               Text(
-                'Welcome to e-cash app',
+                'Welcome to E-Cash App',
                 style: theme.textTheme.headlineSmall?.copyWith(
                   fontWeight: FontWeight.bold,
                   color: theme.colorScheme.primary,

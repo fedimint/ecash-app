@@ -1,9 +1,9 @@
-# e-cash app - A Fedimint Wallet
+# E-Cash App - A Fedimint Wallet
 
-e-cash app is a Fedimint wallet built using Flutter, Rust, and the Flutter Rust Bridge.
+E-Cash App is a Fedimint wallet built using Flutter, Rust, and the Flutter Rust Bridge.
 
 ## Linux Development
-e-cash app uses nix and nix flakes to manage dependencies and build the project.
+E-Cash App uses nix and nix flakes to manage dependencies and build the project.
 
 First, install nix
 
@@ -28,4 +28,4 @@ To run the app on Linux, simply run
 just run
 ```
 
-Done! This will launch e-cash app on Linux.
+Done! This will launch E-Cash App on Linux.
