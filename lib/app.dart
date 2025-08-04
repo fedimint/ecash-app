@@ -92,11 +92,20 @@ class _MyAppState extends State<MyApp> {
           ),
         );
       } else if (event is MultimintEvent_NostrRecovery) {
-        _startOrResetRecoveryTimer();
-        setState(() {
-          _recoveryStatus =
-              "Trying to re-join ${event.field0} using peer ${event.field1}...";
-        });
+        if (event.field2 != null) {
+          ToastService().show(
+            message: "Joined ${event.field2!.federationName}. Recovering...",
+            duration: const Duration(seconds: 5),
+            onTap: () {},
+            icon: Icon(Icons.info),
+          );
+        } else {
+          _startOrResetRecoveryTimer();
+          setState(() {
+            _recoveryStatus =
+                "Trying to re-join ${event.field0} using peer ${event.field1}...";
+          });
+        }
       }
     });
   }

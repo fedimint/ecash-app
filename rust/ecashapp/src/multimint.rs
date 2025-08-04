@@ -274,7 +274,7 @@ pub enum MultimintEvent {
     RecoveryDone(String),
     RecoveryProgress(String, u16, u32, u32),
     Ecash((FederationId, u64)),
-    NostrRecovery(String, u16),
+    NostrRecovery(String, u16, Option<FederationSelector>),
 }
 
 #[derive(Clone, Eq, PartialEq, Serialize, Debug)]
@@ -3267,6 +3267,7 @@ impl Multimint {
                         .publish(MultimintEvent::NostrRecovery(
                             invite_code.federation_id().to_string(),
                             invite_code.peer().into(),
+                            None,
                         ))
                         .await;
 
@@ -3282,13 +3283,21 @@ impl Multimint {
                     )
                     .await
                     {
-                        Ok(Ok(_)) => {
+                        Ok(Ok(selector)) => {
                             already_joined_feds.insert(fed_id);
                             info_to_flutter(format!(
                                 "Successfully rejoined {} after recovery",
                                 fed_id
                             ))
                             .await;
+
+                            get_event_bus()
+                                .publish(MultimintEvent::NostrRecovery(
+                                    invite_code.federation_id().to_string(),
+                                    invite_code.peer().into(),
+                                    Some(selector),
+                                ))
+                                .await;
                         }
                         Ok(Err(e)) => {
                             error_to_flutter(format!(

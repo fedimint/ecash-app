@@ -1389,11 +1389,12 @@ as (FederationId, BigInt),
 
 
 class MultimintEvent_NostrRecovery extends MultimintEvent {
-  const MultimintEvent_NostrRecovery(this.field0, this.field1): super._();
+  const MultimintEvent_NostrRecovery(this.field0, this.field1, [this.field2]): super._();
   
 
 @override final  String field0;
  final  int field1;
+ final  FederationSelector? field2;
 
 /// Create a copy of MultimintEvent
 /// with the given fields replaced by the non-null parameter values.
@@ -1405,16 +1406,16 @@ $MultimintEvent_NostrRecoveryCopyWith<MultimintEvent_NostrRecovery> get copyWith
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is MultimintEvent_NostrRecovery&&(identical(other.field0, field0) || other.field0 == field0)&&(identical(other.field1, field1) || other.field1 == field1));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is MultimintEvent_NostrRecovery&&(identical(other.field0, field0) || other.field0 == field0)&&(identical(other.field1, field1) || other.field1 == field1)&&(identical(other.field2, field2) || other.field2 == field2));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,field0,field1);
+int get hashCode => Object.hash(runtimeType,field0,field1,field2);
 
 @override
 String toString() {
-  return 'MultimintEvent.nostrRecovery(field0: $field0, field1: $field1)';
+  return 'MultimintEvent.nostrRecovery(field0: $field0, field1: $field1, field2: $field2)';
 }
 
 
@@ -1425,7 +1426,7 @@ abstract mixin class $MultimintEvent_NostrRecoveryCopyWith<$Res> implements $Mul
   factory $MultimintEvent_NostrRecoveryCopyWith(MultimintEvent_NostrRecovery value, $Res Function(MultimintEvent_NostrRecovery) _then) = _$MultimintEvent_NostrRecoveryCopyWithImpl;
 @useResult
 $Res call({
- String field0, int field1
+ String field0, int field1, FederationSelector? field2
 });
 
 
@@ -1442,11 +1443,12 @@ class _$MultimintEvent_NostrRecoveryCopyWithImpl<$Res>
 
 /// Create a copy of MultimintEvent
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') $Res call({Object? field0 = null,Object? field1 = null,}) {
+@pragma('vm:prefer-inline') $Res call({Object? field0 = null,Object? field1 = null,Object? field2 = freezed,}) {
   return _then(MultimintEvent_NostrRecovery(
 null == field0 ? _self.field0 : field0 // ignore: cast_nullable_to_non_nullable
 as String,null == field1 ? _self.field1 : field1 // ignore: cast_nullable_to_non_nullable
-as int,
+as int,freezed == field2 ? _self.field2 : field2 // ignore: cast_nullable_to_non_nullable
+as FederationSelector?,
   ));
 }
 

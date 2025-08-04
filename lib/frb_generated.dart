@@ -8903,6 +8903,9 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
         return MultimintEvent_NostrRecovery(
           dco_decode_String(raw[1]),
           dco_decode_u_16(raw[2]),
+          dco_decode_opt_box_autoadd_Auto_Owned_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerFederationSelector(
+            raw[3],
+          ),
         );
       default:
         throw Exception("unreachable");
@@ -10776,7 +10779,11 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
       case 6:
         var var_field0 = sse_decode_String(deserializer);
         var var_field1 = sse_decode_u_16(deserializer);
-        return MultimintEvent_NostrRecovery(var_field0, var_field1);
+        var var_field2 =
+            sse_decode_opt_box_autoadd_Auto_Owned_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerFederationSelector(
+              deserializer,
+            );
+        return MultimintEvent_NostrRecovery(var_field0, var_field1, var_field2);
       default:
         throw UnimplementedError('');
     }
@@ -12694,10 +12701,15 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
       case MultimintEvent_NostrRecovery(
         field0: final field0,
         field1: final field1,
+        field2: final field2,
       ):
         sse_encode_i_32(6, serializer);
         sse_encode_String(field0, serializer);
         sse_encode_u_16(field1, serializer);
+        sse_encode_opt_box_autoadd_Auto_Owned_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerFederationSelector(
+          field2,
+          serializer,
+        );
     }
   }
 
