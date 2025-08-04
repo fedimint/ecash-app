@@ -1386,6 +1386,76 @@ as (FederationId, BigInt),
 }
 
 /// @nodoc
+
+
+class MultimintEvent_NostrRecovery extends MultimintEvent {
+  const MultimintEvent_NostrRecovery(this.field0, this.field1, [this.field2]): super._();
+  
+
+@override final  String field0;
+ final  int field1;
+ final  FederationSelector? field2;
+
+/// Create a copy of MultimintEvent
+/// with the given fields replaced by the non-null parameter values.
+@JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+$MultimintEvent_NostrRecoveryCopyWith<MultimintEvent_NostrRecovery> get copyWith => _$MultimintEvent_NostrRecoveryCopyWithImpl<MultimintEvent_NostrRecovery>(this, _$identity);
+
+
+
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is MultimintEvent_NostrRecovery&&(identical(other.field0, field0) || other.field0 == field0)&&(identical(other.field1, field1) || other.field1 == field1)&&(identical(other.field2, field2) || other.field2 == field2));
+}
+
+
+@override
+int get hashCode => Object.hash(runtimeType,field0,field1,field2);
+
+@override
+String toString() {
+  return 'MultimintEvent.nostrRecovery(field0: $field0, field1: $field1, field2: $field2)';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class $MultimintEvent_NostrRecoveryCopyWith<$Res> implements $MultimintEventCopyWith<$Res> {
+  factory $MultimintEvent_NostrRecoveryCopyWith(MultimintEvent_NostrRecovery value, $Res Function(MultimintEvent_NostrRecovery) _then) = _$MultimintEvent_NostrRecoveryCopyWithImpl;
+@useResult
+$Res call({
+ String field0, int field1, FederationSelector? field2
+});
+
+
+
+
+}
+/// @nodoc
+class _$MultimintEvent_NostrRecoveryCopyWithImpl<$Res>
+    implements $MultimintEvent_NostrRecoveryCopyWith<$Res> {
+  _$MultimintEvent_NostrRecoveryCopyWithImpl(this._self, this._then);
+
+  final MultimintEvent_NostrRecovery _self;
+  final $Res Function(MultimintEvent_NostrRecovery) _then;
+
+/// Create a copy of MultimintEvent
+/// with the given fields replaced by the non-null parameter values.
+@pragma('vm:prefer-inline') $Res call({Object? field0 = null,Object? field1 = null,Object? field2 = freezed,}) {
+  return _then(MultimintEvent_NostrRecovery(
+null == field0 ? _self.field0 : field0 // ignore: cast_nullable_to_non_nullable
+as String,null == field1 ? _self.field1 : field1 // ignore: cast_nullable_to_non_nullable
+as int,freezed == field2 ? _self.field2 : field2 // ignore: cast_nullable_to_non_nullable
+as FederationSelector?,
+  ));
+}
+
+
+}
+
+/// @nodoc
 mixin _$TransactionKind {
 
 

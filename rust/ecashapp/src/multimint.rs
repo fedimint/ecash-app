@@ -55,11 +55,11 @@ use lightning_invoice::{Bolt11Invoice, Description};
 use reqwest::StatusCode;
 use serde::{Deserialize, Serialize};
 use serde_json::{from_value, json};
-use tokio::sync::RwLock;
 use tokio::{
     sync::mpsc::{unbounded_channel, UnboundedReceiver, UnboundedSender},
     time::Instant,
 };
+use tokio::{sync::RwLock, time::timeout};
 
 use crate::{
     anyhow,
@@ -274,6 +274,7 @@ pub enum MultimintEvent {
     RecoveryDone(String),
     RecoveryProgress(String, u16, u32, u32),
     Ecash((FederationId, u64)),
+    NostrRecovery(String, u16, Option<FederationSelector>),
 }
 
 #[derive(Clone, Eq, PartialEq, Serialize, Debug)]
@@ -3251,24 +3252,67 @@ impl Multimint {
 
     pub async fn rejoin_from_backup_invites(&mut self, backup_invite_codes: Vec<String>) {
         let mut already_joined_feds = BTreeSet::new();
+
+        info_to_flutter(format!(
+            "Starting to re-join federations from Nostr. Number of invite codes: {}",
+            backup_invite_codes.len()
+        ))
+        .await;
         for invite in backup_invite_codes {
             if let Ok(invite_code) = InviteCode::from_str(&invite) {
-                if !already_joined_feds.contains(&invite_code.federation_id()) {
-                    if let Err(e) = self.join_federation(invite.clone(), true).await {
-                        error_to_flutter(format!(
-                            "Rejoining federation {} with invite code {} failed {}",
-                            invite_code.federation_id(),
-                            invite,
-                            e
+                let fed_id = invite_code.federation_id();
+
+                if !already_joined_feds.contains(&fed_id) {
+                    get_event_bus()
+                        .publish(MultimintEvent::NostrRecovery(
+                            invite_code.federation_id().to_string(),
+                            invite_code.peer().into(),
+                            None,
                         ))
                         .await;
-                    } else {
-                        already_joined_feds.insert(invite_code.federation_id());
-                        info_to_flutter(format!(
-                            "Successfully rejoined {} after recovery",
-                            invite_code.federation_id()
-                        ))
-                        .await;
+
+                    info_to_flutter(format!(
+                        "Rejoining: {} peer: {}",
+                        invite_code.federation_id(),
+                        invite_code.peer()
+                    ))
+                    .await;
+                    match timeout(
+                        Duration::from_secs(30),
+                        self.join_federation(invite.clone(), true),
+                    )
+                    .await
+                    {
+                        Ok(Ok(selector)) => {
+                            already_joined_feds.insert(fed_id);
+                            info_to_flutter(format!(
+                                "Successfully rejoined {} after recovery",
+                                fed_id
+                            ))
+                            .await;
+
+                            get_event_bus()
+                                .publish(MultimintEvent::NostrRecovery(
+                                    invite_code.federation_id().to_string(),
+                                    invite_code.peer().into(),
+                                    Some(selector),
+                                ))
+                                .await;
+                        }
+                        Ok(Err(e)) => {
+                            error_to_flutter(format!(
+                                "Rejoining federation {} with invite code {} failed: {}",
+                                fed_id, invite, e
+                            ))
+                            .await;
+                        }
+                        Err(_) => {
+                            error_to_flutter(format!(
+                                "Rejoining federation {} with invite code {} timed out",
+                                fed_id, invite
+                            ))
+                            .await;
+                        }
                     }
                 }
             }

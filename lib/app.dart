@@ -41,6 +41,10 @@ class _MyAppState extends State<MyApp> {
 
   bool recoverFederations = false;
 
+  String _recoveryStatus = "Retrieving federation backup from Nostr...";
+  Timer? _recoveryTimer;
+  int _recoverySecondsRemaining = 30;
+
   @override
   void initState() {
     super.initState();
@@ -87,7 +91,38 @@ class _MyAppState extends State<MyApp> {
             color: Theme.of(context).colorScheme.primary,
           ),
         );
+      } else if (event is MultimintEvent_NostrRecovery) {
+        if (event.field2 != null) {
+          ToastService().show(
+            message: "Joined ${event.field2!.federationName}. Recovering...",
+            duration: const Duration(seconds: 5),
+            onTap: () {},
+            icon: Icon(Icons.info),
+          );
+        } else {
+          _startOrResetRecoveryTimer();
+          setState(() {
+            _recoveryStatus =
+                "Trying to re-join ${event.field0} using peer ${event.field1}...";
+          });
+        }
       }
+    });
+  }
+
+  void _startOrResetRecoveryTimer() {
+    _recoveryTimer?.cancel();
+    setState(() {
+      _recoverySecondsRemaining = 30;
+    });
+
+    _recoveryTimer = Timer.periodic(Duration(seconds: 1), (timer) {
+      if (_recoverySecondsRemaining <= 1) {
+        timer.cancel();
+      }
+      setState(() {
+        _recoverySecondsRemaining--;
+      });
     });
   }
 
@@ -163,6 +198,7 @@ class _MyAppState extends State<MyApp> {
   @override
   void dispose() {
     _subscription.cancel();
+    _recoveryTimer?.cancel();
     super.dispose();
   }
 
@@ -234,16 +270,28 @@ class _MyAppState extends State<MyApp> {
         );
       } else {
         if (recoverFederations) {
-          bodyContent = const Center(
+          bodyContent = Center(
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                CircularProgressIndicator(),
-                SizedBox(height: 16),
+                const CircularProgressIndicator(),
+                const SizedBox(height: 16),
                 Text(
-                  'Retrieving federation backup from Nostr...',
-                  style: TextStyle(fontSize: 16),
+                  _recoveryStatus,
+                  style: const TextStyle(fontSize: 16),
+                  textAlign: TextAlign.center,
                 ),
+                const SizedBox(height: 16),
+                if (_recoverySecondsRemaining <= 15)
+                  Text(
+                    "Peer might be offline, trying for $_recoverySecondsRemaining more seconds...",
+                    style: const TextStyle(
+                      fontSize: 16,
+                      color: Colors.red,
+                      fontWeight: FontWeight.w600,
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
               ],
             ),
           );
