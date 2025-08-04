@@ -605,10 +605,10 @@ class _FederationUtxoListState extends State<FederationUtxoList> {
                   Expanded(
                     child: Text(
                       txidLabel,
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontFamily: 'monospace',
                         fontSize: 14,
-                        color: Colors.greenAccent,
+                        color: Theme.of(context).colorScheme.primary,
                         overflow: TextOverflow.ellipsis,
                       ),
                     ),
@@ -635,7 +635,7 @@ class _FederationUtxoListState extends State<FederationUtxoList> {
                 style: Theme.of(context).textTheme.bodyLarge?.copyWith(
                   fontWeight: FontWeight.bold,
                   fontSize: 16,
-                  color: Colors.greenAccent,
+                  color: Theme.of(context).colorScheme.primary,
                 ),
               ),
             ],

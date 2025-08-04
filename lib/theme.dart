@@ -8,7 +8,7 @@ final ThemeData cypherpunkNinjaTheme = ThemeData(
   primaryColor: vibrantBlue,
   colorScheme: const ColorScheme.dark(
     primary: vibrantBlue,
-    secondary: Colors.tealAccent,
+    secondary: Color(0xFF3399FF),
     surface: Color(0xFF111111),
     error: Colors.redAccent,
   ),
