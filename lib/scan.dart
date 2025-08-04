@@ -208,7 +208,13 @@ class _ScanQRPageState extends State<ScanQRPage> {
           break;
       }
     } catch (e) {
-      AppLogger.instance.warn("No action for scanned text: $text");
+      AppLogger.instance.warn("$text cannot be parsed: $e");
+      ToastService().show(
+        message: "Sorry! That cannot be parsed.",
+        duration: const Duration(seconds: 5),
+        onTap: () {},
+        icon: Icon(Icons.error),
+      );
     }
   }
 

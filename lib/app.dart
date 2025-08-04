@@ -41,6 +41,8 @@ class _MyAppState extends State<MyApp> {
 
   bool recoverFederations = false;
 
+  String _recoveryStatus = "Retrieving federation backup from Nostr...";
+
   @override
   void initState() {
     super.initState();
@@ -87,6 +89,11 @@ class _MyAppState extends State<MyApp> {
             color: Theme.of(context).colorScheme.primary,
           ),
         );
+      } else if (event is MultimintEvent_NostrRecovery) {
+        setState(() {
+          _recoveryStatus =
+              "Trying to re-join ${event.field0} using peer ${event.field1}...";
+        });
       }
     });
   }
@@ -234,16 +241,13 @@ class _MyAppState extends State<MyApp> {
         );
       } else {
         if (recoverFederations) {
-          bodyContent = const Center(
+          bodyContent = Center(
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 CircularProgressIndicator(),
                 SizedBox(height: 16),
-                Text(
-                  'Retrieving federation backup from Nostr...',
-                  style: TextStyle(fontSize: 16),
-                ),
+                Text(_recoveryStatus, style: TextStyle(fontSize: 16)),
               ],
             ),
           );

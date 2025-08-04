@@ -537,6 +537,8 @@ sealed class MultimintEvent with _$MultimintEvent {
   ) = MultimintEvent_RecoveryProgress;
   const factory MultimintEvent.ecash((FederationId, BigInt) field0) =
       MultimintEvent_Ecash;
+  const factory MultimintEvent.nostrRecovery(String field0, int field1) =
+      MultimintEvent_NostrRecovery;
 }
 
 class PaymentPreview {

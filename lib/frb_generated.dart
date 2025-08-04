@@ -8899,6 +8899,11 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
             raw[1],
           ),
         );
+      case 6:
+        return MultimintEvent_NostrRecovery(
+          dco_decode_String(raw[1]),
+          dco_decode_u_16(raw[2]),
+        );
       default:
         throw Exception("unreachable");
     }
@@ -10768,6 +10773,10 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
               deserializer,
             );
         return MultimintEvent_Ecash(var_field0);
+      case 6:
+        var var_field0 = sse_decode_String(deserializer);
+        var var_field1 = sse_decode_u_16(deserializer);
+        return MultimintEvent_NostrRecovery(var_field0, var_field1);
       default:
         throw UnimplementedError('');
     }
@@ -12682,6 +12691,13 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           field0,
           serializer,
         );
+      case MultimintEvent_NostrRecovery(
+        field0: final field0,
+        field1: final field1,
+      ):
+        sse_encode_i_32(6, serializer);
+        sse_encode_String(field0, serializer);
+        sse_encode_u_16(field1, serializer);
     }
   }
 

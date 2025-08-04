@@ -10585,6 +10585,11 @@ impl SseDecode for crate::multimint::MultimintEvent {
                 let mut var_field0 = <(FederationId, u64)>::sse_decode(deserializer);
                 return crate::multimint::MultimintEvent::Ecash(var_field0);
             }
+            6 => {
+                let mut var_field0 = <String>::sse_decode(deserializer);
+                let mut var_field1 = <u16>::sse_decode(deserializer);
+                return crate::multimint::MultimintEvent::NostrRecovery(var_field0, var_field1);
+            }
             _ => {
                 unimplemented!("");
             }
@@ -12367,6 +12372,12 @@ impl flutter_rust_bridge::IntoDart for crate::multimint::MultimintEvent {
             crate::multimint::MultimintEvent::Ecash(field0) => {
                 [5.into_dart(), field0.into_into_dart().into_dart()].into_dart()
             }
+            crate::multimint::MultimintEvent::NostrRecovery(field0, field1) => [
+                6.into_dart(),
+                field0.into_into_dart().into_dart(),
+                field1.into_into_dart().into_dart(),
+            ]
+            .into_dart(),
             _ => {
                 unimplemented!("");
             }
@@ -13427,6 +13438,11 @@ impl SseEncode for crate::multimint::MultimintEvent {
             crate::multimint::MultimintEvent::Ecash(field0) => {
                 <i32>::sse_encode(5, serializer);
                 <(FederationId, u64)>::sse_encode(field0, serializer);
+            }
+            crate::multimint::MultimintEvent::NostrRecovery(field0, field1) => {
+                <i32>::sse_encode(6, serializer);
+                <String>::sse_encode(field0, serializer);
+                <u16>::sse_encode(field1, serializer);
             }
             _ => {
                 unimplemented!("");
