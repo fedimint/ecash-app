@@ -4,6 +4,7 @@ import 'package:ecashapp/multimint.dart';
 import 'package:ecashapp/nostr.dart';
 import 'package:ecashapp/theme.dart';
 import 'package:ecashapp/toast.dart';
+import 'package:ecashapp/utils.dart';
 import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
 
@@ -23,6 +24,49 @@ class _Discover extends State<Discover> {
   void initState() {
     super.initState();
     _futureFeds = listFederationsFromNostr(forceUpdate: false);
+  }
+
+  Future<void> _onPreviewPressed(PublicFederation federation) async {
+    try {
+      setState(() => _gettingMetadata = federation);
+      final meta = await getFederationMeta(
+        inviteCode: federation.inviteCodes.first,
+      );
+      setState(() => _gettingMetadata = null);
+
+      final fed = await showAppModalBottomSheet(
+        context: context,
+        child: FederationPreview(
+          fed: meta.selector,
+          inviteCode: federation.inviteCodes.first,
+          welcomeMessage: meta.welcome,
+          imageUrl: meta.picture,
+          joinable: true,
+          guardians: meta.guardians,
+        ),
+      );
+
+      if (fed != null) {
+        final name = fed.$1.federationName;
+        await Future.delayed(const Duration(milliseconds: 400));
+        widget.onJoin(fed.$1, fed.$2);
+        if (context.mounted) Navigator.pop(context);
+        ToastService().show(
+          message: "Joined $name",
+          duration: const Duration(seconds: 5),
+          onTap: () {},
+          icon: Icon(Icons.info),
+        );
+      }
+    } catch (e) {
+      AppLogger.instance.warn("Error when retrieving federation meta: $e");
+      ToastService().show(
+        message: "Sorry! Could not get federation metadata",
+        duration: const Duration(seconds: 5),
+        onTap: () {},
+        icon: Icon(Icons.error),
+      );
+    }
   }
 
   @override
@@ -180,36 +224,7 @@ class _Discover extends State<Discover> {
                     ),
                   ),
                   onPressed: () async {
-                    setState(() => _gettingMetadata = federation);
-                    final meta = await getFederationMeta(
-                      inviteCode: federation.inviteCodes.first,
-                    );
-                    setState(() => _gettingMetadata = null);
-
-                    final fed = await showAppModalBottomSheet(
-                      context: context,
-                      child: FederationPreview(
-                        fed: meta.selector,
-                        inviteCode: federation.inviteCodes.first,
-                        welcomeMessage: meta.welcome,
-                        imageUrl: meta.picture,
-                        joinable: true,
-                        guardians: meta.guardians,
-                      ),
-                    );
-
-                    if (fed != null) {
-                      final name = fed.$1.federationName;
-                      await Future.delayed(const Duration(milliseconds: 400));
-                      widget.onJoin(fed.$1, fed.$2);
-                      if (context.mounted) Navigator.pop(context);
-                      ToastService().show(
-                        message: "Joined $name",
-                        duration: const Duration(seconds: 5),
-                        onTap: () {},
-                        icon: Icon(Icons.info),
-                      );
-                    }
+                    _onPreviewPressed(federation);
                   },
                   icon: const Icon(Icons.info_outline, size: 18),
                   label: const Text("Preview"),
