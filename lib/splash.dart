@@ -39,11 +39,9 @@ class _SplashState extends State<Splash> {
       screen = CreateWallet(dir: widget.dir);
     }
 
-    Future.delayed(const Duration(seconds: 2), () async {
-      Navigator.of(
-        context,
-      ).pushReplacement(MaterialPageRoute(builder: (_) => screen));
-    });
+    Navigator.of(
+      context,
+    ).pushReplacement(MaterialPageRoute(builder: (_) => screen));
   }
 
   @override
