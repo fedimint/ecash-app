@@ -1474,7 +1474,7 @@ impl Multimint {
             .read()
             .await
             .get(federation_id)
-            .expect("No federation exists")
+            .ok_or(anyhow!("No federation exists"))?
             .clone();
         if let Ok((url, send_fee, fed_base, fed_ppm)) =
             Self::lnv2_select_gateway(&client, Some(bolt11.clone())).await

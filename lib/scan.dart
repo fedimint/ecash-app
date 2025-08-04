@@ -121,40 +121,64 @@ class _ScanQRPageState extends State<ScanQRPage> {
       switch (action) {
         case ParsedText_InviteCode(:final field0):
           if (widget.paymentType == null) {
-            final meta = await getFederationMeta(inviteCode: field0);
-            final fed = await showAppModalBottomSheet(
-              context: context,
-              child: FederationPreview(
-                fed: meta.selector,
-                inviteCode: field0,
-                welcomeMessage: meta.welcome,
-                imageUrl: meta.picture,
-                joinable: true,
-                guardians: meta.guardians,
-              ),
-            );
-            if (fed != null) {
-              await Future.delayed(const Duration(milliseconds: 400));
-              Navigator.pop(context, fed);
+            try {
+              final meta = await getFederationMeta(inviteCode: field0);
+              final fed = await showAppModalBottomSheet(
+                context: context,
+                child: FederationPreview(
+                  fed: meta.selector,
+                  inviteCode: field0,
+                  welcomeMessage: meta.welcome,
+                  imageUrl: meta.picture,
+                  joinable: true,
+                  guardians: meta.guardians,
+                ),
+              );
+              if (fed != null) {
+                await Future.delayed(const Duration(milliseconds: 400));
+                Navigator.pop(context, fed);
+              }
+            } catch (e) {
+              AppLogger.instance.warn(
+                "Error when retrieving federation meta: $e",
+              );
+              ToastService().show(
+                message: "Sorry! Could not get federation metadata",
+                duration: const Duration(seconds: 5),
+                onTap: () {},
+                icon: Icon(Icons.error),
+              );
             }
           }
           break;
         case ParsedText_LightningInvoice(:final field0):
           if (widget.paymentType == null ||
               widget.paymentType! == PaymentType.lightning) {
-            final preview = await paymentPreview(
-              federationId: chosenFederation!.federationId,
-              bolt11: field0,
-            );
-            await showAppModalBottomSheet(
-              context: context,
-              child: PaymentPreviewWidget(
-                fed: chosenFederation,
-                paymentPreview: preview,
-              ),
-            );
+            try {
+              final preview = await paymentPreview(
+                federationId: chosenFederation!.federationId,
+                bolt11: field0,
+              );
+              await showAppModalBottomSheet(
+                context: context,
+                child: PaymentPreviewWidget(
+                  fed: chosenFederation,
+                  paymentPreview: preview,
+                ),
+              );
 
-            widget.onPay(chosenFederation, false);
+              widget.onPay(chosenFederation, false);
+            } catch (e) {
+              AppLogger.instance.warn(
+                "Error when retrieving payment preview: $e",
+              );
+              ToastService().show(
+                message: "Sorry! Could not get Lightning payment details",
+                duration: const Duration(seconds: 5),
+                onTap: () {},
+                icon: Icon(Icons.error),
+              );
+            }
           }
           break;
         case ParsedText_BitcoinAddress(:final field0, :final field1):
