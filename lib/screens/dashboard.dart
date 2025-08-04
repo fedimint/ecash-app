@@ -76,6 +76,7 @@ class _DashboardState extends State<Dashboard> {
         final recoveredFedId = event.field0;
         final currFederationId = await federationIdToString(federationId: widget.fed.federationId);
         if (currFederationId == recoveredFedId) {
+          if (!mounted) return;
           setState(() => recovering = false);
           _loadBalance();
         }
