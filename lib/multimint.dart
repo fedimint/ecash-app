@@ -26,7 +26,11 @@ abstract class FederationMeta implements RustOpaqueInterface {
 
   BigInt get lastUpdated;
 
+  String? get lnaddressApi;
+
   String? get picture;
+
+  String? get recurringdApi;
 
   FederationSelector get selector;
 
@@ -36,7 +40,11 @@ abstract class FederationMeta implements RustOpaqueInterface {
 
   set lastUpdated(BigInt lastUpdated);
 
+  set lnaddressApi(String? lnaddressApi);
+
   set picture(String? picture);
+
+  set recurringdApi(String? recurringdApi);
 
   set selector(FederationSelector selector);
 
