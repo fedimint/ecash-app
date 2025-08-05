@@ -74,38 +74,40 @@ class _Discover extends State<Discover> {
     final theme = Theme.of(context);
     return Scaffold(
       appBar: AppBar(title: const Text('Discover Federations')),
-      body: FutureBuilder<List<PublicFederation>>(
-        future: _futureFeds,
-        builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.waiting) {
-            return const Center(child: CircularProgressIndicator());
-          } else if (snapshot.hasError) {
-            return Center(
-              child: Text(
-                "Error: ${snapshot.error}",
-                style: TextStyle(color: theme.colorScheme.error),
-              ),
-            );
-          } else if (!snapshot.hasData || snapshot.data!.isEmpty) {
-            return const Center(
-              child: Text("No public federations available to join"),
-            );
-          }
+      body: SafeArea(
+        child: FutureBuilder<List<PublicFederation>>(
+          future: _futureFeds,
+          builder: (context, snapshot) {
+            if (snapshot.connectionState == ConnectionState.waiting) {
+              return const Center(child: CircularProgressIndicator());
+            } else if (snapshot.hasError) {
+              return Center(
+                child: Text(
+                  "Error: ${snapshot.error}",
+                  style: TextStyle(color: theme.colorScheme.error),
+                ),
+              );
+            } else if (!snapshot.hasData || snapshot.data!.isEmpty) {
+              return const Center(
+                child: Text("No public federations available to join"),
+              );
+            }
 
-          final federations = snapshot.data!;
-          return ListView(
-            padding: const EdgeInsets.all(16),
-            children: [
-              _buildHeader(theme),
-              const SizedBox(height: 16),
-              ...federations.map(
-                (federation) => _buildFederationCard(federation, theme),
-              ),
-              const SizedBox(height: 24),
-              _buildObserverLink(theme),
-            ],
-          );
-        },
+            final federations = snapshot.data!;
+            return ListView(
+              padding: const EdgeInsets.all(16),
+              children: [
+                _buildHeader(theme),
+                const SizedBox(height: 16),
+                ...federations.map(
+                  (federation) => _buildFederationCard(federation, theme),
+                ),
+                const SizedBox(height: 24),
+                _buildObserverLink(theme),
+              ],
+            );
+          },
+        ),
       ),
     );
   }

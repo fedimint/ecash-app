@@ -56,7 +56,7 @@ class GatewaysList extends StatelessWidget {
                   children: [
                     Text(
                       g.endpoint,
-                      style: theme.textTheme.titleMedium,
+                      style: theme.textTheme.titleSmall,
                     ),
                     const SizedBox(height: 4),
                     Text(

@@ -264,7 +264,6 @@ class _DashboardState extends State<Dashboard> {
         padding: const EdgeInsets.all(24),
         child: Column(
           children: [
-            const SizedBox(height: 32),
             DashboardHeader(name: name, network: widget.fed.network),
             if (_lnAddressConfig != null) ...[
               const SizedBox(height: 8),
