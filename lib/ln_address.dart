@@ -89,6 +89,7 @@ class _LightningAddressScreenState extends State<LightningAddressScreen> {
         _usernameController.text = firstUsername;
         _loading = false;
       });
+      _onFederationSet(_selectedFederation);
     } catch (e) {
       AppLogger.instance.error("Unable to get domains: $e");
       ToastService().show(
@@ -182,6 +183,26 @@ class _LightningAddressScreenState extends State<LightningAddressScreen> {
     }
   }
 
+  Future<void> _onFederationSet(FederationSelector? fed) async {
+    if (fed == null) return;
+    try {
+      final meta = await getFederationMeta(federationId: fed.federationId);
+      setState(() {
+        if (meta.recurringdApi != null) {
+          _recurringdApi = meta.recurringdApi!;
+          _recurringdApiController.text = _recurringdApi;
+        }
+
+        if (meta.lnaddressApi != null) {
+          _lnAddressApi = meta.lnaddressApi!;
+          _lnApiController.text = _lnAddressApi;
+        }
+      });
+    } catch (e) {
+      AppLogger.instance.warn("Could not get federation meta: $e");
+    }
+  }
+
   Widget _buildSelectionForm() {
     final feds = widget.federations.where((f) => !f.$2).map((f) => f.$1);
 
@@ -205,6 +226,7 @@ class _LightningAddressScreenState extends State<LightningAddressScreen> {
               setState(() {
                 _selectedFederation = value;
               });
+              _onFederationSet(_selectedFederation);
               _onUsernameChanged();
             },
           ),
@@ -438,13 +460,19 @@ class _LightningAddressScreenState extends State<LightningAddressScreen> {
                 ? await HttpClient().getUrl(uri).then((req) => req.close())
                 : await HttpClient().getUrl(uri).then((req) => req.close());
         return res.statusCode == 200;
-      } catch (_) {
+      } catch (e) {
+        AppLogger.instance.error("Error getting online status $e URL: $url");
         return false;
       }
     }
 
-    final lnOnline = await check(_lnAddressApi);
-    final recOnline = await check("$_recurringdApi/lnv1/federations");
+    String trimSlash(String url) =>
+        url.endsWith('/') ? url.substring(0, url.length - 1) : url;
+
+    final lnOnline = await check(trimSlash(_lnAddressApi));
+    final recOnline = await check(
+      "${trimSlash(_recurringdApi)}/lnv1/federations",
+    );
     setState(() {
       _lnAddressApiOnline = lnOnline;
       _recurringdApiOnline = recOnline;

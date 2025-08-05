@@ -130,6 +130,8 @@ pub struct FederationMeta {
     pub guardians: Vec<Guardian>,
     pub selector: FederationSelector,
     pub last_updated: u64,
+    pub recurringd_api: Option<String>,
+    pub lnaddress_api: Option<String>,
 }
 
 #[derive(Debug, Serialize, Clone, Eq, PartialEq, Encodable, Decodable)]
@@ -966,6 +968,26 @@ impl Multimint {
                         None
                     };
 
+                    let recurringd_api = if let Some(recurringd_api) = meta.get("recurringd_api") {
+                        let url_str = recurringd_api
+                            .as_str()
+                            .ok_or(anyhow!("icon url is not a string"))?;
+                        // Verify that it is a url
+                        Some(SafeUrl::parse(url_str)?.to_string())
+                    } else {
+                        None
+                    };
+
+                    let lnaddress_api = if let Some(lnaddress_api) = meta.get("lnaddress_api") {
+                        let url_str = lnaddress_api
+                            .as_str()
+                            .ok_or(anyhow!("icon url is not a string"))?;
+                        // Verify that it is a url
+                        Some(SafeUrl::parse(url_str)?.to_string())
+                    } else {
+                        None
+                    };
+
                     FederationMeta {
                         picture,
                         welcome,
@@ -975,6 +997,8 @@ impl Multimint {
                             .duration_since(UNIX_EPOCH)
                             .expect("Cannot be before epoch")
                             .as_millis() as u64,
+                        recurringd_api,
+                        lnaddress_api,
                     }
                 }
                 None => FederationMeta {
@@ -986,6 +1010,8 @@ impl Multimint {
                         .duration_since(UNIX_EPOCH)
                         .expect("Cannot be before epoch")
                         .as_millis() as u64,
+                    recurringd_api: None,
+                    lnaddress_api: None,
                 },
             }
         } else {
@@ -998,6 +1024,8 @@ impl Multimint {
                     .duration_since(UNIX_EPOCH)
                     .expect("Cannot be before epoch")
                     .as_millis() as u64,
+                recurringd_api: None,
+                lnaddress_api: None,
             }
         };
 
