@@ -1,5 +1,4 @@
 import 'package:ecashapp/lib.dart';
-import 'package:ecashapp/toast.dart';
 import 'package:ecashapp/utils.dart';
 import 'package:flutter/material.dart';
 
@@ -17,7 +16,8 @@ class SeedPhraseInput extends StatefulWidget {
   State<SeedPhraseInput> createState() => _SeedPhraseInputState();
 }
 
-class _SeedPhraseInputState extends State<SeedPhraseInput> {
+class _SeedPhraseInputState extends State<SeedPhraseInput>
+    with SingleTickerProviderStateMixin {
   late final List<TextEditingController> controllers;
   late final List<FocusNode> focusNodes;
 
@@ -26,6 +26,10 @@ class _SeedPhraseInputState extends State<SeedPhraseInput> {
   final TextEditingController _controller = TextEditingController();
   bool _isInputValid = false;
   String _inputText = '';
+
+  late AnimationController _successAnimationController;
+  late Animation<double> _successScaleAnimation;
+  bool _showSuccessAnimation = false;
 
   @override
   void initState() {
@@ -39,6 +43,15 @@ class _SeedPhraseInputState extends State<SeedPhraseInput> {
     });
 
     focusNodes = List.generate(12, (_) => FocusNode());
+
+    _successAnimationController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 300),
+    );
+    _successScaleAnimation = CurvedAnimation(
+      parent: _successAnimationController,
+      curve: Curves.easeOutBack,
+    );
   }
 
   @override
@@ -49,6 +62,7 @@ class _SeedPhraseInputState extends State<SeedPhraseInput> {
     for (final f in focusNodes) {
       f.dispose();
     }
+    _successAnimationController.dispose();
     super.dispose();
   }
 
@@ -92,20 +106,23 @@ class _SeedPhraseInputState extends State<SeedPhraseInput> {
     final relay = _controller.text.trim();
     try {
       await addRecoveryRelay(relay: relay);
-      ToastService().show(
-        message: "Added $relay for recovery",
-        duration: const Duration(seconds: 5),
-        onTap: () {},
-        icon: Icon(Icons.info),
-      );
+      AppLogger.instance.info("Successfully added relay");
+
+      // Trigger animation
+      setState(() {
+        _showSuccessAnimation = true;
+        _controller.text = "";
+      });
+      _successAnimationController.forward(from: 0);
+
+      await Future.delayed(const Duration(seconds: 2));
+      if (mounted) {
+        setState(() {
+          _showSuccessAnimation = false;
+        });
+      }
     } catch (e) {
       AppLogger.instance.error("Could not add recovery relay: $e");
-      ToastService().show(
-        message: "Sorry! That relay could not be added",
-        duration: const Duration(seconds: 5),
-        onTap: () {},
-        icon: Icon(Icons.error),
-      );
     }
   }
 
@@ -156,13 +173,35 @@ class _SeedPhraseInputState extends State<SeedPhraseInput> {
                 ),
               ),
               const SizedBox(width: 12),
-              ElevatedButton(
-                onPressed: _isInputValid ? _onAddRelay : null,
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: theme.colorScheme.primary,
-                  foregroundColor: Colors.black,
+              SizedBox(
+                height: 48, // match button height
+                width: 120, // match button width
+                child: AnimatedSwitcher(
+                  duration: const Duration(milliseconds: 300),
+                  transitionBuilder:
+                      (child, animation) =>
+                          FadeTransition(opacity: animation, child: child),
+                  child:
+                      _showSuccessAnimation
+                          ? ScaleTransition(
+                            scale: _successScaleAnimation,
+                            child: const Icon(
+                              Icons.check_circle,
+                              color: Colors.greenAccent,
+                              size: 32,
+                            ),
+                          )
+                          : ElevatedButton(
+                            key: const ValueKey('addRelayButton'),
+                            onPressed: _isInputValid ? _onAddRelay : null,
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor:
+                                  Theme.of(context).colorScheme.primary,
+                              foregroundColor: Colors.black,
+                            ),
+                            child: const Text('Add Relay'),
+                          ),
                 ),
-                child: const Text('Add Relay'),
               ),
             ],
           ),
