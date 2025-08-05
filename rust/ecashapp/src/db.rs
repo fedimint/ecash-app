@@ -162,6 +162,7 @@ pub enum DisplaySetting {
     Bip177,
     Sats,
     Nothing,
+    Symbol,
 }
 
 #[derive(Debug, Encodable, Decodable)]
