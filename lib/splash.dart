@@ -22,8 +22,8 @@ class _SplashState extends State<Splash> {
   }
 
   Future<void> _checkWalletStatus() async {
-    final exists = await walletExists(path: widget.dir.path);
-
+    final walletDir = Directory('${widget.dir.path}/client.db');
+    final exists = await walletDir.exists();
     AppLogger.instance.info("Wallet exists: $exists");
 
     if (!mounted) return;

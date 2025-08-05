@@ -36,7 +36,7 @@ use std::{str::FromStr, sync::Arc};
 use anyhow::{anyhow, bail, Context};
 use fedimint_api_client::api::net::Connector;
 use fedimint_bip39::Language;
-use fedimint_client::{Client, OperationId};
+use fedimint_client::OperationId;
 use fedimint_core::{
     config::FederationId, db::Database, encoding::Encodable, invite_code::InviteCode,
     util::SafeUrl, Amount,
@@ -173,22 +173,6 @@ pub async fn create_multimint_from_words(path: String, words: Vec<String>) {
         })
         .await;
     create_nostr_client(db).await;
-}
-
-#[frb]
-pub async fn wallet_exists(path: String) -> bool {
-    let db_path = PathBuf::from_str(&path)
-        .expect("Invalid application directory for wallet")
-        .join("client.db");
-    let db: Database = RocksDb::open(db_path)
-        .await
-        .expect("Could not open database")
-        .into();
-    if let Ok(_) = Client::load_decodable_client_secret::<Vec<u8>>(&db).await {
-        true
-    } else {
-        false
-    }
 }
 
 #[frb]
