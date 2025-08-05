@@ -50,15 +50,20 @@ class GatewaysList extends StatelessWidget {
               ),
               child: ListTile(
                 contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-                title: Text(
-                  g.endpoint,
-                  style: theme.textTheme.titleLarge,
-                ),
                 leading: Icon(Icons.device_hub, color: Theme.of(context).colorScheme.primary),
-                trailing: Text(
-                  "${formatBalance(g.baseRoutingFee, true)} + ${g.ppmRoutingFee} ppm",
-                  style: theme.textTheme.bodyMedium?.copyWith(color: Colors.white60),
-                  textAlign: TextAlign.right,
+                title: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      g.endpoint,
+                      style: theme.textTheme.titleMedium,
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      "${formatBalance(g.baseRoutingFee, true)} + ${g.ppmRoutingFee} ppm",
+                      style: theme.textTheme.bodyMedium?.copyWith(color: Colors.white60),
+                    ),
+                  ],
                 ),
                 onTap: () {
                   showAppModalBottomSheet(

@@ -15,6 +15,7 @@ class _RelaysState extends State<Relays> {
   final TextEditingController _controller = TextEditingController();
   bool _isInputValid = false;
   String _inputText = '';
+  bool _isAdding = false;
 
   @override
   void initState() {
@@ -39,6 +40,10 @@ class _RelaysState extends State<Relays> {
     final relay = _controller.text.trim();
     if (!isValidRelayUri(relay)) return;
 
+    setState(() {
+      _isAdding = true;
+    });
+
     try {
       await insertRelay(relayUri: relay);
       _controller.clear();
@@ -52,6 +57,10 @@ class _RelaysState extends State<Relays> {
         onTap: () {},
         icon: Icon(Icons.error),
       );
+    } finally {
+      setState(() {
+        _isAdding = false;
+      });
     }
   }
 
@@ -128,86 +137,104 @@ class _RelaysState extends State<Relays> {
 
     return Scaffold(
       appBar: AppBar(title: const Text('Nostr Relays')),
-      body: Column(
-        children: [
-          const SizedBox(height: 16),
-          _buildHeader(theme),
-          const SizedBox(height: 16),
-          Expanded(
-            child: FutureBuilder<List<(String, bool)>>(
-              future: _relaysFuture,
-              builder: (context, snapshot) {
-                if (snapshot.connectionState == ConnectionState.waiting) {
-                  return Center(
-                    child: CircularProgressIndicator(
-                      color: theme.colorScheme.primary,
+      body: SafeArea(
+        child: Column(
+          children: [
+            const SizedBox(height: 16),
+            _buildHeader(theme),
+            const SizedBox(height: 16),
+            Padding(
+              padding: const EdgeInsets.all(16),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: TextField(
+                      controller: _controller,
+                      onChanged: _onInputChanged,
+                      style: const TextStyle(color: Colors.white),
+                      decoration: InputDecoration(
+                        hintText: 'wss://example.com',
+                        hintStyle: const TextStyle(color: Colors.white38),
+                        filled: true,
+                        fillColor: const Color(0xFF111111),
+                        border: _inputBorder(borderColor),
+                        enabledBorder: _inputBorder(borderColor),
+                        focusedBorder: _inputBorder(borderColor),
+                      ),
                     ),
-                  );
-                } else if (snapshot.hasError) {
-                  return Center(
-                    child: Text(
-                      'Error: ${snapshot.error}',
-                      style: const TextStyle(color: Colors.redAccent),
+                  ),
+                  const SizedBox(width: 12),
+                  ElevatedButton(
+                    onPressed: (_isInputValid && !_isAdding) ? _addRelay : null,
+                    style: ElevatedButton.styleFrom(
+                      minimumSize: const Size(
+                        120,
+                        48,
+                      ), // consistent button size
+                      backgroundColor: theme.colorScheme.primary,
+                      foregroundColor: Colors.black,
                     ),
-                  );
-                } else {
-                  final relays = snapshot.data!;
-                  if (relays.isEmpty) {
-                    return const Center(
-                      child: Text(
-                        'No relays found.',
-                        style: TextStyle(color: Colors.white70),
+                    child:
+                        _isAdding
+                            ? SizedBox(
+                              width: 24,
+                              height: 24,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2.5,
+                                valueColor: AlwaysStoppedAnimation<Color>(
+                                  theme.colorScheme.primary,
+                                ),
+                              ),
+                            )
+                            : const Text('Add Relay'),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 16),
+            Expanded(
+              child: FutureBuilder<List<(String, bool)>>(
+                future: _relaysFuture,
+                builder: (context, snapshot) {
+                  if (snapshot.connectionState == ConnectionState.waiting) {
+                    return Center(
+                      child: CircularProgressIndicator(
+                        color: theme.colorScheme.primary,
                       ),
                     );
+                  } else if (snapshot.hasError) {
+                    return Center(
+                      child: Text(
+                        'Error: ${snapshot.error}',
+                        style: const TextStyle(color: Colors.redAccent),
+                      ),
+                    );
+                  } else {
+                    final relays = snapshot.data!;
+                    if (relays.isEmpty) {
+                      return const Center(
+                        child: Text(
+                          'No relays found.',
+                          style: TextStyle(color: Colors.white70),
+                        ),
+                      );
+                    }
+                    return ListView.separated(
+                      padding: const EdgeInsets.symmetric(horizontal: 16),
+                      itemCount: relays.length,
+                      separatorBuilder:
+                          (_, __) => const Divider(color: Colors.white10),
+                      itemBuilder: (context, index) {
+                        final (relay, isConnected) = relays[index];
+                        return _buildRelayTile(relay, isConnected);
+                      },
+                    );
                   }
-                  return ListView.separated(
-                    padding: const EdgeInsets.symmetric(horizontal: 16),
-                    itemCount: relays.length,
-                    separatorBuilder:
-                        (_, __) => const Divider(color: Colors.white10),
-                    itemBuilder: (context, index) {
-                      final (relay, isConnected) = relays[index];
-                      return _buildRelayTile(relay, isConnected);
-                    },
-                  );
-                }
-              },
+                },
+              ),
             ),
-          ),
-          const Divider(color: Colors.white10),
-          Padding(
-            padding: const EdgeInsets.all(16),
-            child: Row(
-              children: [
-                Expanded(
-                  child: TextField(
-                    controller: _controller,
-                    onChanged: _onInputChanged,
-                    style: const TextStyle(color: Colors.white),
-                    decoration: InputDecoration(
-                      hintText: 'wss://example.com',
-                      hintStyle: const TextStyle(color: Colors.white38),
-                      filled: true,
-                      fillColor: const Color(0xFF111111),
-                      border: _inputBorder(borderColor),
-                      enabledBorder: _inputBorder(borderColor),
-                      focusedBorder: _inputBorder(borderColor),
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 12),
-                ElevatedButton(
-                  onPressed: _isInputValid ? _addRelay : null,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: theme.colorScheme.primary,
-                    foregroundColor: Colors.black,
-                  ),
-                  child: const Text('Add Relay'),
-                ),
-              ],
-            ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
