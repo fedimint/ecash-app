@@ -1,3 +1,5 @@
+import 'package:ecashapp/lib.dart';
+import 'package:ecashapp/toast.dart';
 import 'package:ecashapp/utils.dart';
 import 'package:flutter/material.dart';
 
@@ -86,6 +88,27 @@ class _SeedPhraseInputState extends State<SeedPhraseInput> {
     return OutlineInputBorder(borderSide: BorderSide(color: color));
   }
 
+  Future<void> _onAddRelay() async {
+    final relay = _controller.text.trim();
+    try {
+      await addRecoveryRelay(relay: relay);
+      ToastService().show(
+        message: "Added $relay for recovery",
+        duration: const Duration(seconds: 5),
+        onTap: () {},
+        icon: Icon(Icons.info),
+      );
+    } catch (e) {
+      AppLogger.instance.error("Could not add recovery relay: $e");
+      ToastService().show(
+        message: "Sorry! That relay could not be added",
+        duration: const Duration(seconds: 5),
+        onTap: () {},
+        icon: Icon(Icons.error),
+      );
+    }
+  }
+
   Widget _buildAdvancedSection() {
     final theme = Theme.of(context);
     Color borderColor;
@@ -134,12 +157,7 @@ class _SeedPhraseInputState extends State<SeedPhraseInput> {
               ),
               const SizedBox(width: 12),
               ElevatedButton(
-                onPressed:
-                    _isInputValid
-                        ? () {
-                          print("Add relay");
-                        }
-                        : null,
+                onPressed: _isInputValid ? _onAddRelay : null,
                 style: ElevatedButton.styleFrom(
                   backgroundColor: theme.colorScheme.primary,
                   foregroundColor: Colors.black,

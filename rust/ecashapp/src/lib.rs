@@ -27,7 +27,7 @@ use multimint::{
 };
 use nostr::{NWCConnectionInfo, NostrClient, PublicFederation};
 use serde::Serialize;
-use tokio::sync::{OnceCell, RwLock};
+use tokio::sync::{Mutex, OnceCell, RwLock};
 
 use std::collections::BTreeMap;
 use std::path::PathBuf;
@@ -58,6 +58,7 @@ static MULTIMINT: OnceCell<Multimint> = OnceCell::const_new();
 static DATABASE: OnceCell<Database> = OnceCell::const_new();
 static NOSTR: OnceCell<Arc<RwLock<NostrClient>>> = OnceCell::const_new();
 static EVENT_BUS: OnceCell<EventBus<MultimintEvent>> = OnceCell::const_new();
+static RECOVERY_RELAYS: OnceCell<Mutex<Vec<String>>> = OnceCell::const_new();
 
 fn get_multimint() -> Multimint {
     MULTIMINT.get().expect("Multimint not initialized").clone()
@@ -82,11 +83,18 @@ fn get_nostr_client() -> Arc<RwLock<NostrClient>> {
     NOSTR.get().expect("NostrClient not initialized").clone()
 }
 
+async fn get_recovery_relays() -> &'static Mutex<Vec<String>> {
+    RECOVERY_RELAYS
+        .get_or_init(|| async { Mutex::new(Vec::new()) })
+        .await
+}
+
 async fn create_nostr_client(db: Database) {
+    let recovery_relays = get_recovery_relays().await.lock().await.clone();
     NOSTR
         .get_or_init(|| async {
             Arc::new(RwLock::new(
-                NostrClient::new(db)
+                NostrClient::new(db, recovery_relays)
                     .await
                     .expect("Could not create nostr client"),
             ))
@@ -117,6 +125,12 @@ async fn error_to_flutter<T: Into<String>>(message: T) {
     get_event_bus()
         .publish(MultimintEvent::Log(LogLevel::Error, message.into()))
         .await;
+}
+
+#[frb]
+pub async fn add_recovery_relay(relay: String) {
+    let mut relays = get_recovery_relays().await.lock().await;
+    relays.push(relay);
 }
 
 #[frb]

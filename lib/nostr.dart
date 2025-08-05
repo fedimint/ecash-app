@@ -29,8 +29,13 @@ abstract class NostrClient implements RustOpaqueInterface {
   Future<void> insertRelay({required String relayUri});
 
   // HINT: Make it `#[frb(sync)]` to let it become the default constructor of Dart class.
-  static Future<NostrClient> newInstance({required Database db}) =>
-      RustLib.instance.api.crateNostrNostrClientNew(db: db);
+  static Future<NostrClient> newInstance({
+    required Database db,
+    required List<String> recoverRelays,
+  }) => RustLib.instance.api.crateNostrNostrClientNew(
+    db: db,
+    recoverRelays: recoverRelays,
+  );
 
   Future<void> removeRelay({required String relayUri});
 
