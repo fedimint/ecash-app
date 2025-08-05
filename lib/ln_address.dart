@@ -395,27 +395,47 @@ class _LightningAddressScreenState extends State<LightningAddressScreen> {
     }) {
       return Padding(
         padding: const EdgeInsets.symmetric(vertical: 8),
-        child: Row(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Expanded(
-              child: TextFormField(
-                controller: controller,
-                decoration: InputDecoration(labelText: label),
+            Row(
+              children: [
+                Expanded(
+                  child: TextFormField(
+                    controller: controller,
+                    decoration: InputDecoration(
+                      labelText: label,
+                      suffixIcon: Padding(
+                        padding: const EdgeInsetsDirectional.only(end: 12),
+                        child: () {
+                          if (isOnline == null) {
+                            return const SizedBox(
+                              width: 20,
+                              height: 20,
+                              child: CircularProgressIndicator(strokeWidth: 2),
+                            );
+                          } else if (isOnline) {
+                            return const Icon(
+                              Icons.check_circle,
+                              color: Colors.green,
+                            );
+                          } else {
+                            return const Icon(Icons.cancel, color: Colors.red);
+                          }
+                        }(),
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 8),
+            Center(
+              child: ElevatedButton(
+                onPressed: onSet,
+                child: Text('Set $label'),
               ),
             ),
-            const SizedBox(width: 8),
-            ElevatedButton(onPressed: onSet, child: Text('Set $label')),
-            const SizedBox(width: 8),
-            if (isOnline == null)
-              const SizedBox(
-                height: 20,
-                width: 20,
-                child: CircularProgressIndicator(strokeWidth: 2),
-              )
-            else if (isOnline)
-              const Icon(Icons.check_circle, color: Colors.green)
-            else
-              const Icon(Icons.cancel, color: Colors.red),
           ],
         ),
       );

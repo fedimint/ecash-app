@@ -326,14 +326,12 @@ impl NostrClient {
                     };
 
                     let nostr_sdk::RelayPoolNotification::Event { event, .. } = notification else {
-                        info_to_flutter("Notification was not an event, continuing...").await;
                         continue;
                     };
 
                     if event.kind == nostr_sdk::Kind::WalletConnectRequest {
                         let sender_pubkey = event.pubkey;
                         let Ok(decrypted) = nostr_sdk::nips::nip04::decrypt(&secret_key, &sender_pubkey, &event.content) else {
-                            info_to_flutter("Could not decrypt WalletConnectRequest").await;
                             continue;
                         };
 

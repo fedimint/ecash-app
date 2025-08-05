@@ -238,14 +238,16 @@ class _NostrWalletConnectState extends State<NostrWalletConnect> {
     if (widget.federations.isEmpty) {
       return Scaffold(
         appBar: AppBar(title: const Text('Nostr Wallet Connect')),
-        body: Center(
-          child: Padding(
-            padding: const EdgeInsets.all(24),
-            child: Text(
-              'You haven’t joined any federations yet.\nPlease join one to continue.',
-              textAlign: TextAlign.center,
-              style: theme.textTheme.bodyLarge?.copyWith(
-                color: theme.colorScheme.onSurface.withOpacity(0.8),
+        body: SafeArea(
+          child: Center(
+            child: Padding(
+              padding: const EdgeInsets.all(24),
+              child: Text(
+                'You haven’t joined any federations yet.\nPlease join one to continue.',
+                textAlign: TextAlign.center,
+                style: theme.textTheme.bodyLarge?.copyWith(
+                  color: theme.colorScheme.onSurface.withOpacity(0.8),
+                ),
               ),
             ),
           ),
@@ -256,7 +258,7 @@ class _NostrWalletConnectState extends State<NostrWalletConnect> {
     if (_loading) {
       return Scaffold(
         appBar: AppBar(title: const Text('Nostr Wallet Connect')),
-        body: const Center(child: CircularProgressIndicator()),
+        body: SafeArea(child: const Center(child: CircularProgressIndicator())),
       );
     }
 
@@ -267,60 +269,64 @@ class _NostrWalletConnectState extends State<NostrWalletConnect> {
 
     return Scaffold(
       appBar: AppBar(title: const Text('Nostr Wallet Connect')),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(24),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.center,
-          children: [
-            _buildSelectionForm(),
-            if (_nwc != null) ...[
-              const SizedBox(height: 32),
-              Container(
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: theme.colorScheme.surface,
-                  borderRadius: BorderRadius.circular(16),
-                  boxShadow: [
-                    BoxShadow(
-                      color: theme.colorScheme.primary.withOpacity(0.3),
-                      blurRadius: 12,
-                      spreadRadius: 1,
+      body: SafeArea(
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              _buildSelectionForm(),
+              if (_nwc != null) ...[
+                const SizedBox(height: 32),
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: theme.colorScheme.surface,
+                    borderRadius: BorderRadius.circular(16),
+                    boxShadow: [
+                      BoxShadow(
+                        color: theme.colorScheme.primary.withOpacity(0.3),
+                        blurRadius: 12,
+                        spreadRadius: 1,
+                      ),
+                    ],
+                    border: Border.all(
+                      color: theme.colorScheme.primary.withOpacity(0.7),
+                      width: 1.5,
                     ),
-                  ],
-                  border: Border.all(
-                    color: theme.colorScheme.primary.withOpacity(0.7),
-                    width: 1.5,
+                  ),
+                  child: AspectRatio(
+                    aspectRatio: 1,
+                    child: QrImageView(
+                      data: connectionString!,
+                      version: QrVersions.auto,
+                      backgroundColor: Colors.white,
+                      padding: EdgeInsets.zero,
+                    ),
                   ),
                 ),
-                child: SizedBox(
-                  width: 400,
-                  height: 400,
-                  child: QrImageView(
-                    data: connectionString!,
-                    version: QrVersions.auto,
-                    backgroundColor: Colors.white,
-                    padding: EdgeInsets.zero,
+                const SizedBox(height: 32),
+                Text(
+                  'Scan with your NWC-compatible wallet to connect.',
+                  style: theme.textTheme.bodyMedium?.copyWith(
+                    color: theme.colorScheme.onSurface.withOpacity(0.8),
                   ),
+                  textAlign: TextAlign.center,
                 ),
-              ),
-              const SizedBox(height: 32),
-              Text(
-                'Scan with your NWC-compatible wallet to connect.',
-                style: theme.textTheme.bodyMedium?.copyWith(
-                  color: theme.colorScheme.onSurface.withOpacity(0.8),
+                const SizedBox(height: 32),
+                _buildCopyableField(
+                  label: 'Connection String',
+                  value: connectionString,
                 ),
-                textAlign: TextAlign.center,
-              ),
-              const SizedBox(height: 32),
-              _buildCopyableField(
-                label: 'Connection String',
-                value: connectionString,
-              ),
-              _buildCopyableField(label: 'Public Key', value: _nwc!.publicKey),
-              _buildCopyableField(label: 'Relays', value: _nwc!.relay),
-              _buildCopyableField(label: 'Secret', value: _nwc!.secret),
+                _buildCopyableField(
+                  label: 'Public Key',
+                  value: _nwc!.publicKey,
+                ),
+                _buildCopyableField(label: 'Relays', value: _nwc!.relay),
+                _buildCopyableField(label: 'Secret', value: _nwc!.secret),
+              ],
             ],
-          ],
+          ),
         ),
       ),
     );
