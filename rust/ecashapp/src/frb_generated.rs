@@ -10421,6 +10421,7 @@ impl SseDecode for crate::db::DisplaySetting {
             0 => crate::db::DisplaySetting::Bip177,
             1 => crate::db::DisplaySetting::Sats,
             2 => crate::db::DisplaySetting::Nothing,
+            3 => crate::db::DisplaySetting::Symbol,
             _ => unreachable!("Invalid variant for DisplaySetting: {}", inner),
         };
     }
@@ -12351,6 +12352,7 @@ impl flutter_rust_bridge::IntoDart for crate::db::DisplaySetting {
             Self::Bip177 => 0.into_dart(),
             Self::Sats => 1.into_dart(),
             Self::Nothing => 2.into_dart(),
+            Self::Symbol => 3.into_dart(),
             _ => unreachable!(),
         }
     }
@@ -13346,6 +13348,7 @@ impl SseEncode for crate::db::DisplaySetting {
                 crate::db::DisplaySetting::Bip177 => 0,
                 crate::db::DisplaySetting::Sats => 1,
                 crate::db::DisplaySetting::Nothing => 2,
+                crate::db::DisplaySetting::Symbol => 3,
                 _ => {
                     unimplemented!("");
                 }

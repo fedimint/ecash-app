@@ -225,7 +225,7 @@ void _showDisplaySettingDialog(BuildContext context) {
               mainAxisSize: MainAxisSize.min,
               children: [
                 RadioListTile<DisplaySetting>(
-                  title: const Text('Bip177 (₿1,234)'),
+                  title: const Text('BIP177 (₿1,234)'),
                   value: DisplaySetting.bip177,
                   groupValue: selected,
                   onChanged: (value) => setState(() => selected = value!),
@@ -233,6 +233,12 @@ void _showDisplaySettingDialog(BuildContext context) {
                 RadioListTile<DisplaySetting>(
                   title: const Text('Sats are the Standard (1,234 sats)'),
                   value: DisplaySetting.sats,
+                  groupValue: selected,
+                  onChanged: (value) => setState(() => selected = value!),
+                ),
+                RadioListTile<DisplaySetting>(
+                  title: const Text('Sat Symbol (1,234丰)'),
+                  value: DisplaySetting.symbol,
                   groupValue: selected,
                   onChanged: (value) => setState(() => selected = value!),
                 ),

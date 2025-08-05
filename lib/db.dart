@@ -63,4 +63,4 @@ abstract class LightningAddressKey implements RustOpaqueInterface {
   set federationId(FederationId federationId);
 }
 
-enum DisplaySetting { bip177, sats, nothing }
+enum DisplaySetting { bip177, sats, nothing, symbol }

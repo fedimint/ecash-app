@@ -120,6 +120,7 @@ String formatBalance(BigInt? msats, bool showMsats) {
       DisplaySetting.bip177 => showMsats ? '₿0.000' : '₿0',
       DisplaySetting.sats => showMsats ? '0.000 sats' : '0 sats',
       DisplaySetting.nothing => showMsats ? '0.000' : '0',
+      DisplaySetting.symbol => showMsats ? '0.000丰' : '0丰',
     };
   }
 
@@ -131,6 +132,7 @@ String formatBalance(BigInt? msats, bool showMsats) {
       DisplaySetting.bip177 => '₿$formatted',
       DisplaySetting.sats => '$formatted sats',
       DisplaySetting.nothing => formatted,
+      DisplaySetting.symbol => '$formatted丰',
     };
   } else {
     final sats = msats.toSats;
@@ -140,6 +142,7 @@ String formatBalance(BigInt? msats, bool showMsats) {
       DisplaySetting.bip177 => '₿$formatted',
       DisplaySetting.sats => '$formatted sats',
       DisplaySetting.nothing => formatted,
+      DisplaySetting.symbol => '$formatted丰',
     };
   }
 }
