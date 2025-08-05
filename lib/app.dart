@@ -100,11 +100,13 @@ class _MyAppState extends State<MyApp> {
             icon: Icon(Icons.info),
           );
         } else {
-          _startOrResetRecoveryTimer();
-          setState(() {
-            _recoveryStatus =
-                "Trying to re-join ${event.field0} using peer ${event.field1}...";
-          });
+          if (_selectedFederation == null) {
+            _startOrResetRecoveryTimer();
+            setState(() {
+              _recoveryStatus =
+                  "Trying to re-join ${event.field0} using peer ${event.field1}...";
+            });
+          }
         }
       }
     });
@@ -213,6 +215,7 @@ class _MyAppState extends State<MyApp> {
       _isRecovering = recovering;
       _currentIndex = 0;
     });
+    _recoveryTimer?.cancel();
   }
 
   Future<void> _refreshFederations() async {
