@@ -35,9 +35,6 @@ Future<void> createMultimintFromWords({
   words: words,
 );
 
-Future<bool> walletExists({required String path}) =>
-    RustLib.instance.api.crateWalletExists(path: path);
-
 Future<List<String>> getMnemonic() => RustLib.instance.api.crateGetMnemonic();
 
 Future<FederationSelector> joinFederation({
