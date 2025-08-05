@@ -832,7 +832,6 @@ impl Multimint {
                         self_copy.cache_btc_price(now).await;
                     }
 
-                    info_to_flutter(format!("waiting for 5 seconds before next check...")).await;
                     interval.tick().await;
                 }
             });
@@ -930,7 +929,6 @@ impl Multimint {
         let peers = &config.global.api_endpoints;
         let mut guardians = Vec::new();
         for (peer_id, endpoint) in peers {
-            info_to_flutter(format!("Trying to get version for peer {peer_id}...")).await;
             let fedimintd_version = client.api().fedimintd_version(*peer_id).await.ok();
             guardians.push(Guardian {
                 name: endpoint.name.clone(),
@@ -959,21 +957,9 @@ impl Multimint {
 
         let meta = client.get_first_module::<fedimint_meta_client::MetaClientModule>();
         let federation_meta = if let Ok(meta) = meta {
-            info_to_flutter(format!("Trying to get meta consensus value...")).await;
             if let Ok(consensus) = meta.get_consensus_value(DEFAULT_META_KEY).await {
                 match consensus {
                     Some(value) => {
-                        /*
-                        let val = serde_json::to_value(value).expect("cant fail");
-                        let val = val
-                            .get("value")
-                            .ok_or(anyhow!("value not present"))?
-                            .as_str()
-                            .ok_or(anyhow!("value was not a string"))?;
-                        let str = hex::decode(val)?;
-                        let json = String::from_utf8(str)?;
-                        let meta: serde_json::Value = serde_json::from_str(&json)?;
-                        */
                         let meta = value.value.to_json().expect("Could not get meta JSON");
                         let welcome = if let Some(welcome) = meta.get("welcome_message") {
                             welcome.as_str().map(|s| s.to_string())

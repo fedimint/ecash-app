@@ -216,145 +216,141 @@ class _FederationPreviewState extends State<FederationPreview> {
 
               const SizedBox(height: 24),
 
-              if (isFederationOnline) ...[
-                if (widget.joinable) ...[
-                  SizedBox(
-                    width: double.infinity,
-                    child: ElevatedButton(
-                      onPressed: () {
-                        _onJoinPressed(false);
-                      },
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: theme.colorScheme.primary,
-                        foregroundColor: Colors.black,
-                        padding: const EdgeInsets.symmetric(vertical: 16),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        textStyle: const TextStyle(
-                          fontSize: 16,
+              if (widget.joinable) ...[
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton(
+                    onPressed: () {
+                      _onJoinPressed(false);
+                    },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: theme.colorScheme.primary,
+                      foregroundColor: Colors.black,
+                      padding: const EdgeInsets.symmetric(vertical: 16),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      textStyle: const TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    child:
+                        isJoining
+                            ? const SizedBox(
+                              height: 20,
+                              width: 20,
+                              child: CircularProgressIndicator(
+                                color: Colors.black,
+                                strokeWidth: 2,
+                              ),
+                            )
+                            : Text("Join Federation"),
+                  ),
+                ),
+              ],
+              if (widget.joinable && !isJoining) ...[
+                const SizedBox(height: 12),
+                SizedBox(
+                  width: double.infinity,
+                  child: OutlinedButton.icon(
+                    onPressed: () {
+                      _onJoinPressed(true);
+                    },
+                    icon: const Icon(Icons.history),
+                    label: const Text('Recover'),
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: theme.colorScheme.secondary,
+                      side: BorderSide(
+                        color: theme.colorScheme.secondary.withOpacity(0.5),
+                      ),
+                      padding: const EdgeInsets.symmetric(vertical: 16),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      textStyle: const TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+
+              const SizedBox(height: 24),
+              TabBar(
+                labelColor: theme.colorScheme.primary,
+                unselectedLabelColor: Colors.grey,
+                indicatorColor: theme.colorScheme.primary,
+                tabs: [Tab(text: 'Guardians'), Tab(text: 'UTXOs')],
+              ),
+              SizedBox(
+                height: 300,
+                child: TabBarView(
+                  children: [
+                    _buildGuardianList(
+                      thresh,
+                      totalGuardians,
+                      isFederationOnline,
+                    ),
+                    FederationUtxoList(
+                      invite: widget.inviteCode,
+                      fed: widget.fed,
+                      isFederationOnline: isFederationOnline,
+                    ),
+                  ],
+                ),
+              ),
+
+              // Advanced section
+              if (!widget.joinable) ...[
+                const SizedBox(height: 24),
+
+                GestureDetector(
+                  onTap: () {
+                    setState(() {
+                      _showAdvanced = !_showAdvanced;
+                    });
+                  },
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(
+                        _showAdvanced ? Icons.expand_less : Icons.expand_more,
+                        color: theme.colorScheme.secondary,
+                      ),
+                      const SizedBox(width: 8),
+                      Text(
+                        "Advanced",
+                        style: theme.textTheme.labelLarge?.copyWith(
+                          color: theme.colorScheme.secondary,
                           fontWeight: FontWeight.bold,
                         ),
-                      ),
-                      child:
-                          isJoining
-                              ? const SizedBox(
-                                height: 20,
-                                width: 20,
-                                child: CircularProgressIndicator(
-                                  color: Colors.black,
-                                  strokeWidth: 2,
-                                ),
-                              )
-                              : Text("Join Federation"),
-                    ),
-                  ),
-                ],
-                if (widget.joinable && !isJoining) ...[
-                  const SizedBox(height: 12),
-                  SizedBox(
-                    width: double.infinity,
-                    child: OutlinedButton.icon(
-                      onPressed: () {
-                        _onJoinPressed(true);
-                      },
-                      icon: const Icon(Icons.history),
-                      label: const Text('Recover'),
-                      style: OutlinedButton.styleFrom(
-                        foregroundColor: theme.colorScheme.secondary,
-                        side: BorderSide(
-                          color: theme.colorScheme.secondary.withOpacity(0.5),
-                        ),
-                        padding: const EdgeInsets.symmetric(vertical: 16),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        textStyle: const TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                    ),
-                  ),
-                ],
-
-                const SizedBox(height: 24),
-                TabBar(
-                  labelColor: theme.colorScheme.primary,
-                  unselectedLabelColor: Colors.grey,
-                  indicatorColor: theme.colorScheme.primary,
-                  tabs: [Tab(text: 'Guardians'), Tab(text: 'UTXOs')],
-                ),
-                SizedBox(
-                  height: 300,
-                  child: TabBarView(
-                    children: [
-                      _buildGuardianList(thresh, totalGuardians),
-                      FederationUtxoList(
-                        invite: widget.inviteCode,
-                        fed: widget.fed,
                       ),
                     ],
                   ),
                 ),
 
-                // Advanced section
-                if (!widget.joinable) ...[
-                  const SizedBox(height: 24),
-
-                  GestureDetector(
-                    onTap: () {
-                      setState(() {
-                        _showAdvanced = !_showAdvanced;
-                      });
-                    },
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Icon(
-                          _showAdvanced ? Icons.expand_less : Icons.expand_more,
-                          color: theme.colorScheme.secondary,
-                        ),
-                        const SizedBox(width: 8),
-                        Text(
-                          "Advanced",
-                          style: theme.textTheme.labelLarge?.copyWith(
-                            color: theme.colorScheme.secondary,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-
-                  if (_showAdvanced) ...[
-                    const SizedBox(height: 12),
-                    OutlinedButton.icon(
-                      onPressed: _onLeavePressed,
-                      icon: const Icon(Icons.logout),
-                      label: const Text("Leave Federation"),
-                      style: OutlinedButton.styleFrom(
-                        foregroundColor: Colors.red,
-                        side: const BorderSide(color: Colors.red),
-                        padding: const EdgeInsets.symmetric(vertical: 14),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        textStyle: const TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w600,
-                        ),
+                if (_showAdvanced) ...[
+                  const SizedBox(height: 12),
+                  OutlinedButton.icon(
+                    onPressed: _onLeavePressed,
+                    icon: const Icon(Icons.logout),
+                    label: const Text("Leave Federation"),
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: Colors.red,
+                      side: const BorderSide(color: Colors.red),
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      textStyle: const TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w600,
                       ),
                     ),
-                  ],
+                  ),
                 ],
-              ] else ...[
-                const SizedBox(height: 16),
-                const Text(
-                  "This federation is offline, please reach out to the guardian operators.",
-                  style: TextStyle(fontSize: 16, color: Colors.red),
-                  textAlign: TextAlign.center,
-                ),
               ],
             ],
           ),
@@ -363,7 +359,7 @@ class _FederationPreviewState extends State<FederationPreview> {
     );
   }
 
-  Widget _buildGuardianList(int thresh, int total) {
+  Widget _buildGuardianList(int thresh, int total, bool isFederationOnline) {
     final theme = Theme.of(context);
     return widget.guardians != null && widget.guardians!.isNotEmpty
         ? ListView.builder(
@@ -389,7 +385,7 @@ class _FederationPreviewState extends State<FederationPreview> {
               trailing: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  if (!widget.joinable) ...[
+                  if (!widget.joinable && isFederationOnline) ...[
                     // Copy invite code button
                     IconButton(
                       tooltip: "Copy invite code",
@@ -509,11 +505,13 @@ class _FederationPreviewState extends State<FederationPreview> {
 class FederationUtxoList extends StatefulWidget {
   final String? invite;
   final FederationSelector fed;
+  final bool isFederationOnline;
 
   const FederationUtxoList({
     super.key,
     required this.invite,
     required this.fed,
+    required this.isFederationOnline,
   });
 
   @override
@@ -530,22 +528,24 @@ class _FederationUtxoListState extends State<FederationUtxoList> {
   }
 
   Future<void> _loadWalletSummary() async {
-    try {
-      final summary = await walletSummary(
-        invite: widget.invite,
-        federationId: widget.fed.federationId,
-      );
-      setState(() {
-        utxos = summary;
-      });
-    } catch (e) {
-      AppLogger.instance.error("Could not load wallet summary: $e");
-      ToastService().show(
-        message: "Could not load Federation's UTXOs",
-        duration: const Duration(seconds: 5),
-        onTap: () {},
-        icon: Icon(Icons.error),
-      );
+    if (widget.isFederationOnline) {
+      try {
+        final summary = await walletSummary(
+          invite: widget.invite,
+          federationId: widget.fed.federationId,
+        );
+        setState(() {
+          utxos = summary;
+        });
+      } catch (e) {
+        AppLogger.instance.error("Could not load wallet summary: $e");
+        ToastService().show(
+          message: "Could not load Federation's UTXOs",
+          duration: const Duration(seconds: 5),
+          onTap: () {},
+          icon: Icon(Icons.error),
+        );
+      }
     }
   }
 
@@ -570,6 +570,12 @@ class _FederationUtxoListState extends State<FederationUtxoList> {
 
   @override
   Widget build(BuildContext context) {
+    if (!widget.isFederationOnline) {
+      return const Center(
+        child: Text("Federation is offline, cannot retrieve UTXOs."),
+      );
+    }
+
     if (utxos == null) {
       return const Center(child: CircularProgressIndicator());
     }
