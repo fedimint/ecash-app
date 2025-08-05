@@ -22,7 +22,6 @@ use fedimint_core::{
     config::FederationId,
     db::{mem_impl::MemDatabase, Database, IDatabaseTransactionOpsCoreTyped},
     encoding::{Decodable, Encodable},
-    hex,
     invite_code::InviteCode,
     task::TaskGroup,
     util::SafeUrl,
@@ -814,14 +813,7 @@ impl Multimint {
 
                         if let Some(client) = self_copy.clients.read().await.get(&federation_id) {
                             if !client.has_pending_recoveries() {
-                                if let Err(e) =
-                                    self_copy.cache_federation_meta(client.clone(), now).await
-                                {
-                                    error_to_flutter(format!(
-                                        "Could not cache federation meta {e:?}"
-                                    ))
-                                    .await;
-                                }
+                                self_copy.cache_federation_meta(client.clone(), now).await;
                             }
                         }
                     }
@@ -908,28 +900,39 @@ impl Multimint {
         }
 
         // Federation either has not been cached yet, or is a new federation
-        self.cache_federation_meta(client, std::time::SystemTime::now())
-            .await
+        Ok(self
+            .cache_federation_meta(client, std::time::SystemTime::now())
+            .await)
+    }
+
+    fn get_url(key: &str, meta: &serde_json::Value) -> Option<String> {
+        let Some(value) = meta.get(key) else {
+            return None;
+        };
+        let url_str = value.as_str()?;
+        Some(SafeUrl::parse(url_str).ok()?.to_string())
     }
 
     async fn cache_federation_meta(
         &self,
         client: ClientHandleArc,
         now: std::time::SystemTime,
-    ) -> anyhow::Result<FederationMeta> {
+    ) -> FederationMeta {
         let federation_id = client.federation_id();
 
         let config = client.config().await;
-        let wallet = client.get_first_module::<fedimint_wallet_client::WalletClientModule>()?;
+        let wallet = client
+            .get_first_module::<fedimint_wallet_client::WalletClientModule>()
+            .expect("No wallet module present");
         let network = wallet.get_network().to_string();
 
         let peers = &config.global.api_endpoints;
         let mut guardians = Vec::new();
         for (peer_id, endpoint) in peers {
-            let fedimintd_vesion = client.api().fedimintd_version(*peer_id).await.ok();
+            let fedimintd_version = client.api().fedimintd_version(*peer_id).await.ok();
             guardians.push(Guardian {
                 name: endpoint.name.clone(),
-                version: fedimintd_vesion,
+                version: fedimintd_version,
             });
         }
 
@@ -939,103 +942,66 @@ impl Multimint {
             network: Some(network),
         };
 
+        let err_metadata = FederationMeta {
+            picture: None,
+            welcome: None,
+            guardians: guardians.clone(),
+            selector: selector.clone(),
+            last_updated: now
+                .duration_since(UNIX_EPOCH)
+                .expect("Cannot be before epoch")
+                .as_millis() as u64,
+            recurringd_api: None,
+            lnaddress_api: None,
+        };
+
         let meta = client.get_first_module::<fedimint_meta_client::MetaClientModule>();
         let federation_meta = if let Ok(meta) = meta {
-            let consensus = meta.get_consensus_value(DEFAULT_META_KEY).await?;
-            match consensus {
-                Some(value) => {
-                    let val = serde_json::to_value(value).expect("cant fail");
-                    let val = val
-                        .get("value")
-                        .ok_or(anyhow!("value not present"))?
-                        .as_str()
-                        .ok_or(anyhow!("value was not a string"))?;
-                    let str = hex::decode(val)?;
-                    let json = String::from_utf8(str)?;
-                    let meta: serde_json::Value = serde_json::from_str(&json)?;
-                    let welcome = if let Some(welcome) = meta.get("welcome_message") {
-                        welcome.as_str().map(|s| s.to_string())
-                    } else {
-                        None
-                    };
-                    let picture = if let Some(picture) = meta.get("fedi:federation_icon_url") {
-                        let url_str = picture
-                            .as_str()
-                            .ok_or(anyhow!("icon url is not a string"))?;
-                        // Verify that it is a url
-                        Some(SafeUrl::parse(url_str)?.to_string())
-                    } else {
-                        None
-                    };
+            if let Ok(consensus) = meta.get_consensus_value(DEFAULT_META_KEY).await {
+                match consensus {
+                    Some(value) => {
+                        let meta = value.value.to_json().expect("Could not get meta JSON");
+                        let welcome = if let Some(welcome) = meta.get("welcome_message") {
+                            welcome.as_str().map(|s| s.to_string())
+                        } else {
+                            None
+                        };
+                        let picture = Self::get_url("fedi:federation_icon_url", &meta);
+                        let recurringd_api = Self::get_url("recurringd_api", &meta);
+                        let lnaddress_api = Self::get_url("lnaddress_api", &meta);
 
-                    let recurringd_api = if let Some(recurringd_api) = meta.get("recurringd_api") {
-                        let url_str = recurringd_api
-                            .as_str()
-                            .ok_or(anyhow!("icon url is not a string"))?;
-                        // Verify that it is a url
-                        Some(SafeUrl::parse(url_str)?.to_string())
-                    } else {
-                        None
-                    };
-
-                    let lnaddress_api = if let Some(lnaddress_api) = meta.get("lnaddress_api") {
-                        let url_str = lnaddress_api
-                            .as_str()
-                            .ok_or(anyhow!("icon url is not a string"))?;
-                        // Verify that it is a url
-                        Some(SafeUrl::parse(url_str)?.to_string())
-                    } else {
-                        None
-                    };
-
-                    FederationMeta {
-                        picture,
-                        welcome,
-                        guardians,
-                        selector,
-                        last_updated: now
-                            .duration_since(UNIX_EPOCH)
-                            .expect("Cannot be before epoch")
-                            .as_millis() as u64,
-                        recurringd_api,
-                        lnaddress_api,
+                        FederationMeta {
+                            picture,
+                            welcome,
+                            guardians,
+                            selector,
+                            last_updated: now
+                                .duration_since(UNIX_EPOCH)
+                                .expect("Cannot be before epoch")
+                                .as_millis() as u64,
+                            recurringd_api,
+                            lnaddress_api,
+                        }
                     }
+                    None => err_metadata,
                 }
-                None => FederationMeta {
-                    picture: None,
-                    welcome: None,
-                    guardians,
-                    selector,
-                    last_updated: now
-                        .duration_since(UNIX_EPOCH)
-                        .expect("Cannot be before epoch")
-                        .as_millis() as u64,
-                    recurringd_api: None,
-                    lnaddress_api: None,
-                },
+            } else {
+                err_metadata
             }
         } else {
-            FederationMeta {
-                picture: None,
-                welcome: None,
-                guardians,
-                selector,
-                last_updated: now
-                    .duration_since(UNIX_EPOCH)
-                    .expect("Cannot be before epoch")
-                    .as_millis() as u64,
-                recurringd_api: None,
-                lnaddress_api: None,
-            }
+            err_metadata
         };
 
         let mut dbtx = self.db.begin_transaction().await;
         dbtx.insert_entry(&FederationMetaKey { federation_id }, &federation_meta)
             .await;
         dbtx.commit_tx().await;
-        info_to_flutter(format!("Updated meta for {federation_id}")).await;
+        info_to_flutter(format!(
+            "Updated meta for {federation_id} {federation_meta:?}"
+        ))
+        .await;
 
-        Ok(federation_meta)
+        federation_meta
     }
 
     pub fn get_mnemonic(&self) -> Vec<String> {
