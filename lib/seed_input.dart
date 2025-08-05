@@ -106,7 +106,7 @@ class _SeedPhraseInputState extends State<SeedPhraseInput>
     final relay = _controller.text.trim();
     try {
       await addRecoveryRelay(relay: relay);
-      AppLogger.instance.info("Successfully added relay");
+      AppLogger.instance.info("Successfully added relay: $relay");
 
       // Trigger animation
       setState(() {
@@ -142,7 +142,7 @@ class _SeedPhraseInputState extends State<SeedPhraseInput>
         const SizedBox(width: 12),
         Expanded(
           child: Text(
-            "Did you backup your joined federations to a specific Nostr relay? Add it here",
+            "Want to use a custom Nostr relay for recovery? Add it here",
             style: theme.textTheme.bodyMedium,
           ),
         ),
@@ -340,7 +340,7 @@ class _SeedPhraseInputState extends State<SeedPhraseInput>
                 width: double.infinity,
                 child: ElevatedButton.icon(
                   icon: const Icon(Icons.check_circle_outline),
-                  label: const Text('Confirm'),
+                  label: const Text('Recover'),
                   style: ElevatedButton.styleFrom(
                     padding: const EdgeInsets.symmetric(vertical: 16),
                     backgroundColor:
