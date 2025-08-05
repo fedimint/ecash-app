@@ -92,7 +92,7 @@ pub(crate) struct NostrClient {
 }
 
 impl NostrClient {
-    pub async fn new(db: Database) -> anyhow::Result<NostrClient> {
+    pub async fn new(db: Database, recover_relays: Vec<String>) -> anyhow::Result<NostrClient> {
         let start = Instant::now();
         // We need to derive a Nostr key from the Fedimint secret.
         // Currently we are using 1/0 as the derivation path, as it does not clash with anything used internally in
@@ -121,7 +121,7 @@ impl NostrClient {
             .task_group
             .spawn_cancellable("update nostr feds", async move {
                 info_to_flutter("Initializing Nostr relays...").await;
-                background_nostr.add_relays_from_db().await;
+                background_nostr.add_relays_from_db(recover_relays).await;
 
                 info_to_flutter("Updating federations from nostr in the background...").await;
                 background_nostr.update_federations_from_nostr().await;
@@ -143,10 +143,12 @@ impl NostrClient {
         Ok(nostr_client)
     }
 
-    async fn add_relays_from_db(&self) {
-        let relays = Self::get_or_insert_default_relays(self.db.clone()).await;
+    async fn add_relays_from_db(&self, mut recover_relays: Vec<String>) {
+        info_to_flutter(format!("Recovery relays: {:?}", recover_relays)).await;
+        let mut relays = Self::get_or_insert_default_relays(self.db.clone()).await;
+        recover_relays.append(&mut relays);
 
-        for relay in relays {
+        for relay in recover_relays {
             match self.nostr_client.add_relay(relay.as_str()).await {
                 Ok(added) => {
                     if added {
@@ -528,7 +530,6 @@ impl NostrClient {
     }
 
     pub async fn get_backup_invite_codes(&self) -> Vec<String> {
-        self.add_relays_from_db().await;
         let pubkey = self.keys.public_key;
         info_to_flutter(format!("Getting backup invite codes for {}", pubkey)).await;
         self.nostr_client.connect().await;

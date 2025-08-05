@@ -195,6 +195,13 @@ class _MyAppState extends State<MyApp> {
     setState(() {
       recoverFederations = false;
     });
+
+    ToastService().show(
+      message: "Re-joined all federations from Nostr",
+      duration: const Duration(seconds: 5),
+      onTap: () {},
+      icon: Icon(Icons.info),
+    );
   }
 
   @override

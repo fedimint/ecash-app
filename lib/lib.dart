@@ -12,11 +12,14 @@ import 'package:flutter_rust_bridge/flutter_rust_bridge_for_generated.dart';
 import 'package:freezed_annotation/freezed_annotation.dart' hide protected;
 part 'lib.freezed.dart';
 
-// These functions are ignored because they are not marked as `pub`: `create_event_bus`, `create_nostr_client`, `error_to_flutter`, `get_database`, `get_multimint`, `get_nostr_client`, `handle_parsed_payment_instructions`, `info_to_flutter`, `parse_ecash`
+// These functions are ignored because they are not marked as `pub`: `create_event_bus`, `create_nostr_client`, `error_to_flutter`, `get_database`, `get_multimint`, `get_nostr_client`, `get_recovery_relays`, `handle_parsed_payment_instructions`, `info_to_flutter`, `parse_ecash`
 // These function are ignored because they are on traits that is not defined in current crate (put an empty `#[frb]` on it to unignore): `assert_receiver_is_total_eq`, `clone`, `eq`, `fmt`
 
 Future<EventBusMultimintEvent> getEventBus() =>
     RustLib.instance.api.crateGetEventBus();
+
+Future<void> addRecoveryRelay({required String relay}) =>
+    RustLib.instance.api.crateAddRecoveryRelay(relay: relay);
 
 Future<void> createNewMultimint({required String path}) =>
     RustLib.instance.api.crateCreateNewMultimint(path: path);
