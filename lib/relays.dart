@@ -28,26 +28,16 @@ class _RelaysState extends State<Relays> {
     });
   }
 
-  bool _isValidRelayUri(String input) {
-    if (input.isEmpty) return false;
-    try {
-      final uri = Uri.parse(input);
-      return uri.scheme == 'wss' && uri.hasAuthority;
-    } catch (_) {
-      return false;
-    }
-  }
-
   void _onInputChanged(String value) {
     setState(() {
       _inputText = value.trim();
-      _isInputValid = _isValidRelayUri(_inputText);
+      _isInputValid = isValidRelayUri(_inputText);
     });
   }
 
   Future<void> _addRelay() async {
     final relay = _controller.text.trim();
-    if (!_isValidRelayUri(relay)) return;
+    if (!isValidRelayUri(relay)) return;
 
     try {
       await insertRelay(relayUri: relay);
@@ -132,7 +122,8 @@ class _RelaysState extends State<Relays> {
     if (_inputText.isEmpty) {
       borderColor = Colors.transparent;
     } else {
-      borderColor = _isInputValid ? Colors.greenAccent : Colors.redAccent;
+      borderColor =
+          _isInputValid ? theme.colorScheme.primary : Colors.redAccent;
     }
 
     return Scaffold(
@@ -147,8 +138,10 @@ class _RelaysState extends State<Relays> {
               future: _relaysFuture,
               builder: (context, snapshot) {
                 if (snapshot.connectionState == ConnectionState.waiting) {
-                  return const Center(
-                    child: CircularProgressIndicator(color: Colors.greenAccent),
+                  return Center(
+                    child: CircularProgressIndicator(
+                      color: theme.colorScheme.primary,
+                    ),
                   );
                 } else if (snapshot.hasError) {
                   return Center(
@@ -206,7 +199,7 @@ class _RelaysState extends State<Relays> {
                 ElevatedButton(
                   onPressed: _isInputValid ? _addRelay : null,
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.greenAccent,
+                    backgroundColor: theme.colorScheme.primary,
                     foregroundColor: Colors.black,
                   ),
                   child: const Text('Add Relay'),

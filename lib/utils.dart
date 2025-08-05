@@ -207,3 +207,13 @@ Future<void> showExplorerConfirmation(BuildContext context, Uri url) async {
     await launchUrl(url, mode: LaunchMode.externalApplication);
   }
 }
+
+bool isValidRelayUri(String input) {
+  if (input.isEmpty) return false;
+  try {
+    final uri = Uri.parse(input);
+    return uri.scheme == 'wss' && uri.hasAuthority;
+  } catch (_) {
+    return false;
+  }
+}
