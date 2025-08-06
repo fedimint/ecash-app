@@ -64,28 +64,31 @@ jobs:
           RUST_DIR="$ROOT/rust/ecashapp"
           JNI_LIBS_DIR="$ROOT/android/app/src/main/jniLibs/arm64-v8a"
           mkdir -p "$JNI_LIBS_DIR"
-          
+
           # Set up cross-compiler environment variables for Linux
+
           export CC_aarch64_linux_android="$ANDROID_NDK_HOME/toolchains/llvm/prebuilt/linux-x86_64/bin/aarch64-linux-android21-clang"
           export CXX_aarch64_linux_android="$ANDROID_NDK_HOME/toolchains/llvm/prebuilt/linux-x86_64/bin/aarch64-linux-android21-clang++"
           export AR_aarch64_linux_android="$ANDROID_NDK_HOME/toolchains/llvm/prebuilt/linux-x86_64/bin/llvm-ar"
           export CARGO_TARGET_AARCH64_LINUX_ANDROID_LINKER="$ANDROID_NDK_HOME/toolchains/llvm/prebuilt/linux-x86_64/bin/aarch64-linux-android21-clang"
-          
+
           # Set up sysroot for proper header files
           export CFLAGS_aarch64_linux_android="--sysroot=$ANDROID_NDK_HOME/toolchains/llvm/prebuilt/linux-x86_64/sysroot"
           export CXXFLAGS_aarch64_linux_android="--sysroot=$ANDROID_NDK_HOME/toolchains/llvm/prebuilt/linux-x86_64/sysroot"
-          
+
           # Set bindgen to use the Android sysroot
           export BINDGEN_EXTRA_CLANG_ARGS_aarch64_linux_android="--sysroot=$ANDROID_NDK_HOME/toolchains/llvm/prebuilt/linux-x86_64/sysroot -I$ANDROID_NDK_HOME/toolchains/llvm/prebuilt/linux-x86_64/sysroot/usr/include -I$ANDROID_NDK_HOME/toolchains/llvm/prebuilt/linux-x86_64/sysroot/usr/include/aarch64-linux-android"
-          
+
           # Build the Rust library for Android ARM64
+
           cd "$RUST_DIR"
           cargo ndk -t arm64-v8a -o "$JNI_LIBS_DIR" build --release --target aarch64-linux-android
-          
+
           # Move any .so files from nested subdirectories up to JNI_LIBS_DIR
+
           find "$JNI_LIBS_DIR" -type f -name '*.so' -exec mv {} "$JNI_LIBS_DIR" \;
           find "$JNI_LIBS_DIR" -type d -empty -delete
-          
+
           # Copy the C++ shared library
           cp "$ANDROID_NDK_HOME/toolchains/llvm/prebuilt/linux-x86_64/sysroot/usr/lib/aarch64-linux-android/libc++_shared.so" "$JNI_LIBS_DIR/" 2>/dev/null || true
 
@@ -93,10 +96,10 @@ jobs:
         run: |
           # Create keystore directory
           mkdir -p android
-          
+
           # Decode keystore from GitHub secret (base64 encoded)
           echo "${{ secrets.ANDROID_KEYSTORE }}" | base64 -d > android/release-keystore.jks
-          
+
           # Create key.properties file from secrets
           cat > android/key.properties << EOF
           storePassword=${{ secrets.KEYSTORE_PASSWORD }}
@@ -105,11 +108,20 @@ jobs:
           storeFile=release-keystore.jks
           EOF
 
+      - name: Update versionCode and versionName
+        run: |
+          VERSION_CODE=$((10000 + $GITHUB_RUN_NUMBER))
+          VERSION_NAME="0.1.${{ steps.slug.outputs.sha8 }}"
+          echo "Using versionCode=$VERSION_CODE and versionName=$VERSION_NAME"
+          echo "VERSION_CODE=$VERSION_CODE" >> $GITHUB_ENV
+          echo "VERSION_NAME=$VERSION_NAME" >> $GITHUB_ENV
+          sed -i "s/version: .*/version: $VERSION_NAME+$VERSION_CODE/" pubspec.yaml
+
       - name: Build Flutter APK
         run: flutter build apk --release
 
       - name: Rename APK
-        run: mv build/app/outputs/flutter-apk/app-release.apk build/app/outputs/flutter-apk/fedimint-app-${{ steps.slug.outputs.sha8 }}.apk
+        run: mv build/app/outputs/flutter-apk/app-release.apk build/app/outputs/flutter-apk/e-cash-app-${VERSION_NAME}-v${VERSION_CODE}.apk
 
       - name: Upload to Release
         if: github.event_name == 'push' && github.ref == 'refs/heads/master'
@@ -117,10 +129,10 @@ jobs:
         with:
           tag: latest
           name: "Latest Android Release"
-          artifacts: "build/app/outputs/flutter-apk/fedimint-app-${{ steps.slug.outputs.sha8 }}.apk"
+          artifacts: "build/app/outputs/flutter-apk/e-cash-app-${VERSION_NAME}-v${VERSION_CODE}.apk"
           allowUpdates: true
           replacesArtifacts: true
           draft: false
           prerelease: true
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} 
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
