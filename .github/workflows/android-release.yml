@@ -109,19 +109,24 @@ jobs:
           EOF
 
       - name: Update versionCode and versionName
+        id: version
         run: |
           VERSION_CODE=$((10000 + $GITHUB_RUN_NUMBER))
           VERSION_NAME="0.1.0"
           echo "Using versionCode=$VERSION_CODE and versionName=$VERSION_NAME"
           echo "VERSION_CODE=$VERSION_CODE" >> $GITHUB_ENV
           echo "VERSION_NAME=$VERSION_NAME" >> $GITHUB_ENV
+          echo "version_code=$VERSION_CODE" >> $GITHUB_OUTPUT
+          echo "version_name=$VERSION_NAME" >> $GITHUB_OUTPUT
           sed -i "s/version: .*/version: $VERSION_NAME+$VERSION_CODE/" pubspec.yaml
 
       - name: Build Flutter APK
         run: flutter build apk --release
 
       - name: Rename APK
-        run: mv build/app/outputs/flutter-apk/app-release.apk build/app/outputs/flutter-apk/e-cash-app-${VERSION_NAME}+${VERSION_CODE}-${{ steps.slug.outputs.sha8 }}.apk
+        run: |
+          mv build/app/outputs/flutter-apk/app-release.apk \
+          build/app/outputs/flutter-apk/e-cash-app-${{ steps.version.outputs.version_name }}+${{ steps.version.outputs.version_code }}-${{ steps.slug.outputs.sha8 }}.apk
 
       - name: Upload to Release
         if: github.event_name == 'push' && github.ref == 'refs/heads/master'
@@ -129,7 +134,7 @@ jobs:
         with:
           tag: latest
           name: "Latest Android Release"
-          artifacts: "build/app/outputs/flutter-apk/e-cash-app-${VERSION_NAME}+${VERSION_CODE}-${{ steps.slug.outputs.sha8 }}.apk"
+          artifacts: build/app/outputs/flutter-apk/e-cash-app-${{ steps.version.outputs.version_name }}+${{ steps.version.outputs.version_code }}-${{ steps.slug.outputs.sha8 }}.apk
           allowUpdates: true
           replacesArtifacts: true
           draft: false
