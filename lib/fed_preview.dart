@@ -263,6 +263,103 @@ class _FederationPreviewState extends State<FederationPreview> {
     final isFederationOnline =
         totalGuardians > 0 && onlineGuardians.length >= thresh;
 
+    Widget federationInfo = Column(
+      crossAxisAlignment: CrossAxisAlignment.center,
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        ClipRRect(
+          borderRadius: BorderRadius.circular(16),
+          child: SizedBox(
+            width: 155,
+            height: 152,
+            child:
+                widget.imageUrl != null
+                    ? Image.network(
+                      widget.imageUrl!,
+                      fit: BoxFit.cover,
+                      errorBuilder: (context, error, stackTrace) {
+                        return Image.asset(
+                          'assets/images/fedimint-icon-color.png',
+                          fit: BoxFit.cover,
+                        );
+                      },
+                    )
+                    : Image.asset(
+                      'assets/images/fedimint-icon-color.png',
+                      fit: BoxFit.cover,
+                    ),
+          ),
+        ),
+        const SizedBox(height: 16),
+        Text(
+          widget.fed.federationName,
+          style: theme.textTheme.headlineSmall?.copyWith(
+            fontWeight: FontWeight.bold,
+          ),
+          textAlign: TextAlign.center,
+        ),
+      ],
+    );
+
+    Widget buttons = Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        ElevatedButton(
+          onPressed: () {
+            _onJoinPressed(false);
+          },
+          style: ElevatedButton.styleFrom(
+            backgroundColor: theme.colorScheme.primary,
+            foregroundColor: Colors.black,
+            padding: const EdgeInsets.symmetric(vertical: 16),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
+            textStyle: const TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          child:
+              isJoining
+                  ? const SizedBox(
+                    height: 20,
+                    width: 20,
+                    child: CircularProgressIndicator(
+                      color: Colors.black,
+                      strokeWidth: 2,
+                    ),
+                  )
+                  : const Text("Join Federation"),
+        ),
+        if (!isJoining) ...[
+          const SizedBox(height: 12),
+          OutlinedButton.icon(
+            onPressed: () {
+              _onJoinPressed(true);
+            },
+            icon: const Icon(Icons.history),
+            label: const Text('Recover'),
+            style: OutlinedButton.styleFrom(
+              foregroundColor: theme.colorScheme.secondary,
+              side: BorderSide(
+                color: theme.colorScheme.secondary.withOpacity(0.5),
+              ),
+              padding: const EdgeInsets.symmetric(vertical: 16),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+              textStyle: const TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ),
+        ],
+      ],
+    );
+
     return DefaultTabController(
       length: 2,
       child: Padding(
@@ -294,42 +391,28 @@ class _FederationPreviewState extends State<FederationPreview> {
                 ),
               ],
 
-              // Federation image
-              Center(
-                child: ClipRRect(
-                  borderRadius: BorderRadius.circular(16),
-                  child: SizedBox(
-                    width: 155,
-                    height: 152,
-                    child:
-                        widget.imageUrl != null
-                            ? Image.network(
-                              widget.imageUrl!,
-                              fit: BoxFit.cover,
-                              errorBuilder: (context, error, stackTrace) {
-                                return Image.asset(
-                                  'assets/images/fedimint-icon-color.png',
-                                  fit: BoxFit.cover,
-                                );
-                              },
-                            )
-                            : Image.asset(
-                              'assets/images/fedimint-icon-color.png',
-                              fit: BoxFit.cover,
-                            ),
-                  ),
-                ),
-              ),
+              if (widget.joinable) ...[
+                Row(
+                  children: [
+                    // Left half: image + name, centered vertically
+                    Expanded(
+                      flex: 1,
+                      child: Align(
+                        alignment: Alignment.center,
+                        child: federationInfo,
+                      ),
+                    ),
 
-              const SizedBox(height: 16),
+                    const SizedBox(width: 16),
 
-              Text(
-                widget.fed.federationName,
-                style: theme.textTheme.headlineSmall?.copyWith(
-                  fontWeight: FontWeight.bold,
+                    // Right half: buttons
+                    Expanded(flex: 1, child: buttons),
+                  ],
                 ),
-                textAlign: TextAlign.center,
-              ),
+              ] else ...[
+                // Original layout if not joinable
+                Center(child: federationInfo),
+              ],
 
               if (widget.welcomeMessage != null) ...[
                 const SizedBox(height: 12),
@@ -351,74 +434,13 @@ class _FederationPreviewState extends State<FederationPreview> {
 
               const SizedBox(height: 24),
 
-              if (widget.joinable) ...[
-                SizedBox(
-                  width: double.infinity,
-                  child: ElevatedButton(
-                    onPressed: () {
-                      _onJoinPressed(false);
-                    },
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: theme.colorScheme.primary,
-                      foregroundColor: Colors.black,
-                      padding: const EdgeInsets.symmetric(vertical: 16),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      textStyle: const TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    child:
-                        isJoining
-                            ? const SizedBox(
-                              height: 20,
-                              width: 20,
-                              child: CircularProgressIndicator(
-                                color: Colors.black,
-                                strokeWidth: 2,
-                              ),
-                            )
-                            : Text("Join Federation"),
-                  ),
-                ),
-              ],
-              if (widget.joinable && !isJoining) ...[
-                const SizedBox(height: 12),
-                SizedBox(
-                  width: double.infinity,
-                  child: OutlinedButton.icon(
-                    onPressed: () {
-                      _onJoinPressed(true);
-                    },
-                    icon: const Icon(Icons.history),
-                    label: const Text('Recover'),
-                    style: OutlinedButton.styleFrom(
-                      foregroundColor: theme.colorScheme.secondary,
-                      side: BorderSide(
-                        color: theme.colorScheme.secondary.withOpacity(0.5),
-                      ),
-                      padding: const EdgeInsets.symmetric(vertical: 16),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      textStyle: const TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                  ),
-                ),
-              ],
-
-              const SizedBox(height: 24),
               TabBar(
                 labelColor: theme.colorScheme.primary,
                 unselectedLabelColor: Colors.grey,
                 indicatorColor: theme.colorScheme.primary,
-                tabs: [Tab(text: 'Guardians'), Tab(text: 'UTXOs')],
+                tabs: const [Tab(text: 'Guardians'), Tab(text: 'UTXOs')],
               ),
+
               SizedBox(
                 height: 300,
                 child: TabBarView(
@@ -437,7 +459,6 @@ class _FederationPreviewState extends State<FederationPreview> {
                 ),
               ),
 
-              // Advanced section
               if (!widget.joinable) ...[
                 const SizedBox(height: 24),
 
