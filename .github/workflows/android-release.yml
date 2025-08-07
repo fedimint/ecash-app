@@ -121,7 +121,7 @@ jobs:
         run: flutter build apk --release
 
       - name: Rename APK
-        run: mv build/app/outputs/flutter-apk/app-release.apk build/app/outputs/flutter-apk/e-cash-app-${VERSION_NAME}-${{ steps.slug.outputs.sha8 }}-v${VERSION_CODE}.apk
+        run: mv build/app/outputs/flutter-apk/app-release.apk build/app/outputs/flutter-apk/e-cash-app-${VERSION_NAME}+${VERSION_CODE}-${{ steps.slug.outputs.sha8 }}.apk
 
       - name: Upload to Release
         if: github.event_name == 'push' && github.ref == 'refs/heads/master'
@@ -129,7 +129,7 @@ jobs:
         with:
           tag: latest
           name: "Latest Android Release"
-          artifacts: "build/app/outputs/flutter-apk/e-cash-app-${VERSION_NAME}-v${VERSION_CODE}.apk"
+          artifacts: "build/app/outputs/flutter-apk/e-cash-app-${VERSION_NAME}+${VERSION_CODE}-${{ steps.slug.outputs.sha8 }}.apk"
           allowUpdates: true
           replacesArtifacts: true
           draft: false
