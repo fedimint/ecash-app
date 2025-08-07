@@ -163,13 +163,13 @@ class _Discover extends State<Discover> {
                         fit: BoxFit.cover,
                         errorBuilder:
                             (_, __, ___) => Image.asset(
-                              'assets/images/fedimint.png',
+                              'assets/images/fedimint-icon-color.png',
                               width: 50,
                               height: 50,
                             ),
                       )
                       : Image.asset(
-                        'assets/images/fedimint.png',
+                        'assets/images/fedimint-icon-color.png',
                         width: 50,
                         height: 50,
                       ),
