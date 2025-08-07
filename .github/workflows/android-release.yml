@@ -111,7 +111,7 @@ jobs:
       - name: Update versionCode and versionName
         run: |
           VERSION_CODE=$((10000 + $GITHUB_RUN_NUMBER))
-          VERSION_NAME="0.1.${{ steps.slug.outputs.sha8 }}"
+          VERSION_NAME="0.1.0"
           echo "Using versionCode=$VERSION_CODE and versionName=$VERSION_NAME"
           echo "VERSION_CODE=$VERSION_CODE" >> $GITHUB_ENV
           echo "VERSION_NAME=$VERSION_NAME" >> $GITHUB_ENV
@@ -121,7 +121,7 @@ jobs:
         run: flutter build apk --release
 
       - name: Rename APK
-        run: mv build/app/outputs/flutter-apk/app-release.apk build/app/outputs/flutter-apk/e-cash-app-${VERSION_NAME}-v${VERSION_CODE}.apk
+        run: mv build/app/outputs/flutter-apk/app-release.apk build/app/outputs/flutter-apk/e-cash-app-${VERSION_NAME}-${{ steps.slug.outputs.sha8 }}-v${VERSION_CODE}.apk
 
       - name: Upload to Release
         if: github.event_name == 'push' && github.ref == 'refs/heads/master'
