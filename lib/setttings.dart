@@ -47,15 +47,21 @@ class _SettingsScreenState extends State<SettingsScreen> {
         padding: const EdgeInsets.all(16),
         children: [
           _SettingsOption(
-            icon: Icons.group_add,
+            icon: Icon(
+              Icons.group_add,
+              color: Theme.of(context).colorScheme.primary,
+            ),
             title: "Getting Started",
             subtitle: "Learn how to get started with Fedimint",
             onTap: widget.onGettingStarted,
           ),
           _SettingsOption(
-            icon: Icons.explore,
+            icon: Icon(
+              Icons.explore,
+              color: Theme.of(context).colorScheme.primary,
+            ),
             title: "Discover",
-            subtitle: "Find new Federations using Nostr",
+            subtitle: "Find new Federations",
             onTap: () {
               Navigator.push(
                 context,
@@ -66,7 +72,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
             },
           ),
           _SettingsOption(
-            icon: Icons.flash_on,
+            icon: Icon(
+              Icons.flash_on,
+              color: Theme.of(context).colorScheme.primary,
+            ),
             title: 'Lightning Address',
             subtitle: 'Claim and configure your Lightning Address',
             onTap: () async {
@@ -84,7 +93,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
             },
           ),
           _SettingsOption(
-            icon: Icons.link,
+            icon: Icon(
+              Icons.link,
+              color: Theme.of(context).colorScheme.primary,
+            ),
             title: 'Nostr Wallet Connect',
             subtitle: 'Connect to NWC-compatible apps',
             onTap: () async {
@@ -98,9 +110,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
             },
           ),
           _SettingsOption(
-            icon: Icons.link,
+            icon: Image.asset(
+              'assets/images/nostr.png',
+              color: Theme.of(context).colorScheme.primary,
+            ),
             title: 'Nostr Relays',
-            subtitle: 'Configure your Nostr Relays',
+            subtitle: 'Add or remove Nostr relays',
             onTap: () async {
               Navigator.push(
                 context,
@@ -109,7 +124,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
             },
           ),
           _SettingsOption(
-            icon: Icons.display_settings,
+            icon: Icon(
+              Icons.display_settings,
+              color: Theme.of(context).colorScheme.primary,
+            ),
             title: 'Display',
             subtitle: 'Configure display settings',
             onTap: () {
@@ -117,7 +135,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
             },
           ),
           _SettingsOption(
-            icon: Icons.vpn_key,
+            icon: Icon(
+              Icons.vpn_key,
+              color: Theme.of(context).colorScheme.primary,
+            ),
             title: 'Mnemonic',
             subtitle: 'View your seed phrase',
             warning: hasAck == false,
@@ -137,7 +158,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
 }
 
 class _SettingsOption extends StatelessWidget {
-  final IconData icon;
+  final Widget icon;
   final String title;
   final String subtitle;
   final VoidCallback onTap;
@@ -164,7 +185,7 @@ class _SettingsOption extends StatelessWidget {
           padding: const EdgeInsets.all(16),
           child: Row(
             children: [
-              Icon(icon, size: 28, color: theme.colorScheme.primary),
+              SizedBox(width: 36, height: 36, child: icon),
               const SizedBox(width: 16),
               Expanded(
                 child: Column(

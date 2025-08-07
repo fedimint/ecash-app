@@ -173,8 +173,8 @@ class _FederationPreviewState extends State<FederationPreview> {
                 child: ClipRRect(
                   borderRadius: BorderRadius.circular(16),
                   child: SizedBox(
-                    width: 150,
-                    height: 150,
+                    width: 155,
+                    height: 152,
                     child:
                         widget.imageUrl != null
                             ? Image.network(
@@ -182,13 +182,13 @@ class _FederationPreviewState extends State<FederationPreview> {
                               fit: BoxFit.cover,
                               errorBuilder: (context, error, stackTrace) {
                                 return Image.asset(
-                                  'assets/images/fedimint.png',
+                                  'assets/images/fedimint-icon-color.png',
                                   fit: BoxFit.cover,
                                 );
                               },
                             )
                             : Image.asset(
-                              'assets/images/fedimint.png',
+                              'assets/images/fedimint-icon-color.png',
                               fit: BoxFit.cover,
                             ),
                   ),
