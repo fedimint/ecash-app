@@ -148,8 +148,6 @@ class _FederationPreviewState extends State<FederationPreview> {
   }) {
     if (totalCount == 0) return const SizedBox.shrink();
 
-    final isHealthy = onlineCount >= threshold;
-
     final percentOnline = totalCount > 0 ? onlineCount / totalCount : 0.0;
     Color borderColor;
 
@@ -170,28 +168,86 @@ class _FederationPreviewState extends State<FederationPreview> {
           style: theme.textTheme.bodySmall?.copyWith(color: borderColor),
         ),
         const SizedBox(height: 4),
-        Container(
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(10),
-            border: Border.all(color: borderColor, width: 1.5),
-          ),
-          child: ClipRRect(
-            borderRadius: BorderRadius.circular(8),
-            child: TweenAnimationBuilder<double>(
-              tween: Tween(begin: 0.0, end: _animatedPercent),
-              duration: const Duration(milliseconds: 800),
-              builder: (context, value, _) {
-                return LinearProgressIndicator(
-                  value: value,
-                  minHeight: 10,
-                  backgroundColor: theme.colorScheme.surfaceVariant.withOpacity(
-                    0.3,
+        LayoutBuilder(
+          builder: (context, constraints) {
+            final barWidth = constraints.maxWidth;
+            final thresholdPos =
+                totalCount > 0 ? (threshold / totalCount) * barWidth : 0.0;
+
+            return Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(10),
+                    border: Border.all(color: borderColor, width: 1.5),
                   ),
-                  valueColor: AlwaysStoppedAnimation<Color>(borderColor),
-                );
-              },
-            ),
-          ),
+                  child: Stack(
+                    children: [
+                      ClipRRect(
+                        borderRadius: BorderRadius.circular(8),
+                        child: TweenAnimationBuilder<double>(
+                          tween: Tween(begin: 0.0, end: _animatedPercent),
+                          duration: const Duration(milliseconds: 800),
+                          builder: (context, value, _) {
+                            return LinearProgressIndicator(
+                              value: value,
+                              minHeight: 10,
+                              backgroundColor: theme.colorScheme.surfaceVariant
+                                  .withOpacity(0.3),
+                              valueColor: AlwaysStoppedAnimation<Color>(
+                                borderColor,
+                              ),
+                            );
+                          },
+                        ),
+                      ),
+
+                      // Threshold Marker Line
+                      Positioned(
+                        left: (thresholdPos - 5).clamp(0.0, barWidth - 4),
+                        top: 0,
+                        bottom: 0,
+                        child: Container(
+                          width: 4,
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(2),
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.black26,
+                                blurRadius: 3,
+                                spreadRadius: 1,
+                                offset: Offset(0, 0),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+
+                // Lock icon underneath, aligned with threshold marker
+                SizedBox(
+                  height: 18,
+                  child: Stack(
+                    children: [
+                      Positioned(
+                        left: (thresholdPos - 10).clamp(
+                          0.0,
+                          barWidth - 12,
+                        ), // icon width ~12
+                        top: 8,
+                        bottom: 0,
+                        child: Icon(Icons.lock, size: 24, color: borderColor),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            );
+          },
         ),
       ],
     );
