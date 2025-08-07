@@ -33,10 +33,23 @@ class FederationPreview extends StatefulWidget {
 class _FederationPreviewState extends State<FederationPreview> {
   bool isJoining = false;
   bool _showAdvanced = false;
+  double _animatedPercent = 0.0;
 
   @override
   void initState() {
     super.initState();
+
+    Future.delayed(const Duration(milliseconds: 300), () {
+      if (!mounted) return;
+
+      final onlineCount =
+          widget.guardians?.where((g) => g.version != null).length ?? 0;
+      final totalCount = widget.guardians?.length ?? 0;
+
+      setState(() {
+        _animatedPercent = totalCount > 0 ? onlineCount / totalCount : 0.0;
+      });
+    });
   }
 
   Future<void> _onLeavePressed() async {
@@ -127,6 +140,63 @@ class _FederationPreviewState extends State<FederationPreview> {
     }
   }
 
+  Widget _buildHealthStatusBar({
+    required ThemeData theme,
+    required int onlineCount,
+    required int totalCount,
+    required int threshold,
+  }) {
+    if (totalCount == 0) return const SizedBox.shrink();
+
+    final isHealthy = onlineCount >= threshold;
+
+    final percentOnline = totalCount > 0 ? onlineCount / totalCount : 0.0;
+    Color borderColor;
+
+    if (percentOnline >= 1.0) {
+      borderColor = Colors.green;
+    } else if (onlineCount >= threshold) {
+      borderColor = Colors.amber;
+    } else {
+      borderColor = Colors.red;
+    }
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Text(
+          "$onlineCount / $totalCount Guardians Online",
+          textAlign: TextAlign.center,
+          style: theme.textTheme.bodySmall?.copyWith(color: borderColor),
+        ),
+        const SizedBox(height: 4),
+        Container(
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(10),
+            border: Border.all(color: borderColor, width: 1.5),
+          ),
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(8),
+            child: TweenAnimationBuilder<double>(
+              tween: Tween(begin: 0.0, end: _animatedPercent),
+              duration: const Duration(milliseconds: 800),
+              builder: (context, value, _) {
+                return LinearProgressIndicator(
+                  value: value,
+                  minHeight: 10,
+                  backgroundColor: theme.colorScheme.surfaceVariant.withOpacity(
+                    0.3,
+                  ),
+                  valueColor: AlwaysStoppedAnimation<Color>(borderColor),
+                );
+              },
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -213,6 +283,15 @@ class _FederationPreviewState extends State<FederationPreview> {
                   textAlign: TextAlign.center,
                 ),
               ],
+
+              const SizedBox(height: 16),
+
+              _buildHealthStatusBar(
+                theme: theme,
+                onlineCount: onlineGuardians.length,
+                totalCount: totalGuardians,
+                threshold: thresh,
+              ),
 
               const SizedBox(height: 24),
 
