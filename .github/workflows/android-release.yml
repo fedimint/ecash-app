@@ -105,7 +105,7 @@ jobs:
           storePassword=${{ secrets.KEYSTORE_PASSWORD }}
           keyPassword=${{ secrets.KEY_PASSWORD }}
           keyAlias=${{ secrets.KEY_ALIAS }}
-          storeFile=release-keystore.jks
+          storeFile=../release-keystore.jks
           EOF
 
       - name: Update versionCode and versionName
