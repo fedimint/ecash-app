@@ -11,7 +11,12 @@ val keystorePropertiesFile = rootProject.file("android/key.properties")
 val keystoreProperties = Properties()
 
 if (keystorePropertiesFile.exists()) {
+    println("✅ key.properties FOUND at: ${keystorePropertiesFile.absolutePath}")
     keystoreProperties.load(keystorePropertiesFile.inputStream())
+
+    println("storeFile: ${keystoreProperties["storeFile"]}")
+} else {
+    println("❌ key.properties NOT found at: ${keystorePropertiesFile.absolutePath}")
 }
 
 android {
