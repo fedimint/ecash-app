@@ -98,14 +98,14 @@ jobs:
           mkdir -p android
 
           # Decode keystore from GitHub secret (base64 encoded)
-          echo "${{ secrets.ANDROID_KEYSTORE }}" | base64 -d > android/release-keystore.jks
+          echo "${{ secrets.ANDROID_KEYSTORE }}" | base64 -d > android/app/release-keystore.jks
 
           # Create key.properties file from secrets
           cat > android/key.properties << EOF
           storePassword=${{ secrets.KEYSTORE_PASSWORD }}
           keyPassword=${{ secrets.KEY_PASSWORD }}
           keyAlias=${{ secrets.KEY_ALIAS }}
-          storeFile=../release-keystore.jks
+          storeFile=release-keystore.jks
           EOF
 
       - name: Update versionCode and versionName
