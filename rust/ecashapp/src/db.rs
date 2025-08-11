@@ -23,6 +23,7 @@ pub(crate) enum DbKeyPrefix {
     NostrRelays = 0x06,
     LightningAddress = 0x07,
     Display = 0x08,
+    FederationBackup = 0x09,
 }
 
 #[derive(Debug, Clone, Encodable, Decodable, Eq, PartialEq, Hash, Ord, PartialOrd)]
@@ -172,4 +173,15 @@ impl_db_record!(
     key = DisplaySettingKey,
     value = DisplaySetting,
     db_prefix = DbKeyPrefix::Display,
+);
+
+#[derive(Debug, Encodable, Decodable)]
+pub(crate) struct FederationBackupKey {
+    pub(crate) federation_id: FederationId,
+}
+
+impl_db_record!(
+    key = FederationBackupKey,
+    value = SystemTime,
+    db_prefix = DbKeyPrefix::FederationBackup,
 );
