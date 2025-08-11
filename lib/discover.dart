@@ -20,25 +20,43 @@ class _Discover extends State<Discover> {
   late Future<List<PublicFederation>> _futureFeds;
   PublicFederation? _gettingMetadata;
 
+  final TextEditingController _inviteCodeController = TextEditingController();
+  bool _isInviteCodeValid = false;
+
   @override
   void initState() {
     super.initState();
     _futureFeds = listFederationsFromNostr(forceUpdate: false);
+
+    _inviteCodeController.addListener(_validateInviteCode);
   }
 
-  Future<void> _onPreviewPressed(PublicFederation federation) async {
+  @override
+  void dispose() {
+    _inviteCodeController.removeListener(_validateInviteCode);
+    _inviteCodeController.dispose();
+    super.dispose();
+  }
+
+  void _validateInviteCode() {
+    final text = _inviteCodeController.text.trim();
+    final isValid = text.isNotEmpty && text.startsWith('fed');
+    if (isValid != _isInviteCodeValid) {
+      setState(() {
+        _isInviteCodeValid = isValid;
+      });
+    }
+  }
+
+  Future<void> _onPreviewPressed(String inviteCode) async {
     try {
-      setState(() => _gettingMetadata = federation);
-      final meta = await getFederationMeta(
-        inviteCode: federation.inviteCodes.first,
-      );
-      setState(() => _gettingMetadata = null);
+      final meta = await getFederationMeta(inviteCode: inviteCode);
 
       final fed = await showAppModalBottomSheet(
         context: context,
         child: FederationPreview(
           fed: meta.selector,
-          inviteCode: federation.inviteCodes.first,
+          inviteCode: inviteCode,
           welcomeMessage: meta.welcome,
           imageUrl: meta.picture,
           joinable: true,
@@ -76,7 +94,7 @@ class _Discover extends State<Discover> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     return Scaffold(
-      appBar: AppBar(title: const Text('Discover Federations')),
+      appBar: AppBar(title: const Text('E-Cash App')),
       body: SafeArea(
         child: FutureBuilder<List<PublicFederation>>(
           future: _futureFeds,
@@ -101,6 +119,32 @@ class _Discover extends State<Discover> {
               padding: const EdgeInsets.all(16),
               children: [
                 _buildHeader(theme),
+                const SizedBox(height: 16),
+                Row(
+                  children: [
+                    Expanded(
+                      child: TextField(
+                        controller: _inviteCodeController,
+                        decoration: const InputDecoration(
+                          border: OutlineInputBorder(),
+                          labelText: 'Enter invite code',
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    ElevatedButton(
+                      onPressed:
+                          _isInviteCodeValid
+                              ? () {
+                                final inviteCode =
+                                    _inviteCodeController.text.trim();
+                                _onPreviewPressed(inviteCode);
+                              }
+                              : null,
+                      child: const Text('Preview'),
+                    ),
+                  ],
+                ),
                 const SizedBox(height: 16),
                 ...federations.map(
                   (federation) => _buildFederationCard(federation, theme),
@@ -229,7 +273,9 @@ class _Discover extends State<Discover> {
                     ),
                   ),
                   onPressed: () async {
-                    _onPreviewPressed(federation);
+                    setState(() => _gettingMetadata = federation);
+                    await _onPreviewPressed(federation.inviteCodes.first);
+                    setState(() => _gettingMetadata = null);
                   },
                   icon: const Icon(Icons.info_outline, size: 18),
                   label: const Text("Preview"),
