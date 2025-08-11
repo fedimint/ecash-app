@@ -5,8 +5,10 @@ import 'package:ecashapp/recovery_progress.dart';
 import 'package:ecashapp/utils.dart';
 import 'package:ecashapp/widgets/addresses.dart';
 import 'package:ecashapp/widgets/gateways.dart';
+import 'package:ecashapp/widgets/ln_address_dialog.dart';
 import 'package:ecashapp/widgets/note_summary.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_speed_dial/flutter_speed_dial.dart';
 
 import 'package:ecashapp/lib.dart';
@@ -74,15 +76,21 @@ class _DashboardState extends State<Dashboard> {
         }
       } else if (event is MultimintEvent_RecoveryDone) {
         final recoveredFedId = event.field0;
-        final currFederationId = await federationIdToString(federationId: widget.fed.federationId);
+        final currFederationId = await federationIdToString(
+          federationId: widget.fed.federationId,
+        );
         if (currFederationId == recoveredFedId) {
           if (!mounted) return;
           setState(() => recovering = false);
           _loadBalance();
         }
       } else if (event is MultimintEvent_Ecash) {
-        final federationIdString = await federationIdToString(federationId: event.field0.$1);
-        final selectorIdString = await federationIdToString(federationId: widget.fed.federationId);
+        final federationIdString = await federationIdToString(
+          federationId: event.field0.$1,
+        );
+        final selectorIdString = await federationIdToString(
+          federationId: widget.fed.federationId,
+        );
         if (federationIdString == selectorIdString) {
           _loadBalance();
           _selectedPaymentType = PaymentType.ecash;
@@ -134,8 +142,10 @@ class _DashboardState extends State<Dashboard> {
   }
 
   Future<void> _loadLightningAddress() async {
-    final config = await getLnAddressConfig(federationId: widget.fed.federationId);
-      if (!mounted) return;
+    final config = await getLnAddressConfig(
+      federationId: widget.fed.federationId,
+    );
+    if (!mounted) return;
     setState(() {
       _lnAddressConfig = config;
     });
@@ -197,7 +207,14 @@ class _DashboardState extends State<Dashboard> {
     } else if (_selectedPaymentType == PaymentType.ecash) {
       await Navigator.push(
         context,
-        MaterialPageRoute(builder: (_) => ScanQRPage(selectedFed: widget.fed, paymentType: _selectedPaymentType, onPay: (_, _) {})),
+        MaterialPageRoute(
+          builder:
+              (_) => ScanQRPage(
+                selectedFed: widget.fed,
+                paymentType: _selectedPaymentType,
+                onPay: (_, _) {},
+              ),
+        ),
       );
     }
     _loadBalance();
@@ -267,28 +284,49 @@ class _DashboardState extends State<Dashboard> {
             DashboardHeader(name: name, network: widget.fed.network),
             if (_lnAddressConfig != null) ...[
               const SizedBox(height: 8),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                decoration: BoxDecoration(
-                  color: Colors.black.withOpacity(0.7),
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: Theme.of(context).colorScheme.secondary.withOpacity(0.6)),
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    const Icon(Icons.flash_on, color: Colors.amber, size: 18),
-                    const SizedBox(width: 8),
-                    Text(
-                      '${_lnAddressConfig!.username}@${_lnAddressConfig!.domain}',
-                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+              if (_lnAddressConfig != null) ...[
+                const SizedBox(height: 8),
+                GestureDetector(
+                  onTap: () {
+                    showLightningAddressDialog(context, _lnAddressConfig!.username, _lnAddressConfig!.domain, _lnAddressConfig!.lnurl);
+                  },
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 8,
+                    ),
+                    decoration: BoxDecoration(
+                      color: Colors.black.withOpacity(0.7),
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(
+                        color: Theme.of(
+                          context,
+                        ).colorScheme.secondary.withOpacity(0.6),
+                      ),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Icon(
+                          Icons.flash_on,
+                          color: Colors.amber,
+                          size: 18,
+                        ),
+                        const SizedBox(width: 8),
+                        Text(
+                          '${_lnAddressConfig!.username}@${_lnAddressConfig!.domain}',
+                          style: Theme.of(
+                            context,
+                          ).textTheme.bodyMedium?.copyWith(
                             color: Theme.of(context).colorScheme.secondary,
                             fontWeight: FontWeight.w500,
                           ),
+                        ),
+                      ],
                     ),
-                  ],
+                  ),
                 ),
-              ),
+              ],
             ],
             const SizedBox(height: 48),
             DashboardBalance(
@@ -300,14 +338,14 @@ class _DashboardState extends State<Dashboard> {
               btcPrice: _btcPrice,
             ),
             const SizedBox(height: 48),
-            if (recovering)...[
+            if (recovering) ...[
               RecoveryStatus(
                 key: ValueKey(_selectedPaymentType),
                 paymentType: _selectedPaymentType,
                 fed: widget.fed,
                 initialProgress: _recoveryProgress,
-              )
-            ] else...[
+              ),
+            ] else ...[
               Expanded(
                 child: DefaultTabController(
                   length: 2,
@@ -344,12 +382,19 @@ class _DashboardState extends State<Dashboard> {
                               },
                             ),
                             if (_selectedPaymentType == PaymentType.onchain)
-                              OnchainAddressesList(key: ValueKey(_addressRefreshKey), fed: widget.fed, updateAddresses: () {
-                                _loadBalance();
-                                _loadAddresses();
-                              }),
+                              OnchainAddressesList(
+                                key: ValueKey(_addressRefreshKey),
+                                fed: widget.fed,
+                                updateAddresses: () {
+                                  _loadBalance();
+                                  _loadAddresses();
+                                },
+                              ),
                             if (_selectedPaymentType == PaymentType.ecash)
-                              NoteSummary(key: ValueKey(_noteRefreshKey), fed: widget.fed),
+                              NoteSummary(
+                                key: ValueKey(_noteRefreshKey),
+                                fed: widget.fed,
+                              ),
                             if (_selectedPaymentType == PaymentType.lightning)
                               GatewaysList(fed: widget.fed),
                           ],
@@ -359,7 +404,7 @@ class _DashboardState extends State<Dashboard> {
                   ),
                 ),
               ),
-            ]
+            ],
           ],
         ),
       ),

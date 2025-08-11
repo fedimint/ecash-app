@@ -4,6 +4,7 @@ import 'package:ecashapp/db.dart';
 import 'package:ecashapp/lib.dart';
 import 'package:ecashapp/models.dart';
 import 'package:ecashapp/multimint.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:path_provider/path_provider.dart';
@@ -219,4 +220,10 @@ bool isValidRelayUri(String input) {
   } catch (_) {
     return false;
   }
+}
+
+bool get isMobile {
+  return defaultTargetPlatform == TargetPlatform.iOS ||
+      defaultTargetPlatform == TargetPlatform.android ||
+      kIsWeb;
 }
