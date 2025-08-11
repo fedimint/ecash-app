@@ -22,6 +22,7 @@ class _Discover extends State<Discover> {
 
   final TextEditingController _inviteCodeController = TextEditingController();
   bool _isInviteCodeValid = false;
+  bool _isLoadingInvitePreview = false;
 
   @override
   void initState() {
@@ -51,6 +52,8 @@ class _Discover extends State<Discover> {
   Future<void> _onPreviewPressed(String inviteCode) async {
     try {
       final meta = await getFederationMeta(inviteCode: inviteCode);
+      setState(() => _gettingMetadata = null);
+      setState(() => _isLoadingInvitePreview = false);
 
       final fed = await showAppModalBottomSheet(
         context: context,
@@ -129,19 +132,36 @@ class _Discover extends State<Discover> {
                           border: OutlineInputBorder(),
                           labelText: 'Enter invite code',
                         ),
+                        enabled: !_isLoadingInvitePreview,
                       ),
                     ),
                     const SizedBox(width: 12),
                     ElevatedButton(
                       onPressed:
-                          _isInviteCodeValid
-                              ? () {
+                          (_isInviteCodeValid && !_isLoadingInvitePreview)
+                              ? () async {
+                                setState(() {
+                                  _isLoadingInvitePreview = true;
+                                });
                                 final inviteCode =
                                     _inviteCodeController.text.trim();
-                                _onPreviewPressed(inviteCode);
+                                await _onPreviewPressed(inviteCode);
+                                setState(() {
+                                  _isLoadingInvitePreview = false;
+                                });
                               }
                               : null,
-                      child: const Text('Preview'),
+                      child:
+                          _isLoadingInvitePreview
+                              ? SizedBox(
+                                width: 20,
+                                height: 20,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                  color: Theme.of(context).colorScheme.primary,
+                                ),
+                              )
+                              : const Text('Preview'),
                     ),
                   ],
                 ),
@@ -275,7 +295,6 @@ class _Discover extends State<Discover> {
                   onPressed: () async {
                     setState(() => _gettingMetadata = federation);
                     await _onPreviewPressed(federation.inviteCodes.first);
-                    setState(() => _gettingMetadata = null);
                   },
                   icon: const Icon(Icons.info_outline, size: 18),
                   label: const Text("Preview"),
