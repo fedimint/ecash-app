@@ -2,10 +2,10 @@ import 'dart:async';
 
 import 'package:ecashapp/db.dart';
 import 'package:ecashapp/recovery_progress.dart';
-import 'package:ecashapp/toast.dart';
 import 'package:ecashapp/utils.dart';
 import 'package:ecashapp/widgets/addresses.dart';
 import 'package:ecashapp/widgets/gateways.dart';
+import 'package:ecashapp/widgets/ln_address_dialog.dart';
 import 'package:ecashapp/widgets/note_summary.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -23,7 +23,6 @@ import 'package:ecashapp/models.dart';
 import 'package:ecashapp/widgets/dashboard_header.dart';
 import 'package:ecashapp/widgets/dashboard_balance.dart';
 import 'package:ecashapp/widgets/transactions_list.dart';
-import 'package:qr_flutter/qr_flutter.dart';
 
 class Dashboard extends StatefulWidget {
   final FederationSelector fed;
@@ -239,92 +238,6 @@ class _DashboardState extends State<Dashboard> {
     }
   }
 
-  void _showLightningAddressDialog() async {
-    final lnAddress =
-        '${_lnAddressConfig!.username}@${_lnAddressConfig!.domain}';
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        backgroundColor: Theme.of(context).colorScheme.surface,
-        title: const Center(
-          child: Text(
-            "Lightning Address",
-            textAlign: TextAlign.center,
-          ),
-        ),
-        content: SingleChildScrollView(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Container(
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: Theme.of(context).colorScheme.surface,
-                  borderRadius: BorderRadius.circular(16),
-                  boxShadow: [
-                    BoxShadow(
-                      color:
-                          Theme.of(context).colorScheme.primary.withOpacity(0.3),
-                      blurRadius: 12,
-                      spreadRadius: 1,
-                    ),
-                  ],
-                  border: Border.all(
-                    color:
-                        Theme.of(context).colorScheme.primary.withOpacity(0.7),
-                    width: 1.5,
-                  ),
-                ),
-                child: SizedBox(
-                  width: 200,
-                  height: 200,
-                  child: QrImageView(
-                    data: lnAddress,
-                    version: QrVersions.auto,
-                    backgroundColor: Colors.white,
-                    padding: EdgeInsets.zero,
-                  ),
-                ),
-              ),
-              const SizedBox(height: 12),
-              SizedBox(
-                width: double.infinity,
-                child: ElevatedButton.icon(
-                  icon: const Icon(Icons.copy, size: 18, color: Colors.black),
-                  label: const Text(
-                    "Copy Lightning Address",
-                    style: TextStyle(color: Colors.black),
-                  ),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Theme.of(context).colorScheme.primary,
-                    padding: const EdgeInsets.symmetric(vertical: 14),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    elevation: 4,
-                  ),
-                  onPressed: () {
-                    Clipboard.setData(ClipboardData(text: lnAddress));
-                    ToastService().show(message: "Copied Lightning Address!", duration: const Duration(seconds: 5), onTap: () {}, icon: Icon(Icons.check));
-                  },
-                ),
-              ),
-            ],
-          ),
-        ),
-        actions: [
-          TextButton(
-            style: TextButton.styleFrom(
-              foregroundColor: Theme.of(context).colorScheme.primary,
-            ),
-            onPressed: () => Navigator.of(context).pop(),
-            child: const Text("Close"),
-          ),
-        ],
-      ),
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
     final name = widget.fed.federationName;
@@ -374,7 +287,9 @@ class _DashboardState extends State<Dashboard> {
               if (_lnAddressConfig != null) ...[
                 const SizedBox(height: 8),
                 GestureDetector(
-                  onTap: _showLightningAddressDialog,
+                  onTap: () {
+                    showLightningAddressDialog(context, _lnAddressConfig!.username, _lnAddressConfig!.domain, _lnAddressConfig!.lnurl);
+                  },
                   child: Container(
                     padding: const EdgeInsets.symmetric(
                       horizontal: 12,

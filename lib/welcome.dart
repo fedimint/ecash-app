@@ -1,6 +1,6 @@
 import 'package:ecashapp/discover.dart';
 import 'package:ecashapp/multimint.dart';
-import 'package:flutter/foundation.dart';
+import 'package:ecashapp/utils.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/gestures.dart';
 import 'package:smooth_page_indicator/smooth_page_indicator.dart';
@@ -21,12 +21,6 @@ class _WelcomeWidgetState extends State<WelcomeWidget> {
   void dispose() {
     _controller.dispose();
     super.dispose();
-  }
-
-  bool get isMobile {
-    return defaultTargetPlatform == TargetPlatform.iOS ||
-        defaultTargetPlatform == TargetPlatform.android ||
-        kIsWeb;
   }
 
   Widget _buildPage({required Widget content}) {
