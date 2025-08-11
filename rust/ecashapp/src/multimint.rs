@@ -63,8 +63,7 @@ use tokio::{sync::RwLock, time::timeout};
 use crate::{
     anyhow,
     db::{
-        BtcPrice, BtcPriceKey, DisplaySetting, DisplaySettingKey, FederationMetaKey,
-        LightningAddressConfig, LightningAddressKey, LightningAddressKeyPrefix,
+        BtcPrice, BtcPriceKey, DisplaySetting, DisplaySettingKey, FederationBackupKey, FederationMetaKey, LightningAddressConfig, LightningAddressKey, LightningAddressKeyPrefix
     },
     error_to_flutter, info_to_flutter, FederationConfig, FederationConfigKey,
     FederationConfigKeyPrefix, SeedPhraseAckKey,
@@ -74,6 +73,7 @@ use crate::{event_bus::EventBus, get_event_bus};
 const DEFAULT_EXPIRY_TIME_SECS: u32 = 86400;
 const CACHE_UPDATE_INTERVAL_SECS: u64 = 30;
 const PRICE_CACHE_UPDATE_INTERVAL_SECS: u64 = 60 * 5;
+const FEDERATION_BACKUP_CACHE_UPDATE_INTERVAL_SECS: u64 = 60 * 60 * 24;
 
 #[derive(Clone, Eq, PartialEq, Serialize, Debug)]
 pub struct PaymentPreview {
@@ -797,7 +797,7 @@ impl Multimint {
                         .await
                         .collect::<Vec<_>>()
                         .await;
-                    for (key, _) in configs {
+                    for (key, _) in configs.iter() {
                         let federation_id = key.id;
 
                         let cached_meta =
@@ -832,9 +832,49 @@ impl Multimint {
                         self_copy.cache_btc_price(now).await;
                     }
 
+                    // Next check if we need to backup our ecash to the federation
+                    let threshold = now
+                        .checked_sub(Duration::from_secs(FEDERATION_BACKUP_CACHE_UPDATE_INTERVAL_SECS))
+                        .expect("Cannot be negative");
+                    for (key, _) in configs {
+                        let federation_id = key.id;
+                        let backup_time = dbtx.get_value(&FederationBackupKey { federation_id }).await;
+                        if let Some(backup) = backup_time {
+                            if backup < threshold {
+                                self_copy.backup(&federation_id, now).await;
+                            }
+                        } else {
+                            self_copy.backup(&federation_id, now).await;
+                        }
+                    }
+
                     interval.tick().await;
                 }
             });
+    }
+
+    async fn backup(&self, federation_id: &FederationId, now: std::time::SystemTime) {
+        if let Some(client) = self.clients.read().await.get(federation_id) {
+            if !client.has_pending_recoveries() {
+                let mut dbtx = self.db.begin_transaction().await;
+                let metadata: BTreeMap<String, String> = BTreeMap::new();
+                let backup_result = client
+                    .backup_to_federation(fedimint_client::backup::Metadata::from_json_serialized(
+                        metadata,
+                    ))
+                    .await;
+                match backup_result {
+                    Ok(()) => {
+                        dbtx.insert_entry(&FederationBackupKey { federation_id: *federation_id}, &now).await;
+                        dbtx.commit_tx().await;
+                        info_to_flutter(format!("Successfully backed up {federation_id}")).await;
+                    }
+                    Err(e) => {
+                        error_to_flutter(format!("Could not create backup for {federation_id}: {e}")).await;
+                    }
+                }
+            }
+        }
     }
 
     async fn cache_btc_price(&self, now: std::time::SystemTime) {
