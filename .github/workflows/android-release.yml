@@ -107,6 +107,17 @@ jobs:
           keyAlias=${{ secrets.KEY_ALIAS }}
           storeFile=release-keystore.jks
           EOF
+      
+      - name: Verify keystore file
+        run: |
+          echo "Checking if keystore exists..."
+          ls -l android/app/release-keystore.jks || { echo "❌ Keystore file not found"; exit 1; }
+
+          echo "Listing keystore contents..."
+          keytool -list -v \
+            -keystore android/app/release-keystore.jks \
+            -storepass "$KEYSTORE_PASSWORD" \
+            || { echo "❌ Invalid keystore or wrong password"; exit 1; }
 
       - name: Update versionCode and versionName
         id: version
