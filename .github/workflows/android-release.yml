@@ -98,9 +98,9 @@ jobs:
           mkdir -p android
 
           # Decode keystore from GitHub secret (base64 encoded)
-          echo "${{ secrets.ANDROID_KEYSTORE }}" | base64 -d > android/app/release-keystore.p12
-          #echo "${{ secrets.KEY_ALIAS }}" | base64 -d > android/app/release-keystore.p12
-          #cat android/app/release-keystore.p12
+          #echo "${{ secrets.ANDROID_KEYSTORE }}" | base64 -d > android/app/release-keystore.p12
+          echo "${{ secrets.KEY_ALIAS }}" | base64 -d > android/app/release-keystore.p12
+          cat android/app/release-keystore.p12
 
           # Create key.properties file from secrets
           cat > android/key.properties << EOF
