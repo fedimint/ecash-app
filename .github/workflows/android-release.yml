@@ -98,24 +98,26 @@ jobs:
           mkdir -p android
 
           # Decode keystore from GitHub secret (base64 encoded)
-          echo "${{ secrets.ANDROID_KEYSTORE }}" | base64 -d > android/app/release-keystore.jks
+          echo "${{ secrets.ANDROID_KEYSTORE }}" | base64 -d > android/app/release-keystore.p12
+          #echo "${{ secrets.KEY_ALIAS }}" | base64 -d > android/app/release-keystore.p12
+          #cat android/app/release-keystore.p12
 
           # Create key.properties file from secrets
           cat > android/key.properties << EOF
           storePassword=${{ secrets.KEYSTORE_PASSWORD }}
           keyPassword=${{ secrets.KEY_PASSWORD }}
           keyAlias=${{ secrets.KEY_ALIAS }}
-          storeFile=release-keystore.jks
+          storeFile=release-keystore.p12
           EOF
       
       - name: Verify keystore file
         run: |
           echo "Checking if keystore exists..."
-          ls -l android/app/release-keystore.jks || { echo "❌ Keystore file not found"; exit 1; }
+          ls -l android/app/release-keystore.p12 || { echo "❌ Keystore file not found"; exit 1; }
 
           echo "Listing keystore contents..."
           keytool -list -v \
-            -keystore android/app/release-keystore.jks \
+            -keystore android/app/release-keystore.p12 \
             -storepass "$KEYSTORE_PASSWORD" \
             || { echo "❌ Invalid keystore or wrong password"; exit 1; }
 
