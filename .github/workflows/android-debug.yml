@@ -12,6 +12,7 @@ jobs:
   build-debug:
     runs-on: ubuntu-latest
     steps:
+      - uses: actions/checkout@v4
       - uses: ./.github/actions/android-build
         with:
           mode: debug
