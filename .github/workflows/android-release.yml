@@ -17,6 +17,10 @@ jobs:
         with:
           mode: release
           with-signing: true
+          android-keystore: ${{ secrets.ANDROID_KEYSTORE }}
+          keystore-password: ${{ secrets.KEYSTORE_PASSWORD }}
+          key-password: ${{ secrets.KEY_PASSWORD }}
+          key-alias: ${{ secrets.KEY_ALIAS }}
 
       - name: Upload to Release
         uses: ncipollo/release-action@v1

@@ -8,6 +8,19 @@ inputs:
     description: "Whether to set up Android signing"
     required: false
     default: "false"
+  android-keystore:
+    description: "Base64 encoded Android keystore"
+    required: false
+  keystore-password:
+    description: "Keystore password"
+    required: false
+  key-password:
+    description: "Key password"
+    required: false
+  key-alias:
+    description: "Key alias"
+    required: false
+
 
 runs:
   using: "composite"
@@ -119,11 +132,11 @@ runs:
       shell: bash
       run: |
         mkdir -p android
-        echo "${{ secrets.ANDROID_KEYSTORE }}" | base64 -d > android/release-keystore.p12
+        echo "${{ inputs.android-keystore }}" | base64 -d > android/release-keystore.p12
         cat > android/key.properties << EOF
-        storePassword=${{ secrets.KEYSTORE_PASSWORD }}
-        keyPassword=${{ secrets.KEY_PASSWORD }}
-        keyAlias=${{ secrets.KEY_ALIAS }}
+        storePassword=${{ inputs.keystore-password }}
+        keyPassword=${{ inputs.key-password }}
+        keyAlias=${{ inputs.key-alias }}
         storeFile=release-keystore.p12
         EOF
 
