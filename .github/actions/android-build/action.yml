@@ -1,0 +1,154 @@
+name: "Android Build (Rust + Flutter)"
+description: "Sets up Rust, Flutter, NDK, builds Rust lib and Flutter APK"
+inputs:
+  mode:
+    description: "Build mode: debug or release"
+    required: true
+  with-signing:
+    description: "Whether to set up Android signing"
+    required: false
+    default: "false"
+
+runs:
+  using: "composite"
+  steps:
+    - uses: actions/checkout@v4
+
+    - name: Get short SHA
+      id: slug
+      shell: bash
+      run: echo "sha8=$(echo ${GITHUB_SHA} | cut -c1-8)" >> $GITHUB_OUTPUT
+
+    # Cache Rust dependencies
+    - name: Cache cargo registry
+      uses: actions/cache@v4
+      with:
+        path: ~/.cargo/registry
+        key: ${{ runner.os }}-cargo-registry-${{ hashFiles('**/Cargo.lock') }}
+        restore-keys: |
+          ${{ runner.os }}-cargo-registry-
+
+    - name: Cache cargo git index
+      uses: actions/cache@v4
+      with:
+        path: ~/.cargo/git
+        key: ${{ runner.os }}-cargo-git-${{ hashFiles('**/Cargo.lock') }}
+        restore-keys: |
+          ${{ runner.os }}-cargo-git-
+
+    - name: Cache cargo target
+      uses: actions/cache@v4
+      with:
+        path: target
+        key: ${{ runner.os }}-cargo-target-${{ inputs.mode }}-${{ hashFiles('**/Cargo.lock') }}
+        restore-keys: |
+          ${{ runner.os }}-cargo-target-${{ inputs.mode }}-
+
+    # Cache Flutter pub packages
+    - name: Cache Flutter pub
+      uses: actions/cache@v4
+      with:
+        path: |
+          ~/.pub-cache
+          **/.dart_tool
+        key: ${{ runner.os }}-flutter-${{ hashFiles('pubspec.lock') }}
+        restore-keys: |
+          ${{ runner.os }}-flutter-
+
+    - name: Set up Flutter
+      uses: subosito/flutter-action@v2
+      with:
+        flutter-version: '3.32.4'
+        channel: 'stable'
+
+    - name: Set up Rust
+      uses: dtolnay/rust-toolchain@stable
+      with:
+        toolchain: stable
+        targets: aarch64-linux-android,armv7-linux-androideabi,x86_64-linux-android,i686-linux-android
+
+    - name: Set up Android NDK
+      uses: nttld/setup-ndk@v1
+      id: setup-ndk
+      with:
+        ndk-version: r25c
+
+    - name: Set Android environment variables
+      shell: bash
+      run: |
+        echo "ANDROID_NDK_HOME=${{ steps.setup-ndk.outputs.ndk-path }}" >> $GITHUB_ENV
+        echo "ANDROID_NDK_ROOT=${{ steps.setup-ndk.outputs.ndk-path }}" >> $GITHUB_ENV
+
+    - name: Install dependencies
+      shell: bash
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y zlib1g-dev clang libclang-dev libc6-dev-i386
+
+    - name: Install cargo-ndk
+      shell: bash
+      run: cargo install cargo-ndk || echo "cargo-ndk already installed"
+
+    - name: Install Flutter dependencies
+      shell: bash
+      run: flutter pub get
+
+    - name: Build Rust library for Android
+      shell: bash
+      run: |
+        ROOT="$(pwd)"
+        RUST_DIR="$ROOT/rust/ecashapp"
+        JNI_LIBS_DIR="$ROOT/android/app/src/main/jniLibs/arm64-v8a"
+        mkdir -p "$JNI_LIBS_DIR"
+
+        export CC_aarch64_linux_android="$ANDROID_NDK_HOME/toolchains/llvm/prebuilt/linux-x86_64/bin/aarch64-linux-android21-clang"
+        export CXX_aarch64_linux_android="$ANDROID_NDK_HOME/toolchains/llvm/prebuilt/linux-x86_64/bin/aarch64-linux-android21-clang++"
+        export AR_aarch64_linux_android="$ANDROID_NDK_HOME/toolchains/llvm/prebuilt/linux-x86_64/bin/llvm-ar"
+        export CARGO_TARGET_AARCH64_LINUX_ANDROID_LINKER="$ANDROID_NDK_HOME/toolchains/llvm/prebuilt/linux-x86_64/bin/aarch64-linux-android21-clang"
+
+        export CFLAGS_aarch64_linux_android="--sysroot=$ANDROID_NDK_HOME/toolchains/llvm/prebuilt/linux-x86_64/sysroot"
+        export CXXFLAGS_aarch64_linux_android="--sysroot=$ANDROID_NDK_HOME/toolchains/llvm/prebuilt/linux-x86_64/sysroot"
+        export BINDGEN_EXTRA_CLANG_ARGS_aarch64_linux_android="--sysroot=$ANDROID_NDK_HOME/toolchains/llvm/prebuilt/linux-x86_64/sysroot -I$ANDROID_NDK_HOME/toolchains/llvm/prebuilt/linux-x86_64/sysroot/usr/include -I$ANDROID_NDK_HOME/toolchains/llvm/prebuilt/linux-x86_64/sysroot/usr/include/aarch64-linux-android"
+
+        cd "$RUST_DIR"
+        cargo ndk -t arm64-v8a -o "$JNI_LIBS_DIR" build --release --target aarch64-linux-android
+        find "$JNI_LIBS_DIR" -type f -name '*.so' -exec mv {} "$JNI_LIBS_DIR" \;
+        find "$JNI_LIBS_DIR" -type d -empty -delete
+        cp "$ANDROID_NDK_HOME/toolchains/llvm/prebuilt/linux-x86_64/sysroot/usr/lib/aarch64-linux-android/libc++_shared.so" "$JNI_LIBS_DIR/" 2>/dev/null || true
+
+    - name: Setup Release Keystore
+      if: inputs.with-signing == 'true'
+      shell: bash
+      run: |
+        mkdir -p android
+        echo "${{ secrets.ANDROID_KEYSTORE }}" | base64 -d > android/release-keystore.p12
+        cat > android/key.properties << EOF
+        storePassword=${{ secrets.KEYSTORE_PASSWORD }}
+        keyPassword=${{ secrets.KEY_PASSWORD }}
+        keyAlias=${{ secrets.KEY_ALIAS }}
+        storeFile=release-keystore.p12
+        EOF
+
+    - name: Update versionCode and versionName
+      if: inputs.with-signing == 'true'
+      id: version
+      shell: bash
+      run: |
+        VERSION_CODE=$((10000 + $GITHUB_RUN_NUMBER))
+        VERSION_NAME="0.1.0"
+        echo "VERSION_CODE=$VERSION_CODE" >> $GITHUB_ENV
+        echo "VERSION_NAME=$VERSION_NAME" >> $GITHUB_ENV
+        echo "version_code=$VERSION_CODE" >> $GITHUB_OUTPUT
+        echo "version_name=$VERSION_NAME" >> $GITHUB_OUTPUT
+        sed -i "s/version: .*/version: $VERSION_NAME+$VERSION_CODE/" pubspec.yaml
+
+    - name: Build Flutter APK
+      shell: bash
+      run: flutter build apk --${{ inputs.mode }}
+
+    - name: Rename APK
+      if: inputs.with-signing == 'true'
+      shell: bash
+      run: |
+        mv build/app/outputs/flutter-apk/app-release.apk \
+        build/app/outputs/flutter-apk/e-cash-app-${{ steps.version.outputs.version_name }}+${{ steps.version.outputs.version_code }}-${{ steps.slug.outputs.sha8 }}.apk
