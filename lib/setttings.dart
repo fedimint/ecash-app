@@ -1,5 +1,4 @@
 import 'package:ecashapp/db.dart';
-import 'package:ecashapp/discover.dart';
 import 'package:ecashapp/lib.dart';
 import 'package:ecashapp/ln_address.dart';
 import 'package:ecashapp/mnemonic.dart';
@@ -51,25 +50,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
               Icons.group_add,
               color: Theme.of(context).colorScheme.primary,
             ),
-            title: "Getting Started",
-            subtitle: "Learn how to get started with Fedimint",
-            onTap: widget.onGettingStarted,
-          ),
-          _SettingsOption(
-            icon: Icon(
-              Icons.explore,
-              color: Theme.of(context).colorScheme.primary,
-            ),
             title: "Discover",
-            subtitle: "Find new Federations",
-            onTap: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => Discover(onJoin: widget.onJoin),
-                ),
-              );
-            },
+            subtitle: "Find new or join existing federations",
+            onTap: widget.onGettingStarted,
           ),
           _SettingsOption(
             icon: Icon(

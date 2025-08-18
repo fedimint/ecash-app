@@ -25,6 +25,7 @@ dependencies:
   uuid: ^4.5.1
   crypto: ^3.0.6
   collection: ^1.19.1
+  shimmer: ^3.0.0
 
 dev_dependencies:
   flutter_test:

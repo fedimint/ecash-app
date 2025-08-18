@@ -306,7 +306,6 @@ class _MyAppState extends State<MyApp> {
             ),
           );
         } else {
-          //bodyContent = WelcomeWidget(onJoin: _onJoinPressed);
           bodyContent = Discover(onJoin: _onJoinPressed);
         }
       }
