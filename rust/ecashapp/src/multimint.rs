@@ -1155,9 +1155,15 @@ impl Multimint {
                         .await
                 } else {
                     info_to_flutter("Client is not initialized, downloading invite code...").await;
-                    client_builder
-                        .preview(invite_code)
-                        .await?
+                    let preview = match timeout(
+                        Duration::from_secs(60),
+                        client_builder.preview(invite_code),
+                    )
+                    .await {
+                        Ok(preview) => preview,
+                        Err(error) => return Err(anyhow!("Timed out getting federation preview: {error}")),
+                    };
+                    preview?
                         .join(fedimint_client::RootSecret::StandardDoubleDerive(
                             global_root_secret,
                         ))
