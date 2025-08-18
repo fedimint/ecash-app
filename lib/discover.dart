@@ -66,6 +66,9 @@ class _Discover extends State<Discover> {
         onTap: () {},
         icon: Icon(Icons.error),
       );
+      setState(() {
+        _gettingMetadata = null;
+      });
     }
   }
 
