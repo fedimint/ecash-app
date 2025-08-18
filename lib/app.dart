@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:ecashapp/discover.dart';
 import 'package:ecashapp/screens/dashboard.dart';
 import 'package:ecashapp/lib.dart';
 import 'package:ecashapp/multimint.dart';
@@ -9,7 +10,6 @@ import 'package:ecashapp/sidebar.dart';
 import 'package:ecashapp/theme.dart';
 import 'package:ecashapp/toast.dart';
 import 'package:ecashapp/utils.dart';
-import 'package:ecashapp/welcome.dart';
 import 'package:flutter/material.dart';
 
 final invoicePaidToastVisible = ValueNotifier<bool>(true);
@@ -306,7 +306,7 @@ class _MyAppState extends State<MyApp> {
             ),
           );
         } else {
-          bodyContent = WelcomeWidget(onJoin: _onJoinPressed);
+          bodyContent = Discover(onJoin: _onJoinPressed);
         }
       }
     }
