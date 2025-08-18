@@ -132,7 +132,7 @@ runs:
       shell: bash
       run: |
         mkdir -p android
-        echo "${{ inputs.android-keystore }}" | base64 -d > android/release-keystore.p12
+        echo "${{ inputs.android-keystore }}" | base64 -d > android/app/release-keystore.p12
         cat > android/key.properties << EOF
         storePassword=${{ inputs.keystore-password }}
         keyPassword=${{ inputs.key-password }}

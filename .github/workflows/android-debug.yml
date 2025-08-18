@@ -1,9 +1,6 @@
 name: Android Debug
 
 on:
-  push:
-    branches:
-      - '**'
   pull_request:
     branches:
       - '**'
