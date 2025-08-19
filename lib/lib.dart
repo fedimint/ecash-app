@@ -79,6 +79,14 @@ Future<(String, BigInt, bool)> selectReceiveGateway({
   amountMsats: amountMsats,
 );
 
+Future<String> getInvoiceFromLnaddressOrLnurl({
+  required BigInt amountMsats,
+  required String lnaddressOrLnurl,
+}) => RustLib.instance.api.crateGetInvoiceFromLnaddressOrLnurl(
+  amountMsats: amountMsats,
+  lnaddressOrLnurl: lnaddressOrLnurl,
+);
+
 Future<OperationId> sendLnaddress({
   required FederationId federationId,
   required BigInt amountMsats,
@@ -412,4 +420,6 @@ sealed class ParsedText with _$ParsedText {
   const factory ParsedText.bitcoinAddress(String field0, [BigInt? field1]) =
       ParsedText_BitcoinAddress;
   const factory ParsedText.ecash(BigInt field0) = ParsedText_Ecash;
+  const factory ParsedText.lightningAddressOrLnurl(String field0) =
+      ParsedText_LightningAddressOrLnurl;
 }

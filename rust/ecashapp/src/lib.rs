@@ -266,6 +266,32 @@ pub async fn select_receive_gateway(
 }
 
 #[frb]
+pub async fn get_invoice_from_lnaddress_or_lnurl(amount_msats: u64, lnaddress_or_lnurl: String) -> anyhow::Result<String> {
+    let lnurl = match lnurl::lightning_address::LightningAddress::from_str(&lnaddress_or_lnurl) {
+        Ok(lightning_address) => {
+            lightning_address.lnurl()
+        }
+        _ => {
+            lnurl::lnurl::LnUrl::from_str(&lnaddress_or_lnurl)?
+        }
+    };
+
+    let async_client = lnurl::AsyncClient::from_client(reqwest::Client::new());
+    let response = async_client.make_request(&lnurl.url).await?;
+    match response {
+        lnurl::LnUrlResponse::LnUrlPayResponse(response) => {
+            let invoice = async_client
+                .get_invoice(&response, amount_msats, None, None)
+                .await?;
+
+            let bolt11 = Bolt11Invoice::from_str(invoice.invoice())?;
+            Ok(bolt11.to_string())
+        }
+        other => bail!("Unexpected response from lnurl: {other:?}"),
+    }
+}
+
+#[frb]
 pub async fn send_lnaddress(
     federation_id: &FederationId,
     amount_msats: u64,
@@ -626,6 +652,7 @@ pub enum ParsedText {
     LightningInvoice(String),
     BitcoinAddress(String, Option<u64>),
     Ecash(u64),
+    LightningAddressOrLnurl(String),
 }
 
 #[frb]
@@ -647,7 +674,7 @@ pub async fn parse_scanned_text_for_federation(
     match instructions {
         Ok(instructions) => {
             if let Ok((parsed_text, fed)) =
-                handle_parsed_payment_instructions(&federation, &instructions).await
+                handle_parsed_payment_instructions(&federation, &instructions, text.clone()).await
             {
                 return Ok((parsed_text, fed));
             }
@@ -701,7 +728,7 @@ pub async fn parsed_scanned_text(
                 // Find the first federation that has a sufficient balance
                 for fed in federations {
                     if let Ok((parsed_text, fed)) =
-                        handle_parsed_payment_instructions(&fed, &instructions).await
+                        handle_parsed_payment_instructions(&fed, &instructions, text.clone()).await
                     {
                         return Ok((parsed_text, Some(fed)));
                     }
@@ -724,20 +751,27 @@ pub async fn parsed_scanned_text(
 async fn handle_parsed_payment_instructions(
     fed: &FederationSelector,
     instructions: &PaymentInstructions,
+    text: String,
 ) -> anyhow::Result<(ParsedText, FederationSelector)> {
     match &instructions {
         // We currently only support Bitcoin addresses for configurable amounts
         PaymentInstructions::ConfigurableAmount(configurable) => {
             for method in configurable.methods() {
-                if let PossiblyResolvedPaymentMethod::Resolved(resolved) = method {
-                    match resolved {
-                        PaymentMethod::OnChain(address) => {
-                            return Ok((
-                                ParsedText::BitcoinAddress(address.to_string(), None),
-                                fed.clone(),
-                            ));
+                match method {
+                    PossiblyResolvedPaymentMethod::Resolved(resolved) => {
+                        match resolved {
+                            PaymentMethod::OnChain(address) => {
+                                return Ok((
+                                    ParsedText::BitcoinAddress(address.to_string(), None),
+                                    fed.clone(),
+                                ));
+                            }
+                            _ => {}
                         }
-                        _ => {}
+                    }
+                    PossiblyResolvedPaymentMethod::LNURLPay { min_value, max_value, callback } => {
+                        info_to_flutter(format!("Min value: {min_value:?}, Max Value: {max_value:?}, Callback: {callback}")).await;
+                        return Ok((ParsedText::LightningAddressOrLnurl(text), fed.clone()))
                     }
                 }
             }
@@ -779,6 +813,11 @@ async fn handle_parsed_payment_instructions(
                 }
             }
         }
+    }
+
+    // Try to parse as an LNURL
+    if lnurl::lnurl::LnUrl::from_str(&text).is_ok() {
+        return Ok((ParsedText::LightningAddressOrLnurl(text), fed.clone()));
     }
 
     Err(anyhow!("Cannot find payment method"))

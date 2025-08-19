@@ -25,8 +25,7 @@ class _LightningAddressDialog extends StatefulWidget {
   const _LightningAddressDialog({
     required this.addresses,
     required this.titles,
-    Key? key,
-  }) : super(key: key);
+  });
 
   @override
   State<_LightningAddressDialog> createState() => _LightningAddressDialogState();
@@ -164,7 +163,7 @@ class _LightningAddressPage extends StatelessWidget {
   final String data;
   final String title;
 
-  const _LightningAddressPage({required this.data, required this.title, Key? key}) : super(key: key);
+  const _LightningAddressPage({required this.data, required this.title});
 
   @override
   Widget build(BuildContext context) {
