@@ -786,11 +786,10 @@ async fn handle_parsed_payment_instructions(
                         _ => {}
                     },
                     PossiblyResolvedPaymentMethod::LNURLPay {
-                        min_value,
-                        max_value,
-                        callback,
+                        min_value: _,
+                        max_value: _,
+                        callback: _,
                     } => {
-                        info_to_flutter(format!("Min value: {min_value:?}, Max Value: {max_value:?}, Callback: {callback}")).await;
                         return Ok((ParsedText::LightningAddressOrLnurl(text), fed.clone()));
                     }
                 }
