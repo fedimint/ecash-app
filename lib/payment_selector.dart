@@ -14,7 +14,7 @@ class PaymentMethodSelector extends StatefulWidget {
 }
 
 class _PaymentMethodSelectorState extends State<PaymentMethodSelector> {
-  String _selected = 'invoice';
+  String _selected = 'scan';
   final _lightningAddressController = TextEditingController();
   final _amountController = TextEditingController();
 
@@ -72,11 +72,7 @@ class _PaymentMethodSelectorState extends State<PaymentMethodSelector> {
           padding: const EdgeInsets.all(4),
           child: Row(
             children: [
-              _buildOption(
-                label: 'Invoice',
-                icon: Icons.qr_code,
-                value: 'invoice',
-              ),
+              _buildOption(label: 'Scan', icon: Icons.qr_code, value: 'scan'),
               const SizedBox(width: 4),
               _buildOption(
                 label: 'Lightning Address',
@@ -90,7 +86,7 @@ class _PaymentMethodSelectorState extends State<PaymentMethodSelector> {
         const SizedBox(height: 32),
 
         // Content without animation
-        if (_selected == 'invoice')
+        if (_selected == 'scan')
           _buildInvoiceInstructions()
         else
           _buildLightningAddressInstructions(),
@@ -100,7 +96,7 @@ class _PaymentMethodSelectorState extends State<PaymentMethodSelector> {
         // Confirm Button
         ElevatedButton.icon(
           onPressed:
-              (_selected == 'invoice' || _isLightningFormValid)
+              (_selected == 'scan' || _isLightningFormValid)
                   ? _onConfirmPressed
                   : null,
           icon: const Icon(Icons.check_circle),
@@ -209,7 +205,7 @@ class _PaymentMethodSelectorState extends State<PaymentMethodSelector> {
         ),
         const SizedBox(height: 16),
         Text(
-          'Scan or paste a Bolt11 invoice.',
+          'Scan a Bolt11 Invoice, Lightning Address, or LNURL.',
           textAlign: TextAlign.center,
           style: Theme.of(context).textTheme.bodyLarge,
         ),
