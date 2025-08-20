@@ -149,9 +149,28 @@ class _NumberPadState extends State<NumberPad> {
     if (amountSats != null) {
       if (widget.paymentType == PaymentType.lightning) {
         if (widget.lightningAddressOrLnurl != null) {
+          final amountMsats = amountSats * BigInt.from(1000);
+
+          // Check balance first
+          final fedBalance = await balance(
+            federationId: widget.fed.federationId,
+          );
+          if (amountMsats > fedBalance) {
+            ToastService().show(
+              message: "Balance is too low!",
+              duration: const Duration(seconds: 5),
+              onTap: () {},
+              icon: Icon(Icons.warning),
+            );
+            setState(() {
+              _creating = false;
+            });
+            return;
+          }
+
           // Get invoice from LN Address
           final invoice = await getInvoiceFromLnaddressOrLnurl(
-            amountMsats: amountSats * BigInt.from(1000),
+            amountMsats: amountMsats,
             lnaddressOrLnurl: widget.lightningAddressOrLnurl!,
           );
 
@@ -168,8 +187,6 @@ class _NumberPadState extends State<NumberPad> {
               paymentPreview: preview,
             ),
           );
-
-          // TODO: Might need to call callback here
         } else {
           await _handleLightningReceive(amountSats);
         }

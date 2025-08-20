@@ -63,7 +63,8 @@ use tokio::{sync::RwLock, time::timeout};
 use crate::{
     anyhow,
     db::{
-        BtcPrice, BtcPriceKey, DisplaySetting, DisplaySettingKey, FederationBackupKey, FederationMetaKey, LightningAddressConfig, LightningAddressKey, LightningAddressKeyPrefix
+        BtcPrice, BtcPriceKey, DisplaySetting, DisplaySettingKey, FederationBackupKey,
+        FederationMetaKey, LightningAddressConfig, LightningAddressKey, LightningAddressKeyPrefix,
     },
     error_to_flutter, info_to_flutter, FederationConfig, FederationConfigKey,
     FederationConfigKeyPrefix, SeedPhraseAckKey,
@@ -834,11 +835,14 @@ impl Multimint {
 
                     // Next check if we need to backup our ecash to the federation
                     let threshold = now
-                        .checked_sub(Duration::from_secs(FEDERATION_BACKUP_CACHE_UPDATE_INTERVAL_SECS))
+                        .checked_sub(Duration::from_secs(
+                            FEDERATION_BACKUP_CACHE_UPDATE_INTERVAL_SECS,
+                        ))
                         .expect("Cannot be negative");
                     for (key, _) in configs {
                         let federation_id = key.id;
-                        let backup_time = dbtx.get_value(&FederationBackupKey { federation_id }).await;
+                        let backup_time =
+                            dbtx.get_value(&FederationBackupKey { federation_id }).await;
                         if let Some(backup) = backup_time {
                             if backup < threshold {
                                 self_copy.backup(&federation_id, now).await;
@@ -865,12 +869,21 @@ impl Multimint {
                     .await;
                 match backup_result {
                     Ok(()) => {
-                        dbtx.insert_entry(&FederationBackupKey { federation_id: *federation_id}, &now).await;
+                        dbtx.insert_entry(
+                            &FederationBackupKey {
+                                federation_id: *federation_id,
+                            },
+                            &now,
+                        )
+                        .await;
                         dbtx.commit_tx().await;
                         info_to_flutter(format!("Successfully backed up {federation_id}")).await;
                     }
                     Err(e) => {
-                        error_to_flutter(format!("Could not create backup for {federation_id}: {e}")).await;
+                        error_to_flutter(format!(
+                            "Could not create backup for {federation_id}: {e}"
+                        ))
+                        .await;
                     }
                 }
             }
@@ -1155,14 +1168,17 @@ impl Multimint {
                         .await
                 } else {
                     info_to_flutter("Client is not initialized, downloading invite code...").await;
-                    let preview = match timeout(
-                        Duration::from_secs(60),
-                        client_builder.preview(invite_code),
-                    )
-                    .await {
-                        Ok(preview) => preview,
-                        Err(error) => return Err(anyhow!("Timed out getting federation preview: {error}")),
-                    };
+                    let preview =
+                        match timeout(Duration::from_secs(60), client_builder.preview(invite_code))
+                            .await
+                        {
+                            Ok(preview) => preview,
+                            Err(error) => {
+                                return Err(anyhow!(
+                                    "Timed out getting federation preview: {error}"
+                                ))
+                            }
+                        };
                     preview?
                         .join(fedimint_client::RootSecret::StandardDoubleDerive(
                             global_root_secret,
@@ -2163,16 +2179,22 @@ impl Multimint {
                                 )
                             }
                             LightningOperationMetaVariant::RecurringPaymentReceive(recurring) => {
-                                let amount_msat = recurring
-                                    .invoice
-                                    .amount_milli_satoshis()
-                                    .expect("Amountless invoice");
-                                Some(Transaction {
-                                    kind: TransactionKind::LightningRecurring,
-                                    amount: amount_msat,
-                                    timestamp,
-                                    operation_id: key.operation_id.0.to_vec(),
-                                })
+                                let receive_outcome = op_log_val.outcome::<LnReceiveState>();
+                                match receive_outcome {
+                                    Some(state) if state == LnReceiveState::Claimed => {
+                                        let amount_msat = recurring
+                                            .invoice
+                                            .amount_milli_satoshis()
+                                            .expect("Amountless invoice");
+                                        Some(Transaction {
+                                            kind: TransactionKind::LightningRecurring,
+                                            amount: amount_msat,
+                                            timestamp,
+                                            operation_id: key.operation_id.0.to_vec(),
+                                        })
+                                    }
+                                    _ => None,
+                                }
                             }
                             _ => None,
                         }
