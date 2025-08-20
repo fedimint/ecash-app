@@ -9,7 +9,6 @@ import 'package:ecashapp/toast.dart';
 import 'package:ecashapp/utils.dart';
 import 'package:ecashapp/models.dart';
 import 'package:flutter/material.dart';
-import 'package:intl/intl.dart';
 import 'package:numpad_layout/widgets/numpad.dart';
 import 'package:flutter/services.dart';
 
@@ -58,10 +57,18 @@ class _NumberPadState extends State<NumberPad> {
   }
 
   String _formatAmount(String value) {
-    if (value.isEmpty) return '₿0';
-    final number = int.tryParse(value) ?? 0;
-    final formatter = NumberFormat('₿#,###', 'en_US');
-    return formatter.format(number).replaceAll(',', ' ');
+    BigInt displayValue;
+    try {
+      if (value.isEmpty) {
+        displayValue = BigInt.zero;
+      } else {
+        displayValue = BigInt.parse(value);
+      }
+    } catch (_) {
+      displayValue = BigInt.zero;
+    }
+
+    return formatBalance(displayValue * BigInt.from(1000), false);
   }
 
   Future<void> _onMaxPressed() async {
