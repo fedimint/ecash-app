@@ -3,6 +3,7 @@ import 'package:ecashapp/ecash_send.dart';
 import 'package:ecashapp/lib.dart';
 import 'package:ecashapp/multimint.dart';
 import 'package:ecashapp/onchain_send.dart';
+import 'package:ecashapp/pay_preview.dart';
 import 'package:ecashapp/request.dart';
 import 'package:ecashapp/theme.dart';
 import 'package:ecashapp/toast.dart';
@@ -20,6 +21,7 @@ class NumberPad extends StatefulWidget {
   final double? btcPrice;
   final VoidCallback? onWithdrawCompleted;
   final String? bitcoinAddress;
+  final String? lightningAddressOrLnurl;
   const NumberPad({
     super.key,
     required this.fed,
@@ -27,6 +29,7 @@ class NumberPad extends StatefulWidget {
     required this.btcPrice,
     this.onWithdrawCompleted,
     this.bitcoinAddress,
+    this.lightningAddressOrLnurl,
   });
 
   @override
@@ -97,50 +100,95 @@ class _NumberPadState extends State<NumberPad> {
     }
   }
 
+  Future<void> _handleLightningReceive(BigInt amountSats) async {
+    try {
+      final requestedAmountMsats = amountSats * BigInt.from(1000);
+      final gateway = await selectReceiveGateway(
+        federationId: widget.fed.federationId,
+        amountMsats: requestedAmountMsats,
+      );
+      final contractAmount = gateway.$2;
+      final invoice = await receive(
+        federationId: widget.fed.federationId,
+        amountMsatsWithFees: contractAmount,
+        amountMsatsWithoutFees: requestedAmountMsats,
+        gateway: gateway.$1,
+        isLnv2: gateway.$3,
+      );
+      invoicePaidToastVisible.value = false;
+      await showAppModalBottomSheet(
+        context: context,
+        child: Request(
+          invoice: invoice.$1,
+          fed: widget.fed,
+          operationId: invoice.$2,
+          requestedAmountMsats: requestedAmountMsats,
+          totalMsats: contractAmount,
+          gateway: gateway.$1,
+          pubkey: invoice.$3,
+          paymentHash: invoice.$4,
+          expiry: invoice.$5,
+        ),
+      );
+    } catch (e) {
+      AppLogger.instance.error("Could not create invoice: $e");
+      ToastService().show(
+        message: "Could not create invoice",
+        duration: const Duration(seconds: 5),
+        onTap: () {},
+        icon: Icon(Icons.error),
+      );
+    } finally {
+      invoicePaidToastVisible.value = true;
+    }
+  }
+
   Future<void> _onConfirm() async {
     setState(() => _creating = true);
     final amountSats = BigInt.tryParse(_rawAmount);
     if (amountSats != null) {
       if (widget.paymentType == PaymentType.lightning) {
-        try {
-          final requestedAmountMsats = amountSats * BigInt.from(1000);
-          final gateway = await selectReceiveGateway(
+        if (widget.lightningAddressOrLnurl != null) {
+          final amountMsats = amountSats * BigInt.from(1000);
+
+          // Check balance first
+          final fedBalance = await balance(
             federationId: widget.fed.federationId,
-            amountMsats: requestedAmountMsats,
           );
-          final contractAmount = gateway.$2;
-          final invoice = await receive(
+          if (amountMsats > fedBalance) {
+            ToastService().show(
+              message: "Balance is too low!",
+              duration: const Duration(seconds: 5),
+              onTap: () {},
+              icon: Icon(Icons.warning),
+            );
+            setState(() {
+              _creating = false;
+            });
+            return;
+          }
+
+          // Get invoice from LN Address
+          final invoice = await getInvoiceFromLnaddressOrLnurl(
+            amountMsats: amountMsats,
+            lnaddressOrLnurl: widget.lightningAddressOrLnurl!,
+          );
+
+          // Get and show payment preview
+          final preview = await paymentPreview(
             federationId: widget.fed.federationId,
-            amountMsatsWithFees: contractAmount,
-            amountMsatsWithoutFees: requestedAmountMsats,
-            gateway: gateway.$1,
-            isLnv2: gateway.$3,
+            bolt11: invoice,
           );
-          invoicePaidToastVisible.value = false;
+
           await showAppModalBottomSheet(
             context: context,
-            child: Request(
-              invoice: invoice.$1,
+            child: PaymentPreviewWidget(
               fed: widget.fed,
-              operationId: invoice.$2,
-              requestedAmountMsats: requestedAmountMsats,
-              totalMsats: contractAmount,
-              gateway: gateway.$1,
-              pubkey: invoice.$3,
-              paymentHash: invoice.$4,
-              expiry: invoice.$5,
+              paymentPreview: preview,
             ),
           );
-        } catch (e) {
-          AppLogger.instance.error("Could not create invoice: $e");
-          ToastService().show(
-            message: "Could not create invoice",
-            duration: const Duration(seconds: 5),
-            onTap: () {},
-            icon: Icon(Icons.error),
-          );
-        } finally {
-          invoicePaidToastVisible.value = true;
+        } else {
+          await _handleLightningReceive(amountSats);
         }
       } else if (widget.paymentType == PaymentType.ecash) {
         BigInt amount = amountSats * BigInt.from(1000);

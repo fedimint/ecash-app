@@ -230,6 +230,25 @@ class _ScanQRPageState extends State<ScanQRPage> {
             widget.onPay(chosenFederation, false);
           }
           break;
+        case ParsedText_LightningAddressOrLnurl(:final field0):
+          if (widget.paymentType == null ||
+              widget.paymentType == PaymentType.lightning) {
+            final btcPrice = await fetchBtcPrice();
+            await Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder:
+                    (_) => NumberPad(
+                      fed: chosenFederation!,
+                      paymentType: PaymentType.lightning,
+                      btcPrice: btcPrice,
+                      onWithdrawCompleted: null,
+                      lightningAddressOrLnurl: field0,
+                    ),
+              ),
+            );
+          }
+          break;
       }
     } catch (e) {
       AppLogger.instance.warn("$text cannot be parsed: $e");

@@ -8,7 +8,6 @@ import 'package:ecashapp/widgets/gateways.dart';
 import 'package:ecashapp/widgets/ln_address_dialog.dart';
 import 'package:ecashapp/widgets/note_summary.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_speed_dial/flutter_speed_dial.dart';
 
 import 'package:ecashapp/lib.dart';

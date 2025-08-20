@@ -193,7 +193,9 @@ class _FederationPreviewState extends State<FederationPreview> {
                             return LinearProgressIndicator(
                               value: value,
                               minHeight: 10,
-                              backgroundColor: theme.colorScheme.surfaceVariant
+                              backgroundColor: theme
+                                  .colorScheme
+                                  .surfaceContainerHighest
                                   .withOpacity(0.3),
                               valueColor: AlwaysStoppedAnimation<Color>(
                                 borderColor,
