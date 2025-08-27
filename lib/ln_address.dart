@@ -60,38 +60,17 @@ class _LightningAddressScreenState extends State<LightningAddressScreen> {
     super.dispose();
   }
 
-  Future<void> _initialize() async {
-    _usernameController.addListener(_onUsernameChanged);
+  Future<void> _updateDomains() async {
     try {
       final domains = await listLnAddressDomains(lnAddressApi: _lnAddressApi);
 
-      FederationSelector? firstSelector;
-      String firstUsername = "";
-      String? firstDomain;
-      if (widget.federations.isNotEmpty) {
-        for (final fed in widget.federations) {
-          final config = await getLnAddressConfig(
-            federationId: fed.$1.federationId,
-          );
-          if (config != null) {
-            firstSelector = fed.$1;
-            firstUsername = config.username;
-            firstDomain = config.domain;
-          }
-        }
-      }
-
       setState(() {
         _domains = domains;
-        _selectedDomain =
-            firstDomain ?? (domains.isNotEmpty ? domains.first : null);
-        _selectedFederation = firstSelector;
-        _usernameController.text = firstUsername;
+        _selectedDomain = (domains.isNotEmpty ? domains.first : null);
         _loading = false;
       });
-      _onFederationSet(_selectedFederation);
     } catch (e) {
-      AppLogger.instance.error("Unable to get domains: $e");
+      AppLogger.instance.error("Unable to get doamins: $e");
       ToastService().show(
         message: "Unable to get Lightning Address domains",
         duration: const Duration(seconds: 5),
@@ -100,8 +79,21 @@ class _LightningAddressScreenState extends State<LightningAddressScreen> {
       );
       setState(() {
         _domains = [];
-        _loading = false;
       });
+    }
+  }
+
+  Future<void> _initialize() async {
+    _usernameController.addListener(_onUsernameChanged);
+    await _updateDomains();
+
+    // Set the selected federation to the first federation
+    if (widget.federations.isNotEmpty) {
+      for (final fed in widget.federations) {
+        if (await _onFederationSet(fed.$1)) {
+          break;
+        }
+      }
     }
   }
 
@@ -183,24 +175,48 @@ class _LightningAddressScreenState extends State<LightningAddressScreen> {
     }
   }
 
-  Future<void> _onFederationSet(FederationSelector? fed) async {
-    if (fed == null) return;
+  Future<bool> _onFederationSet(FederationSelector? fed) async {
+    if (fed == null) return false;
+
+    AppLogger.instance.info("Changing federations.... ${fed.federationName}");
+    bool hasConfig = false;
+
+    setState(() {
+      _selectedFederation = fed;
+    });
+
     try {
+      final config = await getLnAddressConfig(federationId: fed.federationId);
+      if (config != null) {
+        setState(() {
+          _selectedDomain = config.domain;
+          _usernameController.text = config.username;
+        });
+        hasConfig = true;
+      }
+
       final meta = await getFederationMeta(federationId: fed.federationId);
-      setState(() {
-        if (meta.recurringdApi != null) {
+      if (meta.recurringdApi != null) {
+        setState(() {
           _recurringdApi = meta.recurringdApi!;
           _recurringdApiController.text = _recurringdApi;
-        }
+        });
+      }
 
-        if (meta.lnaddressApi != null) {
+      if (meta.lnaddressApi != null) {
+        setState(() {
           _lnAddressApi = meta.lnaddressApi!;
           _lnApiController.text = _lnAddressApi;
-        }
-      });
+        });
+        await _updateDomains();
+      }
     } catch (e) {
-      AppLogger.instance.warn("Could not get federation meta: $e");
+      AppLogger.instance.warn(
+        "Could not get LN address config or federation meta: $e",
+      );
     }
+
+    return hasConfig;
   }
 
   Widget _buildSelectionForm() {
@@ -223,10 +239,7 @@ class _LightningAddressScreenState extends State<LightningAddressScreen> {
                     )
                     .toList(),
             onChanged: (value) {
-              setState(() {
-                _selectedFederation = value;
-              });
-              _onFederationSet(_selectedFederation);
+              _onFederationSet(value);
               _onUsernameChanged();
             },
           ),
@@ -447,12 +460,16 @@ class _LightningAddressScreenState extends State<LightningAddressScreen> {
         buildRow(
           label: 'Lightning Address API',
           controller: _lnApiController,
-          onSet: () {
+          onSet: () async {
             setState(() {
               _lnAddressApi = _lnApiController.text;
+              _lnAddressApiOnline = null;
             });
-            _checkApiOnline();
-            _onUsernameChanged();
+            await _checkApiOnline();
+            if (_lnAddressApiOnline != null && _lnAddressApiOnline!) {
+              await _updateDomains();
+              _onUsernameChanged();
+            }
           },
           isOnline: _lnAddressApiOnline,
         ),
@@ -462,6 +479,7 @@ class _LightningAddressScreenState extends State<LightningAddressScreen> {
           onSet: () {
             setState(() {
               _recurringdApi = _recurringdApiController.text;
+              _recurringdApiOnline = null;
             });
             _checkApiOnline();
           },
@@ -474,6 +492,7 @@ class _LightningAddressScreenState extends State<LightningAddressScreen> {
   Future<void> _checkApiOnline() async {
     Future<bool> check(String url) async {
       try {
+        AppLogger.instance.info("Checking $url for API online status");
         final uri = Uri.parse(url);
         final res =
             Uri.base.scheme == 'https'
