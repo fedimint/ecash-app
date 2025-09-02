@@ -283,51 +283,48 @@ class _DashboardState extends State<Dashboard> {
             DashboardHeader(name: name, network: widget.fed.network),
             if (_lnAddressConfig != null) ...[
               const SizedBox(height: 8),
-              if (_lnAddressConfig != null) ...[
-                const SizedBox(height: 8),
-                GestureDetector(
-                  onTap: () {
-                    showLightningAddressDialog(context, _lnAddressConfig!.username, _lnAddressConfig!.domain, _lnAddressConfig!.lnurl);
-                  },
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 12,
-                      vertical: 8,
-                    ),
-                    decoration: BoxDecoration(
-                      color: Colors.black.withOpacity(0.7),
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(
-                        color: Theme.of(
-                          context,
-                        ).colorScheme.secondary.withOpacity(0.6),
-                      ),
-                    ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        const Icon(
-                          Icons.flash_on,
-                          color: Colors.amber,
-                          size: 18,
-                        ),
-                        const SizedBox(width: 8),
-                        Text(
-                          '${_lnAddressConfig!.username}@${_lnAddressConfig!.domain}',
-                          style: Theme.of(
-                            context,
-                          ).textTheme.bodyMedium?.copyWith(
-                            color: Theme.of(context).colorScheme.secondary,
-                            fontWeight: FontWeight.w500,
-                          ),
-                        ),
-                      ],
+              GestureDetector(
+                onTap: () {
+                  showLightningAddressDialog(context, _lnAddressConfig!.username, _lnAddressConfig!.domain, _lnAddressConfig!.lnurl);
+                },
+                child: Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 8,
+                  ),
+                  decoration: BoxDecoration(
+                    color: Colors.black.withOpacity(0.7),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(
+                      color: Theme.of(
+                        context,
+                      ).colorScheme.secondary.withOpacity(0.6),
                     ),
                   ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Icon(
+                        Icons.flash_on,
+                        color: Colors.amber,
+                        size: 18,
+                      ),
+                      const SizedBox(width: 8),
+                      Text(
+                        '${_lnAddressConfig!.username}@${_lnAddressConfig!.domain}',
+                        style: Theme.of(
+                          context,
+                        ).textTheme.bodyMedium?.copyWith(
+                          color: Theme.of(context).colorScheme.secondary,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
-              ],
+              ),
             ],
-            const SizedBox(height: 48),
+            const SizedBox(height: 8),
             DashboardBalance(
               balanceMsats: balanceMsats,
               isLoading: isLoadingBalance,
@@ -336,7 +333,7 @@ class _DashboardState extends State<Dashboard> {
               onToggle: () => setState(() => showMsats = !showMsats),
               btcPrice: _btcPrice,
             ),
-            const SizedBox(height: 48),
+            const SizedBox(height: 8),
             if (recovering) ...[
               RecoveryStatus(
                 key: ValueKey(_selectedPaymentType),
@@ -365,7 +362,7 @@ class _DashboardState extends State<Dashboard> {
                             const Tab(text: "Gateways"),
                         ],
                       ),
-                      const SizedBox(height: 16),
+                      const SizedBox(height: 8),
                       Expanded(
                         child: TabBarView(
                           children: [
