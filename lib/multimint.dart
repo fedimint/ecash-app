@@ -308,20 +308,23 @@ abstract class WithdrawFeesResponse implements RustOpaqueInterface {
 
 class AwaitingConfsEvent {
   final BigInt amount;
-  final String txid;
+  final String outpoint;
   final BigInt blockHeight;
   final BigInt needed;
 
   const AwaitingConfsEvent({
     required this.amount,
-    required this.txid,
+    required this.outpoint,
     required this.blockHeight,
     required this.needed,
   });
 
   @override
   int get hashCode =>
-      amount.hashCode ^ txid.hashCode ^ blockHeight.hashCode ^ needed.hashCode;
+      amount.hashCode ^
+      outpoint.hashCode ^
+      blockHeight.hashCode ^
+      needed.hashCode;
 
   @override
   bool operator ==(Object other) =>
@@ -329,19 +332,19 @@ class AwaitingConfsEvent {
       other is AwaitingConfsEvent &&
           runtimeType == other.runtimeType &&
           amount == other.amount &&
-          txid == other.txid &&
+          outpoint == other.outpoint &&
           blockHeight == other.blockHeight &&
           needed == other.needed;
 }
 
 class ClaimedEvent {
   final BigInt amount;
-  final String txid;
+  final String outpoint;
 
-  const ClaimedEvent({required this.amount, required this.txid});
+  const ClaimedEvent({required this.amount, required this.outpoint});
 
   @override
-  int get hashCode => amount.hashCode ^ txid.hashCode;
+  int get hashCode => amount.hashCode ^ outpoint.hashCode;
 
   @override
   bool operator ==(Object other) =>
@@ -349,17 +352,17 @@ class ClaimedEvent {
       other is ClaimedEvent &&
           runtimeType == other.runtimeType &&
           amount == other.amount &&
-          txid == other.txid;
+          outpoint == other.outpoint;
 }
 
 class ConfirmedEvent {
   final BigInt amount;
-  final String txid;
+  final String outpoint;
 
-  const ConfirmedEvent({required this.amount, required this.txid});
+  const ConfirmedEvent({required this.amount, required this.outpoint});
 
   @override
-  int get hashCode => amount.hashCode ^ txid.hashCode;
+  int get hashCode => amount.hashCode ^ outpoint.hashCode;
 
   @override
   bool operator ==(Object other) =>
@@ -367,7 +370,7 @@ class ConfirmedEvent {
       other is ConfirmedEvent &&
           runtimeType == other.runtimeType &&
           amount == other.amount &&
-          txid == other.txid;
+          outpoint == other.outpoint;
 }
 
 @freezed
@@ -495,12 +498,12 @@ enum LogLevel { trace, debug, info, warn, error }
 
 class MempoolEvent {
   final BigInt amount;
-  final String txid;
+  final String outpoint;
 
-  const MempoolEvent({required this.amount, required this.txid});
+  const MempoolEvent({required this.amount, required this.outpoint});
 
   @override
-  int get hashCode => amount.hashCode ^ txid.hashCode;
+  int get hashCode => amount.hashCode ^ outpoint.hashCode;
 
   @override
   bool operator ==(Object other) =>
@@ -508,7 +511,7 @@ class MempoolEvent {
       other is MempoolEvent &&
           runtimeType == other.runtimeType &&
           amount == other.amount &&
-          txid == other.txid;
+          outpoint == other.outpoint;
 }
 
 @freezed
