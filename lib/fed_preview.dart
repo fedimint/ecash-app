@@ -56,29 +56,86 @@ class _FederationPreviewState extends State<FederationPreview> {
     final bottomSheetContext = context;
     await showDialog(
       context: context,
-      builder:
-          (dialogContext) => AlertDialog(
-            title: const Text("Leave Federation"),
-            content: const Text(
-              "Are you sure you want to leave this federation? You will need to re-join this federation to access any remaining funds.",
-            ),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.of(context).pop(),
-                child: const Text("Cancel"),
+      builder: (dialogContext) {
+        bool isLeaving = false;
+
+        return StatefulBuilder(
+          builder: (context, setState) {
+            return AlertDialog(
+              title: const Text("Leave Federation"),
+              content: const Text(
+                "Are you sure you want to leave this federation? You will need to re-join this federation to access any remaining funds.",
               ),
-              TextButton(
-                onPressed: () async {
-                  await leaveFederation(federationId: widget.fed.federationId);
-                  widget.onLeaveFederation!();
-                  Navigator.of(dialogContext).pop();
-                  Navigator.of(bottomSheetContext).pop();
-                  Navigator.of(context).pop();
-                },
-                child: const Text("Confirm"),
-              ),
-            ],
-          ),
+              actions: [
+                TextButton(
+                  onPressed:
+                      isLeaving ? null : () => Navigator.of(context).pop(),
+                  child: const Text("Cancel"),
+                ),
+                TextButton(
+                  onPressed:
+                      isLeaving
+                          ? null
+                          : () async {
+                            setState(() {
+                              isLeaving = true;
+                            });
+
+                            try {
+                              await leaveFederation(
+                                federationId: widget.fed.federationId,
+                              );
+                              await _backupToNostr();
+                              widget.onLeaveFederation!();
+
+                              if (context.mounted) {
+                                Navigator.of(
+                                  dialogContext,
+                                ).popUntil((route) => route.isFirst);
+                                Navigator.of(
+                                  bottomSheetContext,
+                                ).popUntil((route) => route.isFirst);
+                                Navigator.of(
+                                  context,
+                                ).popUntil((route) => route.isFirst);
+                              }
+                            } catch (e) {
+                              AppLogger.instance.error(
+                                "Error leaving federation: $e",
+                              );
+                              if (context.mounted) {
+                                Navigator.of(
+                                  dialogContext,
+                                ).popUntil((route) => route.isFirst);
+                                Navigator.of(
+                                  bottomSheetContext,
+                                ).popUntil((route) => route.isFirst);
+                                Navigator.of(
+                                  context,
+                                ).popUntil((route) => route.isFirst);
+                              }
+                            } finally {
+                              if (mounted) {
+                                setState(() {
+                                  isLeaving = false;
+                                });
+                              }
+                            }
+                          },
+                  child:
+                      isLeaving
+                          ? const SizedBox(
+                            height: 20,
+                            width: 20,
+                            child: CircularProgressIndicator(strokeWidth: 2),
+                          )
+                          : const Text("Confirm"),
+                ),
+              ],
+            );
+          },
+        );
+      },
     );
   }
 
