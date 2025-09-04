@@ -38,9 +38,9 @@ class _TransactionDetailsState extends State<TransactionDetails> {
       case TransactionKind_LightningRecurring():
         return "Lightning Address Receive";
       case TransactionKind_EcashReceive():
-        return "Ecash Receive";
+        return "E-Cash Receive";
       case TransactionKind_EcashSend():
-        return "Ecash Send";
+        return "E-Cash Send";
       case TransactionKind_OnchainReceive():
         return "Onchain Receive";
       case TransactionKind_OnchainSend():
@@ -61,14 +61,14 @@ class _TransactionDetailsState extends State<TransactionDetails> {
           ecash: ecash,
         );
         if (result) {
-          ToastService().show(message: "This ecash has been claimed", duration: const Duration(seconds: 5), onTap: () {}, icon: Icon(Icons.info));
+          ToastService().show(message: "This E-Cash has been claimed", duration: const Duration(seconds: 5), onTap: () {}, icon: Icon(Icons.info));
         } else {
-          ToastService().show(message: "This ecash has not been claimed yet", duration: const Duration(seconds: 5), onTap: () {}, icon: Icon(Icons.info));
+          ToastService().show(message: "This E-Cash has not been claimed yet", duration: const Duration(seconds: 5), onTap: () {}, icon: Icon(Icons.info));
         }
       }
     } catch (e) {
       AppLogger.instance.error("Error checking claim status: $e");
-      ToastService().show(message: "Unable to check ecash status", duration: const Duration(seconds: 5), onTap: () {}, icon: Icon(Icons.error));
+      ToastService().show(message: "Unable to check E-Cash status", duration: const Duration(seconds: 5), onTap: () {}, icon: Icon(Icons.error));
     } finally {
       setState(() {
         _checking = false;

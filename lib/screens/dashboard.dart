@@ -420,7 +420,7 @@ class _DashboardState extends State<Dashboard> {
           BottomNavigationBarItem(icon: Icon(Icons.link), label: 'Onchain'),
           BottomNavigationBarItem(
             icon: Icon(Icons.currency_bitcoin),
-            label: 'Ecash',
+            label: 'E-Cash',
           ),
         ],
       ),
