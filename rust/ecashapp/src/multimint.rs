@@ -218,13 +218,13 @@ impl fmt::Display for ClientType {
 #[derive(Clone, Eq, PartialEq, Serialize, Debug)]
 pub struct MempoolEvent {
     pub amount: u64,
-    pub txid: String,
+    pub outpoint: String,
 }
 
 #[derive(Clone, Eq, PartialEq, Serialize, Debug)]
 pub struct AwaitingConfsEvent {
     pub amount: u64,
-    pub txid: String,
+    pub outpoint: String,
     pub block_height: u64,
     pub needed: u64,
 }
@@ -232,13 +232,13 @@ pub struct AwaitingConfsEvent {
 #[derive(Clone, Eq, PartialEq, Serialize, Debug)]
 pub struct ConfirmedEvent {
     pub amount: u64,
-    pub txid: String,
+    pub outpoint: String,
 }
 
 #[derive(Clone, Eq, PartialEq, Serialize, Debug)]
 pub struct ClaimedEvent {
     pub amount: u64,
-    pub txid: String,
+    pub outpoint: String,
 }
 
 #[derive(Clone, Eq, PartialEq, Serialize, Debug)]
@@ -536,7 +536,7 @@ impl Multimint {
                         federation_id,
                         DepositEventKind::Mempool(MempoolEvent {
                             amount: Amount::from_sats(btc_deposited.to_sat()).msats,
-                            txid: btc_out_point.txid.to_string(),
+                            outpoint: btc_out_point.to_string(),
                         }),
                     ));
 
@@ -599,7 +599,7 @@ impl Multimint {
                             federation_id,
                             DepositEventKind::AwaitingConfs(AwaitingConfsEvent {
                                 amount: Amount::from_sats(btc_deposited.to_sat()).msats,
-                                txid: btc_out_point.txid.to_string(),
+                                outpoint: btc_out_point.to_string(),
                                 block_height: tx_height,
                                 needed,
                             }),
@@ -632,7 +632,7 @@ impl Multimint {
                         federation_id,
                         DepositEventKind::Confirmed(ConfirmedEvent {
                             amount: Amount::from_sats(btc_deposited.to_sat()).msats,
-                            txid: btc_out_point.txid.to_string(),
+                            outpoint: btc_out_point.to_string(),
                         }),
                     ));
 
@@ -646,7 +646,7 @@ impl Multimint {
                         federation_id,
                         DepositEventKind::Claimed(ClaimedEvent {
                             amount: Amount::from_sats(btc_deposited.to_sat()).msats,
-                            txid: btc_out_point.txid.to_string(),
+                            outpoint: btc_out_point.to_string(),
                         }),
                     ));
 

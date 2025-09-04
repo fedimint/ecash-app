@@ -10382,12 +10382,12 @@ impl SseDecode for crate::multimint::AwaitingConfsEvent {
     // Codec=Sse (Serialization based), see doc to use other codecs
     fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
         let mut var_amount = <u64>::sse_decode(deserializer);
-        let mut var_txid = <String>::sse_decode(deserializer);
+        let mut var_outpoint = <String>::sse_decode(deserializer);
         let mut var_blockHeight = <u64>::sse_decode(deserializer);
         let mut var_needed = <u64>::sse_decode(deserializer);
         return crate::multimint::AwaitingConfsEvent {
             amount: var_amount,
-            txid: var_txid,
+            outpoint: var_outpoint,
             block_height: var_blockHeight,
             needed: var_needed,
         };
@@ -10405,10 +10405,10 @@ impl SseDecode for crate::multimint::ClaimedEvent {
     // Codec=Sse (Serialization based), see doc to use other codecs
     fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
         let mut var_amount = <u64>::sse_decode(deserializer);
-        let mut var_txid = <String>::sse_decode(deserializer);
+        let mut var_outpoint = <String>::sse_decode(deserializer);
         return crate::multimint::ClaimedEvent {
             amount: var_amount,
-            txid: var_txid,
+            outpoint: var_outpoint,
         };
     }
 }
@@ -10417,10 +10417,10 @@ impl SseDecode for crate::multimint::ConfirmedEvent {
     // Codec=Sse (Serialization based), see doc to use other codecs
     fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
         let mut var_amount = <u64>::sse_decode(deserializer);
-        let mut var_txid = <String>::sse_decode(deserializer);
+        let mut var_outpoint = <String>::sse_decode(deserializer);
         return crate::multimint::ConfirmedEvent {
             amount: var_amount,
-            txid: var_txid,
+            outpoint: var_outpoint,
         };
     }
 }
@@ -10756,10 +10756,10 @@ impl SseDecode for crate::multimint::MempoolEvent {
     // Codec=Sse (Serialization based), see doc to use other codecs
     fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
         let mut var_amount = <u64>::sse_decode(deserializer);
-        let mut var_txid = <String>::sse_decode(deserializer);
+        let mut var_outpoint = <String>::sse_decode(deserializer);
         return crate::multimint::MempoolEvent {
             amount: var_amount,
-            txid: var_txid,
+            outpoint: var_outpoint,
         };
     }
 }
@@ -12300,7 +12300,7 @@ impl flutter_rust_bridge::IntoDart for crate::multimint::AwaitingConfsEvent {
     fn into_dart(self) -> flutter_rust_bridge::for_generated::DartAbi {
         [
             self.amount.into_into_dart().into_dart(),
-            self.txid.into_into_dart().into_dart(),
+            self.outpoint.into_into_dart().into_dart(),
             self.block_height.into_into_dart().into_dart(),
             self.needed.into_into_dart().into_dart(),
         ]
@@ -12323,7 +12323,7 @@ impl flutter_rust_bridge::IntoDart for crate::multimint::ClaimedEvent {
     fn into_dart(self) -> flutter_rust_bridge::for_generated::DartAbi {
         [
             self.amount.into_into_dart().into_dart(),
-            self.txid.into_into_dart().into_dart(),
+            self.outpoint.into_into_dart().into_dart(),
         ]
         .into_dart()
     }
@@ -12344,7 +12344,7 @@ impl flutter_rust_bridge::IntoDart for crate::multimint::ConfirmedEvent {
     fn into_dart(self) -> flutter_rust_bridge::for_generated::DartAbi {
         [
             self.amount.into_into_dart().into_dart(),
-            self.txid.into_into_dart().into_dart(),
+            self.outpoint.into_into_dart().into_dart(),
         ]
         .into_dart()
     }
@@ -12571,7 +12571,7 @@ impl flutter_rust_bridge::IntoDart for crate::multimint::MempoolEvent {
     fn into_dart(self) -> flutter_rust_bridge::for_generated::DartAbi {
         [
             self.amount.into_into_dart().into_dart(),
-            self.txid.into_into_dart().into_dart(),
+            self.outpoint.into_into_dart().into_dart(),
         ]
         .into_dart()
     }
@@ -13335,7 +13335,7 @@ impl SseEncode for crate::multimint::AwaitingConfsEvent {
     // Codec=Sse (Serialization based), see doc to use other codecs
     fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
         <u64>::sse_encode(self.amount, serializer);
-        <String>::sse_encode(self.txid, serializer);
+        <String>::sse_encode(self.outpoint, serializer);
         <u64>::sse_encode(self.block_height, serializer);
         <u64>::sse_encode(self.needed, serializer);
     }
@@ -13352,7 +13352,7 @@ impl SseEncode for crate::multimint::ClaimedEvent {
     // Codec=Sse (Serialization based), see doc to use other codecs
     fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
         <u64>::sse_encode(self.amount, serializer);
-        <String>::sse_encode(self.txid, serializer);
+        <String>::sse_encode(self.outpoint, serializer);
     }
 }
 
@@ -13360,7 +13360,7 @@ impl SseEncode for crate::multimint::ConfirmedEvent {
     // Codec=Sse (Serialization based), see doc to use other codecs
     fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
         <u64>::sse_encode(self.amount, serializer);
-        <String>::sse_encode(self.txid, serializer);
+        <String>::sse_encode(self.outpoint, serializer);
     }
 }
 
@@ -13654,7 +13654,7 @@ impl SseEncode for crate::multimint::MempoolEvent {
     // Codec=Sse (Serialization based), see doc to use other codecs
     fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
         <u64>::sse_encode(self.amount, serializer);
-        <String>::sse_encode(self.txid, serializer);
+        <String>::sse_encode(self.outpoint, serializer);
     }
 }
 

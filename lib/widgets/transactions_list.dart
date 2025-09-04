@@ -28,9 +28,11 @@ class TransactionsList extends StatefulWidget {
   _TransactionsListState createState() => _TransactionsListState();
 }
 
+typedef TxOutpoint = String;
+
 class _TransactionsListState extends State<TransactionsList> {
   final List<Transaction> _transactions = [];
-  final Map<String, DepositEventKind> _depositMap = {};
+  final Map<TxOutpoint, DepositEventKind> _depositMap = {};
   bool _isLoading = true;
   bool _hasMore = true;
   Transaction? _lastTransaction;
@@ -69,22 +71,22 @@ class _TransactionsListState extends State<TransactionsList> {
     });
 
     _depositSubscription = depositEvents.listen((e) {
-      String txid;
+      String txOutpoint;
       switch (e) {
         case DepositEventKind_Mempool(field0: final mempoolEvt):
-          txid = mempoolEvt.txid;
+          txOutpoint = mempoolEvt.outpoint;
           break;
         case DepositEventKind_AwaitingConfs(field0: final awaitEvt):
-          txid = awaitEvt.txid;
+          txOutpoint = awaitEvt.outpoint;
           break;
         case DepositEventKind_Confirmed(field0: final confirmedEvt):
-          txid = confirmedEvt.txid;
+          txOutpoint = confirmedEvt.outpoint;
           break;
         case DepositEventKind_Claimed(field0: final claimedEvt):
-          txid = claimedEvt.txid;
+          txOutpoint = claimedEvt.outpoint;
           break;
       }
-      setState(() => _depositMap[txid] = e);
+      setState(() => _depositMap[txOutpoint] = e);
     });
   }
 

@@ -8687,7 +8687,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
       throw Exception('unexpected arr length: expect 4 but see ${arr.length}');
     return AwaitingConfsEvent(
       amount: dco_decode_u_64(arr[0]),
-      txid: dco_decode_String(arr[1]),
+      outpoint: dco_decode_String(arr[1]),
       blockHeight: dco_decode_u_64(arr[2]),
       needed: dco_decode_u_64(arr[3]),
     );
@@ -8809,7 +8809,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
       throw Exception('unexpected arr length: expect 2 but see ${arr.length}');
     return ClaimedEvent(
       amount: dco_decode_u_64(arr[0]),
-      txid: dco_decode_String(arr[1]),
+      outpoint: dco_decode_String(arr[1]),
     );
   }
 
@@ -8821,7 +8821,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
       throw Exception('unexpected arr length: expect 2 but see ${arr.length}');
     return ConfirmedEvent(
       amount: dco_decode_u_64(arr[0]),
-      txid: dco_decode_String(arr[1]),
+      outpoint: dco_decode_String(arr[1]),
     );
   }
 
@@ -9061,7 +9061,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
       throw Exception('unexpected arr length: expect 2 but see ${arr.length}');
     return MempoolEvent(
       amount: dco_decode_u_64(arr[0]),
-      txid: dco_decode_String(arr[1]),
+      outpoint: dco_decode_String(arr[1]),
     );
   }
 
@@ -10458,12 +10458,12 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   ) {
     // Codec=Sse (Serialization based), see doc to use other codecs
     var var_amount = sse_decode_u_64(deserializer);
-    var var_txid = sse_decode_String(deserializer);
+    var var_outpoint = sse_decode_String(deserializer);
     var var_blockHeight = sse_decode_u_64(deserializer);
     var var_needed = sse_decode_u_64(deserializer);
     return AwaitingConfsEvent(
       amount: var_amount,
-      txid: var_txid,
+      outpoint: var_outpoint,
       blockHeight: var_blockHeight,
       needed: var_needed,
     );
@@ -10599,16 +10599,16 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   ClaimedEvent sse_decode_claimed_event(SseDeserializer deserializer) {
     // Codec=Sse (Serialization based), see doc to use other codecs
     var var_amount = sse_decode_u_64(deserializer);
-    var var_txid = sse_decode_String(deserializer);
-    return ClaimedEvent(amount: var_amount, txid: var_txid);
+    var var_outpoint = sse_decode_String(deserializer);
+    return ClaimedEvent(amount: var_amount, outpoint: var_outpoint);
   }
 
   @protected
   ConfirmedEvent sse_decode_confirmed_event(SseDeserializer deserializer) {
     // Codec=Sse (Serialization based), see doc to use other codecs
     var var_amount = sse_decode_u_64(deserializer);
-    var var_txid = sse_decode_String(deserializer);
-    return ConfirmedEvent(amount: var_amount, txid: var_txid);
+    var var_outpoint = sse_decode_String(deserializer);
+    return ConfirmedEvent(amount: var_amount, outpoint: var_outpoint);
   }
 
   @protected
@@ -10931,8 +10931,8 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   MempoolEvent sse_decode_mempool_event(SseDeserializer deserializer) {
     // Codec=Sse (Serialization based), see doc to use other codecs
     var var_amount = sse_decode_u_64(deserializer);
-    var var_txid = sse_decode_String(deserializer);
-    return MempoolEvent(amount: var_amount, txid: var_txid);
+    var var_outpoint = sse_decode_String(deserializer);
+    return MempoolEvent(amount: var_amount, outpoint: var_outpoint);
   }
 
   @protected
@@ -12415,7 +12415,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   ) {
     // Codec=Sse (Serialization based), see doc to use other codecs
     sse_encode_u_64(self.amount, serializer);
-    sse_encode_String(self.txid, serializer);
+    sse_encode_String(self.outpoint, serializer);
     sse_encode_u_64(self.blockHeight, serializer);
     sse_encode_u_64(self.needed, serializer);
   }
@@ -12568,7 +12568,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   void sse_encode_claimed_event(ClaimedEvent self, SseSerializer serializer) {
     // Codec=Sse (Serialization based), see doc to use other codecs
     sse_encode_u_64(self.amount, serializer);
-    sse_encode_String(self.txid, serializer);
+    sse_encode_String(self.outpoint, serializer);
   }
 
   @protected
@@ -12578,7 +12578,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   ) {
     // Codec=Sse (Serialization based), see doc to use other codecs
     sse_encode_u_64(self.amount, serializer);
-    sse_encode_String(self.txid, serializer);
+    sse_encode_String(self.outpoint, serializer);
   }
 
   @protected
@@ -12859,7 +12859,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   void sse_encode_mempool_event(MempoolEvent self, SseSerializer serializer) {
     // Codec=Sse (Serialization based), see doc to use other codecs
     sse_encode_u_64(self.amount, serializer);
-    sse_encode_String(self.txid, serializer);
+    sse_encode_String(self.outpoint, serializer);
   }
 
   @protected
