@@ -1050,7 +1050,8 @@ impl Multimint {
             .await;
         dbtx.commit_tx().await;
         info_to_flutter(format!(
-            "Updated meta for {federation_id} {federation_meta:?}"
+            "Updated meta for {}",
+            federation_meta.selector.federation_name
         ))
         .await;
 
@@ -1394,6 +1395,7 @@ impl Multimint {
             .await
             {
                 info_to_flutter("Using LNv2 for the actual invoice").await;
+                self.spawn_await_receive(federation_id.clone(), operation_id.clone());
                 return Ok((invoice, operation_id));
             }
         }
@@ -1849,7 +1851,7 @@ impl Multimint {
         let meta = op_log_val.meta::<LightningOperationMeta>();
         match meta {
             LightningOperationMeta::Receive(receive) => {
-                serde_json::from_value::<Amount>(receive.custom_meta)
+                serde_json::from_value::<Amount>(receive.custom_meta.get("amount").expect("amount should be present").clone())
                     .expect("Could not deserialize amount")
                     .msats
             }
