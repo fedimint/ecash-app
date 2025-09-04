@@ -55,9 +55,9 @@ class _EcashRedeemPromptState extends State<EcashRedeemPrompt> {
       await Future.delayed(const Duration(seconds: 4));
       Navigator.of(context).popUntil((route) => route.isFirst);
     } catch (e) {
-      AppLogger.instance.error("Could not reissue ecash $e");
+      AppLogger.instance.error("Could not reissue E-Cash $e");
       ToastService().show(
-        message: "Could not claim ecash",
+        message: "Could not claim E-Cash",
         duration: const Duration(seconds: 5),
         onTap: () {},
         icon: Icon(Icons.error),
@@ -73,9 +73,9 @@ class _EcashRedeemPromptState extends State<EcashRedeemPrompt> {
         ecash: widget.ecash,
       );
     } catch (e) {
-      AppLogger.instance.error("Could not reissue ecash $e");
+      AppLogger.instance.error("Could not reissue E-Cash $e");
       ToastService().show(
-        message: "Could not claim ecash",
+        message: "Could not claim E-Cash",
         duration: const Duration(seconds: 5),
         onTap: () {},
         icon: Icon(Icons.error),
@@ -93,7 +93,7 @@ class _EcashRedeemPromptState extends State<EcashRedeemPrompt> {
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         Text(
-          'Do you want to redeem the following ecash to ${widget.fed.federationName}?',
+          'Do you want to redeem the following E-Cash to ${widget.fed.federationName}?',
           style: theme.textTheme.titleLarge,
           textAlign: TextAlign.center,
         ),

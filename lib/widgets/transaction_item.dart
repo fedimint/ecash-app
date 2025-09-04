@@ -58,7 +58,7 @@ class TransactionItem extends StatelessWidget {
             details: {
               'Amount': formattedAmount,
               "Fees": formatBalance(fees, true),
-              "Ecash": oobNotes,
+              "E-Cash": oobNotes,
               'Timestamp': formattedDate,
             },
             icon: icon,
@@ -74,7 +74,7 @@ class TransactionItem extends StatelessWidget {
             details: {
               'Amount': formattedAmount,
               "Fees": formatBalance(fees, true),
-              "Ecash": oobNotes,
+              "E-Cash": oobNotes,
               'Timestamp': formattedDate,
             },
             icon: icon,

@@ -59,9 +59,9 @@ class _EcashSendState extends State<EcashSend> {
 
       if (_qrChunks.length > 1) _startQrLoop();
     } catch (e) {
-      AppLogger.instance.error("Could not send ecash: $e");
+      AppLogger.instance.error("Could not send E-Cash: $e");
       ToastService().show(
-        message: "Could not send ecash",
+        message: "Could not send E-Cash",
         duration: const Duration(seconds: 5),
         onTap: () {},
         icon: Icon(Icons.error),
@@ -86,7 +86,7 @@ class _EcashSendState extends State<EcashSend> {
     Clipboard.setData(ClipboardData(text: _ecash!));
     setState(() => _copied = true);
     ToastService().show(
-      message: "Ecash copied to clipboard",
+      message: "E-Cash copied to clipboard",
       duration: const Duration(seconds: 5),
       onTap: () {},
       icon: Icon(Icons.check),
@@ -117,7 +117,7 @@ class _EcashSendState extends State<EcashSend> {
     }
 
     if (_ecash == null) {
-      return const Center(child: Text("⚠️ Failed to load ecash"));
+      return const Center(child: Text("⚠️ Failed to load E-Cash"));
     }
 
     final abbreviatedEcash = getAbbreviatedText(_ecash!);
@@ -130,7 +130,7 @@ class _EcashSendState extends State<EcashSend> {
           const Icon(Icons.lock_outline, size: 48),
           const SizedBox(height: 12),
           Text(
-            'Ecash Withdrawn',
+            'E-Cash Withdrawn',
             style: theme.textTheme.headlineSmall?.copyWith(
               color: theme.colorScheme.primary,
               fontWeight: FontWeight.bold,
