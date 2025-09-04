@@ -98,7 +98,9 @@ class _RequestState extends State<Request> with SingleTickerProviderStateMixin {
         icon: Icon(Icons.error),
       );
     } finally {
-      Navigator.of(context).popUntil((route) => route.isFirst);
+      if (mounted) {
+        Navigator.of(context).popUntil((route) => route.isFirst);
+      }
     }
   }
 
