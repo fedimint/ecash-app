@@ -47,16 +47,24 @@ class GatewayDetailsSheet extends StatelessWidget {
               CopyableDetailRow(label: 'Endpoint', value: gateway.endpoint),
               CopyableDetailRow(
                 label: 'Routing Fee',
-                value: "${formatBalance(gateway.baseRoutingFee, true)} + ${gateway.ppmRoutingFee} ppm",
+                value:
+                    "${formatBalance(gateway.baseRoutingFee, true)} + ${gateway.ppmRoutingFee} ppm",
               ),
               CopyableDetailRow(
                 label: 'Transaction Fee',
-                value: "${formatBalance(gateway.baseTransactionFee, true)} + ${gateway.ppmTransactionFee} ppm",
+                value:
+                    "${formatBalance(gateway.baseTransactionFee, true)} + ${gateway.ppmTransactionFee} ppm",
               ),
               if (gateway.lightningAlias != null)
-                CopyableDetailRow(label: 'Lightning Alias', value: gateway.lightningAlias!),
+                CopyableDetailRow(
+                  label: 'Lightning Alias',
+                  value: gateway.lightningAlias!,
+                ),
               if (gateway.lightningNode != null) ...[
-                CopyableDetailRow(label: 'Node Public Key', value: gateway.lightningNode!),
+                CopyableDetailRow(
+                  label: 'Node Public Key',
+                  value: gateway.lightningNode!,
+                ),
                 const SizedBox(height: 4),
                 GestureDetector(
                   onTap: () => _launchAmboss(gateway.lightningNode!),
@@ -76,5 +84,3 @@ class GatewayDetailsSheet extends StatelessWidget {
     );
   }
 }
-
-

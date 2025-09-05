@@ -42,26 +42,33 @@ class GatewaysList extends StatelessWidget {
                 borderRadius: BorderRadius.circular(16),
                 boxShadow: [
                   BoxShadow(
-                    color: Theme.of(context).colorScheme.primary.withOpacity(0.1),
+                    color: Theme.of(
+                      context,
+                    ).colorScheme.primary.withOpacity(0.1),
                     blurRadius: 8,
                     offset: const Offset(0, 4),
                   ),
                 ],
               ),
               child: ListTile(
-                contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-                leading: Icon(Icons.device_hub, color: Theme.of(context).colorScheme.primary),
+                contentPadding: const EdgeInsets.symmetric(
+                  horizontal: 20,
+                  vertical: 16,
+                ),
+                leading: Icon(
+                  Icons.device_hub,
+                  color: Theme.of(context).colorScheme.primary,
+                ),
                 title: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
-                      g.endpoint,
-                      style: theme.textTheme.titleSmall,
-                    ),
+                    Text(g.endpoint, style: theme.textTheme.titleSmall),
                     const SizedBox(height: 4),
                     Text(
                       "${formatBalance(g.baseRoutingFee, true)} + ${g.ppmRoutingFee} ppm",
-                      style: theme.textTheme.bodyMedium?.copyWith(color: Colors.white60),
+                      style: theme.textTheme.bodyMedium?.copyWith(
+                        color: Colors.white60,
+                      ),
                     ),
                   ],
                 ),
@@ -79,5 +86,3 @@ class GatewaysList extends StatelessWidget {
     );
   }
 }
-
-

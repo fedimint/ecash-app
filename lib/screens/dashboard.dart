@@ -285,7 +285,12 @@ class _DashboardState extends State<Dashboard> {
               const SizedBox(height: 8),
               GestureDetector(
                 onTap: () {
-                  showLightningAddressDialog(context, _lnAddressConfig!.username, _lnAddressConfig!.domain, _lnAddressConfig!.lnurl);
+                  showLightningAddressDialog(
+                    context,
+                    _lnAddressConfig!.username,
+                    _lnAddressConfig!.domain,
+                    _lnAddressConfig!.lnurl,
+                  );
                 },
                 child: Container(
                   padding: const EdgeInsets.symmetric(
@@ -304,17 +309,11 @@ class _DashboardState extends State<Dashboard> {
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      const Icon(
-                        Icons.flash_on,
-                        color: Colors.amber,
-                        size: 18,
-                      ),
+                      const Icon(Icons.flash_on, color: Colors.amber, size: 18),
                       const SizedBox(width: 8),
                       Text(
                         '${_lnAddressConfig!.username}@${_lnAddressConfig!.domain}',
-                        style: Theme.of(
-                          context,
-                        ).textTheme.bodyMedium?.copyWith(
+                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                           color: Theme.of(context).colorScheme.secondary,
                           fontWeight: FontWeight.w500,
                         ),

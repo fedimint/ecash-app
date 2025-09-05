@@ -9,7 +9,11 @@ class OnchainAddressesList extends StatefulWidget {
   final FederationSelector fed;
   final VoidCallback updateAddresses;
 
-  const OnchainAddressesList({super.key, required this.fed, required this.updateAddresses});
+  const OnchainAddressesList({
+    super.key,
+    required this.fed,
+    required this.updateAddresses,
+  });
 
   @override
   State<OnchainAddressesList> createState() => _OnchainAddressesListState();
@@ -28,7 +32,11 @@ class _OnchainAddressesListState extends State<OnchainAddressesList> {
     return '${amount.toString()} sats';
   }
 
-  String abbreviateAddress(String address, {int headLength = 8, int tailLength = 8}) {
+  String abbreviateAddress(
+    String address, {
+    int headLength = 8,
+    int tailLength = 8,
+  }) {
     if (address.length <= headLength + tailLength) return address;
     final head = address.substring(0, headLength);
     final tail = address.substring(address.length - tailLength);
@@ -44,22 +52,33 @@ class _OnchainAddressesListState extends State<OnchainAddressesList> {
       default:
         return null;
     }
-  } 
+  }
 
   Future<void> _refreshAddress(BigInt tweakIdx, String address) async {
     try {
       // Call the Rust async function recheckAddress for the given address and federation
-      await recheckAddress(federationId: widget.fed.federationId, tweakIdx: tweakIdx);
+      await recheckAddress(
+        federationId: widget.fed.federationId,
+        tweakIdx: tweakIdx,
+      );
       widget.updateAddresses();
 
-      ToastService().show(message: 'Rechecked ${abbreviateAddress(address)}', duration: const Duration(seconds: 5), onTap: () {}, icon: Icon(Icons.info));
+      ToastService().show(
+        message: 'Rechecked ${abbreviateAddress(address)}',
+        duration: const Duration(seconds: 5),
+        onTap: () {},
+        icon: Icon(Icons.info),
+      );
     } catch (e) {
       AppLogger.instance.error("Failed to refresh address: $e");
-      ToastService().show(message: "Failed to refresh address", duration: const Duration(seconds: 5), onTap: () {}, icon: Icon(Icons.error));
+      ToastService().show(
+        message: "Failed to refresh address",
+        duration: const Duration(seconds: 5),
+        onTap: () {},
+        icon: Icon(Icons.error),
+      );
     }
   }
-
-
 
   @override
   Widget build(BuildContext context) {
@@ -146,7 +165,12 @@ class _OnchainAddressesListState extends State<OnchainAddressesList> {
                           color: Theme.of(context).colorScheme.primary,
                           onPressed: () {
                             Clipboard.setData(ClipboardData(text: address));
-                            ToastService().show(message: "Address copied to clipboard", duration: const Duration(seconds: 5), onTap: () {}, icon: Icon(Icons.check));
+                            ToastService().show(
+                              message: "Address copied to clipboard",
+                              duration: const Duration(seconds: 5),
+                              onTap: () {},
+                              icon: Icon(Icons.check),
+                            );
                           },
                         ),
 

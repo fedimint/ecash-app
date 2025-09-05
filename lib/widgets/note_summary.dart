@@ -33,11 +33,15 @@ class _NoteSummaryState extends State<NoteSummary> {
         }
 
         if (snapshot.hasError) {
-          AppLogger.instance.error("Error loading note summary: ${snapshot.error}");
+          AppLogger.instance.error(
+            "Error loading note summary: ${snapshot.error}",
+          );
           return Center(
             child: Text(
               'Could not load note summary',
-              style: theme.textTheme.bodyMedium?.copyWith(color: Colors.redAccent),
+              style: theme.textTheme.bodyMedium?.copyWith(
+                color: Colors.redAccent,
+              ),
             ),
           );
         }
@@ -58,19 +62,19 @@ class _NoteSummaryState extends State<NoteSummary> {
               DataColumn(label: Text('Denomination')),
               DataColumn(label: Text('Count')),
             ],
-            rows: summary.map((entry) {
-              final (denom, count) = entry;
-              return DataRow(
-                cells: [
-                  DataCell(Text(formatBalance(denom, true))),
-                  DataCell(Text(count.toString())),
-                ],
-              );
-            }).toList(),
+            rows:
+                summary.map((entry) {
+                  final (denom, count) = entry;
+                  return DataRow(
+                    cells: [
+                      DataCell(Text(formatBalance(denom, true))),
+                      DataCell(Text(count.toString())),
+                    ],
+                  );
+                }).toList(),
           ),
         );
       },
     );
   }
 }
-
