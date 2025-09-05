@@ -764,17 +764,6 @@ class _FederationUtxoListState extends State<FederationUtxoList> {
     }
   }
 
-  String? _explorerUrl(String txid) {
-    switch (widget.fed.network) {
-      case 'bitcoin':
-        return 'https://mempool.space/tx/$txid';
-      case 'signet':
-        return 'https://mutinynet.com/tx/$txid';
-      default:
-        return null;
-    }
-  }
-
   // Abbreviate the txid with the middle replaced by "..."
   String abbreviateTxid(String txid, {int headLength = 8, int tailLength = 8}) {
     if (txid.length <= headLength + tailLength) return txid;
@@ -805,7 +794,10 @@ class _FederationUtxoListState extends State<FederationUtxoList> {
       separatorBuilder: (_, __) => const SizedBox(height: 10),
       itemBuilder: (context, index) {
         final utxo = utxos![index];
-        final explorerUrl = _explorerUrl(utxo.txid);
+        final explorerUrl = explorerUrlForNetwork(
+          utxo.txid,
+          widget.fed.network,
+        );
         final abbreviatedTxid = abbreviateTxid(utxo.txid);
         final txidLabel = "$abbreviatedTxid:${utxo.index}";
 

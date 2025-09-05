@@ -8751,6 +8751,12 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   }
 
   @protected
+  double dco_decode_box_autoadd_f_64(dynamic raw) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    return raw as double;
+  }
+
+  @protected
   InvoicePaidEvent dco_decode_box_autoadd_invoice_paid_event(dynamic raw) {
     // Codec=Dco (DartCObject based), see doc to use other codecs
     return dco_decode_invoice_paid_event(raw);
@@ -8793,6 +8799,12 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   ) {
     // Codec=Dco (DartCObject based), see doc to use other codecs
     return raw as (FederationId, BigInt);
+  }
+
+  @protected
+  int dco_decode_box_autoadd_u_32(dynamic raw) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    return raw as int;
   }
 
   @protected
@@ -9190,6 +9202,18 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   }
 
   @protected
+  double? dco_decode_opt_box_autoadd_f_64(dynamic raw) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    return raw == null ? null : dco_decode_box_autoadd_f_64(raw);
+  }
+
+  @protected
+  int? dco_decode_opt_box_autoadd_u_32(dynamic raw) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    return raw == null ? null : dco_decode_box_autoadd_u_32(raw);
+  }
+
+  @protected
   BigInt? dco_decode_opt_box_autoadd_u_64(dynamic raw) {
     // Codec=Dco (DartCObject based), see doc to use other codecs
     return raw == null ? null : dco_decode_box_autoadd_u_64(raw);
@@ -9567,9 +9591,19 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
       case 2:
         return TransactionKind_LightningRecurring();
       case 3:
-        return TransactionKind_OnchainReceive();
+        return TransactionKind_OnchainReceive(
+          address: dco_decode_String(raw[1]),
+          txid: dco_decode_String(raw[2]),
+        );
       case 4:
-        return TransactionKind_OnchainSend();
+        return TransactionKind_OnchainSend(
+          address: dco_decode_String(raw[1]),
+          txid: dco_decode_String(raw[2]),
+          feeRateSatsPerVb: dco_decode_opt_box_autoadd_f_64(raw[3]),
+          txSizeVb: dco_decode_opt_box_autoadd_u_32(raw[4]),
+          feeSats: dco_decode_opt_box_autoadd_u_64(raw[5]),
+          totalSats: dco_decode_opt_box_autoadd_u_64(raw[6]),
+        );
       case 5:
         return TransactionKind_EcashReceive(
           oobNotes: dco_decode_String(raw[1]),
@@ -10533,6 +10567,12 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   }
 
   @protected
+  double sse_decode_box_autoadd_f_64(SseDeserializer deserializer) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    return (sse_decode_f_64(deserializer));
+  }
+
+  @protected
   InvoicePaidEvent sse_decode_box_autoadd_invoice_paid_event(
     SseDeserializer deserializer,
   ) {
@@ -10587,6 +10627,12 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
     return (sse_decode_record_auto_owned_rust_opaque_flutter_rust_bridgefor_generated_rust_auto_opaque_inner_federation_id_u_64(
       deserializer,
     ));
+  }
+
+  @protected
+  int sse_decode_box_autoadd_u_32(SseDeserializer deserializer) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    return (sse_decode_u_32(deserializer));
   }
 
   @protected
@@ -11085,6 +11131,28 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   }
 
   @protected
+  double? sse_decode_opt_box_autoadd_f_64(SseDeserializer deserializer) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+
+    if (sse_decode_bool(deserializer)) {
+      return (sse_decode_box_autoadd_f_64(deserializer));
+    } else {
+      return null;
+    }
+  }
+
+  @protected
+  int? sse_decode_opt_box_autoadd_u_32(SseDeserializer deserializer) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+
+    if (sse_decode_bool(deserializer)) {
+      return (sse_decode_box_autoadd_u_32(deserializer));
+    } else {
+      return null;
+    }
+  }
+
+  @protected
   BigInt? sse_decode_opt_box_autoadd_u_64(SseDeserializer deserializer) {
     // Codec=Sse (Serialization based), see doc to use other codecs
 
@@ -11431,9 +11499,29 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
       case 2:
         return TransactionKind_LightningRecurring();
       case 3:
-        return TransactionKind_OnchainReceive();
+        var var_address = sse_decode_String(deserializer);
+        var var_txid = sse_decode_String(deserializer);
+        return TransactionKind_OnchainReceive(
+          address: var_address,
+          txid: var_txid,
+        );
       case 4:
-        return TransactionKind_OnchainSend();
+        var var_address = sse_decode_String(deserializer);
+        var var_txid = sse_decode_String(deserializer);
+        var var_feeRateSatsPerVb = sse_decode_opt_box_autoadd_f_64(
+          deserializer,
+        );
+        var var_txSizeVb = sse_decode_opt_box_autoadd_u_32(deserializer);
+        var var_feeSats = sse_decode_opt_box_autoadd_u_64(deserializer);
+        var var_totalSats = sse_decode_opt_box_autoadd_u_64(deserializer);
+        return TransactionKind_OnchainSend(
+          address: var_address,
+          txid: var_txid,
+          feeRateSatsPerVb: var_feeRateSatsPerVb,
+          txSizeVb: var_txSizeVb,
+          feeSats: var_feeSats,
+          totalSats: var_totalSats,
+        );
       case 5:
         var var_oobNotes = sse_decode_String(deserializer);
         var var_fees = sse_decode_u_64(deserializer);
@@ -12493,6 +12581,12 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   }
 
   @protected
+  void sse_encode_box_autoadd_f_64(double self, SseSerializer serializer) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    sse_encode_f_64(self, serializer);
+  }
+
+  @protected
   void sse_encode_box_autoadd_invoice_paid_event(
     InvoicePaidEvent self,
     SseSerializer serializer,
@@ -12556,6 +12650,12 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
       self,
       serializer,
     );
+  }
+
+  @protected
+  void sse_encode_box_autoadd_u_32(int self, SseSerializer serializer) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    sse_encode_u_32(self, serializer);
   }
 
   @protected
@@ -13010,6 +13110,26 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   }
 
   @protected
+  void sse_encode_opt_box_autoadd_f_64(double? self, SseSerializer serializer) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+
+    sse_encode_bool(self != null, serializer);
+    if (self != null) {
+      sse_encode_box_autoadd_f_64(self, serializer);
+    }
+  }
+
+  @protected
+  void sse_encode_opt_box_autoadd_u_32(int? self, SseSerializer serializer) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+
+    sse_encode_bool(self != null, serializer);
+    if (self != null) {
+      sse_encode_box_autoadd_u_32(self, serializer);
+    }
+  }
+
+  @protected
   void sse_encode_opt_box_autoadd_u_64(BigInt? self, SseSerializer serializer) {
     // Codec=Sse (Serialization based), see doc to use other codecs
 
@@ -13347,10 +13467,28 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
         sse_encode_String(preimage, serializer);
       case TransactionKind_LightningRecurring():
         sse_encode_i_32(2, serializer);
-      case TransactionKind_OnchainReceive():
+      case TransactionKind_OnchainReceive(
+        address: final address,
+        txid: final txid,
+      ):
         sse_encode_i_32(3, serializer);
-      case TransactionKind_OnchainSend():
+        sse_encode_String(address, serializer);
+        sse_encode_String(txid, serializer);
+      case TransactionKind_OnchainSend(
+        address: final address,
+        txid: final txid,
+        feeRateSatsPerVb: final feeRateSatsPerVb,
+        txSizeVb: final txSizeVb,
+        feeSats: final feeSats,
+        totalSats: final totalSats,
+      ):
         sse_encode_i_32(4, serializer);
+        sse_encode_String(address, serializer);
+        sse_encode_String(txid, serializer);
+        sse_encode_opt_box_autoadd_f_64(feeRateSatsPerVb, serializer);
+        sse_encode_opt_box_autoadd_u_32(txSizeVb, serializer);
+        sse_encode_opt_box_autoadd_u_64(feeSats, serializer);
+        sse_encode_opt_box_autoadd_u_64(totalSats, serializer);
       case TransactionKind_EcashReceive(
         oobNotes: final oobNotes,
         fees: final fees,

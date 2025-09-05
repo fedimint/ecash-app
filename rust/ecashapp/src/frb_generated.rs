@@ -10898,6 +10898,28 @@ impl SseDecode for Option<LightningAddressConfig> {
     }
 }
 
+impl SseDecode for Option<f64> {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
+        if (<bool>::sse_decode(deserializer)) {
+            return Some(<f64>::sse_decode(deserializer));
+        } else {
+            return None;
+        }
+    }
+}
+
+impl SseDecode for Option<u32> {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
+        if (<bool>::sse_decode(deserializer)) {
+            return Some(<u32>::sse_decode(deserializer));
+        } else {
+            return None;
+        }
+    }
+}
+
 impl SseDecode for Option<u64> {
     // Codec=Sse (Serialization based), see doc to use other codecs
     fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
@@ -11192,10 +11214,28 @@ impl SseDecode for crate::multimint::TransactionKind {
                 return crate::multimint::TransactionKind::LightningRecurring;
             }
             3 => {
-                return crate::multimint::TransactionKind::OnchainReceive;
+                let mut var_address = <String>::sse_decode(deserializer);
+                let mut var_txid = <String>::sse_decode(deserializer);
+                return crate::multimint::TransactionKind::OnchainReceive {
+                    address: var_address,
+                    txid: var_txid,
+                };
             }
             4 => {
-                return crate::multimint::TransactionKind::OnchainSend;
+                let mut var_address = <String>::sse_decode(deserializer);
+                let mut var_txid = <String>::sse_decode(deserializer);
+                let mut var_feeRateSatsPerVb = <Option<f64>>::sse_decode(deserializer);
+                let mut var_txSizeVb = <Option<u32>>::sse_decode(deserializer);
+                let mut var_feeSats = <Option<u64>>::sse_decode(deserializer);
+                let mut var_totalSats = <Option<u64>>::sse_decode(deserializer);
+                return crate::multimint::TransactionKind::OnchainSend {
+                    address: var_address,
+                    txid: var_txid,
+                    fee_rate_sats_per_vb: var_feeRateSatsPerVb,
+                    tx_size_vb: var_txSizeVb,
+                    fee_sats: var_feeSats,
+                    total_sats: var_totalSats,
+                };
             }
             5 => {
                 let mut var_oobNotes = <String>::sse_decode(deserializer);
@@ -12800,8 +12840,29 @@ impl flutter_rust_bridge::IntoDart for crate::multimint::TransactionKind {
             ]
             .into_dart(),
             crate::multimint::TransactionKind::LightningRecurring => [2.into_dart()].into_dart(),
-            crate::multimint::TransactionKind::OnchainReceive => [3.into_dart()].into_dart(),
-            crate::multimint::TransactionKind::OnchainSend => [4.into_dart()].into_dart(),
+            crate::multimint::TransactionKind::OnchainReceive { address, txid } => [
+                3.into_dart(),
+                address.into_into_dart().into_dart(),
+                txid.into_into_dart().into_dart(),
+            ]
+            .into_dart(),
+            crate::multimint::TransactionKind::OnchainSend {
+                address,
+                txid,
+                fee_rate_sats_per_vb,
+                tx_size_vb,
+                fee_sats,
+                total_sats,
+            } => [
+                4.into_dart(),
+                address.into_into_dart().into_dart(),
+                txid.into_into_dart().into_dart(),
+                fee_rate_sats_per_vb.into_into_dart().into_dart(),
+                tx_size_vb.into_into_dart().into_dart(),
+                fee_sats.into_into_dart().into_dart(),
+                total_sats.into_into_dart().into_dart(),
+            ]
+            .into_dart(),
             crate::multimint::TransactionKind::EcashReceive { oob_notes, fees } => [
                 5.into_dart(),
                 oob_notes.into_into_dart().into_dart(),
@@ -13777,6 +13838,26 @@ impl SseEncode for Option<LightningAddressConfig> {
     }
 }
 
+impl SseEncode for Option<f64> {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
+        <bool>::sse_encode(self.is_some(), serializer);
+        if let Some(value) = self {
+            <f64>::sse_encode(value, serializer);
+        }
+    }
+}
+
+impl SseEncode for Option<u32> {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
+        <bool>::sse_encode(self.is_some(), serializer);
+        if let Some(value) = self {
+            <u32>::sse_encode(value, serializer);
+        }
+    }
+}
+
 impl SseEncode for Option<u64> {
     // Codec=Sse (Serialization based), see doc to use other codecs
     fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
@@ -14033,11 +14114,26 @@ impl SseEncode for crate::multimint::TransactionKind {
             crate::multimint::TransactionKind::LightningRecurring => {
                 <i32>::sse_encode(2, serializer);
             }
-            crate::multimint::TransactionKind::OnchainReceive => {
+            crate::multimint::TransactionKind::OnchainReceive { address, txid } => {
                 <i32>::sse_encode(3, serializer);
+                <String>::sse_encode(address, serializer);
+                <String>::sse_encode(txid, serializer);
             }
-            crate::multimint::TransactionKind::OnchainSend => {
+            crate::multimint::TransactionKind::OnchainSend {
+                address,
+                txid,
+                fee_rate_sats_per_vb,
+                tx_size_vb,
+                fee_sats,
+                total_sats,
+            } => {
                 <i32>::sse_encode(4, serializer);
+                <String>::sse_encode(address, serializer);
+                <String>::sse_encode(txid, serializer);
+                <Option<f64>>::sse_encode(fee_rate_sats_per_vb, serializer);
+                <Option<u32>>::sse_encode(tx_size_vb, serializer);
+                <Option<u64>>::sse_encode(fee_sats, serializer);
+                <Option<u64>>::sse_encode(total_sats, serializer);
             }
             crate::multimint::TransactionKind::EcashReceive { oob_notes, fees } => {
                 <i32>::sse_encode(5, serializer);

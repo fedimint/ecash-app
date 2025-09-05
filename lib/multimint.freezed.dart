@@ -1665,65 +1665,145 @@ String toString() {
 
 
 class TransactionKind_OnchainReceive extends TransactionKind {
-  const TransactionKind_OnchainReceive(): super._();
+  const TransactionKind_OnchainReceive({required this.address, required this.txid}): super._();
   
 
+ final  String address;
+ final  String txid;
 
-
+/// Create a copy of TransactionKind
+/// with the given fields replaced by the non-null parameter values.
+@JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+$TransactionKind_OnchainReceiveCopyWith<TransactionKind_OnchainReceive> get copyWith => _$TransactionKind_OnchainReceiveCopyWithImpl<TransactionKind_OnchainReceive>(this, _$identity);
 
 
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is TransactionKind_OnchainReceive);
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is TransactionKind_OnchainReceive&&(identical(other.address, address) || other.address == address)&&(identical(other.txid, txid) || other.txid == txid));
 }
 
 
 @override
-int get hashCode => runtimeType.hashCode;
+int get hashCode => Object.hash(runtimeType,address,txid);
 
 @override
 String toString() {
-  return 'TransactionKind.onchainReceive()';
+  return 'TransactionKind.onchainReceive(address: $address, txid: $txid)';
 }
 
 
 }
 
+/// @nodoc
+abstract mixin class $TransactionKind_OnchainReceiveCopyWith<$Res> implements $TransactionKindCopyWith<$Res> {
+  factory $TransactionKind_OnchainReceiveCopyWith(TransactionKind_OnchainReceive value, $Res Function(TransactionKind_OnchainReceive) _then) = _$TransactionKind_OnchainReceiveCopyWithImpl;
+@useResult
+$Res call({
+ String address, String txid
+});
 
 
+
+
+}
+/// @nodoc
+class _$TransactionKind_OnchainReceiveCopyWithImpl<$Res>
+    implements $TransactionKind_OnchainReceiveCopyWith<$Res> {
+  _$TransactionKind_OnchainReceiveCopyWithImpl(this._self, this._then);
+
+  final TransactionKind_OnchainReceive _self;
+  final $Res Function(TransactionKind_OnchainReceive) _then;
+
+/// Create a copy of TransactionKind
+/// with the given fields replaced by the non-null parameter values.
+@pragma('vm:prefer-inline') $Res call({Object? address = null,Object? txid = null,}) {
+  return _then(TransactionKind_OnchainReceive(
+address: null == address ? _self.address : address // ignore: cast_nullable_to_non_nullable
+as String,txid: null == txid ? _self.txid : txid // ignore: cast_nullable_to_non_nullable
+as String,
+  ));
+}
+
+
+}
 
 /// @nodoc
 
 
 class TransactionKind_OnchainSend extends TransactionKind {
-  const TransactionKind_OnchainSend(): super._();
+  const TransactionKind_OnchainSend({required this.address, required this.txid, this.feeRateSatsPerVb, this.txSizeVb, this.feeSats, this.totalSats}): super._();
   
 
+ final  String address;
+ final  String txid;
+ final  double? feeRateSatsPerVb;
+ final  int? txSizeVb;
+ final  BigInt? feeSats;
+ final  BigInt? totalSats;
 
-
+/// Create a copy of TransactionKind
+/// with the given fields replaced by the non-null parameter values.
+@JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+$TransactionKind_OnchainSendCopyWith<TransactionKind_OnchainSend> get copyWith => _$TransactionKind_OnchainSendCopyWithImpl<TransactionKind_OnchainSend>(this, _$identity);
 
 
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is TransactionKind_OnchainSend);
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is TransactionKind_OnchainSend&&(identical(other.address, address) || other.address == address)&&(identical(other.txid, txid) || other.txid == txid)&&(identical(other.feeRateSatsPerVb, feeRateSatsPerVb) || other.feeRateSatsPerVb == feeRateSatsPerVb)&&(identical(other.txSizeVb, txSizeVb) || other.txSizeVb == txSizeVb)&&(identical(other.feeSats, feeSats) || other.feeSats == feeSats)&&(identical(other.totalSats, totalSats) || other.totalSats == totalSats));
 }
 
 
 @override
-int get hashCode => runtimeType.hashCode;
+int get hashCode => Object.hash(runtimeType,address,txid,feeRateSatsPerVb,txSizeVb,feeSats,totalSats);
 
 @override
 String toString() {
-  return 'TransactionKind.onchainSend()';
+  return 'TransactionKind.onchainSend(address: $address, txid: $txid, feeRateSatsPerVb: $feeRateSatsPerVb, txSizeVb: $txSizeVb, feeSats: $feeSats, totalSats: $totalSats)';
 }
 
 
 }
 
+/// @nodoc
+abstract mixin class $TransactionKind_OnchainSendCopyWith<$Res> implements $TransactionKindCopyWith<$Res> {
+  factory $TransactionKind_OnchainSendCopyWith(TransactionKind_OnchainSend value, $Res Function(TransactionKind_OnchainSend) _then) = _$TransactionKind_OnchainSendCopyWithImpl;
+@useResult
+$Res call({
+ String address, String txid, double? feeRateSatsPerVb, int? txSizeVb, BigInt? feeSats, BigInt? totalSats
+});
 
 
+
+
+}
+/// @nodoc
+class _$TransactionKind_OnchainSendCopyWithImpl<$Res>
+    implements $TransactionKind_OnchainSendCopyWith<$Res> {
+  _$TransactionKind_OnchainSendCopyWithImpl(this._self, this._then);
+
+  final TransactionKind_OnchainSend _self;
+  final $Res Function(TransactionKind_OnchainSend) _then;
+
+/// Create a copy of TransactionKind
+/// with the given fields replaced by the non-null parameter values.
+@pragma('vm:prefer-inline') $Res call({Object? address = null,Object? txid = null,Object? feeRateSatsPerVb = freezed,Object? txSizeVb = freezed,Object? feeSats = freezed,Object? totalSats = freezed,}) {
+  return _then(TransactionKind_OnchainSend(
+address: null == address ? _self.address : address // ignore: cast_nullable_to_non_nullable
+as String,txid: null == txid ? _self.txid : txid // ignore: cast_nullable_to_non_nullable
+as String,feeRateSatsPerVb: freezed == feeRateSatsPerVb ? _self.feeRateSatsPerVb : feeRateSatsPerVb // ignore: cast_nullable_to_non_nullable
+as double?,txSizeVb: freezed == txSizeVb ? _self.txSizeVb : txSizeVb // ignore: cast_nullable_to_non_nullable
+as int?,feeSats: freezed == feeSats ? _self.feeSats : feeSats // ignore: cast_nullable_to_non_nullable
+as BigInt?,totalSats: freezed == totalSats ? _self.totalSats : totalSats // ignore: cast_nullable_to_non_nullable
+as BigInt?,
+  ));
+}
+
+
+}
 
 /// @nodoc
 

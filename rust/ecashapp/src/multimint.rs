@@ -163,8 +163,18 @@ pub enum TransactionKind {
         preimage: String,
     },
     LightningRecurring,
-    OnchainReceive,
-    OnchainSend,
+    OnchainReceive {
+        address: String,
+        txid: String,
+    },
+    OnchainSend {
+        address: String,
+        txid: String,
+        fee_rate_sats_per_vb: Option<f64>,
+        tx_size_vb: Option<u32>,
+        fee_sats: Option<u64>,
+        total_sats: Option<u64>,
+    },
     EcashReceive {
         oob_notes: String,
         fees: u64,
@@ -317,6 +327,24 @@ pub struct LNAddressRemoveRequest {
     pub domain: String,
     pub username: String,
     pub authentication_token: String,
+}
+
+#[derive(Serialize, Deserialize)]
+struct OnChainWithdrawalMeta {
+    fee_rate_sats_per_vb: f64,
+    tx_size_vb: u32,
+    fee_sats: u64,
+}
+
+impl OnChainWithdrawalMeta {
+    fn from_peg_out_fees(fees: &PegOutFees) -> Self {
+        Self {
+            fee_rate_sats_per_vb: fees.fee_rate.sats_per_kvb as f64 / 1000.0,
+            // ceil(weight / 4) using only u32
+            tx_size_vb: ((fees.total_weight + 3) / 4) as u32,
+            fee_sats: fees.amount().to_sat(),
+        }
+    }
 }
 
 impl Multimint {
@@ -1851,9 +1879,15 @@ impl Multimint {
         let meta = op_log_val.meta::<LightningOperationMeta>();
         match meta {
             LightningOperationMeta::Receive(receive) => {
-                serde_json::from_value::<Amount>(receive.custom_meta.get("amount").expect("amount should be present").clone())
-                    .expect("Could not deserialize amount")
-                    .msats
+                serde_json::from_value::<Amount>(
+                    receive
+                        .custom_meta
+                        .get("amount")
+                        .expect("amount should be present")
+                        .clone(),
+                )
+                .expect("Could not deserialize amount")
+                .msats
             }
             LightningOperationMeta::Send(send) => send.contract.amount.msats,
         }
@@ -2264,13 +2298,19 @@ impl Multimint {
                     "wallet" => {
                         let meta = op_log_val.meta::<WalletOperationMeta>();
                         match meta.variant {
-                            WalletOperationMetaVariant::Deposit { .. } => {
+                            WalletOperationMetaVariant::Deposit { address, .. } => {
                                 let outcome = op_log_val.outcome::<DepositStateV2>();
-                                if let Some(DepositStateV2::Claimed { btc_deposited, .. }) = outcome
+                                if let Some(DepositStateV2::Claimed {
+                                    btc_deposited,
+                                    btc_out_point,
+                                }) = outcome
                                 {
                                     let amount = Amount::from_sats(btc_deposited.to_sat()).msats;
+                                    let address = address.assume_checked().to_string();
+                                    let txid = btc_out_point.txid.to_string();
+
                                     Some(Transaction {
-                                        kind: TransactionKind::OnchainReceive,
+                                        kind: TransactionKind::OnchainReceive { address, txid },
                                         amount,
                                         timestamp,
                                         operation_id: key.operation_id.0.to_vec(),
@@ -2279,11 +2319,34 @@ impl Multimint {
                                     None
                                 }
                             }
-                            WalletOperationMetaVariant::Withdraw { amount, .. } => {
+                            WalletOperationMetaVariant::Withdraw {
+                                amount, address, ..
+                            } => {
                                 let outcome = op_log_val.outcome::<WithdrawState>();
-                                if let Some(WithdrawState::Succeeded(_txid)) = outcome {
+                                if let Some(WithdrawState::Succeeded(txid)) = outcome {
+                                    let address = address.assume_checked().to_string();
+
+                                    let meta = op_log_val.meta::<WalletOperationMeta>();
+                                    // meta was introduced after users began testing pre-releases of the
+                                    // app and won't exist for recovered clients, so these need to be optional
+                                    let meta = serde_json::from_value::<OnChainWithdrawalMeta>(
+                                        meta.extra_meta,
+                                    )
+                                    .ok();
+
                                     Some(Transaction {
-                                        kind: TransactionKind::OnchainSend,
+                                        kind: TransactionKind::OnchainSend {
+                                            address,
+                                            txid: txid.to_string(),
+                                            fee_rate_sats_per_vb: meta
+                                                .as_ref()
+                                                .map(|m| m.fee_rate_sats_per_vb),
+                                            tx_size_vb: meta.as_ref().map(|m| m.tx_size_vb),
+                                            fee_sats: meta.as_ref().map(|m| m.fee_sats),
+                                            total_sats: meta
+                                                .as_ref()
+                                                .map(|m| m.fee_sats + amount.to_sat()),
+                                        },
                                         amount: Amount::from_sats(amount.to_sat()).msats,
                                         timestamp,
                                         operation_id: key.operation_id.0.to_vec(),
@@ -2681,17 +2744,13 @@ impl Multimint {
         let address = bitcoin::address::Address::from_str(&address)?;
         let address = address.require_network(wallet_module.get_network())?;
         let amount = bitcoin::Amount::from_sat(amount_sats);
-
         let fees = wallet_module.get_withdraw_fees(&address, amount).await?;
-        let fee_amount = fees.amount().to_sat();
-        let fee_rate_sats_per_vb = fees.fee_rate.sats_per_kvb as f64 / 1000.0;
-        // ceil(weight / 4) using only u32
-        let tx_size_vbytes = ((fees.total_weight + 3) / 4) as u32;
+        let meta = OnChainWithdrawalMeta::from_peg_out_fees(&fees);
 
         Ok(WithdrawFeesResponse {
-            fee_amount,
-            fee_rate_sats_per_vb,
-            tx_size_vbytes,
+            fee_amount: meta.fee_sats,
+            fee_rate_sats_per_vb: meta.fee_rate_sats_per_vb,
+            tx_size_vbytes: meta.tx_size_vb,
             peg_out_fees: fees,
         })
     }
@@ -2716,10 +2775,12 @@ impl Multimint {
         let address = bitcoin::address::Address::from_str(&address)?;
         let address = address.require_network(wallet_module.get_network())?;
         let amount = bitcoin::Amount::from_sat(amount_sats);
+        let meta = OnChainWithdrawalMeta::from_peg_out_fees(&peg_out_fees);
 
         let operation_id = wallet_module
-            .withdraw(&address, amount, peg_out_fees, ())
+            .withdraw(&address, amount, peg_out_fees, meta)
             .await?;
+
         Ok(operation_id)
     }
 
