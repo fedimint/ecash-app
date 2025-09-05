@@ -173,6 +173,7 @@ class _OnchainSendState extends State<OnchainSend> {
       return;
     }
 
+    _quoteTimer?.cancel();
     setState(() => _withdrawing = true);
 
     try {
@@ -390,7 +391,10 @@ class _OnchainSendState extends State<OnchainSend> {
                   children: [
                     Expanded(
                       child: TextButton(
-                        onPressed: _loadingFees ? null : _calculateFees,
+                        onPressed:
+                            (_loadingFees || _withdrawing)
+                                ? null
+                                : _calculateFees,
                         child:
                             _loadingFees
                                 ? const Row(
