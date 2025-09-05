@@ -183,6 +183,17 @@ Future<double?> fetchBtcPrice() async {
   return null;
 }
 
+String? explorerUrlForNetwork(String txid, String? network) {
+  switch (network) {
+    case 'bitcoin':
+      return 'https://mempool.space/tx/$txid';
+    case 'signet':
+      return 'https://mutinynet.com/tx/$txid';
+    default:
+      return null;
+  }
+}
+
 Future<void> showExplorerConfirmation(BuildContext context, Uri url) async {
   final confirmed = await showDialog<bool>(
     context: context,

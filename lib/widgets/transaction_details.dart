@@ -61,14 +61,29 @@ class _TransactionDetailsState extends State<TransactionDetails> {
           ecash: ecash,
         );
         if (result) {
-          ToastService().show(message: "This E-Cash has been claimed", duration: const Duration(seconds: 5), onTap: () {}, icon: Icon(Icons.info));
+          ToastService().show(
+            message: "This E-Cash has been claimed",
+            duration: const Duration(seconds: 5),
+            onTap: () {},
+            icon: Icon(Icons.info),
+          );
         } else {
-          ToastService().show(message: "This E-Cash has not been claimed yet", duration: const Duration(seconds: 5), onTap: () {}, icon: Icon(Icons.info));
+          ToastService().show(
+            message: "This E-Cash has not been claimed yet",
+            duration: const Duration(seconds: 5),
+            onTap: () {},
+            icon: Icon(Icons.info),
+          );
         }
       }
     } catch (e) {
       AppLogger.instance.error("Error checking claim status: $e");
-      ToastService().show(message: "Unable to check E-Cash status", duration: const Duration(seconds: 5), onTap: () {}, icon: Icon(Icons.error));
+      ToastService().show(
+        message: "Unable to check E-Cash status",
+        duration: const Duration(seconds: 5),
+        onTap: () {},
+        icon: Icon(Icons.error),
+      );
     } finally {
       setState(() {
         _checking = false;
@@ -87,11 +102,7 @@ class _TransactionDetailsState extends State<TransactionDetails> {
       invoicePaidToastVisible.value = false;
       await showAppModalBottomSheet(
         context: context,
-        child: EcashRedeemPrompt(
-          fed: widget.fed,
-          ecash: ecash,
-          amount: amount,
-        ),
+        child: EcashRedeemPrompt(fed: widget.fed, ecash: ecash, amount: amount),
         heightFactor: 0.33,
       );
       invoicePaidToastVisible.value = true;
@@ -107,11 +118,7 @@ class _TransactionDetailsState extends State<TransactionDetails> {
       children: [
         Row(
           children: [
-            Icon(
-              widget.icon.icon,
-              color: theme.colorScheme.primary,
-              size: 24,
-            ),
+            Icon(widget.icon.icon, color: theme.colorScheme.primary, size: 24),
             const SizedBox(width: 8),
             Text(
               _getTitleFromKind(),
@@ -135,14 +142,63 @@ class _TransactionDetailsState extends State<TransactionDetails> {
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
-            children: widget.details.entries.map((entry) {
-              final abbreviate = entry.key == "Ecash";
-              return CopyableDetailRow(
-                label: entry.key,
-                value: entry.value,
-                abbreviate: abbreviate,
-              );
-            }).toList(),
+            children:
+                widget.details.entries.map((entry) {
+                  final abbreviate = entry.key == "Ecash";
+
+                  if (entry.key == "Txid") {
+                    String? txid;
+                    switch (widget.tx.kind) {
+                      case TransactionKind_OnchainSend(txid: final id):
+                        txid = id;
+                        break;
+                      case TransactionKind_OnchainReceive(txid: final id):
+                        txid = id;
+                        break;
+                      default:
+                        break;
+                    }
+
+                    final explorerUrl =
+                        txid != null
+                            ? explorerUrlForNetwork(txid, widget.fed.network)
+                            : null;
+
+                    return CopyableDetailRow(
+                      label: entry.key,
+                      value: entry.value,
+                      abbreviate: abbreviate,
+                      additionalAction:
+                          explorerUrl != null
+                              ? Padding(
+                                padding: const EdgeInsets.only(left: 8),
+                                child: IconButton(
+                                  tooltip: 'View on Block Explorer',
+                                  iconSize: 20,
+                                  padding: EdgeInsets.zero,
+                                  visualDensity: VisualDensity.compact,
+                                  icon: Icon(
+                                    Icons.open_in_new,
+                                    color: theme.colorScheme.secondary,
+                                  ),
+                                  onPressed:
+                                      () async =>
+                                          await showExplorerConfirmation(
+                                            context,
+                                            Uri.parse(explorerUrl),
+                                          ),
+                                ),
+                              )
+                              : null,
+                    );
+                  }
+
+                  return CopyableDetailRow(
+                    label: entry.key,
+                    value: entry.value,
+                    abbreviate: abbreviate,
+                  );
+                }).toList(),
           ),
         ),
         if (widget.tx.kind is TransactionKind_EcashSend) ...[
@@ -160,16 +216,19 @@ class _TransactionDetailsState extends State<TransactionDetails> {
                     borderRadius: BorderRadius.circular(12),
                   ),
                 ),
-                child: _checking
-                    ? const SizedBox(
-                        width: 20,
-                        height: 20,
-                        child: CircularProgressIndicator(
-                          strokeWidth: 2,
-                          valueColor: AlwaysStoppedAnimation<Color>(Colors.black),
-                        ),
-                      )
-                    : const Text("Check Claim Status"),
+                child:
+                    _checking
+                        ? const SizedBox(
+                          width: 20,
+                          height: 20,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            valueColor: AlwaysStoppedAnimation<Color>(
+                              Colors.black,
+                            ),
+                          ),
+                        )
+                        : const Text("Check Claim Status"),
               ),
               const SizedBox(height: 16),
               OutlinedButton(
@@ -191,4 +250,3 @@ class _TransactionDetailsState extends State<TransactionDetails> {
     );
   }
 }
-

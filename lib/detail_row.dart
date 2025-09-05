@@ -7,6 +7,7 @@ class CopyableDetailRow extends StatefulWidget {
   final String value;
   final bool showCopyButton;
   final bool abbreviate; // NEW optional parameter
+  final Widget? additionalAction;
 
   const CopyableDetailRow({
     super.key,
@@ -14,6 +15,7 @@ class CopyableDetailRow extends StatefulWidget {
     required this.value,
     this.showCopyButton = true,
     this.abbreviate = false, // default false
+    this.additionalAction,
   });
 
   @override
@@ -81,6 +83,7 @@ class _CopyableDetailRowState extends State<CopyableDetailRow> {
                     softWrap: true,
                   ),
                 ),
+                if (widget.additionalAction != null) widget.additionalAction!,
                 // Optional copy button
                 if (widget.showCopyButton)
                   Padding(
