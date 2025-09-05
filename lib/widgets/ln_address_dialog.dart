@@ -4,7 +4,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 
-void showLightningAddressDialog(BuildContext context, String username, String domain, String lnurl) async {
+void showLightningAddressDialog(
+  BuildContext context,
+  String username,
+  String domain,
+  String lnurl,
+) async {
   final lnAddress = '$username@$domain';
 
   showDialog(
@@ -28,7 +33,8 @@ class _LightningAddressDialog extends StatefulWidget {
   });
 
   @override
-  State<_LightningAddressDialog> createState() => _LightningAddressDialogState();
+  State<_LightningAddressDialog> createState() =>
+      _LightningAddressDialogState();
 }
 
 class _LightningAddressDialogState extends State<_LightningAddressDialog> {
@@ -52,10 +58,7 @@ class _LightningAddressDialogState extends State<_LightningAddressDialog> {
     return AlertDialog(
       backgroundColor: Theme.of(context).colorScheme.surface,
       title: Center(
-        child: Text(
-          widget.titles[_currentPage],
-          textAlign: TextAlign.center,
-        ),
+        child: Text(widget.titles[_currentPage], textAlign: TextAlign.center),
       ),
       content: SizedBox(
         width: 320,
@@ -70,7 +73,10 @@ class _LightningAddressDialogState extends State<_LightningAddressDialog> {
                     itemCount: widget.addresses.length,
                     onPageChanged: _onPageChanged,
                     itemBuilder: (context, index) {
-                      return _LightningAddressPage(data: widget.addresses[index], title: widget.titles[_currentPage]);
+                      return _LightningAddressPage(
+                        data: widget.addresses[index],
+                        title: widget.titles[_currentPage],
+                      );
                     },
                   ),
                   if (!isMobile) ...[
@@ -81,18 +87,20 @@ class _LightningAddressDialogState extends State<_LightningAddressDialog> {
                         iconSize: 32,
                         icon: Icon(
                           Icons.arrow_back_ios,
-                          color: _currentPage == 0
-                              ? Colors.grey.shade400
-                              : Theme.of(context).colorScheme.primary,
+                          color:
+                              _currentPage == 0
+                                  ? Colors.grey.shade400
+                                  : Theme.of(context).colorScheme.primary,
                         ),
-                        onPressed: _currentPage == 0
-                            ? null
-                            : () {
-                                _pageController.previousPage(
-                                  duration: const Duration(milliseconds: 300),
-                                  curve: Curves.easeInOut,
-                                );
-                              },
+                        onPressed:
+                            _currentPage == 0
+                                ? null
+                                : () {
+                                  _pageController.previousPage(
+                                    duration: const Duration(milliseconds: 300),
+                                    curve: Curves.easeInOut,
+                                  );
+                                },
                       ),
                     ),
                     // Right arrow button
@@ -102,18 +110,20 @@ class _LightningAddressDialogState extends State<_LightningAddressDialog> {
                         iconSize: 32,
                         icon: Icon(
                           Icons.arrow_forward_ios,
-                          color: _currentPage == widget.addresses.length - 1
-                              ? Colors.grey.shade400
-                              : Theme.of(context).colorScheme.primary,
+                          color:
+                              _currentPage == widget.addresses.length - 1
+                                  ? Colors.grey.shade400
+                                  : Theme.of(context).colorScheme.primary,
                         ),
-                        onPressed: _currentPage == widget.addresses.length - 1
-                            ? null
-                            : () {
-                                _pageController.nextPage(
-                                  duration: const Duration(milliseconds: 300),
-                                  curve: Curves.easeInOut,
-                                );
-                              },
+                        onPressed:
+                            _currentPage == widget.addresses.length - 1
+                                ? null
+                                : () {
+                                  _pageController.nextPage(
+                                    duration: const Duration(milliseconds: 300),
+                                    curve: Curves.easeInOut,
+                                  );
+                                },
                       ),
                     ),
                   ],
@@ -148,9 +158,10 @@ class _LightningAddressDialogState extends State<_LightningAddressDialog> {
           width: isActive ? 16 : 8,
           height: 8,
           decoration: BoxDecoration(
-            color: isActive
-                ? Theme.of(context).colorScheme.primary
-                : Theme.of(context).colorScheme.primary.withOpacity(0.3),
+            color:
+                isActive
+                    ? Theme.of(context).colorScheme.primary
+                    : Theme.of(context).colorScheme.primary.withOpacity(0.3),
             borderRadius: BorderRadius.circular(4),
           ),
         );
@@ -210,10 +221,7 @@ class _LightningAddressPage extends StatelessWidget {
             width: double.infinity,
             child: ElevatedButton.icon(
               icon: const Icon(Icons.copy, size: 18, color: Colors.black),
-              label: Text(
-                "Copy $title",
-                style: TextStyle(color: Colors.black),
-              ),
+              label: Text("Copy $title", style: TextStyle(color: Colors.black)),
               style: ElevatedButton.styleFrom(
                 backgroundColor: Theme.of(context).colorScheme.primary,
                 padding: const EdgeInsets.symmetric(vertical: 14),
@@ -224,7 +232,12 @@ class _LightningAddressPage extends StatelessWidget {
               ),
               onPressed: () {
                 Clipboard.setData(ClipboardData(text: data));
-                ToastService().show(message: "Copied $toastText", duration: const Duration(seconds: 5), onTap: () {}, icon: Icon(Icons.check));
+                ToastService().show(
+                  message: "Copied $toastText",
+                  duration: const Duration(seconds: 5),
+                  onTap: () {},
+                  icon: Icon(Icons.check),
+                );
               },
             ),
           ),
@@ -233,4 +246,3 @@ class _LightningAddressPage extends StatelessWidget {
     );
   }
 }
-

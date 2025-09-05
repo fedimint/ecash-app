@@ -21,7 +21,8 @@ class DashboardBalance extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    BigInt sats = balanceMsats != null ? balanceMsats! ~/ BigInt.from(1000) : BigInt.zero;
+    BigInt sats =
+        balanceMsats != null ? balanceMsats! ~/ BigInt.from(1000) : BigInt.zero;
     final usdText = calculateUsdValue(btcPrice, sats.toInt());
     if (recovering) {
       return Center(
