@@ -145,8 +145,32 @@ runs:
       id: version
       shell: bash
       run: |
-        VERSION_CODE=$((10000 + $GITHUB_RUN_NUMBER))
-        VERSION_NAME="0.1.0"
+        VERSION_NAME=$(grep '^version:' pubspec.yaml | sed 's/version: //' | cut -d'+' -f1)
+
+        if [[ "${{ github.ref }}" == refs/tags/v* ]]; then
+          # extract base version without pre-release suffix
+          BASE_VERSION=$(echo $VERSION_NAME | sed 's/-rc\..*//' | sed 's/-alpha.*//')
+          MAJOR=$(echo $BASE_VERSION | cut -d. -f1)
+          MINOR=$(echo $BASE_VERSION | cut -d. -f2)
+          PATCH=$(echo $BASE_VERSION | cut -d. -f3)
+
+          # calculate version code from semantic version
+          # inspired by https://github.com/ReactiveCircus/app-versioning
+          # verified by https://gist.github.com/bradleystachurski/2262b1e5a835489702e961f645f4f547
+          BASE_CODE=$((MAJOR * 1000000 + MINOR * 10000 + PATCH * 100))
+
+          if [[ "$VERSION_NAME" == *"-rc."* ]]; then
+            RC_NUM=$(echo $VERSION_NAME | sed 's/.*-rc\.//')
+            VERSION_CODE=$((BASE_CODE + RC_NUM))
+          else
+            # final release gets +90 to be above all RCs (room for 89 RCs)
+            VERSION_CODE=$((BASE_CODE + 90))
+          fi
+        else
+          # for master builds, use run number
+          VERSION_CODE=$GITHUB_RUN_NUMBER
+        fi
+
         echo "VERSION_CODE=$VERSION_CODE" >> $GITHUB_ENV
         echo "VERSION_NAME=$VERSION_NAME" >> $GITHUB_ENV
         echo "version_code=$VERSION_CODE" >> $GITHUB_OUTPUT
