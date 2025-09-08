@@ -18,6 +18,7 @@ jobs:
       - uses: ./.github/actions/android-build
         with:
           mode: release
+          use-production-package-id: ${{ startsWith(github.ref, 'refs/tags/') }}
           with-signing: true
           android-keystore: ${{ secrets.ANDROID_KEYSTORE }}
           keystore-password: ${{ secrets.KEYSTORE_PASSWORD }}
