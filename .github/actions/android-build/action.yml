@@ -4,6 +4,10 @@ inputs:
   mode:
     description: "Build mode: debug or release"
     required: true
+  use-production-package-id:
+    description: "Use production package ID (org.fedimint.app) instead of development (org.fedimint.app.master)"
+    required: false
+    default: "false"
   with-signing:
     description: "Whether to set up Android signing"
     required: false
@@ -103,6 +107,21 @@ runs:
     - name: Install Flutter dependencies
       shell: bash
       run: flutter pub get
+
+    - name: Update package ID for production release
+      if: inputs.use-production-package-id == 'true'
+      shell: bash
+      run: |
+        # Update namespace and applicationId in build.gradle.kts
+        sed -i 's/namespace = ".*"/namespace = "org.fedimint.app"/' android/app/build.gradle.kts
+        sed -i 's/applicationId = ".*"/applicationId = "org.fedimint.app"/' android/app/build.gradle.kts
+
+        # Update package in MainActivity.kt
+        CURRENT_PACKAGE=$(grep '^package ' android/app/src/main/kotlin/app/ecash/MainActivity.kt | sed 's/package //')
+        sed -i "s/package ${CURRENT_PACKAGE}/package org.fedimint.app/" android/app/src/main/kotlin/app/ecash/MainActivity.kt
+
+        # Update APPLICATION_ID in Linux CMakeLists.txt
+        sed -i 's/set(APPLICATION_ID ".*")/set(APPLICATION_ID "org.fedimint.app")/' linux/CMakeLists.txt
 
     - name: Build Rust library for Android
       shell: bash
