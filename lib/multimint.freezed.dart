@@ -309,61 +309,30 @@ as ClaimedEvent,
 /// @nodoc
 mixin _$LightningEventKind {
 
- InvoicePaidEvent get field0;
-/// Create a copy of LightningEventKind
-/// with the given fields replaced by the non-null parameter values.
-@JsonKey(includeFromJson: false, includeToJson: false)
-@pragma('vm:prefer-inline')
-$LightningEventKindCopyWith<LightningEventKind> get copyWith => _$LightningEventKindCopyWithImpl<LightningEventKind>(this as LightningEventKind, _$identity);
+
 
 
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is LightningEventKind&&(identical(other.field0, field0) || other.field0 == field0));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is LightningEventKind);
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,field0);
+int get hashCode => runtimeType.hashCode;
 
 @override
 String toString() {
-  return 'LightningEventKind(field0: $field0)';
+  return 'LightningEventKind()';
 }
 
 
 }
 
 /// @nodoc
-abstract mixin class $LightningEventKindCopyWith<$Res>  {
-  factory $LightningEventKindCopyWith(LightningEventKind value, $Res Function(LightningEventKind) _then) = _$LightningEventKindCopyWithImpl;
-@useResult
-$Res call({
- InvoicePaidEvent field0
-});
-
-
-
-
-}
-/// @nodoc
-class _$LightningEventKindCopyWithImpl<$Res>
-    implements $LightningEventKindCopyWith<$Res> {
-  _$LightningEventKindCopyWithImpl(this._self, this._then);
-
-  final LightningEventKind _self;
-  final $Res Function(LightningEventKind) _then;
-
-/// Create a copy of LightningEventKind
-/// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? field0 = null,}) {
-  return _then(_self.copyWith(
-field0: null == field0 ? _self.field0 : field0 // ignore: cast_nullable_to_non_nullable
-as InvoicePaidEvent,
-  ));
-}
-
+class $LightningEventKindCopyWith<$Res>  {
+$LightningEventKindCopyWith(LightningEventKind _, $Res Function(LightningEventKind) __);
 }
 
 
@@ -374,11 +343,11 @@ class LightningEventKind_InvoicePaid extends LightningEventKind {
   const LightningEventKind_InvoicePaid(this.field0): super._();
   
 
-@override final  InvoicePaidEvent field0;
+ final  InvoicePaidEvent field0;
 
 /// Create a copy of LightningEventKind
 /// with the given fields replaced by the non-null parameter values.
-@override @JsonKey(includeFromJson: false, includeToJson: false)
+@JsonKey(includeFromJson: false, includeToJson: false)
 @pragma('vm:prefer-inline')
 $LightningEventKind_InvoicePaidCopyWith<LightningEventKind_InvoicePaid> get copyWith => _$LightningEventKind_InvoicePaidCopyWithImpl<LightningEventKind_InvoicePaid>(this, _$identity);
 
@@ -404,7 +373,7 @@ String toString() {
 /// @nodoc
 abstract mixin class $LightningEventKind_InvoicePaidCopyWith<$Res> implements $LightningEventKindCopyWith<$Res> {
   factory $LightningEventKind_InvoicePaidCopyWith(LightningEventKind_InvoicePaid value, $Res Function(LightningEventKind_InvoicePaid) _then) = _$LightningEventKind_InvoicePaidCopyWithImpl;
-@override @useResult
+@useResult
 $Res call({
  InvoicePaidEvent field0
 });
@@ -423,7 +392,7 @@ class _$LightningEventKind_InvoicePaidCopyWithImpl<$Res>
 
 /// Create a copy of LightningEventKind
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? field0 = null,}) {
+@pragma('vm:prefer-inline') $Res call({Object? field0 = null,}) {
   return _then(LightningEventKind_InvoicePaid(
 null == field0 ? _self.field0 : field0 // ignore: cast_nullable_to_non_nullable
 as InvoicePaidEvent,
@@ -432,6 +401,38 @@ as InvoicePaidEvent,
 
 
 }
+
+/// @nodoc
+
+
+class LightningEventKind_PaymentSent extends LightningEventKind {
+  const LightningEventKind_PaymentSent(): super._();
+  
+
+
+
+
+
+
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is LightningEventKind_PaymentSent);
+}
+
+
+@override
+int get hashCode => runtimeType.hashCode;
+
+@override
+String toString() {
+  return 'LightningEventKind.paymentSent()';
+}
+
+
+}
+
+
+
 
 /// @nodoc
 mixin _$LightningSendOutcome {
