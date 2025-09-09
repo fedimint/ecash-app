@@ -470,6 +470,8 @@ sealed class LightningEventKind with _$LightningEventKind {
 
   const factory LightningEventKind.invoicePaid(InvoicePaidEvent field0) =
       LightningEventKind_InvoicePaid;
+  const factory LightningEventKind.paymentSent() =
+      LightningEventKind_PaymentSent;
 }
 
 @freezed

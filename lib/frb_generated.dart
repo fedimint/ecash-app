@@ -8926,6 +8926,8 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
         return LightningEventKind_InvoicePaid(
           dco_decode_box_autoadd_invoice_paid_event(raw[1]),
         );
+      case 1:
+        return LightningEventKind_PaymentSent();
       default:
         throw Exception("unreachable");
     }
@@ -10750,6 +10752,8 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           deserializer,
         );
         return LightningEventKind_InvoicePaid(var_field0);
+      case 1:
+        return LightningEventKind_PaymentSent();
       default:
         throw UnimplementedError('');
     }
@@ -12765,6 +12769,8 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
       case LightningEventKind_InvoicePaid(field0: final field0):
         sse_encode_i_32(0, serializer);
         sse_encode_box_autoadd_invoice_paid_event(field0, serializer);
+      case LightningEventKind_PaymentSent():
+        sse_encode_i_32(1, serializer);
     }
   }
 
