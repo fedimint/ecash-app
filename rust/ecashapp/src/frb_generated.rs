@@ -10535,6 +10535,9 @@ impl SseDecode for crate::multimint::LightningEventKind {
                 let mut var_field0 = <crate::multimint::InvoicePaidEvent>::sse_decode(deserializer);
                 return crate::multimint::LightningEventKind::InvoicePaid(var_field0);
             }
+            1 => {
+                return crate::multimint::LightningEventKind::PaymentSent;
+            }
             _ => {
                 unimplemented!("");
             }
@@ -12517,6 +12520,7 @@ impl flutter_rust_bridge::IntoDart for crate::multimint::LightningEventKind {
             crate::multimint::LightningEventKind::InvoicePaid(field0) => {
                 [0.into_dart(), field0.into_into_dart().into_dart()].into_dart()
             }
+            crate::multimint::LightningEventKind::PaymentSent => [1.into_dart()].into_dart(),
             _ => {
                 unimplemented!("");
             }
@@ -13519,6 +13523,9 @@ impl SseEncode for crate::multimint::LightningEventKind {
             crate::multimint::LightningEventKind::InvoicePaid(field0) => {
                 <i32>::sse_encode(0, serializer);
                 <crate::multimint::InvoicePaidEvent>::sse_encode(field0, serializer);
+            }
+            crate::multimint::LightningEventKind::PaymentSent => {
+                <i32>::sse_encode(1, serializer);
             }
             _ => {
                 unimplemented!("");

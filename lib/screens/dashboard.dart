@@ -72,6 +72,16 @@ class _DashboardState extends State<Dashboard> {
           if (federationIdString == selectorIdString) {
             _loadBalance();
           }
+        } else if (ln is LightningEventKind_PaymentSent) {
+          final federationIdString = await federationIdToString(
+            federationId: event.field0.$1,
+          );
+          final selectorIdString = await federationIdToString(
+            federationId: widget.fed.federationId,
+          );
+          if (federationIdString == selectorIdString) {
+            _loadBalance();
+          }
         }
       } else if (event is MultimintEvent_RecoveryDone) {
         final recoveredFedId = event.field0;

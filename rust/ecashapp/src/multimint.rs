@@ -267,6 +267,7 @@ pub struct InvoicePaidEvent {
 #[derive(Clone, Eq, PartialEq, Serialize, Debug)]
 pub enum LightningEventKind {
     InvoicePaid(InvoicePaidEvent),
+    PaymentSent,
 }
 
 #[derive(Clone, Eq, PartialEq, Serialize, Debug)]
@@ -1630,6 +1631,7 @@ impl Multimint {
             .await
             {
                 info_to_flutter("Successfully initated LNv2 payment").await;
+                self.spawn_await_send(federation_id.clone(), lnv2_operation_id.clone());
                 return Ok(lnv2_operation_id);
             }
         }
@@ -1676,7 +1678,17 @@ impl Multimint {
         let self_copy = self.clone();
         self.task_group.spawn_cancellable("await send", async move {
             let final_state = self_copy.await_send(&federation_id, operation_id).await;
-            info_to_flutter(format!("Send completed: {final_state:?}")).await;
+            match final_state {
+                LightningSendOutcome::Success(preimage) => {
+                    let multimint_event =
+                        MultimintEvent::Lightning((federation_id, LightningEventKind::PaymentSent));
+                    get_event_bus().publish(multimint_event).await;
+                    info_to_flutter(format!("Successfuly sent payment. Preimage: {preimage}")).await;
+                }
+                LightningSendOutcome::Failure => {
+                    error_to_flutter("Could not complete Lightning payment").await;
+                }
+            }
         });
     }
 
