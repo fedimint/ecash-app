@@ -150,14 +150,17 @@ class TransactionItem extends StatelessWidget {
           'Txid': txid,
         };
 
-        // we add "Max" to the fee rate and transaction size labels since the
-        // federation calculates PegOutFees using max_satisfaction_weight, which
-        // overestimates compared to actual tx sizes you'd see on block explorers.
-        // getting the exact tx size and feerate would require either querying a
-        // block explorer (privacy leak on withdrawals) or significant technical
-        // work, so we show the conservative estimates instead
+        // we add "Min" to the fee rate and "Max" to the transaction size labels since
+        // the federation calculates PegOutFees using max_satisfaction_weight, which
+        // overestimates transaction size compared to actual tx sizes you'd see on block
+        // explorers. since the fee amount is fixed but calculated for the maximum possible
+        // size, this gives us the minimum possible fee rate (fee ÷ max_size = min_rate).
+        // the actual fee rate will be slightly higher when the transaction size is smaller.
+        // getting the exact tx size and feerate would require either querying a block
+        // explorer (privacy leak on withdrawals) or significant technical work, so we
+        // show these conservative bounds instead
         if (feeRateSatsPerVb != null) {
-          details['Max Fee Rate'] =
+          details['Min Fee Rate'] =
               '${feeRateSatsPerVb.toStringAsFixed(3)} sats/vB';
         }
         if (txSizeVb != null) {
