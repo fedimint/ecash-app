@@ -11,7 +11,7 @@ class TransactionDetailKeys {
   static const String txid = 'Txid';
   static const String address = 'Address';
   static const String gateway = 'Gateway';
-  static const String payeePublicKey = 'Payee Public Key';
+  static const String payeePublicKey = 'Payee Pubkey';
   static const String paymentHash = 'Payment Hash';
   static const String preimage = 'Preimage';
   static const String minFeeRate = 'Min Fee Rate';
