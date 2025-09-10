@@ -1,4 +1,5 @@
 import 'package:ecashapp/detail_row.dart';
+import 'constants/transaction_keys.dart';
 import 'package:ecashapp/multimint.dart';
 import 'package:ecashapp/send.dart';
 import 'package:ecashapp/utils.dart';
@@ -50,23 +51,23 @@ class PaymentPreviewWidget extends StatelessWidget {
                 value: fed.federationName,
               ),
               CopyableDetailRow(
-                label: 'Amount',
+                label: TransactionDetailKeys.amount,
                 value: formatBalance(amount, true),
               ),
               CopyableDetailRow(
-                label: 'Fees',
+                label: TransactionDetailKeys.fees,
                 value: formatBalance(fees, true),
               ),
               CopyableDetailRow(
-                label: 'Total',
+                label: TransactionDetailKeys.total,
                 value: formatBalance(amountWithFees, true),
               ),
               CopyableDetailRow(
-                label: 'Gateway',
+                label: TransactionDetailKeys.gateway,
                 value: paymentPreview.gateway,
               ),
               CopyableDetailRow(
-                label: 'Payment Hash',
+                label: TransactionDetailKeys.paymentHash,
                 value: paymentPreview.paymentHash,
               ),
             ],

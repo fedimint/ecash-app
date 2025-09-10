@@ -1,4 +1,5 @@
 import 'package:ecashapp/theme.dart';
+import '../constants/transaction_keys.dart';
 import 'package:ecashapp/widgets/transaction_details.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
@@ -30,12 +31,12 @@ class TransactionItem extends StatelessWidget {
           child: TransactionDetails(
             tx: tx,
             details: {
-              'Amount': formattedAmount,
-              "Fees": formatBalance(fees, true),
-              "Gateway": gateway,
-              "Payee Public Key": payeePubkey,
-              "Payment Hash": paymentHash,
-              'Timestamp': formattedDate,
+              TransactionDetailKeys.amount: formattedAmount,
+              TransactionDetailKeys.fees: formatBalance(fees, true),
+              TransactionDetailKeys.gateway: gateway,
+              TransactionDetailKeys.payeePublicKey: payeePubkey,
+              TransactionDetailKeys.paymentHash: paymentHash,
+              TransactionDetailKeys.timestamp: formattedDate,
             },
             icon: icon,
             fed: fed,
@@ -53,12 +54,12 @@ class TransactionItem extends StatelessWidget {
           child: TransactionDetails(
             tx: tx,
             details: {
-              'Amount': formattedAmount,
-              "Fees": formatBalance(fees, true),
-              "Gateway": gateway,
-              "Payment Hash": paymentHash,
-              "Preimage": preimage,
-              'Timestamp': formattedDate,
+              TransactionDetailKeys.amount: formattedAmount,
+              TransactionDetailKeys.fees: formatBalance(fees, true),
+              TransactionDetailKeys.gateway: gateway,
+              TransactionDetailKeys.paymentHash: paymentHash,
+              TransactionDetailKeys.preimage: preimage,
+              TransactionDetailKeys.timestamp: formattedDate,
             },
             icon: icon,
             fed: fed,
@@ -74,10 +75,10 @@ class TransactionItem extends StatelessWidget {
           child: TransactionDetails(
             tx: tx,
             details: {
-              'Amount': formattedAmount,
-              "Fees": formatBalance(fees, true),
-              "E-Cash": oobNotes,
-              'Timestamp': formattedDate,
+              TransactionDetailKeys.amount: formattedAmount,
+              TransactionDetailKeys.fees: formatBalance(fees, true),
+              TransactionDetailKeys.ecash: oobNotes,
+              TransactionDetailKeys.timestamp: formattedDate,
             },
             icon: icon,
             fed: fed,
@@ -93,10 +94,10 @@ class TransactionItem extends StatelessWidget {
           child: TransactionDetails(
             tx: tx,
             details: {
-              'Amount': formattedAmount,
-              "Fees": formatBalance(fees, true),
-              "E-Cash": oobNotes,
-              'Timestamp': formattedDate,
+              TransactionDetailKeys.amount: formattedAmount,
+              TransactionDetailKeys.fees: formatBalance(fees, true),
+              TransactionDetailKeys.ecash: oobNotes,
+              TransactionDetailKeys.timestamp: formattedDate,
             },
             icon: icon,
             fed: fed,
@@ -108,7 +109,10 @@ class TransactionItem extends StatelessWidget {
           context: context,
           child: TransactionDetails(
             tx: tx,
-            details: {'Amount': formattedAmount, 'Timestamp': formattedDate},
+            details: {
+              TransactionDetailKeys.amount: formattedAmount,
+              TransactionDetailKeys.timestamp: formattedDate,
+            },
             icon: icon,
             fed: fed,
           ),
@@ -119,10 +123,10 @@ class TransactionItem extends StatelessWidget {
         txid: final txid,
       ):
         Map<String, String> details = {
-          'Amount': formattedAmount,
-          'Timestamp': formattedDate,
-          'Address': address,
-          'Txid': txid,
+          TransactionDetailKeys.amount: formattedAmount,
+          TransactionDetailKeys.timestamp: formattedDate,
+          TransactionDetailKeys.address: address,
+          TransactionDetailKeys.txid: txid,
         };
 
         showAppModalBottomSheet(
@@ -144,10 +148,10 @@ class TransactionItem extends StatelessWidget {
         totalSats: final totalSats,
       ):
         Map<String, String> details = {
-          'Amount': formattedAmount,
-          'Timestamp': formattedDate,
-          'Address': address,
-          'Txid': txid,
+          TransactionDetailKeys.amount: formattedAmount,
+          TransactionDetailKeys.timestamp: formattedDate,
+          TransactionDetailKeys.address: address,
+          TransactionDetailKeys.txid: txid,
         };
 
         // we add "Min" to the fee rate and "Max" to the transaction size labels since
@@ -160,17 +164,20 @@ class TransactionItem extends StatelessWidget {
         // explorer (privacy leak on withdrawals) or significant technical work, so we
         // show these conservative bounds instead
         if (feeRateSatsPerVb != null) {
-          details['Min Fee Rate'] =
+          details[TransactionDetailKeys.minFeeRate] =
               '${feeRateSatsPerVb.toStringAsFixed(3)} sats/vB';
         }
         if (txSizeVb != null) {
-          details['Max Tx Size'] = '$txSizeVb vB';
+          details[TransactionDetailKeys.maxTxSize] = '$txSizeVb vB';
         }
         if (feeSats != null) {
-          details['Fee'] = formatBalance(feeSats * BigInt.from(1000), false);
+          details[TransactionDetailKeys.fee] = formatBalance(
+            feeSats * BigInt.from(1000),
+            false,
+          );
         }
         if (totalSats != null) {
-          details['Total'] = formatBalance(
+          details[TransactionDetailKeys.total] = formatBalance(
             totalSats * BigInt.from(1000),
             false,
           );

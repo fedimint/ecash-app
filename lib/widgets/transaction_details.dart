@@ -1,4 +1,5 @@
 import 'package:ecashapp/app.dart';
+import '../constants/transaction_keys.dart';
 import 'package:ecashapp/detail_row.dart';
 import 'package:ecashapp/lib.dart';
 import 'package:ecashapp/multimint.dart';
@@ -54,7 +55,7 @@ class _TransactionDetailsState extends State<TransactionDetails> {
     });
 
     try {
-      final ecash = widget.details["E-Cash"];
+      final ecash = widget.details[TransactionDetailKeys.ecash];
       if (ecash != null) {
         final result = await checkEcashSpent(
           federationId: widget.fed.federationId,
@@ -94,7 +95,7 @@ class _TransactionDetailsState extends State<TransactionDetails> {
   }
 
   Future<void> _redeemEcash() async {
-    final ecash = widget.details["E-Cash"];
+    final ecash = widget.details[TransactionDetailKeys.ecash];
     final amount = widget.tx.amount;
 
     if (ecash != null && amount > BigInt.zero) {
@@ -149,9 +150,9 @@ class _TransactionDetailsState extends State<TransactionDetails> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children:
                 widget.details.entries.map((entry) {
-                  final abbreviate = entry.key == "E-Cash";
+                  final abbreviate = entry.key == TransactionDetailKeys.ecash;
 
-                  if (entry.key == "Txid") {
+                  if (entry.key == TransactionDetailKeys.txid) {
                     String? txid;
                     switch (widget.tx.kind) {
                       case TransactionKind_OnchainSend(txid: final id):
