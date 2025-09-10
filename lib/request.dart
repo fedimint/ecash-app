@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'constants/transaction_keys.dart';
 
 import 'package:ecashapp/detail_row.dart';
 import 'package:ecashapp/lib.dart';
@@ -263,17 +264,17 @@ class _RequestState extends State<Request> with SingleTickerProviderStateMixin {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 CopyableDetailRow(
-                  label: 'Amount',
+                  label: TransactionDetailKeys.amount,
                   value: formatBalance(widget.requestedAmountMsats, true),
                 ),
                 CopyableDetailRow(
-                  label: 'Fees',
+                  label: TransactionDetailKeys.fees,
                   value: formatBalance(fees, true),
                 ),
-                CopyableDetailRow(label: 'Gateway', value: widget.gateway),
-                CopyableDetailRow(label: 'Payee Pubkey', value: widget.pubkey),
+                CopyableDetailRow(label: TransactionDetailKeys.gateway, value: widget.gateway),
+                CopyableDetailRow(label: TransactionDetailKeys.payeePublicKey, value: widget.pubkey),
                 CopyableDetailRow(
-                  label: 'Payment Hash',
+                  label: TransactionDetailKeys.paymentHash,
                   value: widget.paymentHash,
                 ),
               ],
