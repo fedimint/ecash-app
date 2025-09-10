@@ -38,6 +38,8 @@ class _CopyableDetailRowState extends State<CopyableDetailRow> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final screenWidth = MediaQuery.of(context).size.width;
+    final isSmallScreen = screenWidth < 400;
 
     // Decide displayed text based on abbreviate flag
     final displayValue =
@@ -46,20 +48,25 @@ class _CopyableDetailRowState extends State<CopyableDetailRow> {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 6),
       child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
+        crossAxisAlignment: CrossAxisAlignment.center,
         children: [
-          SizedBox(
-            width: 100,
+          ConstrainedBox(
+            constraints: BoxConstraints(
+              minWidth: isSmallScreen ? 90 : 100,
+              maxWidth: isSmallScreen ? 120 : 130,
+            ),
             child: Text(
               widget.label,
               style: theme.textTheme.bodyMedium?.copyWith(
                 color: theme.colorScheme.onSurface.withOpacity(0.7),
                 fontWeight: FontWeight.w600,
               ),
+              overflow: TextOverflow.ellipsis,
+              maxLines: 1,
             ),
           ),
           Container(
-            margin: const EdgeInsets.only(right: 8),
+            margin: const EdgeInsets.symmetric(horizontal: 8),
             height: 20,
             width: 2,
             decoration: BoxDecoration(
@@ -69,7 +76,7 @@ class _CopyableDetailRowState extends State<CopyableDetailRow> {
           ),
           Expanded(
             child: Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
+              crossAxisAlignment: CrossAxisAlignment.center,
               children: [
                 // Value text with possible abbreviation
                 Expanded(
