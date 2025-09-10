@@ -30,14 +30,52 @@ class _EcashRedeemPromptState extends State<EcashRedeemPrompt> {
     });
 
     try {
+      final isSpent = await checkEcashSpent(
+        federationId: widget.fed.federationId,
+        ecash: widget.ecash,
+      );
+
+      if (isSpent) {
+        if (mounted) {
+          ToastService().show(
+            message: "This E-Cash has already been claimed",
+            duration: const Duration(seconds: 5),
+            onTap: () {},
+            icon: Icon(Icons.error),
+          );
+          Navigator.of(context).pop();
+          setState(() {
+            _isLoading = false;
+          });
+        }
+        return;
+      }
+
       final operationId = await reissueEcash(
         federationId: widget.fed.federationId,
         ecash: widget.ecash,
       );
-      await awaitEcashReissue(
+
+      final result = await awaitEcashReissue(
         federationId: widget.fed.federationId,
         operationId: operationId,
       );
+
+      if (result.$2 == null || result.$2 == BigInt.zero) {
+        if (mounted) {
+          ToastService().show(
+            message: "Redeem operation failed",
+            duration: const Duration(seconds: 5),
+            onTap: () {},
+            icon: Icon(Icons.error),
+          );
+          Navigator.of(context).pop();
+          setState(() {
+            _isLoading = false;
+          });
+        }
+        return;
+      }
 
       if (!mounted) return;
 
@@ -53,24 +91,59 @@ class _EcashRedeemPromptState extends State<EcashRedeemPrompt> {
         ),
       );
       await Future.delayed(const Duration(seconds: 4));
-      Navigator.of(context).popUntil((route) => route.isFirst);
+      if (mounted) {
+        Navigator.of(context).popUntil((route) => route.isFirst);
+      }
     } catch (e) {
       AppLogger.instance.error("Could not reissue E-Cash $e");
-      ToastService().show(
-        message: "Could not claim E-Cash",
-        duration: const Duration(seconds: 5),
-        onTap: () {},
-        icon: Icon(Icons.error),
-      );
-      Navigator.of(context).popUntil((route) => route.isFirst);
+      if (mounted) {
+        ToastService().show(
+          message: "Could not claim E-Cash",
+          duration: const Duration(seconds: 5),
+          onTap: () {},
+          icon: Icon(Icons.error),
+        );
+        Navigator.of(context).pop();
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
     }
   }
 
   Future<void> _handleAsyncRedeem() async {
     try {
+      final isSpent = await checkEcashSpent(
+        federationId: widget.fed.federationId,
+        ecash: widget.ecash,
+      );
+
+      if (isSpent) {
+        ToastService().show(
+          message: "This E-Cash has already been claimed",
+          duration: const Duration(seconds: 5),
+          onTap: () {},
+          icon: Icon(Icons.error),
+        );
+        return;
+      }
+
       await reissueEcash(
         federationId: widget.fed.federationId,
         ecash: widget.ecash,
+      );
+
+      if (!mounted) return;
+
+      Navigator.of(context).pop();
+      ToastService().show(
+        message: "E-Cash redeem started in background",
+        duration: const Duration(seconds: 3),
+        onTap: () {},
+        icon: Icon(Icons.check),
       );
     } catch (e) {
       AppLogger.instance.error("Could not reissue E-Cash $e");
@@ -81,8 +154,6 @@ class _EcashRedeemPromptState extends State<EcashRedeemPrompt> {
         icon: Icon(Icons.error),
       );
     }
-
-    Navigator.of(context).popUntil((route) => route.isFirst);
   }
 
   @override
