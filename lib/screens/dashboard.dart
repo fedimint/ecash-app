@@ -1,4 +1,5 @@
 import 'dart:async';
+import '../constants/transaction_keys.dart';
 
 import 'package:ecashapp/db.dart';
 import 'package:ecashapp/recovery_progress.dart';
@@ -429,7 +430,7 @@ class _DashboardState extends State<Dashboard> {
           BottomNavigationBarItem(icon: Icon(Icons.link), label: 'Onchain'),
           BottomNavigationBarItem(
             icon: Icon(Icons.currency_bitcoin),
-            label: 'E-Cash',
+            label: TransactionDetailKeys.ecash,
           ),
         ],
       ),

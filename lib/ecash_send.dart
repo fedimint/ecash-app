@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'constants/transaction_keys.dart';
 import 'dart:convert';
 import 'package:ecashapp/detail_row.dart';
 import 'package:ecashapp/qr_export.dart';
@@ -230,7 +231,7 @@ class _EcashSendState extends State<EcashSend> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 CopyableDetailRow(
-                  label: 'Amount',
+                  label: TransactionDetailKeys.amount,
                   value: formatBalance(widget.amountMsats, false),
                 ),
                 CopyableDetailRow(
