@@ -447,7 +447,11 @@ impl NostrClient {
             }
             WalletConnectRequest::PayInvoice { invoice } => {
                 let payment_preview = payment_preview(federation_id, invoice.clone()).await?;
-                info_to_flutter(format!("Processing NWC PayInvoice. PaymentPreview Gateway: {} IsLNv2: {}", payment_preview.gateway, payment_preview.is_lnv2)).await;
+                info_to_flutter(format!(
+                    "Processing NWC PayInvoice. PaymentPreview Gateway: {} IsLNv2: {}",
+                    payment_preview.gateway, payment_preview.is_lnv2
+                ))
+                .await;
                 let operation_id = send(
                     federation_id,
                     invoice,
