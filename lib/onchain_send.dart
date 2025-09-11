@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'constants/transaction_keys.dart';
 import 'package:ecashapp/detail_row.dart';
 import 'package:ecashapp/lib.dart';
 import 'package:ecashapp/multimint.dart';
@@ -334,7 +335,7 @@ class _OnchainSendState extends State<OnchainSend> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       CopyableDetailRow(
-                        label: 'Amount',
+                        label: TransactionDetailKeys.amount,
                         value: formatBalance(
                           _actualWithdrawalAmount! * BigInt.from(1000),
                           false,
@@ -349,14 +350,14 @@ class _OnchainSendState extends State<OnchainSend> {
                         value: '${_txSizeVbytes ?? 0} vB',
                       ),
                       CopyableDetailRow(
-                        label: 'Fee',
+                        label: TransactionDetailKeys.fee,
                         value: formatBalance(
                           _feeAmountSats! * BigInt.from(1000),
                           false,
                         ),
                       ),
                       CopyableDetailRow(
-                        label: 'Total',
+                        label: TransactionDetailKeys.total,
                         value: formatBalance(
                           (_actualWithdrawalAmount! + _feeAmountSats!) *
                               BigInt.from(1000),

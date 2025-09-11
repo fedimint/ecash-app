@@ -1,4 +1,5 @@
 import 'package:ecashapp/app.dart';
+import '../constants/transaction_keys.dart';
 import 'package:ecashapp/detail_row.dart';
 import 'package:ecashapp/lib.dart';
 import 'package:ecashapp/multimint.dart';
@@ -54,7 +55,7 @@ class _TransactionDetailsState extends State<TransactionDetails> {
     });
 
     try {
-      final ecash = widget.details["Ecash"];
+      final ecash = widget.details[TransactionDetailKeys.ecash];
       if (ecash != null) {
         final result = await checkEcashSpent(
           federationId: widget.fed.federationId,
@@ -85,20 +86,25 @@ class _TransactionDetailsState extends State<TransactionDetails> {
         icon: Icon(Icons.error),
       );
     } finally {
-      setState(() {
-        _checking = false;
-      });
+      if (mounted) {
+        setState(() {
+          _checking = false;
+        });
+      }
     }
   }
 
   Future<void> _redeemEcash() async {
-    Navigator.of(context).pop(); // dismiss current modal
-    await Future.delayed(Duration.zero); // wait for pop to complete
-
-    final ecash = widget.details["Ecash"];
+    final ecash = widget.details[TransactionDetailKeys.ecash];
     final amount = widget.tx.amount;
 
     if (ecash != null && amount > BigInt.zero) {
+      final navigator = Navigator.of(context);
+      navigator.pop();
+      await Future.delayed(const Duration(milliseconds: 100));
+
+      if (!mounted) return;
+
       invoicePaidToastVisible.value = false;
       await showAppModalBottomSheet(
         context: context,
@@ -144,9 +150,9 @@ class _TransactionDetailsState extends State<TransactionDetails> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children:
                 widget.details.entries.map((entry) {
-                  final abbreviate = entry.key == "Ecash";
+                  final abbreviate = entry.key == TransactionDetailKeys.ecash;
 
-                  if (entry.key == "Txid") {
+                  if (entry.key == TransactionDetailKeys.txid) {
                     String? txid;
                     switch (widget.tx.kind) {
                       case TransactionKind_OnchainSend(txid: final id):
