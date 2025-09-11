@@ -441,6 +441,8 @@ impl Multimint {
             if client.has_pending_recoveries() {
                 self.spawn_recovery_progress(client.clone());
             }
+
+            self.lnv1_update_gateway_cache(&client).await;
         }
 
         Ok(())
@@ -1218,7 +1220,7 @@ impl Multimint {
                 .map(Arc::new)?;
 
                 if client_type == ClientType::New {
-                    self.lnv1_update_gateway_cache(&client).await?;
+                    self.lnv1_update_gateway_cache(&client).await;
                 }
 
                 client
@@ -1683,7 +1685,8 @@ impl Multimint {
                     let multimint_event =
                         MultimintEvent::Lightning((federation_id, LightningEventKind::PaymentSent));
                     get_event_bus().publish(multimint_event).await;
-                    info_to_flutter(format!("Successfuly sent payment. Preimage: {preimage}")).await;
+                    info_to_flutter(format!("Successfuly sent payment. Preimage: {preimage}"))
+                        .await;
                 }
                 LightningSendOutcome::Failure => {
                     error_to_flutter("Could not complete Lightning payment").await;
@@ -2014,7 +2017,7 @@ impl Multimint {
         }
     }
 
-    async fn lnv1_update_gateway_cache(&self, client: &ClientHandleArc) -> anyhow::Result<()> {
+    async fn lnv1_update_gateway_cache(&self, client: &ClientHandleArc) {
         let lnv1_client = client.clone();
         self.task_group
             .spawn_cancellable("update gateway cache", async move {
@@ -2029,7 +2032,6 @@ impl Multimint {
                 lnv1.update_gateway_cache_continuously(|gateway| async { gateway })
                     .await
             });
-        Ok(())
     }
 
     async fn lnv1_select_gateway(
