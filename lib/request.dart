@@ -47,6 +47,7 @@ class _RequestState extends State<Request> with SingleTickerProviderStateMixin {
   @override
   void initState() {
     super.initState();
+    AppLogger.instance.info("Invoice size: ${widget.invoice.length}");
     _remaining = Duration(seconds: widget.expiry.toInt());
     _startCountdown();
     _waitForPayment();
@@ -195,11 +196,44 @@ class _RequestState extends State<Request> with SingleTickerProviderStateMixin {
             ),
             child: AspectRatio(
               aspectRatio: 1,
-              child: QrImageView(
-                data: widget.invoice,
-                version: QrVersions.auto,
-                backgroundColor: Colors.white,
-                padding: EdgeInsets.zero,
+              child: GestureDetector(
+                onTap: () {
+                  showDialog(
+                    context: context,
+                    builder:
+                        (_) => Dialog(
+                          backgroundColor: Colors.transparent,
+                          insetPadding: EdgeInsets.zero,
+                          child: GestureDetector(
+                            onTap:
+                                () =>
+                                    Navigator.of(
+                                      context,
+                                      rootNavigator: true,
+                                    ).pop(),
+                            child: Container(
+                              width: double.infinity,
+                              height: double.infinity,
+                              color: Colors.black.withOpacity(0.9),
+                              child: Center(
+                                child: QrImageView(
+                                  data: widget.invoice,
+                                  version: QrVersions.auto,
+                                  backgroundColor: Colors.white,
+                                  size: MediaQuery.of(context).size.width * 0.9,
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                  );
+                },
+                child: QrImageView(
+                  data: widget.invoice,
+                  version: QrVersions.auto,
+                  backgroundColor: Colors.white,
+                  padding: EdgeInsets.zero,
+                ),
               ),
             ),
           ),
