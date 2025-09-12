@@ -215,7 +215,6 @@ class _RequestState extends State<Request> with SingleTickerProviderStateMixin {
                 data: widget.invoice,
                 version: QrVersions.auto,
                 backgroundColor: Colors.white,
-                padding: EdgeInsets.zero,
               ),
             ),
           ),

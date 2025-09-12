@@ -739,6 +739,8 @@ pub async fn parsed_scanned_text(
                         return Ok((parsed_text, Some(fed)));
                     }
                 }
+
+                return Err(anyhow!("No federation found with sufficient balance"));
             }
             _ => {} // Try another network
         }

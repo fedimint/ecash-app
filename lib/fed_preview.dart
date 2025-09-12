@@ -575,7 +575,6 @@ class _FederationPreviewState extends State<FederationPreview> {
   }
 
   Widget _buildGuardianList(int thresh, int total, bool isFederationOnline) {
-    final theme = Theme.of(context);
     return widget.guardians != null && widget.guardians!.isNotEmpty
         ? ListView.builder(
           padding: const EdgeInsets.only(top: 8),
@@ -656,74 +655,53 @@ class _FederationPreviewState extends State<FederationPreview> {
                                       textAlign: TextAlign.center,
                                     ),
                                   ),
-                                  content: Container(
-                                    padding: const EdgeInsets.all(12),
-                                    decoration: BoxDecoration(
-                                      color: theme.colorScheme.surface,
-                                      borderRadius: BorderRadius.circular(16),
-                                      boxShadow: [
-                                        BoxShadow(
-                                          color: theme.colorScheme.primary
-                                              .withOpacity(0.3),
-                                          blurRadius: 12,
-                                          spreadRadius: 1,
-                                        ),
-                                      ],
-                                      border: Border.all(
-                                        color: theme.colorScheme.primary
-                                            .withOpacity(0.7),
-                                        width: 1.5,
-                                      ),
-                                    ),
-                                    child: AspectRatio(
-                                      aspectRatio: 1,
-                                      child: GestureDetector(
-                                        onTap: () {
-                                          showDialog(
-                                            context: context,
-                                            builder:
-                                                (_) => Dialog(
-                                                  backgroundColor:
-                                                      Colors.transparent,
-                                                  insetPadding: EdgeInsets.zero,
-                                                  child: GestureDetector(
-                                                    onTap:
-                                                        () =>
-                                                            Navigator.of(
+                                  content: AspectRatio(
+                                    aspectRatio: 1,
+                                    child: GestureDetector(
+                                      onTap: () {
+                                        showDialog(
+                                          context: context,
+                                          builder:
+                                              (_) => Dialog(
+                                                backgroundColor:
+                                                    Colors.transparent,
+                                                insetPadding: EdgeInsets.zero,
+                                                child: GestureDetector(
+                                                  onTap:
+                                                      () =>
+                                                          Navigator.of(
+                                                            context,
+                                                            rootNavigator:
+                                                                true,
+                                                          ).pop(),
+                                                  child: Container(
+                                                    width: double.infinity,
+                                                    height: double.infinity,
+                                                    color: Colors.black
+                                                        .withOpacity(0.9),
+                                                    child: Center(
+                                                      child: QrImageView(
+                                                        data: inviteCode,
+                                                        version:
+                                                            QrVersions.auto,
+                                                        backgroundColor:
+                                                            Colors.white,
+                                                        size:
+                                                            MediaQuery.of(
                                                               context,
-                                                              rootNavigator:
-                                                                  true,
-                                                            ).pop(),
-                                                    child: Container(
-                                                      width: double.infinity,
-                                                      height: double.infinity,
-                                                      color: Colors.black
-                                                          .withOpacity(0.9),
-                                                      child: Center(
-                                                        child: QrImageView(
-                                                          data: inviteCode,
-                                                          version:
-                                                              QrVersions.auto,
-                                                          backgroundColor:
-                                                              Colors.white,
-                                                          size:
-                                                              MediaQuery.of(
-                                                                context,
-                                                              ).size.width *
-                                                              0.9,
-                                                        ),
+                                                            ).size.width *
+                                                            0.9,
                                                       ),
                                                     ),
                                                   ),
                                                 ),
-                                          );
-                                        },
-                                        child: QrImageView(
-                                          data: inviteCode,
-                                          version: QrVersions.auto,
-                                          backgroundColor: Colors.white,
-                                          padding: EdgeInsets.zero,
-                                        ),
+                                              ),
+                                        );
+                                      },
+                                      child: QrImageView(
+                                        data: inviteCode,
+                                        version: QrVersions.auto,
+                                        backgroundColor: Colors.white,
                                       ),
                                     ),
                                   ),
