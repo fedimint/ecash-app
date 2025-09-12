@@ -676,6 +676,8 @@ pub async fn parse_scanned_text_for_federation(
             {
                 return Ok((parsed_text, fed));
             }
+
+            return Err(anyhow!("No federation found with sufficient balance"));
         }
         Err(e) => {
             error_to_flutter(format!("Error parsing payment instructions: {e:?}")).await;
@@ -739,6 +741,8 @@ pub async fn parsed_scanned_text(
                         return Ok((parsed_text, Some(fed)));
                     }
                 }
+
+                return Err(anyhow!("No federation found with sufficient balance"));
             }
             _ => {} // Try another network
         }
