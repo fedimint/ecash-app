@@ -5,13 +5,17 @@ import 'package:ecashapp/splash.dart';
 import 'package:ecashapp/theme.dart';
 import 'package:ecashapp/utils.dart';
 import 'package:flutter/material.dart';
+import 'package:package_info_plus/package_info_plus.dart';
 import 'package:path_provider/path_provider.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await AppLogger.init();
   await RustLib.init();
-  AppLogger.instance.info("Starting ecashapp...");
+  final packageInfo = await PackageInfo.fromPlatform();
+  AppLogger.instance.info(
+    "Starting ecashapp. Version ${packageInfo.version} Build Number: ${packageInfo.buildNumber}",
+  );
   final dir = await getApplicationDocumentsDirectory();
   runApp(ecashapp(dir: dir));
 }
