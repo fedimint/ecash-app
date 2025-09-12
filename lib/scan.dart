@@ -39,8 +39,26 @@ class _ScanQRPageState extends State<ScanQRPage> {
   bool _isPasting = false;
   _QrLoopSession? _currentSession;
 
-  void _handleQrLoopChunk(String base64Str) {
+  void _handleQrLoopChunk(String base64Str) async {
+    if (_scanned) return;
     try {
+      // If there is no current session, first try to just normally parse the text
+      if (_currentSession == null) {
+        // Set _scanned to try so we don't parse it multiple times
+        setState(() {
+          _scanned = true;
+        });
+        final parsed = await _handleText(base64Str);
+        if (parsed) {
+          return;
+        } else {
+          // If we cannot parse the text, fall through and try to parse as an animated QR code
+          setState(() {
+            _scanned = false;
+          });
+        }
+      }
+
       final bytes = base64Decode(base64Str);
       if (bytes.length < 5) return;
 
@@ -93,7 +111,16 @@ class _ScanQRPageState extends State<ScanQRPage> {
 
         final actualPayload = utf8.decode(payload);
         AppLogger.instance.info("Decoded QR payload: $actualPayload");
-        _handleText(actualPayload);
+        final parsed = await _handleText(actualPayload);
+        if (!parsed) {
+          AppLogger.instance.warn("$actualPayload cannot be parsed");
+          ToastService().show(
+            message: "Sorry! That cannot be parsed.",
+            duration: const Duration(seconds: 5),
+            onTap: () {},
+            icon: Icon(Icons.error),
+          );
+        }
       }
     } catch (e) {
       AppLogger.instance.warn("Failed QR frame: $e");
@@ -101,7 +128,7 @@ class _ScanQRPageState extends State<ScanQRPage> {
     }
   }
 
-  Future<void> _handleText(String text) async {
+  Future<bool> _handleText(String text) async {
     try {
       ParsedText action;
       FederationSelector? chosenFederation;
@@ -250,15 +277,11 @@ class _ScanQRPageState extends State<ScanQRPage> {
           }
           break;
       }
-    } catch (e) {
-      AppLogger.instance.warn("$text cannot be parsed: $e");
-      ToastService().show(
-        message: "Sorry! That cannot be parsed.",
-        duration: const Duration(seconds: 5),
-        onTap: () {},
-        icon: Icon(Icons.error),
-      );
-    }
+
+      return true;
+    } catch (_) {}
+
+    return false;
   }
 
   void _onQRCodeScanned(String code) async {
