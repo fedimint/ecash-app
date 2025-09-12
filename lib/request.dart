@@ -305,8 +305,14 @@ class _RequestState extends State<Request> with SingleTickerProviderStateMixin {
                   label: TransactionDetailKeys.fees,
                   value: formatBalance(fees, true),
                 ),
-                CopyableDetailRow(label: TransactionDetailKeys.gateway, value: widget.gateway),
-                CopyableDetailRow(label: TransactionDetailKeys.payeePublicKey, value: widget.pubkey),
+                CopyableDetailRow(
+                  label: TransactionDetailKeys.gateway,
+                  value: widget.gateway,
+                ),
+                CopyableDetailRow(
+                  label: TransactionDetailKeys.payeePublicKey,
+                  value: widget.pubkey,
+                ),
                 CopyableDetailRow(
                   label: TransactionDetailKeys.paymentHash,
                   value: widget.paymentHash,
