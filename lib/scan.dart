@@ -279,7 +279,19 @@ class _ScanQRPageState extends State<ScanQRPage> {
       }
 
       return true;
-    } catch (_) {}
+    } catch (e) {
+      if (e.toString().contains("sufficient balance")) {
+        AppLogger.instance.warn("No federation with sufficient balance");
+        ToastService().show(
+          message: "No federation with sufficient balance.",
+          duration: const Duration(seconds: 5),
+          onTap: () {},
+          icon: Icon(Icons.error),
+        );
+
+        return true;
+      }
+    }
 
     return false;
   }
