@@ -278,31 +278,12 @@ class _NostrWalletConnectState extends State<NostrWalletConnect> {
               _buildSelectionForm(),
               if (_nwc != null) ...[
                 const SizedBox(height: 32),
-                Container(
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: theme.colorScheme.surface,
-                    borderRadius: BorderRadius.circular(16),
-                    boxShadow: [
-                      BoxShadow(
-                        color: theme.colorScheme.primary.withOpacity(0.3),
-                        blurRadius: 12,
-                        spreadRadius: 1,
-                      ),
-                    ],
-                    border: Border.all(
-                      color: theme.colorScheme.primary.withOpacity(0.7),
-                      width: 1.5,
-                    ),
-                  ),
-                  child: AspectRatio(
-                    aspectRatio: 1,
-                    child: QrImageView(
-                      data: connectionString!,
-                      version: QrVersions.auto,
-                      backgroundColor: Colors.white,
-                      padding: EdgeInsets.zero,
-                    ),
+                AspectRatio(
+                  aspectRatio: 1,
+                  child: QrImageView(
+                    data: connectionString!,
+                    version: QrVersions.auto,
+                    backgroundColor: Colors.white,
                   ),
                 ),
                 const SizedBox(height: 32),
