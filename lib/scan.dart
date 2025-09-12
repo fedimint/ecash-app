@@ -212,7 +212,7 @@ class _ScanQRPageState extends State<ScanQRPage> {
           if (widget.paymentType == null ||
               widget.paymentType! == PaymentType.onchain) {
             if (field1 != null) {
-              showAppModalBottomSheet(
+              await showAppModalBottomSheet(
                 context: context,
                 child: OnchainSend(
                   fed: chosenFederation!,
@@ -277,6 +277,10 @@ class _ScanQRPageState extends State<ScanQRPage> {
           }
           break;
       }
+
+      setState(() {
+        _scanned = false;
+      });
 
       return true;
     } catch (e) {
