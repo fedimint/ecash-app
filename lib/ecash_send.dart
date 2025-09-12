@@ -138,37 +138,18 @@ class _EcashSendState extends State<EcashSend> {
             ),
           ),
           const SizedBox(height: 24),
-          Container(
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: theme.colorScheme.surface,
-              borderRadius: BorderRadius.circular(16),
-              boxShadow: [
-                BoxShadow(
-                  color: theme.colorScheme.primary.withOpacity(0.3),
-                  blurRadius: 12,
-                  spreadRadius: 1,
+          Stack(
+            alignment: Alignment.topRight,
+            children: [
+              AspectRatio(
+                aspectRatio: 1,
+                child: QrImageView(
+                  data: _qrChunks[_currentChunkIndex],
+                  version: QrVersions.auto,
+                  backgroundColor: Colors.white,
                 ),
-              ],
-              border: Border.all(
-                color: theme.colorScheme.primary.withOpacity(0.7),
-                width: 1.5,
               ),
-            ),
-            child: Stack(
-              alignment: Alignment.topRight,
-              children: [
-                AspectRatio(
-                  aspectRatio: 1,
-                  child: QrImageView(
-                    data: _qrChunks[_currentChunkIndex],
-                    version: QrVersions.auto,
-                    backgroundColor: Colors.white,
-                    padding: EdgeInsets.zero,
-                  ),
-                ),
-              ],
-            ),
+            ],
           ),
           const SizedBox(height: 24),
           Container(
