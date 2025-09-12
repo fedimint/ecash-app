@@ -1,31 +1,44 @@
-# E-Cash App - A Fedimint Wallet
+<p align="center">
+  <img src="assets/images/e-cash-app.png" alt="E-Cash App Logo" width="200"/>
+</p>
 
-E-Cash App is a Fedimint wallet built using Flutter, Rust, and the Flutter Rust Bridge.
+# The E-Cash App – A Fedimint Wallet
 
-## Linux Development
-E-Cash App uses nix and nix flakes to manage dependencies and build the project.
+<p align="center">
+  <img src="assets/screenshots/create_wallet.png" alt="Create Wallet" width="300"/>
+  <img src="assets/screenshots/discover2.png" alt="Discover Federations" width="300"/>
+</p>
 
-First, install nix
+**The E-Cash App** is a [Fedimint](https://fedimint.org) wallet. It supports Lightning, On-chain, and E-Cash payments all in one wallet. The E-Cash App is designed to be as transparent as possible, displaying all fees and showing the details of the wallet to the user. Users can query the registered Lightning Gateways, view the UTXOs of a federation, and view the E-Cash note denominations in the wallet.
+It’s built with **Flutter** for the UI and **Rust** (via [Flutter Rust Bridge](https://github.com/fzyzcjy/flutter_rust_bridge)).
 
-```bash
-curl --proto '=https' --tlsv1.2 -sSf -L https://install.determinate.systems/nix | sh -s -- install
-```
+---
 
-Then enter the nix developer environment.
+## ✨ Features
 
-```bash
-nix develop
-```
+- ₿ **Lightning, On-chain, and E-Cash payments** – all in one wallet  
+- ⚡ **Lightning Address** – receive payments using Lightning Address 
+- 🔗 **Nostr Wallet Connect (NWC)** – connect your wallet to Nostr app and use The E-Cash App to zap 
+- 🌐 **Federation Discovery via Nostr** – find and join federations easily  
+- 🔒 **Automated Backup & Recovery** – backup all of your E-Cash using a familiar seed phrase
 
-To generate the Flutter bindings for the rust code, simply run
-```bash
-just generate
-just build-linux
-```
+---
 
-To run the app on Linux, simply run
-```bash
-just run
-```
+## 📸 Screenshots
 
-Done! This will launch E-Cash App on Linux.
+<p align="center">
+  <img src="assets/screenshots/multimint.png" alt="Federation Selector" width="250"/>
+  <img src="assets/screenshots/claim_lnaddress.png" alt="Lightning Address" width="250"/>
+  <img src="assets/screenshots/nostr_wallet_connect.png" alt="Nostr Wallet Connect" width="250"/>
+  <img src="assets/screenshots/addresses_received.png" alt="Addresses" width="250"/>
+  <img src="assets/screenshots/fed_preview_joined.png" alt="Federation Preview" width="250"/>
+  <img src="assets/screenshots/gateways2.png" alt="Gateways" width="250"/>
+  <img src="assets/screenshots/lightning_request.png" alt="Lightning Request" width="250"/>
+  <img src="assets/screenshots/rfq.png" alt="Request for Quote" width="250"/>
+  <img src="assets/screenshots/ecash_receive2.png" alt="E-Cash Receive" width="250"/>
+</p>
+
+---
+
+See [contributing](./docs/contributing.md) for getting setup with a development environment.
+
