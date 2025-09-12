@@ -321,6 +321,7 @@ pub async fn send_lnaddress(
                     gateway,
                     is_lnv2,
                     amount_with_fees,
+                    Some(address),
                 )
                 .await;
         }
@@ -335,11 +336,19 @@ pub async fn send(
     gateway: String,
     is_lnv2: bool,
     amount_with_fees: u64,
+    ln_address: Option<String>,
 ) -> anyhow::Result<OperationId> {
     let multimint = get_multimint();
     let gateway = SafeUrl::parse(&gateway)?;
     multimint
-        .send(federation_id, invoice, gateway, is_lnv2, amount_with_fees)
+        .send(
+            federation_id,
+            invoice,
+            gateway,
+            is_lnv2,
+            amount_with_fees,
+            ln_address,
+        )
         .await
 }
 
