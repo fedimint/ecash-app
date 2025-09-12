@@ -4809,6 +4809,7 @@ fn wire__crate__multimint__Multimint_send_impl(
             let api_gateway = <SafeUrl>::sse_decode(&mut deserializer);
             let api_is_lnv2 = <bool>::sse_decode(&mut deserializer);
             let api_amount_with_fees = <u64>::sse_decode(&mut deserializer);
+            let api_ln_address = <Option<String>>::sse_decode(&mut deserializer);
             deserializer.end();
             move |context| async move {
                 transform_result_sse::<_, flutter_rust_bridge::for_generated::anyhow::Error>(
@@ -4850,6 +4851,7 @@ fn wire__crate__multimint__Multimint_send_impl(
                             api_gateway,
                             api_is_lnv2,
                             api_amount_with_fees,
+                            api_ln_address,
                         )
                         .await?;
                         Ok(output_ok)
@@ -9218,6 +9220,7 @@ fn wire__crate__send_impl(
             let api_gateway = <String>::sse_decode(&mut deserializer);
             let api_is_lnv2 = <bool>::sse_decode(&mut deserializer);
             let api_amount_with_fees = <u64>::sse_decode(&mut deserializer);
+            let api_ln_address = <Option<String>>::sse_decode(&mut deserializer);
             deserializer.end();
             move |context| async move {
                 transform_result_sse::<_, flutter_rust_bridge::for_generated::anyhow::Error>(
@@ -9247,6 +9250,7 @@ fn wire__crate__send_impl(
                             api_gateway,
                             api_is_lnv2,
                             api_amount_with_fees,
+                            api_ln_address,
                         )
                         .await?;
                         Ok(output_ok)
@@ -11206,11 +11210,13 @@ impl SseDecode for crate::multimint::TransactionKind {
                 let mut var_gateway = <String>::sse_decode(deserializer);
                 let mut var_paymentHash = <String>::sse_decode(deserializer);
                 let mut var_preimage = <String>::sse_decode(deserializer);
+                let mut var_lnAddress = <Option<String>>::sse_decode(deserializer);
                 return crate::multimint::TransactionKind::LightningSend {
                     fees: var_fees,
                     gateway: var_gateway,
                     payment_hash: var_paymentHash,
                     preimage: var_preimage,
+                    ln_address: var_lnAddress,
                 };
             }
             2 => {
@@ -12835,12 +12841,14 @@ impl flutter_rust_bridge::IntoDart for crate::multimint::TransactionKind {
                 gateway,
                 payment_hash,
                 preimage,
+                ln_address,
             } => [
                 1.into_dart(),
                 fees.into_into_dart().into_dart(),
                 gateway.into_into_dart().into_dart(),
                 payment_hash.into_into_dart().into_dart(),
                 preimage.into_into_dart().into_dart(),
+                ln_address.into_into_dart().into_dart(),
             ]
             .into_dart(),
             crate::multimint::TransactionKind::LightningRecurring => [2.into_dart()].into_dart(),
@@ -14111,12 +14119,14 @@ impl SseEncode for crate::multimint::TransactionKind {
                 gateway,
                 payment_hash,
                 preimage,
+                ln_address,
             } => {
                 <i32>::sse_encode(1, serializer);
                 <u64>::sse_encode(fees, serializer);
                 <String>::sse_encode(gateway, serializer);
                 <String>::sse_encode(payment_hash, serializer);
                 <String>::sse_encode(preimage, serializer);
+                <Option<String>>::sse_encode(ln_address, serializer);
             }
             crate::multimint::TransactionKind::LightningRecurring => {
                 <i32>::sse_encode(2, serializer);

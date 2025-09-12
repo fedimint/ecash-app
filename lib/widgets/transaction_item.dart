@@ -48,12 +48,14 @@ class TransactionItem extends StatelessWidget {
         gateway: final gateway,
         paymentHash: final paymentHash,
         preimage: final preimage,
+        lnAddress: final lnAddress,
       ):
         showAppModalBottomSheet(
           context: context,
           child: TransactionDetails(
             tx: tx,
             details: {
+              if (lnAddress != null) TransactionDetailKeys.lnAddress: lnAddress,
               TransactionDetailKeys.amount: formattedAmount,
               TransactionDetailKeys.fees: formatBalance(fees, true),
               TransactionDetailKeys.gateway: gateway,
