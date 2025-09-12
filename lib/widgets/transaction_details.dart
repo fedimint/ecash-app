@@ -150,7 +150,14 @@ class _TransactionDetailsState extends State<TransactionDetails> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children:
                 widget.details.entries.map((entry) {
-                  final abbreviate = entry.key == TransactionDetailKeys.ecash;
+                  final abbreviate = const {
+                    TransactionDetailKeys.ecash,
+                    TransactionDetailKeys.txid,
+                    TransactionDetailKeys.address,
+                    TransactionDetailKeys.payeePublicKey,
+                    TransactionDetailKeys.paymentHash,
+                    TransactionDetailKeys.preimage,
+                  }.contains(entry.key);
 
                   if (entry.key == TransactionDetailKeys.txid) {
                     String? txid;
