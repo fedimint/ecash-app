@@ -486,6 +486,7 @@ abstract class RustLibApi extends BaseApi {
     required SafeUrl gateway,
     required bool isLnv2,
     required BigInt amountWithFees,
+    String? lnAddress,
   });
 
   Future<(OperationId, String, BigInt)> crateMultimintMultimintSendEcash({
@@ -862,6 +863,7 @@ abstract class RustLibApi extends BaseApi {
     required String gateway,
     required bool isLnv2,
     required BigInt amountWithFees,
+    String? lnAddress,
   });
 
   Future<(OperationId, String, BigInt)> crateSendEcash({
@@ -4224,6 +4226,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
     required SafeUrl gateway,
     required bool isLnv2,
     required BigInt amountWithFees,
+    String? lnAddress,
   }) {
     return handler.executeNormal(
       NormalTask(
@@ -4244,6 +4247,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           );
           sse_encode_bool(isLnv2, serializer);
           sse_encode_u_64(amountWithFees, serializer);
+          sse_encode_opt_String(lnAddress, serializer);
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
@@ -4264,6 +4268,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           gateway,
           isLnv2,
           amountWithFees,
+          lnAddress,
         ],
         apiImpl: this,
       ),
@@ -4280,6 +4285,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           "gateway",
           "isLnv2",
           "amountWithFees",
+          "lnAddress",
         ],
       );
 
@@ -7396,6 +7402,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
     required String gateway,
     required bool isLnv2,
     required BigInt amountWithFees,
+    String? lnAddress,
   }) {
     return handler.executeNormal(
       NormalTask(
@@ -7409,6 +7416,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           sse_encode_String(gateway, serializer);
           sse_encode_bool(isLnv2, serializer);
           sse_encode_u_64(amountWithFees, serializer);
+          sse_encode_opt_String(lnAddress, serializer);
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
@@ -7422,7 +7430,14 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           decodeErrorData: sse_decode_AnyhowException,
         ),
         constMeta: kCrateSendConstMeta,
-        argValues: [federationId, invoice, gateway, isLnv2, amountWithFees],
+        argValues: [
+          federationId,
+          invoice,
+          gateway,
+          isLnv2,
+          amountWithFees,
+          lnAddress,
+        ],
         apiImpl: this,
       ),
     );
@@ -7436,6 +7451,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
       "gateway",
       "isLnv2",
       "amountWithFees",
+      "lnAddress",
     ],
   );
 
@@ -9589,6 +9605,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           gateway: dco_decode_String(raw[2]),
           paymentHash: dco_decode_String(raw[3]),
           preimage: dco_decode_String(raw[4]),
+          lnAddress: dco_decode_opt_String(raw[5]),
         );
       case 2:
         return TransactionKind_LightningRecurring();
@@ -11494,11 +11511,13 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
         var var_gateway = sse_decode_String(deserializer);
         var var_paymentHash = sse_decode_String(deserializer);
         var var_preimage = sse_decode_String(deserializer);
+        var var_lnAddress = sse_decode_opt_String(deserializer);
         return TransactionKind_LightningSend(
           fees: var_fees,
           gateway: var_gateway,
           paymentHash: var_paymentHash,
           preimage: var_preimage,
+          lnAddress: var_lnAddress,
         );
       case 2:
         return TransactionKind_LightningRecurring();
@@ -13465,12 +13484,14 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
         gateway: final gateway,
         paymentHash: final paymentHash,
         preimage: final preimage,
+        lnAddress: final lnAddress,
       ):
         sse_encode_i_32(1, serializer);
         sse_encode_u_64(fees, serializer);
         sse_encode_String(gateway, serializer);
         sse_encode_String(paymentHash, serializer);
         sse_encode_String(preimage, serializer);
+        sse_encode_opt_String(lnAddress, serializer);
       case TransactionKind_LightningRecurring():
         sse_encode_i_32(2, serializer);
       case TransactionKind_OnchainReceive(
@@ -14384,6 +14405,7 @@ class MultimintImpl extends RustOpaque implements Multimint {
     required SafeUrl gateway,
     required bool isLnv2,
     required BigInt amountWithFees,
+    String? lnAddress,
   }) => RustLib.instance.api.crateMultimintMultimintSend(
     that: this,
     federationId: federationId,
@@ -14391,6 +14413,7 @@ class MultimintImpl extends RustOpaque implements Multimint {
     gateway: gateway,
     isLnv2: isLnv2,
     amountWithFees: amountWithFees,
+    lnAddress: lnAddress,
   );
 
   Future<(OperationId, String, BigInt)> sendEcash({

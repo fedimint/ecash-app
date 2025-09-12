@@ -161,6 +161,7 @@ pub enum TransactionKind {
         gateway: String,
         payment_hash: String,
         preimage: String,
+        ln_address: Option<String>,
     },
     LightningRecurring,
     OnchainReceive {
@@ -1608,6 +1609,7 @@ impl Multimint {
         gateway: SafeUrl,
         is_lnv2: bool,
         amount_with_fees: u64,
+        ln_address: Option<String>,
     ) -> anyhow::Result<OperationId> {
         let client = self
             .clients
@@ -1620,6 +1622,7 @@ impl Multimint {
         let custom_meta = json!({
             "amount_with_fees": amount_with_fees,
             "gateway_url": gateway,
+            "ln_address": ln_address,
         });
 
         if is_lnv2 {
@@ -2192,12 +2195,19 @@ impl Multimint {
                                                 .clone(),
                                         )
                                         .expect("Could not parse to u64");
+
+                                        let ln_address = send
+                                            .custom_meta
+                                            .get("ln_address")
+                                            .and_then(|v| from_value::<String>(v.clone()).ok());
+
                                         Some(Transaction {
                                             kind: TransactionKind::LightningSend {
                                                 fees: amount_with_fees - send.contract.amount.msats,
                                                 gateway: send.gateway.to_string(),
                                                 payment_hash: bolt11.payment_hash().to_string(),
                                                 preimage: preimage.consensus_encode_to_hex(),
+                                                ln_address,
                                             },
                                             amount: send.contract.amount.msats,
                                             timestamp,
@@ -2418,6 +2428,11 @@ impl Multimint {
         )
         .expect("Could not parse SafeUrl")
         .to_string();
+
+        let ln_address = custom_meta
+            .get("ln_address")
+            .and_then(|v| from_value::<String>(v.clone()).ok());
+
         let operation_id = operation_id.0.to_vec();
 
         // First check if the send was over the Lightning network
@@ -2430,6 +2445,7 @@ impl Multimint {
                         gateway,
                         payment_hash: meta.invoice.payment_hash().to_string(),
                         preimage,
+                        ln_address,
                     },
                     amount,
                     timestamp,
@@ -2448,6 +2464,7 @@ impl Multimint {
                                 gateway,
                                 payment_hash: meta.invoice.payment_hash().to_string(),
                                 preimage: preimage.0.consensus_encode_to_hex(),
+                                ln_address,
                             },
                             amount,
                             timestamp,

@@ -246,6 +246,7 @@ abstract class Multimint implements RustOpaqueInterface {
     required SafeUrl gateway,
     required bool isLnv2,
     required BigInt amountWithFees,
+    String? lnAddress,
   });
 
   Future<(OperationId, String, BigInt)> sendEcash({
@@ -646,6 +647,7 @@ sealed class TransactionKind with _$TransactionKind {
     required String gateway,
     required String paymentHash,
     required String preimage,
+    String? lnAddress,
   }) = TransactionKind_LightningSend;
   const factory TransactionKind.lightningRecurring() =
       TransactionKind_LightningRecurring;

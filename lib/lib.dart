@@ -103,12 +103,14 @@ Future<OperationId> send({
   required String gateway,
   required bool isLnv2,
   required BigInt amountWithFees,
+  String? lnAddress,
 }) => RustLib.instance.api.crateSend(
   federationId: federationId,
   invoice: invoice,
   gateway: gateway,
   isLnv2: isLnv2,
   amountWithFees: amountWithFees,
+  lnAddress: lnAddress,
 );
 
 Future<LightningSendOutcome> awaitSend({
