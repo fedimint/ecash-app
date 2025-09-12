@@ -29,6 +29,8 @@ class _EcashRedeemPromptState extends State<EcashRedeemPrompt> {
       _isLoading = true;
     });
 
+    final failureMessage = "Could not claim E-Cash";
+
     try {
       final isSpent = await checkEcashSpent(
         federationId: widget.fed.federationId,
@@ -64,7 +66,7 @@ class _EcashRedeemPromptState extends State<EcashRedeemPrompt> {
       if (result.$2 == null || result.$2 == BigInt.zero) {
         if (mounted) {
           ToastService().show(
-            message: "Redeem operation failed",
+            message: failureMessage,
             duration: const Duration(seconds: 5),
             onTap: () {},
             icon: Icon(Icons.error),
@@ -98,7 +100,7 @@ class _EcashRedeemPromptState extends State<EcashRedeemPrompt> {
       AppLogger.instance.error("Could not reissue E-Cash $e");
       if (mounted) {
         ToastService().show(
-          message: "Could not claim E-Cash",
+          message: failureMessage,
           duration: const Duration(seconds: 5),
           onTap: () {},
           icon: Icon(Icons.error),
