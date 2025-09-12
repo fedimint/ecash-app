@@ -9,6 +9,7 @@ import 'package:ecashapp/theme.dart';
 import 'package:ecashapp/toast.dart';
 import 'package:ecashapp/utils.dart';
 import 'package:flutter/material.dart';
+import 'package:package_info_plus/package_info_plus.dart';
 
 class SettingsScreen extends StatefulWidget {
   final void Function(FederationSelector fed, bool recovering) onJoin;
@@ -25,17 +26,26 @@ class SettingsScreen extends StatefulWidget {
 
 class _SettingsScreenState extends State<SettingsScreen> {
   bool? hasAck;
+  String? _version;
 
   @override
   void initState() {
     super.initState();
     _checkSeedAck();
+    _loadVersion();
   }
 
   Future<void> _checkSeedAck() async {
     final result = await hasSeedPhraseAck();
     setState(() {
       hasAck = result;
+    });
+  }
+
+  Future<void> _loadVersion() async {
+    final info = await PackageInfo.fromPlatform();
+    setState(() {
+      _version = "v${info.version}+${info.buildNumber}";
     });
   }
 
@@ -134,6 +144,16 @@ class _SettingsScreenState extends State<SettingsScreen> {
               _checkSeedAck();
             },
           ),
+          const SizedBox(height: 24),
+          if (_version != null)
+            Center(
+              child: Text(
+                "Version: ${_version!}",
+                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                ),
+              ),
+            ),
         ],
       ),
     );
