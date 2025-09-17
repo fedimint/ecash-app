@@ -62,7 +62,7 @@ class _LightningAddressDialogState extends State<_LightningAddressDialog> {
       ),
       content: SizedBox(
         width: 320,
-        height: 360,
+        height: 400,
         child: Column(
           children: [
             Expanded(
@@ -179,8 +179,10 @@ class _LightningAddressPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     String toastText;
+    String qrText = data;
     if (data.contains('@')) {
       toastText = data;
+      qrText = "lightning:$data";
     } else {
       toastText = getAbbreviatedText(data);
     }
@@ -211,7 +213,7 @@ class _LightningAddressPage extends StatelessWidget {
                             color: Colors.black.withOpacity(0.9),
                             child: Center(
                               child: QrImageView(
-                                data: data,
+                                data: qrText,
                                 version: QrVersions.auto,
                                 backgroundColor: Colors.white,
                                 size: MediaQuery.of(context).size.width * 0.9,
@@ -223,7 +225,7 @@ class _LightningAddressPage extends StatelessWidget {
                 );
               },
               child: QrImageView(
-                data: data,
+                data: qrText,
                 version: QrVersions.auto,
                 backgroundColor: Colors.white,
               ),
