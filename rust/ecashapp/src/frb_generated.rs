@@ -4190,13 +4190,16 @@ fn wire__crate__multimint__Multimint_parse_ecash_impl(
             let api_federation_id = <RustOpaqueMoi<
                 flutter_rust_bridge::for_generated::RustAutoOpaqueInner<FederationId>,
             >>::sse_decode(&mut deserializer);
-            let api_ecash = <String>::sse_decode(&mut deserializer);
+            let api_notes = <RustOpaqueMoi<
+                flutter_rust_bridge::for_generated::RustAutoOpaqueInner<OOBNotes>,
+            >>::sse_decode(&mut deserializer);
             deserializer.end();
             move |context| async move {
                 transform_result_sse::<_, flutter_rust_bridge::for_generated::anyhow::Error>(
                     (move || async move {
                         let mut api_that_guard = None;
                         let mut api_federation_id_guard = None;
+                        let mut api_notes_guard = None;
                         let decode_indices_ =
                             flutter_rust_bridge::for_generated::lockable_compute_decode_order(
                                 vec![
@@ -4207,6 +4210,9 @@ fn wire__crate__multimint__Multimint_parse_ecash_impl(
                                         &api_federation_id,
                                         1,
                                         false,
+                                    ),
+                                    flutter_rust_bridge::for_generated::LockableOrderInfo::new(
+                                        &api_notes, 2, false,
                                     ),
                                 ],
                             );
@@ -4220,15 +4226,20 @@ fn wire__crate__multimint__Multimint_parse_ecash_impl(
                                     api_federation_id_guard =
                                         Some(api_federation_id.lockable_decode_async_ref().await)
                                 }
+                                2 => {
+                                    api_notes_guard =
+                                        Some(api_notes.lockable_decode_async_ref().await)
+                                }
                                 _ => unreachable!(),
                             }
                         }
                         let api_that_guard = api_that_guard.unwrap();
                         let api_federation_id_guard = api_federation_id_guard.unwrap();
+                        let api_notes_guard = api_notes_guard.unwrap();
                         let output_ok = crate::multimint::Multimint::parse_ecash(
                             &*api_that_guard,
                             &*api_federation_id_guard,
-                            api_ecash,
+                            &*api_notes_guard,
                         )
                         .await?;
                         Ok(output_ok)
@@ -9848,6 +9859,9 @@ flutter_rust_bridge::frb_generated_moi_arc_impl_value!(
     flutter_rust_bridge::for_generated::RustAutoOpaqueInner<NostrClient>
 );
 flutter_rust_bridge::frb_generated_moi_arc_impl_value!(
+    flutter_rust_bridge::for_generated::RustAutoOpaqueInner<OOBNotes>
+);
+flutter_rust_bridge::frb_generated_moi_arc_impl_value!(
     flutter_rust_bridge::for_generated::RustAutoOpaqueInner<OperationId>
 );
 flutter_rust_bridge::frb_generated_moi_arc_impl_value!(
@@ -10258,6 +10272,16 @@ impl SseDecode
 
 impl SseDecode
     for RustOpaqueMoi<flutter_rust_bridge::for_generated::RustAutoOpaqueInner<NostrClient>>
+{
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
+        let mut inner = <usize>::sse_decode(deserializer);
+        return decode_rust_opaque_moi(inner);
+    }
+}
+
+impl SseDecode
+    for RustOpaqueMoi<flutter_rust_bridge::for_generated::RustAutoOpaqueInner<OOBNotes>>
 {
     // Codec=Sse (Serialization based), see doc to use other codecs
     fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
@@ -10960,18 +10984,23 @@ impl SseDecode for crate::ParsedText {
             }
             1 => {
                 let mut var_field0 = <String>::sse_decode(deserializer);
-                return crate::ParsedText::LightningInvoice(var_field0);
+                let mut var_field1 = <String>::sse_decode(deserializer);
+                return crate::ParsedText::InviteCodeWithEcash(var_field0, var_field1);
             }
             2 => {
+                let mut var_field0 = <String>::sse_decode(deserializer);
+                return crate::ParsedText::LightningInvoice(var_field0);
+            }
+            3 => {
                 let mut var_field0 = <String>::sse_decode(deserializer);
                 let mut var_field1 = <Option<u64>>::sse_decode(deserializer);
                 return crate::ParsedText::BitcoinAddress(var_field0, var_field1);
             }
-            3 => {
+            4 => {
                 let mut var_field0 = <u64>::sse_decode(deserializer);
                 return crate::ParsedText::Ecash(var_field0);
             }
-            4 => {
+            5 => {
                 let mut var_field0 = <String>::sse_decode(deserializer);
                 return crate::ParsedText::LightningAddressOrLnurl(var_field0);
             }
@@ -12746,20 +12775,26 @@ impl flutter_rust_bridge::IntoDart for crate::ParsedText {
             crate::ParsedText::InviteCode(field0) => {
                 [0.into_dart(), field0.into_into_dart().into_dart()].into_dart()
             }
+            crate::ParsedText::InviteCodeWithEcash(field0, field1) => [
+                1.into_dart(),
+                field0.into_into_dart().into_dart(),
+                field1.into_into_dart().into_dart(),
+            ]
+            .into_dart(),
             crate::ParsedText::LightningInvoice(field0) => {
-                [1.into_dart(), field0.into_into_dart().into_dart()].into_dart()
+                [2.into_dart(), field0.into_into_dart().into_dart()].into_dart()
             }
             crate::ParsedText::BitcoinAddress(field0, field1) => [
-                2.into_dart(),
+                3.into_dart(),
                 field0.into_into_dart().into_dart(),
                 field1.into_into_dart().into_dart(),
             ]
             .into_dart(),
             crate::ParsedText::Ecash(field0) => {
-                [3.into_dart(), field0.into_into_dart().into_dart()].into_dart()
+                [4.into_dart(), field0.into_into_dart().into_dart()].into_dart()
             }
             crate::ParsedText::LightningAddressOrLnurl(field0) => {
-                [4.into_dart(), field0.into_into_dart().into_dart()].into_dart()
+                [5.into_dart(), field0.into_into_dart().into_dart()].into_dart()
             }
             _ => {
                 unimplemented!("");
@@ -13275,6 +13310,17 @@ impl SseEncode
 
 impl SseEncode
     for RustOpaqueMoi<flutter_rust_bridge::for_generated::RustAutoOpaqueInner<NostrClient>>
+{
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
+        let (ptr, size) = self.sse_encode_raw();
+        <usize>::sse_encode(ptr, serializer);
+        <i32>::sse_encode(size, serializer);
+    }
+}
+
+impl SseEncode
+    for RustOpaqueMoi<flutter_rust_bridge::for_generated::RustAutoOpaqueInner<OOBNotes>>
 {
     // Codec=Sse (Serialization based), see doc to use other codecs
     fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
@@ -13901,21 +13947,26 @@ impl SseEncode for crate::ParsedText {
                 <i32>::sse_encode(0, serializer);
                 <String>::sse_encode(field0, serializer);
             }
-            crate::ParsedText::LightningInvoice(field0) => {
+            crate::ParsedText::InviteCodeWithEcash(field0, field1) => {
                 <i32>::sse_encode(1, serializer);
+                <String>::sse_encode(field0, serializer);
+                <String>::sse_encode(field1, serializer);
+            }
+            crate::ParsedText::LightningInvoice(field0) => {
+                <i32>::sse_encode(2, serializer);
                 <String>::sse_encode(field0, serializer);
             }
             crate::ParsedText::BitcoinAddress(field0, field1) => {
-                <i32>::sse_encode(2, serializer);
+                <i32>::sse_encode(3, serializer);
                 <String>::sse_encode(field0, serializer);
                 <Option<u64>>::sse_encode(field1, serializer);
             }
             crate::ParsedText::Ecash(field0) => {
-                <i32>::sse_encode(3, serializer);
+                <i32>::sse_encode(4, serializer);
                 <u64>::sse_encode(field0, serializer);
             }
             crate::ParsedText::LightningAddressOrLnurl(field0) => {
-                <i32>::sse_encode(4, serializer);
+                <i32>::sse_encode(5, serializer);
                 <String>::sse_encode(field0, serializer);
             }
             _ => {
@@ -14455,6 +14506,20 @@ mod io {
     }
 
     #[unsafe(no_mangle)]
+    pub extern "C" fn frbgen_ecashapp_rust_arc_increment_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerOOBNotes(
+        ptr: *const std::ffi::c_void,
+    ) {
+        MoiArc::<flutter_rust_bridge::for_generated::RustAutoOpaqueInner<OOBNotes>>::increment_strong_count(ptr as _);
+    }
+
+    #[unsafe(no_mangle)]
+    pub extern "C" fn frbgen_ecashapp_rust_arc_decrement_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerOOBNotes(
+        ptr: *const std::ffi::c_void,
+    ) {
+        MoiArc::<flutter_rust_bridge::for_generated::RustAutoOpaqueInner<OOBNotes>>::decrement_strong_count(ptr as _);
+    }
+
+    #[unsafe(no_mangle)]
     pub extern "C" fn frbgen_ecashapp_rust_arc_increment_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerOperationId(
         ptr: *const std::ffi::c_void,
     ) {
@@ -14803,6 +14868,20 @@ mod web {
         ptr: *const std::ffi::c_void,
     ) {
         MoiArc::<flutter_rust_bridge::for_generated::RustAutoOpaqueInner<NostrClient>>::decrement_strong_count(ptr as _);
+    }
+
+    #[wasm_bindgen]
+    pub fn rust_arc_increment_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerOOBNotes(
+        ptr: *const std::ffi::c_void,
+    ) {
+        MoiArc::<flutter_rust_bridge::for_generated::RustAutoOpaqueInner<OOBNotes>>::increment_strong_count(ptr as _);
+    }
+
+    #[wasm_bindgen]
+    pub fn rust_arc_decrement_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerOOBNotes(
+        ptr: *const std::ffi::c_void,
+    ) {
+        MoiArc::<flutter_rust_bridge::for_generated::RustAutoOpaqueInner<OOBNotes>>::decrement_strong_count(ptr as _);
     }
 
     #[wasm_bindgen]

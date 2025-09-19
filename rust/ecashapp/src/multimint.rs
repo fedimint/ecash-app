@@ -2621,9 +2621,8 @@ impl Multimint {
     pub async fn parse_ecash(
         &self,
         federation_id: &FederationId,
-        ecash: String,
+        notes: &OOBNotes,
     ) -> anyhow::Result<u64> {
-        let notes = OOBNotes::from_str(&ecash)?;
         let given_federation_id_prefix = notes.federation_id_prefix();
         if federation_id.to_prefix() != given_federation_id_prefix {
             return Err(anyhow!("Trying to claim ecash into incorrect federation"));

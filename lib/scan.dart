@@ -347,6 +347,8 @@ class _ScanQRPageState extends State<ScanQRPage> {
             );
           }
           break;
+        case ParsedText_InviteCodeWithEcash(:final field0, :final field1):
+          break;
       }
 
       setState(() {
