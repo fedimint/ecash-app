@@ -9302,6 +9302,8 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
         return ParsedText_Ecash(dco_decode_u_64(raw[1]));
       case 5:
         return ParsedText_LightningAddressOrLnurl(dco_decode_String(raw[1]));
+      case 6:
+        return ParsedText_EcashNoFederation();
       default:
         throw Exception("unreachable");
     }
@@ -11287,6 +11289,8 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
       case 5:
         var var_field0 = sse_decode_String(deserializer);
         return ParsedText_LightningAddressOrLnurl(var_field0);
+      case 6:
+        return ParsedText_EcashNoFederation();
       default:
         throw UnimplementedError('');
     }
@@ -13303,6 +13307,8 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
       case ParsedText_LightningAddressOrLnurl(field0: final field0):
         sse_encode_i_32(5, serializer);
         sse_encode_String(field0, serializer);
+      case ParsedText_EcashNoFederation():
+        sse_encode_i_32(6, serializer);
     }
   }
 

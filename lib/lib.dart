@@ -426,4 +426,5 @@ sealed class ParsedText with _$ParsedText {
   const factory ParsedText.ecash(BigInt field0) = ParsedText_Ecash;
   const factory ParsedText.lightningAddressOrLnurl(String field0) =
       ParsedText_LightningAddressOrLnurl;
+  const factory ParsedText.ecashNoFederation() = ParsedText_EcashNoFederation;
 }

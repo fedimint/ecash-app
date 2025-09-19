@@ -348,6 +348,47 @@ class _ScanQRPageState extends State<ScanQRPage> {
           }
           break;
         case ParsedText_InviteCodeWithEcash(:final field0, :final field1):
+          if (widget.paymentType == null) {
+            try {
+              final fed = await showAppModalBottomSheet(
+                context: context,
+                childBuilder: () async {
+                  final meta = await getFederationMeta(inviteCode: field0);
+                  return FederationPreview(
+                    fed: meta.selector,
+                    inviteCode: field0,
+                    welcomeMessage: meta.welcome,
+                    imageUrl: meta.picture,
+                    joinable: true,
+                    guardians: meta.guardians,
+                    ecash: field1,
+                  );
+                },
+              );
+              if (fed != null) {
+                await Future.delayed(const Duration(milliseconds: 400));
+                Navigator.pop(context, fed);
+              }
+            } catch (e) {
+              AppLogger.instance.warn(
+                "Error when retrieving federation meta: $e",
+              );
+              ToastService().show(
+                message: "Sorry! Could not get federation metadata",
+                duration: const Duration(seconds: 5),
+                onTap: () {},
+                icon: Icon(Icons.error),
+              );
+            }
+          }
+          break;
+        case ParsedText_EcashNoFederation():
+          ToastService().show(
+            message: "Valid ecash detected, but we cannot determine the federation",
+            duration: const Duration(seconds: 5),
+            onTap: () {},
+            icon: Icon(Icons.error),
+          );
           break;
       }
 
@@ -377,7 +418,16 @@ class _ScanQRPageState extends State<ScanQRPage> {
   void _onQRCodeScanned(String code) async {
     if (_scanned) return;
     _scanned = true;
-    await _handleText(code);
+    final parsed = await _handleText(code);
+    if (!parsed) {
+      AppLogger.instance.warn("$code cannot be parsed");
+      ToastService().show(
+        message: "Sorry! That cannot be parsed.",
+        duration: const Duration(seconds: 5),
+        onTap: () {},
+        icon: Icon(Icons.error),
+      );
+    }
   }
 
   Future<void> _pasteFromClipboard() async {
@@ -396,7 +446,16 @@ class _ScanQRPageState extends State<ScanQRPage> {
       return;
     }
 
-    await _handleText(text);
+    final parsed = await _handleText(text);
+    if (!parsed) {
+      AppLogger.instance.warn("$text cannot be parsed");
+      ToastService().show(
+        message: "Sorry! That cannot be parsed.",
+        duration: const Duration(seconds: 5),
+        onTap: () {},
+        icon: Icon(Icons.error),
+      );
+    }
     setState(() => _isPasting = false);
   }
 

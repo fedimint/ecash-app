@@ -661,6 +661,7 @@ pub enum ParsedText {
     BitcoinAddress(String, Option<u64>),
     Ecash(u64),
     LightningAddressOrLnurl(String),
+    EcashNoFederation,
 }
 
 #[frb]
@@ -784,6 +785,8 @@ pub async fn parsed_scanned_text(
         if let Some(invite_code) = notes.federation_invite() {
             return Ok((ParsedText::InviteCodeWithEcash(invite_code.to_string(), text), None));
         }
+
+        return Ok((ParsedText::EcashNoFederation, None));
     }
 
     Err(anyhow!("Payment method not supported"))

@@ -11004,6 +11004,9 @@ impl SseDecode for crate::ParsedText {
                 let mut var_field0 = <String>::sse_decode(deserializer);
                 return crate::ParsedText::LightningAddressOrLnurl(var_field0);
             }
+            6 => {
+                return crate::ParsedText::EcashNoFederation;
+            }
             _ => {
                 unimplemented!("");
             }
@@ -12796,6 +12799,7 @@ impl flutter_rust_bridge::IntoDart for crate::ParsedText {
             crate::ParsedText::LightningAddressOrLnurl(field0) => {
                 [5.into_dart(), field0.into_into_dart().into_dart()].into_dart()
             }
+            crate::ParsedText::EcashNoFederation => [6.into_dart()].into_dart(),
             _ => {
                 unimplemented!("");
             }
@@ -13968,6 +13972,9 @@ impl SseEncode for crate::ParsedText {
             crate::ParsedText::LightningAddressOrLnurl(field0) => {
                 <i32>::sse_encode(5, serializer);
                 <String>::sse_encode(field0, serializer);
+            }
+            crate::ParsedText::EcashNoFederation => {
+                <i32>::sse_encode(6, serializer);
             }
             _ => {
                 unimplemented!("");

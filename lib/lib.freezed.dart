@@ -15,22 +15,22 @@ T _$identity<T>(T value) => value;
 /// @nodoc
 mixin _$ParsedText {
 
- Object get field0;
+
 
 
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is ParsedText&&const DeepCollectionEquality().equals(other.field0, field0));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is ParsedText);
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,const DeepCollectionEquality().hash(field0));
+int get hashCode => runtimeType.hashCode;
 
 @override
 String toString() {
-  return 'ParsedText(field0: $field0)';
+  return 'ParsedText()';
 }
 
 
@@ -49,7 +49,7 @@ class ParsedText_InviteCode extends ParsedText {
   const ParsedText_InviteCode(this.field0): super._();
   
 
-@override final  String field0;
+ final  String field0;
 
 /// Create a copy of ParsedText
 /// with the given fields replaced by the non-null parameter values.
@@ -115,7 +115,7 @@ class ParsedText_InviteCodeWithEcash extends ParsedText {
   const ParsedText_InviteCodeWithEcash(this.field0, this.field1): super._();
   
 
-@override final  String field0;
+ final  String field0;
  final  String field1;
 
 /// Create a copy of ParsedText
@@ -183,7 +183,7 @@ class ParsedText_LightningInvoice extends ParsedText {
   const ParsedText_LightningInvoice(this.field0): super._();
   
 
-@override final  String field0;
+ final  String field0;
 
 /// Create a copy of ParsedText
 /// with the given fields replaced by the non-null parameter values.
@@ -249,7 +249,7 @@ class ParsedText_BitcoinAddress extends ParsedText {
   const ParsedText_BitcoinAddress(this.field0, [this.field1]): super._();
   
 
-@override final  String field0;
+ final  String field0;
  final  BigInt? field1;
 
 /// Create a copy of ParsedText
@@ -317,7 +317,7 @@ class ParsedText_Ecash extends ParsedText {
   const ParsedText_Ecash(this.field0): super._();
   
 
-@override final  BigInt field0;
+ final  BigInt field0;
 
 /// Create a copy of ParsedText
 /// with the given fields replaced by the non-null parameter values.
@@ -383,7 +383,7 @@ class ParsedText_LightningAddressOrLnurl extends ParsedText {
   const ParsedText_LightningAddressOrLnurl(this.field0): super._();
   
 
-@override final  String field0;
+ final  String field0;
 
 /// Create a copy of ParsedText
 /// with the given fields replaced by the non-null parameter values.
@@ -441,5 +441,37 @@ as String,
 
 
 }
+
+/// @nodoc
+
+
+class ParsedText_EcashNoFederation extends ParsedText {
+  const ParsedText_EcashNoFederation(): super._();
+  
+
+
+
+
+
+
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is ParsedText_EcashNoFederation);
+}
+
+
+@override
+int get hashCode => runtimeType.hashCode;
+
+@override
+String toString() {
+  return 'ParsedText.ecashNoFederation()';
+}
+
+
+}
+
+
+
 
 // dart format on
