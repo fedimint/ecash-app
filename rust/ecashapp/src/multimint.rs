@@ -462,28 +462,31 @@ impl Multimint {
                 for op_id in active_operations {
                     let entry = operation_log.get_operation(op_id).await;
                     if let Some(entry) = entry {
-                        match entry.operation_module_kind() {
-                            "lnv2" | "ln" => {
-                                // We could check what type of operation this is, but `await_receive` and `await_send`
-                                // will do that internally. So we just spawn both here and let one fail since it is the wrong
-                                // operation type.
-                                self_copy.spawn_await_receive(federation_id, op_id);
-                                self_copy.spawn_await_send(federation_id, op_id);
-                            }
-                            "mint" => {
-                                // We could check what type of operation this is, but `await_ecash_reissue` and `await_ecash_send`
-                                // will do that internally. So we just spawn both here and let one fail since it is the wrong
-                                // operation type.
-                                self_copy.spawn_await_ecash_reissue(federation_id, op_id);
-                                self_copy.spawn_await_ecash_send(federation_id, op_id);
-                            }
-                            // Wallet operations are handled by the pegin monitor
-                            "wallet" => {}
-                            module => {
-                                info_to_flutter(format!(
-                                    "Active operation needs to be driven to completion: {module}"
-                                ))
-                                .await;
+                        // Only drive operation to completion if there is no outcome yet
+                        if entry.outcome::<serde_json::Value>().is_none() {
+                            match entry.operation_module_kind() {
+                                "lnv2" | "ln" => {
+                                    // We could check what type of operation this is, but `await_receive` and `await_send`
+                                    // will do that internally. So we just spawn both here and let one fail since it is the wrong
+                                    // operation type.
+                                    self_copy.spawn_await_receive(federation_id, op_id);
+                                    self_copy.spawn_await_send(federation_id, op_id);
+                                }
+                                "mint" => {
+                                    // We could check what type of operation this is, but `await_ecash_reissue` and `await_ecash_send`
+                                    // will do that internally. So we just spawn both here and let one fail since it is the wrong
+                                    // operation type.
+                                    self_copy.spawn_await_ecash_reissue(federation_id, op_id);
+                                    self_copy.spawn_await_ecash_send(federation_id, op_id);
+                                }
+                                // Wallet operations are handled by the pegin monitor
+                                "wallet" => {}
+                                module => {
+                                    info_to_flutter(format!(
+                                        "Active operation needs to be driven to completion: {module}"
+                                    ))
+                                    .await;
+                                }
                             }
                         }
                     }
