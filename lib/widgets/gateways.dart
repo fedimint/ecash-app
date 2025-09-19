@@ -75,7 +75,9 @@ class GatewaysList extends StatelessWidget {
                 onTap: () {
                   showAppModalBottomSheet(
                     context: context,
-                    child: GatewayDetailsSheet(gateway: g),
+                    childBuilder: () async {
+                      return GatewayDetailsSheet(gateway: g);
+                    },
                   );
                 },
               ),

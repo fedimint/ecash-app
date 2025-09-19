@@ -55,7 +55,7 @@ final ThemeData cypherpunkNinjaTheme = ThemeData(
 
 Future<T?> showAppModalBottomSheet<T>({
   required BuildContext context,
-  required Widget child,
+  required Future<Widget> Function() childBuilder,
   double? heightFactor,
 }) {
   return showModalBottomSheet<T>(
@@ -86,11 +86,35 @@ Future<T?> showAppModalBottomSheet<T>({
                     borderRadius: BorderRadius.circular(2),
                   ),
                 ),
-                // Scrollable content
+                // Async content
                 Expanded(
-                  child: SingleChildScrollView(
-                    padding: const EdgeInsets.symmetric(horizontal: 16),
-                    child: child,
+                  child: FutureBuilder<Widget>(
+                    future: childBuilder(),
+                    builder: (context, snapshot) {
+                      if (snapshot.connectionState == ConnectionState.waiting) {
+                        return const Center(
+                          child: Padding(
+                            padding: EdgeInsets.all(24.0),
+                            child: CircularProgressIndicator(),
+                          ),
+                        );
+                      } else if (snapshot.hasError) {
+                        return Center(
+                          child: Padding(
+                            padding: const EdgeInsets.all(24.0),
+                            child: Text(
+                              'Error loading content',
+                              style: TextStyle(color: Colors.red),
+                            ),
+                          ),
+                        );
+                      } else {
+                        return SingleChildScrollView(
+                          padding: const EdgeInsets.symmetric(horizontal: 16),
+                          child: snapshot.data!,
+                        );
+                      }
+                    },
                   ),
                 ),
               ],

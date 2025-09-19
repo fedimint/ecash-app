@@ -108,7 +108,13 @@ class _TransactionDetailsState extends State<TransactionDetails> {
       invoicePaidToastVisible.value = false;
       await showAppModalBottomSheet(
         context: context,
-        child: EcashRedeemPrompt(fed: widget.fed, ecash: ecash, amount: amount),
+        childBuilder: () async {
+          return EcashRedeemPrompt(
+            fed: widget.fed,
+            ecash: ecash,
+            amount: amount,
+          );
+        },
         heightFactor: 0.33,
       );
       invoicePaidToastVisible.value = true;

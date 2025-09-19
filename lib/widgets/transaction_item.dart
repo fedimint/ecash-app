@@ -28,19 +28,21 @@ class TransactionItem extends StatelessWidget {
       ):
         showAppModalBottomSheet(
           context: context,
-          child: TransactionDetails(
-            tx: tx,
-            details: {
-              TransactionDetailKeys.amount: formattedAmount,
-              TransactionDetailKeys.fees: formatBalance(fees, true),
-              TransactionDetailKeys.gateway: gateway,
-              TransactionDetailKeys.payeePublicKey: payeePubkey,
-              TransactionDetailKeys.paymentHash: paymentHash,
-              TransactionDetailKeys.timestamp: formattedDate,
-            },
-            icon: icon,
-            fed: fed,
-          ),
+          childBuilder: () async {
+            return TransactionDetails(
+              tx: tx,
+              details: {
+                TransactionDetailKeys.amount: formattedAmount,
+                TransactionDetailKeys.fees: formatBalance(fees, true),
+                TransactionDetailKeys.gateway: gateway,
+                TransactionDetailKeys.payeePublicKey: payeePubkey,
+                TransactionDetailKeys.paymentHash: paymentHash,
+                TransactionDetailKeys.timestamp: formattedDate,
+              },
+              icon: icon,
+              fed: fed,
+            );
+          },
         );
         break;
       case TransactionKind_LightningSend(
@@ -52,20 +54,23 @@ class TransactionItem extends StatelessWidget {
       ):
         showAppModalBottomSheet(
           context: context,
-          child: TransactionDetails(
-            tx: tx,
-            details: {
-              if (lnAddress != null) TransactionDetailKeys.lnAddress: lnAddress,
-              TransactionDetailKeys.amount: formattedAmount,
-              TransactionDetailKeys.fees: formatBalance(fees, true),
-              TransactionDetailKeys.gateway: gateway,
-              TransactionDetailKeys.paymentHash: paymentHash,
-              TransactionDetailKeys.preimage: preimage,
-              TransactionDetailKeys.timestamp: formattedDate,
-            },
-            icon: icon,
-            fed: fed,
-          ),
+          childBuilder: () async {
+            return TransactionDetails(
+              tx: tx,
+              details: {
+                if (lnAddress != null)
+                  TransactionDetailKeys.lnAddress: lnAddress,
+                TransactionDetailKeys.amount: formattedAmount,
+                TransactionDetailKeys.fees: formatBalance(fees, true),
+                TransactionDetailKeys.gateway: gateway,
+                TransactionDetailKeys.paymentHash: paymentHash,
+                TransactionDetailKeys.preimage: preimage,
+                TransactionDetailKeys.timestamp: formattedDate,
+              },
+              icon: icon,
+              fed: fed,
+            );
+          },
         );
         break;
       case TransactionKind_EcashSend(
@@ -74,17 +79,19 @@ class TransactionItem extends StatelessWidget {
       ):
         showAppModalBottomSheet(
           context: context,
-          child: TransactionDetails(
-            tx: tx,
-            details: {
-              TransactionDetailKeys.amount: formattedAmount,
-              TransactionDetailKeys.fees: formatBalance(fees, true),
-              TransactionDetailKeys.ecash: oobNotes,
-              TransactionDetailKeys.timestamp: formattedDate,
-            },
-            icon: icon,
-            fed: fed,
-          ),
+          childBuilder: () async {
+            return TransactionDetails(
+              tx: tx,
+              details: {
+                TransactionDetailKeys.amount: formattedAmount,
+                TransactionDetailKeys.fees: formatBalance(fees, true),
+                TransactionDetailKeys.ecash: oobNotes,
+                TransactionDetailKeys.timestamp: formattedDate,
+              },
+              icon: icon,
+              fed: fed,
+            );
+          },
         );
         break;
       case TransactionKind_EcashReceive(
@@ -93,31 +100,35 @@ class TransactionItem extends StatelessWidget {
       ):
         showAppModalBottomSheet(
           context: context,
-          child: TransactionDetails(
-            tx: tx,
-            details: {
-              TransactionDetailKeys.amount: formattedAmount,
-              TransactionDetailKeys.fees: formatBalance(fees, true),
-              TransactionDetailKeys.ecash: oobNotes,
-              TransactionDetailKeys.timestamp: formattedDate,
-            },
-            icon: icon,
-            fed: fed,
-          ),
+          childBuilder: () async {
+            return TransactionDetails(
+              tx: tx,
+              details: {
+                TransactionDetailKeys.amount: formattedAmount,
+                TransactionDetailKeys.fees: formatBalance(fees, true),
+                TransactionDetailKeys.ecash: oobNotes,
+                TransactionDetailKeys.timestamp: formattedDate,
+              },
+              icon: icon,
+              fed: fed,
+            );
+          },
         );
         break;
       case TransactionKind_LightningRecurring():
         showAppModalBottomSheet(
           context: context,
-          child: TransactionDetails(
-            tx: tx,
-            details: {
-              TransactionDetailKeys.amount: formattedAmount,
-              TransactionDetailKeys.timestamp: formattedDate,
-            },
-            icon: icon,
-            fed: fed,
-          ),
+          childBuilder: () async {
+            return TransactionDetails(
+              tx: tx,
+              details: {
+                TransactionDetailKeys.amount: formattedAmount,
+                TransactionDetailKeys.timestamp: formattedDate,
+              },
+              icon: icon,
+              fed: fed,
+            );
+          },
         );
         break;
       case TransactionKind_OnchainReceive(
@@ -133,12 +144,14 @@ class TransactionItem extends StatelessWidget {
 
         showAppModalBottomSheet(
           context: context,
-          child: TransactionDetails(
-            tx: tx,
-            details: details,
-            icon: icon,
-            fed: fed,
-          ),
+          childBuilder: () async {
+            return TransactionDetails(
+              tx: tx,
+              details: details,
+              icon: icon,
+              fed: fed,
+            );
+          },
         );
         break;
       case TransactionKind_OnchainSend(
@@ -187,12 +200,14 @@ class TransactionItem extends StatelessWidget {
 
         showAppModalBottomSheet(
           context: context,
-          child: TransactionDetails(
-            tx: tx,
-            details: details,
-            icon: icon,
-            fed: fed,
-          ),
+          childBuilder: () async {
+            return TransactionDetails(
+              tx: tx,
+              details: details,
+              icon: icon,
+              fed: fed,
+            );
+          },
         );
         break;
     }

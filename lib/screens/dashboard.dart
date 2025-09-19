@@ -169,7 +169,9 @@ class _DashboardState extends State<Dashboard> {
     if (_selectedPaymentType == PaymentType.lightning) {
       await showAppModalBottomSheet(
         context: context,
-        child: PaymentMethodSelector(fed: widget.fed),
+        childBuilder: () async {
+          return PaymentMethodSelector(fed: widget.fed);
+        },
       );
     } else if (_selectedPaymentType == PaymentType.ecash ||
         _selectedPaymentType == PaymentType.onchain) {
@@ -210,7 +212,9 @@ class _DashboardState extends State<Dashboard> {
     } else if (_selectedPaymentType == PaymentType.onchain) {
       await showAppModalBottomSheet(
         context: context,
-        child: OnChainReceiveContent(fed: widget.fed),
+        childBuilder: () async {
+          return OnChainReceiveContent(fed: widget.fed);
+        },
         heightFactor: 0.33,
       );
       _loadAddresses();

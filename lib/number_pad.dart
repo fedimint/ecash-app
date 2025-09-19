@@ -102,33 +102,36 @@ class _NumberPadState extends State<NumberPad> {
 
   Future<void> _handleLightningReceive(BigInt amountSats) async {
     try {
-      final requestedAmountMsats = amountSats * BigInt.from(1000);
-      final gateway = await selectReceiveGateway(
-        federationId: widget.fed.federationId,
-        amountMsats: requestedAmountMsats,
-      );
-      final contractAmount = gateway.$2;
-      final invoice = await receive(
-        federationId: widget.fed.federationId,
-        amountMsatsWithFees: contractAmount,
-        amountMsatsWithoutFees: requestedAmountMsats,
-        gateway: gateway.$1,
-        isLnv2: gateway.$3,
-      );
-      invoicePaidToastVisible.value = false;
       await showAppModalBottomSheet(
         context: context,
-        child: Request(
-          invoice: invoice.$1,
-          fed: widget.fed,
-          operationId: invoice.$2,
-          requestedAmountMsats: requestedAmountMsats,
-          totalMsats: contractAmount,
-          gateway: gateway.$1,
-          pubkey: invoice.$3,
-          paymentHash: invoice.$4,
-          expiry: invoice.$5,
-        ),
+        childBuilder: () async {
+          final requestedAmountMsats = amountSats * BigInt.from(1000);
+          final gateway = await selectReceiveGateway(
+            federationId: widget.fed.federationId,
+            amountMsats: requestedAmountMsats,
+          );
+          final contractAmount = gateway.$2;
+          final invoice = await receive(
+            federationId: widget.fed.federationId,
+            amountMsatsWithFees: contractAmount,
+            amountMsatsWithoutFees: requestedAmountMsats,
+            gateway: gateway.$1,
+            isLnv2: gateway.$3,
+          );
+          invoicePaidToastVisible.value = false;
+
+          return Request(
+            invoice: invoice.$1,
+            fed: widget.fed,
+            operationId: invoice.$2,
+            requestedAmountMsats: requestedAmountMsats,
+            totalMsats: contractAmount,
+            gateway: gateway.$1,
+            pubkey: invoice.$3,
+            paymentHash: invoice.$4,
+            expiry: invoice.$5,
+          );
+        },
       );
     } catch (e) {
       AppLogger.instance.error("Could not create invoice: $e");
@@ -168,47 +171,53 @@ class _NumberPadState extends State<NumberPad> {
             return;
           }
 
-          // Get invoice from LN Address
-          final invoice = await getInvoiceFromLnaddressOrLnurl(
-            amountMsats: amountMsats,
-            lnaddressOrLnurl: widget.lightningAddressOrLnurl!,
-          );
-
-          // Get and show payment preview
-          final preview = await paymentPreview(
-            federationId: widget.fed.federationId,
-            bolt11: invoice,
-          );
-
           await showAppModalBottomSheet(
             context: context,
-            child: PaymentPreviewWidget(
-              fed: widget.fed,
-              paymentPreview: preview,
-            ),
+            childBuilder: () async {
+              // Get invoice from LN Address
+              final invoice = await getInvoiceFromLnaddressOrLnurl(
+                amountMsats: amountMsats,
+                lnaddressOrLnurl: widget.lightningAddressOrLnurl!,
+              );
+
+              // Get and show payment preview
+              final preview = await paymentPreview(
+                federationId: widget.fed.federationId,
+                bolt11: invoice,
+              );
+
+              return PaymentPreviewWidget(
+                fed: widget.fed,
+                paymentPreview: preview,
+              );
+            },
           );
         } else {
           await _handleLightningReceive(amountSats);
         }
       } else if (widget.paymentType == PaymentType.ecash) {
-        BigInt amount = amountSats * BigInt.from(1000);
-        if (_withdrawalMode == WithdrawalMode.maxBalance) {
-          amount = await balance(federationId: widget.fed.federationId);
-        }
         showAppModalBottomSheet(
           context: context,
-          child: EcashSend(fed: widget.fed, amountMsats: amount),
+          childBuilder: () async {
+            BigInt amount = amountSats * BigInt.from(1000);
+            if (_withdrawalMode == WithdrawalMode.maxBalance) {
+              amount = await balance(federationId: widget.fed.federationId);
+            }
+            return EcashSend(fed: widget.fed, amountMsats: amount);
+          },
         );
       } else if (widget.paymentType == PaymentType.onchain) {
         showAppModalBottomSheet(
           context: context,
-          child: OnchainSend(
-            fed: widget.fed,
-            amountSats: amountSats,
-            withdrawalMode: _withdrawalMode,
-            onWithdrawCompleted: widget.onWithdrawCompleted,
-            defaultAddress: widget.bitcoinAddress,
-          ),
+          childBuilder: () async {
+            return OnchainSend(
+              fed: widget.fed,
+              amountSats: amountSats,
+              withdrawalMode: _withdrawalMode,
+              onWithdrawCompleted: widget.onWithdrawCompleted,
+              defaultAddress: widget.bitcoinAddress,
+            );
+          },
         );
       }
     }

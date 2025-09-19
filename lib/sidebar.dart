@@ -268,14 +268,16 @@ class _FederationListItemState extends State<FederationListItem> {
                   onPressed: () {
                     showAppModalBottomSheet(
                       context: context,
-                      child: FederationPreview(
-                        fed: widget.fed,
-                        welcomeMessage: welcomeMessage,
-                        imageUrl: federationImageUrl,
-                        joinable: false,
-                        guardians: guardians,
-                        onLeaveFederation: widget.onLeaveFederation,
-                      ),
+                      childBuilder: () async {
+                        return FederationPreview(
+                          fed: widget.fed,
+                          welcomeMessage: welcomeMessage,
+                          imageUrl: federationImageUrl,
+                          joinable: false,
+                          guardians: guardians,
+                          onLeaveFederation: widget.onLeaveFederation,
+                        );
+                      },
                     );
                   },
                 ),

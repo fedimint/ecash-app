@@ -671,8 +671,7 @@ class _FederationPreviewState extends State<FederationPreview> {
                                                       () =>
                                                           Navigator.of(
                                                             context,
-                                                            rootNavigator:
-                                                                true,
+                                                            rootNavigator: true,
                                                           ).pop(),
                                                   child: Container(
                                                     width: double.infinity,
