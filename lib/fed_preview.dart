@@ -212,7 +212,7 @@ class _FederationPreviewState extends State<FederationPreview> {
 
       if (isSpent) {
         ToastService().show(
-          message: "This E-Cash has already been claimed",
+          message: "This Ecash has already been claimed",
           duration: const Duration(seconds: 5),
           onTap: () {},
           icon: Icon(Icons.error),
@@ -225,9 +225,9 @@ class _FederationPreviewState extends State<FederationPreview> {
         ecash: ecash,
       );
     } catch (e) {
-      AppLogger.instance.error("Could not reissue E-Cash $e");
+      AppLogger.instance.error("Could not reissue Ecash $e");
       ToastService().show(
-        message: "Could not claim E-Cash",
+        message: "Could not claim Ecash",
         duration: const Duration(seconds: 5),
         onTap: () {},
         icon: Icon(Icons.error),
