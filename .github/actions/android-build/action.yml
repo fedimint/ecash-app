@@ -205,4 +205,4 @@ runs:
       shell: bash
       run: |
         mv build/app/outputs/flutter-apk/app-release.apk \
-        build/app/outputs/flutter-apk/e-cash-app-${{ steps.version.outputs.version_name }}+${{ steps.version.outputs.version_code }}-${{ steps.slug.outputs.sha8 }}.apk
+        build/app/outputs/flutter-apk/ecash-app-${{ steps.version.outputs.version_name }}+${{ steps.version.outputs.version_code }}-${{ steps.slug.outputs.sha8 }}.apk

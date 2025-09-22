@@ -6,7 +6,7 @@ class TransactionDetailKeys {
 
   static const String amount = 'Amount';
   static const String fees = 'Fees';
-  static const String ecash = 'E-Cash';
+  static const String ecash = 'Ecash';
   static const String timestamp = 'Timestamp';
   static const String txid = 'Txid';
   static const String address = 'Address';

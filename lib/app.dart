@@ -312,7 +312,7 @@ class _MyAppState extends State<MyApp> {
     }
 
     return MaterialApp(
-      title: 'E-Cash App',
+      title: 'Ecash App',
       debugShowCheckedModeBanner: false,
       theme: cypherpunkNinjaTheme,
       navigatorKey: _navigatorKey,

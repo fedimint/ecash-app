@@ -209,7 +209,7 @@ class _TransactionsListState extends State<TransactionsList> {
           message = "No onchain transactions yet";
           break;
         case PaymentType.ecash:
-          message = "No E-Cash transactions yet";
+          message = "No Ecash transactions yet";
           break;
       }
       return SizedBox(height: 20, child: Center(child: Text(message)));

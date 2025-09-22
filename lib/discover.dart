@@ -162,10 +162,10 @@ class _Discover extends State<Discover> with SingleTickerProviderStateMixin {
       mainAxisAlignment: MainAxisAlignment.center,
       crossAxisAlignment: CrossAxisAlignment.center,
       children: [
-        Image.asset('assets/images/e-cash-app.png', width: 120, height: 120),
+        Image.asset('assets/images/ecash-app.png', width: 120, height: 120),
         const SizedBox(height: 16),
         Text(
-          "The E-Cash App",
+          "Ecash App",
           textAlign: TextAlign.center,
           style: theme.textTheme.titleLarge?.copyWith(
             color: Theme.of(context).colorScheme.primary,
