@@ -140,7 +140,7 @@ class _EcashRedeemPromptState extends State<EcashRedeemPrompt> {
 
       if (!mounted) return;
 
-      Navigator.of(context).pop();
+      Navigator.of(context).popUntil((route) => route.isFirst);
       ToastService().show(
         message: "E-Cash redeem started in background",
         duration: const Duration(seconds: 3),
