@@ -39,92 +39,154 @@ class _ScanQRPageState extends State<ScanQRPage> {
   bool _isPasting = false;
   _QrLoopSession? _currentSession;
 
+  final List<_FountainFramePending> _pendingFountains = [];
+  final Set<String> _exploredFountains = {};
+  static const int FOUNTAIN_V1_CONST = 100;
+
   void _handleQrLoopChunk(String base64Str) async {
     if (_scanned) return;
     try {
       // If there is no current session, first try to just normally parse the text
       if (_currentSession == null) {
-        // Set _scanned to try so we don't parse it multiple times
         setState(() {
           _scanned = true;
         });
+        AppLogger.instance.info("Trying for first time to parse as non e-cash");
         final parsed = await _handleText(base64Str);
-        if (parsed) {
-          return;
-        } else {
-          // If we cannot parse the text, fall through and try to parse as an animated QR code
-          setState(() {
-            _scanned = false;
-          });
-        }
+        if (parsed) return;
+        setState(() {
+          _scanned = false;
+        });
       }
 
       final bytes = base64Decode(base64Str);
-      if (bytes.length < 5) return;
+      if (bytes.isEmpty) return;
+      final firstByte = bytes[0];
 
-      final nonce = bytes[0];
-      final totalFrames = (bytes[1] << 8) + bytes[2];
-      final frameIndex = (bytes[3] << 8) + bytes[4];
-      final chunkData = bytes.sublist(5);
-
-      AppLogger.instance.info(
-        "Frame $frameIndex / $totalFrames (nonce=$nonce)",
-      );
-
-      if (_currentSession == null || _currentSession!.nonce != nonce) {
-        _currentSession = _QrLoopSession(
-          nonce: nonce,
-          totalFrames: totalFrames,
-        );
-      }
-
-      final session = _currentSession!;
-
-      if (!session.chunks.containsKey(frameIndex)) {
-        session.chunks[frameIndex] = chunkData;
-        setState(() {});
-      }
-
-      if (session.isComplete && !_scanned) {
-        _scanned = true;
-        final merged = session.mergeChunks();
-
-        final lengthBytes = merged.sublist(0, 4);
-        final declaredLength =
-            (lengthBytes[0] << 24) |
-            (lengthBytes[1] << 16) |
-            (lengthBytes[2] << 8) |
-            lengthBytes[3];
-
-        final hashBytes = merged.sublist(4, 20);
-        final payload = merged.sublist(20, 20 + declaredLength);
-
-        final actualHash = md5.convert(payload).bytes;
-        final isValid = const ListEquality().equals(actualHash, hashBytes);
-
-        if (!isValid) {
-          AppLogger.instance.warn("Expected hash: ${base64Encode(hashBytes)}");
-          AppLogger.instance.warn("Actual hash:   ${base64Encode(actualHash)}");
-          AppLogger.instance.warn("QR payload hash mismatch");
+      if (firstByte == FOUNTAIN_V1_CONST) {
+        // Fountain frame
+        // Deduplicate by base64 string to avoid reprocessing same fountain from QR loop
+        if (_exploredFountains.contains(base64Str)) {
+          AppLogger.instance.info("Duplicate fountain frame ignored");
           return;
         }
+        _exploredFountains.add(base64Str);
 
-        final actualPayload = utf8.decode(payload);
-        AppLogger.instance.info("Decoded QR payload: $actualPayload");
-        final parsed = await _handleText(actualPayload);
-        if (!parsed) {
-          AppLogger.instance.warn("$actualPayload cannot be parsed");
-          ToastService().show(
-            message: "Sorry! That cannot be parsed.",
-            duration: const Duration(seconds: 5),
-            onTap: () {},
-            icon: Icon(Icons.error),
+        final k = (bytes[1] << 8) | bytes[2];
+        final indexes = <int>[];
+        for (int j = 0; j < k; j++) {
+          final idx = (bytes[3 + 2 * j] << 8) | bytes[4 + 2 * j];
+          indexes.add(idx);
+        }
+        final data = bytes.sublist(3 + 2 * k);
+        final fountainPending = _FountainFramePending(
+          base64Str,
+          firstByte,
+          indexes,
+          Uint8List.fromList(data),
+        );
+
+        // If session exists, add it there; otherwise queue it for future sessions
+        if (_currentSession == null) {
+          AppLogger.instance.info(
+            "Queueing fountain frame (no active session yet)",
           );
+          _pendingFountains.add(fountainPending);
+        } else {
+          AppLogger.instance.info(
+            "Adding fountain frame to current session (indexes=$indexes)",
+          );
+          _currentSession!.addFountainFrame(fountainPending.toFountainFrame());
+        }
+        return;
+      } else {
+        // Data Frame
+        if (bytes.length < 5) return;
+        final nonce = bytes[0];
+        final totalFrames = (bytes[1] << 8) + bytes[2];
+        final frameIndex = (bytes[3] << 8) + bytes[4];
+        final chunkData = bytes.sublist(5);
+
+        if (_currentSession == null || _currentSession!.nonce != nonce) {
+          AppLogger.instance.info(
+            "Starting new session! Nonce: $nonce TotalFrames: $totalFrames",
+          );
+          _currentSession = _QrLoopSession(
+            nonce: nonce,
+            totalFrames: totalFrames,
+          );
+
+          // move any pending fountains into the new session (they will be attempted)
+          if (_pendingFountains.isNotEmpty) {
+            AppLogger.instance.info(
+              "Transferring ${_pendingFountains.length} pending fountains to session",
+            );
+            for (final pf in _pendingFountains) {
+              _currentSession!.addFountainFrame(pf.toFountainFrame());
+            }
+            _pendingFountains.clear();
+          }
+        }
+
+        final session = _currentSession!;
+        if (session.addDataFrame(frameIndex, Uint8List.fromList(chunkData))) {
+          setState(() {});
+        }
+
+        AppLogger.instance.info(
+          "Frame $frameIndex / $totalFrames (nonce=$nonce) added. Session size=${session.chunks.length}",
+        );
+
+        if (session.isComplete && !_scanned) {
+          AppLogger.instance.info("Session complete! Reassembling…");
+          _scanned = true;
+          final merged = session.mergeChunks();
+          _processMerged(merged);
         }
       }
     } catch (e) {
       AppLogger.instance.warn("Failed QR frame: $e");
       if (!_scanned) _onQRCodeScanned(base64Str);
+    }
+  }
+
+  void _processMerged(Uint8List merged) async {
+    try {
+      final lengthBytes = merged.sublist(0, 4);
+      final declaredLength =
+          (lengthBytes[0] << 24) |
+          (lengthBytes[1] << 16) |
+          (lengthBytes[2] << 8) |
+          lengthBytes[3];
+      AppLogger.instance.info("Declared length: $declaredLength");
+
+      final hashBytes = merged.sublist(4, 20);
+      final payload = merged.sublist(20, 20 + declaredLength);
+      AppLogger.instance.info("Payload length: ${payload.length}");
+
+      final actualHash = md5.convert(payload).bytes;
+      final isValid = const ListEquality().equals(actualHash, hashBytes);
+
+      if (!isValid) {
+        AppLogger.instance.warn("QR payload hash mismatch");
+        return;
+      }
+
+      AppLogger.instance.info("Passed isValid check. Decoding payload...");
+      AppLogger.instance.error("Payload: $payload");
+      final actualPayload = base64Encode(payload);
+      AppLogger.instance.info("Decoded QR payload: $actualPayload");
+      final parsed = await _handleText(actualPayload);
+      if (!parsed) {
+        ToastService().show(
+          message: "Sorry! That cannot be parsed.",
+          duration: const Duration(seconds: 5),
+          onTap: () {},
+          icon: Icon(Icons.error),
+        );
+      }
+    } catch (e) {
+      AppLogger.instance.error("Error processing merged chunks: $e");
     }
   }
 
@@ -280,6 +342,7 @@ class _ScanQRPageState extends State<ScanQRPage> {
 
       setState(() {
         _scanned = false;
+        _currentSession = null;
       });
 
       return true;
@@ -431,18 +494,136 @@ class _ScanQRPageState extends State<ScanQRPage> {
   }
 }
 
+class _FountainFramePending {
+  final String idBase64; // used for dedupe
+  final int version;
+  final List<int> indexes;
+  final Uint8List data;
+
+  _FountainFramePending(this.idBase64, this.version, this.indexes, this.data);
+
+  _FountainFrame toFountainFrame() => _FountainFrame(version, indexes, data);
+}
+
+class _FountainFrame {
+  final int version;
+  final List<int> indexes;
+  final Uint8List data;
+
+  _FountainFrame(this.version, this.indexes, this.data);
+}
+
 class _QrLoopSession {
   final int nonce;
   final int totalFrames;
   final Map<int, Uint8List> chunks = {};
+  final List<_FountainFrame> fountains = [];
+
   _QrLoopSession({required this.nonce, required this.totalFrames});
 
   bool get isComplete => chunks.length >= totalFrames;
 
+  bool addDataFrame(int frameIndex, Uint8List data) {
+    if (!chunks.containsKey(frameIndex)) {
+      chunks[frameIndex] = data;
+      _tryRecover();
+      return true;
+    }
+    return false;
+  }
+
+  void addFountainFrame(_FountainFrame f) {
+    fountains.add(f);
+    _tryRecover();
+  }
+
+  void _tryRecover() {
+    bool progress = true;
+    while (progress) {
+      progress = false;
+
+      for (int i = 0; i < fountains.length;) {
+        final f = fountains[i];
+
+        // which indexes are missing
+        final missing =
+            f.indexes.where((idx) => !chunks.containsKey(idx)).toList();
+
+        // collect known frames' data for the indexes present
+        final existingFramesData = <Uint8List>[];
+        for (final idx in f.indexes) {
+          final known = chunks[idx];
+          if (known != null) existingFramesData.add(known);
+        }
+
+        if (existingFramesData.isNotEmpty) {
+          // compute min length among known frames
+          final minKnownLen = existingFramesData
+              .map((d) => d.length)
+              .reduce((a, b) => a < b ? a : b);
+
+          // If fountain length does not match min known length, drop the fountain (incompatible).
+          if (f.data.length != minKnownLen) {
+            AppLogger.instance.info(
+              "Dropping fountain: incompatible length (f.len=${f.data.length} minKnownLen=$minKnownLen)",
+            );
+            fountains.removeAt(i);
+            continue;
+          }
+        }
+
+        if (missing.isEmpty) {
+          // fountain is useless now, remove it
+          fountains.removeAt(i);
+          continue;
+        } else if (missing.length == 1) {
+          // we can recover that missing chunk
+          final int missingIndex = missing.first;
+
+          // start with fountain data as Uint8List; we will XOR known frames into it
+          // produce result length = f.data.length (should equal min known length per above)
+          Uint8List recovered = Uint8List.fromList(f.data);
+
+          // XOR existing frames (only up to recovered.length, because we've validated lengths)
+          for (final idx in f.indexes) {
+            if (idx == missingIndex) continue;
+            final known = chunks[idx]!;
+            // XOR only up to recovered.length
+            for (int j = 0; j < recovered.length; j++) {
+              recovered[j] = recovered[j] ^ known[j];
+            }
+          }
+
+          // store recovered chunk
+          chunks[missingIndex] = recovered;
+          AppLogger.instance.info(
+            "Recovered missing chunk $missingIndex from fountain (now have ${chunks.length}/${totalFrames})",
+          );
+
+          // remove fountain and restart loop (some fountains may now be usable)
+          fountains.removeAt(i);
+          progress = true;
+          // restart scanning fountains from beginning
+          i = 0;
+          continue;
+        } else {
+          // cannot do anything for this fountain yet
+          i++;
+        }
+      } // end for fountains
+    } // end while progress
+  }
+
   Uint8List mergeChunks() {
     final List<int> fullData = [];
     for (int i = 0; i < totalFrames; i++) {
-      fullData.addAll(chunks[i]!);
+      final c = chunks[i];
+      if (c == null) {
+        throw Exception(
+          "Missing chunk $i during merge (have ${chunks.keys.toList()})",
+        );
+      }
+      fullData.addAll(c);
     }
     return Uint8List.fromList(fullData);
   }
