@@ -51,7 +51,7 @@ class _ScanQRPageState extends State<ScanQRPage> {
         setState(() {
           _scanned = true;
         });
-        AppLogger.instance.info("Trying for first time to parse as non e-cash");
+        AppLogger.instance.info("Trying for first time to parse as non ecash");
         final parsed = await _handleText(base64Str);
         if (parsed) return;
         setState(() {

@@ -29,7 +29,7 @@ class _EcashRedeemPromptState extends State<EcashRedeemPrompt> {
       _isLoading = true;
     });
 
-    final failureMessage = "Could not claim E-Cash";
+    final failureMessage = "Could not claim Ecash";
 
     try {
       final isSpent = await checkEcashSpent(
@@ -40,7 +40,7 @@ class _EcashRedeemPromptState extends State<EcashRedeemPrompt> {
       if (isSpent) {
         if (mounted) {
           ToastService().show(
-            message: "This E-Cash has already been claimed",
+            message: "This Ecash has already been claimed",
             duration: const Duration(seconds: 5),
             onTap: () {},
             icon: Icon(Icons.error),
@@ -97,7 +97,7 @@ class _EcashRedeemPromptState extends State<EcashRedeemPrompt> {
         Navigator.of(context).popUntil((route) => route.isFirst);
       }
     } catch (e) {
-      AppLogger.instance.error("Could not reissue E-Cash $e");
+      AppLogger.instance.error("Could not reissue Ecash $e");
       if (mounted) {
         ToastService().show(
           message: failureMessage,
@@ -125,7 +125,7 @@ class _EcashRedeemPromptState extends State<EcashRedeemPrompt> {
 
       if (isSpent) {
         ToastService().show(
-          message: "This E-Cash has already been claimed",
+          message: "This Ecash has already been claimed",
           duration: const Duration(seconds: 5),
           onTap: () {},
           icon: Icon(Icons.error),
@@ -142,15 +142,15 @@ class _EcashRedeemPromptState extends State<EcashRedeemPrompt> {
 
       Navigator.of(context).popUntil((route) => route.isFirst);
       ToastService().show(
-        message: "E-Cash redeem started in background",
+        message: "Ecash redeem started in background",
         duration: const Duration(seconds: 3),
         onTap: () {},
         icon: Icon(Icons.check),
       );
     } catch (e) {
-      AppLogger.instance.error("Could not reissue E-Cash $e");
+      AppLogger.instance.error("Could not reissue Ecash $e");
       ToastService().show(
-        message: "Could not claim E-Cash",
+        message: "Could not claim Ecash",
         duration: const Duration(seconds: 5),
         onTap: () {},
         icon: Icon(Icons.error),
@@ -166,7 +166,7 @@ class _EcashRedeemPromptState extends State<EcashRedeemPrompt> {
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         Text(
-          'Do you want to redeem the following E-Cash to ${widget.fed.federationName}?',
+          'Do you want to redeem the following Ecash to ${widget.fed.federationName}?',
           style: theme.textTheme.titleLarge,
           textAlign: TextAlign.center,
         ),

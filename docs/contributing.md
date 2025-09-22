@@ -1,7 +1,7 @@
 # Contributing
 
 ## Linux Development
-E-Cash App uses nix and nix flakes to manage dependencies and build the project.
+Ecash App uses nix and nix flakes to manage dependencies and build the project.
 
 First, install nix
 
@@ -26,4 +26,4 @@ To run the app on Linux, simply run
 just run
 ```
 
-Done! This will launch E-Cash App on Linux.
+Done! This will launch Ecash App on Linux.

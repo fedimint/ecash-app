@@ -87,13 +87,13 @@ class _CreateWalletState extends State<CreateWallet> {
             children: [
               const SizedBox(height: 48),
               Image.asset(
-                'assets/images/e-cash-app.png',
+                'assets/images/ecash-app.png',
                 width: 64,
                 height: 64,
               ),
               const SizedBox(height: 24),
               Text(
-                'Welcome to E-Cash App',
+                'Welcome to Ecash App',
                 style: theme.textTheme.headlineSmall?.copyWith(
                   fontWeight: FontWeight.bold,
                   color: theme.colorScheme.primary,

@@ -41,13 +41,13 @@ flutter:
   assets:
     - assets/images/fedimint.png
     - assets/images/fedimint-icon-color.png
-    - assets/images/e-cash-app.png
+    - assets/images/ecash-app.png
     - assets/images/nostr.png
     - assets/animations/lightning.json
 
 flutter_launcher_icons:
   android: true
   ios: false
-  image_path: "assets/images/e-cash-app.png"
+  image_path: "assets/images/ecash-app.png"
   adaptive_icon_background: "#000000"
-  adaptive_icon_foreground: "assets/images/e-cash-app.png"
+  adaptive_icon_foreground: "assets/images/ecash-app.png"

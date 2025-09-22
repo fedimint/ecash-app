@@ -1,26 +1,26 @@
 <p align="center">
-  <img src="assets/images/e-cash-app.png" alt="E-Cash App Logo" width="200"/>
+  <img src="assets/images/ecash-app.png" alt="Ecash App Logo" width="200"/>
 </p>
 
-# The E-Cash App – A Fedimint Wallet
+# Ecash App – A Fedimint Wallet
 
 <p align="center">
   <img src="assets/screenshots/create_wallet.png" alt="Create Wallet" width="300"/>
   <img src="assets/screenshots/discover2.png" alt="Discover Federations" width="300"/>
 </p>
 
-**The E-Cash App** is a [Fedimint](https://fedimint.org) wallet. It supports Lightning, On-chain, and E-Cash payments all in one wallet. The E-Cash App is designed to be as transparent as possible, displaying all fees and showing the details of the wallet to the user. Users can query the registered Lightning Gateways, view the UTXOs of a federation, and view the E-Cash note denominations in the wallet.
+**Ecash App** is a [Fedimint](https://fedimint.org) wallet. It supports Lightning, On-chain, and Ecash payments all in one wallet. Ecash App is designed to be as transparent as possible, displaying all fees and showing the details of the wallet to the user. Users can query the registered Lightning Gateways, view the UTXOs of a federation, and view the Ecash note denominations in the wallet.
 It’s built with **Flutter** for the UI and **Rust** (via [Flutter Rust Bridge](https://github.com/fzyzcjy/flutter_rust_bridge)).
 
 ---
 
 ## ✨ Features
 
-- ₿ **Lightning, On-chain, and E-Cash payments** – all in one wallet  
+- ₿ **Lightning, On-chain, and Ecash payments** – all in one wallet  
 - ⚡ **Lightning Address** – receive payments using Lightning Address 
-- 🔗 **Nostr Wallet Connect (NWC)** – connect your wallet to Nostr app and use The E-Cash App to zap 
+- 🔗 **Nostr Wallet Connect (NWC)** – connect your wallet to Nostr app and use Ecash App to zap 
 - 🌐 **Federation Discovery via Nostr** – find and join federations easily  
-- 🔒 **Automated Backup & Recovery** – backup all of your E-Cash using a familiar seed phrase
+- 🔒 **Automated Backup & Recovery** – backup all of your Ecash using a familiar seed phrase
 
 ---
 
@@ -35,7 +35,7 @@ It’s built with **Flutter** for the UI and **Rust** (via [Flutter Rust Bridge]
   <img src="assets/screenshots/gateways2.png" alt="Gateways" width="250"/>
   <img src="assets/screenshots/lightning_request.png" alt="Lightning Request" width="250"/>
   <img src="assets/screenshots/rfq.png" alt="Request for Quote" width="250"/>
-  <img src="assets/screenshots/ecash_receive2.png" alt="E-Cash Receive" width="250"/>
+  <img src="assets/screenshots/ecash_receive2.png" alt="Ecash Receive" width="250"/>
 </p>
 
 ---
