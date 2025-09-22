@@ -211,17 +211,19 @@ class _ScanQRPageState extends State<ScanQRPage> {
         case ParsedText_InviteCode(:final field0):
           if (widget.paymentType == null) {
             try {
-              final meta = await getFederationMeta(inviteCode: field0);
               final fed = await showAppModalBottomSheet(
                 context: context,
-                child: FederationPreview(
-                  fed: meta.selector,
-                  inviteCode: field0,
-                  welcomeMessage: meta.welcome,
-                  imageUrl: meta.picture,
-                  joinable: true,
-                  guardians: meta.guardians,
-                ),
+                childBuilder: () async {
+                  final meta = await getFederationMeta(inviteCode: field0);
+                  return FederationPreview(
+                    fed: meta.selector,
+                    inviteCode: field0,
+                    welcomeMessage: meta.welcome,
+                    imageUrl: meta.picture,
+                    joinable: true,
+                    guardians: meta.guardians,
+                  );
+                },
               );
               if (fed != null) {
                 await Future.delayed(const Duration(milliseconds: 400));
@@ -244,19 +246,22 @@ class _ScanQRPageState extends State<ScanQRPage> {
           if (widget.paymentType == null ||
               widget.paymentType! == PaymentType.lightning) {
             try {
-              final preview = await paymentPreview(
-                federationId: chosenFederation!.federationId,
-                bolt11: field0,
-              );
               await showAppModalBottomSheet(
                 context: context,
-                child: PaymentPreviewWidget(
-                  fed: chosenFederation,
-                  paymentPreview: preview,
-                ),
+                childBuilder: () async {
+                  final preview = await paymentPreview(
+                    federationId: chosenFederation!.federationId,
+                    bolt11: field0,
+                  );
+
+                  return PaymentPreviewWidget(
+                    fed: chosenFederation,
+                    paymentPreview: preview,
+                  );
+                },
               );
 
-              widget.onPay(chosenFederation, false);
+              widget.onPay(chosenFederation!, false);
             } catch (e) {
               AppLogger.instance.warn(
                 "Error when retrieving payment preview: $e",
@@ -276,12 +281,14 @@ class _ScanQRPageState extends State<ScanQRPage> {
             if (field1 != null) {
               await showAppModalBottomSheet(
                 context: context,
-                child: OnchainSend(
-                  fed: chosenFederation!,
-                  amountSats: field1.toSats,
-                  withdrawalMode: WithdrawalMode.specificAmount,
-                  defaultAddress: field0,
-                ),
+                childBuilder: () async {
+                  return OnchainSend(
+                    fed: chosenFederation!,
+                    amountSats: field1.toSats,
+                    withdrawalMode: WithdrawalMode.specificAmount,
+                    defaultAddress: field0,
+                  );
+                },
               );
             } else {
               final btcPrice = await fetchBtcPrice();
@@ -308,15 +315,17 @@ class _ScanQRPageState extends State<ScanQRPage> {
             invoicePaidToastVisible.value = false;
             await showAppModalBottomSheet(
               context: context,
-              child: EcashRedeemPrompt(
-                fed: chosenFederation!,
-                ecash: text,
-                amount: field0,
-              ),
+              childBuilder: () async {
+                return EcashRedeemPrompt(
+                  fed: chosenFederation!,
+                  ecash: text,
+                  amount: field0,
+                );
+              },
               heightFactor: 0.33,
             );
             invoicePaidToastVisible.value = true;
-            widget.onPay(chosenFederation, false);
+            widget.onPay(chosenFederation!, false);
           }
           break;
         case ParsedText_LightningAddressOrLnurl(:final field0):

@@ -49,7 +49,6 @@ class _Discover extends State<Discover> with SingleTickerProviderStateMixin {
 
   Future<void> _onPreviewPressed(String inviteCode) async {
     try {
-      final meta = await getFederationMeta(inviteCode: inviteCode);
       setState(() {
         _gettingMetadata = null;
         _isLoadingInvitePreview = false;
@@ -57,14 +56,17 @@ class _Discover extends State<Discover> with SingleTickerProviderStateMixin {
 
       final fed = await showAppModalBottomSheet(
         context: context,
-        child: FederationPreview(
-          fed: meta.selector,
-          inviteCode: inviteCode,
-          welcomeMessage: meta.welcome,
-          imageUrl: meta.picture,
-          joinable: true,
-          guardians: meta.guardians,
-        ),
+        childBuilder: () async {
+          final meta = await getFederationMeta(inviteCode: inviteCode);
+          return FederationPreview(
+            fed: meta.selector,
+            inviteCode: inviteCode,
+            welcomeMessage: meta.welcome,
+            imageUrl: meta.picture,
+            joinable: true,
+            guardians: meta.guardians,
+          );
+        },
       );
 
       if (fed != null) {

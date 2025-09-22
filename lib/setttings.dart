@@ -136,10 +136,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
             subtitle: 'View your seed phrase',
             warning: hasAck == false,
             onTap: () async {
-              final words = await getMnemonic();
               await showAppModalBottomSheet(
                 context: context,
-                child: Mnemonic(words: words, hasAck: hasAck!),
+                childBuilder: () async {
+                  final words = await getMnemonic();
+                  return Mnemonic(words: words, hasAck: hasAck!);
+                },
               );
               _checkSeedAck();
             },
