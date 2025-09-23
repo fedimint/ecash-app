@@ -1,7 +1,7 @@
 identifier: org.fedimint.app
-name: The E-Cash App
+name: Ecash App
 summary: A free and open source Fedimint wallet
-repository: https://github.com/fedimint/e-cash-app
+repository: https://github.com/fedimint/ecash-app
 homepage: https://ecash.love
 images:
  - assets/screenshots/create_wallet.png
@@ -15,10 +15,10 @@ images:
  - assets/screenshots/addresses_received.png
  - assets/screenshots/gateways2.png
  - assets/screenshots/multimint.png
-icon: assets/images/e-cash-app.png
+icon: assets/images/ecash-app.png
 tags: fedimint e-cash ecash lightning onchain bitcoin
 license: MIT
 remote_metadata:
  - github
 assets:
- - e-cash-app-\d+\.\d+\.\d+\+\d+-[0-9a-f]+\.apk
+ - ecash-app-\d+\.\d+\.\d+\+\d+-[0-9a-f]+\.apk
