@@ -15,22 +15,22 @@ T _$identity<T>(T value) => value;
 /// @nodoc
 mixin _$ParsedText {
 
- Object get field0;
+
 
 
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is ParsedText&&const DeepCollectionEquality().equals(other.field0, field0));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is ParsedText);
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,const DeepCollectionEquality().hash(field0));
+int get hashCode => runtimeType.hashCode;
 
 @override
 String toString() {
-  return 'ParsedText(field0: $field0)';
+  return 'ParsedText()';
 }
 
 
@@ -49,7 +49,7 @@ class ParsedText_InviteCode extends ParsedText {
   const ParsedText_InviteCode(this.field0): super._();
   
 
-@override final  String field0;
+ final  String field0;
 
 /// Create a copy of ParsedText
 /// with the given fields replaced by the non-null parameter values.
@@ -111,11 +111,79 @@ as String,
 /// @nodoc
 
 
+class ParsedText_InviteCodeWithEcash extends ParsedText {
+  const ParsedText_InviteCodeWithEcash(this.field0, this.field1): super._();
+  
+
+ final  String field0;
+ final  String field1;
+
+/// Create a copy of ParsedText
+/// with the given fields replaced by the non-null parameter values.
+@JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+$ParsedText_InviteCodeWithEcashCopyWith<ParsedText_InviteCodeWithEcash> get copyWith => _$ParsedText_InviteCodeWithEcashCopyWithImpl<ParsedText_InviteCodeWithEcash>(this, _$identity);
+
+
+
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is ParsedText_InviteCodeWithEcash&&(identical(other.field0, field0) || other.field0 == field0)&&(identical(other.field1, field1) || other.field1 == field1));
+}
+
+
+@override
+int get hashCode => Object.hash(runtimeType,field0,field1);
+
+@override
+String toString() {
+  return 'ParsedText.inviteCodeWithEcash(field0: $field0, field1: $field1)';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class $ParsedText_InviteCodeWithEcashCopyWith<$Res> implements $ParsedTextCopyWith<$Res> {
+  factory $ParsedText_InviteCodeWithEcashCopyWith(ParsedText_InviteCodeWithEcash value, $Res Function(ParsedText_InviteCodeWithEcash) _then) = _$ParsedText_InviteCodeWithEcashCopyWithImpl;
+@useResult
+$Res call({
+ String field0, String field1
+});
+
+
+
+
+}
+/// @nodoc
+class _$ParsedText_InviteCodeWithEcashCopyWithImpl<$Res>
+    implements $ParsedText_InviteCodeWithEcashCopyWith<$Res> {
+  _$ParsedText_InviteCodeWithEcashCopyWithImpl(this._self, this._then);
+
+  final ParsedText_InviteCodeWithEcash _self;
+  final $Res Function(ParsedText_InviteCodeWithEcash) _then;
+
+/// Create a copy of ParsedText
+/// with the given fields replaced by the non-null parameter values.
+@pragma('vm:prefer-inline') $Res call({Object? field0 = null,Object? field1 = null,}) {
+  return _then(ParsedText_InviteCodeWithEcash(
+null == field0 ? _self.field0 : field0 // ignore: cast_nullable_to_non_nullable
+as String,null == field1 ? _self.field1 : field1 // ignore: cast_nullable_to_non_nullable
+as String,
+  ));
+}
+
+
+}
+
+/// @nodoc
+
+
 class ParsedText_LightningInvoice extends ParsedText {
   const ParsedText_LightningInvoice(this.field0): super._();
   
 
-@override final  String field0;
+ final  String field0;
 
 /// Create a copy of ParsedText
 /// with the given fields replaced by the non-null parameter values.
@@ -181,7 +249,7 @@ class ParsedText_BitcoinAddress extends ParsedText {
   const ParsedText_BitcoinAddress(this.field0, [this.field1]): super._();
   
 
-@override final  String field0;
+ final  String field0;
  final  BigInt? field1;
 
 /// Create a copy of ParsedText
@@ -249,7 +317,7 @@ class ParsedText_Ecash extends ParsedText {
   const ParsedText_Ecash(this.field0): super._();
   
 
-@override final  BigInt field0;
+ final  BigInt field0;
 
 /// Create a copy of ParsedText
 /// with the given fields replaced by the non-null parameter values.
@@ -315,7 +383,7 @@ class ParsedText_LightningAddressOrLnurl extends ParsedText {
   const ParsedText_LightningAddressOrLnurl(this.field0): super._();
   
 
-@override final  String field0;
+ final  String field0;
 
 /// Create a copy of ParsedText
 /// with the given fields replaced by the non-null parameter values.
@@ -373,5 +441,37 @@ as String,
 
 
 }
+
+/// @nodoc
+
+
+class ParsedText_EcashNoFederation extends ParsedText {
+  const ParsedText_EcashNoFederation(): super._();
+  
+
+
+
+
+
+
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is ParsedText_EcashNoFederation);
+}
+
+
+@override
+int get hashCode => runtimeType.hashCode;
+
+@override
+String toString() {
+  return 'ParsedText.ecashNoFederation()';
+}
+
+
+}
+
+
+
 
 // dart format on

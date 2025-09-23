@@ -14,6 +14,7 @@ class FederationPreview extends StatefulWidget {
   final bool joinable;
   final List<Guardian>? guardians;
   final VoidCallback? onLeaveFederation;
+  final String? ecash;
 
   const FederationPreview({
     super.key,
@@ -24,6 +25,7 @@ class FederationPreview extends StatefulWidget {
     required this.joinable,
     this.guardians,
     this.onLeaveFederation,
+    this.ecash,
   });
 
   @override
@@ -178,6 +180,10 @@ class _FederationPreviewState extends State<FederationPreview> {
         _backupToNostr();
         await _claimLnAddress(fed);
 
+        if (widget.ecash != null) {
+          _redeemEcash(widget.ecash!);
+        }
+
         if (mounted) {
           Navigator.of(context).pop((fed, false));
         }
@@ -194,6 +200,38 @@ class _FederationPreviewState extends State<FederationPreview> {
           isJoining = false;
         });
       }
+    }
+  }
+
+  Future<void> _redeemEcash(String ecash) async {
+    try {
+      final isSpent = await checkEcashSpent(
+        federationId: widget.fed.federationId,
+        ecash: ecash,
+      );
+
+      if (isSpent) {
+        ToastService().show(
+          message: "This Ecash has already been claimed",
+          duration: const Duration(seconds: 5),
+          onTap: () {},
+          icon: Icon(Icons.error),
+        );
+        return;
+      }
+
+      await reissueEcash(
+        federationId: widget.fed.federationId,
+        ecash: ecash,
+      );
+    } catch (e) {
+      AppLogger.instance.error("Could not reissue Ecash $e");
+      ToastService().show(
+        message: "Could not claim Ecash",
+        duration: const Duration(seconds: 5),
+        onTap: () {},
+        icon: Icon(Icons.error),
+      );
     }
   }
 
@@ -390,7 +428,7 @@ class _FederationPreviewState extends State<FederationPreview> {
                       strokeWidth: 2,
                     ),
                   )
-                  : const Text("Join Federation"),
+                  : widget.ecash == null ? const Text("Join Federation") : const Text("Join and Redeem Ecash"),
         ),
         if (!isJoining) ...[
           const SizedBox(height: 12),

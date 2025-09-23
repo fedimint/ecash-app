@@ -195,7 +195,7 @@ abstract class Multimint implements RustOpaqueInterface {
 
   Future<BigInt> parseEcash({
     required FederationId federationId,
-    required String ecash,
+    required OobNotes notes,
   });
 
   Future<(Bolt11Invoice, OperationId)> receive({
@@ -275,6 +275,9 @@ abstract class Multimint implements RustOpaqueInterface {
     required PegOutFees pegOutFees,
   });
 }
+
+// Rust type: RustOpaqueMoi<flutter_rust_bridge::for_generated::RustAutoOpaqueInner<OOBNotes>>
+abstract class OobNotes implements RustOpaqueInterface {}
 
 // Rust type: RustOpaqueMoi<flutter_rust_bridge::for_generated::RustAutoOpaqueInner<OperationId>>
 abstract class OperationId implements RustOpaqueInterface {}

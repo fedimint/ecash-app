@@ -417,6 +417,8 @@ sealed class ParsedText with _$ParsedText {
   const ParsedText._();
 
   const factory ParsedText.inviteCode(String field0) = ParsedText_InviteCode;
+  const factory ParsedText.inviteCodeWithEcash(String field0, String field1) =
+      ParsedText_InviteCodeWithEcash;
   const factory ParsedText.lightningInvoice(String field0) =
       ParsedText_LightningInvoice;
   const factory ParsedText.bitcoinAddress(String field0, [BigInt? field1]) =
@@ -424,4 +426,5 @@ sealed class ParsedText with _$ParsedText {
   const factory ParsedText.ecash(BigInt field0) = ParsedText_Ecash;
   const factory ParsedText.lightningAddressOrLnurl(String field0) =
       ParsedText_LightningAddressOrLnurl;
+  const factory ParsedText.ecashNoFederation() = ParsedText_EcashNoFederation;
 }

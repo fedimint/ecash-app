@@ -38,7 +38,7 @@ use fedimint_core::{
     util::SafeUrl, Amount,
 };
 use fedimint_lnv2_client::FinalReceiveOperationState;
-use fedimint_mint_client::{ReissueExternalNotesState, SpendOOBState};
+use fedimint_mint_client::{OOBNotes, ReissueExternalNotesState, SpendOOBState};
 use fedimint_rocksdb::RocksDb;
 use lightning_invoice::Bolt11Invoice;
 use std::collections::BTreeMap;
@@ -450,9 +450,9 @@ pub async fn send_ecash(
     multimint.send_ecash(federation_id, amount_msats).await
 }
 
-async fn parse_ecash(federation_id: &FederationId, ecash: String) -> anyhow::Result<u64> {
+async fn parse_ecash(federation_id: &FederationId, notes: &OOBNotes) -> anyhow::Result<u64> {
     let multimint = get_multimint();
-    multimint.parse_ecash(federation_id, ecash).await
+    multimint.parse_ecash(federation_id, notes).await
 }
 
 #[frb]
@@ -656,10 +656,12 @@ pub async fn subscribe_recovery_progress(
 #[derive(Clone, Eq, PartialEq, Serialize, Debug)]
 pub enum ParsedText {
     InviteCode(String),
+    InviteCodeWithEcash(String, String),
     LightningInvoice(String),
     BitcoinAddress(String, Option<u64>),
     Ecash(u64),
     LightningAddressOrLnurl(String),
+    EcashNoFederation,
 }
 
 #[frb]
@@ -700,8 +702,10 @@ pub async fn parse_scanned_text_for_federation(
         ));
     }
 
-    if let Ok(amount) = parse_ecash(&federation.federation_id, text).await {
-        return Ok((ParsedText::Ecash(amount), federation.clone()));
+    if let Ok(notes) = OOBNotes::from_str(&text) {
+        if let Ok(amount) = parse_ecash(&federation.federation_id, &notes).await {
+            return Ok((ParsedText::Ecash(amount), federation.clone()));
+        }
     }
 
     Err(anyhow!("Payment method not supported"))
@@ -770,10 +774,19 @@ pub async fn parsed_scanned_text(
     }
 
     // Try to find a federation that can parse the ecash
-    for (federation, _) in all_federations {
-        if let Ok(amount) = parse_ecash(&federation.federation_id, text.clone()).await {
-            return Ok((ParsedText::Ecash(amount), Some(federation)));
+    if let Ok(notes) = OOBNotes::from_str(&text) {
+        for (federation, _) in all_federations {
+            if let Ok(amount) = parse_ecash(&federation.federation_id, &notes).await {
+                return Ok((ParsedText::Ecash(amount), Some(federation)));
+            }
         }
+
+        // If none of our joined federation's can parse the ecash, lets prompt the user to join
+        if let Some(invite_code) = notes.federation_invite() {
+            return Ok((ParsedText::InviteCodeWithEcash(invite_code.to_string(), text), None));
+        }
+
+        return Ok((ParsedText::EcashNoFederation, None));
     }
 
     Err(anyhow!("Payment method not supported"))
