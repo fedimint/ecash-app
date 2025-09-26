@@ -11,6 +11,19 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      - name: Free Disk Space
+        run: |
+          echo "Initial disk space:"
+          df -h
+          
+          sudo rm -rf /usr/share/dotnet
+          sudo rm -rf /opt/ghc
+          sudo rm -rf /usr/local/lib/android
+          sudo apt-get clean
+          docker rmi $(docker image ls -aq) || true
+          
+          echo "Disk space after cleanup:"
+          df -h
       - uses: ./.github/actions/android-build
         with:
           mode: debug
