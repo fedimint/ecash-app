@@ -1,5 +1,6 @@
 import 'dart:async';
-
+import 'package:collection/collection.dart';
+import 'package:ecashapp/core/secure_storage.dart';
 import 'package:ecashapp/discover.dart';
 import 'package:ecashapp/screens/dashboard.dart';
 import 'package:ecashapp/lib.dart';
@@ -17,11 +18,7 @@ final invoicePaidToastVisible = ValueNotifier<bool>(true);
 class MyApp extends StatefulWidget {
   final List<(FederationSelector, bool)> initialFederations;
   final bool recoverFederationInviteCodes;
-  const MyApp({
-    super.key,
-    required this.initialFederations,
-    required this.recoverFederationInviteCodes,
-  });
+  const MyApp({super.key, required this.initialFederations, required this.recoverFederationInviteCodes});
 
   @override
   State<MyApp> createState() => _MyAppState();
@@ -44,17 +41,18 @@ class _MyAppState extends State<MyApp> {
   String _recoveryStatus = "Retrieving federation backup from Nostr...";
   Timer? _recoveryTimer;
   int _recoverySecondsRemaining = 30;
+  bool _isInitializing = false;
 
   @override
   void initState() {
     super.initState();
+    _isInitializing = true;
     initDisplaySetting();
     _feds = widget.initialFederations;
 
     if (_feds.isNotEmpty) {
-      _selectedFederation = _feds.first.$1;
-      _isRecovering = _feds.first.$2;
-    } else if (_feds.isEmpty && widget.recoverFederationInviteCodes) {
+      _initializeSelectedFederation();
+    } else if (widget.recoverFederationInviteCodes) {
       _rejoinFederations();
     }
 
@@ -86,10 +84,7 @@ class _MyAppState extends State<MyApp> {
         await _handleFundsReceived(
           federationId: event.field0.$1,
           amountMsats: amountMsats,
-          icon: Icon(
-            Icons.currency_bitcoin,
-            color: Theme.of(context).colorScheme.primary,
-          ),
+          icon: Icon(Icons.currency_bitcoin, color: Theme.of(context).colorScheme.primary),
         );
       } else if (event is MultimintEvent_NostrRecovery) {
         if (event.field2 != null) {
@@ -103,8 +98,7 @@ class _MyAppState extends State<MyApp> {
           if (_selectedFederation == null) {
             _startOrResetRecoveryTimer();
             setState(() {
-              _recoveryStatus =
-                  "Trying to re-join ${event.field0} using peer ${event.field1}...";
+              _recoveryStatus = "Trying to re-join ${event.field0} using peer ${event.field1}...";
             });
           }
         }
@@ -134,17 +128,13 @@ class _MyAppState extends State<MyApp> {
     required Icon icon,
   }) async {
     final amount = formatBalance(amountMsats, false);
-    final federationIdString = await federationIdToString(
-      federationId: federationId,
-    );
+    final federationIdString = await federationIdToString(federationId: federationId);
 
     FederationSelector? selector;
     bool? recovering;
 
     for (var sel in _feds) {
-      final idString = await federationIdToString(
-        federationId: sel.$1.federationId,
-      );
+      final idString = await federationIdToString(federationId: sel.$1.federationId);
       if (idString == federationIdString) {
         selector = sel.$1;
         recovering = sel.$2;
@@ -204,6 +194,27 @@ class _MyAppState extends State<MyApp> {
     );
   }
 
+  Future<void> _initializeSelectedFederation() async {
+    final selectedFederationId = await flutterSecureStorage.read(key: SecureStorageKeys.selectedFederation);
+    final selectedFederation = _feds.firstWhereOrNull((sel) => sel.$1.federationId.toString() == selectedFederationId);
+
+    if (selectedFederation != null) {
+      _selectedFederation = selectedFederation.$1;
+      _isRecovering = selectedFederation.$2;
+      setState(() {
+        _isInitializing = false;
+      });
+      return;
+    }
+
+    final firstFed = _feds.first;
+    _selectedFederation = firstFed.$1;
+    _isRecovering = firstFed.$2;
+    setState(() {
+      _isInitializing = false;
+    });
+  }
+
   @override
   void dispose() {
     _subscription.cancel();
@@ -223,6 +234,7 @@ class _MyAppState extends State<MyApp> {
       _currentIndex = 0;
     });
     _recoveryTimer?.cancel();
+    flutterSecureStorage.write(key: SecureStorageKeys.selectedFederation, value: fed.federationId.toString());
   }
 
   Future<void> _refreshFederations() async {
@@ -236,9 +248,7 @@ class _MyAppState extends State<MyApp> {
   void _onScanPressed(BuildContext context) async {
     final result = await Navigator.push<(FederationSelector, bool)>(
       context,
-      MaterialPageRoute(
-        builder: (context) => ScanQRPage(onPay: _onJoinPressed),
-      ),
+      MaterialPageRoute(builder: (context) => ScanQRPage(onPay: _onJoinPressed)),
     );
 
     if (result != null) {
@@ -266,7 +276,9 @@ class _MyAppState extends State<MyApp> {
   Widget build(BuildContext context) {
     Widget bodyContent;
 
-    if (_selectedFederation != null) {
+    if (_isInitializing) {
+      bodyContent = const Center(child: CircularProgressIndicator());
+    } else if (_selectedFederation != null) {
       bodyContent = Dashboard(
         key: ValueKey(_selectedFederation!.federationId),
         fed: _selectedFederation!,
@@ -274,10 +286,7 @@ class _MyAppState extends State<MyApp> {
       );
     } else {
       if (_currentIndex == 1) {
-        bodyContent = SettingsScreen(
-          onJoin: _onJoinPressed,
-          onGettingStarted: _onGettingStarted,
-        );
+        bodyContent = SettingsScreen(onJoin: _onJoinPressed, onGettingStarted: _onGettingStarted);
       } else {
         if (recoverFederations) {
           bodyContent = Center(
@@ -286,20 +295,12 @@ class _MyAppState extends State<MyApp> {
               children: [
                 const CircularProgressIndicator(),
                 const SizedBox(height: 16),
-                Text(
-                  _recoveryStatus,
-                  style: const TextStyle(fontSize: 16),
-                  textAlign: TextAlign.center,
-                ),
+                Text(_recoveryStatus, style: const TextStyle(fontSize: 16), textAlign: TextAlign.center),
                 const SizedBox(height: 16),
                 if (_recoverySecondsRemaining <= 15)
                   Text(
                     "Peer might be offline, trying for $_recoverySecondsRemaining more seconds...",
-                    style: const TextStyle(
-                      fontSize: 16,
-                      color: Colors.red,
-                      fontWeight: FontWeight.w600,
-                    ),
+                    style: const TextStyle(fontSize: 16, color: Colors.red, fontWeight: FontWeight.w600),
                     textAlign: TextAlign.center,
                   ),
               ],
