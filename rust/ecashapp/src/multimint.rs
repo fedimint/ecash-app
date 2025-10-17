@@ -1366,7 +1366,8 @@ impl Multimint {
 
     pub async fn federations(&self) -> Vec<(FederationSelector, bool)> {
         let mut dbtx = self.db.begin_transaction_nc().await;
-        dbtx.find_by_prefix(&FederationConfigKeyPrefix)
+        let mut federations: Vec<(FederationSelector, bool)> = dbtx
+            .find_by_prefix(&FederationConfigKeyPrefix)
             .await
             .then(|(id, config)| {
                 let clients_clone = self.clients.clone();
@@ -1386,7 +1387,31 @@ impl Multimint {
                 }
             })
             .collect::<Vec<_>>()
-            .await
+            .await;
+
+        // Apply saved order if it exists
+        if let Some(saved_order) = self.get_federation_order().await {
+            // Create a map of federation_id to (selector, recovery_status)
+            let mut fed_map: BTreeMap<FederationId, (FederationSelector, bool)> = federations
+                .into_iter()
+                .map(|(selector, status)| (selector.federation_id.clone(), (selector, status)))
+                .collect();
+
+            // Build ordered list based on saved order, then append any new federations
+            let mut ordered_feds = Vec::new();
+            for fed_id in saved_order {
+                if let Some(fed) = fed_map.remove(&fed_id) {
+                    ordered_feds.push(fed);
+                }
+            }
+            // Append any federations not in the saved order (newly added)
+            for (_, fed) in fed_map {
+                ordered_feds.push(fed);
+            }
+            federations = ordered_feds;
+        }
+
+        federations
     }
 
     pub async fn balance(&self, federation_id: &FederationId) -> u64 {
@@ -3503,6 +3528,20 @@ impl Multimint {
     pub async fn set_display_setting(&self, display_setting: DisplaySetting) {
         let mut dbtx = self.db.begin_transaction().await;
         dbtx.insert_entry(&DisplaySettingKey, &display_setting)
+            .await;
+        dbtx.commit_tx().await;
+    }
+
+    pub async fn get_federation_order(&self) -> Option<Vec<FederationId>> {
+        let mut dbtx = self.db.begin_transaction_nc().await;
+        dbtx.get_value(&crate::db::FederationOrderKey)
+            .await
+            .map(|order| order.order)
+    }
+
+    pub async fn set_federation_order(&self, order: Vec<FederationId>) {
+        let mut dbtx = self.db.begin_transaction().await;
+        dbtx.insert_entry(&crate::db::FederationOrderKey, &crate::db::FederationOrder { order })
             .await;
         dbtx.commit_tx().await;
     }

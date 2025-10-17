@@ -24,6 +24,7 @@ pub(crate) enum DbKeyPrefix {
     LightningAddress = 0x07,
     Display = 0x08,
     FederationBackup = 0x09,
+    FederationOrder = 0x0A,
 }
 
 #[derive(Debug, Clone, Encodable, Decodable, Eq, PartialEq, Hash, Ord, PartialOrd)]
@@ -184,4 +185,18 @@ impl_db_record!(
     key = FederationBackupKey,
     value = SystemTime,
     db_prefix = DbKeyPrefix::FederationBackup,
+);
+
+#[derive(Debug, Encodable, Decodable)]
+pub struct FederationOrderKey;
+
+#[derive(Debug, Clone, Encodable, Decodable, Serialize)]
+pub struct FederationOrder {
+    pub order: Vec<FederationId>,
+}
+
+impl_db_record!(
+    key = FederationOrderKey,
+    value = FederationOrder,
+    db_prefix = DbKeyPrefix::FederationOrder,
 );
