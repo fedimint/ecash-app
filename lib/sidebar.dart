@@ -5,14 +5,14 @@ import 'package:ecashapp/theme.dart';
 import 'package:ecashapp/utils.dart';
 import 'package:flutter/material.dart';
 
-class FederationData {
+class FederationPreviewData {
   BigInt? balanceMsats;
   bool isLoading;
   String? federationImageUrl;
   String? welcomeMessage;
   List<Guardian>? guardians;
 
-  FederationData({
+  FederationPreviewData({
     this.balanceMsats,
     this.isLoading = true,
     this.federationImageUrl,
@@ -40,23 +40,23 @@ class FederationSidebar extends StatefulWidget {
 }
 
 class FederationSidebarState extends State<FederationSidebar> {
-  late List<(FederationSelector, bool, FederationData)> _feds;
+  late List<(FederationSelector, bool, FederationPreviewData)> _feds;
 
   @override
   void initState() {
     super.initState();
     // Initialize with loading state for each federation
     _feds = widget.initialFederations
-        .map((fed) => (fed.$1, fed.$2, FederationData()))
+        .map((fed) => (fed.$1, fed.$2, FederationPreviewData()))
         .toList();
     _refreshFederations();
   }
 
-  Future<FederationData> getFederationData(
+  Future<FederationPreviewData> getFederationPreviewData(
     FederationSelector fed,
     bool isRecovering,
   ) async {
-    final data = FederationData();
+    final data = FederationPreviewData();
 
     // Load balance
     if (!isRecovering) {
@@ -92,10 +92,10 @@ class FederationSidebarState extends State<FederationSidebar> {
 
   void _refreshFederations() async {
     final feds = await federations();
-    final fedsWithData = <(FederationSelector, bool, FederationData)>[];
+    final fedsWithData = <(FederationSelector, bool, FederationPreviewData)>[];
 
     for (final fed in feds) {
-      final data = await getFederationData(fed.$1, fed.$2);
+      final data = await getFederationPreviewData(fed.$1, fed.$2);
       fedsWithData.add((fed.$1, fed.$2, data));
     }
 
@@ -218,7 +218,7 @@ class FederationSidebarState extends State<FederationSidebar> {
 class FederationListItem extends StatelessWidget {
   final FederationSelector fed;
   final bool isRecovering;
-  final FederationData data;
+  final FederationPreviewData data;
   final VoidCallback onTap;
   final VoidCallback onLeaveFederation;
 
