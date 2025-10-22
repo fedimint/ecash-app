@@ -580,7 +580,44 @@ class _NumberPadState extends State<NumberPad> {
                   ],
                 ),
               ),
+            ), 
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16.0),
+              child: SizedBox(
+                width: double.infinity,
+                child: ElevatedButton(
+                  onPressed: _isValidAmount() ? _onConfirm : null,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFF42CFFF),
+                    foregroundColor: Colors.black,
+                    padding: const EdgeInsets.symmetric(vertical: 16),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                  ),
+                  child:
+                      _creating
+                          ? const SizedBox(
+                            width: 20,
+                            height: 20,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              valueColor: AlwaysStoppedAnimation<Color>(
+                                Colors.black,
+                              ),
+                            ),
+                          )
+                          : const Text(
+                            'Confirm',
+                            style: TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                ),
+              ),
             ),
+            const SizedBox(height: 16),
             KeyboardListener(
               focusNode: _numpadFocus,
               onKeyEvent: _handleKeyEvent,
@@ -636,43 +673,6 @@ class _NumberPadState extends State<NumberPad> {
                     });
                   },
                   icon: const Icon(Icons.backspace),
-                ),
-              ),
-            ),
-            const SizedBox(height: 16),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16.0),
-              child: SizedBox(
-                width: double.infinity,
-                child: ElevatedButton(
-                  onPressed: _isValidAmount() ? _onConfirm : null,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF42CFFF),
-                    foregroundColor: Colors.black,
-                    padding: const EdgeInsets.symmetric(vertical: 16),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                  ),
-                  child:
-                      _creating
-                          ? const SizedBox(
-                            width: 20,
-                            height: 20,
-                            child: CircularProgressIndicator(
-                              strokeWidth: 2,
-                              valueColor: AlwaysStoppedAnimation<Color>(
-                                Colors.black,
-                              ),
-                            ),
-                          )
-                          : const Text(
-                            'Confirm',
-                            style: TextStyle(
-                              fontSize: 18,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
                 ),
               ),
             ),
