@@ -313,110 +313,130 @@ class _NumberPadState extends State<NumberPad> {
         ),
         body: Column(
           children: [
-            const SizedBox(height: 24),
-            RichText(
-              text: TextSpan(
-                style: const TextStyle(color: Colors.white),
-                children: [
-                  TextSpan(
-                    text: _formatAmount(_rawAmount),
-                    style: const TextStyle(
-                      fontSize: 48,
-                      fontWeight: FontWeight.w700,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              usdText,
-              style: const TextStyle(fontSize: 24, color: Colors.grey),
-            ),
-            const SizedBox(height: 24),
             Expanded(
-              child: KeyboardListener(
-                focusNode: _numpadFocus,
-                onKeyEvent: _handleKeyEvent,
-                child: Center(
-                  child: NumPad(
-                    arabicDigits: false,
-                    onType: (value) {
-                      setState(() {
-                        _rawAmount += value.toString();
-                        _withdrawalMode = WithdrawalMode.specificAmount;
-                      });
-                    },
-                    numberStyle: const TextStyle(
-                      fontSize: 24,
-                      color: Colors.grey,
+              child: Center(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    RichText(
+                      text: TextSpan(
+                        style: const TextStyle(color: Colors.white),
+                        children: [
+                          TextSpan(
+                            text: _formatAmount(_rawAmount),
+                            style: const TextStyle(
+                              fontSize: 48,
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
-                    leftWidget:
-                        widget.paymentType == PaymentType.onchain ||
-                                widget.paymentType == PaymentType.ecash
-                            ? TextButton(
-                              onPressed: _loadingMax ? null : _onMaxPressed,
-                              style: TextButton.styleFrom(
-                                minimumSize: const Size(50, 40),
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 2,
-                                ),
-                              ),
-                              child:
-                                  _loadingMax
-                                      ? const SizedBox(
-                                        width: 16,
-                                        height: 16,
-                                        child: CircularProgressIndicator(
-                                          strokeWidth: 2,
-                                          color: Colors.grey,
-                                        ),
-                                      )
-                                      : const Text(
-                                        'MAX',
-                                        style: TextStyle(
-                                          fontSize: 14,
-                                          fontWeight: FontWeight.bold,
-                                        ),
-                                        maxLines: 1,
-                                        overflow: TextOverflow.clip,
-                                      ),
-                            )
-                            : null,
-                    rightWidget: IconButton(
-                      onPressed: () {
-                        setState(() {
-                          if (_rawAmount.isNotEmpty) {
-                            _rawAmount = _rawAmount.substring(
-                              0,
-                              _rawAmount.length - 1,
-                            );
-                            _withdrawalMode = WithdrawalMode.specificAmount;
-                          }
-                        });
-                      },
-                      icon: const Icon(Icons.backspace),
+                    const SizedBox(height: 8),
+                    Text(
+                      usdText,
+                      style: const TextStyle(fontSize: 24, color: Colors.grey),
                     ),
-                  ),
+                  ],
                 ),
               ),
             ),
             Padding(
-              padding: const EdgeInsets.all(16.0),
+              padding: const EdgeInsets.symmetric(horizontal: 16.0),
               child: SizedBox(
                 width: double.infinity,
                 child: ElevatedButton(
                   onPressed: _onConfirm,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFF42CFFF),
+                    foregroundColor: Colors.black,
+                    padding: const EdgeInsets.symmetric(vertical: 16),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                  ),
                   child:
                       _creating
-                          ? const CircularProgressIndicator(color: Colors.white)
+                          ? const SizedBox(
+                            width: 20,
+                            height: 20,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              valueColor: AlwaysStoppedAnimation<Color>(
+                                Colors.black,
+                              ),
+                            ),
+                          )
                           : const Text(
                             'Confirm',
-                            style: TextStyle(fontSize: 20),
+                            style: TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
+                            ),
                           ),
                 ),
               ),
             ),
+            const SizedBox(height: 16),
+            KeyboardListener(
+              focusNode: _numpadFocus,
+              onKeyEvent: _handleKeyEvent,
+              child: NumPad(
+                arabicDigits: false,
+                onType: (value) {
+                  setState(() {
+                    _rawAmount += value.toString();
+                    _withdrawalMode = WithdrawalMode.specificAmount;
+                  });
+                },
+                numberStyle: const TextStyle(fontSize: 24, color: Colors.grey),
+                leftWidget:
+                    widget.paymentType == PaymentType.onchain ||
+                            widget.paymentType == PaymentType.ecash
+                        ? TextButton(
+                          onPressed: _loadingMax ? null : _onMaxPressed,
+                          style: TextButton.styleFrom(
+                            minimumSize: const Size(50, 40),
+                            padding: const EdgeInsets.symmetric(horizontal: 2),
+                          ),
+                          child:
+                              _loadingMax
+                                  ? const SizedBox(
+                                    width: 16,
+                                    height: 16,
+                                    child: CircularProgressIndicator(
+                                      strokeWidth: 2,
+                                      color: Colors.grey,
+                                    ),
+                                  )
+                                  : const Text(
+                                    'MAX',
+                                    style: TextStyle(
+                                      fontSize: 14,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                    maxLines: 1,
+                                    overflow: TextOverflow.clip,
+                                  ),
+                        )
+                        : null,
+                rightWidget: IconButton(
+                  onPressed: () {
+                    setState(() {
+                      if (_rawAmount.isNotEmpty) {
+                        _rawAmount = _rawAmount.substring(
+                          0,
+                          _rawAmount.length - 1,
+                        );
+                        _withdrawalMode = WithdrawalMode.specificAmount;
+                      }
+                    });
+                  },
+                  icon: const Icon(Icons.backspace),
+                ),
+              ),
+            ),
+            const SizedBox(height: 16),
           ],
         ),
       ),
