@@ -324,17 +324,8 @@ class _MyAppState extends State<MyApp> {
                   IconButton(
                     icon: const Icon(Icons.qr_code_scanner),
                     tooltip: 'Scan',
+                    constraints: const BoxConstraints(minWidth: 56, minHeight: 56),
                     onPressed: () => _onScanPressed(innerContext),
-                  ),
-                  IconButton(
-                    icon: const Icon(Icons.settings),
-                    tooltip: 'Settings',
-                    onPressed: () {
-                      setState(() {
-                        _currentIndex = 1;
-                        _selectedFederation = null;
-                      });
-                    },
                   ),
                 ],
               ),
@@ -344,6 +335,12 @@ class _MyAppState extends State<MyApp> {
                   initialFederations: _feds,
                   onFederationSelected: _setSelectedFederation,
                   onLeaveFederation: _leaveFederation,
+                  onSettingsPressed: () {
+                    setState(() {
+                      _currentIndex = 1;
+                      _selectedFederation = null;
+                    });
+                  },
                 ),
               ),
               body: SafeArea(child: bodyContent),
