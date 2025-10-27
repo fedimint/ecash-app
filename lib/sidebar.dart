@@ -137,42 +137,48 @@ class FederationSidebarState extends State<FederationSidebar> {
             Expanded(
               child: _feds.isEmpty
                   ? const Center(child: Text('No federations found'))
-                  : ListView(
-                      padding: EdgeInsets.zero,
-                      children: [
-                        Container(
-                          height: 80,
-                          padding: const EdgeInsets.all(16),
-                          decoration: BoxDecoration(
-                            color: Colors.grey[900],
-                            border: Border(
-                              bottom: BorderSide(color: Colors.grey.shade800),
-                            ),
-                          ),
-                          alignment: Alignment.centerLeft,
-                          child: Text(
-                            'Federations',
-                            style: TextStyle(
-                              color: Theme.of(context).colorScheme.primary,
-                              fontSize: 18,
-                              fontWeight: FontWeight.bold,
-                            ),
+                  : Column(
+                    children: [
+                      Container(
+                        height: 80,
+                        padding: const EdgeInsets.all(16),
+                        decoration: BoxDecoration(
+                          color: Colors.grey[900],
+                          border: Border(
+                            bottom: BorderSide(color: Colors.grey.shade800),
                           ),
                         ),
-                        ..._feds.map(
-                          (selector) => FederationListItem(
-                            fed: selector.$1,
-                            isRecovering: selector.$2,
-                            onTap: () {
-                              Navigator.of(context).pop();
-                              widget.onFederationSelected(selector.$1, selector.$2);
-                            },
-                            onLeaveFederation: widget.onLeaveFederation,
-                            data: selector.$3,
+                        alignment: Alignment.centerLeft,
+                        child: Text(
+                          'Federations',
+                          style: TextStyle(
+                            color: Theme.of(context).colorScheme.primary,
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
                           ),
                         ),
-                      ],
-                    ),
+                      ),
+                      Expanded(
+                        child: ReorderableListView(
+                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+                          onReorder: _onReorder,
+                          children: _feds.map(
+                            (selector) => FederationListItem(
+                              key: ValueKey(selector.$1.federationId),
+                              fed: selector.$1,
+                              isRecovering: selector.$2,
+                              data: selector.$3,
+                              onTap: () {
+                                Navigator.of(context).pop();
+                                widget.onFederationSelected(selector.$1, selector.$2);
+                              },
+                              onLeaveFederation: widget.onLeaveFederation,
+                            ),
+                          ).toList(),
+                        ),
+                      ),
+                    ],
+                  )
             ),
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 12.0, vertical: 12),
