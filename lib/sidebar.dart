@@ -9,12 +9,14 @@ class FederationSidebar extends StatefulWidget {
   final List<(FederationSelector, bool)> initialFederations;
   final void Function(FederationSelector, bool) onFederationSelected;
   final VoidCallback onLeaveFederation;
+  final VoidCallback onSettingsPressed;
 
   const FederationSidebar({
     super.key,
     required this.initialFederations,
     required this.onFederationSelected,
     required this.onLeaveFederation,
+    required this.onSettingsPressed,
   });
 
   @override
@@ -50,45 +52,84 @@ class FederationSidebarState extends State<FederationSidebar> {
             BoxShadow(color: Colors.black.withOpacity(0.6), blurRadius: 12),
           ],
         ),
-        child:
-            _feds.isEmpty
-                ? const Center(child: Text('No federations found'))
-                : ListView(
-                  padding: EdgeInsets.zero,
-                  key: ValueKey(_refreshTrigger),
-                  children: [
-                    Container(
-                      height: 80,
-                      padding: const EdgeInsets.all(16),
-                      decoration: BoxDecoration(
-                        color: Colors.grey[900],
-                        border: Border(
-                          bottom: BorderSide(color: Colors.grey.shade800),
+        child: Column(
+          children: [
+            Expanded(
+              child: _feds.isEmpty
+                  ? const Center(child: Text('No federations found'))
+                  : ListView(
+                      padding: EdgeInsets.zero,
+                      key: ValueKey(_refreshTrigger),
+                      children: [
+                        Container(
+                          height: 80,
+                          padding: const EdgeInsets.all(16),
+                          decoration: BoxDecoration(
+                            color: Colors.grey[900],
+                            border: Border(
+                              bottom: BorderSide(color: Colors.grey.shade800),
+                            ),
+                          ),
+                          alignment: Alignment.centerLeft,
+                          child: Text(
+                            'Federations',
+                            style: TextStyle(
+                              color: Theme.of(context).colorScheme.primary,
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
                         ),
-                      ),
-                      alignment: Alignment.centerLeft,
-                      child: Text(
-                        'Federations',
-                        style: TextStyle(
+                        ..._feds.map(
+                          (selector) => FederationListItem(
+                            fed: selector.$1,
+                            isRecovering: selector.$2,
+                            onTap: () {
+                              Navigator.of(context).pop();
+                              widget.onFederationSelected(selector.$1, selector.$2);
+                            },
+                            onLeaveFederation: widget.onLeaveFederation,
+                          ),
+                        ),
+                      ],
+                    ),
+            ),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 12.0, vertical: 12),
+              child: Material(
+                color: Colors.grey[900],
+                borderRadius: BorderRadius.circular(12),
+                child: InkWell(
+                  borderRadius: BorderRadius.circular(12),
+                  onTap: () {
+                    Navigator.of(context).pop();
+                    widget.onSettingsPressed();
+                  },
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+                    child: Row(
+                      children: [
+                        Icon(
+                          Icons.settings,
                           color: Theme.of(context).colorScheme.primary,
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
+                          size: 24,
                         ),
-                      ),
+                        const SizedBox(width: 16),
+                        Text(
+                          'Settings',
+                          style: Theme.of(context).textTheme.bodyLarge!.copyWith(
+                            fontWeight: FontWeight.bold,
+                            color: Theme.of(context).colorScheme.primary,
+                          ),
+                        ),
+                      ],
                     ),
-                    ..._feds.map(
-                      (selector) => FederationListItem(
-                        fed: selector.$1,
-                        isRecovering: selector.$2,
-                        onTap: () {
-                          Navigator.of(context).pop();
-                          widget.onFederationSelected(selector.$1, selector.$2);
-                        },
-                        onLeaveFederation: widget.onLeaveFederation,
-                      ),
-                    ),
-                  ],
+                  ),
                 ),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
