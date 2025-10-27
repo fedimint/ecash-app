@@ -990,6 +990,18 @@ pub async fn set_display_setting(display_setting: DisplaySetting) {
 }
 
 #[frb]
+pub async fn get_federation_order() -> Option<Vec<FederationId>> {
+    let multimint = get_multimint();
+    multimint.get_federation_order().await
+}
+
+#[frb]
+pub async fn set_federation_order(order: Vec<FederationId>) {
+    let multimint = get_multimint();
+    multimint.set_federation_order(order).await;
+}
+
+#[frb]
 pub async fn claim_random_ln_address(
     federation_id: &FederationId,
     ln_address_api: String,

@@ -667,7 +667,7 @@ class _QrLoopSession {
           // store recovered chunk
           chunks[missingIndex] = recovered;
           AppLogger.instance.info(
-            "Recovered missing chunk $missingIndex from fountain (now have ${chunks.length}/${totalFrames})",
+            "Recovered missing chunk $missingIndex from fountain (now have ${chunks.length}/$totalFrames)",
           );
 
           // remove fountain and restart loop (some fountains may now be usable)

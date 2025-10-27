@@ -381,6 +381,12 @@ Future<DisplaySetting> getDisplaySetting() =>
 Future<void> setDisplaySetting({required DisplaySetting displaySetting}) =>
     RustLib.instance.api.crateSetDisplaySetting(displaySetting: displaySetting);
 
+Future<List<FederationId>?> getFederationOrder() =>
+    RustLib.instance.api.crateGetFederationOrder();
+
+Future<void> setFederationOrder({required List<FederationId> order}) =>
+    RustLib.instance.api.crateSetFederationOrder(order: order);
+
 Future<(String, String)> claimRandomLnAddress({
   required FederationId federationId,
   required String lnAddressApi,

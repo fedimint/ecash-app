@@ -140,6 +140,8 @@ abstract class Multimint implements RustOpaqueInterface {
 
   Future<DisplaySetting> getDisplaySetting();
 
+  Future<List<FederationId>?> getFederationOrder();
+
   Future<String> getInviteCode({
     required FederationId federationId,
     required int peer,
@@ -255,6 +257,8 @@ abstract class Multimint implements RustOpaqueInterface {
   });
 
   Future<void> setDisplaySetting({required DisplaySetting displaySetting});
+
+  Future<void> setFederationOrder({required List<FederationId> order});
 
   Future<List<Transaction>> transactions({
     required FederationId federationId,
