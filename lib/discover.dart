@@ -11,7 +11,8 @@ import 'package:shimmer/shimmer.dart';
 
 class Discover extends StatefulWidget {
   final void Function(FederationSelector fed, bool recovering) onJoin;
-  const Discover({super.key, required this.onJoin});
+  final bool showAppBar;
+  const Discover({super.key, required this.onJoin, this.showAppBar = false});
 
   @override
   State<Discover> createState() => _Discover();
@@ -73,6 +74,13 @@ class _Discover extends State<Discover> with SingleTickerProviderStateMixin {
         final name = fed.$1.federationName;
         await Future.delayed(const Duration(milliseconds: 400));
         widget.onJoin(fed.$1, fed.$2);
+
+        // If we're in a pushed route (showAppBar is true), pop back to main screen
+        // so the user can see the newly joined federation
+        if (widget.showAppBar && mounted) {
+          Navigator.popUntil(context, (route) => route.isFirst);
+        }
+
         ToastService().show(
           message: "Joined $name",
           duration: const Duration(seconds: 5),
@@ -96,6 +104,7 @@ class _Discover extends State<Discover> with SingleTickerProviderStateMixin {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     return Scaffold(
+      appBar: widget.showAppBar ? AppBar(title: const Text('Discover')) : null,
       backgroundColor: Colors.black,
       body: SafeArea(
         child: FutureBuilder<List<PublicFederation>>(

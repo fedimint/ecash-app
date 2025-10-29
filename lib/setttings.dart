@@ -1,4 +1,5 @@
 import 'package:ecashapp/db.dart';
+import 'package:ecashapp/discover.dart';
 import 'package:ecashapp/lib.dart';
 import 'package:ecashapp/ln_address.dart';
 import 'package:ecashapp/mnemonic.dart';
@@ -52,6 +53,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      appBar: AppBar(title: const Text('Settings')),
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [
@@ -62,7 +64,18 @@ class _SettingsScreenState extends State<SettingsScreen> {
             ),
             title: "Discover",
             subtitle: "Find new or join existing federations",
-            onTap: widget.onGettingStarted,
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder:
+                      (context) => Discover(
+                        onJoin: widget.onJoin,
+                        showAppBar: true,
+                      ),
+                ),
+              );
+            },
           ),
           _SettingsOption(
             icon: Icon(
