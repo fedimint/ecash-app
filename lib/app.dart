@@ -32,7 +32,6 @@ class _MyAppState extends State<MyApp> {
   int _refreshTrigger = 0;
   FederationSelector? _selectedFederation;
   bool? _isRecovering;
-  int _currentIndex = 0;
 
   late Stream<MultimintEvent> events;
   late StreamSubscription<MultimintEvent> _subscription;
@@ -176,7 +175,6 @@ class _MyAppState extends State<MyApp> {
     } else {
       _selectedFederation = null;
       _isRecovering = null;
-      _currentIndex = 0;
     }
   }
 
@@ -220,7 +218,6 @@ class _MyAppState extends State<MyApp> {
     setState(() {
       _selectedFederation = fed;
       _isRecovering = recovering;
-      _currentIndex = 0;
     });
     _recoveryTimer?.cancel();
   }
@@ -258,7 +255,6 @@ class _MyAppState extends State<MyApp> {
   void _onGettingStarted() {
     setState(() {
       _selectedFederation = null;
-      _currentIndex = 0;
     });
   }
 
@@ -273,41 +269,34 @@ class _MyAppState extends State<MyApp> {
         recovering: _isRecovering!,
       );
     } else {
-      if (_currentIndex == 1) {
-        bodyContent = SettingsScreen(
-          onJoin: _onJoinPressed,
-          onGettingStarted: _onGettingStarted,
-        );
-      } else {
-        if (recoverFederations) {
-          bodyContent = Center(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                const CircularProgressIndicator(),
-                const SizedBox(height: 16),
+      if (recoverFederations) {
+        bodyContent = Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              const CircularProgressIndicator(),
+              const SizedBox(height: 16),
+              Text(
+                _recoveryStatus,
+                style: const TextStyle(fontSize: 16),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 16),
+              if (_recoverySecondsRemaining <= 15)
                 Text(
-                  _recoveryStatus,
-                  style: const TextStyle(fontSize: 16),
+                  "Peer might be offline, trying for $_recoverySecondsRemaining more seconds...",
+                  style: const TextStyle(
+                    fontSize: 16,
+                    color: Colors.red,
+                    fontWeight: FontWeight.w600,
+                  ),
                   textAlign: TextAlign.center,
                 ),
-                const SizedBox(height: 16),
-                if (_recoverySecondsRemaining <= 15)
-                  Text(
-                    "Peer might be offline, trying for $_recoverySecondsRemaining more seconds...",
-                    style: const TextStyle(
-                      fontSize: 16,
-                      color: Colors.red,
-                      fontWeight: FontWeight.w600,
-                    ),
-                    textAlign: TextAlign.center,
-                  ),
-              ],
-            ),
-          );
-        } else {
-          bodyContent = Discover(onJoin: _onJoinPressed);
-        }
+            ],
+          ),
+        );
+      } else {
+        bodyContent = Discover(onJoin: _onJoinPressed);
       }
     }
 
@@ -324,7 +313,10 @@ class _MyAppState extends State<MyApp> {
                   IconButton(
                     icon: const Icon(Icons.qr_code_scanner),
                     tooltip: 'Scan',
-                    constraints: const BoxConstraints(minWidth: 56, minHeight: 56),
+                    constraints: const BoxConstraints(
+                      minWidth: 56,
+                      minHeight: 56,
+                    ),
                     onPressed: () => _onScanPressed(innerContext),
                   ),
                 ],
@@ -336,10 +328,16 @@ class _MyAppState extends State<MyApp> {
                   onFederationSelected: _setSelectedFederation,
                   onLeaveFederation: _leaveFederation,
                   onSettingsPressed: () {
-                    setState(() {
-                      _currentIndex = 1;
-                      _selectedFederation = null;
-                    });
+                    Navigator.push(
+                      innerContext,
+                      MaterialPageRoute(
+                        builder:
+                            (context) => SettingsScreen(
+                              onJoin: _onJoinPressed,
+                              onGettingStarted: _onGettingStarted,
+                            ),
+                      ),
+                    );
                   },
                 ),
               ),
