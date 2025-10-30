@@ -783,7 +783,10 @@ pub async fn parsed_scanned_text(
 
         // If none of our joined federation's can parse the ecash, lets prompt the user to join
         if let Some(invite_code) = notes.federation_invite() {
-            return Ok((ParsedText::InviteCodeWithEcash(invite_code.to_string(), text), None));
+            return Ok((
+                ParsedText::InviteCodeWithEcash(invite_code.to_string(), text),
+                None,
+            ));
         }
 
         return Ok((ParsedText::EcashNoFederation, None));
