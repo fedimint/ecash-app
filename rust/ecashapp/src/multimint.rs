@@ -1476,12 +1476,14 @@ impl Multimint {
             .spawn_cancellable("await receive", async move {
                 match self_copy.await_receive(&federation_id, operation_id).await {
                     Ok((final_state, amount_msats)) => {
-                        let lightning_event =
-                            LightningEventKind::InvoicePaid(InvoicePaidEvent { amount_msats });
                         info_to_flutter(format!("Receive completed: {final_state:?}")).await;
-                        let multimint_event =
-                            MultimintEvent::Lightning((federation_id, lightning_event));
-                        get_event_bus().publish(multimint_event).await;
+                        if final_state == FinalReceiveOperationState::Claimed {
+                            let lightning_event =
+                                LightningEventKind::InvoicePaid(InvoicePaidEvent { amount_msats });
+                            let multimint_event =
+                                MultimintEvent::Lightning((federation_id, lightning_event));
+                            get_event_bus().publish(multimint_event).await;
+                        }
                     }
                     Err(e) => {
                         info_to_flutter(format!("Could not await receive {operation_id:?} {e:?}"))
@@ -2721,9 +2723,11 @@ impl Multimint {
                 {
                     Ok((final_state, amount)) => {
                         info_to_flutter(format!("Ecash reissue completed: {final_state:?}")).await;
-                        if let Some(amount) = amount {
-                            let ecash_event = MultimintEvent::Ecash((federation_id, amount));
-                            get_event_bus().publish(ecash_event).await;
+                        if final_state == ReissueExternalNotesState::Done {
+                            if let Some(amount) = amount {
+                                let ecash_event = MultimintEvent::Ecash((federation_id, amount));
+                                get_event_bus().publish(ecash_event).await;
+                            }
                         }
                     }
                     Err(e) => {
@@ -3541,8 +3545,11 @@ impl Multimint {
 
     pub async fn set_federation_order(&self, order: Vec<FederationId>) {
         let mut dbtx = self.db.begin_transaction().await;
-        dbtx.insert_entry(&crate::db::FederationOrderKey, &crate::db::FederationOrder { order })
-            .await;
+        dbtx.insert_entry(
+            &crate::db::FederationOrderKey,
+            &crate::db::FederationOrder { order },
+        )
+        .await;
         dbtx.commit_tx().await;
     }
 }
