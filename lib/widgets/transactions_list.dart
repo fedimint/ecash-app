@@ -1,7 +1,7 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
-import 'package:ecashapp/multimint.dart';
-import 'package:ecashapp/lib.dart';
+import 'package:ecashapp/generated/multimint.dart';
+import 'package:ecashapp/generated/lib.dart';
 import 'package:ecashapp/models.dart';
 import 'package:ecashapp/widgets/pending_deposit_item.dart';
 import 'package:ecashapp/widgets/transaction_item.dart';

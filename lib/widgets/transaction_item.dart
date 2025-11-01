@@ -3,7 +3,7 @@ import '../constants/transaction_keys.dart';
 import 'package:ecashapp/widgets/transaction_details.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
-import 'package:ecashapp/multimint.dart';
+import 'package:ecashapp/generated/multimint.dart';
 import 'package:ecashapp/utils.dart';
 
 class TransactionItem extends StatelessWidget {

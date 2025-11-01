@@ -2,8 +2,8 @@ import 'dart:async';
 
 import 'package:ecashapp/discover.dart';
 import 'package:ecashapp/screens/dashboard.dart';
-import 'package:ecashapp/lib.dart';
-import 'package:ecashapp/multimint.dart';
+import 'package:ecashapp/generated/lib.dart';
+import 'package:ecashapp/generated/multimint.dart';
 import 'package:ecashapp/scan.dart';
 import 'package:ecashapp/setttings.dart';
 import 'package:ecashapp/sidebar.dart';

@@ -2,8 +2,8 @@ import 'dart:async';
 import 'constants/transaction_keys.dart';
 
 import 'package:ecashapp/detail_row.dart';
-import 'package:ecashapp/lib.dart';
-import 'package:ecashapp/multimint.dart';
+import 'package:ecashapp/generated/lib.dart';
+import 'package:ecashapp/generated/multimint.dart';
 import 'package:ecashapp/success.dart';
 import 'package:ecashapp/toast.dart';
 import 'package:ecashapp/utils.dart';

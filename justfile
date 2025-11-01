@@ -1,5 +1,5 @@
 generate:
-  flutter_rust_bridge_codegen generate --rust-input=crate --rust-root=$ROOT/rust/ecashapp --dart-output=$ROOT/lib/
+  flutter_rust_bridge_codegen generate --rust-input=crate --rust-root=$ROOT/rust/ecashapp --dart-output=$ROOT/lib/generated/
   # `freezed_annotation` requires this build step, which gives us rust-like pattern matching in dart's codegen
   flutter pub run build_runner build --delete-conflicting-outputs
 

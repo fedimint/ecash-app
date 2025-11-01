@@ -1,4 +1,4 @@
-import 'package:ecashapp/lib.dart';
+import 'package:ecashapp/generated/lib.dart';
 import 'package:ecashapp/toast.dart';
 import 'package:ecashapp/utils.dart';
 import 'package:flutter/material.dart';

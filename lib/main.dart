@@ -1,6 +1,6 @@
 import 'dart:io';
 
-import 'package:ecashapp/frb_generated.dart';
+import 'package:ecashapp/generated/frb_generated.dart';
 import 'package:ecashapp/splash.dart';
 import 'package:ecashapp/theme.dart';
 import 'package:ecashapp/utils.dart';

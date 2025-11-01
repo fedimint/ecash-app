@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:ecashapp/multimint.dart';
+import 'package:ecashapp/generated/multimint.dart';
 import 'package:ecashapp/utils.dart';
 
 class PendingDepositItem extends StatelessWidget {

@@ -2,9 +2,9 @@ import 'dart:convert';
 
 import 'package:ecashapp/app.dart';
 import 'package:ecashapp/fed_preview.dart';
-import 'package:ecashapp/lib.dart';
+import 'package:ecashapp/generated/lib.dart';
 import 'package:ecashapp/models.dart';
-import 'package:ecashapp/multimint.dart';
+import 'package:ecashapp/generated/multimint.dart';
 import 'package:ecashapp/number_pad.dart';
 import 'package:ecashapp/onchain_send.dart';
 import 'package:ecashapp/pay_preview.dart';

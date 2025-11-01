@@ -1,5 +1,5 @@
-import 'package:ecashapp/lib.dart';
-import 'package:ecashapp/multimint.dart';
+import 'package:ecashapp/generated/lib.dart';
+import 'package:ecashapp/generated/multimint.dart';
 import 'package:ecashapp/theme.dart';
 import 'package:ecashapp/utils.dart';
 import 'package:ecashapp/widgets/gateway_details.dart';

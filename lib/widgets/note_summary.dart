@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:ecashapp/lib.dart';
-import 'package:ecashapp/multimint.dart';
+import 'package:ecashapp/generated/lib.dart';
+import 'package:ecashapp/generated/multimint.dart';
 import 'package:ecashapp/utils.dart'; // for formatBalance
 
 class NoteSummary extends StatefulWidget {
