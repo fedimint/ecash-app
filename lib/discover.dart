@@ -1,7 +1,7 @@
 import 'package:ecashapp/fed_preview.dart';
-import 'package:ecashapp/lib.dart';
-import 'package:ecashapp/multimint.dart';
-import 'package:ecashapp/nostr.dart';
+import 'package:ecashapp/generated/lib.dart';
+import 'package:ecashapp/generated/multimint.dart';
+import 'package:ecashapp/generated/nostr.dart';
 import 'package:ecashapp/theme.dart';
 import 'package:ecashapp/toast.dart';
 import 'package:ecashapp/utils.dart';

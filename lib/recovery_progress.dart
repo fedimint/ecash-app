@@ -1,8 +1,8 @@
 import 'dart:async';
 
-import 'package:ecashapp/lib.dart';
+import 'package:ecashapp/generated/lib.dart';
 import 'package:ecashapp/models.dart';
-import 'package:ecashapp/multimint.dart';
+import 'package:ecashapp/generated/multimint.dart';
 import 'package:ecashapp/utils.dart';
 import 'package:flutter/material.dart';
 

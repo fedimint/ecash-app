@@ -1,6 +1,6 @@
 import 'package:ecashapp/detail_row.dart';
 import 'constants/transaction_keys.dart';
-import 'package:ecashapp/multimint.dart';
+import 'package:ecashapp/generated/multimint.dart';
 import 'package:ecashapp/send.dart';
 import 'package:ecashapp/utils.dart';
 import 'package:flutter/material.dart';

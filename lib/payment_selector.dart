@@ -1,5 +1,5 @@
 import 'package:ecashapp/models.dart';
-import 'package:ecashapp/multimint.dart';
+import 'package:ecashapp/generated/multimint.dart';
 import 'package:ecashapp/scan.dart';
 import 'package:ecashapp/send.dart';
 import 'package:ecashapp/utils.dart';

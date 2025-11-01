@@ -1,7 +1,7 @@
 import 'package:ecashapp/app.dart';
 import 'package:ecashapp/ecash_send.dart';
-import 'package:ecashapp/lib.dart';
-import 'package:ecashapp/multimint.dart';
+import 'package:ecashapp/generated/lib.dart';
+import 'package:ecashapp/generated/multimint.dart';
 import 'package:ecashapp/onchain_send.dart';
 import 'package:ecashapp/pay_preview.dart';
 import 'package:ecashapp/request.dart';

@@ -1,8 +1,8 @@
 import 'package:ecashapp/app.dart';
 import '../constants/transaction_keys.dart';
 import 'package:ecashapp/detail_row.dart';
-import 'package:ecashapp/lib.dart';
-import 'package:ecashapp/multimint.dart';
+import 'package:ecashapp/generated/lib.dart';
+import 'package:ecashapp/generated/multimint.dart';
 import 'package:ecashapp/redeem_ecash.dart';
 import 'package:ecashapp/theme.dart';
 import 'package:ecashapp/toast.dart';
