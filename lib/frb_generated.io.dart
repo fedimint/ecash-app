@@ -538,6 +538,9 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   AwaitingConfsEvent dco_decode_awaiting_confs_event(dynamic raw);
 
   @protected
+  BitcoinDisplay dco_decode_bitcoin_display(dynamic raw);
+
+  @protected
   bool dco_decode_bool(dynamic raw);
 
   @protected
@@ -611,9 +614,6 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
 
   @protected
   DepositEventKind dco_decode_deposit_event_kind(dynamic raw);
-
-  @protected
-  DisplaySetting dco_decode_display_setting(dynamic raw);
 
   @protected
   double dco_decode_f_64(dynamic raw);
@@ -1299,6 +1299,9 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   );
 
   @protected
+  BitcoinDisplay sse_decode_bitcoin_display(SseDeserializer deserializer);
+
+  @protected
   bool sse_decode_bool(SseDeserializer deserializer);
 
   @protected
@@ -1384,9 +1387,6 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
 
   @protected
   DepositEventKind sse_decode_deposit_event_kind(SseDeserializer deserializer);
-
-  @protected
-  DisplaySetting sse_decode_display_setting(SseDeserializer deserializer);
 
   @protected
   double sse_decode_f_64(SseDeserializer deserializer);
@@ -2164,6 +2164,12 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   );
 
   @protected
+  void sse_encode_bitcoin_display(
+    BitcoinDisplay self,
+    SseSerializer serializer,
+  );
+
+  @protected
   void sse_encode_bool(bool self, SseSerializer serializer);
 
   @protected
@@ -2265,12 +2271,6 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   @protected
   void sse_encode_deposit_event_kind(
     DepositEventKind self,
-    SseSerializer serializer,
-  );
-
-  @protected
-  void sse_encode_display_setting(
-    DisplaySetting self,
     SseSerializer serializer,
   );
 

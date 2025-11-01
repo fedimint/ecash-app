@@ -97,31 +97,15 @@ int threshold(int totalPeers) {
   return totalPeers - maxEvil;
 }
 
-DisplaySetting? _cachedDisplaySetting;
-
-Future<void> initDisplaySetting() async {
-  _cachedDisplaySetting = await getDisplaySetting();
-}
-
-DisplaySetting? getCachedDisplaySetting() {
-  return _cachedDisplaySetting;
-}
-
-Future<void> saveDisplaySetting(DisplaySetting setting) async {
-  await setDisplaySetting(displaySetting: setting);
-  _cachedDisplaySetting = setting;
-}
-
-String formatBalance(BigInt? msats, bool showMsats) {
-  final setting =
-      _cachedDisplaySetting ?? DisplaySetting.bip177; // default if not set
+String formatBalance(BigInt? msats, bool showMsats, BitcoinDisplay bitcoinDisplay) {
+  final setting = bitcoinDisplay;
 
   if (msats == null) {
     return switch (setting) {
-      DisplaySetting.bip177 => showMsats ? '₿0.000' : '₿0',
-      DisplaySetting.sats => showMsats ? '0.000 sats' : '0 sats',
-      DisplaySetting.nothing => showMsats ? '0.000' : '0',
-      DisplaySetting.symbol => showMsats ? '0.000丰' : '0丰',
+      BitcoinDisplay.bip177 => showMsats ? '₿0.000' : '₿0',
+      BitcoinDisplay.sats => showMsats ? '0.000 sats' : '0 sats',
+      BitcoinDisplay.nothing => showMsats ? '0.000' : '0',
+      BitcoinDisplay.symbol => showMsats ? '0.000丰' : '0丰',
     };
   }
 
@@ -130,20 +114,20 @@ String formatBalance(BigInt? msats, bool showMsats) {
     final formatter = NumberFormat('#,##0.000', 'en_US');
     var formatted = formatter.format(btcAmount).replaceAll(',', ' ');
     return switch (setting) {
-      DisplaySetting.bip177 => '₿$formatted',
-      DisplaySetting.sats => '$formatted sats',
-      DisplaySetting.nothing => formatted,
-      DisplaySetting.symbol => '$formatted丰',
+      BitcoinDisplay.bip177 => '₿$formatted',
+      BitcoinDisplay.sats => '$formatted sats',
+      BitcoinDisplay.nothing => formatted,
+      BitcoinDisplay.symbol => '$formatted丰',
     };
   } else {
     final sats = msats.toSats;
     final formatter = NumberFormat('#,##0', 'en_US');
     var formatted = formatter.format(sats.toInt()).replaceAll(',', ' ');
     return switch (setting) {
-      DisplaySetting.bip177 => '₿$formatted',
-      DisplaySetting.sats => '$formatted sats',
-      DisplaySetting.nothing => formatted,
-      DisplaySetting.symbol => '$formatted丰',
+      BitcoinDisplay.bip177 => '₿$formatted',
+      BitcoinDisplay.sats => '$formatted sats',
+      BitcoinDisplay.nothing => formatted,
+      BitcoinDisplay.symbol => '$formatted丰',
     };
   }
 }

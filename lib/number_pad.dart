@@ -1,9 +1,11 @@
 import 'package:ecashapp/app.dart';
+import 'package:ecashapp/db.dart';
 import 'package:ecashapp/ecash_send.dart';
 import 'package:ecashapp/lib.dart';
 import 'package:ecashapp/multimint.dart';
 import 'package:ecashapp/onchain_send.dart';
 import 'package:ecashapp/pay_preview.dart';
+import 'package:ecashapp/providers/preferences_provider.dart';
 import 'package:ecashapp/request.dart';
 import 'package:ecashapp/theme.dart';
 import 'package:ecashapp/toast.dart';
@@ -12,6 +14,7 @@ import 'package:ecashapp/models.dart';
 import 'package:flutter/material.dart';
 import 'package:numpad_layout/widgets/numpad.dart';
 import 'package:flutter/services.dart';
+import 'package:provider/provider.dart';
 
 enum WithdrawalMode { specificAmount, maxBalance }
 
@@ -59,7 +62,7 @@ class _NumberPadState extends State<NumberPad> {
     super.dispose();
   }
 
-  String _formatAmount(String value) {
+  String _formatAmount(String value, BitcoinDisplay bitcoinDisplay) {
     BigInt displayValue;
     try {
       if (value.isEmpty) {
@@ -71,7 +74,7 @@ class _NumberPadState extends State<NumberPad> {
       displayValue = BigInt.zero;
     }
 
-    return formatBalance(displayValue * BigInt.from(1000), false);
+    return formatBalance(displayValue * BigInt.from(1000), false, bitcoinDisplay);
   }
 
   Future<void> _onMaxPressed() async {
@@ -295,6 +298,7 @@ class _NumberPadState extends State<NumberPad> {
 
   @override
   Widget build(BuildContext context) {
+    final bitcoinDisplay = context.watch<PreferencesProvider>().bitcoinDisplay;
     final usdText = calculateUsdValue(
       widget.btcPrice,
       int.tryParse(_rawAmount) ?? 0,
@@ -323,7 +327,7 @@ class _NumberPadState extends State<NumberPad> {
                         style: const TextStyle(color: Colors.white),
                         children: [
                           TextSpan(
-                            text: _formatAmount(_rawAmount),
+                            text: _formatAmount(_rawAmount, bitcoinDisplay),
                             style: const TextStyle(
                               fontSize: 48,
                               fontWeight: FontWeight.w700,

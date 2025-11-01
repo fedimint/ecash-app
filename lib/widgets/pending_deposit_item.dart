@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:ecashapp/multimint.dart';
+import 'package:ecashapp/providers/preferences_provider.dart';
 import 'package:ecashapp/utils.dart';
+import 'package:provider/provider.dart';
 
 class PendingDepositItem extends StatelessWidget {
   final DepositEventKind event;
@@ -9,6 +11,7 @@ class PendingDepositItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final bitcoinDisplay = context.watch<PreferencesProvider>().bitcoinDisplay;
     String msg;
     BigInt amount;
 
@@ -29,7 +32,7 @@ class PendingDepositItem extends StatelessWidget {
         return const SizedBox.shrink();
     }
 
-    final formatted = formatBalance(amount, false);
+    final formatted = formatBalance(amount, false, bitcoinDisplay);
     final amountStyle = TextStyle(
       fontWeight: FontWeight.bold,
       color: Theme.of(context).colorScheme.primary,

@@ -1,9 +1,11 @@
 import 'package:ecashapp/detail_row.dart';
 import 'constants/transaction_keys.dart';
 import 'package:ecashapp/multimint.dart';
+import 'package:ecashapp/providers/preferences_provider.dart';
 import 'package:ecashapp/send.dart';
 import 'package:ecashapp/utils.dart';
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 
 class PaymentPreviewWidget extends StatelessWidget {
   final FederationSelector fed;
@@ -18,6 +20,7 @@ class PaymentPreviewWidget extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final bitcoinDisplay = context.watch<PreferencesProvider>().bitcoinDisplay;
     final amount = paymentPreview.amountMsats;
     final amountWithFees = paymentPreview.amountWithFees;
     final fees = amountWithFees - amount;
@@ -52,15 +55,15 @@ class PaymentPreviewWidget extends StatelessWidget {
               ),
               CopyableDetailRow(
                 label: TransactionDetailKeys.amount,
-                value: formatBalance(amount, true),
+                value: formatBalance(amount, true, bitcoinDisplay),
               ),
               CopyableDetailRow(
                 label: TransactionDetailKeys.fees,
-                value: formatBalance(fees, true),
+                value: formatBalance(fees, true, bitcoinDisplay),
               ),
               CopyableDetailRow(
                 label: TransactionDetailKeys.total,
-                value: formatBalance(amountWithFees, true),
+                value: formatBalance(amountWithFees, true, bitcoinDisplay),
               ),
               CopyableDetailRow(
                 label: TransactionDetailKeys.gateway,

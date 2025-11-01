@@ -1,3 +1,4 @@
+import 'package:ecashapp/providers/preferences_provider.dart';
 import 'package:ecashapp/theme.dart';
 import '../constants/transaction_keys.dart';
 import 'package:ecashapp/widgets/transaction_details.dart';
@@ -5,6 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:ecashapp/multimint.dart';
 import 'package:ecashapp/utils.dart';
+import 'package:provider/provider.dart';
 
 class TransactionItem extends StatelessWidget {
   final Transaction tx;
@@ -18,6 +20,7 @@ class TransactionItem extends StatelessWidget {
     String formattedDate,
     IconData iconData,
   ) async {
+    final bitcoinDisplay = context.read<PreferencesProvider>().bitcoinDisplay;
     final icon = Icon(iconData, color: Theme.of(context).colorScheme.primary);
     switch (tx.kind) {
       case TransactionKind_LightningReceive(
@@ -33,7 +36,11 @@ class TransactionItem extends StatelessWidget {
               tx: tx,
               details: {
                 TransactionDetailKeys.amount: formattedAmount,
-                TransactionDetailKeys.fees: formatBalance(fees, true),
+                TransactionDetailKeys.fees: formatBalance(
+                  fees,
+                  true,
+                  bitcoinDisplay,
+                ),
                 TransactionDetailKeys.gateway: gateway,
                 TransactionDetailKeys.payeePublicKey: payeePubkey,
                 TransactionDetailKeys.paymentHash: paymentHash,
@@ -61,7 +68,11 @@ class TransactionItem extends StatelessWidget {
                 if (lnAddress != null)
                   TransactionDetailKeys.lnAddress: lnAddress,
                 TransactionDetailKeys.amount: formattedAmount,
-                TransactionDetailKeys.fees: formatBalance(fees, true),
+                TransactionDetailKeys.fees: formatBalance(
+                  fees,
+                  true,
+                  bitcoinDisplay,
+                ),
                 TransactionDetailKeys.gateway: gateway,
                 TransactionDetailKeys.paymentHash: paymentHash,
                 TransactionDetailKeys.preimage: preimage,
@@ -84,7 +95,11 @@ class TransactionItem extends StatelessWidget {
               tx: tx,
               details: {
                 TransactionDetailKeys.amount: formattedAmount,
-                TransactionDetailKeys.fees: formatBalance(fees, true),
+                TransactionDetailKeys.fees: formatBalance(
+                  fees,
+                  true,
+                  bitcoinDisplay,
+                ),
                 TransactionDetailKeys.ecash: oobNotes,
                 TransactionDetailKeys.timestamp: formattedDate,
               },
@@ -105,7 +120,11 @@ class TransactionItem extends StatelessWidget {
               tx: tx,
               details: {
                 TransactionDetailKeys.amount: formattedAmount,
-                TransactionDetailKeys.fees: formatBalance(fees, true),
+                TransactionDetailKeys.fees: formatBalance(
+                  fees,
+                  true,
+                  bitcoinDisplay,
+                ),
                 TransactionDetailKeys.ecash: oobNotes,
                 TransactionDetailKeys.timestamp: formattedDate,
               },
@@ -189,12 +208,14 @@ class TransactionItem extends StatelessWidget {
           details[TransactionDetailKeys.fee] = formatBalance(
             feeSats * BigInt.from(1000),
             false,
+            bitcoinDisplay,
           );
         }
         if (totalSats != null) {
           details[TransactionDetailKeys.total] = formatBalance(
             totalSats * BigInt.from(1000),
             false,
+            bitcoinDisplay,
           );
         }
 
@@ -215,6 +236,7 @@ class TransactionItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final bitcoinDisplay = context.watch<PreferencesProvider>().bitcoinDisplay;
     final isIncoming =
         tx.kind is TransactionKind_LightningReceive ||
         tx.kind is TransactionKind_OnchainReceive ||
@@ -222,7 +244,7 @@ class TransactionItem extends StatelessWidget {
         tx.kind is TransactionKind_LightningRecurring;
     final date = DateTime.fromMillisecondsSinceEpoch(tx.timestamp.toInt());
     final formattedDate = DateFormat.yMMMd().add_jm().format(date);
-    final formattedAmount = formatBalance(tx.amount, false);
+    final formattedAmount = formatBalance(tx.amount, false, bitcoinDisplay);
 
     IconData moduleIcon;
     switch (tx.kind) {

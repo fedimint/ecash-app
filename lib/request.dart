@@ -4,11 +4,13 @@ import 'constants/transaction_keys.dart';
 import 'package:ecashapp/detail_row.dart';
 import 'package:ecashapp/lib.dart';
 import 'package:ecashapp/multimint.dart';
+import 'package:ecashapp/providers/preferences_provider.dart';
 import 'package:ecashapp/success.dart';
 import 'package:ecashapp/toast.dart';
 import 'package:ecashapp/utils.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:provider/provider.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 
 class Request extends StatefulWidget {
@@ -135,6 +137,7 @@ class _RequestState extends State<Request> with SingleTickerProviderStateMixin {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final bitcoinDisplay = context.watch<PreferencesProvider>().bitcoinDisplay;
     final abbreviatedInvoice = getAbbreviatedText(widget.invoice);
     final fees = widget.totalMsats - widget.requestedAmountMsats;
 
@@ -280,11 +283,11 @@ class _RequestState extends State<Request> with SingleTickerProviderStateMixin {
               children: [
                 CopyableDetailRow(
                   label: TransactionDetailKeys.amount,
-                  value: formatBalance(widget.requestedAmountMsats, true),
+                  value: formatBalance(widget.requestedAmountMsats, true, bitcoinDisplay),
                 ),
                 CopyableDetailRow(
                   label: TransactionDetailKeys.fees,
-                  value: formatBalance(fees, true),
+                  value: formatBalance(fees, true, bitcoinDisplay),
                 ),
                 CopyableDetailRow(
                   label: TransactionDetailKeys.gateway,

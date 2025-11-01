@@ -1,9 +1,11 @@
 import 'package:ecashapp/lib.dart';
 import 'package:ecashapp/multimint.dart';
+import 'package:ecashapp/providers/preferences_provider.dart';
 import 'package:ecashapp/theme.dart';
 import 'package:ecashapp/utils.dart';
 import 'package:ecashapp/widgets/gateway_details.dart';
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 
 class GatewaysList extends StatelessWidget {
   final FederationSelector fed;
@@ -17,6 +19,7 @@ class GatewaysList extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final bitcoinDisplay = context.watch<PreferencesProvider>().bitcoinDisplay;
 
     return FutureBuilder<List<FedimintGateway>>(
       future: _fetchGateways(),
@@ -65,7 +68,7 @@ class GatewaysList extends StatelessWidget {
                     Text(g.endpoint, style: theme.textTheme.titleSmall),
                     const SizedBox(height: 4),
                     Text(
-                      "${formatBalance(g.baseRoutingFee, true)} + ${g.ppmRoutingFee} ppm",
+                      "${formatBalance(g.baseRoutingFee, true, bitcoinDisplay)} + ${g.ppmRoutingFee} ppm",
                       style: theme.textTheme.bodyMedium?.copyWith(
                         color: Colors.white60,
                       ),

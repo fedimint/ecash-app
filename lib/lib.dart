@@ -375,11 +375,11 @@ Future<String> getInviteCode({
   peer: peer,
 );
 
-Future<DisplaySetting> getDisplaySetting() =>
-    RustLib.instance.api.crateGetDisplaySetting();
+Future<BitcoinDisplay> getBitcoinDisplay() =>
+    RustLib.instance.api.crateGetBitcoinDisplay();
 
-Future<void> setDisplaySetting({required DisplaySetting displaySetting}) =>
-    RustLib.instance.api.crateSetDisplaySetting(displaySetting: displaySetting);
+Future<void> setBitcoinDisplay({required BitcoinDisplay bitcoinDisplay}) =>
+    RustLib.instance.api.crateSetBitcoinDisplay(bitcoinDisplay: bitcoinDisplay);
 
 Future<List<FederationId>?> getFederationOrder() =>
     RustLib.instance.api.crateGetFederationOrder();

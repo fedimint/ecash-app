@@ -4,11 +4,13 @@ import 'package:ecashapp/detail_row.dart';
 import 'package:ecashapp/lib.dart';
 import 'package:ecashapp/multimint.dart';
 import 'package:ecashapp/number_pad.dart';
+import 'package:ecashapp/providers/preferences_provider.dart';
 import 'package:ecashapp/success.dart';
 import 'package:ecashapp/toast.dart';
 import 'package:ecashapp/utils.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:provider/provider.dart';
 
 class OnchainSend extends StatefulWidget {
   final FederationSelector fed;
@@ -230,6 +232,7 @@ class _OnchainSendState extends State<OnchainSend> {
 
   @override
   Widget build(BuildContext context) {
+    final bitcoinDisplay = context.watch<PreferencesProvider>().bitcoinDisplay;
     final canWithdraw =
         _feeQuote != null &&
         _actualWithdrawalAmount != null &&
@@ -254,7 +257,7 @@ class _OnchainSendState extends State<OnchainSend> {
               ),
               const SizedBox(height: 12),
               Text(
-                formatBalance(widget.amountSats * BigInt.from(1000), false),
+                formatBalance(widget.amountSats * BigInt.from(1000), false, bitcoinDisplay),
                 style: Theme.of(context).textTheme.headlineSmall,
                 textAlign: TextAlign.center,
               ),
@@ -339,6 +342,7 @@ class _OnchainSendState extends State<OnchainSend> {
                         value: formatBalance(
                           _actualWithdrawalAmount! * BigInt.from(1000),
                           false,
+                          bitcoinDisplay,
                         ),
                       ),
                       CopyableDetailRow(
@@ -354,6 +358,7 @@ class _OnchainSendState extends State<OnchainSend> {
                         value: formatBalance(
                           _feeAmountSats! * BigInt.from(1000),
                           false,
+                          bitcoinDisplay,
                         ),
                       ),
                       CopyableDetailRow(
@@ -362,6 +367,7 @@ class _OnchainSendState extends State<OnchainSend> {
                           (_actualWithdrawalAmount! + _feeAmountSats!) *
                               BigInt.from(1000),
                           false,
+                          bitcoinDisplay,
                         ),
                       ),
                       Padding(

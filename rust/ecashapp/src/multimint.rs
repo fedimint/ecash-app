@@ -63,7 +63,7 @@ use tokio::{sync::RwLock, time::timeout};
 use crate::{
     anyhow,
     db::{
-        BtcPrice, BtcPriceKey, DisplaySetting, DisplaySettingKey, FederationBackupKey,
+        BitcoinDisplay, BitcoinDisplayKey, BtcPrice, BtcPriceKey, FederationBackupKey,
         FederationMetaKey, LightningAddressConfig, LightningAddressKey, LightningAddressKeyPrefix,
     },
     error_to_flutter, info_to_flutter, FederationConfig, FederationConfigKey,
@@ -3522,16 +3522,16 @@ impl Multimint {
             .to_string())
     }
 
-    pub async fn get_display_setting(&self) -> DisplaySetting {
+    pub async fn get_bitcoin_display(&self) -> BitcoinDisplay {
         let mut dbtx = self.db.begin_transaction_nc().await;
-        dbtx.get_value(&DisplaySettingKey)
+        dbtx.get_value(&BitcoinDisplayKey)
             .await
-            .unwrap_or(DisplaySetting::Bip177)
+            .unwrap_or(BitcoinDisplay::Bip177)
     }
 
-    pub async fn set_display_setting(&self, display_setting: DisplaySetting) {
+    pub async fn set_bitcoin_display(&self, bitcoin_display: BitcoinDisplay) {
         let mut dbtx = self.db.begin_transaction().await;
-        dbtx.insert_entry(&DisplaySettingKey, &display_setting)
+        dbtx.insert_entry(&BitcoinDisplayKey, &bitcoin_display)
             .await;
         dbtx.commit_tx().await;
     }

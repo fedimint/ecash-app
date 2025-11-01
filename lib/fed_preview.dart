@@ -1,9 +1,11 @@
 import 'package:ecashapp/lib.dart';
 import 'package:ecashapp/multimint.dart';
+import 'package:ecashapp/providers/preferences_provider.dart';
 import 'package:ecashapp/toast.dart';
 import 'package:ecashapp/utils.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:provider/provider.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 
 class FederationPreview extends StatefulWidget {
@@ -831,6 +833,8 @@ class _FederationUtxoListState extends State<FederationUtxoList> {
 
   @override
   Widget build(BuildContext context) {
+    final bitcoinDisplay = context.watch<PreferencesProvider>().bitcoinDisplay;
+
     if (!widget.isFederationOnline) {
       return const Center(
         child: Text("Federation is offline, cannot retrieve UTXOs."),
@@ -900,7 +904,7 @@ class _FederationUtxoListState extends State<FederationUtxoList> {
 
               // Amount below
               Text(
-                formatBalance(utxo.amount, false),
+                formatBalance(utxo.amount, false, bitcoinDisplay),
                 style: Theme.of(context).textTheme.bodyLarge?.copyWith(
                   fontWeight: FontWeight.bold,
                   fontSize: 16,

@@ -42,7 +42,7 @@ flutter_rust_bridge::frb_generated_boilerplate!(
     default_rust_auto_opaque = RustAutoOpaqueMoi,
 );
 pub(crate) const FLUTTER_RUST_BRIDGE_CODEGEN_VERSION: &str = "2.9.0";
-pub(crate) const FLUTTER_RUST_BRIDGE_CODEGEN_CONTENT_HASH: i32 = 1110895714;
+pub(crate) const FLUTTER_RUST_BRIDGE_CODEGEN_CONTENT_HASH: i32 = -722198615;
 
 // Section: executor
 
@@ -3176,6 +3176,64 @@ fn wire__crate__multimint__Multimint_get_all_invite_codes_impl(
         },
     )
 }
+fn wire__crate__multimint__Multimint_get_bitcoin_display_impl(
+    port_: flutter_rust_bridge::for_generated::MessagePort,
+    ptr_: flutter_rust_bridge::for_generated::PlatformGeneralizedUint8ListPtr,
+    rust_vec_len_: i32,
+    data_len_: i32,
+) {
+    FLUTTER_RUST_BRIDGE_HANDLER.wrap_async::<flutter_rust_bridge::for_generated::SseCodec, _, _, _>(
+        flutter_rust_bridge::for_generated::TaskInfo {
+            debug_name: "Multimint_get_bitcoin_display",
+            port: Some(port_),
+            mode: flutter_rust_bridge::for_generated::FfiCallMode::Normal,
+        },
+        move || {
+            let message = unsafe {
+                flutter_rust_bridge::for_generated::Dart2RustMessageSse::from_wire(
+                    ptr_,
+                    rust_vec_len_,
+                    data_len_,
+                )
+            };
+            let mut deserializer =
+                flutter_rust_bridge::for_generated::SseDeserializer::new(message);
+            let api_that = <RustOpaqueMoi<
+                flutter_rust_bridge::for_generated::RustAutoOpaqueInner<Multimint>,
+            >>::sse_decode(&mut deserializer);
+            deserializer.end();
+            move |context| async move {
+                transform_result_sse::<_, ()>(
+                    (move || async move {
+                        let mut api_that_guard = None;
+                        let decode_indices_ =
+                            flutter_rust_bridge::for_generated::lockable_compute_decode_order(
+                                vec![flutter_rust_bridge::for_generated::LockableOrderInfo::new(
+                                    &api_that, 0, false,
+                                )],
+                            );
+                        for i in decode_indices_ {
+                            match i {
+                                0 => {
+                                    api_that_guard =
+                                        Some(api_that.lockable_decode_async_ref().await)
+                                }
+                                _ => unreachable!(),
+                            }
+                        }
+                        let api_that_guard = api_that_guard.unwrap();
+                        let output_ok = Result::<_, ()>::Ok(
+                            crate::multimint::Multimint::get_bitcoin_display(&*api_that_guard)
+                                .await,
+                        )?;
+                        Ok(output_ok)
+                    })()
+                    .await,
+                )
+            }
+        },
+    )
+}
 fn wire__crate__multimint__Multimint_get_btc_price_impl(
     port_: flutter_rust_bridge::for_generated::MessagePort,
     ptr_: flutter_rust_bridge::for_generated::PlatformGeneralizedUint8ListPtr,
@@ -3287,64 +3345,6 @@ fn wire__crate__multimint__Multimint_get_cached_federation_meta_impl(
                             api_federation_id,
                         )
                         .await?;
-                        Ok(output_ok)
-                    })()
-                    .await,
-                )
-            }
-        },
-    )
-}
-fn wire__crate__multimint__Multimint_get_display_setting_impl(
-    port_: flutter_rust_bridge::for_generated::MessagePort,
-    ptr_: flutter_rust_bridge::for_generated::PlatformGeneralizedUint8ListPtr,
-    rust_vec_len_: i32,
-    data_len_: i32,
-) {
-    FLUTTER_RUST_BRIDGE_HANDLER.wrap_async::<flutter_rust_bridge::for_generated::SseCodec, _, _, _>(
-        flutter_rust_bridge::for_generated::TaskInfo {
-            debug_name: "Multimint_get_display_setting",
-            port: Some(port_),
-            mode: flutter_rust_bridge::for_generated::FfiCallMode::Normal,
-        },
-        move || {
-            let message = unsafe {
-                flutter_rust_bridge::for_generated::Dart2RustMessageSse::from_wire(
-                    ptr_,
-                    rust_vec_len_,
-                    data_len_,
-                )
-            };
-            let mut deserializer =
-                flutter_rust_bridge::for_generated::SseDeserializer::new(message);
-            let api_that = <RustOpaqueMoi<
-                flutter_rust_bridge::for_generated::RustAutoOpaqueInner<Multimint>,
-            >>::sse_decode(&mut deserializer);
-            deserializer.end();
-            move |context| async move {
-                transform_result_sse::<_, ()>(
-                    (move || async move {
-                        let mut api_that_guard = None;
-                        let decode_indices_ =
-                            flutter_rust_bridge::for_generated::lockable_compute_decode_order(
-                                vec![flutter_rust_bridge::for_generated::LockableOrderInfo::new(
-                                    &api_that, 0, false,
-                                )],
-                            );
-                        for i in decode_indices_ {
-                            match i {
-                                0 => {
-                                    api_that_guard =
-                                        Some(api_that.lockable_decode_async_ref().await)
-                                }
-                                _ => unreachable!(),
-                            }
-                        }
-                        let api_that_guard = api_that_guard.unwrap();
-                        let output_ok = Result::<_, ()>::Ok(
-                            crate::multimint::Multimint::get_display_setting(&*api_that_guard)
-                                .await,
-                        )?;
                         Ok(output_ok)
                     })()
                     .await,
@@ -5008,7 +5008,7 @@ fn wire__crate__multimint__Multimint_send_ecash_impl(
         },
     )
 }
-fn wire__crate__multimint__Multimint_set_display_setting_impl(
+fn wire__crate__multimint__Multimint_set_bitcoin_display_impl(
     port_: flutter_rust_bridge::for_generated::MessagePort,
     ptr_: flutter_rust_bridge::for_generated::PlatformGeneralizedUint8ListPtr,
     rust_vec_len_: i32,
@@ -5016,7 +5016,7 @@ fn wire__crate__multimint__Multimint_set_display_setting_impl(
 ) {
     FLUTTER_RUST_BRIDGE_HANDLER.wrap_async::<flutter_rust_bridge::for_generated::SseCodec, _, _, _>(
         flutter_rust_bridge::for_generated::TaskInfo {
-            debug_name: "Multimint_set_display_setting",
+            debug_name: "Multimint_set_bitcoin_display",
             port: Some(port_),
             mode: flutter_rust_bridge::for_generated::FfiCallMode::Normal,
         },
@@ -5033,7 +5033,7 @@ fn wire__crate__multimint__Multimint_set_display_setting_impl(
             let api_that = <RustOpaqueMoi<
                 flutter_rust_bridge::for_generated::RustAutoOpaqueInner<Multimint>,
             >>::sse_decode(&mut deserializer);
-            let api_display_setting = <crate::db::DisplaySetting>::sse_decode(&mut deserializer);
+            let api_bitcoin_display = <crate::db::BitcoinDisplay>::sse_decode(&mut deserializer);
             deserializer.end();
             move |context| async move {
                 transform_result_sse::<_, ()>(
@@ -5056,9 +5056,9 @@ fn wire__crate__multimint__Multimint_set_display_setting_impl(
                         }
                         let api_that_guard = api_that_guard.unwrap();
                         let output_ok = Result::<_, ()>::Ok({
-                            crate::multimint::Multimint::set_display_setting(
+                            crate::multimint::Multimint::set_bitcoin_display(
                                 &*api_that_guard,
-                                api_display_setting,
+                                api_bitcoin_display,
                             )
                             .await;
                         })?;
@@ -7850,6 +7850,41 @@ fn wire__crate__get_addresses_impl(
         },
     )
 }
+fn wire__crate__get_bitcoin_display_impl(
+    port_: flutter_rust_bridge::for_generated::MessagePort,
+    ptr_: flutter_rust_bridge::for_generated::PlatformGeneralizedUint8ListPtr,
+    rust_vec_len_: i32,
+    data_len_: i32,
+) {
+    FLUTTER_RUST_BRIDGE_HANDLER.wrap_async::<flutter_rust_bridge::for_generated::SseCodec, _, _, _>(
+        flutter_rust_bridge::for_generated::TaskInfo {
+            debug_name: "get_bitcoin_display",
+            port: Some(port_),
+            mode: flutter_rust_bridge::for_generated::FfiCallMode::Normal,
+        },
+        move || {
+            let message = unsafe {
+                flutter_rust_bridge::for_generated::Dart2RustMessageSse::from_wire(
+                    ptr_,
+                    rust_vec_len_,
+                    data_len_,
+                )
+            };
+            let mut deserializer =
+                flutter_rust_bridge::for_generated::SseDeserializer::new(message);
+            deserializer.end();
+            move |context| async move {
+                transform_result_sse::<_, ()>(
+                    (move || async move {
+                        let output_ok = Result::<_, ()>::Ok(crate::get_bitcoin_display().await)?;
+                        Ok(output_ok)
+                    })()
+                    .await,
+                )
+            }
+        },
+    )
+}
 fn wire__crate__get_btc_price_impl(
     port_: flutter_rust_bridge::for_generated::MessagePort,
     ptr_: flutter_rust_bridge::for_generated::PlatformGeneralizedUint8ListPtr,
@@ -7877,41 +7912,6 @@ fn wire__crate__get_btc_price_impl(
                 transform_result_sse::<_, ()>(
                     (move || async move {
                         let output_ok = Result::<_, ()>::Ok(crate::get_btc_price().await)?;
-                        Ok(output_ok)
-                    })()
-                    .await,
-                )
-            }
-        },
-    )
-}
-fn wire__crate__get_display_setting_impl(
-    port_: flutter_rust_bridge::for_generated::MessagePort,
-    ptr_: flutter_rust_bridge::for_generated::PlatformGeneralizedUint8ListPtr,
-    rust_vec_len_: i32,
-    data_len_: i32,
-) {
-    FLUTTER_RUST_BRIDGE_HANDLER.wrap_async::<flutter_rust_bridge::for_generated::SseCodec, _, _, _>(
-        flutter_rust_bridge::for_generated::TaskInfo {
-            debug_name: "get_display_setting",
-            port: Some(port_),
-            mode: flutter_rust_bridge::for_generated::FfiCallMode::Normal,
-        },
-        move || {
-            let message = unsafe {
-                flutter_rust_bridge::for_generated::Dart2RustMessageSse::from_wire(
-                    ptr_,
-                    rust_vec_len_,
-                    data_len_,
-                )
-            };
-            let mut deserializer =
-                flutter_rust_bridge::for_generated::SseDeserializer::new(message);
-            deserializer.end();
-            move |context| async move {
-                transform_result_sse::<_, ()>(
-                    (move || async move {
-                        let output_ok = Result::<_, ()>::Ok(crate::get_display_setting().await)?;
                         Ok(output_ok)
                     })()
                     .await,
@@ -9550,7 +9550,7 @@ fn wire__crate__send_lnaddress_impl(
         },
     )
 }
-fn wire__crate__set_display_setting_impl(
+fn wire__crate__set_bitcoin_display_impl(
     port_: flutter_rust_bridge::for_generated::MessagePort,
     ptr_: flutter_rust_bridge::for_generated::PlatformGeneralizedUint8ListPtr,
     rust_vec_len_: i32,
@@ -9558,7 +9558,7 @@ fn wire__crate__set_display_setting_impl(
 ) {
     FLUTTER_RUST_BRIDGE_HANDLER.wrap_async::<flutter_rust_bridge::for_generated::SseCodec, _, _, _>(
         flutter_rust_bridge::for_generated::TaskInfo {
-            debug_name: "set_display_setting",
+            debug_name: "set_bitcoin_display",
             port: Some(port_),
             mode: flutter_rust_bridge::for_generated::FfiCallMode::Normal,
         },
@@ -9572,13 +9572,13 @@ fn wire__crate__set_display_setting_impl(
             };
             let mut deserializer =
                 flutter_rust_bridge::for_generated::SseDeserializer::new(message);
-            let api_display_setting = <crate::db::DisplaySetting>::sse_decode(&mut deserializer);
+            let api_bitcoin_display = <crate::db::BitcoinDisplay>::sse_decode(&mut deserializer);
             deserializer.end();
             move |context| async move {
                 transform_result_sse::<_, ()>(
                     (move || async move {
                         let output_ok = Result::<_, ()>::Ok({
-                            crate::set_display_setting(api_display_setting).await;
+                            crate::set_bitcoin_display(api_bitcoin_display).await;
                         })?;
                         Ok(output_ok)
                     })()
@@ -10615,6 +10615,20 @@ impl SseDecode for crate::multimint::AwaitingConfsEvent {
     }
 }
 
+impl SseDecode for crate::db::BitcoinDisplay {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
+        let mut inner = <i32>::sse_decode(deserializer);
+        return match inner {
+            0 => crate::db::BitcoinDisplay::Bip177,
+            1 => crate::db::BitcoinDisplay::Sats,
+            2 => crate::db::BitcoinDisplay::Nothing,
+            3 => crate::db::BitcoinDisplay::Symbol,
+            _ => unreachable!("Invalid variant for BitcoinDisplay: {}", inner),
+        };
+    }
+}
+
 impl SseDecode for bool {
     // Codec=Sse (Serialization based), see doc to use other codecs
     fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
@@ -10672,20 +10686,6 @@ impl SseDecode for crate::multimint::DepositEventKind {
                 unimplemented!("");
             }
         }
-    }
-}
-
-impl SseDecode for crate::db::DisplaySetting {
-    // Codec=Sse (Serialization based), see doc to use other codecs
-    fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
-        let mut inner = <i32>::sse_decode(deserializer);
-        return match inner {
-            0 => crate::db::DisplaySetting::Bip177,
-            1 => crate::db::DisplaySetting::Sats,
-            2 => crate::db::DisplaySetting::Nothing,
-            3 => crate::db::DisplaySetting::Symbol,
-            _ => unreachable!("Invalid variant for DisplaySetting: {}", inner),
-        };
     }
 }
 
@@ -11646,16 +11646,16 @@ fn pde_ffi_dispatcher_primary_impl(
             rust_vec_len,
             data_len,
         ),
-        58 => {
-            wire__crate__multimint__Multimint_get_btc_price_impl(port, ptr, rust_vec_len, data_len)
-        }
-        59 => wire__crate__multimint__Multimint_get_cached_federation_meta_impl(
+        58 => wire__crate__multimint__Multimint_get_bitcoin_display_impl(
             port,
             ptr,
             rust_vec_len,
             data_len,
         ),
-        60 => wire__crate__multimint__Multimint_get_display_setting_impl(
+        59 => {
+            wire__crate__multimint__Multimint_get_btc_price_impl(port, ptr, rust_vec_len, data_len)
+        }
+        60 => wire__crate__multimint__Multimint_get_cached_federation_meta_impl(
             port,
             ptr,
             rust_vec_len,
@@ -11765,7 +11765,7 @@ fn pde_ffi_dispatcher_primary_impl(
         ),
         82 => wire__crate__multimint__Multimint_send_impl(port, ptr, rust_vec_len, data_len),
         83 => wire__crate__multimint__Multimint_send_ecash_impl(port, ptr, rust_vec_len, data_len),
-        84 => wire__crate__multimint__Multimint_set_display_setting_impl(
+        84 => wire__crate__multimint__Multimint_set_bitcoin_display_impl(
             port,
             ptr,
             rust_vec_len,
@@ -11841,8 +11841,8 @@ fn pde_ffi_dispatcher_primary_impl(
         135 => wire__crate__federation_id_to_string_impl(port, ptr, rust_vec_len, data_len),
         136 => wire__crate__federations_impl(port, ptr, rust_vec_len, data_len),
         137 => wire__crate__get_addresses_impl(port, ptr, rust_vec_len, data_len),
-        138 => wire__crate__get_btc_price_impl(port, ptr, rust_vec_len, data_len),
-        139 => wire__crate__get_display_setting_impl(port, ptr, rust_vec_len, data_len),
+        138 => wire__crate__get_bitcoin_display_impl(port, ptr, rust_vec_len, data_len),
+        139 => wire__crate__get_btc_price_impl(port, ptr, rust_vec_len, data_len),
         140 => wire__crate__get_event_bus_impl(port, ptr, rust_vec_len, data_len),
         141 => wire__crate__get_federation_meta_impl(port, ptr, rust_vec_len, data_len),
         142 => wire__crate__get_federation_order_impl(port, ptr, rust_vec_len, data_len),
@@ -11880,7 +11880,7 @@ fn pde_ffi_dispatcher_primary_impl(
         170 => wire__crate__send_impl(port, ptr, rust_vec_len, data_len),
         171 => wire__crate__send_ecash_impl(port, ptr, rust_vec_len, data_len),
         172 => wire__crate__send_lnaddress_impl(port, ptr, rust_vec_len, data_len),
-        173 => wire__crate__set_display_setting_impl(port, ptr, rust_vec_len, data_len),
+        173 => wire__crate__set_bitcoin_display_impl(port, ptr, rust_vec_len, data_len),
         174 => wire__crate__set_federation_order_impl(port, ptr, rust_vec_len, data_len),
         175 => wire__crate__set_nwc_connection_info_impl(port, ptr, rust_vec_len, data_len),
         176 => wire__crate__subscribe_deposits_impl(port, ptr, rust_vec_len, data_len),
@@ -12630,6 +12630,24 @@ impl flutter_rust_bridge::IntoIntoDart<crate::multimint::AwaitingConfsEvent>
     }
 }
 // Codec=Dco (DartCObject based), see doc to use other codecs
+impl flutter_rust_bridge::IntoDart for crate::db::BitcoinDisplay {
+    fn into_dart(self) -> flutter_rust_bridge::for_generated::DartAbi {
+        match self {
+            Self::Bip177 => 0.into_dart(),
+            Self::Sats => 1.into_dart(),
+            Self::Nothing => 2.into_dart(),
+            Self::Symbol => 3.into_dart(),
+            _ => unreachable!(),
+        }
+    }
+}
+impl flutter_rust_bridge::for_generated::IntoDartExceptPrimitive for crate::db::BitcoinDisplay {}
+impl flutter_rust_bridge::IntoIntoDart<crate::db::BitcoinDisplay> for crate::db::BitcoinDisplay {
+    fn into_into_dart(self) -> crate::db::BitcoinDisplay {
+        self
+    }
+}
+// Codec=Dco (DartCObject based), see doc to use other codecs
 impl flutter_rust_bridge::IntoDart for crate::multimint::ClaimedEvent {
     fn into_dart(self) -> flutter_rust_bridge::for_generated::DartAbi {
         [
@@ -12701,24 +12719,6 @@ impl flutter_rust_bridge::IntoIntoDart<crate::multimint::DepositEventKind>
     for crate::multimint::DepositEventKind
 {
     fn into_into_dart(self) -> crate::multimint::DepositEventKind {
-        self
-    }
-}
-// Codec=Dco (DartCObject based), see doc to use other codecs
-impl flutter_rust_bridge::IntoDart for crate::db::DisplaySetting {
-    fn into_dart(self) -> flutter_rust_bridge::for_generated::DartAbi {
-        match self {
-            Self::Bip177 => 0.into_dart(),
-            Self::Sats => 1.into_dart(),
-            Self::Nothing => 2.into_dart(),
-            Self::Symbol => 3.into_dart(),
-            _ => unreachable!(),
-        }
-    }
-}
-impl flutter_rust_bridge::for_generated::IntoDartExceptPrimitive for crate::db::DisplaySetting {}
-impl flutter_rust_bridge::IntoIntoDart<crate::db::DisplaySetting> for crate::db::DisplaySetting {
-    fn into_into_dart(self) -> crate::db::DisplaySetting {
         self
     }
 }
@@ -13694,6 +13694,24 @@ impl SseEncode for crate::multimint::AwaitingConfsEvent {
     }
 }
 
+impl SseEncode for crate::db::BitcoinDisplay {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
+        <i32>::sse_encode(
+            match self {
+                crate::db::BitcoinDisplay::Bip177 => 0,
+                crate::db::BitcoinDisplay::Sats => 1,
+                crate::db::BitcoinDisplay::Nothing => 2,
+                crate::db::BitcoinDisplay::Symbol => 3,
+                _ => {
+                    unimplemented!("");
+                }
+            },
+            serializer,
+        );
+    }
+}
+
 impl SseEncode for bool {
     // Codec=Sse (Serialization based), see doc to use other codecs
     fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
@@ -13741,24 +13759,6 @@ impl SseEncode for crate::multimint::DepositEventKind {
                 unimplemented!("");
             }
         }
-    }
-}
-
-impl SseEncode for crate::db::DisplaySetting {
-    // Codec=Sse (Serialization based), see doc to use other codecs
-    fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
-        <i32>::sse_encode(
-            match self {
-                crate::db::DisplaySetting::Bip177 => 0,
-                crate::db::DisplaySetting::Sats => 1,
-                crate::db::DisplaySetting::Nothing => 2,
-                crate::db::DisplaySetting::Symbol => 3,
-                _ => {
-                    unimplemented!("");
-                }
-            },
-            serializer,
-        );
     }
 }
 
