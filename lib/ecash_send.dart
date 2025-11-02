@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'constants/transaction_keys.dart';
 import 'dart:convert';
+import 'package:ecashapp/db.dart';
 import 'package:ecashapp/detail_row.dart';
 import 'package:ecashapp/providers/preferences_provider.dart';
 import 'package:ecashapp/qr_export.dart';
@@ -102,7 +103,7 @@ class _EcashSendState extends State<EcashSend> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final bitcoinDisplay = context.watch<PreferencesProvider>().bitcoinDisplay;
+    final bitcoinDisplay = context.select<PreferencesProvider, BitcoinDisplay>((prefs) => prefs.bitcoinDisplay);
 
     if (_loading) {
       return const Center(

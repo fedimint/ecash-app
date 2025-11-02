@@ -1,5 +1,6 @@
 import 'package:ecashapp/db.dart';
 import 'package:ecashapp/lib.dart' as rust_lib;
+import 'package:ecashapp/utils.dart';
 import 'package:flutter/foundation.dart';
 
 class PreferencesProvider extends ChangeNotifier {
@@ -19,6 +20,7 @@ class PreferencesProvider extends ChangeNotifier {
       _isLoading = false;
       notifyListeners();
     } catch (e) {
+      AppLogger.instance.error('Failed to load bitcoin display preference: $e');
       _isLoading = false;
       notifyListeners();
     }
@@ -27,6 +29,10 @@ class PreferencesProvider extends ChangeNotifier {
   Future<void> setBitcoinDisplay(BitcoinDisplay display) async {
     _bitcoinDisplay = display;
     notifyListeners();
-    await rust_lib.setBitcoinDisplay(bitcoinDisplay: display);
+    try {
+      await rust_lib.setBitcoinDisplay(bitcoinDisplay: display);
+    } catch (e) {
+      AppLogger.instance.error('Failed to save bitcoin display preference: $e');
+    }
   }
 }

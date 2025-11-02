@@ -1,3 +1,4 @@
+import 'package:ecashapp/db.dart';
 import 'package:ecashapp/fed_preview.dart';
 import 'package:ecashapp/lib.dart';
 import 'package:ecashapp/multimint.dart';
@@ -300,7 +301,7 @@ class FederationListItem extends StatelessWidget {
                             : formatBalance(
                                 data.balanceMsats,
                                 false,
-                                context.watch<PreferencesProvider>().bitcoinDisplay,
+                                context.select<PreferencesProvider, BitcoinDisplay>((prefs) => prefs.bitcoinDisplay),
                               ),
                         style: Theme.of(context).textTheme.bodyMedium,
                       ),

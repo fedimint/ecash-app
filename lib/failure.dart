@@ -1,3 +1,4 @@
+import 'package:ecashapp/db.dart';
 import 'package:ecashapp/providers/preferences_provider.dart';
 import 'package:ecashapp/utils.dart';
 import 'package:flutter/material.dart';
@@ -11,7 +12,7 @@ class Failure extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final bitcoinDisplay = context.watch<PreferencesProvider>().bitcoinDisplay;
+    final bitcoinDisplay = context.select<PreferencesProvider, BitcoinDisplay>((prefs) => prefs.bitcoinDisplay);
     final displayAmount = formatBalance(amountMsats, false, bitcoinDisplay);
 
     return Scaffold(

@@ -1,3 +1,4 @@
+import 'package:ecashapp/db.dart';
 import 'package:ecashapp/providers/preferences_provider.dart';
 import 'package:ecashapp/theme.dart';
 import '../constants/transaction_keys.dart';
@@ -236,7 +237,9 @@ class TransactionItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final bitcoinDisplay = context.watch<PreferencesProvider>().bitcoinDisplay;
+    final bitcoinDisplay = context.select<PreferencesProvider, BitcoinDisplay>(
+      (prefs) => prefs.bitcoinDisplay,
+    );
     final isIncoming =
         tx.kind is TransactionKind_LightningReceive ||
         tx.kind is TransactionKind_OnchainReceive ||

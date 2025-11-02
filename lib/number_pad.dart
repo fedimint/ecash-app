@@ -298,7 +298,7 @@ class _NumberPadState extends State<NumberPad> {
 
   @override
   Widget build(BuildContext context) {
-    final bitcoinDisplay = context.watch<PreferencesProvider>().bitcoinDisplay;
+    final bitcoinDisplay = context.select<PreferencesProvider, BitcoinDisplay>((prefs) => prefs.bitcoinDisplay);
     final usdText = calculateUsdValue(
       widget.btcPrice,
       int.tryParse(_rawAmount) ?? 0,

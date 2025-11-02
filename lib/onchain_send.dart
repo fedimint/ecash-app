@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'constants/transaction_keys.dart';
+import 'package:ecashapp/db.dart';
 import 'package:ecashapp/detail_row.dart';
 import 'package:ecashapp/lib.dart';
 import 'package:ecashapp/multimint.dart';
@@ -232,7 +233,7 @@ class _OnchainSendState extends State<OnchainSend> {
 
   @override
   Widget build(BuildContext context) {
-    final bitcoinDisplay = context.watch<PreferencesProvider>().bitcoinDisplay;
+    final bitcoinDisplay = context.select<PreferencesProvider, BitcoinDisplay>((prefs) => prefs.bitcoinDisplay);
     final canWithdraw =
         _feeQuote != null &&
         _actualWithdrawalAmount != null &&

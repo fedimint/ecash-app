@@ -1,3 +1,4 @@
+import 'package:ecashapp/db.dart';
 import 'package:ecashapp/lib.dart';
 import 'package:ecashapp/multimint.dart';
 import 'package:ecashapp/providers/preferences_provider.dart';
@@ -833,7 +834,7 @@ class _FederationUtxoListState extends State<FederationUtxoList> {
 
   @override
   Widget build(BuildContext context) {
-    final bitcoinDisplay = context.watch<PreferencesProvider>().bitcoinDisplay;
+    final bitcoinDisplay = context.select<PreferencesProvider, BitcoinDisplay>((prefs) => prefs.bitcoinDisplay);
 
     if (!widget.isFederationOnline) {
       return const Center(

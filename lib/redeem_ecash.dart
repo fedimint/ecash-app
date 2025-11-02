@@ -1,3 +1,4 @@
+import 'package:ecashapp/db.dart';
 import 'package:ecashapp/lib.dart';
 import 'package:ecashapp/multimint.dart';
 import 'package:ecashapp/providers/preferences_provider.dart';
@@ -163,7 +164,7 @@ class _EcashRedeemPromptState extends State<EcashRedeemPrompt> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final bitcoinDisplay = context.watch<PreferencesProvider>().bitcoinDisplay;
+    final bitcoinDisplay = context.select<PreferencesProvider, BitcoinDisplay>((prefs) => prefs.bitcoinDisplay);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,

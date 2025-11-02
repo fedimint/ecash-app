@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'constants/transaction_keys.dart';
 
+import 'package:ecashapp/db.dart';
 import 'package:ecashapp/detail_row.dart';
 import 'package:ecashapp/lib.dart';
 import 'package:ecashapp/multimint.dart';
@@ -137,7 +138,7 @@ class _RequestState extends State<Request> with SingleTickerProviderStateMixin {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final bitcoinDisplay = context.watch<PreferencesProvider>().bitcoinDisplay;
+    final bitcoinDisplay = context.select<PreferencesProvider, BitcoinDisplay>((prefs) => prefs.bitcoinDisplay);
     final abbreviatedInvoice = getAbbreviatedText(widget.invoice);
     final fees = widget.totalMsats - widget.requestedAmountMsats;
 

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:ecashapp/db.dart';
 import 'package:ecashapp/multimint.dart';
 import 'package:ecashapp/providers/preferences_provider.dart';
 import 'package:ecashapp/utils.dart';
@@ -11,7 +12,9 @@ class PendingDepositItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final bitcoinDisplay = context.watch<PreferencesProvider>().bitcoinDisplay;
+    final bitcoinDisplay = context.select<PreferencesProvider, BitcoinDisplay>(
+      (prefs) => prefs.bitcoinDisplay,
+    );
     String msg;
     BigInt amount;
 
