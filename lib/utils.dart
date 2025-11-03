@@ -227,7 +227,7 @@ bool isValidRelayUri(String input) {
   if (input.isEmpty) return false;
   try {
     final uri = Uri.parse(input);
-    return uri.scheme == 'wss' && uri.hasAuthority;
+    return (uri.scheme == 'wss' || uri.scheme == 'ws') && uri.hasAuthority;
   } catch (_) {
     return false;
   }
