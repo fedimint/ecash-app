@@ -151,6 +151,7 @@ class _RelaysState extends State<Relays> {
                     child: TextField(
                       controller: _controller,
                       onChanged: _onInputChanged,
+                      autocorrect: false,
                       style: const TextStyle(color: Colors.white),
                       decoration: InputDecoration(
                         hintText: 'wss://example.com',
