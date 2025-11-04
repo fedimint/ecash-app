@@ -33,6 +33,19 @@ runs:
       id: slug
       shell: bash
       run: echo "sha8=$(echo ${GITHUB_SHA} | cut -c1-8)" >> $GITHUB_OUTPUT
+    
+    # Clean runner disk to free space
+    - name: Free up disk space
+      shell: bash
+      run: |
+        echo "Cleaning up old caches and build artifacts..."
+        sudo rm -rf ~/.gradle/caches/
+        sudo rm -rf ~/.gradle/daemon/
+        sudo rm -rf ~/.gradle/native/
+        rm -rf ~/.pub-cache/*
+        rm -rf **/.dart_tool
+        flutter clean || true
+        df -h
 
     # Cache Rust dependencies
     - name: Cache cargo registry
