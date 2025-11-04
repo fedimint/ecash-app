@@ -95,19 +95,6 @@ runs:
         toolchain: stable
         targets: aarch64-linux-android
 
-    - name: Set Android environment variables
-      shell: bash
-      run: |
-        echo "ANDROID_NDK_HOME=${{ steps.setup-ndk.outputs.ndk-path }}" >> $GITHUB_ENV
-        echo "ANDROID_NDK_ROOT=${{ steps.setup-ndk.outputs.ndk-path }}" >> $GITHUB_ENV
-
-    - name: Prevent Gradle auto-installing NDK
-      shell: bash
-      run: |
-        mkdir -p ~/.android
-        echo "sdk.dir=/usr/local/lib/android/sdk" > ~/.android/repositories.cfg
-        echo "ndk.dir=$ANDROID_NDK_HOME" >> ~/.android/repositories.cfg
-
     - name: Limit Gradle workers
       shell: bash
       run: |
