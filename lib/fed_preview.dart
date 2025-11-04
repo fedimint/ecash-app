@@ -883,6 +883,24 @@ class _FederationUtxoListState extends State<FederationUtxoList> {
                     ),
                   ),
 
+                  IconButton(
+                    tooltip: 'Copy txid',
+                    icon: const Icon(Icons.copy),
+                    color: Theme.of(context).colorScheme.secondary,
+                    onPressed: () async {
+                      await Clipboard.setData(
+                        ClipboardData(text: utxo.txid),
+                      );
+                      if (!context.mounted) return;
+                      ToastService().show(
+                        message: "Txid copied",
+                        duration: const Duration(seconds: 2),
+                        onTap: () {},
+                        icon: Icon(Icons.check),
+                      );
+                    },
+                  ),
+
                   if (explorerUrl != null)
                     IconButton(
                       tooltip: 'View on mempool.space',
