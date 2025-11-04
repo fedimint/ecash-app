@@ -35,16 +35,13 @@ runs:
       run: echo "sha8=$(echo ${GITHUB_SHA} | cut -c1-8)" >> $GITHUB_OUTPUT
     
     # Clean runner disk to free space
-    - name: Free up disk space
+    - name: Free disk space & clean builds
       shell: bash
       run: |
         echo "Cleaning up old caches and build artifacts..."
-        sudo rm -rf ~/.gradle/caches/
-        sudo rm -rf ~/.gradle/daemon/
-        sudo rm -rf ~/.gradle/native/
-        rm -rf ~/.pub-cache/*
-        rm -rf **/.dart_tool
         flutter clean || true
+        rm -rf android/.gradle android/build build
+        rm -rf ~/.pub-cache/*
         df -h
 
     # Cache Rust dependencies
@@ -106,6 +103,27 @@ runs:
       run: |
         echo "ANDROID_NDK_HOME=${{ steps.setup-ndk.outputs.ndk-path }}" >> $GITHUB_ENV
         echo "ANDROID_NDK_ROOT=${{ steps.setup-ndk.outputs.ndk-path }}" >> $GITHUB_ENV
+
+    - name: Prevent Gradle auto-installing NDK
+      shell: bash
+      run: |
+        mkdir -p ~/.android
+        echo "sdk.dir=/usr/local/lib/android/sdk" > ~/.android/repositories.cfg
+        echo "ndk.dir=$ANDROID_NDK_HOME" >> ~/.android/repositories.cfg
+
+    - name: Limit Gradle workers
+      shell: bash
+      run: |
+        mkdir -p android
+        cat > android/gradle.properties <<EOF
+        org.gradle.daemon=false
+        org.gradle.parallel=false
+        org.gradle.configureondemand=true
+        org.gradle.workers.max=2
+        org.gradle.jvmargs=-Xmx8G -XX:MaxMetaspaceSize=4G -XX:ReservedCodeCacheSize=512m -XX:+HeapDumpOnOutOfMemoryError
+        android.useAndroidX=true
+        android.enableJetifier=true
+        EOF
 
     - name: Install dependencies
       shell: bash
