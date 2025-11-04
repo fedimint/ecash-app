@@ -33,6 +33,19 @@ runs:
       id: slug
       shell: bash
       run: echo "sha8=$(echo ${GITHUB_SHA} | cut -c1-8)" >> $GITHUB_OUTPUT
+    
+    # Clean runner disk to free space
+    - name: Free disk space & clean builds
+      shell: bash
+      run: |
+        echo "Cleaning up old caches and build artifacts..."
+        flutter clean || true
+        rm -rf android/.gradle android/build build
+        rm -rf ~/.pub-cache/*
+        rm -rf /usr/local/lib/android/sdk/system-images
+        rm -rf /usr/local/lib/android/sdk/platforms
+        rm -rf /usr/local/lib/android/sdk/build-tools
+        df -h
 
     # Cache Rust dependencies
     - name: Cache cargo registry
@@ -82,17 +95,20 @@ runs:
         toolchain: stable
         targets: aarch64-linux-android
 
-    - name: Set up Android NDK
-      uses: nttld/setup-ndk@v1
-      id: setup-ndk
-      with:
-        ndk-version: r25c
-
-    - name: Set Android environment variables
+    - name: Limit Gradle workers
       shell: bash
       run: |
-        echo "ANDROID_NDK_HOME=${{ steps.setup-ndk.outputs.ndk-path }}" >> $GITHUB_ENV
-        echo "ANDROID_NDK_ROOT=${{ steps.setup-ndk.outputs.ndk-path }}" >> $GITHUB_ENV
+        mkdir -p android
+        cat > android/gradle.properties <<EOF
+        org.gradle.daemon=false
+        org.gradle.parallel=false
+        org.gradle.configureondemand=true
+        org.gradle.workers.max=2
+        org.gradle.jvmargs=-Xmx8G -XX:MaxMetaspaceSize=4G -XX:ReservedCodeCacheSize=512m -XX:+HeapDumpOnOutOfMemoryError
+        android.useAndroidX=true
+        android.enableJetifier=true
+        android.ndkVersion=27.0.12077973
+        EOF
 
     - name: Install dependencies
       shell: bash
