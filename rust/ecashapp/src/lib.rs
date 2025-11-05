@@ -33,6 +33,7 @@ use anyhow::{anyhow, bail, Context};
 use fedimint_api_client::api::net::Connector;
 use fedimint_bip39::Language;
 use fedimint_client::OperationId;
+use fedimint_core::rustls::install_crypto_provider;
 use fedimint_core::{
     config::FederationId, db::Database, encoding::Encodable, invite_code::InviteCode,
     util::SafeUrl, Amount,
@@ -134,6 +135,7 @@ pub async fn add_recovery_relay(relay: String) {
 
 #[frb]
 pub async fn create_new_multimint(path: String) {
+    install_crypto_provider().await;
     create_event_bus().await;
     let db = get_database(path).await;
     MULTIMINT
@@ -148,6 +150,7 @@ pub async fn create_new_multimint(path: String) {
 
 #[frb]
 pub async fn load_multimint(path: String) {
+    install_crypto_provider().await;
     create_event_bus().await;
     let db = get_database(path).await;
     MULTIMINT
@@ -162,6 +165,7 @@ pub async fn load_multimint(path: String) {
 
 #[frb]
 pub async fn create_multimint_from_words(path: String, words: Vec<String>) {
+    install_crypto_provider().await;
     create_event_bus().await;
     let db = get_database(path).await;
     MULTIMINT
