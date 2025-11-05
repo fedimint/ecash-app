@@ -1,6 +1,6 @@
 import 'dart:io';
 
-import 'package:ecashapp/frb_generated.dart';
+import 'package:ecashapp/generated/frb_generated.dart';
 import 'package:ecashapp/splash.dart';
 import 'package:ecashapp/theme.dart';
 import 'package:ecashapp/utils.dart';
@@ -13,9 +13,7 @@ void main() async {
   await AppLogger.init();
   await RustLib.init();
   final packageInfo = await PackageInfo.fromPlatform();
-  AppLogger.instance.info(
-    "Starting ecashapp. Version ${packageInfo.version} Build Number: ${packageInfo.buildNumber}",
-  );
+  AppLogger.instance.info("Starting ecashapp. Version ${packageInfo.version} Build Number: ${packageInfo.buildNumber}");
   final dir = await getApplicationDocumentsDirectory();
   runApp(ecashapp(dir: dir));
 }

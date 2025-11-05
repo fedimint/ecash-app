@@ -1,4 +1,4 @@
-import 'package:ecashapp/db.dart';
+import 'package:ecashapp/generated/db.dart';
 import 'package:ecashapp/providers/preferences_provider.dart';
 import 'package:ecashapp/utils.dart';
 import 'package:flutter/material.dart';
@@ -31,26 +31,16 @@ class Failure extends StatelessWidget {
                 children: [
                   // Red Circle with X Icon
                   Container(
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      color: Colors.redAccent.withOpacity(0.8),
-                    ),
+                    decoration: BoxDecoration(shape: BoxShape.circle, color: Colors.redAccent.withOpacity(0.8)),
                     padding: const EdgeInsets.all(24),
-                    child: const Icon(
-                      Icons.close,
-                      size: 64,
-                      color: Colors.white,
-                    ),
+                    child: const Icon(Icons.close, size: 64, color: Colors.white),
                   ),
                   const SizedBox(height: 24),
 
                   // Failure message
                   Text(
                     'Failed to send $displayAmount',
-                    style: const TextStyle(
-                      fontSize: 28,
-                      fontWeight: FontWeight.bold,
-                    ),
+                    style: const TextStyle(fontSize: 28, fontWeight: FontWeight.bold),
                     textAlign: TextAlign.center,
                   ),
                 ],

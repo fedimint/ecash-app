@@ -2,9 +2,9 @@ import 'dart:convert';
 
 import 'package:ecashapp/app.dart';
 import 'package:ecashapp/fed_preview.dart';
-import 'package:ecashapp/lib.dart';
+import 'package:ecashapp/generated/lib.dart';
 import 'package:ecashapp/models.dart';
-import 'package:ecashapp/multimint.dart';
+import 'package:ecashapp/generated/multimint.dart';
 import 'package:ecashapp/number_pad.dart';
 import 'package:ecashapp/onchain_send.dart';
 import 'package:ecashapp/pay_preview.dart';
@@ -23,12 +23,7 @@ class ScanQRPage extends StatefulWidget {
   final PaymentType? paymentType;
   final void Function(FederationSelector fed, bool recovering) onPay;
 
-  const ScanQRPage({
-    super.key,
-    this.selectedFed,
-    this.paymentType,
-    required this.onPay,
-  });
+  const ScanQRPage({super.key, this.selectedFed, this.paymentType, required this.onPay});
 
   @override
   State<ScanQRPage> createState() => _ScanQRPageState();
@@ -79,23 +74,14 @@ class _ScanQRPageState extends State<ScanQRPage> {
           indexes.add(idx);
         }
         final data = bytes.sublist(3 + 2 * k);
-        final fountainPending = _FountainFramePending(
-          base64Str,
-          firstByte,
-          indexes,
-          Uint8List.fromList(data),
-        );
+        final fountainPending = _FountainFramePending(base64Str, firstByte, indexes, Uint8List.fromList(data));
 
         // If session exists, add it there; otherwise queue it for future sessions
         if (_currentSession == null) {
-          AppLogger.instance.info(
-            "Queueing fountain frame (no active session yet)",
-          );
+          AppLogger.instance.info("Queueing fountain frame (no active session yet)");
           _pendingFountains.add(fountainPending);
         } else {
-          AppLogger.instance.info(
-            "Adding fountain frame to current session (indexes=$indexes)",
-          );
+          AppLogger.instance.info("Adding fountain frame to current session (indexes=$indexes)");
           _currentSession!.addFountainFrame(fountainPending.toFountainFrame());
         }
         return;
@@ -108,19 +94,12 @@ class _ScanQRPageState extends State<ScanQRPage> {
         final chunkData = bytes.sublist(5);
 
         if (_currentSession == null || _currentSession!.nonce != nonce) {
-          AppLogger.instance.info(
-            "Starting new session! Nonce: $nonce TotalFrames: $totalFrames",
-          );
-          _currentSession = _QrLoopSession(
-            nonce: nonce,
-            totalFrames: totalFrames,
-          );
+          AppLogger.instance.info("Starting new session! Nonce: $nonce TotalFrames: $totalFrames");
+          _currentSession = _QrLoopSession(nonce: nonce, totalFrames: totalFrames);
 
           // move any pending fountains into the new session (they will be attempted)
           if (_pendingFountains.isNotEmpty) {
-            AppLogger.instance.info(
-              "Transferring ${_pendingFountains.length} pending fountains to session",
-            );
+            AppLogger.instance.info("Transferring ${_pendingFountains.length} pending fountains to session");
             for (final pf in _pendingFountains) {
               _currentSession!.addFountainFrame(pf.toFountainFrame());
             }
@@ -153,11 +132,7 @@ class _ScanQRPageState extends State<ScanQRPage> {
   void _processMerged(Uint8List merged) async {
     try {
       final lengthBytes = merged.sublist(0, 4);
-      final declaredLength =
-          (lengthBytes[0] << 24) |
-          (lengthBytes[1] << 16) |
-          (lengthBytes[2] << 8) |
-          lengthBytes[3];
+      final declaredLength = (lengthBytes[0] << 24) | (lengthBytes[1] << 16) | (lengthBytes[2] << 8) | lengthBytes[3];
       AppLogger.instance.info("Declared length: $declaredLength");
 
       final hashBytes = merged.sublist(4, 20);
@@ -195,10 +170,7 @@ class _ScanQRPageState extends State<ScanQRPage> {
       ParsedText action;
       FederationSelector? chosenFederation;
       if (widget.selectedFed != null) {
-        final result = await parseScannedTextForFederation(
-          text: text,
-          federation: widget.selectedFed!,
-        );
+        final result = await parseScannedTextForFederation(text: text, federation: widget.selectedFed!);
         action = result.$1;
         chosenFederation = result.$2;
       } else {
@@ -230,9 +202,7 @@ class _ScanQRPageState extends State<ScanQRPage> {
                 Navigator.pop(context, fed);
               }
             } catch (e) {
-              AppLogger.instance.warn(
-                "Error when retrieving federation meta: $e",
-              );
+              AppLogger.instance.warn("Error when retrieving federation meta: $e");
               ToastService().show(
                 message: "Sorry! Could not get federation metadata",
                 duration: const Duration(seconds: 5),
@@ -243,29 +213,20 @@ class _ScanQRPageState extends State<ScanQRPage> {
           }
           break;
         case ParsedText_LightningInvoice(:final field0):
-          if (widget.paymentType == null ||
-              widget.paymentType! == PaymentType.lightning) {
+          if (widget.paymentType == null || widget.paymentType! == PaymentType.lightning) {
             try {
               await showAppModalBottomSheet(
                 context: context,
                 childBuilder: () async {
-                  final preview = await paymentPreview(
-                    federationId: chosenFederation!.federationId,
-                    bolt11: field0,
-                  );
+                  final preview = await paymentPreview(federationId: chosenFederation!.federationId, bolt11: field0);
 
-                  return PaymentPreviewWidget(
-                    fed: chosenFederation,
-                    paymentPreview: preview,
-                  );
+                  return PaymentPreviewWidget(fed: chosenFederation, paymentPreview: preview);
                 },
               );
 
               widget.onPay(chosenFederation!, false);
             } catch (e) {
-              AppLogger.instance.warn(
-                "Error when retrieving payment preview: $e",
-              );
+              AppLogger.instance.warn("Error when retrieving payment preview: $e");
               ToastService().show(
                 message: "Sorry! Could not get Lightning payment details",
                 duration: const Duration(seconds: 5),
@@ -276,8 +237,7 @@ class _ScanQRPageState extends State<ScanQRPage> {
           }
           break;
         case ParsedText_BitcoinAddress(:final field0, :final field1):
-          if (widget.paymentType == null ||
-              widget.paymentType! == PaymentType.onchain) {
+          if (widget.paymentType == null || widget.paymentType! == PaymentType.onchain) {
             if (field1 != null) {
               await showAppModalBottomSheet(
                 context: context,
@@ -310,17 +270,12 @@ class _ScanQRPageState extends State<ScanQRPage> {
           }
           break;
         case ParsedText_Ecash(:final field0):
-          if (widget.paymentType == null ||
-              widget.paymentType! == PaymentType.ecash) {
+          if (widget.paymentType == null || widget.paymentType! == PaymentType.ecash) {
             invoicePaidToastVisible.value = false;
             await showAppModalBottomSheet(
               context: context,
               childBuilder: () async {
-                return EcashRedeemPrompt(
-                  fed: chosenFederation!,
-                  ecash: text,
-                  amount: field0,
-                );
+                return EcashRedeemPrompt(fed: chosenFederation!, ecash: text, amount: field0);
               },
               heightFactor: 0.33,
             );
@@ -329,8 +284,7 @@ class _ScanQRPageState extends State<ScanQRPage> {
           }
           break;
         case ParsedText_LightningAddressOrLnurl(:final field0):
-          if (widget.paymentType == null ||
-              widget.paymentType == PaymentType.lightning) {
+          if (widget.paymentType == null || widget.paymentType == PaymentType.lightning) {
             final btcPrice = await fetchBtcPrice();
             await Navigator.push(
               context,
@@ -370,9 +324,7 @@ class _ScanQRPageState extends State<ScanQRPage> {
                 Navigator.pop(context, fed);
               }
             } catch (e) {
-              AppLogger.instance.warn(
-                "Error when retrieving federation meta: $e",
-              );
+              AppLogger.instance.warn("Error when retrieving federation meta: $e");
               ToastService().show(
                 message: "Sorry! Could not get federation metadata",
                 duration: const Duration(seconds: 5),
@@ -473,17 +425,11 @@ class _ScanQRPageState extends State<ScanQRPage> {
     return SafeArea(
       child: Scaffold(
         appBar: AppBar(
-          title: const Text(
-            'Scan QR',
-            style: TextStyle(fontWeight: FontWeight.bold),
-          ),
+          title: const Text('Scan QR', style: TextStyle(fontWeight: FontWeight.bold)),
           centerTitle: true,
           backgroundColor: Colors.transparent,
           elevation: 0,
-          leading: IconButton(
-            icon: const Icon(Icons.close),
-            onPressed: () => Navigator.of(context).pop(),
-          ),
+          leading: IconButton(icon: const Icon(Icons.close), onPressed: () => Navigator.of(context).pop()),
         ),
         body: Stack(
           children: [
@@ -515,18 +461,12 @@ class _ScanQRPageState extends State<ScanQRPage> {
                               value: value,
                               strokeWidth: 8,
                               backgroundColor: Colors.grey.shade800,
-                              valueColor: AlwaysStoppedAnimation<Color>(
-                                Theme.of(context).colorScheme.primary,
-                              ),
+                              valueColor: AlwaysStoppedAnimation<Color>(Theme.of(context).colorScheme.primary),
                             ),
                           ),
                           Text(
                             "$received / $total",
-                            style: const TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.bold,
-                              color: Colors.white,
-                            ),
+                            style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white),
                           ),
                         ],
                       );
@@ -545,15 +485,10 @@ class _ScanQRPageState extends State<ScanQRPage> {
                           ? const SizedBox(
                             width: 20,
                             height: 20,
-                            child: CircularProgressIndicator(
-                              color: Colors.white,
-                              strokeWidth: 2.0,
-                            ),
+                            child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2.0),
                           )
                           : const Icon(Icons.paste),
-                  label: Text(
-                    _isPasting ? "Pasting..." : "Paste from Clipboard",
-                  ),
+                  label: Text(_isPasting ? "Pasting..." : "Paste from Clipboard"),
                 ),
               ),
             ),
@@ -616,8 +551,7 @@ class _QrLoopSession {
         final f = fountains[i];
 
         // which indexes are missing
-        final missing =
-            f.indexes.where((idx) => !chunks.containsKey(idx)).toList();
+        final missing = f.indexes.where((idx) => !chunks.containsKey(idx)).toList();
 
         // collect known frames' data for the indexes present
         final existingFramesData = <Uint8List>[];
@@ -628,9 +562,7 @@ class _QrLoopSession {
 
         if (existingFramesData.isNotEmpty) {
           // compute min length among known frames
-          final minKnownLen = existingFramesData
-              .map((d) => d.length)
-              .reduce((a, b) => a < b ? a : b);
+          final minKnownLen = existingFramesData.map((d) => d.length).reduce((a, b) => a < b ? a : b);
 
           // If fountain length does not match min known length, drop the fountain (incompatible).
           if (f.data.length != minKnownLen) {
@@ -689,9 +621,7 @@ class _QrLoopSession {
     for (int i = 0; i < totalFrames; i++) {
       final c = chunks[i];
       if (c == null) {
-        throw Exception(
-          "Missing chunk $i during merge (have ${chunks.keys.toList()})",
-        );
+        throw Exception("Missing chunk $i during merge (have ${chunks.keys.toList()})");
       }
       fullData.addAll(c);
     }

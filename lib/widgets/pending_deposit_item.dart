@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:ecashapp/db.dart';
-import 'package:ecashapp/multimint.dart';
+import 'package:ecashapp/generated/db.dart';
+import 'package:ecashapp/generated/multimint.dart';
 import 'package:ecashapp/providers/preferences_provider.dart';
 import 'package:ecashapp/utils.dart';
 import 'package:provider/provider.dart';
@@ -12,9 +12,7 @@ class PendingDepositItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final bitcoinDisplay = context.select<PreferencesProvider, BitcoinDisplay>(
-      (prefs) => prefs.bitcoinDisplay,
-    );
+    final bitcoinDisplay = context.select<PreferencesProvider, BitcoinDisplay>((prefs) => prefs.bitcoinDisplay);
     String msg;
     BigInt amount;
 
@@ -36,10 +34,7 @@ class PendingDepositItem extends StatelessWidget {
     }
 
     final formatted = formatBalance(amount, false, bitcoinDisplay);
-    final amountStyle = TextStyle(
-      fontWeight: FontWeight.bold,
-      color: Theme.of(context).colorScheme.primary,
-    );
+    final amountStyle = TextStyle(fontWeight: FontWeight.bold, color: Theme.of(context).colorScheme.primary);
 
     return Card(
       elevation: 4,
@@ -47,15 +42,10 @@ class PendingDepositItem extends StatelessWidget {
       color: Theme.of(context).colorScheme.surface,
       child: ListTile(
         leading: CircleAvatar(
-          backgroundColor: Theme.of(
-            context,
-          ).colorScheme.primary.withOpacity(0.1),
+          backgroundColor: Theme.of(context).colorScheme.primary.withOpacity(0.1),
           child: const Icon(Icons.link, color: Colors.yellowAccent),
         ),
-        title: Text(
-          "Pending Receive",
-          style: Theme.of(context).textTheme.bodyMedium,
-        ),
+        title: Text("Pending Receive", style: Theme.of(context).textTheme.bodyMedium),
         subtitle: Text(msg, style: Theme.of(context).textTheme.bodyMedium),
         trailing: Text(formatted, style: amountStyle),
       ),

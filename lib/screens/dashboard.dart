@@ -1,7 +1,7 @@
 import 'dart:async';
 import '../constants/transaction_keys.dart';
 
-import 'package:ecashapp/db.dart';
+import 'package:ecashapp/generated/db.dart';
 import 'package:ecashapp/recovery_progress.dart';
 import 'package:ecashapp/utils.dart';
 import 'package:ecashapp/widgets/addresses.dart';
@@ -11,8 +11,8 @@ import 'package:ecashapp/widgets/note_summary.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_speed_dial/flutter_speed_dial.dart';
 
-import 'package:ecashapp/lib.dart';
-import 'package:ecashapp/multimint.dart';
+import 'package:ecashapp/generated/lib.dart';
+import 'package:ecashapp/generated/multimint.dart';
 import 'package:ecashapp/number_pad.dart';
 import 'package:ecashapp/payment_selector.dart';
 import 'package:ecashapp/onchain_receive.dart';
@@ -64,43 +64,29 @@ class _DashboardState extends State<Dashboard> {
       if (event is MultimintEvent_Lightning) {
         final ln = event.field0.$2;
         if (ln is LightningEventKind_InvoicePaid) {
-          final federationIdString = await federationIdToString(
-            federationId: event.field0.$1,
-          );
-          final selectorIdString = await federationIdToString(
-            federationId: widget.fed.federationId,
-          );
+          final federationIdString = await federationIdToString(federationId: event.field0.$1);
+          final selectorIdString = await federationIdToString(federationId: widget.fed.federationId);
           if (federationIdString == selectorIdString) {
             _loadBalance();
           }
         } else if (ln is LightningEventKind_PaymentSent) {
-          final federationIdString = await federationIdToString(
-            federationId: event.field0.$1,
-          );
-          final selectorIdString = await federationIdToString(
-            federationId: widget.fed.federationId,
-          );
+          final federationIdString = await federationIdToString(federationId: event.field0.$1);
+          final selectorIdString = await federationIdToString(federationId: widget.fed.federationId);
           if (federationIdString == selectorIdString) {
             _loadBalance();
           }
         }
       } else if (event is MultimintEvent_RecoveryDone) {
         final recoveredFedId = event.field0;
-        final currFederationId = await federationIdToString(
-          federationId: widget.fed.federationId,
-        );
+        final currFederationId = await federationIdToString(federationId: widget.fed.federationId);
         if (currFederationId == recoveredFedId) {
           if (!mounted) return;
           setState(() => recovering = false);
           _loadBalance();
         }
       } else if (event is MultimintEvent_Ecash) {
-        final federationIdString = await federationIdToString(
-          federationId: event.field0.$1,
-        );
-        final selectorIdString = await federationIdToString(
-          federationId: widget.fed.federationId,
-        );
+        final federationIdString = await federationIdToString(federationId: event.field0.$1);
+        final selectorIdString = await federationIdToString(federationId: widget.fed.federationId);
         if (federationIdString == selectorIdString) {
           _loadBalance();
           _selectedPaymentType = PaymentType.ecash;
@@ -152,9 +138,7 @@ class _DashboardState extends State<Dashboard> {
   }
 
   Future<void> _loadLightningAddress() async {
-    final config = await getLnAddressConfig(
-      federationId: widget.fed.federationId,
-    );
+    final config = await getLnAddressConfig(federationId: widget.fed.federationId);
     if (!mounted) return;
     setState(() {
       _lnAddressConfig = config;
@@ -173,8 +157,7 @@ class _DashboardState extends State<Dashboard> {
           return PaymentMethodSelector(fed: widget.fed);
         },
       );
-    } else if (_selectedPaymentType == PaymentType.ecash ||
-        _selectedPaymentType == PaymentType.onchain) {
+    } else if (_selectedPaymentType == PaymentType.ecash || _selectedPaymentType == PaymentType.onchain) {
       await Navigator.push(
         context,
         MaterialPageRoute(
@@ -183,10 +166,7 @@ class _DashboardState extends State<Dashboard> {
                 fed: widget.fed,
                 paymentType: _selectedPaymentType,
                 btcPrice: _btcPrice,
-                onWithdrawCompleted:
-                    _selectedPaymentType == PaymentType.onchain
-                        ? _refreshTransactions
-                        : null,
+                onWithdrawCompleted: _selectedPaymentType == PaymentType.onchain ? _refreshTransactions : null,
               ),
         ),
       );
@@ -222,12 +202,7 @@ class _DashboardState extends State<Dashboard> {
       await Navigator.push(
         context,
         MaterialPageRoute(
-          builder:
-              (_) => ScanQRPage(
-                selectedFed: widget.fed,
-                paymentType: _selectedPaymentType,
-                onPay: (_, _) {},
-              ),
+          builder: (_) => ScanQRPage(selectedFed: widget.fed, paymentType: _selectedPaymentType, onPay: (_, _) {}),
         ),
       );
     }
@@ -308,18 +283,11 @@ class _DashboardState extends State<Dashboard> {
                   );
                 },
                 child: Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 12,
-                    vertical: 8,
-                  ),
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                   decoration: BoxDecoration(
                     color: Colors.black.withOpacity(0.7),
                     borderRadius: BorderRadius.circular(12),
-                    border: Border.all(
-                      color: Theme.of(
-                        context,
-                      ).colorScheme.secondary.withOpacity(0.6),
-                    ),
+                    border: Border.all(color: Theme.of(context).colorScheme.secondary.withOpacity(0.6)),
                   ),
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
@@ -368,12 +336,9 @@ class _DashboardState extends State<Dashboard> {
                         unselectedLabelColor: Colors.grey,
                         tabs: [
                           const Tab(text: 'Recent Transactions'),
-                          if (_selectedPaymentType == PaymentType.onchain)
-                            const Tab(text: 'Addresses'),
-                          if (_selectedPaymentType == PaymentType.ecash)
-                            const Tab(text: 'Notes'),
-                          if (_selectedPaymentType == PaymentType.lightning)
-                            const Tab(text: "Gateways"),
+                          if (_selectedPaymentType == PaymentType.onchain) const Tab(text: 'Addresses'),
+                          if (_selectedPaymentType == PaymentType.ecash) const Tab(text: 'Notes'),
+                          if (_selectedPaymentType == PaymentType.lightning) const Tab(text: "Gateways"),
                         ],
                       ),
                       const SizedBox(height: 8),
@@ -401,12 +366,8 @@ class _DashboardState extends State<Dashboard> {
                                 },
                               ),
                             if (_selectedPaymentType == PaymentType.ecash)
-                              NoteSummary(
-                                key: ValueKey(_noteRefreshKey),
-                                fed: widget.fed,
-                              ),
-                            if (_selectedPaymentType == PaymentType.lightning)
-                              GatewaysList(fed: widget.fed),
+                              NoteSummary(key: ValueKey(_noteRefreshKey), fed: widget.fed),
+                            if (_selectedPaymentType == PaymentType.lightning) GatewaysList(fed: widget.fed),
                           ],
                         ),
                       ),
@@ -427,15 +388,9 @@ class _DashboardState extends State<Dashboard> {
         selectedItemColor: Theme.of(context).colorScheme.primary,
         unselectedItemColor: Colors.grey,
         items: const [
-          BottomNavigationBarItem(
-            icon: Icon(Icons.flash_on),
-            label: 'Lightning',
-          ),
+          BottomNavigationBarItem(icon: Icon(Icons.flash_on), label: 'Lightning'),
           BottomNavigationBarItem(icon: Icon(Icons.link), label: 'Onchain'),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.currency_bitcoin),
-            label: TransactionDetailKeys.ecash,
-          ),
+          BottomNavigationBarItem(icon: Icon(Icons.currency_bitcoin), label: TransactionDetailKeys.ecash),
         ],
       ),
     );

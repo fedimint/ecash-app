@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:qr_flutter/qr_flutter.dart';
-import 'package:ecashapp/lib.dart';
-import 'package:ecashapp/multimint.dart';
-import 'package:ecashapp/nostr.dart';
+import 'package:ecashapp/generated/lib.dart';
+import 'package:ecashapp/generated/multimint.dart';
+import 'package:ecashapp/generated/nostr.dart';
 
 class NostrWalletConnect extends StatefulWidget {
   final List<(FederationSelector, bool)> federations;
@@ -42,12 +42,7 @@ class _NostrWalletConnectState extends State<NostrWalletConnect> {
     if (widget.federations.isNotEmpty && currentConfig.isNotEmpty) {
       final first = currentConfig.first;
       final matchingFed =
-          widget.federations
-              .where(
-                (element) =>
-                    element.$1.federationName == first.$1.federationName,
-              )
-              .toList();
+          widget.federations.where((element) => element.$1.federationName == first.$1.federationName).toList();
 
       if (matchingFed.isNotEmpty) {
         firstSelector = matchingFed.first.$1;
@@ -74,21 +69,14 @@ class _NostrWalletConnectState extends State<NostrWalletConnect> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            label,
-            style: theme.textTheme.labelMedium?.copyWith(
-              color: theme.colorScheme.onSurfaceVariant,
-            ),
-          ),
+          Text(label, style: theme.textTheme.labelMedium?.copyWith(color: theme.colorScheme.onSurfaceVariant)),
           const SizedBox(height: 4),
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
             decoration: BoxDecoration(
               color: theme.colorScheme.surfaceContainerHighest,
               borderRadius: BorderRadius.circular(12),
-              border: Border.all(
-                color: theme.colorScheme.primary.withOpacity(0.4),
-              ),
+              border: Border.all(color: theme.colorScheme.primary.withOpacity(0.4)),
             ),
             child: Row(
               children: [
@@ -105,21 +93,11 @@ class _NostrWalletConnectState extends State<NostrWalletConnect> {
                 IconButton(
                   icon: AnimatedSwitcher(
                     duration: const Duration(milliseconds: 300),
-                    transitionBuilder:
-                        (child, anim) =>
-                            ScaleTransition(scale: anim, child: child),
+                    transitionBuilder: (child, anim) => ScaleTransition(scale: anim, child: child),
                     child:
                         isCopied
-                            ? Icon(
-                              Icons.check,
-                              key: const ValueKey('copied'),
-                              color: theme.colorScheme.primary,
-                            )
-                            : Icon(
-                              Icons.copy,
-                              key: const ValueKey('copy'),
-                              color: theme.colorScheme.primary,
-                            ),
+                            ? Icon(Icons.check, key: const ValueKey('copied'), color: theme.colorScheme.primary)
+                            : Icon(Icons.copy, key: const ValueKey('copy'), color: theme.colorScheme.primary),
                   ),
                   onPressed: () {
                     Clipboard.setData(ClipboardData(text: value));
@@ -144,20 +122,9 @@ class _NostrWalletConnectState extends State<NostrWalletConnect> {
         DropdownButtonFormField<FederationSelector>(
           decoration: const InputDecoration(labelText: 'Select a Federation'),
           value: _selectedFederation,
-          items:
-              feds
-                  .map(
-                    (f) => DropdownMenuItem(
-                      value: f,
-                      child: Text(f.federationName),
-                    ),
-                  )
-                  .toList(),
+          items: feds.map((f) => DropdownMenuItem(value: f, child: Text(f.federationName))).toList(),
           onChanged: (value) {
-            final match =
-                _existingConfigs
-                    .where((c) => c.$1.federationName == value?.federationName)
-                    .toList();
+            final match = _existingConfigs.where((c) => c.$1.federationName == value?.federationName).toList();
 
             setState(() {
               _selectedFederation = value;
@@ -174,29 +141,18 @@ class _NostrWalletConnectState extends State<NostrWalletConnect> {
               _relays.map((relay) {
                 final (uri, connected) = relay;
                 final statusText = connected ? 'Connected' : 'Disconnected';
-                final statusColor =
-                    connected ? Colors.greenAccent : Colors.redAccent;
+                final statusColor = connected ? Colors.greenAccent : Colors.redAccent;
 
                 return DropdownMenuItem<String>(
                   value: uri,
                   child: Row(
-                    mainAxisSize:
-                        MainAxisSize.min, // prevent unbounded constraint issue
+                    mainAxisSize: MainAxisSize.min, // prevent unbounded constraint issue
                     children: [
-                      Flexible(
-                        child: Text(
-                          uri,
-                          overflow: TextOverflow.ellipsis,
-                          maxLines: 1,
-                        ),
-                      ),
+                      Flexible(child: Text(uri, overflow: TextOverflow.ellipsis, maxLines: 1)),
                       const SizedBox(width: 8),
                       Icon(Icons.circle, size: 10, color: statusColor),
                       const SizedBox(width: 4),
-                      Text(
-                        statusText,
-                        style: TextStyle(fontSize: 12, color: statusColor),
-                      ),
+                      Text(statusText, style: TextStyle(fontSize: 12, color: statusColor)),
                     ],
                   ),
                 );
@@ -208,9 +164,7 @@ class _NostrWalletConnectState extends State<NostrWalletConnect> {
         const SizedBox(height: 24),
         ElevatedButton(
           onPressed:
-              (_selectedFederation != null &&
-                      _selectedRelay != null &&
-                      (_nwc == null || _selectedRelay != _nwc!.relay))
+              (_selectedFederation != null && _selectedRelay != null && (_nwc == null || _selectedRelay != _nwc!.relay))
                   ? () async {
                     final selectedFed = _selectedFederation!;
                     final selectedRelay = _selectedRelay!;
@@ -245,9 +199,7 @@ class _NostrWalletConnectState extends State<NostrWalletConnect> {
               child: Text(
                 'You haven’t joined any federations yet.\nPlease join one to continue.',
                 textAlign: TextAlign.center,
-                style: theme.textTheme.bodyLarge?.copyWith(
-                  color: theme.colorScheme.onSurface.withOpacity(0.8),
-                ),
+                style: theme.textTheme.bodyLarge?.copyWith(color: theme.colorScheme.onSurface.withOpacity(0.8)),
               ),
             ),
           ),
@@ -263,9 +215,7 @@ class _NostrWalletConnectState extends State<NostrWalletConnect> {
     }
 
     final connectionString =
-        _nwc != null
-            ? "nostr+walletconnect://${_nwc!.publicKey}?relay=${_nwc!.relay}&secret=${_nwc!.secret}"
-            : null;
+        _nwc != null ? "nostr+walletconnect://${_nwc!.publicKey}?relay=${_nwc!.relay}&secret=${_nwc!.secret}" : null;
 
     return Scaffold(
       appBar: AppBar(title: const Text('Nostr Wallet Connect')),
@@ -280,29 +230,17 @@ class _NostrWalletConnectState extends State<NostrWalletConnect> {
                 const SizedBox(height: 32),
                 AspectRatio(
                   aspectRatio: 1,
-                  child: QrImageView(
-                    data: connectionString!,
-                    version: QrVersions.auto,
-                    backgroundColor: Colors.white,
-                  ),
+                  child: QrImageView(data: connectionString!, version: QrVersions.auto, backgroundColor: Colors.white),
                 ),
                 const SizedBox(height: 32),
                 Text(
                   'Scan with your NWC-compatible wallet to connect.',
-                  style: theme.textTheme.bodyMedium?.copyWith(
-                    color: theme.colorScheme.onSurface.withOpacity(0.8),
-                  ),
+                  style: theme.textTheme.bodyMedium?.copyWith(color: theme.colorScheme.onSurface.withOpacity(0.8)),
                   textAlign: TextAlign.center,
                 ),
                 const SizedBox(height: 32),
-                _buildCopyableField(
-                  label: 'Connection String',
-                  value: connectionString,
-                ),
-                _buildCopyableField(
-                  label: 'Public Key',
-                  value: _nwc!.publicKey,
-                ),
+                _buildCopyableField(label: 'Connection String', value: connectionString),
+                _buildCopyableField(label: 'Public Key', value: _nwc!.publicKey),
                 _buildCopyableField(label: 'Relays', value: _nwc!.relay),
                 _buildCopyableField(label: 'Secret', value: _nwc!.secret),
               ],

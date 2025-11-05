@@ -1,7 +1,7 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
-import 'package:ecashapp/multimint.dart';
-import 'package:ecashapp/lib.dart';
+import 'package:ecashapp/generated/multimint.dart';
+import 'package:ecashapp/generated/lib.dart';
 import 'package:ecashapp/models.dart';
 import 'package:ecashapp/widgets/pending_deposit_item.dart';
 import 'package:ecashapp/widgets/transaction_item.dart';
@@ -54,10 +54,7 @@ class _TransactionsListState extends State<TransactionsList> {
   void _setupStreamsAndLoad() {
     _loadTransactions();
 
-    final depositEvents =
-        subscribeDeposits(
-          federationId: widget.fed.federationId,
-        ).asBroadcastStream();
+    final depositEvents = subscribeDeposits(federationId: widget.fed.federationId).asBroadcastStream();
 
     _claimSubscription = depositEvents.listen((e) {
       if (e is DepositEventKind_Claimed) {
@@ -159,8 +156,7 @@ class _TransactionsListState extends State<TransactionsList> {
   }
 
   void _onScroll() {
-    if (_scrollController.position.pixels >=
-            _scrollController.position.maxScrollExtent - 100 &&
+    if (_scrollController.position.pixels >= _scrollController.position.maxScrollExtent - 100 &&
         !_isFetchingMore &&
         _hasMore) {
       _loadTransactions(loadMore: true);
@@ -170,34 +166,23 @@ class _TransactionsListState extends State<TransactionsList> {
   @override
   Widget build(BuildContext context) {
     final pending =
-        widget.selectedPaymentType == PaymentType.onchain
-            ? _depositMap.values.toList()
-            : <DepositEventKind>[];
+        widget.selectedPaymentType == PaymentType.onchain ? _depositMap.values.toList() : <DepositEventKind>[];
 
     pending.sort((a, b) {
       final aM = a is DepositEventKind_Mempool;
       final bM = b is DepositEventKind_Mempool;
       if (aM && !bM) return -1;
       if (!aM && bM) return 1;
-      final na =
-          a is DepositEventKind_AwaitingConfs ? a.field0.needed : BigInt.zero;
-      final nb =
-          b is DepositEventKind_AwaitingConfs ? b.field0.needed : BigInt.zero;
+      final na = a is DepositEventKind_AwaitingConfs ? a.field0.needed : BigInt.zero;
+      final nb = b is DepositEventKind_AwaitingConfs ? b.field0.needed : BigInt.zero;
       return nb.compareTo(na);
     });
 
     if (_isLoading && pending.isEmpty) {
-      return const SizedBox(
-        height: 20,
-        child: Center(child: CircularProgressIndicator()),
-      );
+      return const SizedBox(height: 20, child: Center(child: CircularProgressIndicator()));
     }
 
-    final noTxs =
-        _transactions.isEmpty &&
-        pending.isEmpty &&
-        !_isLoading &&
-        !widget.recovering;
+    final noTxs = _transactions.isEmpty && pending.isEmpty && !_isLoading && !widget.recovering;
 
     if (noTxs) {
       String message;

@@ -1,6 +1,6 @@
-import 'package:ecashapp/db.dart';
+import 'package:ecashapp/generated/db.dart';
 import 'package:ecashapp/detail_row.dart';
-import 'package:ecashapp/multimint.dart';
+import 'package:ecashapp/generated/multimint.dart';
 import 'package:ecashapp/providers/preferences_provider.dart';
 import 'package:flutter/material.dart';
 import 'package:ecashapp/utils.dart';
@@ -22,19 +22,14 @@ class GatewayDetailsSheet extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final bitcoinDisplay = context.select<PreferencesProvider, BitcoinDisplay>(
-      (prefs) => prefs.bitcoinDisplay,
-    );
+    final bitcoinDisplay = context.select<PreferencesProvider, BitcoinDisplay>((prefs) => prefs.bitcoinDisplay);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
           "Lightning Gateway",
-          style: theme.textTheme.headlineSmall?.copyWith(
-            fontWeight: FontWeight.bold,
-            color: theme.colorScheme.primary,
-          ),
+          style: theme.textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.bold, color: theme.colorScheme.primary),
         ),
         const SizedBox(height: 24),
         Container(
@@ -43,9 +38,7 @@ class GatewayDetailsSheet extends StatelessWidget {
           decoration: BoxDecoration(
             color: theme.colorScheme.surfaceContainer,
             borderRadius: BorderRadius.circular(12),
-            border: Border.all(
-              color: theme.colorScheme.primary.withOpacity(0.25),
-            ),
+            border: Border.all(color: theme.colorScheme.primary.withOpacity(0.25)),
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -53,8 +46,7 @@ class GatewayDetailsSheet extends StatelessWidget {
               CopyableDetailRow(label: 'Endpoint', value: gateway.endpoint),
               CopyableDetailRow(
                 label: 'Routing Fee',
-                value:
-                    "${formatBalance(gateway.baseRoutingFee, true, bitcoinDisplay)} + ${gateway.ppmRoutingFee} ppm",
+                value: "${formatBalance(gateway.baseRoutingFee, true, bitcoinDisplay)} + ${gateway.ppmRoutingFee} ppm",
               ),
               CopyableDetailRow(
                 label: 'Transaction Fee',
@@ -62,15 +54,9 @@ class GatewayDetailsSheet extends StatelessWidget {
                     "${formatBalance(gateway.baseTransactionFee, true, bitcoinDisplay)} + ${gateway.ppmTransactionFee} ppm",
               ),
               if (gateway.lightningAlias != null)
-                CopyableDetailRow(
-                  label: 'Lightning Alias',
-                  value: gateway.lightningAlias!,
-                ),
+                CopyableDetailRow(label: 'Lightning Alias', value: gateway.lightningAlias!),
               if (gateway.lightningNode != null) ...[
-                CopyableDetailRow(
-                  label: 'Node Public Key',
-                  value: gateway.lightningNode!,
-                ),
+                CopyableDetailRow(label: 'Node Public Key', value: gateway.lightningNode!),
                 const SizedBox(height: 4),
                 GestureDetector(
                   onTap: () => _launchAmboss(gateway.lightningNode!),

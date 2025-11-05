@@ -1,9 +1,9 @@
-import 'package:ecashapp/db.dart';
+import 'package:ecashapp/generated/db.dart';
 import 'package:ecashapp/discover.dart';
-import 'package:ecashapp/lib.dart';
+import 'package:ecashapp/generated/lib.dart';
 import 'package:ecashapp/ln_address.dart';
 import 'package:ecashapp/mnemonic.dart';
-import 'package:ecashapp/multimint.dart';
+import 'package:ecashapp/generated/multimint.dart';
 import 'package:ecashapp/nwc.dart';
 import 'package:ecashapp/providers/preferences_provider.dart';
 import 'package:ecashapp/relays.dart';
@@ -16,11 +16,7 @@ import 'package:provider/provider.dart';
 class SettingsScreen extends StatefulWidget {
   final void Function(FederationSelector fed, bool recovering) onJoin;
   final VoidCallback onGettingStarted;
-  const SettingsScreen({
-    super.key,
-    required this.onJoin,
-    required this.onGettingStarted,
-  });
+  const SettingsScreen({super.key, required this.onJoin, required this.onGettingStarted});
 
   @override
   State<SettingsScreen> createState() => _SettingsScreenState();
@@ -59,30 +55,18 @@ class _SettingsScreenState extends State<SettingsScreen> {
         padding: const EdgeInsets.all(16),
         children: [
           _SettingsOption(
-            icon: Icon(
-              Icons.group_add,
-              color: Theme.of(context).colorScheme.primary,
-            ),
+            icon: Icon(Icons.group_add, color: Theme.of(context).colorScheme.primary),
             title: "Discover",
             subtitle: "Find new or join existing federations",
             onTap: () {
               Navigator.push(
                 context,
-                MaterialPageRoute(
-                  builder:
-                      (context) => Discover(
-                        onJoin: widget.onJoin,
-                        showAppBar: true,
-                      ),
-                ),
+                MaterialPageRoute(builder: (context) => Discover(onJoin: widget.onJoin, showAppBar: true)),
               );
             },
           ),
           _SettingsOption(
-            icon: Icon(
-              Icons.flash_on,
-              color: Theme.of(context).colorScheme.primary,
-            ),
+            icon: Icon(Icons.flash_on, color: Theme.of(context).colorScheme.primary),
             title: 'Lightning Address',
             subtitle: 'Claim and configure your Lightning Address',
             onTap: () async {
@@ -90,51 +74,30 @@ class _SettingsScreenState extends State<SettingsScreen> {
               Navigator.push(
                 context,
                 MaterialPageRoute(
-                  builder:
-                      (context) => LightningAddressScreen(
-                        federations: feds,
-                        onLnAddressRegistered: widget.onJoin,
-                      ),
+                  builder: (context) => LightningAddressScreen(federations: feds, onLnAddressRegistered: widget.onJoin),
                 ),
               );
             },
           ),
           _SettingsOption(
-            icon: Icon(
-              Icons.link,
-              color: Theme.of(context).colorScheme.primary,
-            ),
+            icon: Icon(Icons.link, color: Theme.of(context).colorScheme.primary),
             title: 'Nostr Wallet Connect',
             subtitle: 'Connect to NWC-compatible apps',
             onTap: () async {
               final feds = await federations();
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => NostrWalletConnect(federations: feds),
-                ),
-              );
+              Navigator.push(context, MaterialPageRoute(builder: (context) => NostrWalletConnect(federations: feds)));
             },
           ),
           _SettingsOption(
-            icon: Image.asset(
-              'assets/images/nostr.png',
-              color: Theme.of(context).colorScheme.primary,
-            ),
+            icon: Image.asset('assets/images/nostr.png', color: Theme.of(context).colorScheme.primary),
             title: 'Nostr Relays',
             subtitle: 'Add or remove Nostr relays',
             onTap: () async {
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (context) => Relays()),
-              );
+              Navigator.push(context, MaterialPageRoute(builder: (context) => Relays()));
             },
           ),
           _SettingsOption(
-            icon: Icon(
-              Icons.display_settings,
-              color: Theme.of(context).colorScheme.primary,
-            ),
+            icon: Icon(Icons.display_settings, color: Theme.of(context).colorScheme.primary),
             title: 'Display',
             subtitle: 'Configure display settings',
             onTap: () {
@@ -142,10 +105,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
             },
           ),
           _SettingsOption(
-            icon: Icon(
-              Icons.vpn_key,
-              color: Theme.of(context).colorScheme.primary,
-            ),
+            icon: Icon(Icons.vpn_key, color: Theme.of(context).colorScheme.primary),
             title: 'Mnemonic',
             subtitle: 'View your seed phrase',
             warning: hasAck == false,
@@ -165,9 +125,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
             Center(
               child: Text(
                 "Version: ${_version!}",
-                style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  color: Theme.of(context).colorScheme.onSurfaceVariant,
-                ),
+                style: Theme.of(
+                  context,
+                ).textTheme.bodySmall?.copyWith(color: Theme.of(context).colorScheme.onSurfaceVariant),
               ),
             ),
         ],
@@ -212,20 +172,13 @@ class _SettingsOption extends StatelessWidget {
                   children: [
                     Row(
                       children: [
-                        Text(
-                          title,
-                          style: theme.textTheme.titleMedium?.copyWith(
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
+                        Text(title, style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600)),
                       ],
                     ),
                     const SizedBox(height: 4),
                     Text(
                       subtitle,
-                      style: theme.textTheme.bodySmall?.copyWith(
-                        color: theme.colorScheme.onSurfaceVariant,
-                      ),
+                      style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurfaceVariant),
                     ),
                   ],
                 ),
@@ -233,12 +186,7 @@ class _SettingsOption extends StatelessWidget {
               Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  if (warning)
-                    Icon(
-                      Icons.warning_amber_rounded,
-                      size: 28,
-                      color: Colors.orange,
-                    ),
+                  if (warning) Icon(Icons.warning_amber_rounded, size: 28, color: Colors.orange),
                   const SizedBox(width: 8),
                   const Icon(Icons.chevron_right),
                 ],
@@ -292,10 +240,7 @@ void _showDisplaySettingDialog(BuildContext context) {
               ],
             ),
             actions: [
-              TextButton(
-                onPressed: () => Navigator.of(dialogContext).pop(),
-                child: const Text('Cancel'),
-              ),
+              TextButton(onPressed: () => Navigator.of(dialogContext).pop(), child: const Text('Cancel')),
               TextButton(
                 onPressed: () async {
                   await preferencesProvider.setBitcoinDisplay(selected);

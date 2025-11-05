@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:ecashapp/db.dart';
+import 'package:ecashapp/generated/db.dart';
 import 'package:ecashapp/providers/preferences_provider.dart';
 import 'package:ecashapp/utils.dart';
 import 'package:provider/provider.dart';
@@ -24,17 +24,15 @@ class DashboardBalance extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    BigInt sats =
-        balanceMsats != null ? balanceMsats! ~/ BigInt.from(1000) : BigInt.zero;
+    BigInt sats = balanceMsats != null ? balanceMsats! ~/ BigInt.from(1000) : BigInt.zero;
     final usdText = calculateUsdValue(btcPrice, sats.toInt());
     if (recovering) {
       return Center(
         child: Text(
           "Recovering...",
-          style: Theme.of(context).textTheme.displaySmall?.copyWith(
-            color: Theme.of(context).colorScheme.primary,
-            fontWeight: FontWeight.bold,
-          ),
+          style: Theme.of(
+            context,
+          ).textTheme.displaySmall?.copyWith(color: Theme.of(context).colorScheme.primary, fontWeight: FontWeight.bold),
           textAlign: TextAlign.center,
         ),
       );
@@ -51,9 +49,7 @@ class DashboardBalance extends StatelessWidget {
                 formatBalance(
                   balanceMsats,
                   showMsats,
-                  context.select<PreferencesProvider, BitcoinDisplay>(
-                    (prefs) => prefs.bitcoinDisplay,
-                  ),
+                  context.select<PreferencesProvider, BitcoinDisplay>((prefs) => prefs.bitcoinDisplay),
                 ),
                 style: Theme.of(context).textTheme.displayLarge?.copyWith(
                   color: Theme.of(context).colorScheme.primary,
@@ -62,11 +58,7 @@ class DashboardBalance extends StatelessWidget {
                 textAlign: TextAlign.center,
               ),
               if (btcPrice != null)
-                Text(
-                  usdText,
-                  style: const TextStyle(fontSize: 24, color: Colors.grey),
-                  textAlign: TextAlign.center,
-                ),
+                Text(usdText, style: const TextStyle(fontSize: 24, color: Colors.grey), textAlign: TextAlign.center),
             ],
           ),
         ),

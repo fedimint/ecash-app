@@ -1,7 +1,7 @@
-import 'package:ecashapp/db.dart';
+import 'package:ecashapp/generated/db.dart';
 import 'package:ecashapp/fed_preview.dart';
-import 'package:ecashapp/lib.dart';
-import 'package:ecashapp/multimint.dart';
+import 'package:ecashapp/generated/lib.dart';
+import 'package:ecashapp/generated/multimint.dart';
 import 'package:ecashapp/providers/preferences_provider.dart';
 import 'package:ecashapp/theme.dart';
 import 'package:ecashapp/utils.dart';
@@ -49,16 +49,11 @@ class FederationSidebarState extends State<FederationSidebar> {
   void initState() {
     super.initState();
     // Initialize with loading state for each federation
-    _feds = widget.initialFederations
-        .map((fed) => (fed.$1, fed.$2, FederationPreviewData()))
-        .toList();
+    _feds = widget.initialFederations.map((fed) => (fed.$1, fed.$2, FederationPreviewData())).toList();
     _refreshFederations();
   }
 
-  Future<FederationPreviewData> getFederationPreviewData(
-    FederationSelector fed,
-    bool isRecovering,
-  ) async {
+  Future<FederationPreviewData> getFederationPreviewData(FederationSelector fed, bool isRecovering) async {
     final data = FederationPreviewData();
 
     // Load balance
@@ -70,9 +65,7 @@ class FederationSidebarState extends State<FederationSidebar> {
         AppLogger.instance.error('Failed to load balance: $e');
       }
     } else {
-      AppLogger.instance.warn(
-        "getFederationData: we are still recovering, not getting balance",
-      );
+      AppLogger.instance.warn("getFederationData: we are still recovering, not getting balance");
     }
 
     // Load federation metadata
@@ -131,57 +124,57 @@ class FederationSidebarState extends State<FederationSidebar> {
       child: Container(
         decoration: BoxDecoration(
           color: Theme.of(context).colorScheme.surface,
-          boxShadow: [
-            BoxShadow(color: Colors.black.withOpacity(0.6), blurRadius: 12),
-          ],
+          boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.6), blurRadius: 12)],
         ),
         child: Column(
           children: [
             Expanded(
-              child: _feds.isEmpty
-                  ? const Center(child: Text('No federations found'))
-                  : Column(
-                    children: [
-                      Container(
-                        height: 80,
-                        padding: const EdgeInsets.all(16),
-                        decoration: BoxDecoration(
-                          color: Colors.grey[900],
-                          border: Border(
-                            bottom: BorderSide(color: Colors.grey.shade800),
-                          ),
-                        ),
-                        alignment: Alignment.centerLeft,
-                        child: Text(
-                          'Federations',
-                          style: TextStyle(
-                            color: Theme.of(context).colorScheme.primary,
-                            fontSize: 18,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                      ),
-                      Expanded(
-                        child: ReorderableListView(
-                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
-                          onReorder: _onReorder,
-                          children: _feds.map(
-                            (selector) => FederationListItem(
-                              key: ValueKey(selector.$1.federationId),
-                              fed: selector.$1,
-                              isRecovering: selector.$2,
-                              data: selector.$3,
-                              onTap: () {
-                                Navigator.of(context).pop();
-                                widget.onFederationSelected(selector.$1, selector.$2);
-                              },
-                              onLeaveFederation: widget.onLeaveFederation,
+              child:
+                  _feds.isEmpty
+                      ? const Center(child: Text('No federations found'))
+                      : Column(
+                        children: [
+                          Container(
+                            height: 80,
+                            padding: const EdgeInsets.all(16),
+                            decoration: BoxDecoration(
+                              color: Colors.grey[900],
+                              border: Border(bottom: BorderSide(color: Colors.grey.shade800)),
                             ),
-                          ).toList(),
-                        ),
+                            alignment: Alignment.centerLeft,
+                            child: Text(
+                              'Federations',
+                              style: TextStyle(
+                                color: Theme.of(context).colorScheme.primary,
+                                fontSize: 18,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ),
+                          Expanded(
+                            child: ReorderableListView(
+                              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+                              onReorder: _onReorder,
+                              children:
+                                  _feds
+                                      .map(
+                                        (selector) => FederationListItem(
+                                          key: ValueKey(selector.$1.federationId),
+                                          fed: selector.$1,
+                                          isRecovering: selector.$2,
+                                          data: selector.$3,
+                                          onTap: () {
+                                            Navigator.of(context).pop();
+                                            widget.onFederationSelected(selector.$1, selector.$2);
+                                          },
+                                          onLeaveFederation: widget.onLeaveFederation,
+                                        ),
+                                      )
+                                      .toList(),
+                            ),
+                          ),
+                        ],
                       ),
-                    ],
-                  )
             ),
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 12.0, vertical: 12),
@@ -198,11 +191,7 @@ class FederationSidebarState extends State<FederationSidebar> {
                     padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
                     child: Row(
                       children: [
-                        Icon(
-                          Icons.settings,
-                          color: Theme.of(context).colorScheme.primary,
-                          size: 24,
-                        ),
+                        Icon(Icons.settings, color: Theme.of(context).colorScheme.primary, size: 24),
                         const SizedBox(width: 16),
                         Text(
                           'Settings',
@@ -241,12 +230,9 @@ class FederationListItem extends StatelessWidget {
   });
 
   bool get allGuardiansOnline =>
-      data.guardians != null &&
-      data.guardians!.isNotEmpty &&
-      data.guardians!.every((g) => g.version != null);
+      data.guardians != null && data.guardians!.isNotEmpty && data.guardians!.every((g) => g.version != null);
 
-  int get numOnlineGuardians =>
-      data.guardians != null ? data.guardians!.where((g) => g.version != null).length : 0;
+  int get numOnlineGuardians => data.guardians != null ? data.guardians!.where((g) => g.version != null).length : 0;
 
   @override
   Widget build(BuildContext context) {
@@ -276,8 +262,7 @@ class FederationListItem extends StatelessWidget {
                   backgroundImage:
                       data.federationImageUrl != null
                           ? NetworkImage(data.federationImageUrl!)
-                          : const AssetImage('assets/images/fedimint.png')
-                              as ImageProvider,
+                          : const AssetImage('assets/images/fedimint.png') as ImageProvider,
                   backgroundColor: Colors.black,
                 ),
                 const SizedBox(width: 16),
@@ -299,10 +284,10 @@ class FederationListItem extends StatelessWidget {
                             : data.isLoading
                             ? 'Loading...'
                             : formatBalance(
-                                data.balanceMsats,
-                                false,
-                                context.select<PreferencesProvider, BitcoinDisplay>((prefs) => prefs.bitcoinDisplay),
-                              ),
+                              data.balanceMsats,
+                              false,
+                              context.select<PreferencesProvider, BitcoinDisplay>((prefs) => prefs.bitcoinDisplay),
+                            ),
                         style: Theme.of(context).textTheme.bodyMedium,
                       ),
                       const SizedBox(height: 4),

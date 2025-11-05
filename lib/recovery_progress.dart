@@ -1,8 +1,8 @@
 import 'dart:async';
 
-import 'package:ecashapp/lib.dart';
+import 'package:ecashapp/generated/lib.dart';
 import 'package:ecashapp/models.dart';
-import 'package:ecashapp/multimint.dart';
+import 'package:ecashapp/generated/multimint.dart';
 import 'package:ecashapp/utils.dart';
 import 'package:flutter/material.dart';
 
@@ -11,12 +11,7 @@ class RecoveryStatus extends StatefulWidget {
   final FederationSelector fed;
   final double initialProgress;
 
-  const RecoveryStatus({
-    super.key,
-    required this.paymentType,
-    required this.fed,
-    required this.initialProgress,
-  });
+  const RecoveryStatus({super.key, required this.paymentType, required this.fed, required this.initialProgress});
 
   @override
   State<RecoveryStatus> createState() => _RecoveryStatusState();
@@ -42,9 +37,7 @@ class _RecoveryStatusState extends State<RecoveryStatus> {
       if (e.$2 > 0) {
         double rawProgress = e.$1.toDouble() / e.$2.toDouble();
         setState(() => _progress = rawProgress.clamp(0.0, 1.0));
-        AppLogger.instance.info(
-          "${widget.paymentType.name} progress: $_progress complete: ${e.$1} total: ${e.$2}",
-        );
+        AppLogger.instance.info("${widget.paymentType.name} progress: $_progress complete: ${e.$1} total: ${e.$2}");
       }
     });
   }
@@ -81,10 +74,7 @@ class _RecoveryStatusState extends State<RecoveryStatus> {
                       strokeWidth: 12, // Thicker stroke
                     ),
                   ),
-                  Text(
-                    '${(value * 100).toStringAsFixed(0)}%',
-                    style: Theme.of(context).textTheme.titleMedium,
-                  ),
+                  Text('${(value * 100).toStringAsFixed(0)}%', style: Theme.of(context).textTheme.titleMedium),
                 ],
               );
             },

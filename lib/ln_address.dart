@@ -1,22 +1,17 @@
 import 'dart:async';
 import 'dart:io';
 
-import 'package:ecashapp/lib.dart';
-import 'package:ecashapp/multimint.dart';
+import 'package:ecashapp/generated/lib.dart';
+import 'package:ecashapp/generated/multimint.dart';
 import 'package:ecashapp/toast.dart';
 import 'package:ecashapp/utils.dart';
 import 'package:flutter/material.dart';
 
 class LightningAddressScreen extends StatefulWidget {
   final List<(FederationSelector, bool)> federations;
-  final void Function(FederationSelector fed, bool recovering)
-  onLnAddressRegistered;
+  final void Function(FederationSelector fed, bool recovering) onLnAddressRegistered;
 
-  const LightningAddressScreen({
-    super.key,
-    required this.federations,
-    required this.onLnAddressRegistered,
-  });
+  const LightningAddressScreen({super.key, required this.federations, required this.onLnAddressRegistered});
 
   @override
   State<LightningAddressScreen> createState() => _LightningAddressScreenState();
@@ -211,9 +206,7 @@ class _LightningAddressScreenState extends State<LightningAddressScreen> {
         await _updateDomains();
       }
     } catch (e) {
-      AppLogger.instance.warn(
-        "Could not get LN address config or federation meta: $e",
-      );
+      AppLogger.instance.warn("Could not get LN address config or federation meta: $e");
     }
 
     return hasConfig;
@@ -229,15 +222,7 @@ class _LightningAddressScreenState extends State<LightningAddressScreen> {
           DropdownButtonFormField<FederationSelector>(
             decoration: const InputDecoration(labelText: 'Select a Federation'),
             value: _selectedFederation,
-            items:
-                feds
-                    .map(
-                      (f) => DropdownMenuItem(
-                        value: f,
-                        child: Text(f.federationName),
-                      ),
-                    )
-                    .toList(),
+            items: feds.map((f) => DropdownMenuItem(value: f, child: Text(f.federationName))).toList(),
             onChanged: (value) {
               _onFederationSet(value);
               _onUsernameChanged();
@@ -261,15 +246,7 @@ class _LightningAddressScreenState extends State<LightningAddressScreen> {
                 child: DropdownButtonFormField<String>(
                   decoration: const InputDecoration(labelText: 'Domain'),
                   value: _selectedDomain,
-                  items:
-                      _domains
-                          .map(
-                            (domain) => DropdownMenuItem(
-                              value: domain,
-                              child: Text(domain),
-                            ),
-                          )
-                          .toList(),
+                  items: _domains.map((domain) => DropdownMenuItem(value: domain, child: Text(domain))).toList(),
                   onChanged: (value) {
                     setState(() {
                       _selectedDomain = value;
@@ -287,11 +264,7 @@ class _LightningAddressScreenState extends State<LightningAddressScreen> {
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     if (_status == null)
-                      const SizedBox(
-                        height: 20,
-                        width: 20,
-                        child: CircularProgressIndicator(strokeWidth: 2),
-                      )
+                      const SizedBox(height: 20, width: 20, child: CircularProgressIndicator(strokeWidth: 2))
                     else if (_status is LNAddressStatus_Available)
                       const Icon(Icons.check_circle, color: Colors.green)
                     else
@@ -307,8 +280,7 @@ class _LightningAddressScreenState extends State<LightningAddressScreen> {
                           return "Already registered";
                         } else if (_status is LNAddressStatus_CurrentConfig) {
                           return "This is your current Lightning Address";
-                        } else if (_status
-                            is LNAddressStatus_UnsupportedFederation) {
+                        } else if (_status is LNAddressStatus_UnsupportedFederation) {
                           return "Sorry, this federation is not currently supported";
                         } else if (_status is LNAddressStatus_Invalid) {
                           return "Invalid Lightning Address";
@@ -322,8 +294,7 @@ class _LightningAddressScreenState extends State<LightningAddressScreen> {
                             return Colors.green;
                           } else if (_status is LNAddressStatus_CurrentConfig ||
                               _status is LNAddressStatus_Registered ||
-                              _status
-                                  is LNAddressStatus_UnsupportedFederation ||
+                              _status is LNAddressStatus_UnsupportedFederation ||
                               _status is LNAddressStatus_Invalid) {
                             return Colors.red;
                           }
@@ -338,9 +309,7 @@ class _LightningAddressScreenState extends State<LightningAddressScreen> {
           Center(
             child: ElevatedButton(
               onPressed:
-                  (_selectedFederation != null &&
-                          _status is LNAddressStatus_Available &&
-                          !_registering)
+                  (_selectedFederation != null && _status is LNAddressStatus_Available && !_registering)
                       ? () {
                         _onRegisteredPressed();
                       }
@@ -350,10 +319,7 @@ class _LightningAddressScreenState extends State<LightningAddressScreen> {
                       ? const SizedBox(
                         width: 20,
                         height: 20,
-                        child: CircularProgressIndicator(
-                          strokeWidth: 2,
-                          color: Colors.white,
-                        ),
+                        child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
                       )
                       : const Text('Register'),
             ),
@@ -366,10 +332,7 @@ class _LightningAddressScreenState extends State<LightningAddressScreen> {
               child: Text(
                 "Could not contact Lightning Address Server.",
                 textAlign: TextAlign.center,
-                style: TextStyle(
-                  color: Theme.of(context).colorScheme.error,
-                  fontSize: 16,
-                ),
+                style: TextStyle(color: Theme.of(context).colorScheme.error, fontSize: 16),
               ),
             ),
           ),
@@ -386,11 +349,7 @@ class _LightningAddressScreenState extends State<LightningAddressScreen> {
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               const Text('Advanced'),
-              Icon(
-                _showAdvanced
-                    ? Icons.keyboard_arrow_up
-                    : Icons.keyboard_arrow_down,
-              ),
+              Icon(_showAdvanced ? Icons.keyboard_arrow_up : Icons.keyboard_arrow_down),
             ],
           ),
         ),
@@ -428,10 +387,7 @@ class _LightningAddressScreenState extends State<LightningAddressScreen> {
                               child: CircularProgressIndicator(strokeWidth: 2),
                             );
                           } else if (isOnline) {
-                            return const Icon(
-                              Icons.check_circle,
-                              color: Colors.green,
-                            );
+                            return const Icon(Icons.check_circle, color: Colors.green);
                           } else {
                             return const Icon(Icons.cancel, color: Colors.red);
                           }
@@ -443,12 +399,7 @@ class _LightningAddressScreenState extends State<LightningAddressScreen> {
               ],
             ),
             const SizedBox(height: 8),
-            Center(
-              child: ElevatedButton(
-                onPressed: onSet,
-                child: Text('Set $label'),
-              ),
-            ),
+            Center(child: ElevatedButton(onPressed: onSet, child: Text('Set $label'))),
           ],
         ),
       );
@@ -505,13 +456,10 @@ class _LightningAddressScreenState extends State<LightningAddressScreen> {
       }
     }
 
-    String trimSlash(String url) =>
-        url.endsWith('/') ? url.substring(0, url.length - 1) : url;
+    String trimSlash(String url) => url.endsWith('/') ? url.substring(0, url.length - 1) : url;
 
     final lnOnline = await check(trimSlash(_lnAddressApi));
-    final recOnline = await check(
-      "${trimSlash(_recurringdApi)}/lnv1/federations",
-    );
+    final recOnline = await check("${trimSlash(_recurringdApi)}/lnv1/federations");
     setState(() {
       _lnAddressApiOnline = lnOnline;
       _recurringdApiOnline = recOnline;
@@ -531,9 +479,7 @@ class _LightningAddressScreenState extends State<LightningAddressScreen> {
             child: Text(
               'You haven’t joined any federations yet.\nPlease join one to continue.',
               textAlign: TextAlign.center,
-              style: theme.textTheme.bodyLarge?.copyWith(
-                color: theme.colorScheme.onSurface.withOpacity(0.8),
-              ),
+              style: theme.textTheme.bodyLarge?.copyWith(color: theme.colorScheme.onSurface.withOpacity(0.8)),
             ),
           ),
         ),
@@ -551,10 +497,7 @@ class _LightningAddressScreenState extends State<LightningAddressScreen> {
       appBar: AppBar(title: const Text("Lightning Address")),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(24),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.center,
-          children: [_buildSelectionForm()],
-        ),
+        child: Column(crossAxisAlignment: CrossAxisAlignment.center, children: [_buildSelectionForm()]),
       ),
     );
   }

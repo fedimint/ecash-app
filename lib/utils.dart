@@ -1,9 +1,9 @@
 import 'dart:io';
 
-import 'package:ecashapp/db.dart';
-import 'package:ecashapp/lib.dart';
+import 'package:ecashapp/generated/db.dart';
+import 'package:ecashapp/generated/lib.dart';
 import 'package:ecashapp/models.dart';
-import 'package:ecashapp/multimint.dart';
+import 'package:ecashapp/generated/multimint.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
@@ -44,11 +44,7 @@ class AppLogger {
     debugPrint(formatted);
 
     // Write to file
-    _logFile.writeAsStringSync(
-      "$formatted\n",
-      mode: FileMode.append,
-      flush: true,
-    );
+    _logFile.writeAsStringSync("$formatted\n", mode: FileMode.append, flush: true);
   }
 
   void _rustLog(LogLevel level, String message) {
@@ -78,11 +74,7 @@ class AppLogger {
     debugPrint(formatted);
 
     // Write to file
-    _logFile.writeAsStringSync(
-      "$formatted\n",
-      mode: FileMode.append,
-      flush: true,
-    );
+    _logFile.writeAsStringSync("$formatted\n", mode: FileMode.append, flush: true);
   }
 
   void info(String message) => _log("INFO", message);
@@ -190,14 +182,8 @@ Future<void> showExplorerConfirmation(BuildContext context, Uri url) async {
             'and consider using a self hosted block explorer.',
           ),
           actions: [
-            TextButton(
-              onPressed: () => Navigator.of(context).pop(false),
-              child: const Text('Cancel'),
-            ),
-            TextButton(
-              onPressed: () => Navigator.of(context).pop(true),
-              child: const Text('Confirm'),
-            ),
+            TextButton(onPressed: () => Navigator.of(context).pop(false), child: const Text('Cancel')),
+            TextButton(onPressed: () => Navigator.of(context).pop(true), child: const Text('Confirm')),
           ],
         ),
   );
@@ -218,7 +204,5 @@ bool isValidRelayUri(String input) {
 }
 
 bool get isMobile {
-  return defaultTargetPlatform == TargetPlatform.iOS ||
-      defaultTargetPlatform == TargetPlatform.android ||
-      kIsWeb;
+  return defaultTargetPlatform == TargetPlatform.iOS || defaultTargetPlatform == TargetPlatform.android || kIsWeb;
 }

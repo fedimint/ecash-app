@@ -1,4 +1,4 @@
-import 'package:ecashapp/lib.dart';
+import 'package:ecashapp/generated/lib.dart';
 import 'package:ecashapp/toast.dart';
 import 'package:ecashapp/utils.dart';
 import 'package:flutter/material.dart';
@@ -131,8 +131,7 @@ class _RelaysState extends State<Relays> {
     if (_inputText.isEmpty) {
       borderColor = Colors.transparent;
     } else {
-      borderColor =
-          _isInputValid ? theme.colorScheme.primary : Colors.redAccent;
+      borderColor = _isInputValid ? theme.colorScheme.primary : Colors.redAccent;
     }
 
     return Scaffold(
@@ -168,10 +167,7 @@ class _RelaysState extends State<Relays> {
                   ElevatedButton(
                     onPressed: (_isInputValid && !_isAdding) ? _addRelay : null,
                     style: ElevatedButton.styleFrom(
-                      minimumSize: const Size(
-                        120,
-                        48,
-                      ), // consistent button size
+                      minimumSize: const Size(120, 48), // consistent button size
                       backgroundColor: theme.colorScheme.primary,
                       foregroundColor: Colors.black,
                     ),
@@ -182,9 +178,7 @@ class _RelaysState extends State<Relays> {
                               height: 24,
                               child: CircularProgressIndicator(
                                 strokeWidth: 2.5,
-                                valueColor: AlwaysStoppedAnimation<Color>(
-                                  theme.colorScheme.primary,
-                                ),
+                                valueColor: AlwaysStoppedAnimation<Color>(theme.colorScheme.primary),
                               ),
                             )
                             : const Text('Add Relay'),
@@ -198,33 +192,20 @@ class _RelaysState extends State<Relays> {
                 future: _relaysFuture,
                 builder: (context, snapshot) {
                   if (snapshot.connectionState == ConnectionState.waiting) {
-                    return Center(
-                      child: CircularProgressIndicator(
-                        color: theme.colorScheme.primary,
-                      ),
-                    );
+                    return Center(child: CircularProgressIndicator(color: theme.colorScheme.primary));
                   } else if (snapshot.hasError) {
                     return Center(
-                      child: Text(
-                        'Error: ${snapshot.error}',
-                        style: const TextStyle(color: Colors.redAccent),
-                      ),
+                      child: Text('Error: ${snapshot.error}', style: const TextStyle(color: Colors.redAccent)),
                     );
                   } else {
                     final relays = snapshot.data!;
                     if (relays.isEmpty) {
-                      return const Center(
-                        child: Text(
-                          'No relays found.',
-                          style: TextStyle(color: Colors.white70),
-                        ),
-                      );
+                      return const Center(child: Text('No relays found.', style: TextStyle(color: Colors.white70)));
                     }
                     return ListView.separated(
                       padding: const EdgeInsets.symmetric(horizontal: 16),
                       itemCount: relays.length,
-                      separatorBuilder:
-                          (_, __) => const Divider(color: Colors.white10),
+                      separatorBuilder: (_, __) => const Divider(color: Colors.white10),
                       itemBuilder: (context, index) {
                         final (relay, isConnected) = relays[index];
                         return _buildRelayTile(relay, isConnected);

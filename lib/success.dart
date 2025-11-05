@@ -1,5 +1,5 @@
 import 'dart:async';
-import 'package:ecashapp/db.dart';
+import 'package:ecashapp/generated/db.dart';
 import 'package:ecashapp/providers/preferences_provider.dart';
 import 'package:ecashapp/utils.dart';
 import 'package:flutter/material.dart';
@@ -71,13 +71,7 @@ class _SuccessState extends State<Success> {
           children: [
             // Lightning Animation (conditional)
             if (widget.lightning)
-              Positioned.fill(
-                child: Lottie.asset(
-                  'assets/animations/lightning.json',
-                  fit: BoxFit.cover,
-                  repeat: true,
-                ),
-              ),
+              Positioned.fill(child: Lottie.asset('assets/animations/lightning.json', fit: BoxFit.cover, repeat: true)),
 
             // Main Animated Success Content (centered)
             Center(
@@ -94,46 +88,29 @@ class _SuccessState extends State<Success> {
                     Container(
                       decoration: BoxDecoration(
                         shape: BoxShape.circle,
-                        color: Theme.of(
-                          context,
-                        ).colorScheme.primary.withOpacity(0.8),
+                        color: Theme.of(context).colorScheme.primary.withOpacity(0.8),
                       ),
                       padding: const EdgeInsets.all(24),
-                      child: const Icon(
-                        Icons.check,
-                        size: 64,
-                        color: Colors.white,
-                      ),
+                      child: const Icon(Icons.check, size: 64, color: Colors.white),
                     ),
                     const SizedBox(height: 24),
 
                     // Success message
                     Text(
                       'You $actionText $displayAmount',
-                      style: const TextStyle(
-                        fontSize: 28,
-                        fontWeight: FontWeight.bold,
-                      ),
+                      style: const TextStyle(fontSize: 28, fontWeight: FontWeight.bold),
                       textAlign: TextAlign.center,
                     ),
                     const SizedBox(height: 12),
                     if (widget.txid != null) ...[
                       Text(
                         'Transaction ID:',
-                        style: TextStyle(
-                          fontSize: 14,
-                          color: Colors.grey[600],
-                          fontWeight: FontWeight.w500,
-                        ),
+                        style: TextStyle(fontSize: 14, color: Colors.grey[600], fontWeight: FontWeight.w500),
                       ),
                       const SizedBox(height: 4),
                       SelectableText(
                         widget.txid!,
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: Colors.grey[400],
-                          fontFamily: 'monospace',
-                        ),
+                        style: TextStyle(fontSize: 12, color: Colors.grey[400], fontFamily: 'monospace'),
                         textAlign: TextAlign.center,
                       ),
                     ],
