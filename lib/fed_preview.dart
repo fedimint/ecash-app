@@ -220,10 +220,7 @@ class _FederationPreviewState extends State<FederationPreview> {
         return;
       }
 
-      await reissueEcash(
-        federationId: widget.fed.federationId,
-        ecash: ecash,
-      );
+      await reissueEcash(federationId: widget.fed.federationId, ecash: ecash);
     } catch (e) {
       AppLogger.instance.error("Could not reissue Ecash $e");
       ToastService().show(
@@ -428,7 +425,9 @@ class _FederationPreviewState extends State<FederationPreview> {
                       strokeWidth: 2,
                     ),
                   )
-                  : widget.ecash == null ? const Text("Join Federation") : const Text("Join and Redeem Ecash"),
+                  : widget.ecash == null
+                  ? const Text("Join Federation")
+                  : const Text("Join and Redeem Ecash"),
         ),
         if (!isJoining) ...[
           const SizedBox(height: 12),
@@ -881,6 +880,22 @@ class _FederationUtxoListState extends State<FederationUtxoList> {
                         overflow: TextOverflow.ellipsis,
                       ),
                     ),
+                  ),
+
+                  IconButton(
+                    tooltip: 'Copy txid',
+                    icon: const Icon(Icons.copy),
+                    color: Theme.of(context).colorScheme.secondary,
+                    onPressed: () async {
+                      await Clipboard.setData(ClipboardData(text: utxo.txid));
+                      if (!context.mounted) return;
+                      ToastService().show(
+                        message: "Txid $abbreviatedTxid copied",
+                        duration: const Duration(seconds: 2),
+                        onTap: () {},
+                        icon: Icon(Icons.check),
+                      );
+                    },
                   ),
 
                   if (explorerUrl != null)
