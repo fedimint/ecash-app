@@ -1,8 +1,11 @@
 import 'dart:async';
+import 'package:ecashapp/db.dart';
+import 'package:ecashapp/providers/preferences_provider.dart';
 import 'package:ecashapp/utils.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:lottie/lottie.dart';
+import 'package:provider/provider.dart';
 
 class Success extends StatefulWidget {
   final bool lightning;
@@ -56,8 +59,9 @@ class _SuccessState extends State<Success> {
 
   @override
   Widget build(BuildContext context) {
+    final bitcoinDisplay = context.select<PreferencesProvider, BitcoinDisplay>((prefs) => prefs.bitcoinDisplay);
     final actionText = widget.received ? 'received' : 'sent';
-    final displayAmount = formatBalance(widget.amountMsats, false);
+    final displayAmount = formatBalance(widget.amountMsats, false, bitcoinDisplay);
 
     return Scaffold(
       body: GestureDetector(

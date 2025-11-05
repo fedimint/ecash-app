@@ -27,6 +27,7 @@ dependencies:
   collection: ^1.19.1
   shimmer: ^3.0.0
   package_info_plus: 8.3.1
+  provider: ^6.1.2
 
 dev_dependencies:
   flutter_test:

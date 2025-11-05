@@ -5,12 +5,13 @@ import 'package:ecashapp/ln_address.dart';
 import 'package:ecashapp/mnemonic.dart';
 import 'package:ecashapp/multimint.dart';
 import 'package:ecashapp/nwc.dart';
+import 'package:ecashapp/providers/preferences_provider.dart';
 import 'package:ecashapp/relays.dart';
 import 'package:ecashapp/theme.dart';
 import 'package:ecashapp/toast.dart';
-import 'package:ecashapp/utils.dart';
 import 'package:flutter/material.dart';
 import 'package:package_info_plus/package_info_plus.dart';
+import 'package:provider/provider.dart';
 
 class SettingsScreen extends StatefulWidget {
   final void Function(FederationSelector fed, bool recovering) onJoin;
@@ -251,39 +252,40 @@ class _SettingsOption extends StatelessWidget {
 }
 
 void _showDisplaySettingDialog(BuildContext context) {
-  DisplaySetting selected = getCachedDisplaySetting() ?? DisplaySetting.bip177;
+  final preferencesProvider = context.read<PreferencesProvider>();
+  BitcoinDisplay selected = preferencesProvider.bitcoinDisplay;
 
   showDialog(
     context: context,
-    builder: (context) {
+    builder: (dialogContext) {
       return StatefulBuilder(
-        builder: (context, setState) {
+        builder: (statefulContext, setState) {
           return AlertDialog(
             title: const Text('Select Display Setting'),
             content: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                RadioListTile<DisplaySetting>(
+                RadioListTile<BitcoinDisplay>(
                   title: const Text('BIP177 (₿1,234)'),
-                  value: DisplaySetting.bip177,
+                  value: BitcoinDisplay.bip177,
                   groupValue: selected,
                   onChanged: (value) => setState(() => selected = value!),
                 ),
-                RadioListTile<DisplaySetting>(
+                RadioListTile<BitcoinDisplay>(
                   title: const Text('Sats are the Standard (1,234 sats)'),
-                  value: DisplaySetting.sats,
+                  value: BitcoinDisplay.sats,
                   groupValue: selected,
                   onChanged: (value) => setState(() => selected = value!),
                 ),
-                RadioListTile<DisplaySetting>(
+                RadioListTile<BitcoinDisplay>(
                   title: const Text('Sat Symbol (1,234丰)'),
-                  value: DisplaySetting.symbol,
+                  value: BitcoinDisplay.symbol,
                   groupValue: selected,
                   onChanged: (value) => setState(() => selected = value!),
                 ),
-                RadioListTile<DisplaySetting>(
+                RadioListTile<BitcoinDisplay>(
                   title: const Text('No label (1,234)'),
-                  value: DisplaySetting.nothing,
+                  value: BitcoinDisplay.nothing,
                   groupValue: selected,
                   onChanged: (value) => setState(() => selected = value!),
                 ),
@@ -291,13 +293,13 @@ void _showDisplaySettingDialog(BuildContext context) {
             ),
             actions: [
               TextButton(
-                onPressed: () => Navigator.of(context).pop(),
+                onPressed: () => Navigator.of(dialogContext).pop(),
                 child: const Text('Cancel'),
               ),
               TextButton(
                 onPressed: () async {
-                  await saveDisplaySetting(selected);
-                  Navigator.of(context).pop();
+                  await preferencesProvider.setBitcoinDisplay(selected);
+                  Navigator.of(dialogContext).pop();
                   ToastService().show(
                     message: "Display setting set!",
                     duration: const Duration(seconds: 3),

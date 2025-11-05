@@ -1,7 +1,10 @@
+import 'package:ecashapp/db.dart';
 import 'package:ecashapp/detail_row.dart';
 import 'package:ecashapp/multimint.dart';
+import 'package:ecashapp/providers/preferences_provider.dart';
 import 'package:flutter/material.dart';
 import 'package:ecashapp/utils.dart';
+import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 class GatewayDetailsSheet extends StatelessWidget {
@@ -19,6 +22,9 @@ class GatewayDetailsSheet extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final bitcoinDisplay = context.select<PreferencesProvider, BitcoinDisplay>(
+      (prefs) => prefs.bitcoinDisplay,
+    );
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -48,12 +54,12 @@ class GatewayDetailsSheet extends StatelessWidget {
               CopyableDetailRow(
                 label: 'Routing Fee',
                 value:
-                    "${formatBalance(gateway.baseRoutingFee, true)} + ${gateway.ppmRoutingFee} ppm",
+                    "${formatBalance(gateway.baseRoutingFee, true, bitcoinDisplay)} + ${gateway.ppmRoutingFee} ppm",
               ),
               CopyableDetailRow(
                 label: 'Transaction Fee',
                 value:
-                    "${formatBalance(gateway.baseTransactionFee, true)} + ${gateway.ppmTransactionFee} ppm",
+                    "${formatBalance(gateway.baseTransactionFee, true, bitcoinDisplay)} + ${gateway.ppmTransactionFee} ppm",
               ),
               if (gateway.lightningAlias != null)
                 CopyableDetailRow(

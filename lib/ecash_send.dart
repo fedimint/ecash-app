@@ -1,7 +1,9 @@
 import 'dart:async';
 import 'constants/transaction_keys.dart';
 import 'dart:convert';
+import 'package:ecashapp/db.dart';
 import 'package:ecashapp/detail_row.dart';
+import 'package:ecashapp/providers/preferences_provider.dart';
 import 'package:ecashapp/qr_export.dart';
 import 'package:ecashapp/lib.dart';
 import 'package:ecashapp/multimint.dart';
@@ -9,6 +11,7 @@ import 'package:ecashapp/toast.dart';
 import 'package:ecashapp/utils.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:provider/provider.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 
 class EcashSend extends StatefulWidget {
@@ -100,6 +103,7 @@ class _EcashSendState extends State<EcashSend> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final bitcoinDisplay = context.select<PreferencesProvider, BitcoinDisplay>((prefs) => prefs.bitcoinDisplay);
 
     if (_loading) {
       return const Center(
@@ -213,7 +217,7 @@ class _EcashSendState extends State<EcashSend> {
               children: [
                 CopyableDetailRow(
                   label: TransactionDetailKeys.amount,
-                  value: formatBalance(widget.amountMsats, false),
+                  value: formatBalance(widget.amountMsats, false, bitcoinDisplay),
                 ),
                 CopyableDetailRow(
                   label: 'Federation',
@@ -231,7 +235,7 @@ class _EcashSendState extends State<EcashSend> {
                   Navigator.of(context).popUntil((route) => route.isFirst);
                   ToastService().show(
                     message:
-                        '${formatBalance(widget.amountMsats, false)} spent',
+                        '${formatBalance(widget.amountMsats, false, bitcoinDisplay)} spent',
                     duration: const Duration(seconds: 5),
                     onTap: () {},
                     icon: Icon(Icons.currency_bitcoin),

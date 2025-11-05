@@ -66,7 +66,7 @@ class RustLib extends BaseEntrypoint<RustLibApi, RustLibApiImpl, RustLibWire> {
   String get codegenVersion => '2.9.0';
 
   @override
-  int get rustContentHash => 1110895714;
+  int get rustContentHash => -722198615;
 
   static const kDefaultExternalLibraryLoaderConfig =
       ExternalLibraryLoaderConfig(
@@ -350,16 +350,16 @@ abstract class RustLibApi extends BaseApi {
     required Multimint that,
   });
 
+  Future<BitcoinDisplay> crateMultimintMultimintGetBitcoinDisplay({
+    required Multimint that,
+  });
+
   Future<BigInt?> crateMultimintMultimintGetBtcPrice({required Multimint that});
 
   Future<FederationMeta> crateMultimintMultimintGetCachedFederationMeta({
     required Multimint that,
     String? invite,
     FederationId? federationId,
-  });
-
-  Future<DisplaySetting> crateMultimintMultimintGetDisplaySetting({
-    required Multimint that,
   });
 
   Future<List<FederationId>?> crateMultimintMultimintGetFederationOrder({
@@ -499,9 +499,9 @@ abstract class RustLibApi extends BaseApi {
     required BigInt amountMsats,
   });
 
-  Future<void> crateMultimintMultimintSetDisplaySetting({
+  Future<void> crateMultimintMultimintSetBitcoinDisplay({
     required Multimint that,
-    required DisplaySetting displaySetting,
+    required BitcoinDisplay bitcoinDisplay,
   });
 
   Future<void> crateMultimintMultimintSetFederationOrder({
@@ -746,9 +746,9 @@ abstract class RustLibApi extends BaseApi {
     required FederationId federationId,
   });
 
-  Future<BigInt?> crateGetBtcPrice();
+  Future<BitcoinDisplay> crateGetBitcoinDisplay();
 
-  Future<DisplaySetting> crateGetDisplaySetting();
+  Future<BigInt?> crateGetBtcPrice();
 
   Future<EventBusMultimintEvent> crateGetEventBus();
 
@@ -888,7 +888,7 @@ abstract class RustLibApi extends BaseApi {
     required String address,
   });
 
-  Future<void> crateSetDisplaySetting({required DisplaySetting displaySetting});
+  Future<void> crateSetBitcoinDisplay({required BitcoinDisplay bitcoinDisplay});
 
   Future<void> crateSetFederationOrder({required List<FederationId> order});
 
@@ -3240,7 +3240,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
       );
 
   @override
-  Future<BigInt?> crateMultimintMultimintGetBtcPrice({
+  Future<BitcoinDisplay> crateMultimintMultimintGetBitcoinDisplay({
     required Multimint that,
   }) {
     return handler.executeNormal(
@@ -3255,6 +3255,42 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
             generalizedFrbRustBinding,
             serializer,
             funcId: 58,
+            port: port_,
+          );
+        },
+        codec: SseCodec(
+          decodeSuccessData: sse_decode_bitcoin_display,
+          decodeErrorData: null,
+        ),
+        constMeta: kCrateMultimintMultimintGetBitcoinDisplayConstMeta,
+        argValues: [that],
+        apiImpl: this,
+      ),
+    );
+  }
+
+  TaskConstMeta get kCrateMultimintMultimintGetBitcoinDisplayConstMeta =>
+      const TaskConstMeta(
+        debugName: "Multimint_get_bitcoin_display",
+        argNames: ["that"],
+      );
+
+  @override
+  Future<BigInt?> crateMultimintMultimintGetBtcPrice({
+    required Multimint that,
+  }) {
+    return handler.executeNormal(
+      NormalTask(
+        callFfi: (port_) {
+          final serializer = SseSerializer(generalizedFrbRustBinding);
+          sse_encode_Auto_Ref_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerMultimint(
+            that,
+            serializer,
+          );
+          pdeCallFfi(
+            generalizedFrbRustBinding,
+            serializer,
+            funcId: 59,
             port: port_,
           );
         },
@@ -3297,7 +3333,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 59,
+            funcId: 60,
             port: port_,
           );
         },
@@ -3317,42 +3353,6 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
       const TaskConstMeta(
         debugName: "Multimint_get_cached_federation_meta",
         argNames: ["that", "invite", "federationId"],
-      );
-
-  @override
-  Future<DisplaySetting> crateMultimintMultimintGetDisplaySetting({
-    required Multimint that,
-  }) {
-    return handler.executeNormal(
-      NormalTask(
-        callFfi: (port_) {
-          final serializer = SseSerializer(generalizedFrbRustBinding);
-          sse_encode_Auto_Ref_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerMultimint(
-            that,
-            serializer,
-          );
-          pdeCallFfi(
-            generalizedFrbRustBinding,
-            serializer,
-            funcId: 60,
-            port: port_,
-          );
-        },
-        codec: SseCodec(
-          decodeSuccessData: sse_decode_display_setting,
-          decodeErrorData: null,
-        ),
-        constMeta: kCrateMultimintMultimintGetDisplaySettingConstMeta,
-        argValues: [that],
-        apiImpl: this,
-      ),
-    );
-  }
-
-  TaskConstMeta get kCrateMultimintMultimintGetDisplaySettingConstMeta =>
-      const TaskConstMeta(
-        debugName: "Multimint_get_display_setting",
-        argNames: ["that"],
       );
 
   @override
@@ -4395,9 +4395,9 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
       );
 
   @override
-  Future<void> crateMultimintMultimintSetDisplaySetting({
+  Future<void> crateMultimintMultimintSetBitcoinDisplay({
     required Multimint that,
-    required DisplaySetting displaySetting,
+    required BitcoinDisplay bitcoinDisplay,
   }) {
     return handler.executeNormal(
       NormalTask(
@@ -4407,7 +4407,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
             that,
             serializer,
           );
-          sse_encode_display_setting(displaySetting, serializer);
+          sse_encode_bitcoin_display(bitcoinDisplay, serializer);
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
@@ -4419,17 +4419,17 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           decodeSuccessData: sse_decode_unit,
           decodeErrorData: null,
         ),
-        constMeta: kCrateMultimintMultimintSetDisplaySettingConstMeta,
-        argValues: [that, displaySetting],
+        constMeta: kCrateMultimintMultimintSetBitcoinDisplayConstMeta,
+        argValues: [that, bitcoinDisplay],
         apiImpl: this,
       ),
     );
   }
 
-  TaskConstMeta get kCrateMultimintMultimintSetDisplaySettingConstMeta =>
+  TaskConstMeta get kCrateMultimintMultimintSetBitcoinDisplayConstMeta =>
       const TaskConstMeta(
-        debugName: "Multimint_set_display_setting",
-        argNames: ["that", "displaySetting"],
+        debugName: "Multimint_set_bitcoin_display",
+        argNames: ["that", "bitcoinDisplay"],
       );
 
   @override
@@ -6444,7 +6444,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   );
 
   @override
-  Future<BigInt?> crateGetBtcPrice() {
+  Future<BitcoinDisplay> crateGetBitcoinDisplay() {
     return handler.executeNormal(
       NormalTask(
         callFfi: (port_) {
@@ -6453,6 +6453,33 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
             generalizedFrbRustBinding,
             serializer,
             funcId: 138,
+            port: port_,
+          );
+        },
+        codec: SseCodec(
+          decodeSuccessData: sse_decode_bitcoin_display,
+          decodeErrorData: null,
+        ),
+        constMeta: kCrateGetBitcoinDisplayConstMeta,
+        argValues: [],
+        apiImpl: this,
+      ),
+    );
+  }
+
+  TaskConstMeta get kCrateGetBitcoinDisplayConstMeta =>
+      const TaskConstMeta(debugName: "get_bitcoin_display", argNames: []);
+
+  @override
+  Future<BigInt?> crateGetBtcPrice() {
+    return handler.executeNormal(
+      NormalTask(
+        callFfi: (port_) {
+          final serializer = SseSerializer(generalizedFrbRustBinding);
+          pdeCallFfi(
+            generalizedFrbRustBinding,
+            serializer,
+            funcId: 139,
             port: port_,
           );
         },
@@ -6469,33 +6496,6 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
 
   TaskConstMeta get kCrateGetBtcPriceConstMeta =>
       const TaskConstMeta(debugName: "get_btc_price", argNames: []);
-
-  @override
-  Future<DisplaySetting> crateGetDisplaySetting() {
-    return handler.executeNormal(
-      NormalTask(
-        callFfi: (port_) {
-          final serializer = SseSerializer(generalizedFrbRustBinding);
-          pdeCallFfi(
-            generalizedFrbRustBinding,
-            serializer,
-            funcId: 139,
-            port: port_,
-          );
-        },
-        codec: SseCodec(
-          decodeSuccessData: sse_decode_display_setting,
-          decodeErrorData: null,
-        ),
-        constMeta: kCrateGetDisplaySettingConstMeta,
-        argValues: [],
-        apiImpl: this,
-      ),
-    );
-  }
-
-  TaskConstMeta get kCrateGetDisplaySettingConstMeta =>
-      const TaskConstMeta(debugName: "get_display_setting", argNames: []);
 
   @override
   Future<EventBusMultimintEvent> crateGetEventBus() {
@@ -7672,14 +7672,14 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   );
 
   @override
-  Future<void> crateSetDisplaySetting({
-    required DisplaySetting displaySetting,
+  Future<void> crateSetBitcoinDisplay({
+    required BitcoinDisplay bitcoinDisplay,
   }) {
     return handler.executeNormal(
       NormalTask(
         callFfi: (port_) {
           final serializer = SseSerializer(generalizedFrbRustBinding);
-          sse_encode_display_setting(displaySetting, serializer);
+          sse_encode_bitcoin_display(bitcoinDisplay, serializer);
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
@@ -7691,16 +7691,16 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           decodeSuccessData: sse_decode_unit,
           decodeErrorData: null,
         ),
-        constMeta: kCrateSetDisplaySettingConstMeta,
-        argValues: [displaySetting],
+        constMeta: kCrateSetBitcoinDisplayConstMeta,
+        argValues: [bitcoinDisplay],
         apiImpl: this,
       ),
     );
   }
 
-  TaskConstMeta get kCrateSetDisplaySettingConstMeta => const TaskConstMeta(
-    debugName: "set_display_setting",
-    argNames: ["displaySetting"],
+  TaskConstMeta get kCrateSetBitcoinDisplayConstMeta => const TaskConstMeta(
+    debugName: "set_bitcoin_display",
+    argNames: ["bitcoinDisplay"],
   );
 
   @override
@@ -8907,6 +8907,12 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   }
 
   @protected
+  BitcoinDisplay dco_decode_bitcoin_display(dynamic raw) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    return BitcoinDisplay.values[raw as int];
+  }
+
+  @protected
   bool dco_decode_bool(dynamic raw) {
     // Codec=Dco (DartCObject based), see doc to use other codecs
     return raw as bool;
@@ -9073,12 +9079,6 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
       default:
         throw Exception("unreachable");
     }
-  }
-
-  @protected
-  DisplaySetting dco_decode_display_setting(dynamic raw) {
-    // Codec=Dco (DartCObject based), see doc to use other codecs
-    return DisplaySetting.values[raw as int];
   }
 
   @protected
@@ -10777,6 +10777,13 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   }
 
   @protected
+  BitcoinDisplay sse_decode_bitcoin_display(SseDeserializer deserializer) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    var inner = sse_decode_i_32(deserializer);
+    return BitcoinDisplay.values[inner];
+  }
+
+  @protected
   bool sse_decode_bool(SseDeserializer deserializer) {
     // Codec=Sse (Serialization based), see doc to use other codecs
     return deserializer.buffer.getUint8() != 0;
@@ -10953,13 +10960,6 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
       default:
         throw UnimplementedError('');
     }
-  }
-
-  @protected
-  DisplaySetting sse_decode_display_setting(SseDeserializer deserializer) {
-    // Codec=Sse (Serialization based), see doc to use other codecs
-    var inner = sse_decode_i_32(deserializer);
-    return DisplaySetting.values[inner];
   }
 
   @protected
@@ -12853,6 +12853,15 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   }
 
   @protected
+  void sse_encode_bitcoin_display(
+    BitcoinDisplay self,
+    SseSerializer serializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    sse_encode_i_32(self.index, serializer);
+  }
+
+  @protected
   void sse_encode_bool(bool self, SseSerializer serializer) {
     // Codec=Sse (Serialization based), see doc to use other codecs
     serializer.buffer.putUint8(self ? 1 : 0);
@@ -13045,15 +13054,6 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
         sse_encode_i_32(3, serializer);
         sse_encode_box_autoadd_claimed_event(field0, serializer);
     }
-  }
-
-  @protected
-  void sse_encode_display_setting(
-    DisplaySetting self,
-    SseSerializer serializer,
-  ) {
-    // Codec=Sse (Serialization based), see doc to use other codecs
-    sse_encode_i_32(self.index, serializer);
   }
 
   @protected
@@ -14583,6 +14583,9 @@ class MultimintImpl extends RustOpaque implements Multimint {
   Future<List<String>> getAllInviteCodes() =>
       RustLib.instance.api.crateMultimintMultimintGetAllInviteCodes(that: this);
 
+  Future<BitcoinDisplay> getBitcoinDisplay() =>
+      RustLib.instance.api.crateMultimintMultimintGetBitcoinDisplay(that: this);
+
   Future<BigInt?> getBtcPrice() =>
       RustLib.instance.api.crateMultimintMultimintGetBtcPrice(that: this);
 
@@ -14594,9 +14597,6 @@ class MultimintImpl extends RustOpaque implements Multimint {
     invite: invite,
     federationId: federationId,
   );
-
-  Future<DisplaySetting> getDisplaySetting() =>
-      RustLib.instance.api.crateMultimintMultimintGetDisplaySetting(that: this);
 
   Future<List<FederationId>?> getFederationOrder() => RustLib.instance.api
       .crateMultimintMultimintGetFederationOrder(that: this);
@@ -14791,10 +14791,10 @@ class MultimintImpl extends RustOpaque implements Multimint {
     amountMsats: amountMsats,
   );
 
-  Future<void> setDisplaySetting({required DisplaySetting displaySetting}) =>
-      RustLib.instance.api.crateMultimintMultimintSetDisplaySetting(
+  Future<void> setBitcoinDisplay({required BitcoinDisplay bitcoinDisplay}) =>
+      RustLib.instance.api.crateMultimintMultimintSetBitcoinDisplay(
         that: this,
-        displaySetting: displaySetting,
+        bitcoinDisplay: bitcoinDisplay,
       );
 
   Future<void> setFederationOrder({required List<FederationId> order}) =>

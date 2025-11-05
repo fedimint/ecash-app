@@ -1,9 +1,12 @@
+import 'package:ecashapp/db.dart';
 import 'package:ecashapp/fed_preview.dart';
 import 'package:ecashapp/lib.dart';
 import 'package:ecashapp/multimint.dart';
+import 'package:ecashapp/providers/preferences_provider.dart';
 import 'package:ecashapp/theme.dart';
 import 'package:ecashapp/utils.dart';
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 
 class FederationPreviewData {
   BigInt? balanceMsats;
@@ -295,7 +298,11 @@ class FederationListItem extends StatelessWidget {
                             ? "Recovering..."
                             : data.isLoading
                             ? 'Loading...'
-                            : formatBalance(data.balanceMsats, false),
+                            : formatBalance(
+                                data.balanceMsats,
+                                false,
+                                context.select<PreferencesProvider, BitcoinDisplay>((prefs) => prefs.bitcoinDisplay),
+                              ),
                         style: Theme.of(context).textTheme.bodyMedium,
                       ),
                       const SizedBox(height: 4),

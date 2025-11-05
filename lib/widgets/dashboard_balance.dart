@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:ecashapp/db.dart';
+import 'package:ecashapp/providers/preferences_provider.dart';
 import 'package:ecashapp/utils.dart';
+import 'package:provider/provider.dart';
 
 class DashboardBalance extends StatelessWidget {
   final BigInt? balanceMsats;
@@ -45,7 +48,13 @@ class DashboardBalance extends StatelessWidget {
             mainAxisSize: MainAxisSize.min,
             children: [
               Text(
-                formatBalance(balanceMsats, showMsats),
+                formatBalance(
+                  balanceMsats,
+                  showMsats,
+                  context.select<PreferencesProvider, BitcoinDisplay>(
+                    (prefs) => prefs.bitcoinDisplay,
+                  ),
+                ),
                 style: Theme.of(context).textTheme.displayLarge?.copyWith(
                   color: Theme.of(context).colorScheme.primary,
                   fontWeight: FontWeight.bold,

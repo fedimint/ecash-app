@@ -4,6 +4,7 @@ import 'package:ecashapp/discover.dart';
 import 'package:ecashapp/screens/dashboard.dart';
 import 'package:ecashapp/lib.dart';
 import 'package:ecashapp/multimint.dart';
+import 'package:ecashapp/providers/preferences_provider.dart';
 import 'package:ecashapp/scan.dart';
 import 'package:ecashapp/setttings.dart';
 import 'package:ecashapp/sidebar.dart';
@@ -11,6 +12,7 @@ import 'package:ecashapp/theme.dart';
 import 'package:ecashapp/toast.dart';
 import 'package:ecashapp/utils.dart';
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 
 final invoicePaidToastVisible = ValueNotifier<bool>(true);
 
@@ -47,7 +49,6 @@ class _MyAppState extends State<MyApp> {
   @override
   void initState() {
     super.initState();
-    initDisplaySetting();
     _feds = widget.initialFederations;
 
     if (_feds.isNotEmpty) {
@@ -132,7 +133,11 @@ class _MyAppState extends State<MyApp> {
     required BigInt amountMsats,
     required Icon icon,
   }) async {
-    final amount = formatBalance(amountMsats, false);
+    final context = _navigatorKey.currentContext;
+    if (context == null) return;
+
+    final bitcoinDisplay = context.read<PreferencesProvider>().bitcoinDisplay;
+    final amount = formatBalance(amountMsats, false, bitcoinDisplay);
     final federationIdString = await federationIdToString(
       federationId: federationId,
     );
@@ -300,12 +305,14 @@ class _MyAppState extends State<MyApp> {
       }
     }
 
-    return MaterialApp(
-      title: 'Ecash App',
-      debugShowCheckedModeBanner: false,
-      theme: cypherpunkNinjaTheme,
-      navigatorKey: _navigatorKey,
-      home: Builder(
+    return ChangeNotifierProvider(
+      create: (_) => PreferencesProvider(),
+      child: MaterialApp(
+        title: 'Ecash App',
+        debugShowCheckedModeBanner: false,
+        theme: cypherpunkNinjaTheme,
+        navigatorKey: _navigatorKey,
+        home: Builder(
         builder:
             (innerContext) => Scaffold(
               appBar: AppBar(
@@ -343,6 +350,7 @@ class _MyAppState extends State<MyApp> {
               ),
               body: SafeArea(child: bodyContent),
             ),
+        ),
       ),
     );
   }

@@ -46,7 +46,7 @@ use std::path::PathBuf;
 use std::{str::FromStr, sync::Arc};
 
 use crate::db::{
-    DisplaySetting, FederationConfig, FederationConfigKey, FederationConfigKeyPrefix,
+    BitcoinDisplay, FederationConfig, FederationConfigKey, FederationConfigKeyPrefix,
     LightningAddressConfig,
 };
 use crate::frb_generated::StreamSink;
@@ -981,15 +981,15 @@ pub async fn get_invite_code(federation_id: &FederationId, peer: u16) -> anyhow:
 }
 
 #[frb]
-pub async fn get_display_setting() -> DisplaySetting {
+pub async fn get_bitcoin_display() -> BitcoinDisplay {
     let multimint = get_multimint();
-    multimint.get_display_setting().await
+    multimint.get_bitcoin_display().await
 }
 
 #[frb]
-pub async fn set_display_setting(display_setting: DisplaySetting) {
+pub async fn set_bitcoin_display(bitcoin_display: BitcoinDisplay) {
     let multimint = get_multimint();
-    multimint.set_display_setting(display_setting).await;
+    multimint.set_bitcoin_display(bitcoin_display).await;
 }
 
 #[frb]

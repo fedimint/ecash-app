@@ -1,9 +1,12 @@
+import 'package:ecashapp/db.dart';
 import 'package:ecashapp/lib.dart';
 import 'package:ecashapp/multimint.dart';
+import 'package:ecashapp/providers/preferences_provider.dart';
 import 'package:ecashapp/success.dart';
 import 'package:ecashapp/toast.dart';
 import 'package:ecashapp/utils.dart';
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 
 class EcashRedeemPrompt extends StatefulWidget {
   final FederationSelector fed;
@@ -161,6 +164,7 @@ class _EcashRedeemPromptState extends State<EcashRedeemPrompt> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final bitcoinDisplay = context.select<PreferencesProvider, BitcoinDisplay>((prefs) => prefs.bitcoinDisplay);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -172,7 +176,7 @@ class _EcashRedeemPromptState extends State<EcashRedeemPrompt> {
         ),
         const SizedBox(height: 16),
         Text(
-          formatBalance(widget.amount, false),
+          formatBalance(widget.amount, false, bitcoinDisplay),
           textAlign: TextAlign.center,
           style: theme.textTheme.displaySmall?.copyWith(
             fontWeight: FontWeight.bold,

@@ -160,7 +160,7 @@ impl_db_lookup!(
 );
 
 #[derive(Debug, Clone, Encodable, Decodable, Serialize)]
-pub enum DisplaySetting {
+pub enum BitcoinDisplay {
     Bip177,
     Sats,
     Nothing,
@@ -168,11 +168,11 @@ pub enum DisplaySetting {
 }
 
 #[derive(Debug, Encodable, Decodable)]
-pub struct DisplaySettingKey;
+pub struct BitcoinDisplayKey;
 
 impl_db_record!(
-    key = DisplaySettingKey,
-    value = DisplaySetting,
+    key = BitcoinDisplayKey,
+    value = BitcoinDisplay,
     db_prefix = DbKeyPrefix::Display,
 );
 

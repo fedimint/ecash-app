@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:ecashapp/db.dart';
 import 'package:ecashapp/lib.dart';
 import 'package:ecashapp/multimint.dart';
+import 'package:ecashapp/providers/preferences_provider.dart';
 import 'package:ecashapp/utils.dart'; // for formatBalance
+import 'package:provider/provider.dart';
 
 class NoteSummary extends StatefulWidget {
   final FederationSelector fed;
@@ -24,6 +27,9 @@ class _NoteSummaryState extends State<NoteSummary> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final bitcoinDisplay = context.select<PreferencesProvider, BitcoinDisplay>(
+      (prefs) => prefs.bitcoinDisplay,
+    );
 
     return FutureBuilder<List<(BigInt, BigInt)>>(
       future: _summaryFuture,
@@ -67,7 +73,9 @@ class _NoteSummaryState extends State<NoteSummary> {
                   final (denom, count) = entry;
                   return DataRow(
                     cells: [
-                      DataCell(Text(formatBalance(denom, true))),
+                      DataCell(
+                        Text(formatBalance(denom, true, bitcoinDisplay)),
+                      ),
                       DataCell(Text(count.toString())),
                     ],
                   );
