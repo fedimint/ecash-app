@@ -1946,7 +1946,9 @@ impl Multimint {
                 .msats
             }
             LightningOperationMeta::Send(send) => send.contract.amount.msats,
-            LightningOperationMeta::LnurlReceive(_) => todo!(),
+            LightningOperationMeta::LnurlReceive(receive) => {
+                receive.contract.commitment.amount.msats
+            }
         }
     }
 
@@ -2256,7 +2258,18 @@ impl Multimint {
                                     _ => None,
                                 }
                             }
-                            LightningOperationMeta::LnurlReceive(_) => todo!(),
+                            LightningOperationMeta::LnurlReceive(receive) => {
+                                let outcome = op_log_val.outcome::<ReceiveOperationState>();
+                                match outcome {
+                                    Some(ReceiveOperationState::Claimed) => Some(Transaction {
+                                        kind: TransactionKind::LightningRecurring,
+                                        amount: receive.contract.commitment.amount.msats,
+                                        timestamp,
+                                        operation_id: key.operation_id.0.to_vec(),
+                                    }),
+                                    _ => None,
+                                }
+                            }
                         }
                     }
                     "ln" => {
