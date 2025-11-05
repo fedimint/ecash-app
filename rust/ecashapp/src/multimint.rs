@@ -424,14 +424,15 @@ impl Multimint {
             .await;
         for (id, _) in configs {
             let client_db = self.get_client_database(&id.id);
-            let mut client_builder = Client::builder(client_db).await?;
+            let mut client_builder = Client::builder().await?;
             client_builder.with_module_inits(self.modules.clone());
             client_builder.with_primary_module_kind(fedimint_mint_client::KIND);
             let global_root_secret = Bip39RootSecretStrategy::<12>::to_root_secret(&self.mnemonic);
             let client = client_builder
-                .open(fedimint_client::RootSecret::StandardDoubleDerive(
-                    global_root_secret,
-                ))
+                .open(
+                    client_db,
+                    fedimint_client::RootSecret::StandardDoubleDerive(global_root_secret),
+                )
                 .await
                 .map(Arc::new)?;
 
@@ -1176,7 +1177,7 @@ impl Multimint {
         };
 
         let global_root_secret = Bip39RootSecretStrategy::<12>::to_root_secret(&self.mnemonic);
-        let mut client_builder = Client::builder(client_db).await?;
+        let mut client_builder = Client::builder().await?;
         client_builder.with_module_inits(self.modules.clone());
         client_builder.with_primary_module_kind(fedimint_mint_client::KIND);
 
@@ -1186,6 +1187,7 @@ impl Multimint {
                     .preview(invite_code)
                     .await?
                     .recover(
+                        client_db,
                         fedimint_client::RootSecret::StandardDoubleDerive(global_root_secret),
                         None,
                     )
@@ -1195,12 +1197,13 @@ impl Multimint {
                 client
             }
             client_type => {
-                let client = if Client::is_initialized(client_builder.db_no_decoders()).await {
+                let client = if Client::is_initialized(&client_db).await {
                     info_to_flutter("Client is already initialized, opening using secret...").await;
                     client_builder
-                        .open(fedimint_client::RootSecret::StandardDoubleDerive(
-                            global_root_secret,
-                        ))
+                        .open(
+                            client_db,
+                            fedimint_client::RootSecret::StandardDoubleDerive(global_root_secret),
+                        )
                         .await
                 } else {
                     info_to_flutter("Client is not initialized, downloading invite code...").await;
@@ -1216,9 +1219,10 @@ impl Multimint {
                             }
                         };
                     preview?
-                        .join(fedimint_client::RootSecret::StandardDoubleDerive(
-                            global_root_secret,
-                        ))
+                        .join(
+                            client_db,
+                            fedimint_client::RootSecret::StandardDoubleDerive(global_root_secret),
+                        )
                         .await
                 }
                 .map(Arc::new)?;
@@ -1422,7 +1426,11 @@ impl Multimint {
             .get(federation_id)
             .expect("No federation exists")
             .clone();
-        client.get_balance().await.msats
+        client
+            .get_balance()
+            .await
+            .expect("balance unavailable")
+            .msats
     }
 
     pub async fn receive(
@@ -1938,6 +1946,7 @@ impl Multimint {
                 .msats
             }
             LightningOperationMeta::Send(send) => send.contract.amount.msats,
+            LightningOperationMeta::LnurlReceive(_) => todo!(),
         }
     }
 
@@ -2247,6 +2256,7 @@ impl Multimint {
                                     _ => None,
                                 }
                             }
+                            LightningOperationMeta::LnurlReceive(_) => todo!(),
                         }
                     }
                     "ln" => {
@@ -2907,7 +2917,7 @@ impl Multimint {
 
         let address = bitcoin::address::Address::from_str(&address)?;
         let address = address.require_network(wallet_module.get_network())?;
-        let balance = bitcoin::Amount::from_sat(client.get_balance().await.msats / 1000);
+        let balance = bitcoin::Amount::from_sat(client.get_balance_err().await?.msats / 1000);
         let fees = wallet_module.get_withdraw_fees(&address, balance).await?;
         let max_withdrawable = balance
             .checked_sub(fees.amount())
