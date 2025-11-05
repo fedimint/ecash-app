@@ -45,6 +45,8 @@ class _NumberPadState extends State<NumberPad> {
   String _rawAmount = '';
   bool _creating = false;
   bool _loadingMax = false;
+  bool _loadingBalance = true;
+  BigInt? _currentBalance;
   WithdrawalMode _withdrawalMode = WithdrawalMode.specificAmount;
 
   @override
@@ -54,6 +56,23 @@ class _NumberPadState extends State<NumberPad> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _numpadFocus.requestFocus();
     });
+
+    _fetchBalance();
+  }
+
+  Future<void> _fetchBalance() async {
+    try {
+      final balanceMsats = await balance(federationId: widget.fed.federationId);
+      setState(() {
+        _currentBalance = balanceMsats;
+        _loadingBalance = false;
+      });
+    } catch (e) {
+      AppLogger.instance.error('Failed to fetch balance for number pad: $e');
+      setState(() {
+        _loadingBalance = false;
+      });
+    }
   }
 
   @override
@@ -75,6 +94,57 @@ class _NumberPadState extends State<NumberPad> {
     }
 
     return formatBalance(displayValue * BigInt.from(1000), false, bitcoinDisplay);
+  }
+
+  bool _isValidAmount() {
+    // Disable while balance is loading
+    if (_loadingBalance) return false;
+
+    // Parse the entered amount
+    final amountSats = BigInt.tryParse(_rawAmount);
+    if (amountSats == null || amountSats == BigInt.zero) {
+      return false;
+    }
+
+    // For lightning receives (no address/lnurl), only check amount > 0
+    final isLightningReceive = widget.paymentType == PaymentType.lightning &&
+        widget.lightningAddressOrLnurl == null;
+
+    if (isLightningReceive) {
+      return true; // Balance check not needed for receives
+    }
+
+    // For sends (lightning with address, ecash, onchain), check balance
+    if (_currentBalance != null) {
+      final amountMsats = amountSats * BigInt.from(1000);
+      return amountMsats <= _currentBalance!;
+    }
+
+    // If balance failed to load, allow user to proceed (error will be caught later)
+    return true;
+  }
+
+  bool _isAmountOverBalance() {
+    // Don't show red if still loading or no balance available
+    if (_loadingBalance || _currentBalance == null) return false;
+
+    // Parse the entered amount
+    final amountSats = BigInt.tryParse(_rawAmount);
+    if (amountSats == null || amountSats == BigInt.zero) {
+      return false;
+    }
+
+    // For lightning receives, balance check doesn't apply
+    final isLightningReceive = widget.paymentType == PaymentType.lightning &&
+        widget.lightningAddressOrLnurl == null;
+
+    if (isLightningReceive) {
+      return false;
+    }
+
+    // For sends, check if amount exceeds balance
+    final amountMsats = amountSats * BigInt.from(1000);
+    return amountMsats > _currentBalance!;
   }
 
   Future<void> _onMaxPressed() async {
@@ -336,52 +406,38 @@ class _NumberPadState extends State<NumberPad> {
                         ],
                       ),
                     ),
-                    const SizedBox(height: 8),
+                    const SizedBox(height: 16),
                     Text(
                       usdText,
                       style: const TextStyle(fontSize: 24, color: Colors.grey),
                     ),
+                    const SizedBox(height: 12),
+                    // Hide balance for lightning receives
+                    (widget.paymentType == PaymentType.lightning &&
+                            widget.lightningAddressOrLnurl == null)
+                        ? const SizedBox.shrink()
+                        : _loadingBalance
+                            ? const SizedBox(
+                                width: 16,
+                                height: 16,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                  color: Colors.grey,
+                                ),
+                              )
+                            : _currentBalance != null
+                                ? Text(
+                                    '${formatBalance(_currentBalance, false)} max',
+                                    style: TextStyle(
+                                      fontSize: 16,
+                                      color: _isAmountOverBalance() ? Colors.red : Colors.grey,
+                                    ),
+                                  )
+                                : const SizedBox.shrink(),
                   ],
                 ),
               ),
             ),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16.0),
-              child: SizedBox(
-                width: double.infinity,
-                child: ElevatedButton(
-                  onPressed: _onConfirm,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF42CFFF),
-                    foregroundColor: Colors.black,
-                    padding: const EdgeInsets.symmetric(vertical: 16),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                  ),
-                  child:
-                      _creating
-                          ? const SizedBox(
-                            width: 20,
-                            height: 20,
-                            child: CircularProgressIndicator(
-                              strokeWidth: 2,
-                              valueColor: AlwaysStoppedAnimation<Color>(
-                                Colors.black,
-                              ),
-                            ),
-                          )
-                          : const Text(
-                            'Confirm',
-                            style: TextStyle(
-                              fontSize: 18,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                ),
-              ),
-            ),
-            const SizedBox(height: 16),
             KeyboardListener(
               focusNode: _numpadFocus,
               onKeyEvent: _handleKeyEvent,
@@ -437,6 +493,43 @@ class _NumberPadState extends State<NumberPad> {
                     });
                   },
                   icon: const Icon(Icons.backspace),
+                ),
+              ),
+            ),
+            const SizedBox(height: 16),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16.0),
+              child: SizedBox(
+                width: double.infinity,
+                child: ElevatedButton(
+                  onPressed: _isValidAmount() ? _onConfirm : null,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFF42CFFF),
+                    foregroundColor: Colors.black,
+                    padding: const EdgeInsets.symmetric(vertical: 16),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                  ),
+                  child:
+                      _creating
+                          ? const SizedBox(
+                            width: 20,
+                            height: 20,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              valueColor: AlwaysStoppedAnimation<Color>(
+                                Colors.black,
+                              ),
+                            ),
+                          )
+                          : const Text(
+                            'Confirm',
+                            style: TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
                 ),
               ),
             ),
