@@ -1,5 +1,5 @@
 import 'package:ecashapp/models.dart';
-import 'package:ecashapp/multimint.dart';
+import 'package:ecashapp/generated/multimint.dart';
 import 'package:ecashapp/scan.dart';
 import 'package:ecashapp/send.dart';
 import 'package:ecashapp/utils.dart';
@@ -57,9 +57,7 @@ class _PaymentMethodSelectorState extends State<PaymentMethodSelector> {
         Text(
           'Choose Payment Method',
           textAlign: TextAlign.center,
-          style: theme.textTheme.titleLarge?.copyWith(
-            fontWeight: FontWeight.bold,
-          ),
+          style: theme.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
         ),
         const SizedBox(height: 24),
 
@@ -74,11 +72,7 @@ class _PaymentMethodSelectorState extends State<PaymentMethodSelector> {
             children: [
               _buildOption(label: 'Scan', icon: Icons.qr_code, value: 'scan'),
               const SizedBox(width: 4),
-              _buildOption(
-                label: 'Lightning Address',
-                icon: Icons.flash_on,
-                value: 'lnaddress',
-              ),
+              _buildOption(label: 'Lightning Address', icon: Icons.flash_on, value: 'lnaddress'),
             ],
           ),
         ),
@@ -86,31 +80,21 @@ class _PaymentMethodSelectorState extends State<PaymentMethodSelector> {
         const SizedBox(height: 32),
 
         // Content without animation
-        if (_selected == 'scan')
-          _buildInvoiceInstructions()
-        else
-          _buildLightningAddressInstructions(),
+        if (_selected == 'scan') _buildInvoiceInstructions() else _buildLightningAddressInstructions(),
 
         const SizedBox(height: 32),
 
         // Confirm Button
         ElevatedButton.icon(
-          onPressed:
-              (_selected == 'scan' || _isLightningFormValid)
-                  ? _onConfirmPressed
-                  : null,
+          onPressed: (_selected == 'scan' || _isLightningFormValid) ? _onConfirmPressed : null,
           icon: const Icon(Icons.check_circle),
           label: const Text('Confirm'),
           style: ElevatedButton.styleFrom(
             backgroundColor: theme.colorScheme.primary,
             foregroundColor: theme.colorScheme.onPrimary,
             padding: const EdgeInsets.symmetric(vertical: 16),
-            textStyle: theme.textTheme.titleMedium?.copyWith(
-              fontWeight: FontWeight.w600,
-            ),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(16),
-            ),
+            textStyle: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600),
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
           ),
         ),
       ],
@@ -126,12 +110,7 @@ class _PaymentMethodSelectorState extends State<PaymentMethodSelector> {
         await Navigator.push(
           context,
           MaterialPageRoute(
-            builder:
-                (context) => SendPayment(
-                  fed: widget.fed,
-                  amountMsats: amount,
-                  lnAddress: address,
-                ),
+            builder: (context) => SendPayment(fed: widget.fed, amountMsats: amount, lnAddress: address),
           ),
         );
       } catch (e) {
@@ -142,21 +121,13 @@ class _PaymentMethodSelectorState extends State<PaymentMethodSelector> {
         context,
         MaterialPageRoute(
           builder:
-              (context) => ScanQRPage(
-                selectedFed: widget.fed,
-                paymentType: PaymentType.lightning,
-                onPay: (_, _) {},
-              ),
+              (context) => ScanQRPage(selectedFed: widget.fed, paymentType: PaymentType.lightning, onPay: (_, _) {}),
         ),
       );
     }
   }
 
-  Widget _buildOption({
-    required String label,
-    required IconData icon,
-    required String value,
-  }) {
+  Widget _buildOption({required String label, required IconData icon, required String value}) {
     final theme = Theme.of(context);
     final isSelected = _selected == value;
 
@@ -175,16 +146,12 @@ class _PaymentMethodSelectorState extends State<PaymentMethodSelector> {
           ),
           child: Column(
             children: [
-              Icon(
-                icon,
-                color: isSelected ? Colors.white : theme.colorScheme.onSurface,
-              ),
+              Icon(icon, color: isSelected ? Colors.white : theme.colorScheme.onSurface),
               const SizedBox(height: 8),
               Text(
                 label,
                 style: theme.textTheme.bodyMedium?.copyWith(
-                  color:
-                      isSelected ? Colors.white : theme.colorScheme.onSurface,
+                  color: isSelected ? Colors.white : theme.colorScheme.onSurface,
                 ),
               ),
             ],
@@ -198,11 +165,7 @@ class _PaymentMethodSelectorState extends State<PaymentMethodSelector> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.center,
       children: [
-        Icon(
-          Icons.qr_code,
-          size: 64,
-          color: Theme.of(context).colorScheme.primary,
-        ),
+        Icon(Icons.qr_code, size: 64, color: Theme.of(context).colorScheme.primary),
         const SizedBox(height: 16),
         Text(
           'Scan a Bolt11 Invoice, Lightning Address, or LNURL.',
@@ -221,11 +184,7 @@ class _PaymentMethodSelectorState extends State<PaymentMethodSelector> {
       children: [
         Icon(Icons.flash_on, size: 64, color: Colors.amber),
         const SizedBox(height: 16),
-        Text(
-          'Enter a Lightning Address and Amount.',
-          textAlign: TextAlign.center,
-          style: theme.textTheme.bodyLarge,
-        ),
+        Text('Enter a Lightning Address and Amount.', textAlign: TextAlign.center, style: theme.textTheme.bodyLarge),
         const SizedBox(height: 24),
         TextField(
           controller: _lightningAddressController,

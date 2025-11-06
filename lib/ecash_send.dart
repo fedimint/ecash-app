@@ -1,12 +1,12 @@
 import 'dart:async';
 import 'constants/transaction_keys.dart';
 import 'dart:convert';
-import 'package:ecashapp/db.dart';
+import 'package:ecashapp/generated/db.dart';
 import 'package:ecashapp/detail_row.dart';
 import 'package:ecashapp/providers/preferences_provider.dart';
 import 'package:ecashapp/qr_export.dart';
-import 'package:ecashapp/lib.dart';
-import 'package:ecashapp/multimint.dart';
+import 'package:ecashapp/generated/lib.dart';
+import 'package:ecashapp/generated/multimint.dart';
 import 'package:ecashapp/toast.dart';
 import 'package:ecashapp/utils.dart';
 import 'package:flutter/material.dart';
@@ -47,10 +47,7 @@ class _EcashSendState extends State<EcashSend> {
 
   Future<void> _loadEcash() async {
     try {
-      final ecash = await sendEcash(
-        federationId: widget.fed.federationId,
-        amountMsats: widget.amountMsats,
-      );
+      final ecash = await sendEcash(federationId: widget.fed.federationId, amountMsats: widget.amountMsats);
 
       final ecashString = ecash.$2;
       final chunked = dataToFrames(utf8.encode(ecashString));
@@ -112,10 +109,7 @@ class _EcashSendState extends State<EcashSend> {
           children: [
             CircularProgressIndicator(),
             SizedBox(height: 16),
-            Text(
-              "Getting change from mint...",
-              style: TextStyle(color: Colors.white70),
-            ),
+            Text("Getting change from mint...", style: TextStyle(color: Colors.white70)),
           ],
         ),
       );
@@ -161,9 +155,7 @@ class _EcashSendState extends State<EcashSend> {
             decoration: BoxDecoration(
               color: theme.colorScheme.surfaceContainerHighest,
               borderRadius: BorderRadius.circular(12),
-              border: Border.all(
-                color: theme.colorScheme.primary.withOpacity(0.4),
-              ),
+              border: Border.all(color: theme.colorScheme.primary.withOpacity(0.4)),
             ),
             child: Row(
               children: [
@@ -180,21 +172,11 @@ class _EcashSendState extends State<EcashSend> {
                 IconButton(
                   icon: AnimatedSwitcher(
                     duration: const Duration(milliseconds: 300),
-                    transitionBuilder:
-                        (child, anim) =>
-                            ScaleTransition(scale: anim, child: child),
+                    transitionBuilder: (child, anim) => ScaleTransition(scale: anim, child: child),
                     child:
                         _copied
-                            ? Icon(
-                              Icons.check,
-                              key: const ValueKey('copied'),
-                              color: theme.colorScheme.primary,
-                            )
-                            : Icon(
-                              Icons.copy,
-                              key: const ValueKey('copy'),
-                              color: theme.colorScheme.primary,
-                            ),
+                            ? Icon(Icons.check, key: const ValueKey('copied'), color: theme.colorScheme.primary)
+                            : Icon(Icons.copy, key: const ValueKey('copy'), color: theme.colorScheme.primary),
                   ),
                   onPressed: _copyEcash,
                 ),
@@ -208,9 +190,7 @@ class _EcashSendState extends State<EcashSend> {
             decoration: BoxDecoration(
               color: theme.colorScheme.surfaceContainer,
               borderRadius: BorderRadius.circular(12),
-              border: Border.all(
-                color: theme.colorScheme.primary.withOpacity(0.25),
-              ),
+              border: Border.all(color: theme.colorScheme.primary.withOpacity(0.25)),
             ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -219,10 +199,7 @@ class _EcashSendState extends State<EcashSend> {
                   label: TransactionDetailKeys.amount,
                   value: formatBalance(widget.amountMsats, false, bitcoinDisplay),
                 ),
-                CopyableDetailRow(
-                  label: 'Federation',
-                  value: widget.fed.federationName,
-                ),
+                CopyableDetailRow(label: 'Federation', value: widget.fed.federationName),
               ],
             ),
           ),
@@ -234,8 +211,7 @@ class _EcashSendState extends State<EcashSend> {
                 if (mounted) {
                   Navigator.of(context).popUntil((route) => route.isFirst);
                   ToastService().show(
-                    message:
-                        '${formatBalance(widget.amountMsats, false, bitcoinDisplay)} spent',
+                    message: '${formatBalance(widget.amountMsats, false, bitcoinDisplay)} spent',
                     duration: const Duration(seconds: 5),
                     onTap: () {},
                     icon: Icon(Icons.currency_bitcoin),
@@ -246,9 +222,7 @@ class _EcashSendState extends State<EcashSend> {
                 backgroundColor: theme.colorScheme.primary,
                 foregroundColor: Colors.black,
                 padding: const EdgeInsets.symmetric(vertical: 16),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
               ),
               child: const Text("Confirm Payment"),
             ),

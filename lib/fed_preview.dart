@@ -1,6 +1,6 @@
-import 'package:ecashapp/db.dart';
-import 'package:ecashapp/lib.dart';
-import 'package:ecashapp/multimint.dart';
+import 'package:ecashapp/generated/db.dart';
+import 'package:ecashapp/generated/lib.dart';
+import 'package:ecashapp/generated/multimint.dart';
 import 'package:ecashapp/providers/preferences_provider.dart';
 import 'package:ecashapp/toast.dart';
 import 'package:ecashapp/utils.dart';
@@ -47,8 +47,7 @@ class _FederationPreviewState extends State<FederationPreview> {
     Future.delayed(const Duration(milliseconds: 300), () {
       if (!mounted) return;
 
-      final onlineCount =
-          widget.guardians?.where((g) => g.version != null).length ?? 0;
+      final onlineCount = widget.guardians?.where((g) => g.version != null).length ?? 0;
       final totalCount = widget.guardians?.length ?? 0;
 
       setState(() {
@@ -73,8 +72,7 @@ class _FederationPreviewState extends State<FederationPreview> {
               ),
               actions: [
                 TextButton(
-                  onPressed:
-                      isLeaving ? null : () => Navigator.of(context).pop(),
+                  onPressed: isLeaving ? null : () => Navigator.of(context).pop(),
                   child: const Text("Cancel"),
                 ),
                 TextButton(
@@ -87,37 +85,21 @@ class _FederationPreviewState extends State<FederationPreview> {
                             });
 
                             try {
-                              await leaveFederation(
-                                federationId: widget.fed.federationId,
-                              );
+                              await leaveFederation(federationId: widget.fed.federationId);
                               await _backupToNostr();
                               widget.onLeaveFederation!();
 
                               if (context.mounted) {
-                                Navigator.of(
-                                  dialogContext,
-                                ).popUntil((route) => route.isFirst);
-                                Navigator.of(
-                                  bottomSheetContext,
-                                ).popUntil((route) => route.isFirst);
-                                Navigator.of(
-                                  context,
-                                ).popUntil((route) => route.isFirst);
+                                Navigator.of(dialogContext).popUntil((route) => route.isFirst);
+                                Navigator.of(bottomSheetContext).popUntil((route) => route.isFirst);
+                                Navigator.of(context).popUntil((route) => route.isFirst);
                               }
                             } catch (e) {
-                              AppLogger.instance.error(
-                                "Error leaving federation: $e",
-                              );
+                              AppLogger.instance.error("Error leaving federation: $e");
                               if (context.mounted) {
-                                Navigator.of(
-                                  dialogContext,
-                                ).popUntil((route) => route.isFirst);
-                                Navigator.of(
-                                  bottomSheetContext,
-                                ).popUntil((route) => route.isFirst);
-                                Navigator.of(
-                                  context,
-                                ).popUntil((route) => route.isFirst);
+                                Navigator.of(dialogContext).popUntil((route) => route.isFirst);
+                                Navigator.of(bottomSheetContext).popUntil((route) => route.isFirst);
+                                Navigator.of(context).popUntil((route) => route.isFirst);
                               }
                             } finally {
                               if (mounted) {
@@ -129,11 +111,7 @@ class _FederationPreviewState extends State<FederationPreview> {
                           },
                   child:
                       isLeaving
-                          ? const SizedBox(
-                            height: 20,
-                            width: 20,
-                            child: CircularProgressIndicator(strokeWidth: 2),
-                          )
+                          ? const SizedBox(height: 20, width: 20, child: CircularProgressIndicator(strokeWidth: 2))
                           : const Text("Confirm"),
                 ),
               ],
@@ -174,10 +152,7 @@ class _FederationPreviewState extends State<FederationPreview> {
       });
 
       try {
-        final fed = await joinFederation(
-          inviteCode: widget.inviteCode!,
-          recover: recover,
-        );
+        final fed = await joinFederation(inviteCode: widget.inviteCode!, recover: recover);
         AppLogger.instance.info('Successfully joined federation');
 
         _backupToNostr();
@@ -208,10 +183,7 @@ class _FederationPreviewState extends State<FederationPreview> {
 
   Future<void> _redeemEcash(String ecash) async {
     try {
-      final isSpent = await checkEcashSpent(
-        federationId: widget.fed.federationId,
-        ecash: ecash,
-      );
+      final isSpent = await checkEcashSpent(federationId: widget.fed.federationId, ecash: ecash);
 
       if (isSpent) {
         ToastService().show(
@@ -266,8 +238,7 @@ class _FederationPreviewState extends State<FederationPreview> {
         LayoutBuilder(
           builder: (context, constraints) {
             final barWidth = constraints.maxWidth;
-            final thresholdPos =
-                totalCount > 0 ? (threshold / totalCount) * barWidth : 0.0;
+            final thresholdPos = totalCount > 0 ? (threshold / totalCount) * barWidth : 0.0;
 
             return Column(
               mainAxisSize: MainAxisSize.min,
@@ -288,13 +259,8 @@ class _FederationPreviewState extends State<FederationPreview> {
                             return LinearProgressIndicator(
                               value: value,
                               minHeight: 10,
-                              backgroundColor: theme
-                                  .colorScheme
-                                  .surfaceContainerHighest
-                                  .withOpacity(0.3),
-                              valueColor: AlwaysStoppedAnimation<Color>(
-                                borderColor,
-                              ),
+                              backgroundColor: theme.colorScheme.surfaceContainerHighest.withOpacity(0.3),
+                              valueColor: AlwaysStoppedAnimation<Color>(borderColor),
                             );
                           },
                         ),
@@ -311,12 +277,7 @@ class _FederationPreviewState extends State<FederationPreview> {
                             color: Colors.white,
                             borderRadius: BorderRadius.circular(2),
                             boxShadow: [
-                              BoxShadow(
-                                color: Colors.black26,
-                                blurRadius: 3,
-                                spreadRadius: 1,
-                                offset: Offset(0, 0),
-                              ),
+                              BoxShadow(color: Colors.black26, blurRadius: 3, spreadRadius: 1, offset: Offset(0, 0)),
                             ],
                           ),
                         ),
@@ -331,10 +292,7 @@ class _FederationPreviewState extends State<FederationPreview> {
                   child: Stack(
                     children: [
                       Positioned(
-                        left: (thresholdPos - 10).clamp(
-                          0.0,
-                          barWidth - 12,
-                        ), // icon width ~12
+                        left: (thresholdPos - 10).clamp(0.0, barWidth - 12), // icon width ~12
                         top: 8,
                         bottom: 0,
                         child: Icon(Icons.lock, size: 24, color: borderColor),
@@ -355,10 +313,8 @@ class _FederationPreviewState extends State<FederationPreview> {
     final theme = Theme.of(context);
     final totalGuardians = widget.guardians?.length ?? 0;
     final thresh = threshold(totalGuardians);
-    final onlineGuardians =
-        widget.guardians?.where((g) => g.version != null).toList() ?? [];
-    final isFederationOnline =
-        totalGuardians > 0 && onlineGuardians.length >= thresh;
+    final onlineGuardians = widget.guardians?.where((g) => g.version != null).toList() ?? [];
+    final isFederationOnline = totalGuardians > 0 && onlineGuardians.length >= thresh;
 
     Widget federationInfo = Column(
       crossAxisAlignment: CrossAxisAlignment.center,
@@ -375,24 +331,16 @@ class _FederationPreviewState extends State<FederationPreview> {
                       widget.imageUrl!,
                       fit: BoxFit.cover,
                       errorBuilder: (context, error, stackTrace) {
-                        return Image.asset(
-                          'assets/images/fedimint-icon-color.png',
-                          fit: BoxFit.cover,
-                        );
+                        return Image.asset('assets/images/fedimint-icon-color.png', fit: BoxFit.cover);
                       },
                     )
-                    : Image.asset(
-                      'assets/images/fedimint-icon-color.png',
-                      fit: BoxFit.cover,
-                    ),
+                    : Image.asset('assets/images/fedimint-icon-color.png', fit: BoxFit.cover),
           ),
         ),
         const SizedBox(height: 16),
         Text(
           widget.fed.federationName,
-          style: theme.textTheme.headlineSmall?.copyWith(
-            fontWeight: FontWeight.bold,
-          ),
+          style: theme.textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.bold),
           textAlign: TextAlign.center,
         ),
       ],
@@ -410,23 +358,15 @@ class _FederationPreviewState extends State<FederationPreview> {
             backgroundColor: theme.colorScheme.primary,
             foregroundColor: Colors.black,
             padding: const EdgeInsets.symmetric(vertical: 16),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(12),
-            ),
-            textStyle: const TextStyle(
-              fontSize: 16,
-              fontWeight: FontWeight.bold,
-            ),
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            textStyle: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
           ),
           child:
               isJoining
                   ? const SizedBox(
                     height: 20,
                     width: 20,
-                    child: CircularProgressIndicator(
-                      color: Colors.black,
-                      strokeWidth: 2,
-                    ),
+                    child: CircularProgressIndicator(color: Colors.black, strokeWidth: 2),
                   )
                   : widget.ecash == null
                   ? const Text("Join Federation")
@@ -442,17 +382,10 @@ class _FederationPreviewState extends State<FederationPreview> {
             label: const Text('Recover'),
             style: OutlinedButton.styleFrom(
               foregroundColor: theme.colorScheme.secondary,
-              side: BorderSide(
-                color: theme.colorScheme.secondary.withOpacity(0.5),
-              ),
+              side: BorderSide(color: theme.colorScheme.secondary.withOpacity(0.5)),
               padding: const EdgeInsets.symmetric(vertical: 16),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
-              ),
-              textStyle: const TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.w600,
-              ),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              textStyle: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
             ),
           ),
         ],
@@ -471,10 +404,7 @@ class _FederationPreviewState extends State<FederationPreview> {
                 Container(
                   margin: const EdgeInsets.only(bottom: 16),
                   padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: Colors.orange.shade100,
-                    borderRadius: BorderRadius.circular(8),
-                  ),
+                  decoration: BoxDecoration(color: Colors.orange.shade100, borderRadius: BorderRadius.circular(8)),
                   child: Row(
                     children: [
                       const Icon(Icons.warning, color: Colors.orange),
@@ -494,13 +424,7 @@ class _FederationPreviewState extends State<FederationPreview> {
                 Row(
                   children: [
                     // Left half: image + name, centered vertically
-                    Expanded(
-                      flex: 1,
-                      child: Align(
-                        alignment: Alignment.center,
-                        child: federationInfo,
-                      ),
-                    ),
+                    Expanded(flex: 1, child: Align(alignment: Alignment.center, child: federationInfo)),
 
                     const SizedBox(width: 16),
 
@@ -515,11 +439,7 @@ class _FederationPreviewState extends State<FederationPreview> {
 
               if (widget.welcomeMessage != null) ...[
                 const SizedBox(height: 12),
-                Text(
-                  widget.welcomeMessage!,
-                  style: theme.textTheme.bodyMedium,
-                  textAlign: TextAlign.center,
-                ),
+                Text(widget.welcomeMessage!, style: theme.textTheme.bodyMedium, textAlign: TextAlign.center),
               ],
 
               const SizedBox(height: 16),
@@ -544,11 +464,7 @@ class _FederationPreviewState extends State<FederationPreview> {
                 height: 300,
                 child: TabBarView(
                   children: [
-                    _buildGuardianList(
-                      thresh,
-                      totalGuardians,
-                      isFederationOnline,
-                    ),
+                    _buildGuardianList(thresh, totalGuardians, isFederationOnline),
                     FederationUtxoList(
                       invite: widget.inviteCode,
                       fed: widget.fed,
@@ -570,10 +486,7 @@ class _FederationPreviewState extends State<FederationPreview> {
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      Icon(
-                        _showAdvanced ? Icons.expand_less : Icons.expand_more,
-                        color: theme.colorScheme.secondary,
-                      ),
+                      Icon(_showAdvanced ? Icons.expand_less : Icons.expand_more, color: theme.colorScheme.secondary),
                       const SizedBox(width: 8),
                       Text(
                         "Advanced",
@@ -596,13 +509,8 @@ class _FederationPreviewState extends State<FederationPreview> {
                       foregroundColor: Colors.red,
                       side: const BorderSide(color: Colors.red),
                       padding: const EdgeInsets.symmetric(vertical: 14),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      textStyle: const TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w600,
-                      ),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      textStyle: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
                     ),
                   ),
                 ],
@@ -626,16 +534,9 @@ class _FederationPreviewState extends State<FederationPreview> {
             return ListTile(
               dense: true,
               contentPadding: EdgeInsets.zero,
-              leading: Icon(
-                Icons.circle,
-                color: isOnline ? Colors.green : Colors.red,
-                size: 12,
-              ),
+              leading: Icon(Icons.circle, color: isOnline ? Colors.green : Colors.red, size: 12),
               title: Text(guardian.name),
-              subtitle:
-                  isOnline
-                      ? Text('Version: ${guardian.version}')
-                      : const Text('Offline'),
+              subtitle: isOnline ? Text('Version: ${guardian.version}') : const Text('Offline'),
               trailing: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
@@ -646,14 +547,9 @@ class _FederationPreviewState extends State<FederationPreview> {
                       icon: const Icon(Icons.copy, size: 20),
                       onPressed: () async {
                         try {
-                          final inviteCode = await getInviteCode(
-                            federationId: widget.fed.federationId,
-                            peer: index,
-                          );
+                          final inviteCode = await getInviteCode(federationId: widget.fed.federationId, peer: index);
                           if (!context.mounted) return;
-                          await Clipboard.setData(
-                            ClipboardData(text: inviteCode),
-                          );
+                          await Clipboard.setData(ClipboardData(text: inviteCode));
                           ToastService().show(
                             message: "Invite code for ${guardian.name} copied",
                             duration: const Duration(seconds: 5),
@@ -661,9 +557,7 @@ class _FederationPreviewState extends State<FederationPreview> {
                             icon: Icon(Icons.check),
                           );
                         } catch (e) {
-                          AppLogger.instance.error(
-                            "Error getting invite code: $e",
-                          );
+                          AppLogger.instance.error("Error getting invite code: $e");
                           ToastService().show(
                             message: "Could not get invite code",
                             duration: const Duration(seconds: 5),
@@ -680,21 +574,13 @@ class _FederationPreviewState extends State<FederationPreview> {
                       icon: const Icon(Icons.qr_code, size: 20),
                       onPressed: () async {
                         try {
-                          final inviteCode = await getInviteCode(
-                            federationId: widget.fed.federationId,
-                            peer: index,
-                          );
+                          final inviteCode = await getInviteCode(federationId: widget.fed.federationId, peer: index);
                           if (!context.mounted) return;
                           showDialog(
                             context: context,
                             builder:
                                 (context) => AlertDialog(
-                                  title: const Center(
-                                    child: Text(
-                                      "Invite Code",
-                                      textAlign: TextAlign.center,
-                                    ),
-                                  ),
+                                  title: const Center(child: Text("Invite Code", textAlign: TextAlign.center)),
                                   content: AspectRatio(
                                     aspectRatio: 1,
                                     child: GestureDetector(
@@ -703,33 +589,20 @@ class _FederationPreviewState extends State<FederationPreview> {
                                           context: context,
                                           builder:
                                               (_) => Dialog(
-                                                backgroundColor:
-                                                    Colors.transparent,
+                                                backgroundColor: Colors.transparent,
                                                 insetPadding: EdgeInsets.zero,
                                                 child: GestureDetector(
-                                                  onTap:
-                                                      () =>
-                                                          Navigator.of(
-                                                            context,
-                                                            rootNavigator: true,
-                                                          ).pop(),
+                                                  onTap: () => Navigator.of(context, rootNavigator: true).pop(),
                                                   child: Container(
                                                     width: double.infinity,
                                                     height: double.infinity,
-                                                    color: Colors.black
-                                                        .withOpacity(0.9),
+                                                    color: Colors.black.withOpacity(0.9),
                                                     child: Center(
                                                       child: QrImageView(
                                                         data: inviteCode,
-                                                        version:
-                                                            QrVersions.auto,
-                                                        backgroundColor:
-                                                            Colors.white,
-                                                        size:
-                                                            MediaQuery.of(
-                                                              context,
-                                                            ).size.width *
-                                                            0.9,
+                                                        version: QrVersions.auto,
+                                                        backgroundColor: Colors.white,
+                                                        size: MediaQuery.of(context).size.width * 0.9,
                                                       ),
                                                     ),
                                                   ),
@@ -746,17 +619,14 @@ class _FederationPreviewState extends State<FederationPreview> {
                                   ),
                                   actions: [
                                     TextButton(
-                                      onPressed:
-                                          () => Navigator.of(context).pop(),
+                                      onPressed: () => Navigator.of(context).pop(),
                                       child: const Text("Close"),
                                     ),
                                   ],
                                 ),
                           );
                         } catch (e) {
-                          AppLogger.instance.error(
-                            "Error getting invite code: $e",
-                          );
+                          AppLogger.instance.error("Error getting invite code: $e");
                           ToastService().show(
                             message: "Could not get invite code",
                             duration: const Duration(seconds: 5),
@@ -781,12 +651,7 @@ class FederationUtxoList extends StatefulWidget {
   final FederationSelector fed;
   final bool isFederationOnline;
 
-  const FederationUtxoList({
-    super.key,
-    required this.invite,
-    required this.fed,
-    required this.isFederationOnline,
-  });
+  const FederationUtxoList({super.key, required this.invite, required this.fed, required this.isFederationOnline});
 
   @override
   State<FederationUtxoList> createState() => _FederationUtxoListState();
@@ -804,10 +669,7 @@ class _FederationUtxoListState extends State<FederationUtxoList> {
   Future<void> _loadWalletSummary() async {
     if (widget.isFederationOnline) {
       try {
-        final summary = await walletSummary(
-          invite: widget.invite,
-          federationId: widget.fed.federationId,
-        );
+        final summary = await walletSummary(invite: widget.invite, federationId: widget.fed.federationId);
         setState(() {
           utxos = summary;
         });
@@ -836,9 +698,7 @@ class _FederationUtxoListState extends State<FederationUtxoList> {
     final bitcoinDisplay = context.select<PreferencesProvider, BitcoinDisplay>((prefs) => prefs.bitcoinDisplay);
 
     if (!widget.isFederationOnline) {
-      return const Center(
-        child: Text("Federation is offline, cannot retrieve UTXOs."),
-      );
+      return const Center(child: Text("Federation is offline, cannot retrieve UTXOs."));
     }
 
     if (utxos == null) {
@@ -855,18 +715,12 @@ class _FederationUtxoListState extends State<FederationUtxoList> {
       separatorBuilder: (_, __) => const SizedBox(height: 10),
       itemBuilder: (context, index) {
         final utxo = utxos![index];
-        final explorerUrl = explorerUrlForNetwork(
-          utxo.txid,
-          widget.fed.network,
-        );
+        final explorerUrl = explorerUrlForNetwork(utxo.txid, widget.fed.network);
         final abbreviatedTxid = abbreviateTxid(utxo.txid);
         final txidLabel = "$abbreviatedTxid:${utxo.index}";
 
         return Container(
-          decoration: BoxDecoration(
-            color: const Color(0xFF1A1A1A),
-            borderRadius: BorderRadius.circular(12),
-          ),
+          decoration: BoxDecoration(color: const Color(0xFF1A1A1A), borderRadius: BorderRadius.circular(12)),
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,

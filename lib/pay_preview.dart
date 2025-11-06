@@ -1,7 +1,7 @@
-import 'package:ecashapp/db.dart';
+import 'package:ecashapp/generated/db.dart';
 import 'package:ecashapp/detail_row.dart';
 import 'constants/transaction_keys.dart';
-import 'package:ecashapp/multimint.dart';
+import 'package:ecashapp/generated/multimint.dart';
 import 'package:ecashapp/providers/preferences_provider.dart';
 import 'package:ecashapp/send.dart';
 import 'package:ecashapp/utils.dart';
@@ -12,11 +12,7 @@ class PaymentPreviewWidget extends StatelessWidget {
   final FederationSelector fed;
   final PaymentPreview paymentPreview;
 
-  const PaymentPreviewWidget({
-    super.key,
-    required this.fed,
-    required this.paymentPreview,
-  });
+  const PaymentPreviewWidget({super.key, required this.fed, required this.paymentPreview});
 
   @override
   Widget build(BuildContext context) {
@@ -31,10 +27,7 @@ class PaymentPreviewWidget extends StatelessWidget {
       children: [
         Text(
           'Confirm Lightning Payment',
-          style: theme.textTheme.headlineSmall?.copyWith(
-            color: theme.colorScheme.primary,
-            fontWeight: FontWeight.bold,
-          ),
+          style: theme.textTheme.headlineSmall?.copyWith(color: theme.colorScheme.primary, fontWeight: FontWeight.bold),
         ),
         const SizedBox(height: 24),
         Container(
@@ -43,37 +36,23 @@ class PaymentPreviewWidget extends StatelessWidget {
           decoration: BoxDecoration(
             color: theme.colorScheme.surfaceContainer,
             borderRadius: BorderRadius.circular(12),
-            border: Border.all(
-              color: theme.colorScheme.primary.withOpacity(0.25),
-            ),
+            border: Border.all(color: theme.colorScheme.primary.withOpacity(0.25)),
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              CopyableDetailRow(
-                label: "Payer Federation",
-                value: fed.federationName,
-              ),
+              CopyableDetailRow(label: "Payer Federation", value: fed.federationName),
               CopyableDetailRow(
                 label: TransactionDetailKeys.amount,
                 value: formatBalance(amount, true, bitcoinDisplay),
               ),
-              CopyableDetailRow(
-                label: TransactionDetailKeys.fees,
-                value: formatBalance(fees, true, bitcoinDisplay),
-              ),
+              CopyableDetailRow(label: TransactionDetailKeys.fees, value: formatBalance(fees, true, bitcoinDisplay)),
               CopyableDetailRow(
                 label: TransactionDetailKeys.total,
                 value: formatBalance(amountWithFees, true, bitcoinDisplay),
               ),
-              CopyableDetailRow(
-                label: TransactionDetailKeys.gateway,
-                value: paymentPreview.gateway,
-              ),
-              CopyableDetailRow(
-                label: TransactionDetailKeys.paymentHash,
-                value: paymentPreview.paymentHash,
-              ),
+              CopyableDetailRow(label: TransactionDetailKeys.gateway, value: paymentPreview.gateway),
+              CopyableDetailRow(label: TransactionDetailKeys.paymentHash, value: paymentPreview.paymentHash),
             ],
           ),
         ),
@@ -87,9 +66,7 @@ class PaymentPreviewWidget extends StatelessWidget {
               backgroundColor: theme.colorScheme.primary,
               foregroundColor: Colors.black,
               padding: const EdgeInsets.symmetric(vertical: 16),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(16),
-              ),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
             ),
             onPressed: () {
               Navigator.push(

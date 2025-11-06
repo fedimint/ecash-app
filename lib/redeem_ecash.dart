@@ -1,6 +1,6 @@
-import 'package:ecashapp/db.dart';
-import 'package:ecashapp/lib.dart';
-import 'package:ecashapp/multimint.dart';
+import 'package:ecashapp/generated/db.dart';
+import 'package:ecashapp/generated/lib.dart';
+import 'package:ecashapp/generated/multimint.dart';
 import 'package:ecashapp/providers/preferences_provider.dart';
 import 'package:ecashapp/success.dart';
 import 'package:ecashapp/toast.dart';
@@ -13,12 +13,7 @@ class EcashRedeemPrompt extends StatefulWidget {
   final String ecash;
   final BigInt amount;
 
-  const EcashRedeemPrompt({
-    super.key,
-    required this.fed,
-    required this.ecash,
-    required this.amount,
-  });
+  const EcashRedeemPrompt({super.key, required this.fed, required this.ecash, required this.amount});
 
   @override
   State<EcashRedeemPrompt> createState() => _EcashRedeemPromptState();
@@ -35,10 +30,7 @@ class _EcashRedeemPromptState extends State<EcashRedeemPrompt> {
     final failureMessage = "Could not claim Ecash";
 
     try {
-      final isSpent = await checkEcashSpent(
-        federationId: widget.fed.federationId,
-        ecash: widget.ecash,
-      );
+      final isSpent = await checkEcashSpent(federationId: widget.fed.federationId, ecash: widget.ecash);
 
       if (isSpent) {
         if (mounted) {
@@ -56,15 +48,9 @@ class _EcashRedeemPromptState extends State<EcashRedeemPrompt> {
         return;
       }
 
-      final operationId = await reissueEcash(
-        federationId: widget.fed.federationId,
-        ecash: widget.ecash,
-      );
+      final operationId = await reissueEcash(federationId: widget.fed.federationId, ecash: widget.ecash);
 
-      final result = await awaitEcashReissue(
-        federationId: widget.fed.federationId,
-        operationId: operationId,
-      );
+      final result = await awaitEcashReissue(federationId: widget.fed.federationId, operationId: operationId);
 
       if (result.$2 == null || result.$2 == BigInt.zero) {
         if (mounted) {
@@ -86,14 +72,7 @@ class _EcashRedeemPromptState extends State<EcashRedeemPrompt> {
 
       Navigator.push(
         context,
-        MaterialPageRoute(
-          builder:
-              (context) => Success(
-                lightning: false,
-                received: true,
-                amountMsats: widget.amount,
-              ),
-        ),
+        MaterialPageRoute(builder: (context) => Success(lightning: false, received: true, amountMsats: widget.amount)),
       );
       await Future.delayed(const Duration(seconds: 4));
       if (mounted) {
@@ -121,10 +100,7 @@ class _EcashRedeemPromptState extends State<EcashRedeemPrompt> {
 
   Future<void> _handleAsyncRedeem() async {
     try {
-      final isSpent = await checkEcashSpent(
-        federationId: widget.fed.federationId,
-        ecash: widget.ecash,
-      );
+      final isSpent = await checkEcashSpent(federationId: widget.fed.federationId, ecash: widget.ecash);
 
       if (isSpent) {
         ToastService().show(
@@ -136,10 +112,7 @@ class _EcashRedeemPromptState extends State<EcashRedeemPrompt> {
         return;
       }
 
-      await reissueEcash(
-        federationId: widget.fed.federationId,
-        ecash: widget.ecash,
-      );
+      await reissueEcash(federationId: widget.fed.federationId, ecash: widget.ecash);
 
       if (!mounted) return;
 
@@ -199,9 +172,7 @@ class _EcashRedeemPromptState extends State<EcashRedeemPrompt> {
             backgroundColor: theme.colorScheme.primary,
             foregroundColor: Colors.black,
             padding: const EdgeInsets.symmetric(vertical: 16),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(12),
-            ),
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
           ),
           child:
               _isLoading
@@ -222,9 +193,7 @@ class _EcashRedeemPromptState extends State<EcashRedeemPrompt> {
             foregroundColor: theme.colorScheme.primary,
             side: BorderSide(color: theme.colorScheme.primary),
             padding: const EdgeInsets.symmetric(vertical: 16),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(12),
-            ),
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
           ),
           child: const Text('Redeem when online'),
         ),

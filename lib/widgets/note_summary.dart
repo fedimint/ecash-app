@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:ecashapp/db.dart';
-import 'package:ecashapp/lib.dart';
-import 'package:ecashapp/multimint.dart';
+import 'package:ecashapp/generated/db.dart';
+import 'package:ecashapp/generated/lib.dart';
+import 'package:ecashapp/generated/multimint.dart';
 import 'package:ecashapp/providers/preferences_provider.dart';
 import 'package:ecashapp/utils.dart'; // for formatBalance
 import 'package:provider/provider.dart';
@@ -27,9 +27,7 @@ class _NoteSummaryState extends State<NoteSummary> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final bitcoinDisplay = context.select<PreferencesProvider, BitcoinDisplay>(
-      (prefs) => prefs.bitcoinDisplay,
-    );
+    final bitcoinDisplay = context.select<PreferencesProvider, BitcoinDisplay>((prefs) => prefs.bitcoinDisplay);
 
     return FutureBuilder<List<(BigInt, BigInt)>>(
       future: _summaryFuture,
@@ -39,15 +37,11 @@ class _NoteSummaryState extends State<NoteSummary> {
         }
 
         if (snapshot.hasError) {
-          AppLogger.instance.error(
-            "Error loading note summary: ${snapshot.error}",
-          );
+          AppLogger.instance.error("Error loading note summary: ${snapshot.error}");
           return Center(
             child: Text(
               'Could not load note summary',
-              style: theme.textTheme.bodyMedium?.copyWith(
-                color: Colors.redAccent,
-              ),
+              style: theme.textTheme.bodyMedium?.copyWith(color: Colors.redAccent),
             ),
           );
         }
@@ -64,18 +58,13 @@ class _NoteSummaryState extends State<NoteSummary> {
             dataRowColor: WidgetStatePropertyAll(const Color(0xFF1A1A1A)),
             headingTextStyle: theme.textTheme.titleLarge,
             dataTextStyle: theme.textTheme.bodyLarge,
-            columns: const [
-              DataColumn(label: Text('Denomination')),
-              DataColumn(label: Text('Count')),
-            ],
+            columns: const [DataColumn(label: Text('Denomination')), DataColumn(label: Text('Count'))],
             rows:
                 summary.map((entry) {
                   final (denom, count) = entry;
                   return DataRow(
                     cells: [
-                      DataCell(
-                        Text(formatBalance(denom, true, bitcoinDisplay)),
-                      ),
+                      DataCell(Text(formatBalance(denom, true, bitcoinDisplay))),
                       DataCell(Text(count.toString())),
                     ],
                   );

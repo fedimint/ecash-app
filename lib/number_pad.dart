@@ -1,8 +1,8 @@
 import 'package:ecashapp/app.dart';
-import 'package:ecashapp/db.dart';
+import 'package:ecashapp/generated/db.dart';
 import 'package:ecashapp/ecash_send.dart';
-import 'package:ecashapp/lib.dart';
-import 'package:ecashapp/multimint.dart';
+import 'package:ecashapp/generated/lib.dart';
+import 'package:ecashapp/generated/multimint.dart';
 import 'package:ecashapp/onchain_send.dart';
 import 'package:ecashapp/pay_preview.dart';
 import 'package:ecashapp/providers/preferences_provider.dart';
@@ -158,9 +158,7 @@ class _NumberPadState extends State<NumberPad> {
           final amountMsats = amountSats * BigInt.from(1000);
 
           // Check balance first
-          final fedBalance = await balance(
-            federationId: widget.fed.federationId,
-          );
+          final fedBalance = await balance(federationId: widget.fed.federationId);
           if (amountMsats > fedBalance) {
             ToastService().show(
               message: "Balance is too low!",
@@ -184,15 +182,9 @@ class _NumberPadState extends State<NumberPad> {
               );
 
               // Get and show payment preview
-              final preview = await paymentPreview(
-                federationId: widget.fed.federationId,
-                bolt11: invoice,
-              );
+              final preview = await paymentPreview(federationId: widget.fed.federationId, bolt11: invoice);
 
-              return PaymentPreviewWidget(
-                fed: widget.fed,
-                paymentPreview: preview,
-              );
+              return PaymentPreviewWidget(fed: widget.fed, paymentPreview: preview);
             },
           );
         } else {
@@ -232,51 +224,40 @@ class _NumberPadState extends State<NumberPad> {
     if (event is KeyDownEvent) {
       final key = event.logicalKey;
       // Handle Enter for confirm
-      if (key == LogicalKeyboardKey.enter ||
-          key == LogicalKeyboardKey.numpadEnter) {
+      if (key == LogicalKeyboardKey.enter || key == LogicalKeyboardKey.numpadEnter) {
         _onConfirm();
         return;
       }
 
       String digit = '';
-      if (key == LogicalKeyboardKey.digit0 ||
-          key == LogicalKeyboardKey.numpad0) {
+      if (key == LogicalKeyboardKey.digit0 || key == LogicalKeyboardKey.numpad0) {
         digit = '0';
       }
-      if (key == LogicalKeyboardKey.digit1 ||
-          key == LogicalKeyboardKey.numpad1) {
+      if (key == LogicalKeyboardKey.digit1 || key == LogicalKeyboardKey.numpad1) {
         digit = '1';
       }
-      if (key == LogicalKeyboardKey.digit2 ||
-          key == LogicalKeyboardKey.numpad2) {
+      if (key == LogicalKeyboardKey.digit2 || key == LogicalKeyboardKey.numpad2) {
         digit = '2';
       }
-      if (key == LogicalKeyboardKey.digit3 ||
-          key == LogicalKeyboardKey.numpad3) {
+      if (key == LogicalKeyboardKey.digit3 || key == LogicalKeyboardKey.numpad3) {
         digit = '3';
       }
-      if (key == LogicalKeyboardKey.digit4 ||
-          key == LogicalKeyboardKey.numpad4) {
+      if (key == LogicalKeyboardKey.digit4 || key == LogicalKeyboardKey.numpad4) {
         digit = '4';
       }
-      if (key == LogicalKeyboardKey.digit5 ||
-          key == LogicalKeyboardKey.numpad5) {
+      if (key == LogicalKeyboardKey.digit5 || key == LogicalKeyboardKey.numpad5) {
         digit = '5';
       }
-      if (key == LogicalKeyboardKey.digit6 ||
-          key == LogicalKeyboardKey.numpad6) {
+      if (key == LogicalKeyboardKey.digit6 || key == LogicalKeyboardKey.numpad6) {
         digit = '6';
       }
-      if (key == LogicalKeyboardKey.digit7 ||
-          key == LogicalKeyboardKey.numpad7) {
+      if (key == LogicalKeyboardKey.digit7 || key == LogicalKeyboardKey.numpad7) {
         digit = '7';
       }
-      if (key == LogicalKeyboardKey.digit8 ||
-          key == LogicalKeyboardKey.numpad8) {
+      if (key == LogicalKeyboardKey.digit8 || key == LogicalKeyboardKey.numpad8) {
         digit = '8';
       }
-      if (key == LogicalKeyboardKey.digit9 ||
-          key == LogicalKeyboardKey.numpad9) {
+      if (key == LogicalKeyboardKey.digit9 || key == LogicalKeyboardKey.numpad9) {
         digit = '9';
       }
       if (key == LogicalKeyboardKey.backspace) {
@@ -299,18 +280,12 @@ class _NumberPadState extends State<NumberPad> {
   @override
   Widget build(BuildContext context) {
     final bitcoinDisplay = context.select<PreferencesProvider, BitcoinDisplay>((prefs) => prefs.bitcoinDisplay);
-    final usdText = calculateUsdValue(
-      widget.btcPrice,
-      int.tryParse(_rawAmount) ?? 0,
-    );
+    final usdText = calculateUsdValue(widget.btcPrice, int.tryParse(_rawAmount) ?? 0);
 
     return SafeArea(
       child: Scaffold(
         appBar: AppBar(
-          title: const Text(
-            'Enter Amount',
-            style: TextStyle(fontWeight: FontWeight.bold),
-          ),
+          title: const Text('Enter Amount', style: TextStyle(fontWeight: FontWeight.bold)),
           centerTitle: true,
           backgroundColor: Colors.transparent,
           elevation: 0,
@@ -328,19 +303,13 @@ class _NumberPadState extends State<NumberPad> {
                         children: [
                           TextSpan(
                             text: _formatAmount(_rawAmount, bitcoinDisplay),
-                            style: const TextStyle(
-                              fontSize: 48,
-                              fontWeight: FontWeight.w700,
-                            ),
+                            style: const TextStyle(fontSize: 48, fontWeight: FontWeight.w700),
                           ),
                         ],
                       ),
                     ),
                     const SizedBox(height: 8),
-                    Text(
-                      usdText,
-                      style: const TextStyle(fontSize: 24, color: Colors.grey),
-                    ),
+                    Text(usdText, style: const TextStyle(fontSize: 24, color: Colors.grey)),
                   ],
                 ),
               ),
@@ -355,9 +324,7 @@ class _NumberPadState extends State<NumberPad> {
                     backgroundColor: const Color(0xFF42CFFF),
                     foregroundColor: Colors.black,
                     padding: const EdgeInsets.symmetric(vertical: 16),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(8),
-                    ),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
                   ),
                   child:
                       _creating
@@ -366,18 +333,10 @@ class _NumberPadState extends State<NumberPad> {
                             height: 20,
                             child: CircularProgressIndicator(
                               strokeWidth: 2,
-                              valueColor: AlwaysStoppedAnimation<Color>(
-                                Colors.black,
-                              ),
+                              valueColor: AlwaysStoppedAnimation<Color>(Colors.black),
                             ),
                           )
-                          : const Text(
-                            'Confirm',
-                            style: TextStyle(
-                              fontSize: 18,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
+                          : const Text('Confirm', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
                 ),
               ),
             ),
@@ -395,8 +354,7 @@ class _NumberPadState extends State<NumberPad> {
                 },
                 numberStyle: const TextStyle(fontSize: 24, color: Colors.grey),
                 leftWidget:
-                    widget.paymentType == PaymentType.onchain ||
-                            widget.paymentType == PaymentType.ecash
+                    widget.paymentType == PaymentType.onchain || widget.paymentType == PaymentType.ecash
                         ? TextButton(
                           onPressed: _loadingMax ? null : _onMaxPressed,
                           style: TextButton.styleFrom(
@@ -408,17 +366,11 @@ class _NumberPadState extends State<NumberPad> {
                                   ? const SizedBox(
                                     width: 16,
                                     height: 16,
-                                    child: CircularProgressIndicator(
-                                      strokeWidth: 2,
-                                      color: Colors.grey,
-                                    ),
+                                    child: CircularProgressIndicator(strokeWidth: 2, color: Colors.grey),
                                   )
                                   : const Text(
                                     'MAX',
-                                    style: TextStyle(
-                                      fontSize: 14,
-                                      fontWeight: FontWeight.bold,
-                                    ),
+                                    style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
                                     maxLines: 1,
                                     overflow: TextOverflow.clip,
                                   ),
@@ -428,10 +380,7 @@ class _NumberPadState extends State<NumberPad> {
                   onPressed: () {
                     setState(() {
                       if (_rawAmount.isNotEmpty) {
-                        _rawAmount = _rawAmount.substring(
-                          0,
-                          _rawAmount.length - 1,
-                        );
+                        _rawAmount = _rawAmount.substring(0, _rawAmount.length - 1);
                         _withdrawalMode = WithdrawalMode.specificAmount;
                       }
                     });

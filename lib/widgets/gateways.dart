@@ -1,6 +1,6 @@
-import 'package:ecashapp/db.dart';
-import 'package:ecashapp/lib.dart';
-import 'package:ecashapp/multimint.dart';
+import 'package:ecashapp/generated/db.dart';
+import 'package:ecashapp/generated/lib.dart';
+import 'package:ecashapp/generated/multimint.dart';
 import 'package:ecashapp/providers/preferences_provider.dart';
 import 'package:ecashapp/theme.dart';
 import 'package:ecashapp/utils.dart';
@@ -20,9 +20,7 @@ class GatewaysList extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final bitcoinDisplay = context.select<PreferencesProvider, BitcoinDisplay>(
-      (prefs) => prefs.bitcoinDisplay,
-    );
+    final bitcoinDisplay = context.select<PreferencesProvider, BitcoinDisplay>((prefs) => prefs.bitcoinDisplay);
 
     return FutureBuilder<List<FedimintGateway>>(
       future: _fetchGateways(),
@@ -48,23 +46,15 @@ class GatewaysList extends StatelessWidget {
                 borderRadius: BorderRadius.circular(16),
                 boxShadow: [
                   BoxShadow(
-                    color: Theme.of(
-                      context,
-                    ).colorScheme.primary.withOpacity(0.1),
+                    color: Theme.of(context).colorScheme.primary.withOpacity(0.1),
                     blurRadius: 8,
                     offset: const Offset(0, 4),
                   ),
                 ],
               ),
               child: ListTile(
-                contentPadding: const EdgeInsets.symmetric(
-                  horizontal: 20,
-                  vertical: 16,
-                ),
-                leading: Icon(
-                  Icons.device_hub,
-                  color: Theme.of(context).colorScheme.primary,
-                ),
+                contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+                leading: Icon(Icons.device_hub, color: Theme.of(context).colorScheme.primary),
                 title: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -72,9 +62,7 @@ class GatewaysList extends StatelessWidget {
                     const SizedBox(height: 4),
                     Text(
                       "${formatBalance(g.baseRoutingFee, true, bitcoinDisplay)} + ${g.ppmRoutingFee} ppm",
-                      style: theme.textTheme.bodyMedium?.copyWith(
-                        color: Colors.white60,
-                      ),
+                      style: theme.textTheme.bodyMedium?.copyWith(color: Colors.white60),
                     ),
                   ],
                 ),

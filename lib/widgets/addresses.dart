@@ -1,19 +1,15 @@
-import 'package:ecashapp/multimint.dart';
+import 'package:ecashapp/generated/multimint.dart';
 import 'package:ecashapp/toast.dart';
 import 'package:ecashapp/utils.dart';
 import 'package:flutter/material.dart';
-import 'package:ecashapp/lib.dart';
+import 'package:ecashapp/generated/lib.dart';
 import 'package:flutter/services.dart';
 
 class OnchainAddressesList extends StatefulWidget {
   final FederationSelector fed;
   final VoidCallback updateAddresses;
 
-  const OnchainAddressesList({
-    super.key,
-    required this.fed,
-    required this.updateAddresses,
-  });
+  const OnchainAddressesList({super.key, required this.fed, required this.updateAddresses});
 
   @override
   State<OnchainAddressesList> createState() => _OnchainAddressesListState();
@@ -32,11 +28,7 @@ class _OnchainAddressesListState extends State<OnchainAddressesList> {
     return '${amount.toString()} sats';
   }
 
-  String abbreviateAddress(
-    String address, {
-    int headLength = 8,
-    int tailLength = 8,
-  }) {
+  String abbreviateAddress(String address, {int headLength = 8, int tailLength = 8}) {
     if (address.length <= headLength + tailLength) return address;
     final head = address.substring(0, headLength);
     final tail = address.substring(address.length - tailLength);
@@ -57,10 +49,7 @@ class _OnchainAddressesListState extends State<OnchainAddressesList> {
   Future<void> _refreshAddress(BigInt tweakIdx, String address) async {
     try {
       // Call the Rust async function recheckAddress for the given address and federation
-      await recheckAddress(
-        federationId: widget.fed.federationId,
-        tweakIdx: tweakIdx,
-      );
+      await recheckAddress(federationId: widget.fed.federationId, tweakIdx: tweakIdx);
       widget.updateAddresses();
 
       ToastService().show(
@@ -88,19 +77,9 @@ class _OnchainAddressesListState extends State<OnchainAddressesList> {
         if (snapshot.connectionState == ConnectionState.waiting) {
           return const Center(child: CircularProgressIndicator());
         } else if (snapshot.hasError) {
-          return Center(
-            child: Text(
-              'Failed to load addresses',
-              style: Theme.of(context).textTheme.bodyMedium,
-            ),
-          );
+          return Center(child: Text('Failed to load addresses', style: Theme.of(context).textTheme.bodyMedium));
         } else if (!snapshot.hasData || snapshot.data!.isEmpty) {
-          return Center(
-            child: Text(
-              'No addresses found',
-              style: Theme.of(context).textTheme.bodyMedium,
-            ),
-          );
+          return Center(child: Text('No addresses found', style: Theme.of(context).textTheme.bodyMedium));
         }
 
         final addresses = snapshot.data!;
@@ -115,20 +94,14 @@ class _OnchainAddressesListState extends State<OnchainAddressesList> {
               margin: const EdgeInsets.symmetric(vertical: 6, horizontal: 4),
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(12),
-                side: BorderSide(
-                  color: Theme.of(context).colorScheme.primary.withOpacity(0.4),
-                  width: 1,
-                ),
+                side: BorderSide(color: Theme.of(context).colorScheme.primary.withOpacity(0.4), width: 1),
               ),
               color:
                   amount != null
                       ? Theme.of(context).colorScheme.primary.withOpacity(0.1)
                       : Theme.of(context).colorScheme.surface,
               child: Padding(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 12,
-                  vertical: 8,
-                ),
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -138,9 +111,7 @@ class _OnchainAddressesListState extends State<OnchainAddressesList> {
                         Expanded(
                           child: SelectableText(
                             abbreviateAddress(address),
-                            style: Theme.of(
-                              context,
-                            ).textTheme.bodyLarge?.copyWith(letterSpacing: 0.8),
+                            style: Theme.of(context).textTheme.bodyLarge?.copyWith(letterSpacing: 0.8),
                             maxLines: 1,
                           ),
                         ),

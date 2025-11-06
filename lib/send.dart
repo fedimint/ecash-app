@@ -1,6 +1,6 @@
 import 'package:ecashapp/failure.dart';
-import 'package:ecashapp/lib.dart';
-import 'package:ecashapp/multimint.dart';
+import 'package:ecashapp/generated/lib.dart';
+import 'package:ecashapp/generated/multimint.dart';
 import 'package:ecashapp/success.dart';
 import 'package:ecashapp/toast.dart';
 import 'package:ecashapp/utils.dart';
@@ -63,10 +63,7 @@ class _SendPaymentState extends State<SendPayment> {
   void _payInvoice() async {
     try {
       final operationId = await _sendPayment();
-      final finalState = await awaitSend(
-        federationId: widget.fed.federationId,
-        operationId: operationId,
-      );
+      final finalState = await awaitSend(federationId: widget.fed.federationId, operationId: operationId);
 
       if (!mounted) return;
 
@@ -75,12 +72,7 @@ class _SendPaymentState extends State<SendPayment> {
         Navigator.push(
           context,
           MaterialPageRoute(
-            builder:
-                (context) => Success(
-                  lightning: true,
-                  received: false,
-                  amountMsats: widget.amountMsats,
-                ),
+            builder: (context) => Success(lightning: true, received: false, amountMsats: widget.amountMsats),
           ),
         );
 
@@ -93,12 +85,7 @@ class _SendPaymentState extends State<SendPayment> {
         AppLogger.instance.error('Payment was unsuccessful');
 
         // Navigate to Failure screen
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (context) => Failure(amountMsats: widget.amountMsats),
-          ),
-        );
+        Navigator.push(context, MaterialPageRoute(builder: (context) => Failure(amountMsats: widget.amountMsats)));
 
         await Future.delayed(const Duration(seconds: 4));
 
@@ -138,9 +125,7 @@ class _SendPaymentState extends State<SendPayment> {
                   children: [
                     const SizedBox(height: 24),
                     CircularProgressIndicator(
-                      valueColor: AlwaysStoppedAnimation(
-                        theme.colorScheme.primary,
-                      ),
+                      valueColor: AlwaysStoppedAnimation(theme.colorScheme.primary),
                       strokeWidth: 3,
                     ),
                     const SizedBox(height: 24),

@@ -1,5 +1,5 @@
-import 'package:ecashapp/db.dart';
-import 'package:ecashapp/lib.dart' as rust_lib;
+import 'package:ecashapp/generated/db.dart';
+import 'package:ecashapp/generated/lib.dart' as rust_lib;
 import 'package:ecashapp/utils.dart';
 import 'package:flutter/foundation.dart';
 

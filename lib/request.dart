@@ -1,10 +1,10 @@
 import 'dart:async';
 import 'constants/transaction_keys.dart';
 
-import 'package:ecashapp/db.dart';
+import 'package:ecashapp/generated/db.dart';
 import 'package:ecashapp/detail_row.dart';
-import 'package:ecashapp/lib.dart';
-import 'package:ecashapp/multimint.dart';
+import 'package:ecashapp/generated/lib.dart';
+import 'package:ecashapp/generated/multimint.dart';
 import 'package:ecashapp/providers/preferences_provider.dart';
 import 'package:ecashapp/success.dart';
 import 'package:ecashapp/toast.dart';
@@ -76,20 +76,12 @@ class _RequestState extends State<Request> with SingleTickerProviderStateMixin {
 
   void _waitForPayment() async {
     try {
-      await awaitReceive(
-        federationId: widget.fed.federationId,
-        operationId: widget.operationId,
-      );
+      await awaitReceive(federationId: widget.fed.federationId, operationId: widget.operationId);
       if (mounted) {
         Navigator.push(
           context,
           MaterialPageRoute(
-            builder:
-                (context) => Success(
-                  lightning: true,
-                  received: true,
-                  amountMsats: widget.requestedAmountMsats,
-                ),
+            builder: (context) => Success(lightning: true, received: true, amountMsats: widget.requestedAmountMsats),
           ),
         );
         await Future.delayed(const Duration(seconds: 4));
@@ -151,16 +143,11 @@ class _RequestState extends State<Request> with SingleTickerProviderStateMixin {
             children: [
               const Spacer(),
               Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 12,
-                  vertical: 6,
-                ),
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                 decoration: BoxDecoration(
                   color: theme.colorScheme.surfaceContainerHighest,
                   borderRadius: BorderRadius.circular(8),
-                  border: Border.all(
-                    color: theme.colorScheme.primary.withOpacity(0.5),
-                  ),
+                  border: Border.all(color: theme.colorScheme.primary.withOpacity(0.5)),
                 ),
                 child: Text(
                   _formatDuration(_remaining),
@@ -192,12 +179,7 @@ class _RequestState extends State<Request> with SingleTickerProviderStateMixin {
                         backgroundColor: Colors.transparent,
                         insetPadding: EdgeInsets.zero,
                         child: GestureDetector(
-                          onTap:
-                              () =>
-                                  Navigator.of(
-                                    context,
-                                    rootNavigator: true,
-                                  ).pop(),
+                          onTap: () => Navigator.of(context, rootNavigator: true).pop(),
                           child: Container(
                             width: double.infinity,
                             height: double.infinity,
@@ -215,11 +197,7 @@ class _RequestState extends State<Request> with SingleTickerProviderStateMixin {
                       ),
                 );
               },
-              child: QrImageView(
-                data: widget.invoice,
-                version: QrVersions.auto,
-                backgroundColor: Colors.white,
-              ),
+              child: QrImageView(data: widget.invoice, version: QrVersions.auto, backgroundColor: Colors.white),
             ),
           ),
           const SizedBox(height: 24),
@@ -228,9 +206,7 @@ class _RequestState extends State<Request> with SingleTickerProviderStateMixin {
             decoration: BoxDecoration(
               color: theme.colorScheme.surfaceContainerHighest,
               borderRadius: BorderRadius.circular(12),
-              border: Border.all(
-                color: theme.colorScheme.primary.withOpacity(0.4),
-              ),
+              border: Border.all(color: theme.colorScheme.primary.withOpacity(0.4)),
             ),
             child: Row(
               children: [
@@ -247,21 +223,11 @@ class _RequestState extends State<Request> with SingleTickerProviderStateMixin {
                 IconButton(
                   icon: AnimatedSwitcher(
                     duration: const Duration(milliseconds: 300),
-                    transitionBuilder:
-                        (child, anim) =>
-                            ScaleTransition(scale: anim, child: child),
+                    transitionBuilder: (child, anim) => ScaleTransition(scale: anim, child: child),
                     child:
                         _copied
-                            ? Icon(
-                              Icons.check,
-                              key: const ValueKey('copied'),
-                              color: theme.colorScheme.primary,
-                            )
-                            : Icon(
-                              Icons.copy,
-                              key: const ValueKey('copy'),
-                              color: theme.colorScheme.primary,
-                            ),
+                            ? Icon(Icons.check, key: const ValueKey('copied'), color: theme.colorScheme.primary)
+                            : Icon(Icons.copy, key: const ValueKey('copy'), color: theme.colorScheme.primary),
                   ),
                   onPressed: _copyInvoice,
                 ),
@@ -275,9 +241,7 @@ class _RequestState extends State<Request> with SingleTickerProviderStateMixin {
             decoration: BoxDecoration(
               color: theme.colorScheme.surfaceContainer,
               borderRadius: BorderRadius.circular(12),
-              border: Border.all(
-                color: theme.colorScheme.primary.withOpacity(0.25),
-              ),
+              border: Border.all(color: theme.colorScheme.primary.withOpacity(0.25)),
             ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -286,22 +250,10 @@ class _RequestState extends State<Request> with SingleTickerProviderStateMixin {
                   label: TransactionDetailKeys.amount,
                   value: formatBalance(widget.requestedAmountMsats, true, bitcoinDisplay),
                 ),
-                CopyableDetailRow(
-                  label: TransactionDetailKeys.fees,
-                  value: formatBalance(fees, true, bitcoinDisplay),
-                ),
-                CopyableDetailRow(
-                  label: TransactionDetailKeys.gateway,
-                  value: widget.gateway,
-                ),
-                CopyableDetailRow(
-                  label: TransactionDetailKeys.payeePublicKey,
-                  value: widget.pubkey,
-                ),
-                CopyableDetailRow(
-                  label: TransactionDetailKeys.paymentHash,
-                  value: widget.paymentHash,
-                ),
+                CopyableDetailRow(label: TransactionDetailKeys.fees, value: formatBalance(fees, true, bitcoinDisplay)),
+                CopyableDetailRow(label: TransactionDetailKeys.gateway, value: widget.gateway),
+                CopyableDetailRow(label: TransactionDetailKeys.payeePublicKey, value: widget.pubkey),
+                CopyableDetailRow(label: TransactionDetailKeys.paymentHash, value: widget.paymentHash),
               ],
             ),
           ),

@@ -1,5 +1,5 @@
-import 'package:ecashapp/lib.dart';
-import 'package:ecashapp/multimint.dart';
+import 'package:ecashapp/generated/lib.dart';
+import 'package:ecashapp/generated/multimint.dart';
 import 'package:ecashapp/toast.dart';
 import 'package:ecashapp/utils.dart';
 import 'package:flutter/material.dart';
@@ -26,9 +26,7 @@ class _OnChainReceiveContentState extends State<OnChainReceiveContent> {
 
   Future<void> _fetchAddress() async {
     try {
-      final address = await allocateDepositAddress(
-        federationId: widget.fed.federationId,
-      );
+      final address = await allocateDepositAddress(federationId: widget.fed.federationId);
       if (!mounted) return;
       setState(() {
         _address = address;
@@ -67,8 +65,7 @@ class _OnChainReceiveContentState extends State<OnChainReceiveContent> {
               ? const Center(child: CircularProgressIndicator())
               : Column(
                 mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment:
-                    CrossAxisAlignment.stretch, // Stretch children
+                crossAxisAlignment: CrossAxisAlignment.stretch, // Stretch children
                 children: [
                   Text(
                     'You can use this address to deposit funds to the federation:',
@@ -79,9 +76,7 @@ class _OnChainReceiveContentState extends State<OnChainReceiveContent> {
                   SelectableText(
                     _address!,
                     textAlign: TextAlign.center,
-                    style: theme.textTheme.titleLarge?.copyWith(
-                      fontWeight: FontWeight.bold,
-                    ),
+                    style: theme.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
                   ),
                   const SizedBox(height: 24),
                   SizedBox(
@@ -97,9 +92,7 @@ class _OnChainReceiveContentState extends State<OnChainReceiveContent> {
                         backgroundColor: theme.colorScheme.primary,
                         foregroundColor: Colors.black,
                         padding: const EdgeInsets.symmetric(vertical: 16),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                       ),
                     ),
                   ),

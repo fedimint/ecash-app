@@ -1,7 +1,7 @@
 import 'package:ecashapp/fed_preview.dart';
-import 'package:ecashapp/lib.dart';
-import 'package:ecashapp/multimint.dart';
-import 'package:ecashapp/nostr.dart';
+import 'package:ecashapp/generated/lib.dart';
+import 'package:ecashapp/generated/multimint.dart';
+import 'package:ecashapp/generated/nostr.dart';
 import 'package:ecashapp/theme.dart';
 import 'package:ecashapp/toast.dart';
 import 'package:ecashapp/utils.dart';
@@ -113,16 +113,9 @@ class _Discover extends State<Discover> with SingleTickerProviderStateMixin {
             if (snapshot.connectionState == ConnectionState.waiting) {
               return _buildShimmerLoading();
             } else if (snapshot.hasError) {
-              return Center(
-                child: Text(
-                  "Error: ${snapshot.error}",
-                  style: TextStyle(color: theme.colorScheme.error),
-                ),
-              );
+              return Center(child: Text("Error: ${snapshot.error}", style: TextStyle(color: theme.colorScheme.error)));
             } else if (!snapshot.hasData || snapshot.data!.isEmpty) {
-              return const Center(
-                child: Text("No public federations available to join"),
-              );
+              return const Center(child: Text("No public federations available to join"));
             }
 
             final federations = snapshot.data!;
@@ -133,9 +126,7 @@ class _Discover extends State<Discover> with SingleTickerProviderStateMixin {
                 const SizedBox(height: 24),
                 _buildInviteCodeSection(theme),
                 const SizedBox(height: 24),
-                ...federations.map(
-                  (federation) => _buildFederationCard(federation, theme),
-                ),
+                ...federations.map((federation) => _buildFederationCard(federation, theme)),
                 const SizedBox(height: 32),
                 _buildObserverLink(theme),
               ],
@@ -157,10 +148,7 @@ class _Discover extends State<Discover> with SingleTickerProviderStateMixin {
             (context, index) => Container(
               margin: const EdgeInsets.only(bottom: 16),
               height: 80,
-              decoration: BoxDecoration(
-                color: Colors.grey[800],
-                borderRadius: BorderRadius.circular(16),
-              ),
+              decoration: BoxDecoration(color: Colors.grey[800], borderRadius: BorderRadius.circular(16)),
             ),
       ),
     );
@@ -194,10 +182,7 @@ class _Discover extends State<Discover> with SingleTickerProviderStateMixin {
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
-          color:
-              _isInviteCodeValid
-                  ? Theme.of(context).colorScheme.primary
-                  : Colors.grey[700]!,
+          color: _isInviteCodeValid ? Theme.of(context).colorScheme.primary : Colors.grey[700]!,
           width: 2,
         ),
       ),
@@ -215,17 +200,11 @@ class _Discover extends State<Discover> with SingleTickerProviderStateMixin {
               enabled: !_isLoadingInvitePreview,
             ),
           ),
-          if (_isInviteCodeValid)
-            Icon(
-              Icons.check_circle,
-              color: Theme.of(context).colorScheme.primary,
-            ),
+          if (_isInviteCodeValid) Icon(Icons.check_circle, color: Theme.of(context).colorScheme.primary),
           const SizedBox(width: 8),
           ElevatedButton(
             onPressed:
-                (_isInviteCodeValid &&
-                        !_isLoadingInvitePreview &&
-                        _gettingMetadata == null)
+                (_isInviteCodeValid && !_isLoadingInvitePreview && _gettingMetadata == null)
                     ? () async {
                       setState(() => _isLoadingInvitePreview = true);
                       final inviteCode = _inviteCodeController.text.trim();
@@ -236,9 +215,7 @@ class _Discover extends State<Discover> with SingleTickerProviderStateMixin {
             style: ElevatedButton.styleFrom(
               backgroundColor: Theme.of(context).colorScheme.primary,
               foregroundColor: Colors.black,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
-              ),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
               padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
             ),
             child:
@@ -246,10 +223,7 @@ class _Discover extends State<Discover> with SingleTickerProviderStateMixin {
                     ? const SizedBox(
                       width: 20,
                       height: 20,
-                      child: CircularProgressIndicator(
-                        strokeWidth: 2,
-                        color: Colors.black,
-                      ),
+                      child: CircularProgressIndicator(strokeWidth: 2, color: Colors.black),
                     )
                     : const Text('Preview'),
           ),
@@ -279,13 +253,7 @@ class _Discover extends State<Discover> with SingleTickerProviderStateMixin {
       margin: const EdgeInsets.only(bottom: 16),
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(20),
-        boxShadow: [
-          BoxShadow(
-            color: Theme.of(context).colorScheme.primary,
-            blurRadius: 8,
-            offset: const Offset(0, 2),
-          ),
-        ],
+        boxShadow: [BoxShadow(color: Theme.of(context).colorScheme.primary, blurRadius: 8, offset: const Offset(0, 2))],
       ),
       child: Card(
         color: Colors.grey[900],
@@ -307,25 +275,17 @@ class _Discover extends State<Discover> with SingleTickerProviderStateMixin {
                 ClipRRect(
                   borderRadius: BorderRadius.circular(12),
                   child:
-                      federation.picture != null &&
-                              federation.picture!.isNotEmpty
+                      federation.picture != null && federation.picture!.isNotEmpty
                           ? Image.network(
                             federation.picture!,
                             width: 50,
                             height: 50,
                             fit: BoxFit.cover,
                             errorBuilder:
-                                (_, __, ___) => Image.asset(
-                                  'assets/images/fedimint-icon-color.png',
-                                  width: 50,
-                                  height: 50,
-                                ),
+                                (_, __, ___) =>
+                                    Image.asset('assets/images/fedimint-icon-color.png', width: 50, height: 50),
                           )
-                          : Image.asset(
-                            'assets/images/fedimint-icon-color.png',
-                            width: 50,
-                            height: 50,
-                          ),
+                          : Image.asset('assets/images/fedimint-icon-color.png', width: 50, height: 50),
                 ),
                 const SizedBox(width: 16),
                 Expanded(
@@ -342,49 +302,30 @@ class _Discover extends State<Discover> with SingleTickerProviderStateMixin {
                       const SizedBox(height: 4),
                       Text(
                         "Network: ${federation.network == 'bitcoin' ? 'mainnet' : federation.network}",
-                        style: theme.textTheme.bodySmall?.copyWith(
-                          color: Colors.grey[400],
-                        ),
+                        style: theme.textTheme.bodySmall?.copyWith(color: Colors.grey[400]),
                       ),
-                      if (federation.about != null &&
-                          federation.about!.isNotEmpty) ...[
+                      if (federation.about != null && federation.about!.isNotEmpty) ...[
                         const SizedBox(height: 6),
-                        Text(
-                          federation.about!,
-                          style: theme.textTheme.bodySmall?.copyWith(
-                            color: Colors.grey[400],
-                          ),
-                        ),
+                        Text(federation.about!, style: theme.textTheme.bodySmall?.copyWith(color: Colors.grey[400])),
                       ],
                     ],
                   ),
                 ),
                 const SizedBox(width: 12),
                 _gettingMetadata == federation
-                    ? const SizedBox(
-                      width: 24,
-                      height: 24,
-                      child: CircularProgressIndicator(strokeWidth: 2),
-                    )
+                    ? const SizedBox(width: 24, height: 24, child: CircularProgressIndicator(strokeWidth: 2))
                     : ElevatedButton.icon(
                       style: ElevatedButton.styleFrom(
                         backgroundColor: Theme.of(context).colorScheme.primary,
                         foregroundColor: Colors.black,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 14,
-                          vertical: 10,
-                        ),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
                       ),
                       onPressed:
                           (_gettingMetadata == null && !_isLoadingInvitePreview)
                               ? () async {
                                 setState(() => _gettingMetadata = federation);
-                                await _onPreviewPressed(
-                                  federation.inviteCodes.first,
-                                );
+                                await _onPreviewPressed(federation.inviteCodes.first);
                               }
                               : null,
                       icon: const Icon(Icons.info_outline, size: 18),

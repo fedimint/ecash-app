@@ -1,7 +1,7 @@
 import 'dart:io';
 
 import 'package:ecashapp/app.dart';
-import 'package:ecashapp/lib.dart';
+import 'package:ecashapp/generated/lib.dart';
 import 'package:ecashapp/utils.dart';
 import 'package:flutter/material.dart';
 import 'create_wallet.dart';
@@ -31,28 +31,16 @@ class _SplashState extends State<Splash> {
     if (exists) {
       await loadMultimint(path: widget.dir.path);
       final initialFeds = await federations();
-      screen = MyApp(
-        initialFederations: initialFeds,
-        recoverFederationInviteCodes: false,
-      );
+      screen = MyApp(initialFederations: initialFeds, recoverFederationInviteCodes: false);
     } else {
       screen = CreateWallet(dir: widget.dir);
     }
 
-    Navigator.of(
-      context,
-    ).pushReplacement(MaterialPageRoute(builder: (_) => screen));
+    Navigator.of(context).pushReplacement(MaterialPageRoute(builder: (_) => screen));
   }
 
   @override
   Widget build(BuildContext context) {
-    return const Scaffold(
-      body: Center(
-        child: Image(
-          image: AssetImage('assets/images/ecash-app.png'),
-          width: 200,
-        ),
-      ),
-    );
+    return const Scaffold(body: Center(child: Image(image: AssetImage('assets/images/ecash-app.png'), width: 200)));
   }
 }

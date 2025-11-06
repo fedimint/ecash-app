@@ -1,4 +1,4 @@
-import 'package:ecashapp/lib.dart';
+import 'package:ecashapp/generated/lib.dart';
 import 'package:flutter/material.dart';
 import 'dart:async';
 
@@ -23,9 +23,7 @@ class _MnemonicState extends State<Mnemonic> {
   void _startHold() {
     _timer?.cancel();
     _progress = 0.0;
-    _timer = Timer.periodic(const Duration(milliseconds: tickIntervalMs), (
-      timer,
-    ) {
+    _timer = Timer.periodic(const Duration(milliseconds: tickIntervalMs), (timer) {
       setState(() {
         _progress += tickIntervalMs / holdDurationMs;
         if (_progress >= 1.0) {
@@ -68,10 +66,7 @@ class _MnemonicState extends State<Mnemonic> {
           Container(
             margin: const EdgeInsets.only(bottom: 16),
             padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: Colors.orange.shade100,
-              borderRadius: BorderRadius.circular(8),
-            ),
+            decoration: BoxDecoration(color: Colors.orange.shade100, borderRadius: BorderRadius.circular(8)),
             child: Row(
               children: [
                 const Icon(Icons.warning, color: Colors.orange),
@@ -87,11 +82,7 @@ class _MnemonicState extends State<Mnemonic> {
           ),
         ],
         const SizedBox(height: 16),
-        Text(
-          "Your Recovery Phrase",
-          style: theme.textTheme.titleLarge,
-          textAlign: TextAlign.center,
-        ),
+        Text("Your Recovery Phrase", style: theme.textTheme.titleLarge, textAlign: TextAlign.center),
         const SizedBox(height: 24),
         GridView.builder(
           shrinkWrap: true,
@@ -108,11 +99,7 @@ class _MnemonicState extends State<Mnemonic> {
               children: [
                 Text("${index + 1}. ", style: theme.textTheme.bodyMedium),
                 Expanded(
-                  child: Text(
-                    widget.words[index],
-                    style: theme.textTheme.bodyLarge,
-                    overflow: TextOverflow.ellipsis,
-                  ),
+                  child: Text(widget.words[index], style: theme.textTheme.bodyLarge, overflow: TextOverflow.ellipsis),
                 ),
               ],
             );
@@ -128,10 +115,7 @@ class _MnemonicState extends State<Mnemonic> {
               builder: (context, constraints) {
                 final fillWidth = constraints.maxWidth * _progress;
                 return Container(
-                  decoration: BoxDecoration(
-                    color: baseColor,
-                    borderRadius: BorderRadius.circular(12),
-                  ),
+                  decoration: BoxDecoration(color: baseColor, borderRadius: BorderRadius.circular(12)),
                   padding: const EdgeInsets.symmetric(vertical: 14),
                   child: Stack(
                     children: [
@@ -146,8 +130,7 @@ class _MnemonicState extends State<Mnemonic> {
                             right: Radius.circular(_progress == 1 ? 12 : 0),
                           ),
                         ),
-                        height:
-                            48, // matches button height padding + line height
+                        height: 48, // matches button height padding + line height
                       ),
 
                       // Centered text:

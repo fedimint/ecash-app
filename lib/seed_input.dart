@@ -1,4 +1,4 @@
-import 'package:ecashapp/lib.dart';
+import 'package:ecashapp/generated/lib.dart';
 import 'package:ecashapp/utils.dart';
 import 'package:flutter/material.dart';
 
@@ -6,18 +6,13 @@ class SeedPhraseInput extends StatefulWidget {
   final void Function(List<String> words) onConfirm;
   final List<String> validWords;
 
-  const SeedPhraseInput({
-    super.key,
-    required this.onConfirm,
-    required this.validWords,
-  });
+  const SeedPhraseInput({super.key, required this.onConfirm, required this.validWords});
 
   @override
   State<SeedPhraseInput> createState() => _SeedPhraseInputState();
 }
 
-class _SeedPhraseInputState extends State<SeedPhraseInput>
-    with SingleTickerProviderStateMixin {
+class _SeedPhraseInputState extends State<SeedPhraseInput> with SingleTickerProviderStateMixin {
   late final List<TextEditingController> controllers;
   late final List<FocusNode> focusNodes;
 
@@ -44,14 +39,8 @@ class _SeedPhraseInputState extends State<SeedPhraseInput>
 
     focusNodes = List.generate(12, (_) => FocusNode());
 
-    _successAnimationController = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 300),
-    );
-    _successScaleAnimation = CurvedAnimation(
-      parent: _successAnimationController,
-      curve: Curves.easeOutBack,
-    );
+    _successAnimationController = AnimationController(vsync: this, duration: const Duration(milliseconds: 300));
+    _successScaleAnimation = CurvedAnimation(parent: _successAnimationController, curve: Curves.easeOutBack);
   }
 
   @override
@@ -132,8 +121,7 @@ class _SeedPhraseInputState extends State<SeedPhraseInput>
     if (_inputText.isEmpty) {
       borderColor = Colors.transparent;
     } else {
-      borderColor =
-          _isInputValid ? theme.colorScheme.primary : Colors.redAccent;
+      borderColor = _isInputValid ? theme.colorScheme.primary : Colors.redAccent;
     }
 
     final header = Row(
@@ -141,10 +129,7 @@ class _SeedPhraseInputState extends State<SeedPhraseInput>
         Image.asset('assets/images/nostr.png', width: 48, height: 48),
         const SizedBox(width: 12),
         Expanded(
-          child: Text(
-            "Want to use a custom Nostr relay for recovery? Add it here",
-            style: theme.textTheme.bodyMedium,
-          ),
+          child: Text("Want to use a custom Nostr relay for recovery? Add it here", style: theme.textTheme.bodyMedium),
         ),
       ],
     );
@@ -179,25 +164,18 @@ class _SeedPhraseInputState extends State<SeedPhraseInput>
                 width: 120, // match button width
                 child: AnimatedSwitcher(
                   duration: const Duration(milliseconds: 300),
-                  transitionBuilder:
-                      (child, animation) =>
-                          FadeTransition(opacity: animation, child: child),
+                  transitionBuilder: (child, animation) => FadeTransition(opacity: animation, child: child),
                   child:
                       _showSuccessAnimation
                           ? ScaleTransition(
                             scale: _successScaleAnimation,
-                            child: const Icon(
-                              Icons.check_circle,
-                              color: Colors.greenAccent,
-                              size: 32,
-                            ),
+                            child: const Icon(Icons.check_circle, color: Colors.greenAccent, size: 32),
                           )
                           : ElevatedButton(
                             key: const ValueKey('addRelayButton'),
                             onPressed: _isInputValid ? _onAddRelay : null,
                             style: ElevatedButton.styleFrom(
-                              backgroundColor:
-                                  Theme.of(context).colorScheme.primary,
+                              backgroundColor: Theme.of(context).colorScheme.primary,
                               foregroundColor: Colors.black,
                             ),
                             child: const Text('Add Relay'),
@@ -249,10 +227,7 @@ class _SeedPhraseInputState extends State<SeedPhraseInput>
                       decoration: BoxDecoration(
                         color: theme.colorScheme.surface,
                         borderRadius: BorderRadius.circular(12),
-                        border: Border.all(
-                          color: getBorderColor(index, theme),
-                          width: getBorderWidth(index),
-                        ),
+                        border: Border.all(color: getBorderColor(index, theme), width: getBorderWidth(index)),
                       ),
                       padding: const EdgeInsets.symmetric(horizontal: 12),
                       child: Row(
@@ -273,24 +248,14 @@ class _SeedPhraseInputState extends State<SeedPhraseInput>
                                 if (value.text.isEmpty) {
                                   return const Iterable<String>.empty();
                                 }
-                                return widget.validWords.where(
-                                  (word) =>
-                                      word.startsWith(value.text.toLowerCase()),
-                                );
+                                return widget.validWords.where((word) => word.startsWith(value.text.toLowerCase()));
                               },
-                              fieldViewBuilder: (
-                                context,
-                                textFieldController,
-                                focusNode,
-                                onFieldSubmitted,
-                              ) {
+                              fieldViewBuilder: (context, textFieldController, focusNode, onFieldSubmitted) {
                                 return TextFormField(
                                   controller: textFieldController,
                                   focusNode: focusNode,
                                   onFieldSubmitted: (_) => onFieldSubmitted(),
-                                  style: theme.textTheme.bodyMedium?.copyWith(
-                                    color: Colors.white,
-                                  ),
+                                  style: theme.textTheme.bodyMedium?.copyWith(color: Colors.white),
                                   decoration: const InputDecoration(
                                     border: InputBorder.none,
                                     isDense: true,
@@ -299,11 +264,7 @@ class _SeedPhraseInputState extends State<SeedPhraseInput>
                                   ),
                                 );
                               },
-                              optionsViewBuilder: (
-                                context,
-                                onSelected,
-                                options,
-                              ) {
+                              optionsViewBuilder: (context, onSelected, options) {
                                 return Align(
                                   alignment: Alignment.topLeft,
                                   child: Material(
@@ -315,12 +276,7 @@ class _SeedPhraseInputState extends State<SeedPhraseInput>
                                       children:
                                           options.map((option) {
                                             return ListTile(
-                                              title: Text(
-                                                option,
-                                                style: const TextStyle(
-                                                  color: Colors.white,
-                                                ),
-                                              ),
+                                              title: Text(option, style: const TextStyle(color: Colors.white)),
                                               onTap: () => onSelected(option),
                                             );
                                           }).toList(),
@@ -345,20 +301,14 @@ class _SeedPhraseInputState extends State<SeedPhraseInput>
                   style: ElevatedButton.styleFrom(
                     padding: const EdgeInsets.symmetric(vertical: 16),
                     backgroundColor:
-                        isValidSeed
-                            ? theme.colorScheme.primary
-                            : theme.colorScheme.primary.withOpacity(0.3),
-                    foregroundColor:
-                        isValidSeed ? Colors.black : Colors.black45,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(16),
-                    ),
+                        isValidSeed ? theme.colorScheme.primary : theme.colorScheme.primary.withOpacity(0.3),
+                    foregroundColor: isValidSeed ? Colors.black : Colors.black45,
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
                   ),
                   onPressed:
                       isValidSeed
                           ? () {
-                            final words =
-                                controllers.map((c) => c.text.trim()).toList();
+                            final words = controllers.map((c) => c.text.trim()).toList();
                             widget.onConfirm(words);
                           }
                           : null,
@@ -377,11 +327,7 @@ class _SeedPhraseInputState extends State<SeedPhraseInput>
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     const Text('Advanced'),
-                    Icon(
-                      _showAdvanced
-                          ? Icons.keyboard_arrow_up
-                          : Icons.keyboard_arrow_down,
-                    ),
+                    Icon(_showAdvanced ? Icons.keyboard_arrow_up : Icons.keyboard_arrow_down),
                   ],
                 ),
               ),

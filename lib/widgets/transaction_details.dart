@@ -1,8 +1,8 @@
 import 'package:ecashapp/app.dart';
 import '../constants/transaction_keys.dart';
 import 'package:ecashapp/detail_row.dart';
-import 'package:ecashapp/lib.dart';
-import 'package:ecashapp/multimint.dart';
+import 'package:ecashapp/generated/lib.dart';
+import 'package:ecashapp/generated/multimint.dart';
 import 'package:ecashapp/redeem_ecash.dart';
 import 'package:ecashapp/theme.dart';
 import 'package:ecashapp/toast.dart';
@@ -15,13 +15,7 @@ class TransactionDetails extends StatefulWidget {
   final Map<String, String> details;
   final FederationSelector fed;
 
-  const TransactionDetails({
-    super.key,
-    required this.tx,
-    required this.icon,
-    required this.details,
-    required this.fed,
-  });
+  const TransactionDetails({super.key, required this.tx, required this.icon, required this.details, required this.fed});
 
   @override
   State<TransactionDetails> createState() => _TransactionDetailsState();
@@ -57,10 +51,7 @@ class _TransactionDetailsState extends State<TransactionDetails> {
     try {
       final ecash = widget.details[TransactionDetailKeys.ecash];
       if (ecash != null) {
-        final result = await checkEcashSpent(
-          federationId: widget.fed.federationId,
-          ecash: ecash,
-        );
+        final result = await checkEcashSpent(federationId: widget.fed.federationId, ecash: ecash);
         if (result) {
           ToastService().show(
             message: "This Ecash has been claimed",
@@ -109,11 +100,7 @@ class _TransactionDetailsState extends State<TransactionDetails> {
       await showAppModalBottomSheet(
         context: context,
         childBuilder: () async {
-          return EcashRedeemPrompt(
-            fed: widget.fed,
-            ecash: ecash,
-            amount: amount,
-          );
+          return EcashRedeemPrompt(fed: widget.fed, ecash: ecash, amount: amount);
         },
         heightFactor: 0.33,
       );
@@ -148,9 +135,7 @@ class _TransactionDetailsState extends State<TransactionDetails> {
           decoration: BoxDecoration(
             color: theme.colorScheme.surfaceContainer,
             borderRadius: BorderRadius.circular(12),
-            border: Border.all(
-              color: theme.colorScheme.primary.withOpacity(0.25),
-            ),
+            border: Border.all(color: theme.colorScheme.primary.withOpacity(0.25)),
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -178,10 +163,7 @@ class _TransactionDetailsState extends State<TransactionDetails> {
                         break;
                     }
 
-                    final explorerUrl =
-                        txid != null
-                            ? explorerUrlForNetwork(txid, widget.fed.network)
-                            : null;
+                    final explorerUrl = txid != null ? explorerUrlForNetwork(txid, widget.fed.network) : null;
 
                     return CopyableDetailRow(
                       label: entry.key,
@@ -196,27 +178,16 @@ class _TransactionDetailsState extends State<TransactionDetails> {
                                   iconSize: 20,
                                   padding: EdgeInsets.zero,
                                   visualDensity: VisualDensity.compact,
-                                  icon: Icon(
-                                    Icons.open_in_new,
-                                    color: theme.colorScheme.secondary,
-                                  ),
+                                  icon: Icon(Icons.open_in_new, color: theme.colorScheme.secondary),
                                   onPressed:
-                                      () async =>
-                                          await showExplorerConfirmation(
-                                            context,
-                                            Uri.parse(explorerUrl),
-                                          ),
+                                      () async => await showExplorerConfirmation(context, Uri.parse(explorerUrl)),
                                 ),
                               )
                               : null,
                     );
                   }
 
-                  return CopyableDetailRow(
-                    label: entry.key,
-                    value: entry.value,
-                    abbreviate: abbreviate,
-                  );
+                  return CopyableDetailRow(label: entry.key, value: entry.value, abbreviate: abbreviate);
                 }).toList(),
           ),
         ),
@@ -231,9 +202,7 @@ class _TransactionDetailsState extends State<TransactionDetails> {
                   backgroundColor: theme.colorScheme.primary,
                   foregroundColor: Colors.black,
                   padding: const EdgeInsets.symmetric(vertical: 16),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                 ),
                 child:
                     _checking
@@ -242,9 +211,7 @@ class _TransactionDetailsState extends State<TransactionDetails> {
                           height: 20,
                           child: CircularProgressIndicator(
                             strokeWidth: 2,
-                            valueColor: AlwaysStoppedAnimation<Color>(
-                              Colors.black,
-                            ),
+                            valueColor: AlwaysStoppedAnimation<Color>(Colors.black),
                           ),
                         )
                         : const Text("Check Claim Status"),
@@ -256,9 +223,7 @@ class _TransactionDetailsState extends State<TransactionDetails> {
                   foregroundColor: theme.colorScheme.primary,
                   side: BorderSide(color: theme.colorScheme.primary),
                   padding: const EdgeInsets.symmetric(vertical: 16),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                 ),
                 child: const Text("Redeem Ecash"),
               ),

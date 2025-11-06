@@ -1,7 +1,7 @@
 import 'dart:io';
 
 import 'package:ecashapp/app.dart';
-import 'package:ecashapp/lib.dart';
+import 'package:ecashapp/generated/lib.dart';
 import 'package:ecashapp/seed_input.dart';
 import 'package:ecashapp/utils.dart';
 import 'package:flutter/material.dart';
@@ -40,13 +40,7 @@ class _CreateWalletState extends State<CreateWallet> {
       await createNewMultimint(path: widget.dir.path);
       if (mounted) {
         Navigator.of(context).pushReplacement(
-          MaterialPageRoute(
-            builder:
-                (_) => MyApp(
-                  initialFederations: [],
-                  recoverFederationInviteCodes: false,
-                ),
-          ),
+          MaterialPageRoute(builder: (_) => MyApp(initialFederations: [], recoverFederationInviteCodes: false)),
         );
       }
     } catch (e) {
@@ -60,13 +54,7 @@ class _CreateWalletState extends State<CreateWallet> {
       await createMultimintFromWords(path: widget.dir.path, words: words);
       if (mounted) {
         Navigator.of(context).pushReplacement(
-          MaterialPageRoute(
-            builder:
-                (_) => MyApp(
-                  initialFederations: [],
-                  recoverFederationInviteCodes: true,
-                ),
-          ),
+          MaterialPageRoute(builder: (_) => MyApp(initialFederations: [], recoverFederationInviteCodes: true)),
         );
       }
     } catch (e) {
@@ -86,11 +74,7 @@ class _CreateWalletState extends State<CreateWallet> {
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
               const SizedBox(height: 48),
-              Image.asset(
-                'assets/images/ecash-app.png',
-                width: 64,
-                height: 64,
-              ),
+              Image.asset('assets/images/ecash-app.png', width: 64, height: 64),
               const SizedBox(height: 24),
               Text(
                 'Welcome to Ecash App',
@@ -111,8 +95,7 @@ class _CreateWalletState extends State<CreateWallet> {
               _WalletOptionCard(
                 icon: Icons.fiber_new,
                 title: 'Create New Wallet',
-                description:
-                    'Set up a brand new wallet with a secure seed phrase.',
+                description: 'Set up a brand new wallet with a secure seed phrase.',
                 onTap: _isCreating ? null : _handleCreateWallet,
                 trailing:
                     _isCreating
@@ -121,9 +104,7 @@ class _CreateWalletState extends State<CreateWallet> {
                           width: 20,
                           child: CircularProgressIndicator(
                             strokeWidth: 2,
-                            valueColor: AlwaysStoppedAnimation<Color>(
-                              Theme.of(context).colorScheme.primary,
-                            ),
+                            valueColor: AlwaysStoppedAnimation<Color>(Theme.of(context).colorScheme.primary),
                           ),
                         )
                         : null,
@@ -140,11 +121,7 @@ class _CreateWalletState extends State<CreateWallet> {
                         : () {
                           Navigator.of(context).push(
                             MaterialPageRoute(
-                              builder:
-                                  (_) => SeedPhraseInput(
-                                    onConfirm: _handleRecoverWallet,
-                                    validWords: _words,
-                                  ),
+                              builder: (_) => SeedPhraseInput(onConfirm: _handleRecoverWallet, validWords: _words),
                             ),
                           );
                         },
@@ -201,12 +178,7 @@ class _WalletOptionCard extends StatelessWidget {
                     ),
                   ),
                   const SizedBox(height: 4),
-                  Text(
-                    description,
-                    style: theme.textTheme.bodyMedium?.copyWith(
-                      color: Colors.white70,
-                    ),
-                  ),
+                  Text(description, style: theme.textTheme.bodyMedium?.copyWith(color: Colors.white70)),
                 ],
               ),
             ),

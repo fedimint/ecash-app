@@ -1,9 +1,9 @@
 import 'dart:async';
 import 'constants/transaction_keys.dart';
-import 'package:ecashapp/db.dart';
+import 'package:ecashapp/generated/db.dart';
 import 'package:ecashapp/detail_row.dart';
-import 'package:ecashapp/lib.dart';
-import 'package:ecashapp/multimint.dart';
+import 'package:ecashapp/generated/lib.dart';
+import 'package:ecashapp/generated/multimint.dart';
 import 'package:ecashapp/number_pad.dart';
 import 'package:ecashapp/providers/preferences_provider.dart';
 import 'package:ecashapp/success.dart';
@@ -49,9 +49,7 @@ class _OnchainSendState extends State<OnchainSend> {
   @override
   void initState() {
     super.initState();
-    _addressController = TextEditingController(
-      text: widget.defaultAddress ?? '',
-    );
+    _addressController = TextEditingController(text: widget.defaultAddress ?? '');
     _addressController.addListener(_onAddressChanged);
   }
 
@@ -171,9 +169,7 @@ class _OnchainSendState extends State<OnchainSend> {
   }
 
   Future<void> _withdraw() async {
-    if (_addressController.text.isEmpty ||
-        _pegOutFees == null ||
-        _actualWithdrawalAmount == null) {
+    if (_addressController.text.isEmpty || _pegOutFees == null || _actualWithdrawalAmount == null) {
       return;
     }
 
@@ -188,10 +184,7 @@ class _OnchainSendState extends State<OnchainSend> {
         pegOutFees: _pegOutFees!,
       );
 
-      final txid = await awaitWithdraw(
-        federationId: widget.fed.federationId,
-        operationId: operationId,
-      );
+      final txid = await awaitWithdraw(federationId: widget.fed.federationId, operationId: operationId);
 
       if (mounted) {
         Navigator.of(context).push(
@@ -200,9 +193,7 @@ class _OnchainSendState extends State<OnchainSend> {
                 (context) => Success(
                   lightning: false,
                   received: false,
-                  amountMsats:
-                      (_actualWithdrawalAmount ?? widget.amountSats) *
-                      BigInt.from(1000),
+                  amountMsats: (_actualWithdrawalAmount ?? widget.amountSats) * BigInt.from(1000),
                   txid: txid,
                   onCompleted: widget.onWithdrawCompleted,
                 ),
@@ -251,11 +242,7 @@ class _OnchainSendState extends State<OnchainSend> {
           padding: const EdgeInsets.symmetric(vertical: 16),
           child: Column(
             children: [
-              Icon(
-                Icons.outbound,
-                size: 48,
-                color: Theme.of(context).colorScheme.primary,
-              ),
+              Icon(Icons.outbound, size: 48, color: Theme.of(context).colorScheme.primary),
               const SizedBox(height: 12),
               Text(
                 formatBalance(widget.amountSats * BigInt.from(1000), false, bitcoinDisplay),
@@ -298,13 +285,7 @@ class _OnchainSendState extends State<OnchainSend> {
                           ? const Row(
                             mainAxisSize: MainAxisSize.min,
                             children: [
-                              SizedBox(
-                                width: 16,
-                                height: 16,
-                                child: CircularProgressIndicator(
-                                  strokeWidth: 2,
-                                ),
-                              ),
+                              SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2)),
                               SizedBox(width: 8),
                               Text('Calculating...'),
                             ],
@@ -329,44 +310,25 @@ class _OnchainSendState extends State<OnchainSend> {
                   decoration: BoxDecoration(
                     color: Theme.of(context).colorScheme.surfaceContainer,
                     borderRadius: BorderRadius.circular(12),
-                    border: Border.all(
-                      color: Theme.of(
-                        context,
-                      ).colorScheme.primary.withOpacity(0.25),
-                    ),
+                    border: Border.all(color: Theme.of(context).colorScheme.primary.withOpacity(0.25)),
                   ),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       CopyableDetailRow(
                         label: TransactionDetailKeys.amount,
-                        value: formatBalance(
-                          _actualWithdrawalAmount! * BigInt.from(1000),
-                          false,
-                          bitcoinDisplay,
-                        ),
+                        value: formatBalance(_actualWithdrawalAmount! * BigInt.from(1000), false, bitcoinDisplay),
                       ),
-                      CopyableDetailRow(
-                        label: 'Fee Rate',
-                        value: _formatFeeRate(_feeRateSatsPerVbyte),
-                      ),
-                      CopyableDetailRow(
-                        label: 'Tx Size',
-                        value: '${_txSizeVbytes ?? 0} vB',
-                      ),
+                      CopyableDetailRow(label: 'Fee Rate', value: _formatFeeRate(_feeRateSatsPerVbyte)),
+                      CopyableDetailRow(label: 'Tx Size', value: '${_txSizeVbytes ?? 0} vB'),
                       CopyableDetailRow(
                         label: TransactionDetailKeys.fee,
-                        value: formatBalance(
-                          _feeAmountSats! * BigInt.from(1000),
-                          false,
-                          bitcoinDisplay,
-                        ),
+                        value: formatBalance(_feeAmountSats! * BigInt.from(1000), false, bitcoinDisplay),
                       ),
                       CopyableDetailRow(
                         label: TransactionDetailKeys.total,
                         value: formatBalance(
-                          (_actualWithdrawalAmount! + _feeAmountSats!) *
-                              BigInt.from(1000),
+                          (_actualWithdrawalAmount! + _feeAmountSats!) * BigInt.from(1000),
                           false,
                           bitcoinDisplay,
                         ),
@@ -377,8 +339,7 @@ class _OnchainSendState extends State<OnchainSend> {
                           _getQuoteTimeRemaining(),
                           style: TextStyle(
                             color:
-                                _quoteExpiry != null &&
-                                        DateTime.now().isAfter(_quoteExpiry!)
+                                _quoteExpiry != null && DateTime.now().isAfter(_quoteExpiry!)
                                     ? Colors.red
                                     : Theme.of(context).colorScheme.primary,
                             fontWeight: FontWeight.bold,
@@ -399,22 +360,13 @@ class _OnchainSendState extends State<OnchainSend> {
                   children: [
                     Expanded(
                       child: TextButton(
-                        onPressed:
-                            (_loadingFees || _withdrawing)
-                                ? null
-                                : _calculateFees,
+                        onPressed: (_loadingFees || _withdrawing) ? null : _calculateFees,
                         child:
                             _loadingFees
                                 ? const Row(
                                   mainAxisSize: MainAxisSize.min,
                                   children: [
-                                    SizedBox(
-                                      width: 14,
-                                      height: 14,
-                                      child: CircularProgressIndicator(
-                                        strokeWidth: 2,
-                                      ),
-                                    ),
+                                    SizedBox(width: 14, height: 14, child: CircularProgressIndicator(strokeWidth: 2)),
                                     SizedBox(width: 6),
                                     Text('Updating...'),
                                   ],
@@ -427,8 +379,7 @@ class _OnchainSendState extends State<OnchainSend> {
                       child: ElevatedButton(
                         onPressed: canWithdraw ? _withdraw : null,
                         style: ElevatedButton.styleFrom(
-                          backgroundColor:
-                              Theme.of(context).colorScheme.primary,
+                          backgroundColor: Theme.of(context).colorScheme.primary,
                           foregroundColor: Colors.black,
                           padding: const EdgeInsets.symmetric(vertical: 16),
                         ),
@@ -437,10 +388,7 @@ class _OnchainSendState extends State<OnchainSend> {
                                 ? const SizedBox(
                                   height: 20,
                                   width: 20,
-                                  child: CircularProgressIndicator(
-                                    color: Colors.black,
-                                    strokeWidth: 2,
-                                  ),
+                                  child: CircularProgressIndicator(color: Colors.black, strokeWidth: 2),
                                 )
                                 : const Text('Confirm Withdrawal'),
                       ),

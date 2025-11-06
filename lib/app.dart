@@ -2,8 +2,8 @@ import 'dart:async';
 
 import 'package:ecashapp/discover.dart';
 import 'package:ecashapp/screens/dashboard.dart';
-import 'package:ecashapp/lib.dart';
-import 'package:ecashapp/multimint.dart';
+import 'package:ecashapp/generated/lib.dart';
+import 'package:ecashapp/generated/multimint.dart';
 import 'package:ecashapp/providers/preferences_provider.dart';
 import 'package:ecashapp/scan.dart';
 import 'package:ecashapp/setttings.dart';
@@ -19,11 +19,7 @@ final invoicePaidToastVisible = ValueNotifier<bool>(true);
 class MyApp extends StatefulWidget {
   final List<(FederationSelector, bool)> initialFederations;
   final bool recoverFederationInviteCodes;
-  const MyApp({
-    super.key,
-    required this.initialFederations,
-    required this.recoverFederationInviteCodes,
-  });
+  const MyApp({super.key, required this.initialFederations, required this.recoverFederationInviteCodes});
 
   @override
   State<MyApp> createState() => _MyAppState();
@@ -86,10 +82,7 @@ class _MyAppState extends State<MyApp> {
         await _handleFundsReceived(
           federationId: event.field0.$1,
           amountMsats: amountMsats,
-          icon: Icon(
-            Icons.currency_bitcoin,
-            color: Theme.of(context).colorScheme.primary,
-          ),
+          icon: Icon(Icons.currency_bitcoin, color: Theme.of(context).colorScheme.primary),
         );
       } else if (event is MultimintEvent_NostrRecovery) {
         if (event.field2 != null) {
@@ -103,8 +96,7 @@ class _MyAppState extends State<MyApp> {
           if (_selectedFederation == null) {
             _startOrResetRecoveryTimer();
             setState(() {
-              _recoveryStatus =
-                  "Trying to re-join ${event.field0} using peer ${event.field1}...";
+              _recoveryStatus = "Trying to re-join ${event.field0} using peer ${event.field1}...";
             });
           }
         }
@@ -138,17 +130,13 @@ class _MyAppState extends State<MyApp> {
 
     final bitcoinDisplay = context.read<PreferencesProvider>().bitcoinDisplay;
     final amount = formatBalance(amountMsats, false, bitcoinDisplay);
-    final federationIdString = await federationIdToString(
-      federationId: federationId,
-    );
+    final federationIdString = await federationIdToString(federationId: federationId);
 
     FederationSelector? selector;
     bool? recovering;
 
     for (var sel in _feds) {
-      final idString = await federationIdToString(
-        federationId: sel.$1.federationId,
-      );
+      final idString = await federationIdToString(federationId: sel.$1.federationId);
       if (idString == federationIdString) {
         selector = sel.$1;
         recovering = sel.$2;
@@ -238,9 +226,7 @@ class _MyAppState extends State<MyApp> {
   void _onScanPressed(BuildContext context) async {
     final result = await Navigator.push<(FederationSelector, bool)>(
       context,
-      MaterialPageRoute(
-        builder: (context) => ScanQRPage(onPay: _onJoinPressed),
-      ),
+      MaterialPageRoute(builder: (context) => ScanQRPage(onPay: _onJoinPressed)),
     );
 
     if (result != null) {
@@ -281,20 +267,12 @@ class _MyAppState extends State<MyApp> {
             children: [
               const CircularProgressIndicator(),
               const SizedBox(height: 16),
-              Text(
-                _recoveryStatus,
-                style: const TextStyle(fontSize: 16),
-                textAlign: TextAlign.center,
-              ),
+              Text(_recoveryStatus, style: const TextStyle(fontSize: 16), textAlign: TextAlign.center),
               const SizedBox(height: 16),
               if (_recoverySecondsRemaining <= 15)
                 Text(
                   "Peer might be offline, trying for $_recoverySecondsRemaining more seconds...",
-                  style: const TextStyle(
-                    fontSize: 16,
-                    color: Colors.red,
-                    fontWeight: FontWeight.w600,
-                  ),
+                  style: const TextStyle(fontSize: 16, color: Colors.red, fontWeight: FontWeight.w600),
                   textAlign: TextAlign.center,
                 ),
             ],
@@ -313,43 +291,37 @@ class _MyAppState extends State<MyApp> {
         theme: cypherpunkNinjaTheme,
         navigatorKey: _navigatorKey,
         home: Builder(
-        builder:
-            (innerContext) => Scaffold(
-              appBar: AppBar(
-                actions: [
-                  IconButton(
-                    icon: const Icon(Icons.qr_code_scanner),
-                    tooltip: 'Scan',
-                    constraints: const BoxConstraints(
-                      minWidth: 56,
-                      minHeight: 56,
+          builder:
+              (innerContext) => Scaffold(
+                appBar: AppBar(
+                  actions: [
+                    IconButton(
+                      icon: const Icon(Icons.qr_code_scanner),
+                      tooltip: 'Scan',
+                      constraints: const BoxConstraints(minWidth: 56, minHeight: 56),
+                      onPressed: () => _onScanPressed(innerContext),
                     ),
-                    onPressed: () => _onScanPressed(innerContext),
-                  ),
-                ],
-              ),
-              drawer: SafeArea(
-                child: FederationSidebar(
-                  key: ValueKey(_refreshTrigger),
-                  initialFederations: _feds,
-                  onFederationSelected: _setSelectedFederation,
-                  onLeaveFederation: _leaveFederation,
-                  onSettingsPressed: () {
-                    Navigator.push(
-                      innerContext,
-                      MaterialPageRoute(
-                        builder:
-                            (context) => SettingsScreen(
-                              onJoin: _onJoinPressed,
-                              onGettingStarted: _onGettingStarted,
-                            ),
-                      ),
-                    );
-                  },
+                  ],
                 ),
+                drawer: SafeArea(
+                  child: FederationSidebar(
+                    key: ValueKey(_refreshTrigger),
+                    initialFederations: _feds,
+                    onFederationSelected: _setSelectedFederation,
+                    onLeaveFederation: _leaveFederation,
+                    onSettingsPressed: () {
+                      Navigator.push(
+                        innerContext,
+                        MaterialPageRoute(
+                          builder:
+                              (context) => SettingsScreen(onJoin: _onJoinPressed, onGettingStarted: _onGettingStarted),
+                        ),
+                      );
+                    },
+                  ),
+                ),
+                body: SafeArea(child: bodyContent),
               ),
-              body: SafeArea(child: bodyContent),
-            ),
         ),
       ),
     );
