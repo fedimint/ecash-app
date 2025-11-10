@@ -413,6 +413,9 @@ class _NumberPadState extends State<NumberPad> {
     final remainingBalance = _getRemainingBalance();
     final isOverBalance = _isAmountOverBalance();
     final theme = Theme.of(context);
+    final bitcoinDisplay = context.select<PreferencesProvider, BitcoinDisplay>(
+      (prefs) => prefs.bitcoinDisplay,
+    );
 
     return Center(
       child: AnimatedContainer(
@@ -516,7 +519,7 @@ class _NumberPadState extends State<NumberPad> {
                             color: isOverBalance ? Colors.red : Colors.grey,
                           ),
                           child: Text(
-                            formatBalance(remainingBalance, false),
+                            formatBalance(remainingBalance, false, bitcoinDisplay),
                           ),
                         ),
                 ],
