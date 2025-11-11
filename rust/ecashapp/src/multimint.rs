@@ -2488,45 +2488,46 @@ impl Multimint {
 
         let operation_id = operation_id.0.to_vec();
 
-        // First check if the send was over the Lightning network
-        let external_outcome = ln_outcome.outcome::<LnPayState>();
-        match external_outcome {
-            Some(state) => match state {
-                LnPayState::Success { preimage } => Some(Transaction {
-                    kind: TransactionKind::LightningSend {
-                        fees: amount_with_fees - amount,
-                        gateway,
-                        payment_hash: meta.invoice.payment_hash().to_string(),
-                        preimage,
-                        ln_address,
-                    },
-                    amount,
-                    timestamp,
-                    operation_id,
-                }),
-                _ => None,
-            },
-            None => {
-                // If unsuccessful, check if the payment was an internal payment
-                let internal_outcome = ln_outcome.outcome::<InternalPayState>();
-                match internal_outcome {
-                    Some(state) => match state {
-                        InternalPayState::Preimage(preimage) => Some(Transaction {
-                            kind: TransactionKind::LightningSend {
-                                fees: amount_with_fees - amount,
-                                gateway,
-                                payment_hash: meta.invoice.payment_hash().to_string(),
-                                preimage: preimage.0.consensus_encode_to_hex(),
-                                ln_address,
-                            },
-                            amount,
-                            timestamp,
-                            operation_id,
-                        }),
-                        _ => None,
-                    },
+        // First check if the send was an internal payment
+        if meta.is_internal_payment {
+            let internal_outcome = ln_outcome.outcome::<InternalPayState>();
+            match internal_outcome {
+                Some(state) => match state {
+                    InternalPayState::Preimage(preimage) => Some(Transaction {
+                        kind: TransactionKind::LightningSend {
+                            fees: amount_with_fees - amount,
+                            gateway,
+                            payment_hash: meta.invoice.payment_hash().to_string(),
+                            preimage: preimage.0.consensus_encode_to_hex(),
+                            ln_address,
+                        },
+                        amount,
+                        timestamp,
+                        operation_id,
+                    }),
                     _ => None,
-                }
+                },
+                _ => None,
+            }
+        } else {
+            let external_outcome = ln_outcome.outcome::<LnPayState>();
+            match external_outcome {
+                Some(state) => match state {
+                    LnPayState::Success { preimage } => Some(Transaction {
+                        kind: TransactionKind::LightningSend {
+                            fees: amount_with_fees - amount,
+                            gateway,
+                            payment_hash: meta.invoice.payment_hash().to_string(),
+                            preimage,
+                            ln_address,
+                        },
+                        amount,
+                        timestamp,
+                        operation_id,
+                    }),
+                    _ => None,
+                },
+                None => None,
             }
         }
     }
