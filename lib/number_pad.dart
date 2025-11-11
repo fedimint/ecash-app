@@ -45,6 +45,9 @@ class _NumberPadState extends State<NumberPad> {
   String _rawAmount = '';
   bool _creating = false;
   bool _loadingMax = false;
+  bool _loadingBalance = true;
+  BigInt? _currentBalance;
+  FederationMeta? _federationMeta;
   WithdrawalMode _withdrawalMode = WithdrawalMode.specificAmount;
 
   @override
@@ -54,6 +57,37 @@ class _NumberPadState extends State<NumberPad> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _numpadFocus.requestFocus();
     });
+
+    _fetchBalance();
+    _fetchFederationMeta();
+  }
+
+  Future<void> _fetchBalance() async {
+    try {
+      final balanceMsats = await balance(federationId: widget.fed.federationId);
+      setState(() {
+        _currentBalance = balanceMsats;
+        _loadingBalance = false;
+      });
+    } catch (e) {
+      AppLogger.instance.error('Failed to fetch balance for number pad: $e');
+      setState(() {
+        _loadingBalance = false;
+      });
+    }
+  }
+
+  Future<void> _fetchFederationMeta() async {
+    try {
+      final meta = await getFederationMeta(
+        federationId: widget.fed.federationId,
+      );
+      setState(() {
+        _federationMeta = meta;
+      });
+    } catch (e) {
+      AppLogger.instance.error('Failed to fetch federation metadata: $e');
+    }
   }
 
   @override
@@ -75,6 +109,76 @@ class _NumberPadState extends State<NumberPad> {
     }
 
     return formatBalance(displayValue * BigInt.from(1000), false, bitcoinDisplay);
+  }
+
+  bool _isValidAmount() {
+    // Disable while balance is loading
+    if (_loadingBalance) return false;
+
+    // Parse the entered amount
+    final amountSats = BigInt.tryParse(_rawAmount);
+    if (amountSats == null || amountSats == BigInt.zero) {
+      return false;
+    }
+
+    // For lightning receives (no address/lnurl), only check amount > 0
+    final isLightningReceive =
+        widget.paymentType == PaymentType.lightning &&
+        widget.lightningAddressOrLnurl == null;
+
+    if (isLightningReceive) {
+      return true; // Balance check not needed for receives
+    }
+
+    // For sends (lightning with address, ecash, onchain), check balance
+    if (_currentBalance != null) {
+      final amountMsats = amountSats * BigInt.from(1000);
+      return amountMsats <= _currentBalance!;
+    }
+
+    // If balance failed to load, allow user to proceed (error will be caught later)
+    return true;
+  }
+
+  bool _isAmountOverBalance() {
+    // Don't show red if still loading or no balance available
+    if (_loadingBalance || _currentBalance == null) return false;
+
+    // Parse the entered amount
+    final amountSats = BigInt.tryParse(_rawAmount);
+    if (amountSats == null || amountSats == BigInt.zero) {
+      return false;
+    }
+
+    // For lightning receives, balance check doesn't apply
+    final isLightningReceive =
+        widget.paymentType == PaymentType.lightning &&
+        widget.lightningAddressOrLnurl == null;
+
+    if (isLightningReceive) {
+      return false;
+    }
+
+    // For sends, check if amount exceeds balance
+    final amountMsats = amountSats * BigInt.from(1000);
+    return amountMsats > _currentBalance!;
+  }
+
+  BigInt? _getRemainingBalance() {
+    // If balance is loading or unavailable, return null
+    if (_loadingBalance || _currentBalance == null) return null;
+
+    // Parse the entered amount
+    final amountSats = BigInt.tryParse(_rawAmount);
+    if (amountSats == null) {
+      return _currentBalance; // No amount entered, show full balance
+    }
+
+    final amountMsats = amountSats * BigInt.from(1000);
+    final remaining = _currentBalance! - amountMsats;
+
+    // If negative, return zero (will display as "0 sats" in red)
+    return remaining < BigInt.zero ? BigInt.zero : remaining;
   }
 
   Future<void> _onMaxPressed() async {
@@ -296,6 +400,137 @@ class _NumberPadState extends State<NumberPad> {
     }
   }
 
+  Widget _buildFederationCard() {
+    // Hide card for lightning receives
+    final isLightningReceive =
+        widget.paymentType == PaymentType.lightning &&
+        widget.lightningAddressOrLnurl == null;
+
+    if (isLightningReceive) {
+      return const SizedBox.shrink();
+    }
+
+    final remainingBalance = _getRemainingBalance();
+    final isOverBalance = _isAmountOverBalance();
+    final theme = Theme.of(context);
+    final bitcoinDisplay = context.select<PreferencesProvider, BitcoinDisplay>(
+      (prefs) => prefs.bitcoinDisplay,
+    );
+
+    return Center(
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 300),
+        curve: Curves.easeInOut,
+        constraints: const BoxConstraints(maxWidth: 400),
+        margin: const EdgeInsets.fromLTRB(16, 16, 16, 12),
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: theme.colorScheme.surface,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(
+            color: isOverBalance
+                ? Colors.red.withValues(alpha: 0.4)
+                : theme.colorScheme.primary.withValues(alpha: 0.1),
+            width: 1,
+          ),
+          boxShadow: [
+            if (isOverBalance)
+              BoxShadow(
+                color: Colors.red.withValues(alpha: 0.2),
+                blurRadius: 12,
+                spreadRadius: 2,
+                offset: const Offset(0, 2),
+              )
+            else
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.3),
+                blurRadius: 8,
+                offset: const Offset(0, 2),
+              ),
+          ],
+        ),
+        child: Row(
+          children: [
+            // Federation Image
+            ClipRRect(
+              borderRadius: BorderRadius.circular(28),
+              child: SizedBox(
+                width: 56,
+                height: 56,
+                child:
+                    _federationMeta?.picture != null &&
+                            _federationMeta!.picture!.isNotEmpty
+                        ? Image.network(
+                          _federationMeta!.picture!,
+                          fit: BoxFit.cover,
+                          errorBuilder: (context, error, stackTrace) {
+                            return Image.asset(
+                              'assets/images/fedimint-icon-color.png',
+                              fit: BoxFit.cover,
+                            );
+                          },
+                        )
+                        : Image.asset(
+                          'assets/images/fedimint-icon-color.png',
+                          fit: BoxFit.cover,
+                        ),
+              ),
+            ),
+            const SizedBox(width: 12),
+            // Federation Name and Balance
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    widget.fed.federationName,
+                    style: const TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  const SizedBox(height: 6),
+                  const Text(
+                    'Available',
+                    style: TextStyle(
+                      fontSize: 11,
+                      color: Colors.grey,
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  remainingBalance == null
+                      ? const SizedBox(
+                          width: 16,
+                          height: 16,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            color: Colors.grey,
+                          ),
+                        )
+                      : AnimatedDefaultTextStyle(
+                          duration: const Duration(milliseconds: 300),
+                          curve: Curves.easeInOut,
+                          style: TextStyle(
+                            fontSize: 14,
+                            color: isOverBalance ? Colors.red : Colors.grey,
+                          ),
+                          child: Text(
+                            formatBalance(remainingBalance, false, bitcoinDisplay),
+                          ),
+                        ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final bitcoinDisplay = context.select<PreferencesProvider, BitcoinDisplay>((prefs) => prefs.bitcoinDisplay);
@@ -317,6 +552,7 @@ class _NumberPadState extends State<NumberPad> {
         ),
         body: Column(
           children: [
+            _buildFederationCard(),
             Expanded(
               child: Center(
                 child: Column(
@@ -336,7 +572,7 @@ class _NumberPadState extends State<NumberPad> {
                         ],
                       ),
                     ),
-                    const SizedBox(height: 8),
+                    const SizedBox(height: 16),
                     Text(
                       usdText,
                       style: const TextStyle(fontSize: 24, color: Colors.grey),
@@ -345,43 +581,6 @@ class _NumberPadState extends State<NumberPad> {
                 ),
               ),
             ),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16.0),
-              child: SizedBox(
-                width: double.infinity,
-                child: ElevatedButton(
-                  onPressed: _onConfirm,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF42CFFF),
-                    foregroundColor: Colors.black,
-                    padding: const EdgeInsets.symmetric(vertical: 16),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                  ),
-                  child:
-                      _creating
-                          ? const SizedBox(
-                            width: 20,
-                            height: 20,
-                            child: CircularProgressIndicator(
-                              strokeWidth: 2,
-                              valueColor: AlwaysStoppedAnimation<Color>(
-                                Colors.black,
-                              ),
-                            ),
-                          )
-                          : const Text(
-                            'Confirm',
-                            style: TextStyle(
-                              fontSize: 18,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                ),
-              ),
-            ),
-            const SizedBox(height: 16),
             KeyboardListener(
               focusNode: _numpadFocus,
               onKeyEvent: _handleKeyEvent,
@@ -437,6 +636,43 @@ class _NumberPadState extends State<NumberPad> {
                     });
                   },
                   icon: const Icon(Icons.backspace),
+                ),
+              ),
+            ),
+            const SizedBox(height: 16),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16.0),
+              child: SizedBox(
+                width: double.infinity,
+                child: ElevatedButton(
+                  onPressed: _isValidAmount() ? _onConfirm : null,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFF42CFFF),
+                    foregroundColor: Colors.black,
+                    padding: const EdgeInsets.symmetric(vertical: 16),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                  ),
+                  child:
+                      _creating
+                          ? const SizedBox(
+                            width: 20,
+                            height: 20,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              valueColor: AlwaysStoppedAnimation<Color>(
+                                Colors.black,
+                              ),
+                            ),
+                          )
+                          : const Text(
+                            'Confirm',
+                            style: TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
                 ),
               ),
             ),
