@@ -174,7 +174,7 @@ class _ScanQRPageState extends State<ScanQRPage> {
 
       AppLogger.instance.info("Passed isValid check. Decoding payload...");
       AppLogger.instance.error("Payload: $payload");
-      final actualPayload = base64Encode(payload);
+      final actualPayload = utf8.decode(payload);
       AppLogger.instance.info("Decoded QR payload: $actualPayload");
       final parsed = await _handleText(actualPayload);
       if (!parsed) {
