@@ -33,12 +33,22 @@ class _DisplaySettingsScreenState extends State<DisplaySettingsScreen> {
         padding: const EdgeInsets.all(16),
         children: [
           // Bitcoin Display Section
-          Text(
-            'Bitcoin Display',
-            style: theme.textTheme.titleLarge?.copyWith(
-              fontWeight: FontWeight.bold,
-              color: theme.colorScheme.primary,
-            ),
+          Row(
+            children: [
+              Icon(
+                Icons.currency_bitcoin,
+                color: theme.colorScheme.primary,
+                size: 28,
+              ),
+              const SizedBox(width: 12),
+              Text(
+                'Bitcoin Display',
+                style: theme.textTheme.titleLarge?.copyWith(
+                  fontWeight: FontWeight.bold,
+                  color: theme.colorScheme.primary,
+                ),
+              ),
+            ],
           ),
           const SizedBox(height: 8),
           Card(
@@ -49,39 +59,128 @@ class _DisplaySettingsScreenState extends State<DisplaySettingsScreen> {
             child: Column(
               children: [
                 RadioListTile<BitcoinDisplay>(
-                  title: const Text('BIP177 (₿1,234)'),
+                  contentPadding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 8,
+                  ),
+                  title: Text(
+                    'BIP177 (₿1,234)',
+                    style: TextStyle(
+                      fontWeight:
+                          _selectedBitcoinDisplay == BitcoinDisplay.bip177
+                              ? FontWeight.w600
+                              : FontWeight.normal,
+                      color:
+                          _selectedBitcoinDisplay == BitcoinDisplay.bip177
+                              ? theme.colorScheme.primary
+                              : null,
+                    ),
+                  ),
+                  subtitle: Text(
+                    'Bitcoin symbol with decimal places',
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: theme.colorScheme.onSurfaceVariant,
+                    ),
+                  ),
                   value: BitcoinDisplay.bip177,
                   groupValue: _selectedBitcoinDisplay,
+                  activeColor: theme.colorScheme.primary,
                   onChanged: (value) {
                     setState(() => _selectedBitcoinDisplay = value!);
                     _saveBitcoinDisplay(value!);
                   },
                 ),
-                const Divider(height: 1),
                 RadioListTile<BitcoinDisplay>(
-                  title: const Text('Sats are the Standard (1,234 sats)'),
+                  contentPadding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 8,
+                  ),
+                  title: Text(
+                    'Sats are the Standard (1,234 sats)',
+                    style: TextStyle(
+                      fontWeight:
+                          _selectedBitcoinDisplay == BitcoinDisplay.sats
+                              ? FontWeight.w600
+                              : FontWeight.normal,
+                      color:
+                          _selectedBitcoinDisplay == BitcoinDisplay.sats
+                              ? theme.colorScheme.primary
+                              : null,
+                    ),
+                  ),
+                  subtitle: Text(
+                    'Display amounts in satoshis with "sats" label',
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: theme.colorScheme.onSurfaceVariant,
+                    ),
+                  ),
                   value: BitcoinDisplay.sats,
                   groupValue: _selectedBitcoinDisplay,
+                  activeColor: theme.colorScheme.primary,
                   onChanged: (value) {
                     setState(() => _selectedBitcoinDisplay = value!);
                     _saveBitcoinDisplay(value!);
                   },
                 ),
-                const Divider(height: 1),
                 RadioListTile<BitcoinDisplay>(
-                  title: const Text('Sat Symbol (1,234丰)'),
+                  contentPadding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 8,
+                  ),
+                  title: Text(
+                    'Sat Symbol (1,234丰)',
+                    style: TextStyle(
+                      fontWeight:
+                          _selectedBitcoinDisplay == BitcoinDisplay.symbol
+                              ? FontWeight.w600
+                              : FontWeight.normal,
+                      color:
+                          _selectedBitcoinDisplay == BitcoinDisplay.symbol
+                              ? theme.colorScheme.primary
+                              : null,
+                    ),
+                  ),
+                  subtitle: Text(
+                    'Use the satoshi symbol (丰) suffix',
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: theme.colorScheme.onSurfaceVariant,
+                    ),
+                  ),
                   value: BitcoinDisplay.symbol,
                   groupValue: _selectedBitcoinDisplay,
+                  activeColor: theme.colorScheme.primary,
                   onChanged: (value) {
                     setState(() => _selectedBitcoinDisplay = value!);
                     _saveBitcoinDisplay(value!);
                   },
                 ),
-                const Divider(height: 1),
                 RadioListTile<BitcoinDisplay>(
-                  title: const Text('No label (1,234)'),
+                  contentPadding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 8,
+                  ),
+                  title: Text(
+                    'No label (1,234)',
+                    style: TextStyle(
+                      fontWeight:
+                          _selectedBitcoinDisplay == BitcoinDisplay.nothing
+                              ? FontWeight.w600
+                              : FontWeight.normal,
+                      color:
+                          _selectedBitcoinDisplay == BitcoinDisplay.nothing
+                              ? theme.colorScheme.primary
+                              : null,
+                    ),
+                  ),
+                  subtitle: Text(
+                    'Plain numbers without currency indicators',
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: theme.colorScheme.onSurfaceVariant,
+                    ),
+                  ),
                   value: BitcoinDisplay.nothing,
                   groupValue: _selectedBitcoinDisplay,
+                  activeColor: theme.colorScheme.primary,
                   onChanged: (value) {
                     setState(() => _selectedBitcoinDisplay = value!);
                     _saveBitcoinDisplay(value!);
@@ -94,12 +193,22 @@ class _DisplaySettingsScreenState extends State<DisplaySettingsScreen> {
           const SizedBox(height: 32),
 
           // Fiat Currency Section
-          Text(
-            'Fiat Currency',
-            style: theme.textTheme.titleLarge?.copyWith(
-              fontWeight: FontWeight.bold,
-              color: theme.colorScheme.primary,
-            ),
+          Row(
+            children: [
+              Icon(
+                Icons.attach_money,
+                color: theme.colorScheme.primary,
+                size: 28,
+              ),
+              const SizedBox(width: 12),
+              Text(
+                'Fiat Currency',
+                style: theme.textTheme.titleLarge?.copyWith(
+                  fontWeight: FontWeight.bold,
+                  color: theme.colorScheme.primary,
+                ),
+              ),
+            ],
           ),
           const SizedBox(height: 8),
           Card(
@@ -110,69 +219,224 @@ class _DisplaySettingsScreenState extends State<DisplaySettingsScreen> {
             child: Column(
               children: [
                 RadioListTile<FiatCurrency>(
-                  title: const Text('US Dollar (\$)'),
+                  contentPadding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 8,
+                  ),
+                  title: Text(
+                    'US Dollar (\$)',
+                    style: TextStyle(
+                      fontWeight:
+                          _selectedFiatCurrency == FiatCurrency.usd
+                              ? FontWeight.w600
+                              : FontWeight.normal,
+                      color:
+                          _selectedFiatCurrency == FiatCurrency.usd
+                              ? theme.colorScheme.primary
+                              : null,
+                    ),
+                  ),
+                  subtitle: Text(
+                    'United States',
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: theme.colorScheme.onSurfaceVariant,
+                    ),
+                  ),
                   value: FiatCurrency.usd,
                   groupValue: _selectedFiatCurrency,
+                  activeColor: theme.colorScheme.primary,
                   onChanged: (value) {
                     setState(() => _selectedFiatCurrency = value!);
                     _saveFiatCurrency(value!);
                   },
                 ),
-                const Divider(height: 1),
                 RadioListTile<FiatCurrency>(
-                  title: const Text('Euro (€)'),
+                  contentPadding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 8,
+                  ),
+                  title: Text(
+                    'Euro (€)',
+                    style: TextStyle(
+                      fontWeight:
+                          _selectedFiatCurrency == FiatCurrency.eur
+                              ? FontWeight.w600
+                              : FontWeight.normal,
+                      color:
+                          _selectedFiatCurrency == FiatCurrency.eur
+                              ? theme.colorScheme.primary
+                              : null,
+                    ),
+                  ),
+                  subtitle: Text(
+                    'European Union',
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: theme.colorScheme.onSurfaceVariant,
+                    ),
+                  ),
                   value: FiatCurrency.eur,
                   groupValue: _selectedFiatCurrency,
+                  activeColor: theme.colorScheme.primary,
                   onChanged: (value) {
                     setState(() => _selectedFiatCurrency = value!);
                     _saveFiatCurrency(value!);
                   },
                 ),
-                const Divider(height: 1),
                 RadioListTile<FiatCurrency>(
-                  title: const Text('British Pound (£)'),
+                  contentPadding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 8,
+                  ),
+                  title: Text(
+                    'British Pound (£)',
+                    style: TextStyle(
+                      fontWeight:
+                          _selectedFiatCurrency == FiatCurrency.gbp
+                              ? FontWeight.w600
+                              : FontWeight.normal,
+                      color:
+                          _selectedFiatCurrency == FiatCurrency.gbp
+                              ? theme.colorScheme.primary
+                              : null,
+                    ),
+                  ),
+                  subtitle: Text(
+                    'United Kingdom',
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: theme.colorScheme.onSurfaceVariant,
+                    ),
+                  ),
                   value: FiatCurrency.gbp,
                   groupValue: _selectedFiatCurrency,
+                  activeColor: theme.colorScheme.primary,
                   onChanged: (value) {
                     setState(() => _selectedFiatCurrency = value!);
                     _saveFiatCurrency(value!);
                   },
                 ),
-                const Divider(height: 1),
                 RadioListTile<FiatCurrency>(
-                  title: const Text('Canadian Dollar (C\$)'),
+                  contentPadding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 8,
+                  ),
+                  title: Text(
+                    'Canadian Dollar (C\$)',
+                    style: TextStyle(
+                      fontWeight:
+                          _selectedFiatCurrency == FiatCurrency.cad
+                              ? FontWeight.w600
+                              : FontWeight.normal,
+                      color:
+                          _selectedFiatCurrency == FiatCurrency.cad
+                              ? theme.colorScheme.primary
+                              : null,
+                    ),
+                  ),
+                  subtitle: Text(
+                    'Canada',
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: theme.colorScheme.onSurfaceVariant,
+                    ),
+                  ),
                   value: FiatCurrency.cad,
                   groupValue: _selectedFiatCurrency,
+                  activeColor: theme.colorScheme.primary,
                   onChanged: (value) {
                     setState(() => _selectedFiatCurrency = value!);
                     _saveFiatCurrency(value!);
                   },
                 ),
-                const Divider(height: 1),
                 RadioListTile<FiatCurrency>(
-                  title: const Text('Swiss Franc (CHF)'),
+                  contentPadding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 8,
+                  ),
+                  title: Text(
+                    'Swiss Franc (CHF)',
+                    style: TextStyle(
+                      fontWeight:
+                          _selectedFiatCurrency == FiatCurrency.chf
+                              ? FontWeight.w600
+                              : FontWeight.normal,
+                      color:
+                          _selectedFiatCurrency == FiatCurrency.chf
+                              ? theme.colorScheme.primary
+                              : null,
+                    ),
+                  ),
+                  subtitle: Text(
+                    'Switzerland',
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: theme.colorScheme.onSurfaceVariant,
+                    ),
+                  ),
                   value: FiatCurrency.chf,
                   groupValue: _selectedFiatCurrency,
+                  activeColor: theme.colorScheme.primary,
                   onChanged: (value) {
                     setState(() => _selectedFiatCurrency = value!);
                     _saveFiatCurrency(value!);
                   },
                 ),
-                const Divider(height: 1),
                 RadioListTile<FiatCurrency>(
-                  title: const Text('Australian Dollar (A\$)'),
+                  contentPadding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 8,
+                  ),
+                  title: Text(
+                    'Australian Dollar (A\$)',
+                    style: TextStyle(
+                      fontWeight:
+                          _selectedFiatCurrency == FiatCurrency.aud
+                              ? FontWeight.w600
+                              : FontWeight.normal,
+                      color:
+                          _selectedFiatCurrency == FiatCurrency.aud
+                              ? theme.colorScheme.primary
+                              : null,
+                    ),
+                  ),
+                  subtitle: Text(
+                    'Australia',
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: theme.colorScheme.onSurfaceVariant,
+                    ),
+                  ),
                   value: FiatCurrency.aud,
                   groupValue: _selectedFiatCurrency,
+                  activeColor: theme.colorScheme.primary,
                   onChanged: (value) {
                     setState(() => _selectedFiatCurrency = value!);
                     _saveFiatCurrency(value!);
                   },
                 ),
-                const Divider(height: 1),
                 RadioListTile<FiatCurrency>(
-                  title: const Text('Japanese Yen (¥)'),
+                  contentPadding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 8,
+                  ),
+                  title: Text(
+                    'Japanese Yen (¥)',
+                    style: TextStyle(
+                      fontWeight:
+                          _selectedFiatCurrency == FiatCurrency.jpy
+                              ? FontWeight.w600
+                              : FontWeight.normal,
+                      color:
+                          _selectedFiatCurrency == FiatCurrency.jpy
+                              ? theme.colorScheme.primary
+                              : null,
+                    ),
+                  ),
+                  subtitle: Text(
+                    'Japan',
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: theme.colorScheme.onSurfaceVariant,
+                    ),
+                  ),
                   value: FiatCurrency.jpy,
                   groupValue: _selectedFiatCurrency,
+                  activeColor: theme.colorScheme.primary,
                   onChanged: (value) {
                     setState(() => _selectedFiatCurrency = value!);
                     _saveFiatCurrency(value!);
