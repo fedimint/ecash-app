@@ -1,4 +1,4 @@
-# E-Cash App Release Process
+# Ecash App Release Process
 
 ## Release Candidates
 - Create release branch (if new major/minor): `git checkout -b releases/vX.Y`
