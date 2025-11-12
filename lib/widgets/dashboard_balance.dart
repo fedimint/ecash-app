@@ -1,7 +1,7 @@
-import 'package:flutter/material.dart';
 import 'package:ecashapp/db.dart';
 import 'package:ecashapp/providers/preferences_provider.dart';
 import 'package:ecashapp/utils.dart';
+import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 class DashboardBalance extends StatelessWidget {
@@ -10,7 +10,7 @@ class DashboardBalance extends StatelessWidget {
   final bool recovering;
   final bool showMsats;
   final VoidCallback onToggle;
-  final double? btcPrice;
+  final Map<FiatCurrency, double> btcPrices;
 
   const DashboardBalance({
     super.key,
@@ -19,14 +19,21 @@ class DashboardBalance extends StatelessWidget {
     required this.recovering,
     required this.showMsats,
     required this.onToggle,
-    required this.btcPrice,
+    required this.btcPrices,
   });
 
   @override
   Widget build(BuildContext context) {
     BigInt sats =
         balanceMsats != null ? balanceMsats! ~/ BigInt.from(1000) : BigInt.zero;
-    final usdText = calculateUsdValue(btcPrice, sats.toInt());
+    final fiatCurrency = context.select<PreferencesProvider, FiatCurrency>(
+      (prefs) => prefs.fiatCurrency,
+    );
+    final fiatText = calculateFiatValue(
+      btcPrices[fiatCurrency],
+      sats.toInt(),
+      fiatCurrency,
+    );
     if (recovering) {
       return Center(
         child: Text(
@@ -61,9 +68,9 @@ class DashboardBalance extends StatelessWidget {
                 ),
                 textAlign: TextAlign.center,
               ),
-              if (btcPrice != null)
+              if (btcPrices.isNotEmpty)
                 Text(
-                  usdText,
+                  fiatText,
                   style: const TextStyle(fontSize: 24, color: Colors.grey),
                   textAlign: TextAlign.center,
                 ),

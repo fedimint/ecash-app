@@ -137,10 +137,27 @@ String getAbbreviatedText(String text) {
   return '${text.substring(0, 7)}...${text.substring(text.length - 7)}';
 }
 
-String calculateUsdValue(double? btcPrice, int sats) {
+String calculateFiatValue(double? btcPrice, int sats, FiatCurrency fiatCurrency) {
   if (btcPrice == null) return '';
-  final usdValue = (btcPrice * sats) / 100000000;
-  return '\$${usdValue.toStringAsFixed(2)}';
+
+  // btcPrice is fetched from mempool.space API for the specific currency
+  final fiatValue = (btcPrice * sats) / 100000000;
+
+  // Get currency symbol and format
+  final (symbol, symbolPosition) = switch (fiatCurrency) {
+    FiatCurrency.usd => ('\$', 'before'),
+    FiatCurrency.eur => ('€', 'after'),
+    FiatCurrency.gbp => ('£', 'before'),
+    FiatCurrency.cad => ('C\$', 'before'),
+    FiatCurrency.chf => ('CHF ', 'before'),
+    FiatCurrency.aud => ('A\$', 'before'),
+    FiatCurrency.jpy => ('¥', 'before'),
+  };
+
+  final formattedValue = fiatValue.toStringAsFixed(2);
+  return symbolPosition == 'before'
+      ? '$symbol$formattedValue'
+      : '$formattedValue$symbol';
 }
 
 int getModuleIdForPaymentType(PaymentType paymentType) {
@@ -154,17 +171,21 @@ int getModuleIdForPaymentType(PaymentType paymentType) {
   }
 }
 
-Future<double?> fetchBtcPrice() async {
+Future<Map<FiatCurrency, double>> fetchAllBtcPrices() async {
   try {
-    final price = await getBtcPrice();
-    if (price != null) {
-      return price.toDouble();
-    }
-  } catch (e) {
-    AppLogger.instance.error("Error fetching price: $e");
-  }
+    final pricesList = await getAllBtcPrices();
+    if (pricesList == null) return {};
 
-  return null;
+    // Convert List of tuples to Map
+    final result = <FiatCurrency, double>{};
+    for (final entry in pricesList) {
+      result[entry.$1] = entry.$2.toDouble();
+    }
+    return result;
+  } catch (e) {
+    AppLogger.instance.error("Error fetching all prices: $e");
+    return {};
+  }
 }
 
 String? explorerUrlForNetwork(String txid, String? network) {
