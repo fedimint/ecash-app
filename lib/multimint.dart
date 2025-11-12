@@ -129,6 +129,8 @@ abstract class Multimint implements RustOpaqueInterface {
     required FederationId federationId,
   });
 
+  Future<List<(FiatCurrency, BigInt)>?> getAllBtcPrices();
+
   Future<List<String>> getAllInviteCodes();
 
   Future<BitcoinDisplay> getBitcoinDisplay();
@@ -141,6 +143,8 @@ abstract class Multimint implements RustOpaqueInterface {
   });
 
   Future<List<FederationId>?> getFederationOrder();
+
+  Future<FiatCurrency> getFiatCurrency();
 
   Future<String> getInviteCode({
     required FederationId federationId,
@@ -261,6 +265,8 @@ abstract class Multimint implements RustOpaqueInterface {
   Future<void> setBitcoinDisplay({required BitcoinDisplay bitcoinDisplay});
 
   Future<void> setFederationOrder({required List<FederationId> order});
+
+  Future<void> setFiatCurrency({required FiatCurrency fiatCurrency});
 
   Future<List<Transaction>> transactions({
     required FederationId federationId,

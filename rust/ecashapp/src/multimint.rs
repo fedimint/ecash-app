@@ -63,8 +63,9 @@ use tokio::{sync::RwLock, time::timeout};
 use crate::{
     anyhow,
     db::{
-        BitcoinDisplay, BitcoinDisplayKey, BtcPrice, BtcPriceKey, FederationBackupKey,
-        FederationMetaKey, LightningAddressConfig, LightningAddressKey, LightningAddressKeyPrefix,
+        BitcoinDisplay, BitcoinDisplayKey, BtcPrice, BtcPriceKey, BtcPrices, BtcPricesKey,
+        FiatCurrency, FiatCurrencyKey, FederationBackupKey, FederationMetaKey,
+        LightningAddressConfig, LightningAddressKey, LightningAddressKeyPrefix,
     },
     error_to_flutter, info_to_flutter, FederationConfig, FederationConfigKey,
     FederationConfigKeyPrefix, SeedPhraseAckKey,
@@ -936,20 +937,54 @@ impl Multimint {
         if response.status().is_success() {
             let json: Result<serde_json::Value, reqwest::Error> = response.json().await;
             if let Ok(json) = json {
-                if let Some(price) = json.get("USD").and_then(|v| v.as_u64()) {
+                // Extract all currency prices
+                let usd = json.get("USD").and_then(|v| v.as_u64());
+                let eur = json.get("EUR").and_then(|v| v.as_u64());
+                let gbp = json.get("GBP").and_then(|v| v.as_u64());
+                let cad = json.get("CAD").and_then(|v| v.as_u64());
+                let chf = json.get("CHF").and_then(|v| v.as_u64());
+                let aud = json.get("AUD").and_then(|v| v.as_u64());
+                let jpy = json.get("JPY").and_then(|v| v.as_u64());
+
+                if let (Some(usd), Some(eur), Some(gbp), Some(cad), Some(chf), Some(aud), Some(jpy))
+                    = (usd, eur, gbp, cad, chf, aud, jpy) {
+
                     let mut dbtx = self.db.begin_transaction().await;
+
+                    // Store multi-currency prices
                     dbtx.insert_entry(
-                        &BtcPriceKey,
-                        &BtcPrice {
-                            price,
+                        &BtcPricesKey,
+                        &BtcPrices {
+                            usd,
+                            eur,
+                            gbp,
+                            cad,
+                            chf,
+                            aud,
+                            jpy,
                             last_updated: now,
                         },
                     )
                     .await;
+
+                    // Also store USD price in old format for backward compatibility
+                    dbtx.insert_entry(
+                        &BtcPriceKey,
+                        &BtcPrice {
+                            price: usd,
+                            last_updated: now,
+                        },
+                    )
+                    .await;
+
                     dbtx.commit_tx().await;
-                    info_to_flutter(format!("Updated BTC Price: {}", price)).await;
+                    info_to_flutter(format!(
+                        "Updated BTC Prices: USD={}, EUR={}, GBP={}, CAD={}, CHF={}, AUD={}, JPY={}",
+                        usd, eur, gbp, cad, chf, aud, jpy
+                    ))
+                    .await;
                 } else {
-                    error_to_flutter("USD price not found in response").await;
+                    error_to_flutter("Failed to parse all currency prices from API response").await;
                 }
             }
         } else {
@@ -3059,8 +3094,25 @@ impl Multimint {
     }
 
     pub async fn get_btc_price(&self) -> Option<u64> {
+        // Backward compatibility - returns USD price
         let mut dbtx = self.db.begin_transaction_nc().await;
-        dbtx.get_value(&BtcPriceKey).await.map(|p| p.price)
+        let prices = dbtx.get_value(&BtcPricesKey).await?;
+        Some(prices.usd)
+    }
+
+    pub async fn get_all_btc_prices(&self) -> Option<Vec<(FiatCurrency, u64)>> {
+        let mut dbtx = self.db.begin_transaction_nc().await;
+        let prices = dbtx.get_value(&BtcPricesKey).await?;
+
+        Some(vec![
+            (FiatCurrency::Usd, prices.usd),
+            (FiatCurrency::Eur, prices.eur),
+            (FiatCurrency::Gbp, prices.gbp),
+            (FiatCurrency::Cad, prices.cad),
+            (FiatCurrency::Chf, prices.chf),
+            (FiatCurrency::Aud, prices.aud),
+            (FiatCurrency::Jpy, prices.jpy),
+        ])
     }
 
     pub async fn get_addresses(
@@ -3593,6 +3645,20 @@ impl Multimint {
     pub async fn set_bitcoin_display(&self, bitcoin_display: BitcoinDisplay) {
         let mut dbtx = self.db.begin_transaction().await;
         dbtx.insert_entry(&BitcoinDisplayKey, &bitcoin_display)
+            .await;
+        dbtx.commit_tx().await;
+    }
+
+    pub async fn get_fiat_currency(&self) -> FiatCurrency {
+        let mut dbtx = self.db.begin_transaction_nc().await;
+        dbtx.get_value(&FiatCurrencyKey)
+            .await
+            .unwrap_or(FiatCurrency::Usd)
+    }
+
+    pub async fn set_fiat_currency(&self, fiat_currency: FiatCurrency) {
+        let mut dbtx = self.db.begin_transaction().await;
+        dbtx.insert_entry(&FiatCurrencyKey, &fiat_currency)
             .await;
         dbtx.commit_tx().await;
     }

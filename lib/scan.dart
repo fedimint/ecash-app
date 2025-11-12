@@ -291,7 +291,7 @@ class _ScanQRPageState extends State<ScanQRPage> {
                 },
               );
             } else {
-              final btcPrice = await fetchBtcPrice();
+              final btcPrices = await fetchAllBtcPrices();
               await Navigator.push(
                 context,
                 MaterialPageRoute(
@@ -299,7 +299,7 @@ class _ScanQRPageState extends State<ScanQRPage> {
                       (_) => NumberPad(
                         fed: chosenFederation!,
                         paymentType: PaymentType.onchain,
-                        btcPrice: btcPrice,
+                        btcPrices: btcPrices,
                         onWithdrawCompleted: null,
                         bitcoinAddress: field0,
                       ),
@@ -331,7 +331,7 @@ class _ScanQRPageState extends State<ScanQRPage> {
         case ParsedText_LightningAddressOrLnurl(:final field0):
           if (widget.paymentType == null ||
               widget.paymentType == PaymentType.lightning) {
-            final btcPrice = await fetchBtcPrice();
+            final btcPrices = await fetchAllBtcPrices();
             await Navigator.push(
               context,
               MaterialPageRoute(
@@ -339,7 +339,7 @@ class _ScanQRPageState extends State<ScanQRPage> {
                     (_) => NumberPad(
                       fed: chosenFederation!,
                       paymentType: PaymentType.lightning,
-                      btcPrice: btcPrice,
+                      btcPrices: btcPrices,
                       onWithdrawCompleted: null,
                       lightningAddressOrLnurl: field0,
                     ),

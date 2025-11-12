@@ -47,7 +47,7 @@ use std::path::PathBuf;
 use std::{str::FromStr, sync::Arc};
 
 use crate::db::{
-    BitcoinDisplay, FederationConfig, FederationConfigKey, FederationConfigKeyPrefix,
+    BitcoinDisplay, FiatCurrency, FederationConfig, FederationConfigKey, FederationConfigKeyPrefix,
     LightningAddressConfig,
 };
 use crate::frb_generated::StreamSink;
@@ -1013,6 +1013,24 @@ pub async fn get_bitcoin_display() -> BitcoinDisplay {
 pub async fn set_bitcoin_display(bitcoin_display: BitcoinDisplay) {
     let multimint = get_multimint();
     multimint.set_bitcoin_display(bitcoin_display).await;
+}
+
+#[frb]
+pub async fn get_fiat_currency() -> FiatCurrency {
+    let multimint = get_multimint();
+    multimint.get_fiat_currency().await
+}
+
+#[frb]
+pub async fn set_fiat_currency(fiat_currency: FiatCurrency) {
+    let multimint = get_multimint();
+    multimint.set_fiat_currency(fiat_currency).await;
+}
+
+#[frb]
+pub async fn get_all_btc_prices() -> Option<Vec<(FiatCurrency, u64)>> {
+    let multimint = get_multimint();
+    multimint.get_all_btc_prices().await
 }
 
 #[frb]

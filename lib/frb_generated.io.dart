@@ -622,6 +622,9 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   FedimintGateway dco_decode_fedimint_gateway(dynamic raw);
 
   @protected
+  FiatCurrency dco_decode_fiat_currency(dynamic raw);
+
+  @protected
   Guardian dco_decode_guardian(dynamic raw);
 
   @protected
@@ -669,6 +672,11 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   @protected
   List<(FederationSelector, NWCConnectionInfo)>
   dco_decode_list_record_auto_owned_rust_opaque_flutter_rust_bridgefor_generated_rust_auto_opaque_inner_federation_selector_nwc_connection_info(
+    dynamic raw,
+  );
+
+  @protected
+  List<(FiatCurrency, BigInt)> dco_decode_list_record_fiat_currency_u_64(
     dynamic raw,
   );
 
@@ -746,6 +754,11 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   Uint8List? dco_decode_opt_list_prim_u_8_strict(dynamic raw);
 
   @protected
+  List<(FiatCurrency, BigInt)>? dco_decode_opt_list_record_fiat_currency_u_64(
+    dynamic raw,
+  );
+
+  @protected
   ParsedText dco_decode_parsed_text(dynamic raw);
 
   @protected
@@ -804,6 +817,9 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   dco_decode_record_auto_owned_rust_opaque_flutter_rust_bridgefor_generated_rust_auto_opaque_inner_reissue_external_notes_state_opt_box_autoadd_u_64(
     dynamic raw,
   );
+
+  @protected
+  (FiatCurrency, BigInt) dco_decode_record_fiat_currency_u_64(dynamic raw);
 
   @protected
   (ParsedText, FederationSelector)
@@ -1395,6 +1411,9 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   FedimintGateway sse_decode_fedimint_gateway(SseDeserializer deserializer);
 
   @protected
+  FiatCurrency sse_decode_fiat_currency(SseDeserializer deserializer);
+
+  @protected
   Guardian sse_decode_guardian(SseDeserializer deserializer);
 
   @protected
@@ -1448,6 +1467,11 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   @protected
   List<(FederationSelector, NWCConnectionInfo)>
   sse_decode_list_record_auto_owned_rust_opaque_flutter_rust_bridgefor_generated_rust_auto_opaque_inner_federation_selector_nwc_connection_info(
+    SseDeserializer deserializer,
+  );
+
+  @protected
+  List<(FiatCurrency, BigInt)> sse_decode_list_record_fiat_currency_u_64(
     SseDeserializer deserializer,
   );
 
@@ -1533,6 +1557,11 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   Uint8List? sse_decode_opt_list_prim_u_8_strict(SseDeserializer deserializer);
 
   @protected
+  List<(FiatCurrency, BigInt)>? sse_decode_opt_list_record_fiat_currency_u_64(
+    SseDeserializer deserializer,
+  );
+
+  @protected
   ParsedText sse_decode_parsed_text(SseDeserializer deserializer);
 
   @protected
@@ -1589,6 +1618,11 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   @protected
   (ReissueExternalNotesState, BigInt?)
   sse_decode_record_auto_owned_rust_opaque_flutter_rust_bridgefor_generated_rust_auto_opaque_inner_reissue_external_notes_state_opt_box_autoadd_u_64(
+    SseDeserializer deserializer,
+  );
+
+  @protected
+  (FiatCurrency, BigInt) sse_decode_record_fiat_currency_u_64(
     SseDeserializer deserializer,
   );
 
@@ -2284,6 +2318,9 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   );
 
   @protected
+  void sse_encode_fiat_currency(FiatCurrency self, SseSerializer serializer);
+
+  @protected
   void sse_encode_guardian(Guardian self, SseSerializer serializer);
 
   @protected
@@ -2350,6 +2387,12 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   void
   sse_encode_list_record_auto_owned_rust_opaque_flutter_rust_bridgefor_generated_rust_auto_opaque_inner_federation_selector_nwc_connection_info(
     List<(FederationSelector, NWCConnectionInfo)> self,
+    SseSerializer serializer,
+  );
+
+  @protected
+  void sse_encode_list_record_fiat_currency_u_64(
+    List<(FiatCurrency, BigInt)> self,
     SseSerializer serializer,
   );
 
@@ -2457,6 +2500,12 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   );
 
   @protected
+  void sse_encode_opt_list_record_fiat_currency_u_64(
+    List<(FiatCurrency, BigInt)>? self,
+    SseSerializer serializer,
+  );
+
+  @protected
   void sse_encode_parsed_text(ParsedText self, SseSerializer serializer);
 
   @protected
@@ -2525,6 +2574,12 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   void
   sse_encode_record_auto_owned_rust_opaque_flutter_rust_bridgefor_generated_rust_auto_opaque_inner_reissue_external_notes_state_opt_box_autoadd_u_64(
     (ReissueExternalNotesState, BigInt?) self,
+    SseSerializer serializer,
+  );
+
+  @protected
+  void sse_encode_record_fiat_currency_u_64(
+    (FiatCurrency, BigInt) self,
     SseSerializer serializer,
   );
 

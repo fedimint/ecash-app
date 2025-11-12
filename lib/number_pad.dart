@@ -21,7 +21,7 @@ enum WithdrawalMode { specificAmount, maxBalance }
 class NumberPad extends StatefulWidget {
   final FederationSelector fed;
   final PaymentType paymentType;
-  final double? btcPrice;
+  final Map<FiatCurrency, double> btcPrices;
   final VoidCallback? onWithdrawCompleted;
   final String? bitcoinAddress;
   final String? lightningAddressOrLnurl;
@@ -29,7 +29,7 @@ class NumberPad extends StatefulWidget {
     super.key,
     required this.fed,
     required this.paymentType,
-    required this.btcPrice,
+    required this.btcPrices,
     this.onWithdrawCompleted,
     this.bitcoinAddress,
     this.lightningAddressOrLnurl,
@@ -534,9 +534,11 @@ class _NumberPadState extends State<NumberPad> {
   @override
   Widget build(BuildContext context) {
     final bitcoinDisplay = context.select<PreferencesProvider, BitcoinDisplay>((prefs) => prefs.bitcoinDisplay);
-    final usdText = calculateUsdValue(
-      widget.btcPrice,
+    final fiatCurrency = context.select<PreferencesProvider, FiatCurrency>((prefs) => prefs.fiatCurrency);
+    final fiatText = calculateFiatValue(
+      widget.btcPrices[fiatCurrency],
       int.tryParse(_rawAmount) ?? 0,
+      fiatCurrency,
     );
 
     return SafeArea(
@@ -574,7 +576,7 @@ class _NumberPadState extends State<NumberPad> {
                     ),
                     const SizedBox(height: 16),
                     Text(
-                      usdText,
+                      fiatText,
                       style: const TextStyle(fontSize: 24, color: Colors.grey),
                     ),
                   ],
