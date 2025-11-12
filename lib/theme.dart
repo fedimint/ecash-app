@@ -58,6 +58,7 @@ Future<T?> showAppModalBottomSheet<T>({
   required Future<Widget> Function() childBuilder,
   double? heightFactor,
 }) {
+  final childFuture = childBuilder();
   return showModalBottomSheet<T>(
     context: context,
     backgroundColor: Theme.of(context).bottomSheetTheme.backgroundColor,
@@ -89,7 +90,7 @@ Future<T?> showAppModalBottomSheet<T>({
                 // Async content
                 Expanded(
                   child: FutureBuilder<Widget>(
-                    future: childBuilder(),
+                    future: childFuture,
                     builder: (context, snapshot) {
                       if (snapshot.connectionState == ConnectionState.waiting) {
                         return const Center(

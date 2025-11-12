@@ -761,7 +761,12 @@ pub async fn parsed_scanned_text(
 
                 return Err(anyhow!("No federation found with sufficient balance"));
             }
-            _ => {} // Try another network
+            Err(e) => {
+                error_to_flutter(format!(
+                    "Error when trying to parse payment instructions: {e:?}"
+                ))
+                .await;
+            }
         }
     }
 
@@ -831,13 +836,14 @@ async fn handle_parsed_payment_instructions(
         PaymentInstructions::FixedAmount(fixed) => {
             let balance = balance(&fed.federation_id).await;
             // Find a payment method that we support
+            let mut found_payment_method = None;
             for method in fixed.methods() {
                 match method {
                     PaymentMethod::LightningBolt11(invoice) => {
                         // Verify that the federation's balance is sufficient to pay the invoice
                         if let Some(lightning_amount) = fixed.ln_payment_amount() {
                             if balance >= lightning_amount.milli_sats() {
-                                return Ok((
+                                found_payment_method = Some((
                                     ParsedText::LightningInvoice(invoice.to_string()),
                                     fed.clone(),
                                 ));
@@ -848,13 +854,16 @@ async fn handle_parsed_payment_instructions(
                         // Verify that the federation's balance is sufficient to pay the onchain address
                         if let Some(onchain_amount) = fixed.onchain_payment_amount() {
                             if balance >= onchain_amount.milli_sats() {
-                                return Ok((
-                                    ParsedText::BitcoinAddress(
-                                        address.to_string(),
-                                        Some(onchain_amount.milli_sats()),
-                                    ),
-                                    fed.clone(),
-                                ));
+                                // Prefer using Lightning if its available
+                                if found_payment_method.is_none() {
+                                    found_payment_method = Some((
+                                        ParsedText::BitcoinAddress(
+                                            address.to_string(),
+                                            Some(onchain_amount.milli_sats()),
+                                        ),
+                                        fed.clone(),
+                                    ));
+                                }
                             }
                         }
                     }
@@ -863,6 +872,10 @@ async fn handle_parsed_payment_instructions(
                             .await;
                     }
                 }
+            }
+
+            if let Some(payment_method) = found_payment_method {
+                return Ok(payment_method);
             }
         }
     }
