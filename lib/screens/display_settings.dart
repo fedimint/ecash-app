@@ -77,7 +77,7 @@ class _DisplaySettingsScreenState extends State<DisplaySettingsScreen> {
                     ),
                   ),
                   subtitle: Text(
-                    'Bitcoin symbol with decimal places',
+                    'Display amounts in bitcoins with leading ₿ prefix',
                     style: theme.textTheme.bodySmall?.copyWith(
                       color: theme.colorScheme.onSurfaceVariant,
                     ),
