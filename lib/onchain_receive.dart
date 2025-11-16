@@ -4,6 +4,7 @@ import 'package:ecashapp/toast.dart';
 import 'package:ecashapp/utils.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:qr_flutter/qr_flutter.dart';
 
 class OnChainReceiveContent extends StatefulWidget {
   final FederationSelector fed;
@@ -81,6 +82,50 @@ class _OnChainReceiveContentState extends State<OnChainReceiveContent> {
                     textAlign: TextAlign.center,
                     style: theme.textTheme.titleLarge?.copyWith(
                       fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  const SizedBox(height: 24),
+                  AspectRatio(
+                    aspectRatio: 1,
+                    child: GestureDetector(
+                      onTap: () {
+                        showDialog(
+                          context: context,
+                          builder:
+                              (_) => Dialog(
+                                backgroundColor: Colors.transparent,
+                                insetPadding: EdgeInsets.zero,
+                                child: GestureDetector(
+                                  onTap:
+                                      () =>
+                                          Navigator.of(
+                                            context,
+                                            rootNavigator: true,
+                                          ).pop(),
+                                  child: Container(
+                                    width: double.infinity,
+                                    height: double.infinity,
+                                    color: Colors.black.withOpacity(0.9),
+                                    child: Center(
+                                      child: QrImageView(
+                                        data: _address!,
+                                        version: QrVersions.auto,
+                                        backgroundColor: Colors.white,
+                                        size:
+                                            MediaQuery.of(context).size.width *
+                                            0.9,
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              ),
+                        );
+                      },
+                      child: QrImageView(
+                        data: _address!,
+                        version: QrVersions.auto,
+                        backgroundColor: Colors.white,
+                      ),
                     ),
                   ),
                   const SizedBox(height: 24),

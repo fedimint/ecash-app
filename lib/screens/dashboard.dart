@@ -215,7 +215,7 @@ class _DashboardState extends State<Dashboard> {
         childBuilder: () async {
           return OnChainReceiveContent(fed: widget.fed);
         },
-        heightFactor: 0.33,
+        heightFactor: 0.8,
       );
       _loadAddresses();
     } else if (_selectedPaymentType == PaymentType.ecash) {
