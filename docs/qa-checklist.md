@@ -33,6 +33,7 @@ Note: Future Fedimint releases will reissue all ecash on recovery, which costs s
 - [ ] Desktop refund before claim (test check claim + redeem for both claimed/unclaimed)
 
 ## Recovery (CAUTION: requires uninstall, be aware of any mainnet sats)
+**Verify:** Recovery should complete quickly with logs confirming federation backup loaded (not full scan)
 - [ ] Desktop
 - [ ] Mobile
 
