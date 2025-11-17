@@ -1183,13 +1183,27 @@ impl Multimint {
 
         let client = match client_type {
             ClientType::Recovery => {
-                let client = client_builder
-                    .preview(invite_code)
-                    .await?
+                let client_preview = client_builder.preview(invite_code).await?;
+                let backup = client_preview
+                    .download_backup_from_federation(
+                        fedimint_client::RootSecret::StandardDoubleDerive(
+                            global_root_secret.clone(),
+                        ),
+                    )
+                    .await?;
+                if backup.is_some() {
+                    info_to_flutter("Starting recovery with backup from federation").await;
+                } else {
+                    info_to_flutter(
+                        "Starting recovery without a backup! This could take some time...",
+                    )
+                    .await;
+                }
+                let client = client_preview
                     .recover(
                         client_db,
                         fedimint_client::RootSecret::StandardDoubleDerive(global_root_secret),
-                        None,
+                        backup,
                     )
                     .await
                     .map(Arc::new)?;
