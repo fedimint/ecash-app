@@ -11,6 +11,8 @@ class DashboardBalance extends StatelessWidget {
   final bool showMsats;
   final VoidCallback onToggle;
   final Map<FiatCurrency, double> btcPrices;
+  final bool isLoadingPrices;
+  final bool pricesFailed;
 
   const DashboardBalance({
     super.key,
@@ -20,6 +22,8 @@ class DashboardBalance extends StatelessWidget {
     required this.showMsats,
     required this.onToggle,
     required this.btcPrices,
+    required this.isLoadingPrices,
+    required this.pricesFailed,
   });
 
   @override
@@ -68,7 +72,19 @@ class DashboardBalance extends StatelessWidget {
                 ),
                 textAlign: TextAlign.center,
               ),
-              if (btcPrices.isNotEmpty)
+              if (isLoadingPrices)
+                const Text(
+                  'Loading prices...',
+                  style: TextStyle(fontSize: 16, color: Colors.grey),
+                  textAlign: TextAlign.center,
+                )
+              else if (pricesFailed)
+                const Text(
+                  'Price unavailable',
+                  style: TextStyle(fontSize: 16, color: Colors.grey),
+                  textAlign: TextAlign.center,
+                )
+              else if (btcPrices.isNotEmpty)
                 Text(
                   fiatText,
                   style: const TextStyle(fontSize: 24, color: Colors.grey),

@@ -44,6 +44,8 @@ class _DashboardState extends State<Dashboard> {
   VoidCallback? _pendingAction;
   VoidCallback? _refreshTransactionsList;
   Map<FiatCurrency, double> _btcPrices = {};
+  bool _isLoadingPrices = false;
+  bool _pricesFailed = false;
   int _addressRefreshKey = 0;
   int _noteRefreshKey = 0;
   LightningAddressConfig? _lnAddressConfig;
@@ -143,12 +145,19 @@ class _DashboardState extends State<Dashboard> {
   }
 
   Future<void> _loadBtcPrices() async {
+    setState(() {
+      _isLoadingPrices = true;
+      _pricesFailed = false;
+    });
+
     final prices = await fetchAllBtcPrices();
-    if (prices.isNotEmpty) {
-      setState(() {
-        _btcPrices = prices;
-      });
-    }
+
+    if (!mounted) return;
+    setState(() {
+      _btcPrices = prices;
+      _isLoadingPrices = false;
+      _pricesFailed = prices.isEmpty;
+    });
   }
 
   Future<void> _loadLightningAddress() async {
@@ -346,6 +355,8 @@ class _DashboardState extends State<Dashboard> {
               showMsats: showMsats,
               onToggle: () => setState(() => showMsats = !showMsats),
               btcPrices: _btcPrices,
+              isLoadingPrices: _isLoadingPrices,
+              pricesFailed: _pricesFailed,
             ),
             const SizedBox(height: 8),
             if (recovering) ...[
