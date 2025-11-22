@@ -13,4 +13,6 @@ build-linux:
   $ROOT/scripts/build-linux.sh
 
 run:
+  export LIBGL_ALWAYS_SOFTWARE=1
+  export FLUTTER_LINUX_RENDERER=software
   nix run --impure github:guibou/nixGL flutter run
