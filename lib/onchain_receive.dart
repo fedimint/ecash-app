@@ -78,6 +78,36 @@ class _OnChainReceiveContentState extends State<OnChainReceiveContent> {
     });
   }
 
+  List<TextSpan> _formatAddressWithColor(String address, ThemeData theme) {
+    // Format address with spacing every 4 characters and alternating colors
+    // Following Bitcoin Design Guide recommendations
+    final List<TextSpan> spans = [];
+    final baseColor = theme.colorScheme.onSurface;
+    final alternateColor = theme.colorScheme.onSurface.withValues(alpha: 0.6);
+
+    for (int i = 0; i < address.length; i += 4) {
+      final chunk = address.substring(i, (i + 4).clamp(0, address.length));
+      final isEvenChunk = (i ~/ 4) % 2 == 0;
+
+      spans.add(TextSpan(
+        text: chunk,
+        style: TextStyle(
+          color: isEvenChunk ? baseColor : alternateColor,
+        ),
+      ));
+
+      // Add space between chunks (except after the last chunk)
+      if (i + 4 < address.length) {
+        spans.add(TextSpan(
+          text: ' ',
+          style: TextStyle(color: baseColor),
+        ));
+      }
+    }
+
+    return spans;
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -162,11 +192,17 @@ class _OnChainReceiveContentState extends State<OnChainReceiveContent> {
                         mainAxisSize: MainAxisSize.min,
                         children: [
                           Flexible(
-                            child: Text(
-                              _address!,
+                            child: RichText(
                               textAlign: TextAlign.center,
-                              style: theme.textTheme.titleLarge?.copyWith(
-                                fontWeight: FontWeight.bold,
+                              text: TextSpan(
+                                children: _formatAddressWithColor(_address!, theme),
+                                style: theme.textTheme.titleLarge?.copyWith(
+                                  fontWeight: FontWeight.bold,
+                                  fontFamily: 'monospace',
+                                  fontFeatures: const [
+                                    FontFeature.tabularFigures(),
+                                  ],
+                                ),
                               ),
                             ),
                           ),
