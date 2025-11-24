@@ -43,7 +43,7 @@ class _DashboardState extends State<Dashboard> {
   PaymentType _selectedPaymentType = PaymentType.lightning;
   VoidCallback? _pendingAction;
   VoidCallback? _refreshTransactionsList;
-  double? _btcPrice;
+  Map<FiatCurrency, double> _btcPrices = {};
   int _addressRefreshKey = 0;
   int _noteRefreshKey = 0;
   LightningAddressConfig? _lnAddressConfig;
@@ -56,7 +56,7 @@ class _DashboardState extends State<Dashboard> {
     super.initState();
     recovering = widget.recovering;
     _loadBalance();
-    _loadBtcPrice();
+    _loadBtcPrices();
     _loadLightningAddress();
 
     events = subscribeMultimintEvents().asBroadcastStream();
@@ -142,11 +142,11 @@ class _DashboardState extends State<Dashboard> {
     });
   }
 
-  Future<void> _loadBtcPrice() async {
-    final price = await fetchBtcPrice();
-    if (price != null) {
+  Future<void> _loadBtcPrices() async {
+    final prices = await fetchAllBtcPrices();
+    if (prices.isNotEmpty) {
       setState(() {
-        _btcPrice = price.toDouble();
+        _btcPrices = prices;
       });
     }
   }
@@ -182,7 +182,7 @@ class _DashboardState extends State<Dashboard> {
               (_) => NumberPad(
                 fed: widget.fed,
                 paymentType: _selectedPaymentType,
-                btcPrice: _btcPrice,
+                btcPrices: _btcPrices,
                 onWithdrawCompleted:
                     _selectedPaymentType == PaymentType.onchain
                         ? _refreshTransactions
@@ -204,7 +204,7 @@ class _DashboardState extends State<Dashboard> {
               (_) => NumberPad(
                 fed: widget.fed,
                 paymentType: _selectedPaymentType,
-                btcPrice: _btcPrice,
+                btcPrices: _btcPrices,
                 onWithdrawCompleted: null,
               ),
         ),
@@ -345,7 +345,7 @@ class _DashboardState extends State<Dashboard> {
               recovering: recovering,
               showMsats: showMsats,
               onToggle: () => setState(() => showMsats = !showMsats),
-              btcPrice: _btcPrice,
+              btcPrices: _btcPrices,
             ),
             const SizedBox(height: 8),
             if (recovering) ...[

@@ -384,6 +384,15 @@ Future<BitcoinDisplay> getBitcoinDisplay() =>
 Future<void> setBitcoinDisplay({required BitcoinDisplay bitcoinDisplay}) =>
     RustLib.instance.api.crateSetBitcoinDisplay(bitcoinDisplay: bitcoinDisplay);
 
+Future<FiatCurrency> getFiatCurrency() =>
+    RustLib.instance.api.crateGetFiatCurrency();
+
+Future<void> setFiatCurrency({required FiatCurrency fiatCurrency}) =>
+    RustLib.instance.api.crateSetFiatCurrency(fiatCurrency: fiatCurrency);
+
+Future<List<(FiatCurrency, BigInt)>?> getAllBtcPrices() =>
+    RustLib.instance.api.crateGetAllBtcPrices();
+
 Future<List<FederationId>?> getFederationOrder() =>
     RustLib.instance.api.crateGetFederationOrder();
 

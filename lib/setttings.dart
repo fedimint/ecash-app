@@ -1,17 +1,14 @@
-import 'package:ecashapp/db.dart';
 import 'package:ecashapp/discover.dart';
 import 'package:ecashapp/lib.dart';
 import 'package:ecashapp/ln_address.dart';
 import 'package:ecashapp/mnemonic.dart';
 import 'package:ecashapp/multimint.dart';
 import 'package:ecashapp/nwc.dart';
-import 'package:ecashapp/providers/preferences_provider.dart';
 import 'package:ecashapp/relays.dart';
+import 'package:ecashapp/screens/display_settings.dart';
 import 'package:ecashapp/theme.dart';
-import 'package:ecashapp/toast.dart';
 import 'package:flutter/material.dart';
 import 'package:package_info_plus/package_info_plus.dart';
-import 'package:provider/provider.dart';
 
 class SettingsScreen extends StatefulWidget {
   final void Function(FederationSelector fed, bool recovering) onJoin;
@@ -136,9 +133,14 @@ class _SettingsScreenState extends State<SettingsScreen> {
               color: Theme.of(context).colorScheme.primary,
             ),
             title: 'Display',
-            subtitle: 'Configure display settings',
+            subtitle: 'Configure Bitcoin and fiat currency display',
             onTap: () {
-              _showDisplaySettingDialog(context);
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => const DisplaySettingsScreen(),
+                ),
+              );
             },
           ),
           _SettingsOption(
@@ -249,70 +251,4 @@ class _SettingsOption extends StatelessWidget {
       ),
     );
   }
-}
-
-void _showDisplaySettingDialog(BuildContext context) {
-  final preferencesProvider = context.read<PreferencesProvider>();
-  BitcoinDisplay selected = preferencesProvider.bitcoinDisplay;
-
-  showDialog(
-    context: context,
-    builder: (dialogContext) {
-      return StatefulBuilder(
-        builder: (statefulContext, setState) {
-          return AlertDialog(
-            title: const Text('Select Display Setting'),
-            content: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                RadioListTile<BitcoinDisplay>(
-                  title: const Text('BIP177 (₿1,234)'),
-                  value: BitcoinDisplay.bip177,
-                  groupValue: selected,
-                  onChanged: (value) => setState(() => selected = value!),
-                ),
-                RadioListTile<BitcoinDisplay>(
-                  title: const Text('Sats are the Standard (1,234 sats)'),
-                  value: BitcoinDisplay.sats,
-                  groupValue: selected,
-                  onChanged: (value) => setState(() => selected = value!),
-                ),
-                RadioListTile<BitcoinDisplay>(
-                  title: const Text('Sat Symbol (1,234丰)'),
-                  value: BitcoinDisplay.symbol,
-                  groupValue: selected,
-                  onChanged: (value) => setState(() => selected = value!),
-                ),
-                RadioListTile<BitcoinDisplay>(
-                  title: const Text('No label (1,234)'),
-                  value: BitcoinDisplay.nothing,
-                  groupValue: selected,
-                  onChanged: (value) => setState(() => selected = value!),
-                ),
-              ],
-            ),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.of(dialogContext).pop(),
-                child: const Text('Cancel'),
-              ),
-              TextButton(
-                onPressed: () async {
-                  await preferencesProvider.setBitcoinDisplay(selected);
-                  Navigator.of(dialogContext).pop();
-                  ToastService().show(
-                    message: "Display setting set!",
-                    duration: const Duration(seconds: 3),
-                    onTap: () {},
-                    icon: Icon(Icons.info),
-                  );
-                },
-                child: const Text('Save'),
-              ),
-            ],
-          );
-        },
-      );
-    },
-  );
 }

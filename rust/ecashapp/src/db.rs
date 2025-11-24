@@ -25,6 +25,8 @@ pub(crate) enum DbKeyPrefix {
     Display = 0x08,
     FederationBackup = 0x09,
     FederationOrder = 0x0A,
+    FiatCurrency = 0x0B,
+    BtcPrices = 0x0C,
 }
 
 #[derive(Debug, Clone, Encodable, Decodable, Eq, PartialEq, Hash, Ord, PartialOrd)]
@@ -115,6 +117,27 @@ impl_db_record!(
 );
 
 #[derive(Debug, Encodable, Decodable)]
+pub(crate) struct BtcPricesKey;
+
+#[derive(Debug, Encodable, Decodable)]
+pub(crate) struct BtcPrices {
+    pub(crate) usd: u64,
+    pub(crate) eur: u64,
+    pub(crate) gbp: u64,
+    pub(crate) cad: u64,
+    pub(crate) chf: u64,
+    pub(crate) aud: u64,
+    pub(crate) jpy: u64,
+    pub(crate) last_updated: SystemTime,
+}
+
+impl_db_record!(
+    key = BtcPricesKey,
+    value = BtcPrices,
+    db_prefix = DbKeyPrefix::BtcPrices,
+);
+
+#[derive(Debug, Encodable, Decodable)]
 pub(crate) struct NostrRelaysKey {
     pub uri: String,
 }
@@ -174,6 +197,26 @@ impl_db_record!(
     key = BitcoinDisplayKey,
     value = BitcoinDisplay,
     db_prefix = DbKeyPrefix::Display,
+);
+
+#[derive(Debug, Clone, Encodable, Decodable, Serialize)]
+pub enum FiatCurrency {
+    Usd,
+    Eur,
+    Gbp,
+    Cad,
+    Chf,
+    Aud,
+    Jpy,
+}
+
+#[derive(Debug, Encodable, Decodable)]
+pub struct FiatCurrencyKey;
+
+impl_db_record!(
+    key = FiatCurrencyKey,
+    value = FiatCurrency,
+    db_prefix = DbKeyPrefix::FiatCurrency,
 );
 
 #[derive(Debug, Encodable, Decodable)]
