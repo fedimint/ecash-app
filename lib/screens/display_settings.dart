@@ -14,6 +14,8 @@ class DisplaySettingsScreen extends StatefulWidget {
 class _DisplaySettingsScreenState extends State<DisplaySettingsScreen> {
   late BitcoinDisplay _selectedBitcoinDisplay;
   late FiatCurrency _selectedFiatCurrency;
+  late BitcoinDisplay _initialBitcoinDisplay;
+  late FiatCurrency _initialFiatCurrency;
 
   @override
   void initState() {
@@ -21,6 +23,8 @@ class _DisplaySettingsScreenState extends State<DisplaySettingsScreen> {
     final preferencesProvider = context.read<PreferencesProvider>();
     _selectedBitcoinDisplay = preferencesProvider.bitcoinDisplay;
     _selectedFiatCurrency = preferencesProvider.fiatCurrency;
+    _initialBitcoinDisplay = preferencesProvider.bitcoinDisplay;
+    _initialFiatCurrency = preferencesProvider.fiatCurrency;
   }
 
   @override
@@ -28,7 +32,13 @@ class _DisplaySettingsScreenState extends State<DisplaySettingsScreen> {
     final theme = Theme.of(context);
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Display Settings')),
+      appBar: AppBar(
+        title: const Text('Display Settings'),
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back),
+          onPressed: _handleBackNavigation,
+        ),
+      ),
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [
@@ -450,25 +460,30 @@ class _DisplaySettingsScreenState extends State<DisplaySettingsScreen> {
     );
   }
 
+  bool _hasSettingsChanged() {
+    return _selectedBitcoinDisplay != _initialBitcoinDisplay ||
+        _selectedFiatCurrency != _initialFiatCurrency;
+  }
+
+  void _handleBackNavigation() {
+    if (_hasSettingsChanged()) {
+      ToastService().show(
+        message: "Display settings updated!",
+        duration: const Duration(seconds: 2),
+        onTap: () {},
+        icon: const Icon(Icons.check),
+      );
+    }
+    Navigator.pop(context);
+  }
+
   Future<void> _saveBitcoinDisplay(BitcoinDisplay display) async {
     final preferencesProvider = context.read<PreferencesProvider>();
     await preferencesProvider.setBitcoinDisplay(display);
-    ToastService().show(
-      message: "Bitcoin display updated!",
-      duration: const Duration(seconds: 2),
-      onTap: () {},
-      icon: const Icon(Icons.check),
-    );
   }
 
   Future<void> _saveFiatCurrency(FiatCurrency currency) async {
     final preferencesProvider = context.read<PreferencesProvider>();
     await preferencesProvider.setFiatCurrency(currency);
-    ToastService().show(
-      message: "Fiat currency updated!",
-      duration: const Duration(seconds: 2),
-      onTap: () {},
-      icon: const Icon(Icons.check),
-    );
   }
 }

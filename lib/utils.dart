@@ -97,7 +97,11 @@ int threshold(int totalPeers) {
   return totalPeers - maxEvil;
 }
 
-String formatBalance(BigInt? msats, bool showMsats, BitcoinDisplay bitcoinDisplay) {
+String formatBalance(
+  BigInt? msats,
+  bool showMsats,
+  BitcoinDisplay bitcoinDisplay,
+) {
   final setting = bitcoinDisplay;
 
   if (msats == null) {
@@ -137,7 +141,11 @@ String getAbbreviatedText(String text) {
   return '${text.substring(0, 7)}...${text.substring(text.length - 7)}';
 }
 
-String calculateFiatValue(double? btcPrice, int sats, FiatCurrency fiatCurrency) {
+String calculateFiatValue(
+  double? btcPrice,
+  int sats,
+  FiatCurrency fiatCurrency,
+) {
   if (btcPrice == null) return '';
 
   // btcPrice is fetched from mempool.space API for the specific currency
@@ -174,7 +182,10 @@ int getModuleIdForPaymentType(PaymentType paymentType) {
 Future<Map<FiatCurrency, double>> fetchAllBtcPrices() async {
   try {
     final pricesList = await getAllBtcPrices();
-    if (pricesList == null) return {};
+    if (pricesList == null) {
+      AppLogger.instance.warn("getAllBtcPrices returned null");
+      return {};
+    }
 
     // Convert List of tuples to Map
     final result = <FiatCurrency, double>{};
