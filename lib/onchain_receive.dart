@@ -1,9 +1,13 @@
+import 'package:ecashapp/db.dart';
+import 'package:ecashapp/detail_row.dart';
 import 'package:ecashapp/lib.dart';
 import 'package:ecashapp/multimint.dart';
+import 'package:ecashapp/providers/preferences_provider.dart';
 import 'package:ecashapp/toast.dart';
 import 'package:ecashapp/utils.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:provider/provider.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 
 class OnChainReceiveContent extends StatefulWidget {
@@ -17,7 +21,9 @@ class OnChainReceiveContent extends StatefulWidget {
 
 class _OnChainReceiveContentState extends State<OnChainReceiveContent> {
   String? _address;
+  BigInt? _peginFee;
   bool _isLoading = true;
+  bool _addressCopied = false;
 
   @override
   void initState() {
@@ -30,13 +36,18 @@ class _OnChainReceiveContentState extends State<OnChainReceiveContent> {
       final address = await allocateDepositAddress(
         federationId: widget.fed.federationId,
       );
+      final fee = await getPeginFee(federationId: widget.fed.federationId);
+
       if (!mounted) return;
       setState(() {
         _address = address;
+        _peginFee = fee;
         _isLoading = false;
       });
     } catch (e) {
-      AppLogger.instance.error("Could not allocate deposit address: $e");
+      AppLogger.instance.error(
+        "Could not allocate deposit address or fetch peg-in fee: $e",
+      );
       ToastService().show(
         message: "Could not get new address",
         duration: const Duration(seconds: 5),
@@ -49,17 +60,30 @@ class _OnChainReceiveContentState extends State<OnChainReceiveContent> {
 
   void _copyToClipboard(String text) {
     Clipboard.setData(ClipboardData(text: text));
+    setState(() {
+      _addressCopied = true;
+    });
     ToastService().show(
       message: "Address copied to clipboard",
       duration: const Duration(seconds: 5),
       onTap: () {},
       icon: Icon(Icons.check),
     );
+    Future.delayed(const Duration(milliseconds: 2000), () {
+      if (mounted) {
+        setState(() {
+          _addressCopied = false;
+        });
+      }
+    });
   }
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final bitcoinDisplay = context.select<PreferencesProvider, BitcoinDisplay>(
+      (prefs) => prefs.bitcoinDisplay,
+    );
 
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
@@ -77,14 +101,8 @@ class _OnChainReceiveContentState extends State<OnChainReceiveContent> {
                     style: theme.textTheme.bodyMedium,
                   ),
                   const SizedBox(height: 20),
-                  SelectableText(
-                    _address!,
-                    textAlign: TextAlign.center,
-                    style: theme.textTheme.titleLarge?.copyWith(
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  const SizedBox(height: 24),
+
+                  // QR code
                   AspectRatio(
                     aspectRatio: 1,
                     child: GestureDetector(
@@ -129,23 +147,110 @@ class _OnChainReceiveContentState extends State<OnChainReceiveContent> {
                     ),
                   ),
                   const SizedBox(height: 24),
-                  SizedBox(
-                    width: double.infinity,
-                    child: ElevatedButton.icon(
-                      onPressed: () {
-                        _copyToClipboard(_address!);
-                        Navigator.of(context).pop();
-                      },
-                      icon: const Icon(Icons.copy, size: 20),
-                      label: const Text('Copy address'),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: theme.colorScheme.primary,
-                        foregroundColor: Colors.black,
-                        padding: const EdgeInsets.symmetric(vertical: 16),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
+
+                  // Clickable address with inline copy icon
+                  InkWell(
+                    onTap: () => _copyToClipboard(_address!),
+                    borderRadius: BorderRadius.circular(8),
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(
+                        vertical: 8,
+                        horizontal: 12,
                       ),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Flexible(
+                            child: Text(
+                              _address!,
+                              textAlign: TextAlign.center,
+                              style: theme.textTheme.titleLarge?.copyWith(
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          AnimatedSwitcher(
+                            duration: const Duration(milliseconds: 300),
+                            transitionBuilder:
+                                (child, anim) =>
+                                    ScaleTransition(scale: anim, child: child),
+                            child:
+                                _addressCopied
+                                    ? Icon(
+                                      Icons.check,
+                                      key: const ValueKey('copied'),
+                                      size: 20,
+                                      color: theme.colorScheme.primary,
+                                    )
+                                    : Icon(
+                                      Icons.copy,
+                                      key: const ValueKey('copy'),
+                                      size: 20,
+                                      color: theme.colorScheme.primary,
+                                    ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 24),
+
+                  // Fee information card
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: theme.colorScheme.surfaceContainer,
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(
+                        color: theme.colorScheme.primary.withOpacity(0.25),
+                      ),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            Icon(
+                              Icons.info_outline,
+                              size: 20,
+                              color: theme.colorScheme.primary,
+                            ),
+                            const SizedBox(width: 8),
+                            Text(
+                              'Deposit Information',
+                              style: theme.textTheme.titleMedium?.copyWith(
+                                color: theme.colorScheme.onSurface,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 12),
+                        CopyableDetailRow(
+                          label: 'Peg-in Fee',
+                          value:
+                              _peginFee == null
+                                  ? 'Unable to fetch fee'
+                                  : _peginFee == BigInt.zero
+                                  ? 'No fee configured'
+                                  : formatBalance(
+                                    _peginFee!,
+                                    false,
+                                    bitcoinDisplay,
+                                  ),
+                        ),
+                        const SizedBox(height: 8),
+                        Text(
+                          'This fee is deducted by the federation when your deposit is claimed.',
+                          style: theme.textTheme.bodySmall?.copyWith(
+                            color: theme.colorScheme.onSurface.withOpacity(0.7),
+                            fontSize: 12,
+                          ),
+                        ),
+                      ],
                     ),
                   ),
                 ],

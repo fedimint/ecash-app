@@ -202,6 +202,9 @@ Future<String> allocateDepositAddress({required FederationId federationId}) =>
       federationId: federationId,
     );
 
+Future<BigInt> getPeginFee({required FederationId federationId}) =>
+    RustLib.instance.api.crateGetPeginFee(federationId: federationId);
+
 Future<List<(FederationSelector, NWCConnectionInfo)>> getNwcConnectionInfo() =>
     RustLib.instance.api.crateGetNwcConnectionInfo();
 

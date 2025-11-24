@@ -163,6 +163,8 @@ abstract class Multimint implements RustOpaqueInterface {
     required FederationId federationId,
   });
 
+  Future<BigInt> getPeginFee({required FederationId federationId});
+
   Future<RecoveryProgress> getRecoveryProgress({
     required FederationId federationId,
     required int moduleId,
