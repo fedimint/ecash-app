@@ -3004,6 +3004,29 @@ impl Multimint {
         Ok(address.to_string())
     }
 
+    pub async fn get_pegin_fee(&self, federation_id: &FederationId) -> anyhow::Result<u64> {
+        let client = self
+            .clients
+            .read()
+            .await
+            .get(federation_id)
+            .ok_or(anyhow!("No federation exists for peg-in fee query"))?
+            .clone();
+        let wallet_module = client
+            .get_first_module::<fedimint_wallet_client::WalletClientModule>()?;
+
+        let client_module_config = client.config().await.modules;
+        let config = client_module_config
+            .get(&wallet_module.id)
+            .ok_or(anyhow!("Could not get Wallet config for peg-in fee"))?
+            .cast::<fedimint_wallet_common::config::WalletClientConfig>()?;
+
+        // Get the peg-in fee from the wallet config
+        let peg_in_fee_msats = config.fee_consensus.peg_in_abs.msats;
+
+        Ok(peg_in_fee_msats)
+    }
+
     pub async fn wallet_summary(
         &self,
         invite: Option<String>,

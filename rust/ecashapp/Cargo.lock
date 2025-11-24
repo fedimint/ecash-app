@@ -1261,6 +1261,7 @@ dependencies = [
  "fedimint-mint-client",
  "fedimint-rocksdb",
  "fedimint-wallet-client",
+ "fedimint-wallet-common",
  "flutter_rust_bridge",
  "futures-timer",
  "futures-util",

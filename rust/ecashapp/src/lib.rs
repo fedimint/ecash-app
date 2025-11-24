@@ -523,6 +523,12 @@ pub async fn allocate_deposit_address(federation_id: FederationId) -> anyhow::Re
 }
 
 #[frb]
+pub async fn get_pegin_fee(federation_id: FederationId) -> anyhow::Result<u64> {
+    let multimint = get_multimint();
+    multimint.get_pegin_fee(&federation_id).await
+}
+
+#[frb]
 pub async fn get_nwc_connection_info() -> Vec<(FederationSelector, NWCConnectionInfo)> {
     let nostr_client = get_nostr_client();
     let nostr = nostr_client.read().await;

@@ -21,6 +21,7 @@ class OnChainReceiveContent extends StatefulWidget {
 
 class _OnChainReceiveContentState extends State<OnChainReceiveContent> {
   String? _address;
+  BigInt? _peginFee;
   bool _isLoading = true;
   bool _addressCopied = false;
 
@@ -35,13 +36,18 @@ class _OnChainReceiveContentState extends State<OnChainReceiveContent> {
       final address = await allocateDepositAddress(
         federationId: widget.fed.federationId,
       );
+      final fee = await getPeginFee(federationId: widget.fed.federationId);
+
       if (!mounted) return;
       setState(() {
         _address = address;
+        _peginFee = fee;
         _isLoading = false;
       });
     } catch (e) {
-      AppLogger.instance.error("Could not allocate deposit address: $e");
+      AppLogger.instance.error(
+        "Could not allocate deposit address or fetch peg-in fee: $e",
+      );
       ToastService().show(
         message: "Could not get new address",
         duration: const Duration(seconds: 5),
@@ -147,7 +153,10 @@ class _OnChainReceiveContentState extends State<OnChainReceiveContent> {
                     onTap: () => _copyToClipboard(_address!),
                     borderRadius: BorderRadius.circular(8),
                     child: Padding(
-                      padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
+                      padding: const EdgeInsets.symmetric(
+                        vertical: 8,
+                        horizontal: 12,
+                      ),
                       child: Row(
                         mainAxisAlignment: MainAxisAlignment.center,
                         mainAxisSize: MainAxisSize.min,
@@ -222,11 +231,16 @@ class _OnChainReceiveContentState extends State<OnChainReceiveContent> {
                         const SizedBox(height: 12),
                         CopyableDetailRow(
                           label: 'Peg-in Fee',
-                          value: formatBalance(
-                            BigInt.from(1000 * 1000), // 1000 sats in msats
-                            false,
-                            bitcoinDisplay,
-                          ),
+                          value:
+                              _peginFee == null
+                                  ? 'Unable to fetch fee'
+                                  : _peginFee == BigInt.zero
+                                  ? 'No fee configured'
+                                  : formatBalance(
+                                    _peginFee!,
+                                    false,
+                                    bitcoinDisplay,
+                                  ),
                         ),
                         const SizedBox(height: 8),
                         Text(
