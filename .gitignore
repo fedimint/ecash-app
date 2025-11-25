@@ -49,3 +49,6 @@ app.*.map.json
 **/*.so
 **/*.db/
 **/client.db.lock
+
+# Docker build caches (for faster incremental builds)
+.docker-cache/

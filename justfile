@@ -12,6 +12,9 @@ build-android-arm:
 build-linux:
   $ROOT/scripts/build-linux.sh
 
+build-debug-apk:
+  $ROOT/docker/build-apk.sh debug
+
 run:
   export LIBGL_ALWAYS_SOFTWARE=1
   export FLUTTER_LINUX_RENDERER=software
