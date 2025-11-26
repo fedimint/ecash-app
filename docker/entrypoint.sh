@@ -30,20 +30,6 @@ else
 fi
 echo ""
 
-# Setup gradle properties (matching GitHub Actions)
-echo "Configuring Gradle..."
-mkdir -p android
-cat > android/gradle.properties <<EOF
-org.gradle.daemon=false
-org.gradle.parallel=false
-org.gradle.configureondemand=true
-org.gradle.workers.max=2
-org.gradle.jvmargs=-Xmx8G -XX:MaxMetaspaceSize=4G -XX:ReservedCodeCacheSize=512m -XX:+HeapDumpOnOutOfMemoryError
-android.useAndroidX=true
-android.enableJetifier=true
-android.ndkVersion=27.3.13750724
-EOF
-
 # Get Flutter dependencies
 echo "Getting Flutter dependencies..."
 flutter pub get
