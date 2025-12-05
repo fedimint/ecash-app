@@ -546,6 +546,13 @@ pub async fn set_nwc_connection_info(
 }
 
 #[frb]
+pub async fn remove_nwc_connection_info(federation_id: FederationId) {
+    let nostr_client = get_nostr_client();
+    let mut nostr = nostr_client.write().await;
+    nostr.remove_nwc_connection_info(federation_id).await;
+}
+
+#[frb]
 pub async fn get_relays() -> Vec<(String, bool)> {
     let nostr_client = get_nostr_client();
     let nostr = nostr_client.read().await;

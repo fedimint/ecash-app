@@ -28,6 +28,8 @@ dependencies:
   shimmer: ^3.0.0
   package_info_plus: 8.3.1
   provider: ^6.1.2
+  flutter_foreground_task: ^8.13.0
+  permission_handler: ^11.3.1
 
 dev_dependencies:
   flutter_test:

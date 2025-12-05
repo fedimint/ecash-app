@@ -5,11 +5,16 @@ import 'package:ecashapp/splash.dart';
 import 'package:ecashapp/theme.dart';
 import 'package:ecashapp/utils.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_foreground_task/flutter_foreground_task.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:path_provider/path_provider.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
+  // Initialize foreground task
+  FlutterForegroundTask.initCommunicationPort();
+
   await AppLogger.init();
   await RustLib.init();
   final packageInfo = await PackageInfo.fromPlatform();
