@@ -644,6 +644,21 @@ impl NostrClient {
         }
     }
 
+    pub async fn remove_nwc_connection_info(&mut self, federation_id: FederationId) {
+        // Stop the background listener
+        let mut listeners = self.nwc_listeners.write().await;
+        if let Some(listener) = listeners.remove(&federation_id) {
+            info_to_flutter("Stopping NWC listener for federation").await;
+            let _ = listener.send(());
+        }
+
+        // Remove from database
+        let mut dbtx = self.db.begin_transaction().await;
+        dbtx.remove_entry(&NostrWalletConnectKey { federation_id })
+            .await;
+        dbtx.commit_tx().await;
+    }
+
     pub async fn get_relays(&self) -> Vec<(String, bool)> {
         let relays = Self::get_or_insert_default_relays(self.db.clone()).await;
         let mut relays_and_status = Vec::new();

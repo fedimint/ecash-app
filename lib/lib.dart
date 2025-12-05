@@ -216,6 +216,11 @@ Future<NWCConnectionInfo> setNwcConnectionInfo({
   relay: relay,
 );
 
+Future<void> removeNwcConnectionInfo({required FederationId federationId}) =>
+    RustLib.instance.api.crateRemoveNwcConnectionInfo(
+      federationId: federationId,
+    );
+
 Future<List<(String, bool)>> getRelays() =>
     RustLib.instance.api.crateGetRelays();
 

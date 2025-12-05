@@ -1,9 +1,14 @@
+import 'dart:io';
+
+import 'package:ecashapp/utils.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 import 'package:ecashapp/lib.dart';
 import 'package:ecashapp/multimint.dart';
 import 'package:ecashapp/nostr.dart';
+import 'package:flutter_foreground_task/flutter_foreground_task.dart';
+import 'package:permission_handler/permission_handler.dart';
 
 class NostrWalletConnect extends StatefulWidget {
   final List<(FederationSelector, bool)> federations;
@@ -24,16 +29,154 @@ class _NostrWalletConnectState extends State<NostrWalletConnect> {
   List<(String, bool)> _relays = [];
   List<(FederationSelector, NWCConnectionInfo)> _existingConfigs = [];
 
+  bool _serviceRunning = false;
+  final Set<String> _connectedFederations = {};
+
   @override
   void initState() {
     super.initState();
     _initialize();
+
+    // Listen for notification button presses
+    FlutterForegroundTask.addTaskDataCallback(_onNotificationButtonPressed);
+  }
+
+  void _onNotificationButtonPressed(dynamic data) {
+    if (data == 'disconnect_all') {
+      _disconnectAll();
+    }
+  }
+
+  @override
+  void dispose() {
+    FlutterForegroundTask.removeTaskDataCallback(_onNotificationButtonPressed);
+    super.dispose();
+  }
+
+  Future<bool> _requestNotificationPermission() async {
+    if (Platform.isAndroid) {
+      final status = await Permission.notification.status;
+      if (status.isDenied) {
+        final result = await Permission.notification.request();
+        return result.isGranted;
+      }
+      return status.isGranted;
+    }
+    return true; // iOS or other platforms
+  }
+
+  Future<void> _startForegroundService() async {
+    if (_serviceRunning) return;
+
+    final hasPermission = await _requestNotificationPermission();
+    if (!hasPermission) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Notification permission required for NWC'),
+          ),
+        );
+      }
+      return;
+    }
+
+    // Initialize the service with Android notification options
+    FlutterForegroundTask.init(
+      androidNotificationOptions: AndroidNotificationOptions(
+        channelId: 'nwc_foreground_service',
+        channelName: 'NWC Foreground Service',
+        channelDescription:
+            'Keeps NWC wallet connections active in the background',
+        onlyAlertOnce: true,
+      ),
+      iosNotificationOptions: const IOSNotificationOptions(
+        showNotification: false,
+      ),
+      foregroundTaskOptions: ForegroundTaskOptions(
+        eventAction: ForegroundTaskEventAction.nothing(),
+      ),
+    );
+
+    await FlutterForegroundTask.startService(
+      serviceId: 256,
+      notificationTitle: 'NWC Active',
+      notificationText: _buildNotificationText(),
+      notificationButtons: [
+        const NotificationButton(id: 'disconnect_all', text: 'Disconnect All'),
+      ],
+    );
+
+    setState(() => _serviceRunning = true);
+  }
+
+  Future<void> _updateForegroundService() async {
+    if (!_serviceRunning) return;
+
+    await FlutterForegroundTask.updateService(
+      notificationTitle: 'NWC Active',
+      notificationText: _buildNotificationText(),
+      notificationButtons: [
+        const NotificationButton(id: 'disconnect_all', text: 'Disconnect All'),
+      ],
+    );
+  }
+
+  Future<void> _stopForegroundService() async {
+    if (!_serviceRunning) return;
+
+    await FlutterForegroundTask.stopService();
+    setState(() => _serviceRunning = false);
+  }
+
+  String _buildNotificationText() {
+    if (_connectedFederations.isEmpty) return 'No active connections';
+    if (_connectedFederations.length == 1) {
+      return 'Connected to ${_connectedFederations.first}';
+    }
+    return 'Connected to ${_connectedFederations.length} federations: ${_connectedFederations.join(", ")}';
+  }
+
+  Future<void> _disconnectFederation(FederationSelector federation) async {
+    await removeNwcConnectionInfo(federationId: federation.federationId);
+
+    setState(() {
+      _connectedFederations.remove(federation.federationName);
+      if (federation.federationId == _selectedFederation?.federationId) {
+        _nwc = null;
+        _selectedRelay = null;
+      }
+    });
+
+    if (_connectedFederations.isEmpty) {
+      await _stopForegroundService();
+    } else {
+      await _updateForegroundService();
+    }
+  }
+
+  Future<void> _disconnectAll() async {
+    for (final config in _existingConfigs) {
+      await removeNwcConnectionInfo(federationId: config.$1.federationId);
+    }
+
+    setState(() {
+      _connectedFederations.clear();
+      _existingConfigs.clear();
+      _nwc = null;
+      _selectedRelay = null;
+    });
+
+    await _stopForegroundService();
   }
 
   Future<void> _initialize() async {
     final relays = await getRelays();
     final currentConfig = await getNwcConnectionInfo();
     _existingConfigs = currentConfig;
+
+    // Track which federations are connected
+    final connectedFedNames =
+        currentConfig.map((c) => c.$1.federationName).toSet();
 
     FederationSelector? firstSelector;
     String? firstRelay;
@@ -61,8 +204,14 @@ class _NostrWalletConnectState extends State<NostrWalletConnect> {
       _selectedFederation = firstSelector;
       _nwc = firstNwc;
       _selectedRelay = firstRelay;
+      _connectedFederations.addAll(connectedFedNames);
       _loading = false;
     });
+
+    // Start foreground service if there are active connections
+    if (_connectedFederations.isNotEmpty) {
+      await _startForegroundService();
+    }
   }
 
   Widget _buildCopyableField({required String label, required String value}) {
@@ -208,24 +357,38 @@ class _NostrWalletConnectState extends State<NostrWalletConnect> {
         const SizedBox(height: 24),
         ElevatedButton(
           onPressed:
-              (_selectedFederation != null &&
-                      _selectedRelay != null &&
-                      (_nwc == null || _selectedRelay != _nwc!.relay))
+              (_selectedFederation != null && _selectedRelay != null)
                   ? () async {
                     final selectedFed = _selectedFederation!;
                     final selectedRelay = _selectedRelay!;
 
-                    final result = await setNwcConnectionInfo(
-                      federationId: selectedFed.federationId,
-                      relay: selectedRelay,
-                    );
+                    // Check if this federation is already connected
+                    final isConnected = _nwc != null;
 
-                    setState(() {
-                      _nwc = result;
-                    });
+                    if (isConnected) {
+                      // Disconnect
+                      await _disconnectFederation(selectedFed);
+                    } else {
+                      // Connect
+                      final result = await setNwcConnectionInfo(
+                        federationId: selectedFed.federationId,
+                        relay: selectedRelay,
+                      );
+
+                      setState(() {
+                        _nwc = result;
+                        _connectedFederations.add(selectedFed.federationName);
+                      });
+
+                      if (_connectedFederations.length == 1) {
+                        await _startForegroundService();
+                      } else {
+                        await _updateForegroundService();
+                      }
+                    }
                   }
                   : null,
-          child: const Text('Save Connection Info'),
+          child: Text(_nwc != null ? 'Disconnect' : 'Save Connection Info'),
         ),
       ],
     );

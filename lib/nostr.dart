@@ -37,6 +37,8 @@ abstract class NostrClient implements RustOpaqueInterface {
     recoverRelays: recoverRelays,
   );
 
+  Future<void> removeNwcConnectionInfo({required FederationId federationId});
+
   Future<void> removeRelay({required String relayUri});
 
   Future<NWCConnectionInfo> setNwcConnectionInfo({
