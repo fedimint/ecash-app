@@ -36,20 +36,10 @@ class _NostrWalletConnectState extends State<NostrWalletConnect> {
   void initState() {
     super.initState();
     _initialize();
-
-    // Listen for notification button presses
-    FlutterForegroundTask.addTaskDataCallback(_onNotificationButtonPressed);
-  }
-
-  void _onNotificationButtonPressed(dynamic data) {
-    if (data == 'disconnect_all') {
-      _disconnectAll();
-    }
   }
 
   @override
   void dispose() {
-    FlutterForegroundTask.removeTaskDataCallback(_onNotificationButtonPressed);
     super.dispose();
   }
 
@@ -101,9 +91,6 @@ class _NostrWalletConnectState extends State<NostrWalletConnect> {
       serviceId: 256,
       notificationTitle: 'NWC Active',
       notificationText: _buildNotificationText(),
-      notificationButtons: [
-        const NotificationButton(id: 'disconnect_all', text: 'Disconnect All'),
-      ],
     );
 
     setState(() => _serviceRunning = true);
@@ -115,9 +102,6 @@ class _NostrWalletConnectState extends State<NostrWalletConnect> {
     await FlutterForegroundTask.updateService(
       notificationTitle: 'NWC Active',
       notificationText: _buildNotificationText(),
-      notificationButtons: [
-        const NotificationButton(id: 'disconnect_all', text: 'Disconnect All'),
-      ],
     );
   }
 
@@ -141,8 +125,16 @@ class _NostrWalletConnectState extends State<NostrWalletConnect> {
 
     setState(() {
       _connectedFederations.remove(federation.federationName);
-      if (federation.federationId == _selectedFederation?.federationId) {
+
+      // Remove from existing configs to prevent it from reappearing
+      _existingConfigs.removeWhere(
+        (config) => config.$1.federationName == federation.federationName,
+      );
+
+      // Clear connection info if disconnecting the currently selected federation
+      if (federation.federationName == _selectedFederation?.federationName) {
         _nwc = null;
+        _selectedFederation = null;
         _selectedRelay = null;
       }
     });
@@ -152,21 +144,6 @@ class _NostrWalletConnectState extends State<NostrWalletConnect> {
     } else {
       await _updateForegroundService();
     }
-  }
-
-  Future<void> _disconnectAll() async {
-    for (final config in _existingConfigs) {
-      await removeNwcConnectionInfo(federationId: config.$1.federationId);
-    }
-
-    setState(() {
-      _connectedFederations.clear();
-      _existingConfigs.clear();
-      _nwc = null;
-      _selectedRelay = null;
-    });
-
-    await _stopForegroundService();
   }
 
   Future<void> _initialize() async {
