@@ -1,3 +1,4 @@
+import 'dart:developer';
 import 'dart:io';
 
 import 'package:ecashapp/utils.dart';
@@ -9,6 +10,33 @@ import 'package:ecashapp/multimint.dart';
 import 'package:ecashapp/nostr.dart';
 import 'package:flutter_foreground_task/flutter_foreground_task.dart';
 import 'package:permission_handler/permission_handler.dart';
+
+// TaskHandler for foreground service periodic execution
+class NWCTaskHandler extends TaskHandler {
+  @override
+  Future<void> onStart(DateTime timestamp, TaskStarter starter) async {
+    log('[NWC Foreground Task] Started at ${timestamp.toIso8601String()}', name: 'NWCTask');
+  }
+
+  @override
+  void onRepeatEvent(DateTime timestamp) {
+    // This runs every 5 seconds - update notification to show we're alive
+    FlutterForegroundTask.updateService(
+      notificationText: 'Callback at ${timestamp.hour}:${timestamp.minute}:${timestamp.second}',
+    );
+  }
+
+  @override
+  Future<void> onDestroy(DateTime timestamp) async {
+    log('[NWC Foreground Task] Destroyed at ${timestamp.toIso8601String()}', name: 'NWCTask');
+  }
+}
+
+// Top-level callback function for foreground task
+@pragma('vm:entry-point')
+void startNWCCallback() {
+  FlutterForegroundTask.setTaskHandler(NWCTaskHandler());
+}
 
 class NostrWalletConnect extends StatefulWidget {
   final List<(FederationSelector, bool)> federations;
@@ -83,7 +111,7 @@ class _NostrWalletConnectState extends State<NostrWalletConnect> {
         showNotification: false,
       ),
       foregroundTaskOptions: ForegroundTaskOptions(
-        eventAction: ForegroundTaskEventAction.nothing(),
+        eventAction: ForegroundTaskEventAction.repeat(5000),
       ),
     );
 
@@ -91,6 +119,7 @@ class _NostrWalletConnectState extends State<NostrWalletConnect> {
       serviceId: 256,
       notificationTitle: 'NWC Active',
       notificationText: _buildNotificationText(),
+      callback: startNWCCallback,
     );
 
     setState(() => _serviceRunning = true);
