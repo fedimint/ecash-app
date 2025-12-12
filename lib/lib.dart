@@ -8,6 +8,7 @@ import 'event_bus.dart';
 import 'frb_generated.dart';
 import 'multimint.dart';
 import 'nostr.dart';
+import 'package:collection/collection.dart';
 import 'package:flutter_rust_bridge/flutter_rust_bridge_for_generated.dart';
 import 'package:freezed_annotation/freezed_annotation.dart' hide protected;
 part 'lib.freezed.dart';
@@ -220,6 +221,17 @@ Future<void> removeNwcConnectionInfo({required FederationId federationId}) =>
     RustLib.instance.api.crateRemoveNwcConnectionInfo(
       federationId: federationId,
     );
+
+/// Blocking NWC listener that runs until the connection is closed.
+/// This is called directly from the foreground task.
+/// Takes a string federation_id for easier passing from Dart foreground task.
+Future<void> listenForNwcBlocking({
+  required String federationIdStr,
+  required String relay,
+}) => RustLib.instance.api.crateListenForNwcBlocking(
+  federationIdStr: federationIdStr,
+  relay: relay,
+);
 
 Future<List<(String, bool)>> getRelays() =>
     RustLib.instance.api.crateGetRelays();
@@ -450,4 +462,16 @@ sealed class ParsedText with _$ParsedText {
   const factory ParsedText.lightningAddressOrLnurl(String field0) =
       ParsedText_LightningAddressOrLnurl;
   const factory ParsedText.ecashNoFederation() = ParsedText_EcashNoFederation;
+}
+
+class U8Array32 extends NonGrowableListView<int> {
+  static const arraySize = 32;
+
+  @internal
+  Uint8List get inner => _inner;
+  final Uint8List _inner;
+
+  U8Array32(this._inner) : assert(_inner.length == arraySize), super(_inner);
+
+  U8Array32.init() : this(Uint8List(arraySize));
 }
