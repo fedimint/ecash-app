@@ -548,8 +548,41 @@ pub async fn set_nwc_connection_info(
 #[frb]
 pub async fn remove_nwc_connection_info(federation_id: FederationId) {
     let nostr_client = get_nostr_client();
-    let mut nostr = nostr_client.write().await;
+    let nostr = nostr_client.read().await;
     nostr.remove_nwc_connection_info(federation_id).await;
+}
+
+/// Blocking NWC listener that runs until the connection is closed.
+/// This is called directly from the foreground task.
+/// Takes a string federation_id for easier passing from Dart foreground task.
+#[frb]
+pub async fn listen_for_nwc_blocking(
+    federation_id_str: String,
+    relay: String,
+) -> anyhow::Result<()> {
+    info_to_flutter(format!("[NWC] listen_for_nwc_blocking called with federation: {federation_id_str}, relay: {relay}")).await;
+    let federation_id = FederationId::from_str(&federation_id_str)?;
+
+    // Get or create the NWC config, then drop the lock before blocking
+    let nwc_config = {
+        let nostr_client = get_nostr_client();
+        info_to_flutter("[NWC] Acquiring read lock on nostr client").await;
+        let nostr = nostr_client.read().await;
+        info_to_flutter("[NWC] Got read lock, getting NWC config").await;
+        let (nwc_config, _connection_info) = nostr
+            .get_or_create_nwc_config(federation_id, relay)
+            .await;
+        info_to_flutter("[NWC] Got NWC config, dropping read lock").await;
+        nwc_config
+        // Read lock is dropped here when `nostr` goes out of scope
+    };
+
+    info_to_flutter("[NWC] Starting blocking listen for NWC").await;
+    // Start listening (this blocks until the connection is closed)
+    nostr::NostrClient::listen_for_nwc(&federation_id, nwc_config).await;
+    info_to_flutter("[NWC] listen_for_nwc returned").await;
+
+    Ok(())
 }
 
 #[frb]
