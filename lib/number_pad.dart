@@ -49,6 +49,9 @@ class _NumberPadState extends State<NumberPad> {
   BigInt? _currentBalance;
   FederationMeta? _federationMeta;
   WithdrawalMode _withdrawalMode = WithdrawalMode.specificAmount;
+  bool _isFiatInputMode = false;
+  String? _displayedFiatInput;
+  String? _preservedSatsBeforeFiatEdit;
 
   @override
   void initState() {
@@ -108,7 +111,11 @@ class _NumberPadState extends State<NumberPad> {
       displayValue = BigInt.zero;
     }
 
-    return formatBalance(displayValue * BigInt.from(1000), false, bitcoinDisplay);
+    return formatBalance(
+      displayValue * BigInt.from(1000),
+      false,
+      bitcoinDisplay,
+    );
   }
 
   bool _isValidAmount() {
@@ -179,6 +186,55 @@ class _NumberPadState extends State<NumberPad> {
 
     // If negative, return zero (will display as "0 sats" in red)
     return remaining < BigInt.zero ? BigInt.zero : remaining;
+  }
+
+  /// Returns true if we can add another digit in fiat mode.
+  /// Limits to 2 decimal places.
+  bool _canAddFiatDigit() {
+    if (_displayedFiatInput == null) return true;
+    if (!_displayedFiatInput!.contains('.')) return true;
+    final parts = _displayedFiatInput!.split('.');
+    return parts.length < 2 || parts[1].length < 2;
+  }
+
+  void _onSwapCurrency() {
+    final fiatCurrency = context.read<PreferencesProvider>().fiatCurrency;
+    final btcPrice = widget.btcPrices[fiatCurrency];
+
+    // Don't allow swap if price data unavailable
+    if (btcPrice == null) {
+      ToastService().show(
+        message: "Price data unavailable",
+        duration: const Duration(seconds: 3),
+        onTap: () {},
+        icon: const Icon(Icons.warning),
+      );
+      return;
+    }
+
+    setState(() {
+      if (_isFiatInputMode) {
+        // Swapping FROM fiat TO bitcoin
+        // If user didn't edit in fiat mode, restore preserved value
+        if (_preservedSatsBeforeFiatEdit != null) {
+          _rawAmount = _preservedSatsBeforeFiatEdit!;
+        }
+        // _rawAmount already contains converted sats if user typed in fiat
+        _displayedFiatInput = null;
+        _preservedSatsBeforeFiatEdit = null;
+        _isFiatInputMode = false;
+      } else {
+        // Swapping FROM bitcoin TO fiat
+        // Preserve the current sats value
+        _preservedSatsBeforeFiatEdit = _rawAmount;
+        // Calculate and display the fiat equivalent
+        final sats = int.tryParse(_rawAmount) ?? 0;
+        final fiatValue = (btcPrice * sats) / 100000000;
+        // Store as raw fiat input (just the number, formatted on display)
+        _displayedFiatInput = fiatValue.toStringAsFixed(2);
+        _isFiatInputMode = true;
+      }
+    });
   }
 
   Future<void> _onMaxPressed() async {
@@ -385,15 +441,56 @@ class _NumberPadState extends State<NumberPad> {
       }
       if (key == LogicalKeyboardKey.backspace) {
         setState(() {
-          if (_rawAmount.isNotEmpty) {
-            _rawAmount = _rawAmount.substring(0, _rawAmount.length - 1);
-            _withdrawalMode = WithdrawalMode.specificAmount;
+          if (_isFiatInputMode) {
+            if (_displayedFiatInput != null &&
+                _displayedFiatInput!.isNotEmpty) {
+              _displayedFiatInput = _displayedFiatInput!.substring(
+                0,
+                _displayedFiatInput!.length - 1,
+              );
+              _preservedSatsBeforeFiatEdit = null;
+              final fiatValue =
+                  double.tryParse(_displayedFiatInput ?? '0') ?? 0;
+              final fiatCurrency =
+                  context.read<PreferencesProvider>().fiatCurrency;
+              final btcPrice = widget.btcPrices[fiatCurrency];
+              _rawAmount =
+                  calculateSatsFromFiat(btcPrice, fiatValue).toString();
+            }
+          } else {
+            if (_rawAmount.isNotEmpty) {
+              _rawAmount = _rawAmount.substring(0, _rawAmount.length - 1);
+            }
+          }
+          _withdrawalMode = WithdrawalMode.specificAmount;
+        });
+      }
+      // Handle decimal point for fiat mode via keyboard
+      if (_isFiatInputMode &&
+          (key == LogicalKeyboardKey.period ||
+              key == LogicalKeyboardKey.numpadDecimal)) {
+        setState(() {
+          if (!(_displayedFiatInput?.contains('.') ?? false)) {
+            _preservedSatsBeforeFiatEdit = null;
+            _displayedFiatInput = (_displayedFiatInput ?? '') + '.';
           }
         });
       }
       if (digit != '') {
         setState(() {
-          _rawAmount += digit;
+          if (_isFiatInputMode) {
+            // Don't allow more than 2 decimal places
+            if (!_canAddFiatDigit()) return;
+            _preservedSatsBeforeFiatEdit = null;
+            _displayedFiatInput = (_displayedFiatInput ?? '') + digit;
+            final fiatValue = double.tryParse(_displayedFiatInput ?? '0') ?? 0;
+            final fiatCurrency =
+                context.read<PreferencesProvider>().fiatCurrency;
+            final btcPrice = widget.btcPrices[fiatCurrency];
+            _rawAmount = calculateSatsFromFiat(btcPrice, fiatValue).toString();
+          } else {
+            _rawAmount += digit;
+          }
           _withdrawalMode = WithdrawalMode.specificAmount;
         });
       }
@@ -428,9 +525,10 @@ class _NumberPadState extends State<NumberPad> {
           color: theme.colorScheme.surface,
           borderRadius: BorderRadius.circular(12),
           border: Border.all(
-            color: isOverBalance
-                ? Colors.red.withValues(alpha: 0.4)
-                : theme.colorScheme.primary.withValues(alpha: 0.1),
+            color:
+                isOverBalance
+                    ? Colors.red.withValues(alpha: 0.4)
+                    : theme.colorScheme.primary.withValues(alpha: 0.1),
             width: 1,
           ),
           boxShadow: [
@@ -496,32 +594,33 @@ class _NumberPadState extends State<NumberPad> {
                   const SizedBox(height: 6),
                   const Text(
                     'Available',
-                    style: TextStyle(
-                      fontSize: 11,
-                      color: Colors.grey,
-                    ),
+                    style: TextStyle(fontSize: 11, color: Colors.grey),
                   ),
                   const SizedBox(height: 2),
                   remainingBalance == null
                       ? const SizedBox(
-                          width: 16,
-                          height: 16,
-                          child: CircularProgressIndicator(
-                            strokeWidth: 2,
-                            color: Colors.grey,
-                          ),
-                        )
+                        width: 16,
+                        height: 16,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          color: Colors.grey,
+                        ),
+                      )
                       : AnimatedDefaultTextStyle(
-                          duration: const Duration(milliseconds: 300),
-                          curve: Curves.easeInOut,
-                          style: TextStyle(
-                            fontSize: 14,
-                            color: isOverBalance ? Colors.red : Colors.grey,
-                          ),
-                          child: Text(
-                            formatBalance(remainingBalance, false, bitcoinDisplay),
+                        duration: const Duration(milliseconds: 300),
+                        curve: Curves.easeInOut,
+                        style: TextStyle(
+                          fontSize: 14,
+                          color: isOverBalance ? Colors.red : Colors.grey,
+                        ),
+                        child: Text(
+                          formatBalance(
+                            remainingBalance,
+                            false,
+                            bitcoinDisplay,
                           ),
                         ),
+                      ),
                 ],
               ),
             ),
@@ -533,8 +632,12 @@ class _NumberPadState extends State<NumberPad> {
 
   @override
   Widget build(BuildContext context) {
-    final bitcoinDisplay = context.select<PreferencesProvider, BitcoinDisplay>((prefs) => prefs.bitcoinDisplay);
-    final fiatCurrency = context.select<PreferencesProvider, FiatCurrency>((prefs) => prefs.fiatCurrency);
+    final bitcoinDisplay = context.select<PreferencesProvider, BitcoinDisplay>(
+      (prefs) => prefs.bitcoinDisplay,
+    );
+    final fiatCurrency = context.select<PreferencesProvider, FiatCurrency>(
+      (prefs) => prefs.fiatCurrency,
+    );
     final fiatText = calculateFiatValue(
       widget.btcPrices[fiatCurrency],
       int.tryParse(_rawAmount) ?? 0,
@@ -560,29 +663,107 @@ class _NumberPadState extends State<NumberPad> {
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    RichText(
-                      text: TextSpan(
-                        style: const TextStyle(color: Colors.white),
-                        children: [
-                          TextSpan(
-                            text: _formatAmount(_rawAmount, bitcoinDisplay),
-                            style: const TextStyle(
-                              fontSize: 48,
-                              fontWeight: FontWeight.w700,
-                            ),
+                    // Primary display (large) - shows what user is entering
+                    AnimatedSwitcher(
+                      duration: const Duration(milliseconds: 200),
+                      transitionBuilder: (child, animation) {
+                        return FadeTransition(
+                          opacity: animation,
+                          child: SlideTransition(
+                            position: Tween<Offset>(
+                              begin: const Offset(0, 0.2),
+                              end: Offset.zero,
+                            ).animate(animation),
+                            child: child,
                           ),
-                        ],
+                        );
+                      },
+                      child: RichText(
+                        key: ValueKey<bool>(_isFiatInputMode),
+                        text: TextSpan(
+                          style: const TextStyle(color: Colors.white),
+                          children: [
+                            TextSpan(
+                              text:
+                                  _isFiatInputMode
+                                      ? formatFiatInput(
+                                        _displayedFiatInput ?? '0',
+                                        fiatCurrency,
+                                      )
+                                      : _formatAmount(_rawAmount, bitcoinDisplay),
+                              style: const TextStyle(
+                                fontSize: 48,
+                                fontWeight: FontWeight.w700,
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
                     ),
                     const SizedBox(height: 16),
-                    Text(
-                      fiatText,
-                      style: const TextStyle(fontSize: 24, color: Colors.grey),
+                    // Secondary display row with swap button (fixed position)
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        // Spacer to balance the swap button on the right
+                        const SizedBox(width: 36),
+                        // Secondary currency display (small) - fixed width centered
+                        SizedBox(
+                          width: 150,
+                          child: AnimatedSwitcher(
+                            duration: const Duration(milliseconds: 200),
+                            transitionBuilder: (child, animation) {
+                              return FadeTransition(
+                                opacity: animation,
+                                child: SlideTransition(
+                                  position: Tween<Offset>(
+                                    begin: const Offset(0, -0.2),
+                                    end: Offset.zero,
+                                  ).animate(animation),
+                                  child: child,
+                                ),
+                              );
+                            },
+                            child: Text(
+                              key: ValueKey<bool>(_isFiatInputMode),
+                              _isFiatInputMode
+                                  ? _formatAmount(_rawAmount, bitcoinDisplay)
+                                  : fiatText,
+                              textAlign: TextAlign.center,
+                              style: const TextStyle(
+                                fontSize: 24,
+                                color: Colors.grey,
+                              ),
+                            ),
+                          ),
+                        ),
+                        // Swap button - fixed width
+                        SizedBox(
+                          width: 36,
+                          child: IconButton(
+                            onPressed:
+                                widget.btcPrices[fiatCurrency] != null
+                                    ? _onSwapCurrency
+                                    : null,
+                            icon: Icon(
+                              Icons.swap_vert,
+                              color:
+                                  widget.btcPrices[fiatCurrency] != null
+                                      ? Colors.grey
+                                      : Colors.grey.withValues(alpha: 0.3),
+                              size: 28,
+                            ),
+                            tooltip: 'Swap input currency',
+                            padding: EdgeInsets.zero,
+                            constraints: const BoxConstraints(),
+                          ),
+                        ),
+                      ],
                     ),
                   ],
                 ),
               ),
-            ), 
+            ),
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16.0),
               child: SizedBox(
@@ -627,14 +808,62 @@ class _NumberPadState extends State<NumberPad> {
                 arabicDigits: false,
                 onType: (value) {
                   setState(() {
-                    _rawAmount += value.toString();
+                    if (_isFiatInputMode) {
+                      // Don't allow more than 2 decimal places
+                      if (!_canAddFiatDigit()) return;
+
+                      // In fiat mode
+                      final digit = value.toString();
+
+                      // Clear preserved sats since user is now editing
+                      _preservedSatsBeforeFiatEdit = null;
+
+                      _displayedFiatInput = (_displayedFiatInput ?? '') + digit;
+
+                      // Convert to sats
+                      final fiatValue =
+                          double.tryParse(_displayedFiatInput ?? '0') ?? 0;
+                      final fiatCurrency =
+                          context.read<PreferencesProvider>().fiatCurrency;
+                      final btcPrice = widget.btcPrices[fiatCurrency];
+                      final sats = calculateSatsFromFiat(btcPrice, fiatValue);
+                      _rawAmount = sats.toString();
+                    } else {
+                      // In bitcoin mode (existing behavior)
+                      _rawAmount += value.toString();
+                    }
                     _withdrawalMode = WithdrawalMode.specificAmount;
                   });
                 },
                 numberStyle: const TextStyle(fontSize: 24, color: Colors.grey),
                 leftWidget:
-                    widget.paymentType == PaymentType.onchain ||
-                            widget.paymentType == PaymentType.ecash
+                    _isFiatInputMode
+                        ? TextButton(
+                          onPressed: () {
+                            setState(() {
+                              // Only add decimal if not already present
+                              if (!(_displayedFiatInput?.contains('.') ??
+                                  false)) {
+                                _preservedSatsBeforeFiatEdit = null;
+                                _displayedFiatInput =
+                                    (_displayedFiatInput ?? '') + '.';
+                              }
+                            });
+                          },
+                          style: TextButton.styleFrom(
+                            minimumSize: const Size(50, 40),
+                            padding: const EdgeInsets.symmetric(horizontal: 2),
+                          ),
+                          child: const Text(
+                            '.',
+                            style: TextStyle(
+                              fontSize: 24,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        )
+                        : (widget.paymentType == PaymentType.onchain ||
+                            widget.paymentType == PaymentType.ecash)
                         ? TextButton(
                           onPressed: _loadingMax ? null : _onMaxPressed,
                           style: TextButton.styleFrom(
@@ -665,13 +894,35 @@ class _NumberPadState extends State<NumberPad> {
                 rightWidget: IconButton(
                   onPressed: () {
                     setState(() {
-                      if (_rawAmount.isNotEmpty) {
-                        _rawAmount = _rawAmount.substring(
-                          0,
-                          _rawAmount.length - 1,
-                        );
-                        _withdrawalMode = WithdrawalMode.specificAmount;
+                      if (_isFiatInputMode) {
+                        if (_displayedFiatInput != null &&
+                            _displayedFiatInput!.isNotEmpty) {
+                          _displayedFiatInput = _displayedFiatInput!.substring(
+                            0,
+                            _displayedFiatInput!.length - 1,
+                          );
+                          _preservedSatsBeforeFiatEdit = null; // User edited
+                          // Recalculate sats
+                          final fiatValue =
+                              double.tryParse(_displayedFiatInput ?? '0') ?? 0;
+                          final fiatCurrency =
+                              context.read<PreferencesProvider>().fiatCurrency;
+                          final btcPrice = widget.btcPrices[fiatCurrency];
+                          _rawAmount =
+                              calculateSatsFromFiat(
+                                btcPrice,
+                                fiatValue,
+                              ).toString();
+                        }
+                      } else {
+                        if (_rawAmount.isNotEmpty) {
+                          _rawAmount = _rawAmount.substring(
+                            0,
+                            _rawAmount.length - 1,
+                          );
+                        }
                       }
+                      _withdrawalMode = WithdrawalMode.specificAmount;
                     });
                   },
                   icon: const Icon(Icons.backspace),

@@ -168,6 +168,47 @@ String calculateFiatValue(
       : '$formattedValue$symbol';
 }
 
+/// Converts a fiat amount to satoshis based on the current BTC price.
+/// Returns 0 if btcPrice is null or zero to avoid division errors.
+///
+/// Formula: sats = (fiatValue * 100000000) / btcPrice
+int calculateSatsFromFiat(double? btcPrice, double fiatAmount) {
+  if (btcPrice == null || btcPrice == 0) return 0;
+  return ((fiatAmount * 100000000) / btcPrice).round();
+}
+
+/// Formats a raw fiat input string for display with currency symbol.
+/// Handles partial input like "12." or "12.5" during typing.
+String formatFiatInput(String rawFiatInput, FiatCurrency fiatCurrency) {
+  if (rawFiatInput.isEmpty) rawFiatInput = '0';
+
+  final (symbol, symbolPosition) = switch (fiatCurrency) {
+    FiatCurrency.usd => ('\$', 'before'),
+    FiatCurrency.eur => ('€', 'after'),
+    FiatCurrency.gbp => ('£', 'before'),
+    FiatCurrency.cad => ('C\$', 'before'),
+    FiatCurrency.chf => ('CHF ', 'before'),
+    FiatCurrency.aud => ('A\$', 'before'),
+    FiatCurrency.jpy => ('¥', 'before'),
+  };
+
+  // Handle partial decimal input (user typed "12." or "12.5")
+  String formattedValue;
+  if (rawFiatInput.contains('.')) {
+    final parts = rawFiatInput.split('.');
+    final intPart = parts[0].isEmpty ? '0' : parts[0];
+    final decPart = parts.length > 1 ? parts[1] : '';
+    // Show as-is during typing, don't pad decimals
+    formattedValue = '$intPart.$decPart';
+  } else {
+    formattedValue = rawFiatInput;
+  }
+
+  return symbolPosition == 'before'
+      ? '$symbol$formattedValue'
+      : '$formattedValue$symbol';
+}
+
 int getModuleIdForPaymentType(PaymentType paymentType) {
   switch (paymentType) {
     case PaymentType.lightning:
