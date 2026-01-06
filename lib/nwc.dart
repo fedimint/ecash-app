@@ -350,7 +350,7 @@ class _NostrWalletConnectState extends State<NostrWalletConnect> {
                     ),
                   )
                   .toList(),
-          onChanged: (value) {
+          onChanged: _connectedFederation != null ? null : (value) {
             setState(() {
               _selectedFederation = value;
               // Clear NWC info if selecting a different federation than what's connected
@@ -396,7 +396,7 @@ class _NostrWalletConnectState extends State<NostrWalletConnect> {
                   ),
                 );
               }).toList(),
-          onChanged: (value) {
+          onChanged: _connectedFederation != null ? null : (value) {
             setState(() => _selectedRelay = value);
           },
         ),
