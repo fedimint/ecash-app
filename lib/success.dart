@@ -59,9 +59,15 @@ class _SuccessState extends State<Success> {
 
   @override
   Widget build(BuildContext context) {
-    final bitcoinDisplay = context.select<PreferencesProvider, BitcoinDisplay>((prefs) => prefs.bitcoinDisplay);
+    final bitcoinDisplay = context.select<PreferencesProvider, BitcoinDisplay>(
+      (prefs) => prefs.bitcoinDisplay,
+    );
     final actionText = widget.received ? 'received' : 'sent';
-    final displayAmount = formatBalance(widget.amountMsats, false, bitcoinDisplay);
+    final displayAmount = formatBalance(
+      widget.amountMsats,
+      false,
+      bitcoinDisplay,
+    );
 
     return Scaffold(
       body: GestureDetector(

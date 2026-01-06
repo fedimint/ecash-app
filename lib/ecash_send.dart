@@ -103,7 +103,9 @@ class _EcashSendState extends State<EcashSend> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final bitcoinDisplay = context.select<PreferencesProvider, BitcoinDisplay>((prefs) => prefs.bitcoinDisplay);
+    final bitcoinDisplay = context.select<PreferencesProvider, BitcoinDisplay>(
+      (prefs) => prefs.bitcoinDisplay,
+    );
 
     if (_loading) {
       return const Center(
@@ -217,7 +219,11 @@ class _EcashSendState extends State<EcashSend> {
               children: [
                 CopyableDetailRow(
                   label: TransactionDetailKeys.amount,
-                  value: formatBalance(widget.amountMsats, false, bitcoinDisplay),
+                  value: formatBalance(
+                    widget.amountMsats,
+                    false,
+                    bitcoinDisplay,
+                  ),
                 ),
                 CopyableDetailRow(
                   label: 'Federation',

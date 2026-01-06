@@ -67,10 +67,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 context,
                 MaterialPageRoute(
                   builder:
-                      (context) => Discover(
-                        onJoin: widget.onJoin,
-                        showAppBar: true,
-                      ),
+                      (context) =>
+                          Discover(onJoin: widget.onJoin, showAppBar: true),
                 ),
               );
             },

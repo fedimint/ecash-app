@@ -86,11 +86,7 @@ class _CreateWalletState extends State<CreateWallet> {
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
               const SizedBox(height: 48),
-              Image.asset(
-                'assets/images/ecash-app.png',
-                width: 64,
-                height: 64,
-              ),
+              Image.asset('assets/images/ecash-app.png', width: 64, height: 64),
               const SizedBox(height: 24),
               Text(
                 'Welcome to Ecash App',
