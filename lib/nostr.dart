@@ -3,12 +3,13 @@
 
 // ignore_for_file: invalid_use_of_internal_member, unused_import, unnecessary_import
 
+import 'db.dart';
 import 'frb_generated.dart';
 import 'lib.dart';
 import 'multimint.dart';
 import 'package:flutter_rust_bridge/flutter_rust_bridge_for_generated.dart';
 
-// These functions are ignored because they are not marked as `pub`: `add_relays_from_db`, `broadcast_nwc_info`, `broadcast_response`, `get_or_insert_default_relays`, `handle_request`, `listen_for_nwc`, `parse_content`, `parse_federation_id`, `parse_federation_name`, `parse_invite_codes`, `parse_modules`, `parse_network`, `parse_picture`, `spawn_listen_for_nwc`, `update_federations_from_nostr`
+// These functions are ignored because they are not marked as `pub`: `add_relays_from_db`, `broadcast_nwc_info`, `broadcast_response`, `get_or_insert_default_relays`, `handle_request`, `parse_content`, `parse_federation_id`, `parse_federation_name`, `parse_invite_codes`, `parse_modules`, `parse_network`, `parse_picture`, `spawn_listen_for_nwc`, `update_federations_from_nostr`
 // These types are ignored because they are neither used by any `pub` functions nor (for structs and enums) marked `#[frb(unignore)]`: `WalletConnectRequest`, `WalletConnectResponse`
 // These function are ignored because they are on traits that is not defined in current crate (put an empty `#[frb]` on it to unignore): `assert_receiver_is_total_eq`, `clone`, `clone`, `clone`, `eq`, `fmt`, `fmt`, `fmt`, `fmt`, `try_from`
 
@@ -17,6 +18,12 @@ abstract class NostrClient implements RustOpaqueInterface {
   Future<void> backupInviteCodes({required List<String> inviteCodes});
 
   Future<List<String>> getBackupInviteCodes();
+
+  /// Get NWC config for a federation and return it.
+  /// This is used by the blocking listen function.
+  Future<(NostrWalletConnectConfig, NWCConnectionInfo)> getNwcConfig({
+    required FederationId federationId,
+  });
 
   Future<List<(FederationSelector, NWCConnectionInfo)>> getNwcConnectionInfo();
 
@@ -28,20 +35,35 @@ abstract class NostrClient implements RustOpaqueInterface {
 
   Future<void> insertRelay({required String relayUri});
 
+  /// Blocking NWC listener - runs until the relay connection is closed or an error occurs.
+  /// This function is intended to be called directly from the foreground task.
+  static Future<void> listenForNwc({
+    required FederationId federationId,
+    required NostrWalletConnectConfig nwcConfig,
+  }) => RustLib.instance.api.crateNostrNostrClientListenForNwc(
+    federationId: federationId,
+    nwcConfig: nwcConfig,
+  );
+
   // HINT: Make it `#[frb(sync)]` to let it become the default constructor of Dart class.
   static Future<NostrClient> newInstance({
     required Database db,
     required List<String> recoverRelays,
+    required bool isDesktop,
   }) => RustLib.instance.api.crateNostrNostrClientNew(
     db: db,
     recoverRelays: recoverRelays,
+    isDesktop: isDesktop,
   );
+
+  Future<void> removeNwcConnectionInfo({required FederationId federationId});
 
   Future<void> removeRelay({required String relayUri});
 
   Future<NWCConnectionInfo> setNwcConnectionInfo({
     required FederationId federationId,
     required String relay,
+    required bool isDesktop,
   });
 }
 

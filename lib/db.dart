@@ -7,7 +7,7 @@ import 'frb_generated.dart';
 import 'lib.dart';
 import 'package:flutter_rust_bridge/flutter_rust_bridge_for_generated.dart';
 
-// These types are ignored because they are neither used by any `pub` functions nor (for structs and enums) marked `#[frb(unignore)]`: `BitcoinDisplayKey`, `BtcPriceKey`, `BtcPrice`, `BtcPricesKey`, `BtcPrices`, `DbKeyPrefix`, `FederationBackupKey`, `FederationConfigKeyPrefix`, `FederationConfigKey`, `FederationMetaKey`, `FederationOrderKey`, `FederationOrder`, `FiatCurrencyKey`, `LightningAddressKeyPrefix`, `NostrRelaysKeyPrefix`, `NostrRelaysKey`, `NostrWalletConnectConfig`, `NostrWalletConnectKeyPrefix`, `NostrWalletConnectKey`, `SeedPhraseAckKey`
+// These types are ignored because they are neither used by any `pub` functions nor (for structs and enums) marked `#[frb(unignore)]`: `BitcoinDisplayKey`, `BtcPriceKey`, `BtcPrice`, `BtcPricesKey`, `BtcPrices`, `DbKeyPrefix`, `FederationBackupKey`, `FederationConfigKeyPrefix`, `FederationConfigKey`, `FederationMetaKey`, `FederationOrderKey`, `FederationOrder`, `FiatCurrencyKey`, `LightningAddressKeyPrefix`, `NostrRelaysKeyPrefix`, `NostrRelaysKey`, `NostrWalletConnectKeyPrefix`, `NostrWalletConnectKey`, `SeedPhraseAckKey`
 // These function are ignored because they are on traits that is not defined in current crate (put an empty `#[frb]` on it to unignore): `assert_receiver_is_total_eq`, `assert_receiver_is_total_eq`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `cmp`, `consensus_decode_partial_from_finite_reader`, `consensus_decode_partial_from_finite_reader`, `consensus_decode_partial_from_finite_reader`, `consensus_decode_partial_from_finite_reader`, `consensus_decode_partial_from_finite_reader`, `consensus_decode_partial_from_finite_reader`, `consensus_decode_partial_from_finite_reader`, `consensus_decode_partial_from_finite_reader`, `consensus_decode_partial_from_finite_reader`, `consensus_decode_partial_from_finite_reader`, `consensus_decode_partial_from_finite_reader`, `consensus_decode_partial_from_finite_reader`, `consensus_decode_partial_from_finite_reader`, `consensus_decode_partial_from_finite_reader`, `consensus_decode_partial_from_finite_reader`, `consensus_decode_partial_from_finite_reader`, `consensus_decode_partial_from_finite_reader`, `consensus_decode_partial_from_finite_reader`, `consensus_decode_partial_from_finite_reader`, `consensus_decode_partial_from_finite_reader`, `consensus_decode_partial_from_finite_reader`, `consensus_decode_partial_from_finite_reader`, `consensus_decode_partial_from_finite_reader`, `consensus_decode_partial_from_finite_reader`, `consensus_encode`, `consensus_encode`, `consensus_encode`, `consensus_encode`, `consensus_encode`, `consensus_encode`, `consensus_encode`, `consensus_encode`, `consensus_encode`, `consensus_encode`, `consensus_encode`, `consensus_encode`, `consensus_encode`, `consensus_encode`, `consensus_encode`, `consensus_encode`, `consensus_encode`, `consensus_encode`, `consensus_encode`, `consensus_encode`, `consensus_encode`, `consensus_encode`, `consensus_encode`, `consensus_encode`, `eq`, `eq`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `hash`, `partial_cmp`
 
 // Rust type: RustOpaqueMoi<flutter_rust_bridge::for_generated::RustAutoOpaqueInner<FederationConfig>>
@@ -66,3 +66,24 @@ abstract class LightningAddressKey implements RustOpaqueInterface {
 enum BitcoinDisplay { bip177, sats, nothing, symbol }
 
 enum FiatCurrency { usd, eur, gbp, cad, chf, aud, jpy }
+
+class NostrWalletConnectConfig {
+  final U8Array32 secretKey;
+  final String relay;
+
+  const NostrWalletConnectConfig({
+    required this.secretKey,
+    required this.relay,
+  });
+
+  @override
+  int get hashCode => secretKey.hashCode ^ relay.hashCode;
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is NostrWalletConnectConfig &&
+          runtimeType == other.runtimeType &&
+          secretKey == other.secretKey &&
+          relay == other.relay;
+}

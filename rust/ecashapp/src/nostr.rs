@@ -1,9 +1,5 @@
 use std::{
-    collections::BTreeMap,
-    str::FromStr,
-    sync::Arc,
-    time::{Duration, SystemTime},
-    u64,
+    collections::BTreeMap, str::FromStr, sync::Arc, time::{Duration, SystemTime}, u64
 };
 
 use crate::{
@@ -32,7 +28,7 @@ use fedimint_derive_secret::ChildId;
 use futures_util::StreamExt;
 use serde::{Deserialize, Serialize};
 use tokio::{
-    sync::{oneshot, RwLock},
+    sync::{RwLock, oneshot},
     time::Instant,
 };
 
@@ -87,12 +83,12 @@ pub(crate) struct NostrClient {
     public_federations: Arc<RwLock<Vec<PublicFederation>>>,
     task_group: TaskGroup,
     db: Database,
-    nwc_listeners: Arc<RwLock<BTreeMap<FederationId, oneshot::Sender<()>>>>,
     keys: nostr_sdk::Keys,
+    nwc_listeners: Arc<RwLock<BTreeMap<FederationId, oneshot::Sender<()>>>>,
 }
 
 impl NostrClient {
-    pub async fn new(db: Database, recover_relays: Vec<String>) -> anyhow::Result<NostrClient> {
+    pub async fn new(db: Database, recover_relays: Vec<String>, is_desktop: bool) -> anyhow::Result<NostrClient> {
         let start = Instant::now();
         // We need to derive a Nostr key from the Fedimint secret.
         // Currently we are using 1/0 as the derivation path, as it does not clash with anything used internally in
@@ -112,8 +108,8 @@ impl NostrClient {
             public_federations: Arc::new(RwLock::new(vec![])),
             task_group: TaskGroup::new(),
             db: db.clone(),
-            nwc_listeners: Arc::new(RwLock::new(BTreeMap::new())),
             keys,
+            nwc_listeners: Arc::new(RwLock::new(BTreeMap::new())),
         };
 
         let mut background_nostr = nostr_client.clone();
@@ -127,16 +123,19 @@ impl NostrClient {
                 background_nostr.update_federations_from_nostr().await;
             });
 
-        let mut dbtx = db.begin_transaction_nc().await;
-        let federation_configs = dbtx
-            .find_by_prefix(&NostrWalletConnectKeyPrefix)
-            .await
-            .collect::<Vec<_>>()
-            .await;
-        for (key, nwc_config) in federation_configs {
-            nostr_client
-                .spawn_listen_for_nwc(key.federation_id, nwc_config)
+        // On desktop, we need to spawn the background listener for NWC
+        if is_desktop {
+            let mut dbtx = db.begin_transaction_nc().await;
+            let federation_configs = dbtx
+                .find_by_prefix(&NostrWalletConnectKeyPrefix)
+                .await
+                .collect::<Vec<_>>()
                 .await;
+            for (key, nwc_config) in federation_configs {
+                nostr_client
+                    .spawn_listen_for_nwc(&key.federation_id, nwc_config)
+                    .await;
+            }
         }
 
         info_to_flutter(format!("Initialized Nostr client in {:?}", start.elapsed())).await;
@@ -247,28 +246,34 @@ impl NostrClient {
         }
     }
 
-    async fn spawn_listen_for_nwc(
-        &mut self,
-        federation_id: FederationId,
-        nwc_config: NostrWalletConnectConfig,
-    ) {
+    async fn spawn_listen_for_nwc(&mut self, federation_id: &FederationId, nwc_config: NostrWalletConnectConfig) {
         let mut listeners = self.nwc_listeners.write().await;
-        if let Some(listener) = listeners.remove(&federation_id) {
+        if let Some(listener) = listeners.remove(federation_id) {
             info_to_flutter("Sending shutdown signal to previous listening thread").await;
             let _ = listener.send(());
         }
-        let (sender, receiver) = oneshot::channel::<()>();
-        listeners.insert(federation_id, sender);
-        self.task_group
-            .spawn_cancellable("nostr wallet connect", async move {
-                Self::listen_for_nwc(&federation_id, nwc_config, receiver).await;
-            });
+        let (sender, mut receiver) = oneshot::channel::<()>();
+        listeners.insert(*federation_id, sender);
+        let federation_id = federation_id.clone();
+        self.task_group.spawn_cancellable("desktop nostr wallet connected", async move {
+            tokio::select! {
+                _ = &mut receiver => {
+                    info_to_flutter(format!("Received shutdown signal for {federation_id}")).await;
+                    return;
+                }
+                _ = Self::listen_for_nwc(&federation_id, nwc_config) => {
+                    info_to_flutter(format!("Stopped listening for NWC for {federation_id}")).await;
+                    return;
+                }
+            }
+        });
     }
 
-    async fn listen_for_nwc(
+    /// Blocking NWC listener - runs until the relay connection is closed or an error occurs.
+    /// This function is intended to be called directly from the foreground task.
+    pub async fn listen_for_nwc(
         federation_id: &FederationId,
         nwc_config: NostrWalletConnectConfig,
-        mut receiver: oneshot::Receiver<()>,
     ) {
         let secret_key = nostr_sdk::SecretKey::from_slice(&nwc_config.secret_key)
             .expect("Could not create secret key");
@@ -313,43 +318,35 @@ impl NostrClient {
             "FederationId: {federation_id} Listening for NWC Requests..."
         ))
         .await;
-        loop {
-            tokio::select! {
-                _ = &mut receiver => {
-                    info_to_flutter(format!("Received shutdown signal for {federation_id}")).await;
-                    break;
+
+        // Main event loop - runs until the notification stream is closed
+        // (which happens when the foreground service is stopped)
+        while let Ok(notification) = notifications.recv().await {
+            let nostr_sdk::RelayPoolNotification::Event { event, .. } = notification else {
+                continue;
+            };
+
+            if event.kind == nostr_sdk::Kind::WalletConnectRequest {
+                let sender_pubkey = event.pubkey;
+                let Ok(decrypted) = nostr_sdk::nips::nip04::decrypt(&secret_key, &sender_pubkey, &event.content) else {
+                    continue;
+                };
+
+                let Ok(request) = serde_json::from_str::<WalletConnectRequest>(&decrypted) else {
+                    info_to_flutter("Error deserializing WalletConnectRequest").await;
+                    continue;
+                };
+
+                info_to_flutter(format!("WalletConnectRequest: {request:?}")).await;
+                if let Err(err) = Self::handle_request(federation_id, &nostr_client, &keys, request, sender_pubkey, event.id).await {
+                    info_to_flutter(format!("Error handling WalletConnectRequest: {err:?}")).await;
                 }
-                notification = notifications.recv() => {
-                    let Ok(notification) = notification else {
-                        info_to_flutter(format!("Received shutdown signal from notifications stream for {federation_id}")).await;
-                        break;
-                    };
-
-                    let nostr_sdk::RelayPoolNotification::Event { event, .. } = notification else {
-                        continue;
-                    };
-
-                    if event.kind == nostr_sdk::Kind::WalletConnectRequest {
-                        let sender_pubkey = event.pubkey;
-                        let Ok(decrypted) = nostr_sdk::nips::nip04::decrypt(&secret_key, &sender_pubkey, &event.content) else {
-                            continue;
-                        };
-
-                        let Ok(request) = serde_json::from_str::<WalletConnectRequest>(&decrypted) else {
-                            info_to_flutter("Error deserializing WalletConnectRequest").await;
-                            continue;
-                        };
-
-                        info_to_flutter(format!("WalletConnectRequest: {request:?}")).await;
-                        if let Err(err) = Self::handle_request(federation_id, &nostr_client, &keys, request, sender_pubkey, event.id).await {
-                            info_to_flutter(format!("Error handling WalletConnectRequest: {err:?}")).await;
-                        }
-                    } else {
-                        info_to_flutter(format!("Event was not a WalletConnectRequest, continuing... {}", event.kind)).await;
-                    }
-                }
+            } else {
+                info_to_flutter(format!("Event was not a WalletConnectRequest, continuing... {}", event.kind)).await;
             }
         }
+
+        info_to_flutter(format!("Notification stream closed for {federation_id}")).await;
 
         nostr_client.unsubscribe(&subscription_id).await;
 
@@ -619,6 +616,7 @@ impl NostrClient {
         &mut self,
         federation_id: FederationId,
         relay: String,
+        is_desktop: bool,
     ) -> NWCConnectionInfo {
         let mut dbtx = self.db.begin_transaction().await;
         let keys = nostr_sdk::Keys::generate();
@@ -636,12 +634,53 @@ impl NostrClient {
         dbtx.commit_tx().await;
 
         let public_key = keys.public_key.to_hex();
-        self.spawn_listen_for_nwc(federation_id, nwc_config).await;
+        if is_desktop {
+            self.spawn_listen_for_nwc(&federation_id, nwc_config).await;
+        }
         NWCConnectionInfo {
             public_key,
             relay,
             secret: keys.secret_key().to_secret_hex(),
         }
+    }
+
+    pub async fn remove_nwc_connection_info(&self, federation_id: FederationId) {
+        // Remove from database
+        let mut dbtx = self.db.begin_transaction().await;
+        dbtx.remove_entry(&NostrWalletConnectKey { federation_id })
+            .await;
+        dbtx.commit_tx().await;
+
+        let mut listeners = self.nwc_listeners.write().await;
+        if let Some(sender) = listeners.remove(&federation_id) {
+            let _ = sender.send(());
+        }
+    }
+
+    /// Get NWC config for a federation and return it.
+    /// This is used by the blocking listen function.
+    pub async fn get_nwc_config(
+        &self,
+        federation_id: FederationId,
+    ) -> anyhow::Result<(NostrWalletConnectConfig, NWCConnectionInfo)> {
+        let mut dbtx = self.db.begin_transaction().await;
+
+        let existing_config = dbtx.get_value(&NostrWalletConnectKey { federation_id }).await.ok_or(anyhow!("NostrWalletConnectKey does not exist"))?;
+
+        let secret_key = nostr_sdk::SecretKey::from_slice(&existing_config.secret_key)
+            .expect("Could not create secret key");
+        let keys =
+            nostr_sdk::Keys::new_with_ctx(fedimint_core::secp256k1::SECP256K1, secret_key);
+        let public_key = keys.public_key.to_hex();
+        let relay = existing_config.relay.clone();
+        return Ok((
+            existing_config,
+            NWCConnectionInfo {
+                public_key,
+                relay,
+                secret: keys.secret_key().to_secret_hex(),
+            },
+        ));
     }
 
     pub async fn get_relays(&self) -> Vec<(String, bool)> {
