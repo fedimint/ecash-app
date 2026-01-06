@@ -98,61 +98,63 @@ class _NostrWalletConnectState extends State<NostrWalletConnect> {
     FederationSelector federation,
     String relay,
   ) async {
-    AppLogger.instance.info(
-      '[NWC] Starting foreground service for ${federation.federationName} with relay: $relay',
-    );
+    if (Platform.isAndroid) {
+      AppLogger.instance.info(
+        '[NWC] Starting foreground service for ${federation.federationName} with relay: $relay',
+      );
 
-    final hasPermission = await _requestNotificationPermission();
-    if (!hasPermission) {
-      AppLogger.instance.warn('[NWC] Notification permission denied');
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Notification permission required for NWC'),
-          ),
-        );
+      final hasPermission = await _requestNotificationPermission();
+      if (!hasPermission) {
+        AppLogger.instance.warn('[NWC] Notification permission denied');
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Notification permission required for NWC'),
+            ),
+          );
+        }
+        return;
       }
-      return;
+
+      // Convert FederationId to string for passing to foreground task
+      final federationIdStr = await federationIdToString(
+        federationId: federation.federationId,
+      );
+
+      // Save data for the task handler
+      await FlutterForegroundTask.saveData(
+        key: 'federation_id',
+        value: federationIdStr,
+      );
+      await FlutterForegroundTask.saveData(key: 'relay', value: relay);
+
+      // Initialize the service with Android notification options
+      FlutterForegroundTask.init(
+        androidNotificationOptions: AndroidNotificationOptions(
+          channelId: 'nwc_foreground_service',
+          channelName: 'NWC Foreground Service',
+          channelDescription:
+              'Keeps NWC wallet connections active in the background',
+          onlyAlertOnce: true,
+        ),
+        iosNotificationOptions: const IOSNotificationOptions(
+          showNotification: false,
+        ),
+        foregroundTaskOptions: ForegroundTaskOptions(
+          eventAction: ForegroundTaskEventAction.nothing(),
+        ),
+      );
+
+      await FlutterForegroundTask.startService(
+        serviceId: 256,
+        notificationTitle: 'NWC Active',
+        notificationText: 'Connected to ${federation.federationName}',
+        callback: startNWCCallback,
+      );
+
+      AppLogger.instance.info('[NWC] Foreground service started successfully');
     }
 
-    // Convert FederationId to string for passing to foreground task
-    final federationIdStr = await federationIdToString(
-      federationId: federation.federationId,
-    );
-    AppLogger.instance.debug('[NWC] Federation ID string: $federationIdStr');
-
-    // Save data for the task handler
-    await FlutterForegroundTask.saveData(
-      key: 'federation_id',
-      value: federationIdStr,
-    );
-    await FlutterForegroundTask.saveData(key: 'relay', value: relay);
-
-    // Initialize the service with Android notification options
-    FlutterForegroundTask.init(
-      androidNotificationOptions: AndroidNotificationOptions(
-        channelId: 'nwc_foreground_service',
-        channelName: 'NWC Foreground Service',
-        channelDescription:
-            'Keeps NWC wallet connections active in the background',
-        onlyAlertOnce: true,
-      ),
-      iosNotificationOptions: const IOSNotificationOptions(
-        showNotification: false,
-      ),
-      foregroundTaskOptions: ForegroundTaskOptions(
-        eventAction: ForegroundTaskEventAction.nothing(),
-      ),
-    );
-
-    await FlutterForegroundTask.startService(
-      serviceId: 256,
-      notificationTitle: 'NWC Active',
-      notificationText: 'Connected to ${federation.federationName}',
-      callback: startNWCCallback,
-    );
-
-    AppLogger.instance.info('[NWC] Foreground service started successfully');
     setState(() {
       _serviceRunning = true;
       _connectedFederation = federation;
@@ -160,16 +162,19 @@ class _NostrWalletConnectState extends State<NostrWalletConnect> {
   }
 
   Future<void> _stopForegroundService() async {
-    AppLogger.instance.debug(
-      '[NWC] Stopping foreground service (currently running: $_serviceRunning)',
-    );
-    if (!_serviceRunning) {
-      AppLogger.instance.debug('[NWC] Service not running, skipping stop');
-      return;
+    if (Platform.isAndroid) {
+      AppLogger.instance.debug(
+        '[NWC] Stopping foreground service (currently running: $_serviceRunning)',
+      );
+      if (!_serviceRunning) {
+        AppLogger.instance.debug('[NWC] Service not running, skipping stop');
+        return;
+      }
+
+      await FlutterForegroundTask.stopService();
+      AppLogger.instance.info('[NWC] Foreground service stopped');
     }
 
-    await FlutterForegroundTask.stopService();
-    AppLogger.instance.info('[NWC] Foreground service stopped');
     setState(() {
       _serviceRunning = false;
       _connectedFederation = null;
@@ -177,9 +182,6 @@ class _NostrWalletConnectState extends State<NostrWalletConnect> {
   }
 
   Future<void> _disconnect() async {
-    AppLogger.instance.info(
-      '[NWC] Disconnecting from federation: ${_connectedFederation?.federationName}',
-    );
     if (_connectedFederation != null) {
       AppLogger.instance.debug(
         '[NWC] Removing NWC connection info from database',
@@ -190,7 +192,6 @@ class _NostrWalletConnectState extends State<NostrWalletConnect> {
     }
     await _stopForegroundService();
 
-    AppLogger.instance.debug('[NWC] Disconnect complete, clearing _nwc state');
     setState(() {
       _nwc = null;
     });
@@ -200,9 +201,6 @@ class _NostrWalletConnectState extends State<NostrWalletConnect> {
     AppLogger.instance.debug('[NWC] Initializing...');
     final relays = await getRelays();
     final currentConfigs = await getNwcConnectionInfo();
-    AppLogger.instance.debug(
-      '[NWC] Found ${currentConfigs.length} existing NWC configs',
-    );
 
     FederationSelector? connectedFed;
     String? connectedRelay;
@@ -211,9 +209,6 @@ class _NostrWalletConnectState extends State<NostrWalletConnect> {
     // Only one config should exist (single federation mode)
     if (widget.federations.isNotEmpty && currentConfigs.isNotEmpty) {
       final config = currentConfigs.first;
-      AppLogger.instance.debug(
-        '[NWC] Existing config for federation: ${config.$1.federationName}',
-      );
       final matchingFed =
           widget.federations
               .where(
@@ -226,9 +221,6 @@ class _NostrWalletConnectState extends State<NostrWalletConnect> {
         connectedFed = matchingFed.first.$1;
         connectedRelay = config.$2.relay;
         connectedNwc = config.$2;
-        AppLogger.instance.debug(
-          '[NWC] Matched federation: ${connectedFed.federationName}',
-        );
       }
     }
 
@@ -243,15 +235,9 @@ class _NostrWalletConnectState extends State<NostrWalletConnect> {
       _connectedFederation = connectedFed;
       _loading = false;
     });
-    AppLogger.instance.debug(
-      '[NWC] State initialized. connectedFed: ${connectedFed?.federationName}, selectedFed: ${_selectedFederation?.federationName}',
-    );
 
     // Start foreground service if there's an active connection
     if (connectedFed != null && connectedRelay != null) {
-      AppLogger.instance.info(
-        '[NWC] Auto-starting foreground service for existing connection',
-      );
       await _startForegroundService(connectedFed, connectedRelay);
     }
   }
@@ -350,16 +336,19 @@ class _NostrWalletConnectState extends State<NostrWalletConnect> {
                     ),
                   )
                   .toList(),
-          onChanged: _connectedFederation != null ? null : (value) {
-            setState(() {
-              _selectedFederation = value;
-              // Clear NWC info if selecting a different federation than what's connected
-              if (_connectedFederation?.federationName !=
-                  value?.federationName) {
-                _nwc = null;
-              }
-            });
-          },
+          onChanged:
+              _connectedFederation != null
+                  ? null
+                  : (value) {
+                    setState(() {
+                      _selectedFederation = value;
+                      // Clear NWC info if selecting a different federation than what's connected
+                      if (_connectedFederation?.federationName !=
+                          value?.federationName) {
+                        _nwc = null;
+                      }
+                    });
+                  },
         ),
         const SizedBox(height: 16),
         DropdownButtonFormField<String>(
@@ -396,9 +385,12 @@ class _NostrWalletConnectState extends State<NostrWalletConnect> {
                   ),
                 );
               }).toList(),
-          onChanged: _connectedFederation != null ? null : (value) {
-            setState(() => _selectedRelay = value);
-          },
+          onChanged:
+              _connectedFederation != null
+                  ? null
+                  : (value) {
+                    setState(() => _selectedRelay = value);
+                  },
         ),
         const SizedBox(height: 24),
         ElevatedButton(
@@ -407,13 +399,6 @@ class _NostrWalletConnectState extends State<NostrWalletConnect> {
                   ? () async {
                     final selectedFed = _selectedFederation!;
                     final selectedRelay = _selectedRelay!;
-
-                    AppLogger.instance.debug(
-                      '[NWC] Button pressed. isSelectedFederationConnected: $isSelectedFederationConnected, isConnected: $isConnected',
-                    );
-                    AppLogger.instance.debug(
-                      '[NWC] Selected: ${selectedFed.federationName}, Connected: ${_connectedFederation?.federationName}',
-                    );
 
                     if (isSelectedFederationConnected) {
                       // Disconnect from current federation
@@ -430,23 +415,21 @@ class _NostrWalletConnectState extends State<NostrWalletConnect> {
                         await _disconnect();
                       }
 
-                      AppLogger.instance.info(
-                        '[NWC] Action: Connect to ${selectedFed.federationName}',
-                      );
                       // Get the connection info (creates keys if needed)
                       final result = await setNwcConnectionInfo(
                         federationId: selectedFed.federationId,
                         relay: selectedRelay,
+                        isDesktop: Platform.isLinux | Platform.isMacOS,
                       );
-                      AppLogger.instance.debug(
-                        '[NWC] setNwcConnectionInfo returned: publicKey=${result.publicKey}',
+                      AppLogger.instance.info(
+                        '[NWC] Set config for ${selectedFed.federationName}',
                       );
 
                       setState(() {
                         _nwc = result;
                       });
 
-                      // Start the foreground service which will call the Rust listener
+                      // Start the foreground service which will call the Rust listener on Android
                       await _startForegroundService(selectedFed, selectedRelay);
                     }
                   }

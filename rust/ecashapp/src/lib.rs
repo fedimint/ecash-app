@@ -89,12 +89,12 @@ async fn get_recovery_relays() -> &'static Mutex<Vec<String>> {
         .await
 }
 
-async fn create_nostr_client(db: Database) {
+async fn create_nostr_client(db: Database, is_desktop: bool) {
     let recovery_relays = get_recovery_relays().await.lock().await.clone();
     NOSTR
         .get_or_init(|| async {
             Arc::new(RwLock::new(
-                NostrClient::new(db, recovery_relays)
+                NostrClient::new(db, recovery_relays, is_desktop)
                     .await
                     .expect("Could not create nostr client"),
             ))
@@ -134,7 +134,7 @@ pub async fn add_recovery_relay(relay: String) {
 }
 
 #[frb]
-pub async fn create_new_multimint(path: String) {
+pub async fn create_new_multimint(path: String, is_desktop: bool) {
     install_crypto_provider().await;
     create_event_bus().await;
     let db = get_database(path).await;
@@ -145,11 +145,11 @@ pub async fn create_new_multimint(path: String) {
                 .expect("Could not create multimint")
         })
         .await;
-    create_nostr_client(db).await;
+    create_nostr_client(db, is_desktop).await;
 }
 
 #[frb]
-pub async fn load_multimint(path: String) {
+pub async fn load_multimint(path: String, is_desktop: bool) {
     install_crypto_provider().await;
     create_event_bus().await;
     let db = get_database(path).await;
@@ -160,11 +160,11 @@ pub async fn load_multimint(path: String) {
                 .expect("Could not create multimint")
         })
         .await;
-    create_nostr_client(db).await;
+    create_nostr_client(db, is_desktop).await;
 }
 
 #[frb]
-pub async fn create_multimint_from_words(path: String, words: Vec<String>) {
+pub async fn create_multimint_from_words(path: String, words: Vec<String>, is_desktop: bool) {
     install_crypto_provider().await;
     create_event_bus().await;
     let db = get_database(path).await;
@@ -175,7 +175,7 @@ pub async fn create_multimint_from_words(path: String, words: Vec<String>) {
                 .expect("Could not create multimint")
         })
         .await;
-    create_nostr_client(db).await;
+    create_nostr_client(db, is_desktop).await;
 }
 
 #[frb]
@@ -539,10 +539,11 @@ pub async fn get_nwc_connection_info() -> Vec<(FederationSelector, NWCConnection
 pub async fn set_nwc_connection_info(
     federation_id: FederationId,
     relay: String,
+    is_desktop: bool,
 ) -> NWCConnectionInfo {
     let nostr_client = get_nostr_client();
     let mut nostr = nostr_client.write().await;
-    nostr.set_nwc_connection_info(federation_id, relay).await
+    nostr.set_nwc_connection_info(federation_id, relay, is_desktop).await
 }
 
 #[frb]

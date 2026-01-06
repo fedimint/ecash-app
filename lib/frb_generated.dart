@@ -590,6 +590,7 @@ abstract class RustLibApi extends BaseApi {
   Future<NostrClient> crateNostrNostrClientNew({
     required Database db,
     required List<String> recoverRelays,
+    required bool isDesktop,
   });
 
   Future<void> crateNostrNostrClientRemoveNwcConnectionInfo({
@@ -606,6 +607,7 @@ abstract class RustLibApi extends BaseApi {
     required NostrClient that,
     required FederationId federationId,
     required String relay,
+    required bool isDesktop,
   });
 
   String? crateNostrPublicFederationAutoAccessorGetAbout({
@@ -767,9 +769,13 @@ abstract class RustLibApi extends BaseApi {
   Future<void> crateCreateMultimintFromWords({
     required String path,
     required List<String> words,
+    required bool isDesktop,
   });
 
-  Future<void> crateCreateNewMultimint({required String path});
+  Future<void> crateCreateNewMultimint({
+    required String path,
+    required bool isDesktop,
+  });
 
   Future<String> crateFederationIdToString({
     required FederationId federationId,
@@ -863,7 +869,10 @@ abstract class RustLibApi extends BaseApi {
     required String relay,
   });
 
-  Future<void> crateLoadMultimint({required String path});
+  Future<void> crateLoadMultimint({
+    required String path,
+    required bool isDesktop,
+  });
 
   Future<(ParsedText, FederationSelector)> crateParseScannedTextForFederation({
     required String text,
@@ -947,6 +956,7 @@ abstract class RustLibApi extends BaseApi {
   Future<NWCConnectionInfo> crateSetNwcConnectionInfo({
     required FederationId federationId,
     required String relay,
+    required bool isDesktop,
   });
 
   Stream<DepositEventKind> crateSubscribeDeposits({
@@ -5142,6 +5152,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   Future<NostrClient> crateNostrNostrClientNew({
     required Database db,
     required List<String> recoverRelays,
+    required bool isDesktop,
   }) {
     return handler.executeNormal(
       NormalTask(
@@ -5152,6 +5163,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
             serializer,
           );
           sse_encode_list_String(recoverRelays, serializer);
+          sse_encode_bool(isDesktop, serializer);
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
@@ -5165,7 +5177,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           decodeErrorData: sse_decode_AnyhowException,
         ),
         constMeta: kCrateNostrNostrClientNewConstMeta,
-        argValues: [db, recoverRelays],
+        argValues: [db, recoverRelays, isDesktop],
         apiImpl: this,
       ),
     );
@@ -5173,7 +5185,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
 
   TaskConstMeta get kCrateNostrNostrClientNewConstMeta => const TaskConstMeta(
     debugName: "NostrClient_new",
-    argNames: ["db", "recoverRelays"],
+    argNames: ["db", "recoverRelays", "isDesktop"],
   );
 
   @override
@@ -5260,6 +5272,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
     required NostrClient that,
     required FederationId federationId,
     required String relay,
+    required bool isDesktop,
   }) {
     return handler.executeNormal(
       NormalTask(
@@ -5274,6 +5287,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
             serializer,
           );
           sse_encode_String(relay, serializer);
+          sse_encode_bool(isDesktop, serializer);
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
@@ -5286,7 +5300,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           decodeErrorData: null,
         ),
         constMeta: kCrateNostrNostrClientSetNwcConnectionInfoConstMeta,
-        argValues: [that, federationId, relay],
+        argValues: [that, federationId, relay, isDesktop],
         apiImpl: this,
       ),
     );
@@ -5295,7 +5309,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   TaskConstMeta get kCrateNostrNostrClientSetNwcConnectionInfoConstMeta =>
       const TaskConstMeta(
         debugName: "NostrClient_set_nwc_connection_info",
-        argNames: ["that", "federationId", "relay"],
+        argNames: ["that", "federationId", "relay", "isDesktop"],
       );
 
   @override
@@ -6621,6 +6635,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   Future<void> crateCreateMultimintFromWords({
     required String path,
     required List<String> words,
+    required bool isDesktop,
   }) {
     return handler.executeNormal(
       NormalTask(
@@ -6628,6 +6643,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           final serializer = SseSerializer(generalizedFrbRustBinding);
           sse_encode_String(path, serializer);
           sse_encode_list_String(words, serializer);
+          sse_encode_bool(isDesktop, serializer);
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
@@ -6640,7 +6656,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           decodeErrorData: null,
         ),
         constMeta: kCrateCreateMultimintFromWordsConstMeta,
-        argValues: [path, words],
+        argValues: [path, words, isDesktop],
         apiImpl: this,
       ),
     );
@@ -6649,16 +6665,20 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   TaskConstMeta get kCrateCreateMultimintFromWordsConstMeta =>
       const TaskConstMeta(
         debugName: "create_multimint_from_words",
-        argNames: ["path", "words"],
+        argNames: ["path", "words", "isDesktop"],
       );
 
   @override
-  Future<void> crateCreateNewMultimint({required String path}) {
+  Future<void> crateCreateNewMultimint({
+    required String path,
+    required bool isDesktop,
+  }) {
     return handler.executeNormal(
       NormalTask(
         callFfi: (port_) {
           final serializer = SseSerializer(generalizedFrbRustBinding);
           sse_encode_String(path, serializer);
+          sse_encode_bool(isDesktop, serializer);
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
@@ -6671,7 +6691,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           decodeErrorData: null,
         ),
         constMeta: kCrateCreateNewMultimintConstMeta,
-        argValues: [path],
+        argValues: [path, isDesktop],
         apiImpl: this,
       ),
     );
@@ -6679,7 +6699,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
 
   TaskConstMeta get kCrateCreateNewMultimintConstMeta => const TaskConstMeta(
     debugName: "create_new_multimint",
-    argNames: ["path"],
+    argNames: ["path", "isDesktop"],
   );
 
   @override
@@ -7577,12 +7597,16 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   );
 
   @override
-  Future<void> crateLoadMultimint({required String path}) {
+  Future<void> crateLoadMultimint({
+    required String path,
+    required bool isDesktop,
+  }) {
     return handler.executeNormal(
       NormalTask(
         callFfi: (port_) {
           final serializer = SseSerializer(generalizedFrbRustBinding);
           sse_encode_String(path, serializer);
+          sse_encode_bool(isDesktop, serializer);
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
@@ -7595,14 +7619,16 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           decodeErrorData: null,
         ),
         constMeta: kCrateLoadMultimintConstMeta,
-        argValues: [path],
+        argValues: [path, isDesktop],
         apiImpl: this,
       ),
     );
   }
 
-  TaskConstMeta get kCrateLoadMultimintConstMeta =>
-      const TaskConstMeta(debugName: "load_multimint", argNames: ["path"]);
+  TaskConstMeta get kCrateLoadMultimintConstMeta => const TaskConstMeta(
+    debugName: "load_multimint",
+    argNames: ["path", "isDesktop"],
+  );
 
   @override
   Future<(ParsedText, FederationSelector)> crateParseScannedTextForFederation({
@@ -8265,6 +8291,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   Future<NWCConnectionInfo> crateSetNwcConnectionInfo({
     required FederationId federationId,
     required String relay,
+    required bool isDesktop,
   }) {
     return handler.executeNormal(
       NormalTask(
@@ -8275,6 +8302,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
             serializer,
           );
           sse_encode_String(relay, serializer);
+          sse_encode_bool(isDesktop, serializer);
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
@@ -8287,7 +8315,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           decodeErrorData: null,
         ),
         constMeta: kCrateSetNwcConnectionInfoConstMeta,
-        argValues: [federationId, relay],
+        argValues: [federationId, relay, isDesktop],
         apiImpl: this,
       ),
     );
@@ -8295,7 +8323,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
 
   TaskConstMeta get kCrateSetNwcConnectionInfoConstMeta => const TaskConstMeta(
     debugName: "set_nwc_connection_info",
-    argNames: ["federationId", "relay"],
+    argNames: ["federationId", "relay", "isDesktop"],
   );
 
   @override
@@ -15682,10 +15710,12 @@ class NostrClientImpl extends RustOpaque implements NostrClient {
   Future<NWCConnectionInfo> setNwcConnectionInfo({
     required FederationId federationId,
     required String relay,
+    required bool isDesktop,
   }) => RustLib.instance.api.crateNostrNostrClientSetNwcConnectionInfo(
     that: this,
     federationId: federationId,
     relay: relay,
+    isDesktop: isDesktop,
   );
 }
 

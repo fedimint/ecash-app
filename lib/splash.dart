@@ -29,7 +29,10 @@ class _SplashState extends State<Splash> {
     if (!mounted) return;
     final Widget screen;
     if (exists) {
-      await loadMultimint(path: widget.dir.path);
+      await loadMultimint(
+        path: widget.dir.path,
+        isDesktop: Platform.isLinux | Platform.isMacOS,
+      );
       final initialFeds = await federations();
       screen = MyApp(
         initialFederations: initialFeds,

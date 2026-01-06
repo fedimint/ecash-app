@@ -9,7 +9,7 @@ import 'lib.dart';
 import 'multimint.dart';
 import 'package:flutter_rust_bridge/flutter_rust_bridge_for_generated.dart';
 
-// These functions are ignored because they are not marked as `pub`: `add_relays_from_db`, `broadcast_nwc_info`, `broadcast_response`, `get_or_insert_default_relays`, `handle_request`, `parse_content`, `parse_federation_id`, `parse_federation_name`, `parse_invite_codes`, `parse_modules`, `parse_network`, `parse_picture`, `update_federations_from_nostr`
+// These functions are ignored because they are not marked as `pub`: `add_relays_from_db`, `broadcast_nwc_info`, `broadcast_response`, `get_or_insert_default_relays`, `handle_request`, `parse_content`, `parse_federation_id`, `parse_federation_name`, `parse_invite_codes`, `parse_modules`, `parse_network`, `parse_picture`, `spawn_listen_for_nwc`, `update_federations_from_nostr`
 // These types are ignored because they are neither used by any `pub` functions nor (for structs and enums) marked `#[frb(unignore)]`: `WalletConnectRequest`, `WalletConnectResponse`
 // These function are ignored because they are on traits that is not defined in current crate (put an empty `#[frb]` on it to unignore): `assert_receiver_is_total_eq`, `clone`, `clone`, `clone`, `eq`, `fmt`, `fmt`, `fmt`, `fmt`, `try_from`
 
@@ -50,9 +50,11 @@ abstract class NostrClient implements RustOpaqueInterface {
   static Future<NostrClient> newInstance({
     required Database db,
     required List<String> recoverRelays,
+    required bool isDesktop,
   }) => RustLib.instance.api.crateNostrNostrClientNew(
     db: db,
     recoverRelays: recoverRelays,
+    isDesktop: isDesktop,
   );
 
   Future<void> removeNwcConnectionInfo({required FederationId federationId});
@@ -62,6 +64,7 @@ abstract class NostrClient implements RustOpaqueInterface {
   Future<NWCConnectionInfo> setNwcConnectionInfo({
     required FederationId federationId,
     required String relay,
+    required bool isDesktop,
   });
 }
 

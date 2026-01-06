@@ -22,18 +22,25 @@ Future<EventBusMultimintEvent> getEventBus() =>
 Future<void> addRecoveryRelay({required String relay}) =>
     RustLib.instance.api.crateAddRecoveryRelay(relay: relay);
 
-Future<void> createNewMultimint({required String path}) =>
-    RustLib.instance.api.crateCreateNewMultimint(path: path);
+Future<void> createNewMultimint({
+  required String path,
+  required bool isDesktop,
+}) => RustLib.instance.api.crateCreateNewMultimint(
+  path: path,
+  isDesktop: isDesktop,
+);
 
-Future<void> loadMultimint({required String path}) =>
-    RustLib.instance.api.crateLoadMultimint(path: path);
+Future<void> loadMultimint({required String path, required bool isDesktop}) =>
+    RustLib.instance.api.crateLoadMultimint(path: path, isDesktop: isDesktop);
 
 Future<void> createMultimintFromWords({
   required String path,
   required List<String> words,
+  required bool isDesktop,
 }) => RustLib.instance.api.crateCreateMultimintFromWords(
   path: path,
   words: words,
+  isDesktop: isDesktop,
 );
 
 Future<List<String>> getMnemonic() => RustLib.instance.api.crateGetMnemonic();
@@ -212,9 +219,11 @@ Future<List<(FederationSelector, NWCConnectionInfo)>> getNwcConnectionInfo() =>
 Future<NWCConnectionInfo> setNwcConnectionInfo({
   required FederationId federationId,
   required String relay,
+  required bool isDesktop,
 }) => RustLib.instance.api.crateSetNwcConnectionInfo(
   federationId: federationId,
   relay: relay,
+  isDesktop: isDesktop,
 );
 
 Future<void> removeNwcConnectionInfo({required FederationId federationId}) =>

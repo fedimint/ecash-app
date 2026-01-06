@@ -37,7 +37,10 @@ class _CreateWalletState extends State<CreateWallet> {
     });
 
     try {
-      await createNewMultimint(path: widget.dir.path);
+      await createNewMultimint(
+        path: widget.dir.path,
+        isDesktop: Platform.isLinux | Platform.isMacOS,
+      );
       if (mounted) {
         Navigator.of(context).pushReplacement(
           MaterialPageRoute(
@@ -57,7 +60,11 @@ class _CreateWalletState extends State<CreateWallet> {
 
   Future<void> _handleRecoverWallet(List<String> words) async {
     try {
-      await createMultimintFromWords(path: widget.dir.path, words: words);
+      await createMultimintFromWords(
+        path: widget.dir.path,
+        words: words,
+        isDesktop: Platform.isLinux | Platform.isMacOS,
+      );
       if (mounted) {
         Navigator.of(context).pushReplacement(
           MaterialPageRoute(
