@@ -566,22 +566,16 @@ pub async fn listen_for_nwc_blocking(
     // Get or create the NWC config, then drop the lock before blocking
     let nwc_config = {
         let nostr_client = get_nostr_client();
-        info_to_flutter("[NWC] Acquiring read lock on nostr client").await;
         let nostr = nostr_client.read().await;
-        info_to_flutter("[NWC] Got read lock, getting NWC config").await;
         let (nwc_config, _connection_info) = nostr
             .get_or_create_nwc_config(federation_id, relay)
             .await;
-        info_to_flutter("[NWC] Got NWC config, dropping read lock").await;
         nwc_config
         // Read lock is dropped here when `nostr` goes out of scope
     };
 
-    info_to_flutter("[NWC] Starting blocking listen for NWC").await;
     // Start listening (this blocks until the connection is closed)
     nostr::NostrClient::listen_for_nwc(&federation_id, nwc_config).await;
-    info_to_flutter("[NWC] listen_for_nwc returned").await;
-
     Ok(())
 }
 
