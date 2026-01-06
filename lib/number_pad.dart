@@ -472,7 +472,7 @@ class _NumberPadState extends State<NumberPad> {
         setState(() {
           if (!(_displayedFiatInput?.contains('.') ?? false)) {
             _preservedSatsBeforeFiatEdit = null;
-            _displayedFiatInput = '${_displayedFiatInput ?? ''}.';
+            _displayedFiatInput = (_displayedFiatInput ?? '') + '.';
           }
         });
       }
@@ -849,7 +849,7 @@ class _NumberPadState extends State<NumberPad> {
                                   false)) {
                                 _preservedSatsBeforeFiatEdit = null;
                                 _displayedFiatInput =
-                                    '${_displayedFiatInput ?? ''}.';
+                                    (_displayedFiatInput ?? '') + '.';
                               }
                             });
                           },
