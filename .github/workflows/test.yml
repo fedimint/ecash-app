@@ -27,11 +27,3 @@ jobs:
 
       - name: Run tests
         run: flutter test
-
-  # rust:
-  #   name: Rust Tests
-  #   runs-on: ubuntu-latest
-  #   steps:
-  #     - uses: actions/checkout@v4
-  #     - name: Run Rust tests
-  #       run: cargo test
