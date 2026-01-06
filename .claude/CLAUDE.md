@@ -163,14 +163,6 @@ Key concepts:
 
 No test commands are currently defined in the justfile. Manual testing is done by running the app.
 
-## Android Build Notes
-
-- Target NDK: 27.3.13750724 (specified in `android/app/build.gradle.kts`)
-- NDK in nix: 27.0.12077973 (specified in `flake.nix`)
-- ABI filter: arm64-v8a only
-- Min SDK: Defined by Flutter
-- Signing: Configured via `key.properties` for release builds
-
 ## Code Generation
 
 The project uses multiple code generation tools:
