@@ -1,5 +1,9 @@
 use std::{
-    collections::BTreeMap, str::FromStr, sync::Arc, time::{Duration, SystemTime}, u64
+    collections::BTreeMap,
+    str::FromStr,
+    sync::Arc,
+    time::{Duration, SystemTime},
+    u64,
 };
 
 use crate::{
@@ -28,7 +32,7 @@ use fedimint_derive_secret::ChildId;
 use futures_util::StreamExt;
 use serde::{Deserialize, Serialize};
 use tokio::{
-    sync::{RwLock, oneshot},
+    sync::{oneshot, RwLock},
     time::Instant,
 };
 
@@ -88,7 +92,11 @@ pub(crate) struct NostrClient {
 }
 
 impl NostrClient {
-    pub async fn new(db: Database, recover_relays: Vec<String>, is_desktop: bool) -> anyhow::Result<NostrClient> {
+    pub async fn new(
+        db: Database,
+        recover_relays: Vec<String>,
+        is_desktop: bool,
+    ) -> anyhow::Result<NostrClient> {
         let start = Instant::now();
         // We need to derive a Nostr key from the Fedimint secret.
         // Currently we are using 1/0 as the derivation path, as it does not clash with anything used internally in
@@ -246,7 +254,11 @@ impl NostrClient {
         }
     }
 
-    async fn spawn_listen_for_nwc(&mut self, federation_id: &FederationId, nwc_config: NostrWalletConnectConfig) {
+    async fn spawn_listen_for_nwc(
+        &mut self,
+        federation_id: &FederationId,
+        nwc_config: NostrWalletConnectConfig,
+    ) {
         let mut listeners = self.nwc_listeners.write().await;
         if let Some(listener) = listeners.remove(federation_id) {
             info_to_flutter("Sending shutdown signal to previous listening thread").await;
@@ -328,7 +340,9 @@ impl NostrClient {
 
             if event.kind == nostr_sdk::Kind::WalletConnectRequest {
                 let sender_pubkey = event.pubkey;
-                let Ok(decrypted) = nostr_sdk::nips::nip04::decrypt(&secret_key, &sender_pubkey, &event.content) else {
+                let Ok(decrypted) =
+                    nostr_sdk::nips::nip04::decrypt(&secret_key, &sender_pubkey, &event.content)
+                else {
                     continue;
                 };
 
@@ -338,11 +352,24 @@ impl NostrClient {
                 };
 
                 info_to_flutter(format!("WalletConnectRequest: {request:?}")).await;
-                if let Err(err) = Self::handle_request(federation_id, &nostr_client, &keys, request, sender_pubkey, event.id).await {
+                if let Err(err) = Self::handle_request(
+                    federation_id,
+                    &nostr_client,
+                    &keys,
+                    request,
+                    sender_pubkey,
+                    event.id,
+                )
+                .await
+                {
                     info_to_flutter(format!("Error handling WalletConnectRequest: {err:?}")).await;
                 }
             } else {
-                info_to_flutter(format!("Event was not a WalletConnectRequest, continuing... {}", event.kind)).await;
+                info_to_flutter(format!(
+                    "Event was not a WalletConnectRequest, continuing... {}",
+                    event.kind
+                ))
+                .await;
             }
         }
 
@@ -665,12 +692,14 @@ impl NostrClient {
     ) -> anyhow::Result<(NostrWalletConnectConfig, NWCConnectionInfo)> {
         let mut dbtx = self.db.begin_transaction().await;
 
-        let existing_config = dbtx.get_value(&NostrWalletConnectKey { federation_id }).await.ok_or(anyhow!("NostrWalletConnectKey does not exist"))?;
+        let existing_config = dbtx
+            .get_value(&NostrWalletConnectKey { federation_id })
+            .await
+            .ok_or(anyhow!("NostrWalletConnectKey does not exist"))?;
 
         let secret_key = nostr_sdk::SecretKey::from_slice(&existing_config.secret_key)
             .expect("Could not create secret key");
-        let keys =
-            nostr_sdk::Keys::new_with_ctx(fedimint_core::secp256k1::SECP256K1, secret_key);
+        let keys = nostr_sdk::Keys::new_with_ctx(fedimint_core::secp256k1::SECP256K1, secret_key);
         let public_key = keys.public_key.to_hex();
         let relay = existing_config.relay.clone();
         return Ok((
