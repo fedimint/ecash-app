@@ -559,9 +559,8 @@ pub async fn remove_nwc_connection_info(federation_id: FederationId) {
 #[frb]
 pub async fn listen_for_nwc_blocking(
     federation_id_str: String,
-    relay: String,
 ) -> anyhow::Result<()> {
-    info_to_flutter(format!("[NWC] listen_for_nwc_blocking called with federation: {federation_id_str}, relay: {relay}")).await;
+    info_to_flutter(format!("[NWC] listen_for_nwc_blocking called with federation: {federation_id_str}")).await;
     let federation_id = FederationId::from_str(&federation_id_str)?;
 
     // Get or create the NWC config, then drop the lock before blocking
@@ -569,8 +568,8 @@ pub async fn listen_for_nwc_blocking(
         let nostr_client = get_nostr_client();
         let nostr = nostr_client.read().await;
         let (nwc_config, _connection_info) = nostr
-            .get_or_create_nwc_config(federation_id, relay)
-            .await;
+            .get_nwc_config(federation_id)
+            .await?;
         nwc_config
         // Read lock is dropped here when `nostr` goes out of scope
     };

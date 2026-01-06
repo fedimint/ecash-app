@@ -19,14 +19,13 @@ abstract class NostrClient implements RustOpaqueInterface {
 
   Future<List<String>> getBackupInviteCodes();
 
-  Future<List<(FederationSelector, NWCConnectionInfo)>> getNwcConnectionInfo();
-
-  /// Get or create NWC config for a federation and return it.
+  /// Get NWC config for a federation and return it.
   /// This is used by the blocking listen function.
-  Future<(NostrWalletConnectConfig, NWCConnectionInfo)> getOrCreateNwcConfig({
+  Future<(NostrWalletConnectConfig, NWCConnectionInfo)> getNwcConfig({
     required FederationId federationId,
-    required String relay,
   });
+
+  Future<List<(FederationSelector, NWCConnectionInfo)>> getNwcConnectionInfo();
 
   Future<List<PublicFederation>> getPublicFederations({
     required bool forceUpdate,

@@ -66,7 +66,7 @@ class RustLib extends BaseEntrypoint<RustLibApi, RustLibApiImpl, RustLibWire> {
   String get codegenVersion => '2.9.0';
 
   @override
-  int get rustContentHash => 206096014;
+  int get rustContentHash => -1439719807;
 
   static const kDefaultExternalLibraryLoaderConfig =
       ExternalLibraryLoaderConfig(
@@ -558,15 +558,14 @@ abstract class RustLibApi extends BaseApi {
     required NostrClient that,
   });
 
-  Future<List<(FederationSelector, NWCConnectionInfo)>>
-  crateNostrNostrClientGetNwcConnectionInfo({required NostrClient that});
-
   Future<(NostrWalletConnectConfig, NWCConnectionInfo)>
-  crateNostrNostrClientGetOrCreateNwcConfig({
+  crateNostrNostrClientGetNwcConfig({
     required NostrClient that,
     required FederationId federationId,
-    required String relay,
   });
+
+  Future<List<(FederationSelector, NWCConnectionInfo)>>
+  crateNostrNostrClientGetNwcConnectionInfo({required NostrClient that});
 
   Future<List<PublicFederation>> crateNostrNostrClientGetPublicFederations({
     required NostrClient that,
@@ -864,10 +863,7 @@ abstract class RustLibApi extends BaseApi {
     required String lnAddressApi,
   });
 
-  Future<void> crateListenForNwcBlocking({
-    required String federationIdStr,
-    required String relay,
-  });
+  Future<void> crateListenForNwcBlocking({required String federationIdStr});
 
   Future<void> crateLoadMultimint({
     required String path,
@@ -4914,6 +4910,49 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
       );
 
   @override
+  Future<(NostrWalletConnectConfig, NWCConnectionInfo)>
+  crateNostrNostrClientGetNwcConfig({
+    required NostrClient that,
+    required FederationId federationId,
+  }) {
+    return handler.executeNormal(
+      NormalTask(
+        callFfi: (port_) {
+          final serializer = SseSerializer(generalizedFrbRustBinding);
+          sse_encode_Auto_Ref_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerNostrClient(
+            that,
+            serializer,
+          );
+          sse_encode_Auto_Owned_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerFederationId(
+            federationId,
+            serializer,
+          );
+          pdeCallFfi(
+            generalizedFrbRustBinding,
+            serializer,
+            funcId: 95,
+            port: port_,
+          );
+        },
+        codec: SseCodec(
+          decodeSuccessData:
+              sse_decode_record_nostr_wallet_connect_config_nwc_connection_info,
+          decodeErrorData: sse_decode_AnyhowException,
+        ),
+        constMeta: kCrateNostrNostrClientGetNwcConfigConstMeta,
+        argValues: [that, federationId],
+        apiImpl: this,
+      ),
+    );
+  }
+
+  TaskConstMeta get kCrateNostrNostrClientGetNwcConfigConstMeta =>
+      const TaskConstMeta(
+        debugName: "NostrClient_get_nwc_config",
+        argNames: ["that", "federationId"],
+      );
+
+  @override
   Future<List<(FederationSelector, NWCConnectionInfo)>>
   crateNostrNostrClientGetNwcConnectionInfo({required NostrClient that}) {
     return handler.executeNormal(
@@ -4927,7 +4966,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 95,
+            funcId: 96,
             port: port_,
           );
         },
@@ -4947,51 +4986,6 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
       const TaskConstMeta(
         debugName: "NostrClient_get_nwc_connection_info",
         argNames: ["that"],
-      );
-
-  @override
-  Future<(NostrWalletConnectConfig, NWCConnectionInfo)>
-  crateNostrNostrClientGetOrCreateNwcConfig({
-    required NostrClient that,
-    required FederationId federationId,
-    required String relay,
-  }) {
-    return handler.executeNormal(
-      NormalTask(
-        callFfi: (port_) {
-          final serializer = SseSerializer(generalizedFrbRustBinding);
-          sse_encode_Auto_Ref_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerNostrClient(
-            that,
-            serializer,
-          );
-          sse_encode_Auto_Owned_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerFederationId(
-            federationId,
-            serializer,
-          );
-          sse_encode_String(relay, serializer);
-          pdeCallFfi(
-            generalizedFrbRustBinding,
-            serializer,
-            funcId: 96,
-            port: port_,
-          );
-        },
-        codec: SseCodec(
-          decodeSuccessData:
-              sse_decode_record_nostr_wallet_connect_config_nwc_connection_info,
-          decodeErrorData: null,
-        ),
-        constMeta: kCrateNostrNostrClientGetOrCreateNwcConfigConstMeta,
-        argValues: [that, federationId, relay],
-        apiImpl: this,
-      ),
-    );
-  }
-
-  TaskConstMeta get kCrateNostrNostrClientGetOrCreateNwcConfigConstMeta =>
-      const TaskConstMeta(
-        debugName: "NostrClient_get_or_create_nwc_config",
-        argNames: ["that", "federationId", "relay"],
       );
 
   @override
@@ -7563,16 +7557,12 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   );
 
   @override
-  Future<void> crateListenForNwcBlocking({
-    required String federationIdStr,
-    required String relay,
-  }) {
+  Future<void> crateListenForNwcBlocking({required String federationIdStr}) {
     return handler.executeNormal(
       NormalTask(
         callFfi: (port_) {
           final serializer = SseSerializer(generalizedFrbRustBinding);
           sse_encode_String(federationIdStr, serializer);
-          sse_encode_String(relay, serializer);
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
@@ -7585,7 +7575,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           decodeErrorData: sse_decode_AnyhowException,
         ),
         constMeta: kCrateListenForNwcBlockingConstMeta,
-        argValues: [federationIdStr, relay],
+        argValues: [federationIdStr],
         apiImpl: this,
       ),
     );
@@ -7593,7 +7583,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
 
   TaskConstMeta get kCrateListenForNwcBlockingConstMeta => const TaskConstMeta(
     debugName: "listen_for_nwc_blocking",
-    argNames: ["federationIdStr", "relay"],
+    argNames: ["federationIdStr"],
   );
 
   @override
@@ -15670,20 +15660,18 @@ class NostrClientImpl extends RustOpaque implements NostrClient {
   Future<List<String>> getBackupInviteCodes() => RustLib.instance.api
       .crateNostrNostrClientGetBackupInviteCodes(that: this);
 
+  /// Get NWC config for a federation and return it.
+  /// This is used by the blocking listen function.
+  Future<(NostrWalletConnectConfig, NWCConnectionInfo)> getNwcConfig({
+    required FederationId federationId,
+  }) => RustLib.instance.api.crateNostrNostrClientGetNwcConfig(
+    that: this,
+    federationId: federationId,
+  );
+
   Future<List<(FederationSelector, NWCConnectionInfo)>>
   getNwcConnectionInfo() => RustLib.instance.api
       .crateNostrNostrClientGetNwcConnectionInfo(that: this);
-
-  /// Get or create NWC config for a federation and return it.
-  /// This is used by the blocking listen function.
-  Future<(NostrWalletConnectConfig, NWCConnectionInfo)> getOrCreateNwcConfig({
-    required FederationId federationId,
-    required String relay,
-  }) => RustLib.instance.api.crateNostrNostrClientGetOrCreateNwcConfig(
-    that: this,
-    federationId: federationId,
-    relay: relay,
-  );
 
   Future<List<PublicFederation>> getPublicFederations({
     required bool forceUpdate,

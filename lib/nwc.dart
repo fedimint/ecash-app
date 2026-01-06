@@ -24,15 +24,14 @@ class NWCTaskHandler extends TaskHandler {
     final federationIdStr = await FlutterForegroundTask.getData<String>(
       key: 'federation_id',
     );
-    final relay = await FlutterForegroundTask.getData<String>(key: 'relay');
 
-    if (federationIdStr == null || relay == null) {
+    if (federationIdStr == null) {
       return;
     }
 
     // Call Rust blocking listen function - this will run until the service is stopped
     // The function takes a string federation_id for easier passing from foreground task
-    await listenForNwcBlocking(federationIdStr: federationIdStr, relay: relay);
+    await listenForNwcBlocking(federationIdStr: federationIdStr);
   }
 
   @override
@@ -96,11 +95,10 @@ class _NostrWalletConnectState extends State<NostrWalletConnect> {
 
   Future<void> _startForegroundService(
     FederationSelector federation,
-    String relay,
   ) async {
     if (Platform.isAndroid) {
       AppLogger.instance.info(
-        '[NWC] Starting foreground service for ${federation.federationName} with relay: $relay',
+        '[NWC] Starting foreground service for ${federation.federationName}',
       );
 
       final hasPermission = await _requestNotificationPermission();
@@ -126,7 +124,6 @@ class _NostrWalletConnectState extends State<NostrWalletConnect> {
         key: 'federation_id',
         value: federationIdStr,
       );
-      await FlutterForegroundTask.saveData(key: 'relay', value: relay);
 
       // Initialize the service with Android notification options
       FlutterForegroundTask.init(
@@ -238,7 +235,7 @@ class _NostrWalletConnectState extends State<NostrWalletConnect> {
 
     // Start foreground service if there's an active connection
     if (connectedFed != null && connectedRelay != null) {
-      await _startForegroundService(connectedFed, connectedRelay);
+      await _startForegroundService(connectedFed);
     }
   }
 
@@ -430,7 +427,7 @@ class _NostrWalletConnectState extends State<NostrWalletConnect> {
                       });
 
                       // Start the foreground service which will call the Rust listener on Android
-                      await _startForegroundService(selectedFed, selectedRelay);
+                      await _startForegroundService(selectedFed);
                     }
                   }
                   : null,

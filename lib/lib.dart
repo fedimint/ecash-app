@@ -234,13 +234,10 @@ Future<void> removeNwcConnectionInfo({required FederationId federationId}) =>
 /// Blocking NWC listener that runs until the connection is closed.
 /// This is called directly from the foreground task.
 /// Takes a string federation_id for easier passing from Dart foreground task.
-Future<void> listenForNwcBlocking({
-  required String federationIdStr,
-  required String relay,
-}) => RustLib.instance.api.crateListenForNwcBlocking(
-  federationIdStr: federationIdStr,
-  relay: relay,
-);
+Future<void> listenForNwcBlocking({required String federationIdStr}) => RustLib
+    .instance
+    .api
+    .crateListenForNwcBlocking(federationIdStr: federationIdStr);
 
 Future<List<(String, bool)>> getRelays() =>
     RustLib.instance.api.crateGetRelays();

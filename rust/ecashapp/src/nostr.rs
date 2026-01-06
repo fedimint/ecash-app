@@ -657,80 +657,30 @@ impl NostrClient {
         }
     }
 
-    /// Get or create NWC config for a federation and return it.
+    /// Get NWC config for a federation and return it.
     /// This is used by the blocking listen function.
-    pub async fn get_or_create_nwc_config(
+    pub async fn get_nwc_config(
         &self,
         federation_id: FederationId,
-        relay: String,
-    ) -> (NostrWalletConnectConfig, NWCConnectionInfo) {
+    ) -> anyhow::Result<(NostrWalletConnectConfig, NWCConnectionInfo)> {
         let mut dbtx = self.db.begin_transaction().await;
 
-        // Check if config already exists
-        if let Some(existing_config) = dbtx
-            .get_value(&NostrWalletConnectKey { federation_id })
-            .await
-        {
-            let secret_key = nostr_sdk::SecretKey::from_slice(&existing_config.secret_key)
-                .expect("Could not create secret key");
-            let keys =
-                nostr_sdk::Keys::new_with_ctx(fedimint_core::secp256k1::SECP256K1, secret_key);
-            let public_key = keys.public_key.to_hex();
+        let existing_config = dbtx.get_value(&NostrWalletConnectKey { federation_id }).await.ok_or(anyhow!("NostrWalletConnectKey does not exist"))?;
 
-            // Update relay if it changed
-            if existing_config.relay != relay {
-                let updated_config = NostrWalletConnectConfig {
-                    secret_key: existing_config.secret_key,
-                    relay: relay.clone(),
-                };
-                dbtx.insert_entry(&NostrWalletConnectKey { federation_id }, &updated_config)
-                    .await;
-                dbtx.commit_tx().await;
-
-                return (
-                    updated_config,
-                    NWCConnectionInfo {
-                        public_key,
-                        relay,
-                        secret: keys.secret_key().to_secret_hex(),
-                    },
-                );
-            }
-
-            let relay = existing_config.relay.clone();
-            return (
-                existing_config,
-                NWCConnectionInfo {
-                    public_key,
-                    relay,
-                    secret: keys.secret_key().to_secret_hex(),
-                },
-            );
-        }
-
-        // Create new config
-        let keys = nostr_sdk::Keys::generate();
-        let nwc_config = NostrWalletConnectConfig {
-            secret_key: keys
-                .secret_key()
-                .as_secret_bytes()
-                .try_into()
-                .expect("Could not serialize secret key"),
-            relay: relay.clone(),
-        };
-        dbtx.insert_entry(&NostrWalletConnectKey { federation_id }, &nwc_config)
-            .await;
-        dbtx.commit_tx().await;
-
+        let secret_key = nostr_sdk::SecretKey::from_slice(&existing_config.secret_key)
+            .expect("Could not create secret key");
+        let keys =
+            nostr_sdk::Keys::new_with_ctx(fedimint_core::secp256k1::SECP256K1, secret_key);
         let public_key = keys.public_key.to_hex();
-        (
-            nwc_config,
+        let relay = existing_config.relay.clone();
+        return Ok((
+            existing_config,
             NWCConnectionInfo {
                 public_key,
                 relay,
                 secret: keys.secret_key().to_secret_hex(),
             },
-        )
+        ));
     }
 
     pub async fn get_relays(&self) -> Vec<(String, bool)> {
