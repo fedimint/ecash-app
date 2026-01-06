@@ -12,7 +12,9 @@ class Failure extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final bitcoinDisplay = context.select<PreferencesProvider, BitcoinDisplay>((prefs) => prefs.bitcoinDisplay);
+    final bitcoinDisplay = context.select<PreferencesProvider, BitcoinDisplay>(
+      (prefs) => prefs.bitcoinDisplay,
+    );
     final displayAmount = formatBalance(amountMsats, false, bitcoinDisplay);
 
     return Scaffold(

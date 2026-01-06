@@ -138,7 +138,9 @@ class _RequestState extends State<Request> with SingleTickerProviderStateMixin {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final bitcoinDisplay = context.select<PreferencesProvider, BitcoinDisplay>((prefs) => prefs.bitcoinDisplay);
+    final bitcoinDisplay = context.select<PreferencesProvider, BitcoinDisplay>(
+      (prefs) => prefs.bitcoinDisplay,
+    );
     final abbreviatedInvoice = getAbbreviatedText(widget.invoice);
     final fees = widget.totalMsats - widget.requestedAmountMsats;
 
@@ -284,7 +286,11 @@ class _RequestState extends State<Request> with SingleTickerProviderStateMixin {
               children: [
                 CopyableDetailRow(
                   label: TransactionDetailKeys.amount,
-                  value: formatBalance(widget.requestedAmountMsats, true, bitcoinDisplay),
+                  value: formatBalance(
+                    widget.requestedAmountMsats,
+                    true,
+                    bitcoinDisplay,
+                  ),
                 ),
                 CopyableDetailRow(
                   label: TransactionDetailKeys.fees,

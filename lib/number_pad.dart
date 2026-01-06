@@ -690,7 +690,10 @@ class _NumberPadState extends State<NumberPad> {
                                         _displayedFiatInput ?? '0',
                                         fiatCurrency,
                                       )
-                                      : _formatAmount(_rawAmount, bitcoinDisplay),
+                                      : _formatAmount(
+                                        _rawAmount,
+                                        bitcoinDisplay,
+                                      ),
                               style: const TextStyle(
                                 fontSize: 48,
                                 fontWeight: FontWeight.w700,

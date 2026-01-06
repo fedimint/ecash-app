@@ -233,7 +233,9 @@ class _OnchainSendState extends State<OnchainSend> {
 
   @override
   Widget build(BuildContext context) {
-    final bitcoinDisplay = context.select<PreferencesProvider, BitcoinDisplay>((prefs) => prefs.bitcoinDisplay);
+    final bitcoinDisplay = context.select<PreferencesProvider, BitcoinDisplay>(
+      (prefs) => prefs.bitcoinDisplay,
+    );
     final canWithdraw =
         _feeQuote != null &&
         _actualWithdrawalAmount != null &&
@@ -258,7 +260,11 @@ class _OnchainSendState extends State<OnchainSend> {
               ),
               const SizedBox(height: 12),
               Text(
-                formatBalance(widget.amountSats * BigInt.from(1000), false, bitcoinDisplay),
+                formatBalance(
+                  widget.amountSats * BigInt.from(1000),
+                  false,
+                  bitcoinDisplay,
+                ),
                 style: Theme.of(context).textTheme.headlineSmall,
                 textAlign: TextAlign.center,
               ),

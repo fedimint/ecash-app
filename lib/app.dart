@@ -313,43 +313,43 @@ class _MyAppState extends State<MyApp> {
         theme: cypherpunkNinjaTheme,
         navigatorKey: _navigatorKey,
         home: Builder(
-        builder:
-            (innerContext) => Scaffold(
-              appBar: AppBar(
-                actions: [
-                  IconButton(
-                    icon: const Icon(Icons.qr_code_scanner),
-                    tooltip: 'Scan',
-                    constraints: const BoxConstraints(
-                      minWidth: 56,
-                      minHeight: 56,
-                    ),
-                    onPressed: () => _onScanPressed(innerContext),
-                  ),
-                ],
-              ),
-              drawer: SafeArea(
-                child: FederationSidebar(
-                  key: ValueKey(_refreshTrigger),
-                  initialFederations: _feds,
-                  onFederationSelected: _setSelectedFederation,
-                  onLeaveFederation: _leaveFederation,
-                  onSettingsPressed: () {
-                    Navigator.push(
-                      innerContext,
-                      MaterialPageRoute(
-                        builder:
-                            (context) => SettingsScreen(
-                              onJoin: _onJoinPressed,
-                              onGettingStarted: _onGettingStarted,
-                            ),
+          builder:
+              (innerContext) => Scaffold(
+                appBar: AppBar(
+                  actions: [
+                    IconButton(
+                      icon: const Icon(Icons.qr_code_scanner),
+                      tooltip: 'Scan',
+                      constraints: const BoxConstraints(
+                        minWidth: 56,
+                        minHeight: 56,
                       ),
-                    );
-                  },
+                      onPressed: () => _onScanPressed(innerContext),
+                    ),
+                  ],
                 ),
+                drawer: SafeArea(
+                  child: FederationSidebar(
+                    key: ValueKey(_refreshTrigger),
+                    initialFederations: _feds,
+                    onFederationSelected: _setSelectedFederation,
+                    onLeaveFederation: _leaveFederation,
+                    onSettingsPressed: () {
+                      Navigator.push(
+                        innerContext,
+                        MaterialPageRoute(
+                          builder:
+                              (context) => SettingsScreen(
+                                onJoin: _onJoinPressed,
+                                onGettingStarted: _onGettingStarted,
+                              ),
+                        ),
+                      );
+                    },
+                  ),
+                ),
+                body: SafeArea(child: bodyContent),
               ),
-              body: SafeArea(child: bodyContent),
-            ),
         ),
       ),
     );

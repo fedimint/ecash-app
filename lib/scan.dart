@@ -384,7 +384,8 @@ class _ScanQRPageState extends State<ScanQRPage> {
           break;
         case ParsedText_EcashNoFederation():
           ToastService().show(
-            message: "Valid ecash detected, but we cannot determine the federation",
+            message:
+                "Valid ecash detected, but we cannot determine the federation",
             duration: const Duration(seconds: 5),
             onTap: () {},
             icon: Icon(Icons.error),

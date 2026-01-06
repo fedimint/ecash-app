@@ -833,7 +833,9 @@ class _FederationUtxoListState extends State<FederationUtxoList> {
 
   @override
   Widget build(BuildContext context) {
-    final bitcoinDisplay = context.select<PreferencesProvider, BitcoinDisplay>((prefs) => prefs.bitcoinDisplay);
+    final bitcoinDisplay = context.select<PreferencesProvider, BitcoinDisplay>(
+      (prefs) => prefs.bitcoinDisplay,
+    );
 
     if (!widget.isFederationOnline) {
       return const Center(

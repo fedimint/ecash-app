@@ -89,19 +89,16 @@ class _OnChainReceiveContentState extends State<OnChainReceiveContent> {
       final chunk = address.substring(i, (i + 4).clamp(0, address.length));
       final isEvenChunk = (i ~/ 4) % 2 == 0;
 
-      spans.add(TextSpan(
-        text: chunk,
-        style: TextStyle(
-          color: isEvenChunk ? baseColor : alternateColor,
+      spans.add(
+        TextSpan(
+          text: chunk,
+          style: TextStyle(color: isEvenChunk ? baseColor : alternateColor),
         ),
-      ));
+      );
 
       // Add space between chunks (except after the last chunk)
       if (i + 4 < address.length) {
-        spans.add(TextSpan(
-          text: ' ',
-          style: TextStyle(color: baseColor),
-        ));
+        spans.add(TextSpan(text: ' ', style: TextStyle(color: baseColor)));
       }
     }
 
@@ -195,7 +192,10 @@ class _OnChainReceiveContentState extends State<OnChainReceiveContent> {
                             child: RichText(
                               textAlign: TextAlign.center,
                               text: TextSpan(
-                                children: _formatAddressWithColor(_address!, theme),
+                                children: _formatAddressWithColor(
+                                  _address!,
+                                  theme,
+                                ),
                                 style: theme.textTheme.titleLarge?.copyWith(
                                   fontWeight: FontWeight.bold,
                                   fontFamily: 'monospace',

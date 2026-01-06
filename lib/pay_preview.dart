@@ -21,7 +21,9 @@ class PaymentPreviewWidget extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final bitcoinDisplay = context.select<PreferencesProvider, BitcoinDisplay>((prefs) => prefs.bitcoinDisplay);
+    final bitcoinDisplay = context.select<PreferencesProvider, BitcoinDisplay>(
+      (prefs) => prefs.bitcoinDisplay,
+    );
     final amount = paymentPreview.amountMsats;
     final amountWithFees = paymentPreview.amountWithFees;
     final fees = amountWithFees - amount;

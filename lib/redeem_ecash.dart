@@ -164,7 +164,9 @@ class _EcashRedeemPromptState extends State<EcashRedeemPrompt> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final bitcoinDisplay = context.select<PreferencesProvider, BitcoinDisplay>((prefs) => prefs.bitcoinDisplay);
+    final bitcoinDisplay = context.select<PreferencesProvider, BitcoinDisplay>(
+      (prefs) => prefs.bitcoinDisplay,
+    );
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
