@@ -4,6 +4,7 @@ import 'package:ecashapp/frb_generated.dart';
 import 'package:ecashapp/utils.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:path_provider/path_provider.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 import 'package:ecashapp/lib.dart';
 import 'package:ecashapp/multimint.dart';
@@ -15,9 +16,9 @@ import 'package:permission_handler/permission_handler.dart';
 class NWCTaskHandler extends TaskHandler {
   @override
   Future<void> onStart(DateTime timestamp, TaskStarter starter) async {
-    AppLogger.instance.info(
-      '[NWC Foreground Task] Started at ${timestamp.toIso8601String()}',
-    );
+    final directory = await getApplicationDocumentsDirectory();
+    final file = File('${directory.path}/foreground.txt');
+    await file.writeAsString("Hello from foreground task");
 
     // Initialize RustLib in the foreground task isolate
     await RustLib.init();
@@ -29,21 +30,12 @@ class NWCTaskHandler extends TaskHandler {
     final relay = await FlutterForegroundTask.getData<String>(key: 'relay');
 
     if (federationIdStr == null || relay == null) {
-      AppLogger.instance.warn(
-        '[NWC Foreground Task] Missing federation_id or relay data',
-      );
       return;
     }
-
-    AppLogger.instance.info(
-      '[NWC Foreground Task] Starting NWC listener for federation: $federationIdStr relay: $relay',
-    );
 
     // Call Rust blocking listen function - this will run until the service is stopped
     // The function takes a string federation_id for easier passing from foreground task
     await listenForNwcBlocking(federationIdStr: federationIdStr, relay: relay);
-
-    AppLogger.instance.info('[NWC Foreground Task] NWC listener finished');
   }
 
   @override
