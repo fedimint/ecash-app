@@ -64,7 +64,7 @@ use crate::{
     anyhow,
     db::{
         BitcoinDisplay, BitcoinDisplayKey, BtcPrice, BtcPriceKey, BtcPrices, BtcPricesKey,
-        FiatCurrency, FiatCurrencyKey, FederationBackupKey, FederationMetaKey,
+        FederationBackupKey, FederationMetaKey, FiatCurrency, FiatCurrencyKey,
         LightningAddressConfig, LightningAddressKey, LightningAddressKeyPrefix,
     },
     error_to_flutter, info_to_flutter, FederationConfig, FederationConfigKey,
@@ -946,9 +946,16 @@ impl Multimint {
                 let aud = json.get("AUD").and_then(|v| v.as_u64());
                 let jpy = json.get("JPY").and_then(|v| v.as_u64());
 
-                if let (Some(usd), Some(eur), Some(gbp), Some(cad), Some(chf), Some(aud), Some(jpy))
-                    = (usd, eur, gbp, cad, chf, aud, jpy) {
-
+                if let (
+                    Some(usd),
+                    Some(eur),
+                    Some(gbp),
+                    Some(cad),
+                    Some(chf),
+                    Some(aud),
+                    Some(jpy),
+                ) = (usd, eur, gbp, cad, chf, aud, jpy)
+                {
                     let mut dbtx = self.db.begin_transaction().await;
 
                     // Store multi-currency prices
@@ -3047,8 +3054,8 @@ impl Multimint {
             .get(federation_id)
             .ok_or(anyhow!("No federation exists for peg-in fee query"))?
             .clone();
-        let wallet_module = client
-            .get_first_module::<fedimint_wallet_client::WalletClientModule>()?;
+        let wallet_module =
+            client.get_first_module::<fedimint_wallet_client::WalletClientModule>()?;
 
         let client_module_config = client.config().await.modules;
         let config = client_module_config
@@ -3658,8 +3665,7 @@ impl Multimint {
 
     pub async fn set_fiat_currency(&self, fiat_currency: FiatCurrency) {
         let mut dbtx = self.db.begin_transaction().await;
-        dbtx.insert_entry(&FiatCurrencyKey, &fiat_currency)
-            .await;
+        dbtx.insert_entry(&FiatCurrencyKey, &fiat_currency).await;
         dbtx.commit_tx().await;
     }
 

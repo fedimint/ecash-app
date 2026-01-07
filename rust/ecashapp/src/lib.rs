@@ -47,7 +47,7 @@ use std::path::PathBuf;
 use std::{str::FromStr, sync::Arc};
 
 use crate::db::{
-    BitcoinDisplay, FiatCurrency, FederationConfig, FederationConfigKey, FederationConfigKeyPrefix,
+    BitcoinDisplay, FederationConfig, FederationConfigKey, FederationConfigKeyPrefix, FiatCurrency,
     LightningAddressConfig,
 };
 use crate::frb_generated::StreamSink;
@@ -543,7 +543,9 @@ pub async fn set_nwc_connection_info(
 ) -> NWCConnectionInfo {
     let nostr_client = get_nostr_client();
     let mut nostr = nostr_client.write().await;
-    nostr.set_nwc_connection_info(federation_id, relay, is_desktop).await
+    nostr
+        .set_nwc_connection_info(federation_id, relay, is_desktop)
+        .await
 }
 
 #[frb]
@@ -557,19 +559,18 @@ pub async fn remove_nwc_connection_info(federation_id: FederationId) {
 /// This is called directly from the foreground task.
 /// Takes a string federation_id for easier passing from Dart foreground task.
 #[frb]
-pub async fn listen_for_nwc_blocking(
-    federation_id_str: String,
-) -> anyhow::Result<()> {
-    info_to_flutter(format!("[NWC] listen_for_nwc_blocking called with federation: {federation_id_str}")).await;
+pub async fn listen_for_nwc_blocking(federation_id_str: String) -> anyhow::Result<()> {
+    info_to_flutter(format!(
+        "[NWC] listen_for_nwc_blocking called with federation: {federation_id_str}"
+    ))
+    .await;
     let federation_id = FederationId::from_str(&federation_id_str)?;
 
     // Get or create the NWC config, then drop the lock before blocking
     let nwc_config = {
         let nostr_client = get_nostr_client();
         let nostr = nostr_client.read().await;
-        let (nwc_config, _connection_info) = nostr
-            .get_nwc_config(federation_id)
-            .await?;
+        let (nwc_config, _connection_info) = nostr.get_nwc_config(federation_id).await?;
         nwc_config
         // Read lock is dropped here when `nostr` goes out of scope
     };
