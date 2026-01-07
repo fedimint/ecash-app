@@ -729,21 +729,22 @@ impl Multimint {
 
                     let mut tweak_idx = TweakIdx(0);
                     while let Ok(data) = wallet_module.get_pegin_tweak_idx(tweak_idx).await {
-                        if data.claimed.is_empty() {
-                            // we found an allocated, unused address so we need to monitor
-                            if let Err(_) = pegin_address_monitor_tx_clone.send((fed_id, tweak_idx))
-                            {
-                                info_to_flutter(format!(
-                                    "failed to monitor tweak index {:?} for fed {:?}",
-                                    tweak_idx, fed_id
-                                ))
-                                .await;
-                            }
-                        }
-                        tweak_idx = tweak_idx.next();
-
                         let operation = operation_log.get_operation(data.operation_id).await;
                         if let Some(wallet_op) = operation {
+                            if data.claimed.is_empty() {
+                                // we found an allocated, unused address so we need to monitor
+                                if let Err(_) =
+                                    pegin_address_monitor_tx_clone.send((fed_id, tweak_idx))
+                                {
+                                    info_to_flutter(format!(
+                                        "failed to monitor tweak index {:?} for fed {:?}",
+                                        tweak_idx, fed_id
+                                    ))
+                                    .await;
+                                }
+                            }
+                            tweak_idx = tweak_idx.next();
+
                             let wallet_meta = wallet_op.meta::<WalletOperationMeta>();
                             if let WalletOperationMetaVariant::Deposit {
                                 address,
