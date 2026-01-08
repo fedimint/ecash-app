@@ -3,18 +3,15 @@
     fedimint.url = "github:fedimint/fedimint?ref=v0.9.0";
     flake-utils.url = "github:numtide/flake-utils";
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
-    nixgl.url = "github:guibou/nixGL";
   };
 
-  outputs = { self, fedimint, flake-utils, nixpkgs, nixgl, ... }:
+  outputs = { self, fedimint, flake-utils, nixpkgs, ... }:
     flake-utils.lib.eachDefaultSystem (system:
       let
         pkgs = import nixpkgs {
           inherit system;
           config.allowUnfree = true;
         };
-
-        nixglPkgs = import nixgl { inherit system; };
 
         # Import the `devShells` from the fedimint flake
         devShells = fedimint.devShells.${system};
