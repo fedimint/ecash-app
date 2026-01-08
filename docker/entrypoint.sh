@@ -78,7 +78,4 @@ NEW_APK="build/app/outputs/flutter-apk/${APP_NAME}-${VERSION}-${BUILD_MODE}-${TI
 mv "$OLD_APK" "$NEW_APK"
 
 echo ""
-echo "==================================="
-echo "Build complete!"
-echo "==================================="
-echo "APK location: $NEW_APK"
+echo "Build complete: $NEW_APK"

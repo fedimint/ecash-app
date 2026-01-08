@@ -78,9 +78,3 @@ if [ -d "$PROJECT_ROOT/.dart_tool.host" ]; then
     mv "$PROJECT_ROOT/.dart_tool.host" "$PROJECT_ROOT/.dart_tool"
 fi
 
-echo ""
-echo "==================================="
-echo "All done!"
-echo "==================================="
-echo "Your APK is in: $PROJECT_ROOT/build/app/outputs/flutter-apk/"
-echo "Run 'ls -lth $PROJECT_ROOT/build/app/outputs/flutter-apk/' to see the latest build"
