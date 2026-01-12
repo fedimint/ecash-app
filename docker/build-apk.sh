@@ -31,18 +31,15 @@ fi
 
 if [[ "${CLEAN}" == "1" ]]; then
     echo "  - CLEAN=1: Wiping all build caches (Rust, Flutter, Gradle)"
-    if [ -d "$PROJECT_ROOT/.docker-cache" ]; then
-        echo "  - Removing .docker-cache directory..."
-        # Use Docker to remove since cache files are root-owned from container builds
-        docker run --rm -v "$PROJECT_ROOT:/workspace" alpine rm -rf /workspace/.docker-cache
-    fi
+    rm -rf "$PROJECT_ROOT/.docker-cache"
 else
     echo "  - Using incremental build caches (set CLEAN=1 to wipe)"
 fi
 echo ""
 
-# Create cache directory if it doesn't exist
+# Create cache directories (owned by current user)
 mkdir -p "$PROJECT_ROOT/.docker-cache/gradle"
+mkdir -p "$PROJECT_ROOT/.docker-cache/cargo"
 
 # Build the Docker image if it doesn't exist or if forced
 IMAGE_NAME="ecash-app-builder"
@@ -56,19 +53,28 @@ else
     echo ""
 fi
 
+# Backup host's .dart_tool (docker will overwrite with container paths)
+if [ -d "$PROJECT_ROOT/.dart_tool" ]; then
+    mv "$PROJECT_ROOT/.dart_tool" "$PROJECT_ROOT/.dart_tool.host"
+fi
+
 echo "Starting build in Docker container..."
-# Gradle user cache persists in .docker-cache (separate from repo mount)
 docker run --rm \
+    --user "$(id -u):$(id -g)" \
     -v "$PROJECT_ROOT:/workspace" \
-    -v "$PROJECT_ROOT/.docker-cache/gradle:/root/.gradle" \
+    -v "$PROJECT_ROOT/.docker-cache/gradle:/gradle-cache" \
+    -v "$PROJECT_ROOT/.docker-cache/cargo:/cargo-cache" \
     -w /workspace \
     -e CLEAN="${CLEAN}" \
+    -e GRADLE_USER_HOME="/gradle-cache" \
+    -e CARGO_HOME="/cargo-cache" \
+    -e HOME="/workspace" \
     $IMAGE_NAME \
     bash /workspace/docker/entrypoint.sh "$BUILD_MODE"
 
-echo ""
-echo "==================================="
-echo "All done!"
-echo "==================================="
-echo "Your APK is in: $PROJECT_ROOT/build/app/outputs/flutter-apk/"
-echo "Run 'ls -lth $PROJECT_ROOT/build/app/outputs/flutter-apk/' to see the latest build"
+# Restore host's .dart_tool
+rm -rf "$PROJECT_ROOT/.dart_tool"
+if [ -d "$PROJECT_ROOT/.dart_tool.host" ]; then
+    mv "$PROJECT_ROOT/.dart_tool.host" "$PROJECT_ROOT/.dart_tool"
+fi
+
