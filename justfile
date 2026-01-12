@@ -15,7 +15,7 @@ build-linux:
 build-debug-apk:
   $ROOT/docker/build-apk.sh debug
 
-run:
+run: build-linux
   export LIBGL_ALWAYS_SOFTWARE=1
   export FLUTTER_LINUX_RENDERER=software
-  nix run --impure github:guibou/nixGL flutter run
+  nix run --impure github:nix-community/nixGL/b6105297e6f0cd041670c3e8628394d4ee247ed5 -- flutter run
