@@ -3201,7 +3201,7 @@ impl Multimint {
             .into_iter()
             .map(|g| {
                 let info = g.info;
-                FedimintGateway {
+                let gw = FedimintGateway {
                     endpoint: info.api.to_string(),
                     base_routing_fee: info.fees.base_msat as u64,
                     ppm_routing_fee: info.fees.proportional_millionths as u64,
@@ -3209,26 +3209,30 @@ impl Multimint {
                     ppm_transaction_fee: 0,
                     lightning_alias: Some(info.lightning_alias),
                     lightning_node: Some(info.node_pub_key.to_string()),
-                }
+                };
+                (info.api, gw)
             })
-            .collect::<Vec<_>>();
+            .collect::<BTreeMap<_, _>>();
 
         // TODO: This only adds 1 LNv2 gateway. Good enough for now, but needs Fedimint changes to display all
         if let Ok(lnv2) = client.get_first_module::<fedimint_lnv2_client::LightningClientModule>() {
             if let Ok((lnv2_api, lnv2_routing_info)) = lnv2.select_gateway(None).await {
-                gateways.push(FedimintGateway {
-                    endpoint: lnv2_api.to_string(),
-                    base_routing_fee: lnv2_routing_info.send_fee_default.base.msats,
-                    ppm_routing_fee: lnv2_routing_info.send_fee_default.parts_per_million,
-                    base_transaction_fee: lnv2_routing_info.receive_fee.base.msats,
-                    ppm_transaction_fee: lnv2_routing_info.receive_fee.parts_per_million,
-                    lightning_alias: None,
-                    lightning_node: Some(lnv2_routing_info.lightning_public_key.to_string()),
-                });
+                gateways.insert(
+                    lnv2_api.clone(),
+                    FedimintGateway {
+                        endpoint: lnv2_api.to_string(),
+                        base_routing_fee: lnv2_routing_info.send_fee_default.base.msats,
+                        ppm_routing_fee: lnv2_routing_info.send_fee_default.parts_per_million,
+                        base_transaction_fee: lnv2_routing_info.receive_fee.base.msats,
+                        ppm_transaction_fee: lnv2_routing_info.receive_fee.parts_per_million,
+                        lightning_alias: None,
+                        lightning_node: Some(lnv2_routing_info.lightning_public_key.to_string()),
+                    },
+                );
             }
         }
 
-        Ok(gateways)
+        Ok(gateways.into_values().collect())
     }
 
     /// Retreives currently configured Lightning Address
