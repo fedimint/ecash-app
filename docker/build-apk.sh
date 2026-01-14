@@ -31,7 +31,8 @@ fi
 
 if [[ "${CLEAN}" == "1" ]]; then
     echo "  - CLEAN=1: Wiping all build caches (Rust, Flutter, Gradle)"
-    rm -rf "$PROJECT_ROOT/.docker-cache"
+    rm -rf "$PROJECT_ROOT/.docker-cache/gradle"
+    rm -rf "$PROJECT_ROOT/.docker-cache/cargo"
 else
     echo "  - Using incremental build caches (set CLEAN=1 to wipe)"
 fi
