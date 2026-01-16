@@ -36,6 +36,7 @@ dev_dependencies:
   flutter_test:
     sdk: flutter
   flutter_lints: ^5.0.0
+  mocktail: ^1.0.4
   freezed: ^3.0.6
   build_runner: ^2.4.15
   flutter_launcher_icons: ^0.14.4
