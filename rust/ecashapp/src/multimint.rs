@@ -9,7 +9,6 @@ use std::{
 use anyhow::bail;
 use anyhow::Context;
 use bitcoin::key::rand::{seq::SliceRandom, thread_rng};
-use fedimint_api_client::api::net::Connector;
 use fedimint_bip39::{Bip39RootSecretStrategy, Language, Mnemonic};
 use fedimint_client::{
     db::ChronologicalOperationLogKey,
@@ -18,6 +17,7 @@ use fedimint_client::{
     secret::RootSecretStrategy,
     Client, ClientHandleArc, OperationId,
 };
+use fedimint_connectors::ConnectorRegistry;
 use fedimint_core::{
     config::FederationId,
     db::{mem_impl::MemDatabase, Database, IDatabaseTransactionOpsCoreTyped},
@@ -64,7 +64,7 @@ use crate::{
     anyhow,
     db::{
         BitcoinDisplay, BitcoinDisplayKey, BtcPrice, BtcPriceKey, BtcPrices, BtcPricesKey,
-        FederationBackupKey, FederationMetaKey, FiatCurrency, FiatCurrencyKey,
+        Connector, FederationBackupKey, FederationMetaKey, FiatCurrency, FiatCurrencyKey,
         LightningAddressConfig, LightningAddressKey, LightningAddressKeyPrefix,
     },
     error_to_flutter, info_to_flutter, FederationConfig, FederationConfigKey,
@@ -425,12 +425,15 @@ impl Multimint {
             .await;
         for (id, _) in configs {
             let client_db = self.get_client_database(&id.id);
+            let connectors = ConnectorRegistry::build_from_client_defaults()
+                .bind()
+                .await?;
             let mut client_builder = Client::builder().await?;
             client_builder.with_module_inits(self.modules.clone());
-            client_builder.with_primary_module_kind(fedimint_mint_client::KIND);
             let global_root_secret = Bip39RootSecretStrategy::<12>::to_root_secret(&self.mnemonic);
             let client = client_builder
                 .open(
+                    connectors,
                     client_db,
                     fedimint_client::RootSecret::StandardDoubleDerive(global_root_secret),
                 )
@@ -1213,6 +1216,9 @@ impl Multimint {
         client_type: ClientType,
     ) -> anyhow::Result<ClientHandleArc> {
         info_to_flutter(format!("Building new client. type: {client_type}")).await;
+        let connectors = ConnectorRegistry::build_from_client_defaults()
+            .bind()
+            .await?;
         let client_db = match client_type {
             ClientType::Temporary => MemDatabase::new().into(),
             _ => self.get_client_database(&federation_id),
@@ -1221,11 +1227,12 @@ impl Multimint {
         let global_root_secret = Bip39RootSecretStrategy::<12>::to_root_secret(&self.mnemonic);
         let mut client_builder = Client::builder().await?;
         client_builder.with_module_inits(self.modules.clone());
-        client_builder.with_primary_module_kind(fedimint_mint_client::KIND);
 
         let client = match client_type {
             ClientType::Recovery => {
-                let client_preview = client_builder.preview(invite_code).await?;
+                let client_preview = client_builder
+                    .preview(connectors.clone(), invite_code)
+                    .await?;
                 let backup = client_preview
                     .download_backup_from_federation(
                         fedimint_client::RootSecret::StandardDoubleDerive(
@@ -1257,23 +1264,24 @@ impl Multimint {
                     info_to_flutter("Client is already initialized, opening using secret...").await;
                     client_builder
                         .open(
+                            connectors.clone(),
                             client_db,
                             fedimint_client::RootSecret::StandardDoubleDerive(global_root_secret),
                         )
                         .await
                 } else {
                     info_to_flutter("Client is not initialized, downloading invite code...").await;
-                    let preview =
-                        match timeout(Duration::from_secs(60), client_builder.preview(invite_code))
-                            .await
-                        {
-                            Ok(preview) => preview,
-                            Err(error) => {
-                                return Err(anyhow!(
-                                    "Timed out getting federation preview: {error}"
-                                ))
-                            }
-                        };
+                    let preview = match timeout(
+                        Duration::from_secs(60),
+                        client_builder.preview(connectors.clone(), invite_code),
+                    )
+                    .await
+                    {
+                        Ok(preview) => preview,
+                        Err(error) => {
+                            return Err(anyhow!("Timed out getting federation preview: {error}"))
+                        }
+                    };
                     preview?
                         .join(
                             client_db,
@@ -1483,7 +1491,7 @@ impl Multimint {
             .expect("No federation exists")
             .clone();
         client
-            .get_balance()
+            .get_balance_for_btc()
             .await
             .expect("balance unavailable")
             .msats
@@ -2987,7 +2995,7 @@ impl Multimint {
 
         let address = bitcoin::address::Address::from_str(&address)?;
         let address = address.require_network(wallet_module.get_network())?;
-        let balance = bitcoin::Amount::from_sat(client.get_balance_err().await?.msats / 1000);
+        let balance = bitcoin::Amount::from_sat(client.get_balance_for_btc().await?.msats / 1000);
         let fees = wallet_module.get_withdraw_fees(&address, balance).await?;
         let max_withdrawable = balance
             .checked_sub(fees.amount())
