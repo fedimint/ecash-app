@@ -10,6 +10,7 @@ import 'package:ecashapp/request.dart';
 import 'package:ecashapp/theme.dart';
 import 'package:ecashapp/toast.dart';
 import 'package:ecashapp/utils.dart';
+import 'package:ecashapp/utils/amount_validation.dart';
 import 'package:ecashapp/models.dart';
 import 'package:flutter/material.dart';
 import 'package:ecashapp/widgets/numpad/custom_numpad.dart';
@@ -119,84 +120,32 @@ class _NumberPadState extends State<NumberPad> {
     );
   }
 
-  bool _isValidAmount() {
-    // Disable while balance is loading
-    if (_loadingBalance) return false;
+  bool _isLightningReceive() =>
+      widget.paymentType == PaymentType.lightning &&
+      widget.lightningAddressOrLnurl == null;
 
-    // Parse the entered amount
-    final amountSats = BigInt.tryParse(_rawAmount);
-    if (amountSats == null || amountSats == BigInt.zero) {
-      return false;
-    }
+  bool _isValidAmount() => isValidAmount(
+        rawAmount: _rawAmount,
+        loadingBalance: _loadingBalance,
+        currentBalance: _currentBalance,
+        paymentType: widget.paymentType,
+        isLightningReceive: _isLightningReceive(),
+      );
 
-    // For lightning receives (no address/lnurl), only check amount > 0
-    final isLightningReceive =
-        widget.paymentType == PaymentType.lightning &&
-        widget.lightningAddressOrLnurl == null;
+  bool _isAmountOverBalance() => isAmountOverBalance(
+        rawAmount: _rawAmount,
+        loadingBalance: _loadingBalance,
+        currentBalance: _currentBalance,
+        isLightningReceive: _isLightningReceive(),
+      );
 
-    if (isLightningReceive) {
-      return true; // Balance check not needed for receives
-    }
+  BigInt? _getRemainingBalance() => getRemainingBalance(
+        rawAmount: _rawAmount,
+        loadingBalance: _loadingBalance,
+        currentBalance: _currentBalance,
+      );
 
-    // For sends (lightning with address, ecash, onchain), check balance
-    if (_currentBalance != null) {
-      final amountMsats = amountSats * BigInt.from(1000);
-      return amountMsats <= _currentBalance!;
-    }
-
-    // If balance failed to load, allow user to proceed (error will be caught later)
-    return true;
-  }
-
-  bool _isAmountOverBalance() {
-    // Don't show red if still loading or no balance available
-    if (_loadingBalance || _currentBalance == null) return false;
-
-    // Parse the entered amount
-    final amountSats = BigInt.tryParse(_rawAmount);
-    if (amountSats == null || amountSats == BigInt.zero) {
-      return false;
-    }
-
-    // For lightning receives, balance check doesn't apply
-    final isLightningReceive =
-        widget.paymentType == PaymentType.lightning &&
-        widget.lightningAddressOrLnurl == null;
-
-    if (isLightningReceive) {
-      return false;
-    }
-
-    // For sends, check if amount exceeds balance
-    final amountMsats = amountSats * BigInt.from(1000);
-    return amountMsats > _currentBalance!;
-  }
-
-  BigInt? _getRemainingBalance() {
-    // If balance is loading or unavailable, return null
-    if (_loadingBalance || _currentBalance == null) return null;
-
-    // Parse the entered amount
-    final amountSats = BigInt.tryParse(_rawAmount);
-    if (amountSats == null) {
-      return _currentBalance; // No amount entered, show full balance
-    }
-
-    final amountMsats = amountSats * BigInt.from(1000);
-    final remaining = _currentBalance! - amountMsats;
-
-    // If negative, return zero (will display as "0 sats" in red)
-    return remaining < BigInt.zero ? BigInt.zero : remaining;
-  }
-
-  /// Returns true if we can add another digit in fiat mode.
-  /// Limits to 2 decimal places.
-  bool _canAddFiatDigit() {
-    if (_displayedFiatInput == null) return true;
-    if (!_displayedFiatInput!.contains('.')) return true;
-    final parts = _displayedFiatInput!.split('.');
-    return parts.length < 2 || parts[1].length < 2;
-  }
+  bool _canAddFiatDigit() => canAddFiatDigit(_displayedFiatInput);
 
   void _onSwapCurrency() {
     final fiatCurrency = context.read<PreferencesProvider>().fiatCurrency;
