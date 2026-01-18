@@ -3,11 +3,7 @@ import 'dart:async';
 import 'package:app_links/app_links.dart';
 import 'package:ecashapp/utils.dart';
 
-enum DeepLinkType {
-  lightning,
-  lnurl,
-  bitcoin,
-}
+enum DeepLinkType { lightning, lnurl, bitcoin }
 
 class DeepLinkData {
   final DeepLinkType type;
@@ -27,9 +23,10 @@ DeepLinkData? parseDeepLinkUri(Uri uri) {
   if (scheme == 'lightning') {
     // lightning:lnbc1... -> extract the invoice
     // The data can be in the host, path, or the entire schemeSpecificPart
-    String data = uri.host.isNotEmpty
-        ? uri.host + uri.path
-        : uri.path.isNotEmpty
+    String data =
+        uri.host.isNotEmpty
+            ? uri.host + uri.path
+            : uri.path.isNotEmpty
             ? uri.path
             : uri.toString().substring('lightning:'.length);
 
@@ -39,12 +36,13 @@ DeepLinkData? parseDeepLinkUri(Uri uri) {
     if (data.isNotEmpty) {
       return DeepLinkData(type: DeepLinkType.lightning, data: data);
     }
-  } else if (scheme == 'lnurl' || scheme == 'lnurlp' || scheme == 'lnurlw') {
-    // lnurl:LNURL1... / lnurlp:LNURL1... / lnurlw:LNURL1... -> extract the LNURL
+  } else if (scheme == 'lnurl' || scheme == 'lnurlp') {
+    // lnurl:LNURL1... / lnurlp:LNURL1... -> extract the LNURL
     final schemePrefix = '$scheme:';
-    String data = uri.host.isNotEmpty
-        ? uri.host + uri.path
-        : uri.path.isNotEmpty
+    String data =
+        uri.host.isNotEmpty
+            ? uri.host + uri.path
+            : uri.path.isNotEmpty
             ? uri.path
             : uri.toString().substring(schemePrefix.length);
 
@@ -108,15 +106,18 @@ class DeepLinkHandler {
     }
 
     // Listen for warm start links
-    _subscription = _appLinks.uriLinkStream.listen((uri) {
-      AppLogger.instance.info('Deep link warm start: $uri');
-      final deepLinkData = parseDeepLinkUri(uri);
-      if (deepLinkData != null) {
-        _deepLinkController.add(deepLinkData);
-      }
-    }, onError: (e) {
-      AppLogger.instance.error('Error listening to deep links: $e');
-    });
+    _subscription = _appLinks.uriLinkStream.listen(
+      (uri) {
+        AppLogger.instance.info('Deep link warm start: $uri');
+        final deepLinkData = parseDeepLinkUri(uri);
+        if (deepLinkData != null) {
+          _deepLinkController.add(deepLinkData);
+        }
+      },
+      onError: (e) {
+        AppLogger.instance.error('Error listening to deep links: $e');
+      },
+    );
   }
 
   void dispose() {

@@ -67,17 +67,6 @@ void main() {
       });
     });
 
-    group('lnurlw: scheme', () {
-      test('parses lnurlw as lnurl type', () {
-        final uri = Uri.parse('lnurlw:LNURL1TEST');
-        final result = parseDeepLinkUri(uri);
-
-        expect(result, isNotNull);
-        expect(result!.type, DeepLinkType.lnurl);
-        expect(result.data, 'LNURL1TEST');
-      });
-    });
-
     group('bitcoin: scheme (BIP21)', () {
       test('parses basic bitcoin address', () {
         final uri = Uri.parse('bitcoin:bc1qar0srrr7xfkvy5l643lydnw9re59gtzzwf5mdq');

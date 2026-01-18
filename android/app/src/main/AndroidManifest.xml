@@ -39,7 +39,6 @@
                 <data android:scheme="lnurl" />
                 <data android:scheme="bitcoin" />
                 <data android:scheme="lnurlp" />
-                <data android:scheme="lnurlw" />
             </intent-filter>
         </activity>
         <!-- Disable Flutter's default deep link handler to use app_links -->
