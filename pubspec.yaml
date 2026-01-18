@@ -30,6 +30,7 @@ dependencies:
   provider: ^6.1.2
   flutter_foreground_task: ^8.13.0
   permission_handler: ^11.3.1
+  app_links: ^6.3.3
 
 dev_dependencies:
   flutter_test:
