@@ -1,5 +1,6 @@
 import 'dart:io';
 
+import 'package:ecashapp/deep_link_handler.dart';
 import 'package:ecashapp/frb_generated.dart';
 import 'package:ecashapp/splash.dart';
 import 'package:ecashapp/theme.dart';
@@ -16,6 +17,10 @@ void main() async {
   FlutterForegroundTask.initCommunicationPort();
 
   await AppLogger.init();
+
+  // Initialize deep link handler early to catch cold start links
+  await DeepLinkHandler().init();
+
   await RustLib.init();
   final packageInfo = await PackageInfo.fromPlatform();
   AppLogger.instance.info(
