@@ -1,6 +1,5 @@
 use std::time::SystemTime;
 
-use fedimint_api_client::api::net::Connector;
 use fedimint_core::{
     config::{ClientConfig, FederationId},
     encoding::{Decodable, Encodable},
@@ -10,6 +9,25 @@ use fedimint_core::{
 use serde::{Deserialize, Serialize};
 
 use crate::multimint::FederationMeta;
+
+/// Local enum for DB backward compatibility after migration from fedimint 0.9.0 to 0.10.0.
+/// Previously imported from fedimint_api_client::api::net::Connector.
+///
+/// This was originally used in build_client() to specify connection type (TCP/Tor),
+/// but was removed in 681fa2a when invite codes were refactored out of the database.
+/// The field remains in FederationConfig for schema compatibility with existing databases,
+/// but is no longer read - connection behavior is now determined by ConnectorRegistry.
+#[derive(Debug, Clone, Copy, Eq, PartialEq, Encodable, Decodable, Serialize, Deserialize)]
+pub(crate) enum Connector {
+    Tcp,
+    Tor,
+}
+
+impl Default for Connector {
+    fn default() -> Self {
+        Self::Tcp
+    }
+}
 
 #[repr(u8)]
 #[derive(Clone, Debug)]
