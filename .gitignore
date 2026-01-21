@@ -50,5 +50,6 @@ app.*.map.json
 **/*.db/
 **/client.db.lock
 
-# Docker build caches (for faster incremental builds)
+# Docker APK build artifacts (needed for faster incremental builds)
 .docker-cache/
+.dart_tool.host/
