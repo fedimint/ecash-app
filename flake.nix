@@ -1,6 +1,6 @@
 {
   inputs = {
-    fedimint.url = "github:fedimint/fedimint?ref=v0.9.0";
+    fedimint.url = "github:fedimint/fedimint?ref=v0.10.0";
     flake-utils.url = "github:numtide/flake-utils";
     # Pinned to Flutter 3.32.x / Dart 3.8.x to match Docker to prevent:
     # - pubspec.lock drift between environments
