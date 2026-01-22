@@ -30,7 +30,6 @@ use serde::Serialize;
 use tokio::sync::{Mutex, OnceCell, RwLock};
 
 use anyhow::{anyhow, bail, Context};
-use fedimint_api_client::api::net::Connector;
 use fedimint_bip39::Language;
 use fedimint_client::OperationId;
 use fedimint_core::rustls::install_crypto_provider;
@@ -70,7 +69,8 @@ async fn get_database(path: String) -> Database {
             let db_path = PathBuf::from_str(&path)
                 .expect("Could not parse db path")
                 .join("client.db");
-            RocksDb::open(db_path)
+            RocksDb::build(db_path)
+                .open()
                 .await
                 .expect("Could not open database")
                 .into()
