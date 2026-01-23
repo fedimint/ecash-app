@@ -26,10 +26,11 @@ RUN apt-get update && apt-get install -y \
     make \
     && rm -rf /var/lib/apt/lists/*
 
-# Install Flutter 3.38.3 (matching GitHub Actions)
+# Install Flutter (version from .flutter-version)
+ARG FLUTTER_VERSION
 RUN git clone https://github.com/flutter/flutter.git -b stable /opt/flutter \
     && cd /opt/flutter \
-    && git checkout 3.38.3 \
+    && git checkout ${FLUTTER_VERSION} \
     && flutter precache --android
 
 # Allow non-root users to use flutter
