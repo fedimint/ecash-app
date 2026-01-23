@@ -22,6 +22,9 @@ jobs:
           flutter-version: '3.32.4'
           channel: 'stable'
 
+      - name: Get Flutter dependencies
+        run: flutter pub get
+
       - name: Check Dart formatting
         run: dart format --set-exit-if-changed lib/
 
