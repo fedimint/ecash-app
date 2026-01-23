@@ -17,16 +17,13 @@ use crate::multimint::FederationMeta;
 /// but was removed in 681fa2a when invite codes were refactored out of the database.
 /// The field remains in FederationConfig for schema compatibility with existing databases,
 /// but is no longer read - connection behavior is now determined by ConnectorRegistry.
-#[derive(Debug, Clone, Copy, Eq, PartialEq, Encodable, Decodable, Serialize, Deserialize)]
+#[derive(
+    Debug, Clone, Copy, Eq, PartialEq, Encodable, Decodable, Serialize, Deserialize, Default,
+)]
 pub(crate) enum Connector {
+    #[default]
     Tcp,
     Tor,
-}
-
-impl Default for Connector {
-    fn default() -> Self {
-        Self::Tcp
-    }
 }
 
 #[repr(u8)]
@@ -35,7 +32,7 @@ pub(crate) enum DbKeyPrefix {
     FederationConfig = 0x00,
     ClientDatabase = 0x01,
     SeedPhraseAck = 0x02,
-    NWC = 0x03,
+    Nwc = 0x03,
     FederationMeta = 0x04,
     BtcPrice = 0x05,
     NostrRelays = 0x06,
@@ -100,7 +97,7 @@ pub(crate) struct NostrWalletConnectConfig {
 impl_db_record!(
     key = NostrWalletConnectKey,
     value = NostrWalletConnectConfig,
-    db_prefix = DbKeyPrefix::NWC,
+    db_prefix = DbKeyPrefix::Nwc,
 );
 
 impl_db_lookup!(

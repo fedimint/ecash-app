@@ -109,6 +109,7 @@ pub struct WithdrawFeesResponse {
     pub peg_out_fees: PegOutFees,
 }
 
+#[allow(clippy::type_complexity)]
 #[derive(Clone)]
 pub struct Multimint {
     db: Database,
@@ -222,7 +223,7 @@ impl fmt::Display for ClientType {
         match self {
             ClientType::New => write!(f, "New"),
             ClientType::Temporary => write!(f, "Temporary"),
-            ClientType::Recovery { .. } => write!(f, "Recovery"),
+            ClientType::Recovery => write!(f, "Recovery"),
         }
     }
 }
@@ -344,7 +345,7 @@ impl OnChainWithdrawalMeta {
         Self {
             fee_rate_sats_per_vb: fees.fee_rate.sats_per_kvb as f64 / 1000.0,
             // ceil(weight / 4) using only u32
-            tx_size_vb: ((fees.total_weight + 3) / 4) as u32,
+            tx_size_vb: fees.total_weight.div_ceil(4) as u32,
             fee_sats: fees.amount().to_sat(),
         }
     }
@@ -545,6 +546,7 @@ impl Multimint {
         Ok(())
     }
 
+    #[allow(clippy::type_complexity)]
     async fn watch_pegin_address(
         federation_id: FederationId,
         client: ClientHandleArc,
@@ -602,7 +604,7 @@ impl Multimint {
                         fedimint_core::util::backoff_util::background_backoff(),
                         || async {
                             let resp = client
-                                .get(format!("{}/tx/{}", api_url, btc_out_point.txid.to_string(),))
+                                .get(format!("{}/tx/{}", api_url, btc_out_point.txid))
                                 .send()
                                 .await?
                                 .error_for_status()?
@@ -733,8 +735,9 @@ impl Multimint {
                         if let Some(wallet_op) = operation {
                             if data.claimed.is_empty() {
                                 // we found an allocated, unused address so we need to monitor
-                                if let Err(_) =
-                                    pegin_address_monitor_tx_clone.send((fed_id, tweak_idx))
+                                if pegin_address_monitor_tx_clone
+                                    .send((fed_id, tweak_idx))
+                                    .is_err()
                                 {
                                     info_to_flutter(format!(
                                         "failed to monitor tweak index {:?} for fed {:?}",
@@ -1042,9 +1045,7 @@ impl Multimint {
     }
 
     fn get_url(key: &str, meta: &serde_json::Value) -> Option<String> {
-        let Some(value) = meta.get(key) else {
-            return None;
-        };
+        let value = meta.get(key)?;
         let url_str = value.as_str()?;
         Some(SafeUrl::parse(url_str).ok()?.to_string())
     }
@@ -1223,7 +1224,7 @@ impl Multimint {
             .await?;
         let client_db = match client_type {
             ClientType::Temporary => MemDatabase::new().into(),
-            _ => self.get_client_database(&federation_id),
+            _ => self.get_client_database(federation_id),
         };
 
         let global_root_secret = Bip39RootSecretStrategy::<12>::to_root_secret(&self.mnemonic);
@@ -1400,7 +1401,7 @@ impl Multimint {
         let peers = config.global.api_endpoints.keys().collect::<Vec<_>>();
         let mut joined = false;
         for peer in peers {
-            if let Some(invite_code) = recovering_client.invite_code(peer.clone()).await {
+            if let Some(invite_code) = recovering_client.invite_code(*peer).await {
                 self.join_federation(invite_code.to_string(), false).await?;
                 joined = true;
                 break;
@@ -1464,7 +1465,7 @@ impl Multimint {
             // Create a map of federation_id to (selector, recovery_status)
             let mut fed_map: BTreeMap<FederationId, (FederationSelector, bool)> = federations
                 .into_iter()
-                .map(|(selector, status)| (selector.federation_id.clone(), (selector, status)))
+                .map(|(selector, status)| (selector.federation_id, (selector, status)))
                 .collect();
 
             // Build ordered list based on saved order, then append any new federations
@@ -1529,7 +1530,7 @@ impl Multimint {
             .await
             {
                 info_to_flutter("Using LNv2 for the actual invoice").await;
-                self.spawn_await_receive(federation_id.clone(), operation_id.clone());
+                self.spawn_await_receive(*federation_id, operation_id);
                 return Ok((invoice, operation_id));
             }
         }
@@ -1539,7 +1540,7 @@ impl Multimint {
             Self::receive_lnv1(&client, amount_with_fees, amount_without_fees, gateway).await?;
 
         // Spawn new task that awaits the payment in case the user clicks away
-        self.spawn_await_receive(federation_id.clone(), operation_id.clone());
+        self.spawn_await_receive(*federation_id, operation_id);
 
         Ok((invoice, operation_id))
     }
@@ -1740,7 +1741,7 @@ impl Multimint {
             .await
             {
                 info_to_flutter("Successfully initated LNv2 payment").await;
-                self.spawn_await_send(federation_id.clone(), lnv2_operation_id.clone());
+                self.spawn_await_send(*federation_id, lnv2_operation_id);
                 return Ok(lnv2_operation_id);
             }
         }
@@ -1748,7 +1749,7 @@ impl Multimint {
         info_to_flutter("Attempting to pay using LNv1...").await;
         let operation_id = Self::pay_lnv1(&client, invoice, gateway, custom_meta).await?;
         info_to_flutter("Successfully initiated LNv1 payment").await;
-        self.spawn_await_send(federation_id.clone(), operation_id.clone());
+        self.spawn_await_send(*federation_id, operation_id);
         Ok(operation_id)
     }
 
@@ -2026,11 +2027,8 @@ impl Multimint {
         let mut updates = lnv1.subscribe_ln_receive(operation_id).await?.into_stream();
         let mut final_state = FinalReceiveOperationState::Failure;
         while let Some(update) = updates.next().await {
-            match update {
-                LnReceiveState::Claimed => {
-                    final_state = FinalReceiveOperationState::Claimed;
-                }
-                _ => {}
+            if let LnReceiveState::Claimed = update {
+                final_state = FinalReceiveOperationState::Claimed;
             }
         }
 
@@ -2061,35 +2059,30 @@ impl Multimint {
                             .await
                             .expect("operation must exist");
                         while let Some(update) = stream.next().await {
-                            match update {
-                                LnReceiveState::Claimed => {
-                                    final_state = FinalReceiveOperationState::Claimed;
-                                    if let LightningOperationMetaVariant::RecurringPaymentReceive(
-                                        meta,
-                                    ) = operation
-                                        .meta::<fedimint_ln_client::LightningOperationMeta>()
-                                        .variant
-                                    {
-                                        let amount_msats = meta
-                                            .invoice
-                                            .amount_milli_satoshis()
-                                            .expect("Amount not present");
-                                        let lightning_event =
-                                            LightningEventKind::InvoicePaid(InvoicePaidEvent {
-                                                amount_msats,
-                                            });
-                                        info_to_flutter(format!(
-                                            "Recurringd receive completed: {final_state:?}"
-                                        ))
-                                        .await;
-                                        let multimint_event = MultimintEvent::Lightning((
-                                            federation_id,
-                                            lightning_event,
-                                        ));
-                                        get_event_bus().publish(multimint_event).await;
-                                    }
+                            if update == LnReceiveState::Claimed {
+                                final_state = FinalReceiveOperationState::Claimed;
+                                if let LightningOperationMetaVariant::RecurringPaymentReceive(
+                                    meta,
+                                ) = operation
+                                    .meta::<fedimint_ln_client::LightningOperationMeta>()
+                                    .variant
+                                {
+                                    let amount_msats = meta
+                                        .invoice
+                                        .amount_milli_satoshis()
+                                        .expect("Amount not present");
+                                    let lightning_event =
+                                        LightningEventKind::InvoicePaid(InvoicePaidEvent {
+                                            amount_msats,
+                                        });
+                                    info_to_flutter(format!(
+                                        "Recurringd receive completed: {final_state:?}"
+                                    ))
+                                    .await;
+                                    let multimint_event =
+                                        MultimintEvent::Lightning((federation_id, lightning_event));
+                                    get_event_bus().publish(multimint_event).await;
                                 }
-                                _ => {}
                             }
                         }
                         info_to_flutter(format!(
@@ -2150,7 +2143,7 @@ impl Multimint {
         let lnv1 = client.get_first_module::<LightningClientModule>().ok()?;
         let gateways = lnv1.list_gateways().await;
 
-        if gateways.len() == 0 {
+        if gateways.is_empty() {
             return None;
         }
 
@@ -2206,24 +2199,20 @@ impl Multimint {
             .clone();
 
         let mut collected = Vec::new();
-        let mut next_key = if let Some(timestamp) = timestamp {
-            Some(ChronologicalOperationLogKey {
-                creation_time: UNIX_EPOCH + Duration::from_millis(timestamp),
-                operation_id: OperationId(
-                    operation_id
-                        .expect("Invalid operation")
-                        .try_into()
-                        .expect("Invalid operation"),
-                ),
-            })
-        } else {
-            None
-        };
+        let mut next_key = timestamp.map(|timestamp| ChronologicalOperationLogKey {
+            creation_time: UNIX_EPOCH + Duration::from_millis(timestamp),
+            operation_id: OperationId(
+                operation_id
+                    .expect("Invalid operation")
+                    .try_into()
+                    .expect("Invalid operation"),
+            ),
+        });
 
         while collected.len() < 10 {
             let page = client
                 .operation_log()
-                .paginate_operations_rev(50, next_key.clone())
+                .paginate_operations_rev(50, next_key)
                 .await;
 
             if page.is_empty() {
@@ -2360,7 +2349,7 @@ impl Multimint {
                             LightningOperationMetaVariant::RecurringPaymentReceive(recurring) => {
                                 let receive_outcome = op_log_val.outcome::<LnReceiveState>();
                                 match receive_outcome {
-                                    Some(state) if state == LnReceiveState::Claimed => {
+                                    Some(LnReceiveState::Claimed) => {
                                         let amount_msat = recurring
                                             .invoice
                                             .amount_milli_satoshis()
@@ -2513,7 +2502,7 @@ impl Multimint {
             }
 
             // Update the pagination key to the last item in this page
-            next_key = page.last().map(|(key, _)| key.clone());
+            next_key = page.last().map(|(key, _)| *key);
         }
 
         collected
@@ -2558,42 +2547,36 @@ impl Multimint {
         if meta.is_internal_payment {
             let internal_outcome = ln_outcome.outcome::<InternalPayState>();
             match internal_outcome {
-                Some(state) => match state {
-                    InternalPayState::Preimage(preimage) => Some(Transaction {
-                        kind: TransactionKind::LightningSend {
-                            fees: amount_with_fees - amount,
-                            gateway,
-                            payment_hash: meta.invoice.payment_hash().to_string(),
-                            preimage: preimage.0.consensus_encode_to_hex(),
-                            ln_address,
-                        },
-                        amount,
-                        timestamp,
-                        operation_id,
-                    }),
-                    _ => None,
-                },
+                Some(InternalPayState::Preimage(preimage)) => Some(Transaction {
+                    kind: TransactionKind::LightningSend {
+                        fees: amount_with_fees - amount,
+                        gateway,
+                        payment_hash: meta.invoice.payment_hash().to_string(),
+                        preimage: preimage.0.consensus_encode_to_hex(),
+                        ln_address,
+                    },
+                    amount,
+                    timestamp,
+                    operation_id,
+                }),
                 _ => None,
             }
         } else {
             let external_outcome = ln_outcome.outcome::<LnPayState>();
             match external_outcome {
-                Some(state) => match state {
-                    LnPayState::Success { preimage } => Some(Transaction {
-                        kind: TransactionKind::LightningSend {
-                            fees: amount_with_fees - amount,
-                            gateway,
-                            payment_hash: meta.invoice.payment_hash().to_string(),
-                            preimage,
-                            ln_address,
-                        },
-                        amount,
-                        timestamp,
-                        operation_id,
-                    }),
-                    _ => None,
-                },
-                None => None,
+                Some(LnPayState::Success { preimage }) => Some(Transaction {
+                    kind: TransactionKind::LightningSend {
+                        fees: amount_with_fees - amount,
+                        gateway,
+                        payment_hash: meta.invoice.payment_hash().to_string(),
+                        preimage,
+                        ln_address,
+                    },
+                    amount,
+                    timestamp,
+                    operation_id,
+                }),
+                _ => None,
             }
         }
     }
@@ -2633,7 +2616,7 @@ impl Multimint {
         .expect("Could not parse SafeUrl")
         .to_string();
         match receive_outcome {
-            Some(state) if state == LnReceiveState::Claimed => Some(Transaction {
+            Some(LnReceiveState::Claimed) => Some(Transaction {
                 kind: TransactionKind::LightningReceive {
                     fees: amount_with_fees - amount,
                     gateway,
@@ -2799,7 +2782,7 @@ impl Multimint {
             "ecash": ecash,
         });
         let operation_id = mint.reissue_external_notes(notes, extra_meta).await?;
-        self.spawn_await_ecash_reissue(federation_id.clone(), operation_id);
+        self.spawn_await_ecash_reissue(*federation_id, operation_id);
         Ok(operation_id)
     }
 
@@ -2865,9 +2848,7 @@ impl Multimint {
     }
 
     fn get_ecash_amount_from_meta(op_log_val: Option<OperationLogEntry>) -> Option<u64> {
-        let Some(op_log_val) = op_log_val else {
-            return None;
-        };
+        let op_log_val = op_log_val?;
         let meta = op_log_val.meta::<MintOperationMeta>();
         // Internal reissues will have an operation id in the extra meta, these should not generate events
         if serde_json::from_value::<OperationId>(meta.extra_meta).is_ok() {
@@ -3749,8 +3730,7 @@ fn receive_amount_after_fees(
     let gw_fee = gw_base + ((gw_ppm as f64 / 1_000_000.0) * x as f64) as u64;
     let after_gateway = x - gw_fee;
     let fed_fee = fed_base + ((fed_ppm as f64 / 1_000_000.0) * after_gateway as f64) as u64;
-    let leftover = after_gateway - fed_fee;
-    leftover
+    after_gateway - fed_fee
 }
 
 /// Given the `requested_amount`, compute the total that the user will pay including gateway and federation (transaction) fees.
@@ -3763,8 +3743,7 @@ fn compute_send_amount(
     let contract_amount = send_fee.add_to(requested_amount.msats);
     let fed_fee =
         fed_base + (((fed_ppm as f64) / 1_000_000.0) * contract_amount.msats as f64) as u64;
-    let total = contract_amount.msats + fed_fee;
-    total
+    contract_amount.msats + fed_fee
 }
 
 #[cfg(test)]
