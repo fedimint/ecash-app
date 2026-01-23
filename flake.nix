@@ -2,10 +2,6 @@
   inputs = {
     fedimint.url = "github:fedimint/fedimint?ref=v0.10.0";
     flake-utils.url = "github:numtide/flake-utils";
-    # Pinned to Flutter 3.32.x / Dart 3.8.x to match Docker to prevent:
-    # - pubspec.lock drift between environments
-    # - `just generate` converting value to initialValue breaks apk
-    # flutter --version && docker run --rm ecash-app-builder flutter --version
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-25.11";
   };
 
