@@ -272,9 +272,10 @@ class _MyAppState extends State<MyApp> {
       final selectedFed = await showFederationPicker(
         context: context,
         federations: _feds,
-        title: deepLink.type == DeepLinkType.lightning
-            ? 'Select Federation to Pay From'
-            : 'Select Federation',
+        title:
+            deepLink.type == DeepLinkType.lightning
+                ? 'Select Federation to Pay From'
+                : 'Select Federation',
       );
 
       if (selectedFed == null) {
@@ -313,10 +314,7 @@ class _MyAppState extends State<MyApp> {
                 federationId: fed.federationId,
                 bolt11: field0,
               );
-              return PaymentPreviewWidget(
-                fed: fed,
-                paymentPreview: preview,
-              );
+              return PaymentPreviewWidget(fed: fed, paymentPreview: preview);
             },
           );
           _onJoinPressed(fed, false);
@@ -329,13 +327,14 @@ class _MyAppState extends State<MyApp> {
           await Navigator.push(
             context,
             MaterialPageRoute(
-              builder: (_) => NumberPad(
-                fed: fed,
-                paymentType: PaymentType.lightning,
-                btcPrices: btcPrices,
-                onWithdrawCompleted: null,
-                lightningAddressOrLnurl: field0,
-              ),
+              builder:
+                  (_) => NumberPad(
+                    fed: fed,
+                    paymentType: PaymentType.lightning,
+                    btcPrices: btcPrices,
+                    onWithdrawCompleted: null,
+                    lightningAddressOrLnurl: field0,
+                  ),
             ),
           );
           break;
@@ -363,13 +362,14 @@ class _MyAppState extends State<MyApp> {
             await Navigator.push(
               context,
               MaterialPageRoute(
-                builder: (_) => NumberPad(
-                  fed: fed,
-                  paymentType: PaymentType.onchain,
-                  btcPrices: btcPrices,
-                  onWithdrawCompleted: null,
-                  bitcoinAddress: field0,
-                ),
+                builder:
+                    (_) => NumberPad(
+                      fed: fed,
+                      paymentType: PaymentType.onchain,
+                      btcPrices: btcPrices,
+                      onWithdrawCompleted: null,
+                      bitcoinAddress: field0,
+                    ),
               ),
             );
           }

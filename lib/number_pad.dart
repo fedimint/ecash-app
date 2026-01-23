@@ -855,8 +855,10 @@ class _NumberPadState extends State<NumberPad> {
                               context.read<PreferencesProvider>().fiatCurrency;
                           final btcPrice = widget.btcPrices[fiatCurrency];
                           _rawAmount =
-                              calculateSatsFromFiat(btcPrice, fiatValue)
-                                  .toString();
+                              calculateSatsFromFiat(
+                                btcPrice,
+                                fiatValue,
+                              ).toString();
                         }
                       } else {
                         if (_rawAmount.isNotEmpty) {
@@ -869,28 +871,30 @@ class _NumberPadState extends State<NumberPad> {
                       _withdrawalMode = WithdrawalMode.specificAmount;
                     });
                   },
-                  leftWidget: _isFiatInputMode
-                      ? NumPadButton(
-                          label: '.',
-                          onPressed: () {
-                            setState(() {
-                              // Only add decimal if not already present
-                              if (!(_displayedFiatInput?.contains('.') ??
-                                  false)) {
-                                _preservedSatsBeforeFiatEdit = null;
-                                _displayedFiatInput =
-                                    '${_displayedFiatInput ?? ''}.';
-                              }
-                            });
-                          },
-                          isSpecial: true,
-                        )
-                      : null,
-                  onLeftAction: !_isFiatInputMode &&
-                          (widget.paymentType == PaymentType.onchain ||
-                              widget.paymentType == PaymentType.ecash)
-                      ? (_loadingMax ? null : _onMaxPressed)
-                      : null,
+                  leftWidget:
+                      _isFiatInputMode
+                          ? NumPadButton(
+                            label: '.',
+                            onPressed: () {
+                              setState(() {
+                                // Only add decimal if not already present
+                                if (!(_displayedFiatInput?.contains('.') ??
+                                    false)) {
+                                  _preservedSatsBeforeFiatEdit = null;
+                                  _displayedFiatInput =
+                                      '${_displayedFiatInput ?? ''}.';
+                                }
+                              });
+                            },
+                            isSpecial: true,
+                          )
+                          : null,
+                  onLeftAction:
+                      !_isFiatInputMode &&
+                              (widget.paymentType == PaymentType.onchain ||
+                                  widget.paymentType == PaymentType.ecash)
+                          ? (_loadingMax ? null : _onMaxPressed)
+                          : null,
                   leftActionLoading: _loadingMax,
                 ),
               ),
