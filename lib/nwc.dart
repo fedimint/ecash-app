@@ -93,9 +93,7 @@ class _NostrWalletConnectState extends State<NostrWalletConnect> {
     return true; // iOS or other platforms
   }
 
-  Future<void> _startForegroundService(
-    FederationSelector federation,
-  ) async {
+  Future<void> _startForegroundService(FederationSelector federation) async {
     if (Platform.isAndroid) {
       AppLogger.instance.info(
         '[NWC] Starting foreground service for ${federation.federationName}',

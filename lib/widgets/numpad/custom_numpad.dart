@@ -21,17 +21,18 @@ class CustomNumPad extends StatelessWidget {
     return SizedBox(
       height: 64,
       child: Row(
-        children: digits.map((digit) {
-          return Expanded(
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 4),
-              child: NumPadButton(
-                label: digit,
-                onPressed: () => onDigitPressed(int.parse(digit)),
-              ),
-            ),
-          );
-        }).toList(),
+        children:
+            digits.map((digit) {
+              return Expanded(
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 4),
+                  child: NumPadButton(
+                    label: digit,
+                    onPressed: () => onDigitPressed(int.parse(digit)),
+                  ),
+                ),
+              );
+            }).toList(),
       ),
     );
   }
@@ -45,14 +46,15 @@ class CustomNumPad extends StatelessWidget {
           Expanded(
             child: Padding(
               padding: const EdgeInsets.symmetric(horizontal: 4),
-              child: leftWidget ??
+              child:
+                  leftWidget ??
                   (onLeftAction != null
                       ? NumPadButton(
-                          label: 'MAX',
-                          onPressed: onLeftAction!,
-                          isSpecial: true,
-                          isLoading: leftActionLoading,
-                        )
+                        label: 'MAX',
+                        onPressed: onLeftAction!,
+                        isSpecial: true,
+                        isLoading: leftActionLoading,
+                      )
                       : const SizedBox()),
             ),
           ),
