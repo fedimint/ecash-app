@@ -83,10 +83,15 @@ runs:
         restore-keys: |
           ${{ runner.os }}-flutter-
 
+    - name: Read Flutter version
+      id: flutter-version
+      shell: bash
+      run: echo "version=$(cat .flutter-version)" >> $GITHUB_OUTPUT
+
     - name: Set up Flutter
       uses: subosito/flutter-action@v2
       with:
-        flutter-version: '3.32.4'
+        flutter-version: ${{ steps.flutter-version.outputs.version }}
         channel: 'stable'
 
     - name: Set up Rust

@@ -15,11 +15,15 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Read Flutter version
+        id: flutter-version
+        run: echo "version=$(cat .flutter-version)" >> $GITHUB_OUTPUT
+
       # Dart format check
       - name: Set up Flutter
         uses: subosito/flutter-action@v2
         with:
-          flutter-version: '3.32.4'
+          flutter-version: ${{ steps.flutter-version.outputs.version }}
           channel: 'stable'
 
       - name: Get Flutter dependencies
