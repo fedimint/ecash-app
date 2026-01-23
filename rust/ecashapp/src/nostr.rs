@@ -3,7 +3,6 @@ use std::{
     str::FromStr,
     sync::Arc,
     time::{Duration, SystemTime},
-    u64,
 };
 
 use crate::{
@@ -234,7 +233,7 @@ impl NostrClient {
             .await;
         }
         dbtx.commit_tx().await;
-        DEFAULT_RELAYS.into_iter().map(|s| s.to_string()).collect()
+        DEFAULT_RELAYS.iter().map(|s| s.to_string()).collect()
     }
 
     async fn broadcast_nwc_info(nostr_client: &nostr_sdk::Client, federation_id: &FederationId) {
@@ -266,16 +265,14 @@ impl NostrClient {
         }
         let (sender, mut receiver) = oneshot::channel::<()>();
         listeners.insert(*federation_id, sender);
-        let federation_id = federation_id.clone();
+        let federation_id = *federation_id;
         self.task_group.spawn_cancellable("desktop nostr wallet connected", async move {
             tokio::select! {
                 _ = &mut receiver => {
                     info_to_flutter(format!("Received shutdown signal for {federation_id}")).await;
-                    return;
                 }
                 _ = Self::listen_for_nwc(&federation_id, nwc_config) => {
                     info_to_flutter(format!("Stopped listening for NWC for {federation_id}")).await;
-                    return;
                 }
             }
         });
@@ -389,7 +386,7 @@ impl NostrClient {
     ) -> anyhow::Result<()> {
         let content = serde_json::to_string(&response)?;
         let encrypted_content =
-            nostr_sdk::nips::nip04::encrypt(&keys.secret_key(), sender_pubkey, content.clone())?;
+            nostr_sdk::nips::nip04::encrypt(keys.secret_key(), sender_pubkey, content.clone())?;
 
         let event_builder =
             nostr_sdk::EventBuilder::new(nostr_sdk::Kind::WalletConnectResponse, encrypted_content)
@@ -499,7 +496,7 @@ impl NostrClient {
                         .await?;
                     }
                     LightningSendOutcome::Failure => {
-                        info_to_flutter(format!("NWC Payment Failure")).await;
+                        info_to_flutter("NWC Payment Failure".to_string()).await;
                     }
                 }
             }
@@ -535,12 +532,9 @@ impl NostrClient {
                 let events = all_events
                     .iter()
                     .filter_map(|event| {
-                        match PublicFederation::parse_network(&event.tags) {
-                            Ok(network) if network == Network::Regtest => {
-                                // Skip over regtest advertisements
-                                return None;
-                            }
-                            _ => {}
+                        if let Ok(Network::Regtest) = PublicFederation::parse_network(&event.tags) {
+                            // Skip over regtest advertisements
+                            return None;
                         }
 
                         PublicFederation::try_from(event.clone()).ok()
@@ -587,7 +581,7 @@ impl NostrClient {
                     ) {
                         let codes = decrypted.split(",");
                         for code in codes {
-                            if let Ok(_) = InviteCode::from_str(code) {
+                            if InviteCode::from_str(code).is_ok() {
                                 invite_codes.push(code.to_string());
                             }
                         }
@@ -702,14 +696,14 @@ impl NostrClient {
         let keys = nostr_sdk::Keys::new_with_ctx(fedimint_core::secp256k1::SECP256K1, secret_key);
         let public_key = keys.public_key.to_hex();
         let relay = existing_config.relay.clone();
-        return Ok((
+        Ok((
             existing_config,
             NWCConnectionInfo {
                 public_key,
                 relay,
                 secret: keys.secret_key().to_secret_hex(),
             },
-        ));
+        ))
     }
 
     pub async fn get_relays(&self) -> Vec<(String, bool)> {
@@ -732,7 +726,7 @@ impl NostrClient {
         let pubkey = self.keys.public_key;
         let serialized_invite_codes = invite_codes.join(",");
         let encrypted_content = nostr_sdk::nips::nip04::encrypt(
-            &self.keys.secret_key(),
+            self.keys.secret_key(),
             &pubkey,
             serialized_invite_codes,
         )?;
@@ -873,19 +867,14 @@ impl PublicFederation {
 
     fn parse_picture(json: &serde_json::Value) -> Option<String> {
         let picture = json.get("picture");
-        match picture {
-            Some(picture) => {
-                match picture.as_str() {
-                    Some(pic_url) => {
-                        // Verify that the picture is a URL
-                        let safe_url = SafeUrl::parse(pic_url).ok()?;
-                        return Some(safe_url.to_string());
-                    }
-                    None => {}
-                }
+        if let Some(picture) = picture {
+            if let Some(pic_url) = picture.as_str() {
+                // Verify that the picture is a URL
+                let safe_url = SafeUrl::parse(pic_url).ok()?;
+                return Some(safe_url.to_string());
             }
-            None => {}
         }
+
         None
     }
 

@@ -855,15 +855,14 @@ async fn handle_parsed_payment_instructions(
         PaymentInstructions::ConfigurableAmount(configurable) => {
             for method in configurable.methods() {
                 match method {
-                    PossiblyResolvedPaymentMethod::Resolved(resolved) => match resolved {
-                        PaymentMethod::OnChain(address) => {
+                    PossiblyResolvedPaymentMethod::Resolved(resolved) => {
+                        if let PaymentMethod::OnChain(address) = resolved {
                             return Ok((
                                 ParsedText::BitcoinAddress(address.to_string(), None),
                                 fed.clone(),
                             ));
                         }
-                        _ => {}
-                    },
+                    }
                     PossiblyResolvedPaymentMethod::LNURLPay {
                         min_value: _,
                         max_value: _,
