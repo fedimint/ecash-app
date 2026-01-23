@@ -743,7 +743,6 @@ impl Multimint {
                                     .await;
                                 }
                             }
-                            tweak_idx = tweak_idx.next();
 
                             let wallet_meta = wallet_op.meta::<WalletOperationMeta>();
                             if let WalletOperationMetaVariant::Deposit {
@@ -773,6 +772,8 @@ impl Multimint {
                                 }
                             }
                         }
+
+                        tweak_idx = tweak_idx.next();
                     }
                 }
             });
