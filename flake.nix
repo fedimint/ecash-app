@@ -6,7 +6,7 @@
     # - pubspec.lock drift between environments
     # - `just generate` converting value to initialValue breaks apk
     # flutter --version && docker run --rm ecash-app-builder flutter --version
-    nixpkgs.url = "github:NixOS/nixpkgs/d1d883129b193f0b495d75c148c2c3a7d95789a0";
+    nixpkgs.url = "github:NixOS/nixpkgs/nixos-25.11";
   };
 
   outputs = { self, fedimint, flake-utils, nixpkgs, ... }:
