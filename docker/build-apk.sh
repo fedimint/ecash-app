@@ -48,7 +48,7 @@ IMAGE_NAME="ecash-app-builder"
 
 if ! docker image inspect $IMAGE_NAME &> /dev/null || [[ "${REBUILD_IMAGE}" == "1" ]]; then
     echo "Building Docker image..."
-    docker build -t $IMAGE_NAME "$SCRIPT_DIR"
+    docker build --build-arg FLUTTER_VERSION=$(cat "$PROJECT_ROOT/.flutter-version") -t $IMAGE_NAME "$SCRIPT_DIR"
     echo ""
 else
     echo "Using existing Docker image: $IMAGE_NAME"

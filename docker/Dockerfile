@@ -26,10 +26,11 @@ RUN apt-get update && apt-get install -y \
     make \
     && rm -rf /var/lib/apt/lists/*
 
-# Install Flutter 3.32.4 (matching GitHub Actions)
+# Install Flutter (version from .flutter-version)
+ARG FLUTTER_VERSION
 RUN git clone https://github.com/flutter/flutter.git -b stable /opt/flutter \
     && cd /opt/flutter \
-    && git checkout 3.32.4 \
+    && git checkout ${FLUTTER_VERSION} \
     && flutter precache --android
 
 # Allow non-root users to use flutter
@@ -59,6 +60,7 @@ RUN yes | sdkmanager --licenses \
         "platform-tools" \
         "platforms;android-34" \
         "platforms;android-35" \
+        "platforms;android-36" \
         "build-tools;34.0.0" \
         "build-tools;35.0.0" \
         "cmake;3.22.1"
