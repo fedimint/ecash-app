@@ -16,7 +16,7 @@ build-debug-apk:
   $ROOT/docker/build-apk.sh debug
 
 run: build-linux
-  nix run --impure github:nix-community/nixGL/b6105297e6f0cd041670c3e8628394d4ee247ed5 -- flutter run
+  flutter run
 
 test:
   flutter test
