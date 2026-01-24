@@ -304,9 +304,6 @@ pub struct ContactPaymentKey {
 }
 
 #[derive(Debug, Encodable, Decodable)]
-pub struct ContactPaymentKeyPrefix;
-
-#[derive(Debug, Encodable, Decodable)]
 pub struct ContactPaymentByNpubPrefix {
     pub npub: String,
 }
@@ -323,11 +320,6 @@ impl_db_record!(
     key = ContactPaymentKey,
     value = ContactPayment,
     db_prefix = DbKeyPrefix::ContactPayment,
-);
-
-impl_db_lookup!(
-    key = ContactPaymentKey,
-    query_prefix = ContactPaymentKeyPrefix,
 );
 
 impl_db_lookup!(
