@@ -42,6 +42,9 @@ pub(crate) enum DbKeyPrefix {
     FederationOrder = 0x0A,
     FiatCurrency = 0x0B,
     BtcPrices = 0x0C,
+    Contact = 0x0D,
+    ContactPayment = 0x0E,
+    ContactsImported = 0x0F,
 }
 
 #[derive(Debug, Clone, Encodable, Decodable, Eq, PartialEq, Hash, Ord, PartialOrd)]
@@ -257,4 +260,87 @@ impl_db_record!(
     key = FederationOrderKey,
     value = FederationOrder,
     db_prefix = DbKeyPrefix::FederationOrder,
+);
+
+// Contact - stores Nostr profile data for address book
+#[derive(Debug, Clone, Encodable, Decodable, Eq, PartialEq, Hash, Ord, PartialOrd)]
+pub struct ContactKey {
+    pub npub: String,
+}
+
+#[derive(Debug, Encodable, Decodable)]
+pub struct ContactKeyPrefix;
+
+#[derive(Debug, Clone, Encodable, Decodable, Serialize, Deserialize)]
+pub struct Contact {
+    pub npub: String,
+    pub name: Option<String>,
+    pub display_name: Option<String>,
+    pub picture: Option<String>,
+    pub lud16: Option<String>, // Lightning Address
+    pub nip05: Option<String>,
+    pub nip05_verified: bool,
+    pub about: Option<String>,
+    pub created_at: u64,         // Unix timestamp in milliseconds
+    pub last_paid_at: Option<u64>, // Unix timestamp in milliseconds
+}
+
+impl_db_record!(
+    key = ContactKey,
+    value = Contact,
+    db_prefix = DbKeyPrefix::Contact,
+);
+
+impl_db_lookup!(
+    key = ContactKey,
+    query_prefix = ContactKeyPrefix,
+);
+
+// ContactPayment - stores payment history per contact
+#[derive(Debug, Clone, Encodable, Decodable, Eq, PartialEq, Hash, Ord, PartialOrd)]
+pub struct ContactPaymentKey {
+    pub npub: String,
+    pub timestamp: u64, // Unix timestamp in milliseconds
+}
+
+#[derive(Debug, Encodable, Decodable)]
+pub struct ContactPaymentKeyPrefix;
+
+#[derive(Debug, Encodable, Decodable)]
+pub struct ContactPaymentByNpubPrefix {
+    pub npub: String,
+}
+
+#[derive(Debug, Clone, Encodable, Decodable, Serialize, Deserialize)]
+pub struct ContactPayment {
+    pub amount_msats: u64,
+    pub federation_id: FederationId,
+    pub operation_id: Vec<u8>,
+    pub note: Option<String>,
+}
+
+impl_db_record!(
+    key = ContactPaymentKey,
+    value = ContactPayment,
+    db_prefix = DbKeyPrefix::ContactPayment,
+);
+
+impl_db_lookup!(
+    key = ContactPaymentKey,
+    query_prefix = ContactPaymentKeyPrefix,
+);
+
+impl_db_lookup!(
+    key = ContactPaymentKey,
+    query_prefix = ContactPaymentByNpubPrefix,
+);
+
+// ContactsImported - flag indicating first-time import prompt has been shown
+#[derive(Debug, Encodable, Decodable)]
+pub struct ContactsImportedKey;
+
+impl_db_record!(
+    key = ContactsImportedKey,
+    value = (),
+    db_prefix = DbKeyPrefix::ContactsImported,
 );
