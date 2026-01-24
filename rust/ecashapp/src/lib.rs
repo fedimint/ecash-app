@@ -25,7 +25,7 @@ use multimint::{
     FederationMeta, FederationSelector, LightningSendOutcome, LogLevel, Multimint,
     MultimintCreation, MultimintEvent, PaymentPreview, Transaction, Utxo, WithdrawFeesResponse,
 };
-use nostr::{NWCConnectionInfo, NostrClient, PublicFederation};
+use nostr::{NWCConnectionInfo, NostrClient, NostrProfile, PublicFederation};
 use serde::Serialize;
 use tokio::sync::{Mutex, OnceCell, RwLock};
 
@@ -46,8 +46,8 @@ use std::path::PathBuf;
 use std::{str::FromStr, sync::Arc};
 
 use crate::db::{
-    BitcoinDisplay, FederationConfig, FederationConfigKey, FederationConfigKeyPrefix, FiatCurrency,
-    LightningAddressConfig,
+    BitcoinDisplay, Contact, ContactPayment, FederationConfig, FederationConfigKey,
+    FederationConfigKeyPrefix, FiatCurrency, LightningAddressConfig,
 };
 use crate::frb_generated::StreamSink;
 use crate::multimint::{DepositEventKind, FedimintGateway, LNAddressStatus};
@@ -1139,4 +1139,183 @@ pub async fn claim_random_ln_address(
 pub async fn leave_federation(federation_id: &FederationId) {
     let mut multimint = get_multimint();
     multimint.leave_federation(federation_id).await;
+}
+
+// === Contact Address Book Functions ===
+
+/// Get the user's own Nostr npub
+#[frb]
+pub async fn get_user_npub() -> String {
+    let nostr_client = get_nostr_client();
+    let nostr = nostr_client.read().await;
+    nostr.get_user_npub()
+}
+
+/// Fetch the user's follows list from Nostr (Kind 3 contact list)
+#[frb]
+pub async fn get_nostr_follows() -> anyhow::Result<Vec<String>> {
+    let nostr_client = get_nostr_client();
+    let nostr = nostr_client.read().await;
+    nostr.get_nostr_follows().await
+}
+
+/// Fetch follows list for any pubkey from Nostr (Kind 3 contact list)
+#[frb]
+pub async fn get_follows_for_pubkey(npub: String) -> anyhow::Result<Vec<String>> {
+    let nostr_client = get_nostr_client();
+    let nostr = nostr_client.read().await;
+    nostr.get_follows_for_pubkey(npub).await
+}
+
+/// Fetch Nostr profiles for a list of npubs
+#[frb]
+pub async fn fetch_nostr_profiles(npubs: Vec<String>) -> anyhow::Result<Vec<NostrProfile>> {
+    let nostr_client = get_nostr_client();
+    let nostr = nostr_client.read().await;
+    nostr.fetch_nostr_profiles(npubs).await
+}
+
+/// Fetch a single Nostr profile by npub
+#[frb]
+pub async fn fetch_nostr_profile(npub: String) -> anyhow::Result<NostrProfile> {
+    let nostr_client = get_nostr_client();
+    let nostr = nostr_client.read().await;
+    nostr.fetch_nostr_profile(npub).await
+}
+
+/// Verify a NIP-05 identifier and return the associated npub
+#[frb]
+pub async fn verify_nip05(nip05_id: String) -> anyhow::Result<String> {
+    let nostr_client = get_nostr_client();
+    let nostr = nostr_client.read().await;
+    nostr.verify_nip05(&nip05_id).await
+}
+
+/// Check if contacts have been imported (first-time flag)
+#[frb]
+pub async fn has_imported_contacts() -> bool {
+    let nostr_client = get_nostr_client();
+    let nostr = nostr_client.read().await;
+    nostr.has_imported_contacts().await
+}
+
+/// Mark contacts as having been imported
+#[frb]
+pub async fn set_contacts_imported() {
+    let nostr_client = get_nostr_client();
+    let nostr = nostr_client.read().await;
+    nostr.set_contacts_imported().await;
+}
+
+/// Import contacts from Nostr profiles into the database
+#[frb]
+pub async fn import_contacts(profiles: Vec<NostrProfile>) -> anyhow::Result<usize> {
+    let nostr_client = get_nostr_client();
+    let nostr = nostr_client.read().await;
+    nostr.import_contacts(profiles).await
+}
+
+/// Add a single contact by npub
+#[frb]
+pub async fn add_contact_by_npub(npub: String) -> anyhow::Result<Contact> {
+    let nostr_client = get_nostr_client();
+    let nostr = nostr_client.read().await;
+    nostr.add_contact_by_npub(npub).await
+}
+
+/// Add a contact by NIP-05 identifier (e.g., "user@domain.com")
+#[frb]
+pub async fn add_contact_by_nip05(nip05_id: String) -> anyhow::Result<Contact> {
+    let nostr_client = get_nostr_client();
+    let nostr = nostr_client.read().await;
+    nostr.add_contact_by_nip05(nip05_id).await
+}
+
+/// Get all contacts, sorted by last_paid_at (recent first)
+#[frb]
+pub async fn get_all_contacts() -> Vec<Contact> {
+    let nostr_client = get_nostr_client();
+    let nostr = nostr_client.read().await;
+    nostr.get_all_contacts().await
+}
+
+/// Get a single contact by npub
+#[frb]
+pub async fn get_contact(npub: String) -> Option<Contact> {
+    let nostr_client = get_nostr_client();
+    let nostr = nostr_client.read().await;
+    nostr.get_contact(&npub).await
+}
+
+/// Delete a contact
+#[frb]
+pub async fn delete_contact(npub: String) {
+    let nostr_client = get_nostr_client();
+    let nostr = nostr_client.read().await;
+    nostr.delete_contact(&npub).await;
+}
+
+/// Refresh a contact's profile from Nostr
+#[frb]
+pub async fn refresh_contact_profile(npub: String) -> anyhow::Result<Contact> {
+    let nostr_client = get_nostr_client();
+    let nostr = nostr_client.read().await;
+    nostr.refresh_contact_profile(&npub).await
+}
+
+/// Verify a contact's NIP-05 identifier
+#[frb]
+pub async fn verify_contact_nip05(npub: String) -> anyhow::Result<bool> {
+    let nostr_client = get_nostr_client();
+    let nostr = nostr_client.read().await;
+
+    let contact = nostr
+        .get_contact(&npub)
+        .await
+        .ok_or_else(|| anyhow!("Contact not found"))?;
+
+    if let Some(nip05) = &contact.nip05 {
+        let verified = nostr.verify_contact_nip05(&npub, nip05).await;
+        nostr
+            .update_contact_nip05_verification(&npub, verified)
+            .await?;
+        Ok(verified)
+    } else {
+        Ok(false)
+    }
+}
+
+/// Record a payment to a contact
+#[frb]
+pub async fn record_contact_payment(
+    npub: String,
+    amount_msats: u64,
+    federation_id: FederationId,
+    operation_id: OperationId,
+    note: Option<String>,
+) -> anyhow::Result<()> {
+    let nostr_client = get_nostr_client();
+    let nostr = nostr_client.read().await;
+    nostr
+        .record_contact_payment(&npub, amount_msats, federation_id, operation_id.0.to_vec(), note)
+        .await
+}
+
+/// Get payment history for a contact
+#[frb]
+pub async fn get_contact_payments(
+    npub: String,
+    limit: u32,
+) -> Vec<(u64, ContactPayment)> {
+    let nostr_client = get_nostr_client();
+    let nostr = nostr_client.read().await;
+    nostr.get_contact_payments(&npub, limit as usize).await
+}
+
+/// Search contacts by name, display_name, nip05, or npub
+#[frb]
+pub async fn search_contacts(query: String) -> Vec<Contact> {
+    let nostr_client = get_nostr_client();
+    let nostr = nostr_client.read().await;
+    nostr.search_contacts(&query).await
 }

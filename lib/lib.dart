@@ -435,6 +435,94 @@ Future<(String, String)> claimRandomLnAddress({
 Future<void> leaveFederation({required FederationId federationId}) =>
     RustLib.instance.api.crateLeaveFederation(federationId: federationId);
 
+/// Get the user's own Nostr npub
+Future<String> getUserNpub() => RustLib.instance.api.crateGetUserNpub();
+
+/// Fetch the user's follows list from Nostr (Kind 3 contact list)
+Future<List<String>> getNostrFollows() =>
+    RustLib.instance.api.crateGetNostrFollows();
+
+/// Fetch follows list for any pubkey from Nostr (Kind 3 contact list)
+Future<List<String>> getFollowsForPubkey({required String npub}) =>
+    RustLib.instance.api.crateGetFollowsForPubkey(npub: npub);
+
+/// Fetch Nostr profiles for a list of npubs
+Future<List<NostrProfile>> fetchNostrProfiles({required List<String> npubs}) =>
+    RustLib.instance.api.crateFetchNostrProfiles(npubs: npubs);
+
+/// Fetch a single Nostr profile by npub
+Future<NostrProfile> fetchNostrProfile({required String npub}) =>
+    RustLib.instance.api.crateFetchNostrProfile(npub: npub);
+
+/// Verify a NIP-05 identifier and return the associated npub
+Future<String> verifyNip05({required String nip05Id}) =>
+    RustLib.instance.api.crateVerifyNip05(nip05Id: nip05Id);
+
+/// Check if contacts have been imported (first-time flag)
+Future<bool> hasImportedContacts() =>
+    RustLib.instance.api.crateHasImportedContacts();
+
+/// Mark contacts as having been imported
+Future<void> setContactsImported() =>
+    RustLib.instance.api.crateSetContactsImported();
+
+/// Import contacts from Nostr profiles into the database
+Future<BigInt> importContacts({required List<NostrProfile> profiles}) =>
+    RustLib.instance.api.crateImportContacts(profiles: profiles);
+
+/// Add a single contact by npub
+Future<Contact> addContactByNpub({required String npub}) =>
+    RustLib.instance.api.crateAddContactByNpub(npub: npub);
+
+/// Add a contact by NIP-05 identifier (e.g., "user@domain.com")
+Future<Contact> addContactByNip05({required String nip05Id}) =>
+    RustLib.instance.api.crateAddContactByNip05(nip05Id: nip05Id);
+
+/// Get all contacts, sorted by last_paid_at (recent first)
+Future<List<Contact>> getAllContacts() =>
+    RustLib.instance.api.crateGetAllContacts();
+
+/// Get a single contact by npub
+Future<Contact?> getContact({required String npub}) =>
+    RustLib.instance.api.crateGetContact(npub: npub);
+
+/// Delete a contact
+Future<void> deleteContact({required String npub}) =>
+    RustLib.instance.api.crateDeleteContact(npub: npub);
+
+/// Refresh a contact's profile from Nostr
+Future<Contact> refreshContactProfile({required String npub}) =>
+    RustLib.instance.api.crateRefreshContactProfile(npub: npub);
+
+/// Verify a contact's NIP-05 identifier
+Future<bool> verifyContactNip05({required String npub}) =>
+    RustLib.instance.api.crateVerifyContactNip05(npub: npub);
+
+/// Record a payment to a contact
+Future<void> recordContactPayment({
+  required String npub,
+  required BigInt amountMsats,
+  required FederationId federationId,
+  required OperationId operationId,
+  String? note,
+}) => RustLib.instance.api.crateRecordContactPayment(
+  npub: npub,
+  amountMsats: amountMsats,
+  federationId: federationId,
+  operationId: operationId,
+  note: note,
+);
+
+/// Get payment history for a contact
+Future<List<(BigInt, ContactPayment)>> getContactPayments({
+  required String npub,
+  required int limit,
+}) => RustLib.instance.api.crateGetContactPayments(npub: npub, limit: limit);
+
+/// Search contacts by name, display_name, nip05, or npub
+Future<List<Contact>> searchContacts({required String query}) =>
+    RustLib.instance.api.crateSearchContacts(query: query);
+
 // Rust type: RustOpaqueMoi<flutter_rust_bridge::for_generated::RustAutoOpaqueInner<ClientConfig>>
 abstract class ClientConfig implements RustOpaqueInterface {}
 
