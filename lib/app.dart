@@ -523,9 +523,10 @@ class _MyAppState extends State<MyApp> {
                       Navigator.push(
                         innerContext,
                         MaterialPageRoute(
-                          builder: (context) => ContactsScreen(
-                            selectedFederation: _selectedFederation,
-                          ),
+                          builder:
+                              (context) => ContactsScreen(
+                                selectedFederation: _selectedFederation,
+                              ),
                         ),
                       );
                     },
