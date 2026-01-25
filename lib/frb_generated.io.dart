@@ -33,6 +33,10 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   get rust_arc_decrement_strong_count_ClientConfigPtr =>
       wire._rust_arc_decrement_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerClientConfigPtr;
 
+  CrossPlatformFinalizerArg
+  get rust_arc_decrement_strong_count_ContactPaymentPtr =>
+      wire._rust_arc_decrement_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerContactPaymentPtr;
+
   CrossPlatformFinalizerArg get rust_arc_decrement_strong_count_DatabasePtr =>
       wire._rust_arc_decrement_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerDatabasePtr;
 
@@ -126,6 +130,12 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   @protected
   ClientConfig
   dco_decode_Auto_Owned_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerClientConfig(
+    dynamic raw,
+  );
+
+  @protected
+  ContactPayment
+  dco_decode_Auto_Owned_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerContactPayment(
     dynamic raw,
   );
 
@@ -244,6 +254,12 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   );
 
   @protected
+  ContactPayment
+  dco_decode_Auto_RefMut_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerContactPayment(
+    dynamic raw,
+  );
+
+  @protected
   FederationConfig
   dco_decode_Auto_RefMut_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerFederationConfig(
     dynamic raw,
@@ -294,6 +310,12 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   @protected
   WithdrawFeesResponse
   dco_decode_Auto_RefMut_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerWithdrawFeesResponse(
+    dynamic raw,
+  );
+
+  @protected
+  ContactPayment
+  dco_decode_Auto_Ref_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerContactPayment(
     dynamic raw,
   );
 
@@ -378,6 +400,12 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   @protected
   ClientConfig
   dco_decode_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerClientConfig(
+    dynamic raw,
+  );
+
+  @protected
+  ContactPayment
+  dco_decode_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerContactPayment(
     dynamic raw,
   );
 
@@ -556,6 +584,9 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   ConfirmedEvent dco_decode_box_autoadd_confirmed_event(dynamic raw);
 
   @protected
+  Contact dco_decode_box_autoadd_contact(dynamic raw);
+
+  @protected
   double dco_decode_box_autoadd_f_64(dynamic raw);
 
   @protected
@@ -606,6 +637,9 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   Connector dco_decode_connector(dynamic raw);
 
   @protected
+  Contact dco_decode_contact(dynamic raw);
+
+  @protected
   DepositEventKind dco_decode_deposit_event_kind(dynamic raw);
 
   @protected
@@ -648,10 +682,19 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   List<String> dco_decode_list_String(dynamic raw);
 
   @protected
+  List<Contact> dco_decode_list_contact(dynamic raw);
+
+  @protected
   List<FedimintGateway> dco_decode_list_fedimint_gateway(dynamic raw);
 
   @protected
   List<Guardian> dco_decode_list_guardian(dynamic raw);
+
+  @protected
+  List<NostrProfile> dco_decode_list_nostr_profile(dynamic raw);
+
+  @protected
+  List<int> dco_decode_list_prim_u_8_loose(dynamic raw);
 
   @protected
   Uint8List dco_decode_list_prim_u_8_strict(dynamic raw);
@@ -681,6 +724,12 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   dco_decode_list_record_string_u_64_opt_box_autoadd_u_64(dynamic raw);
 
   @protected
+  List<(BigInt, ContactPayment)>
+  dco_decode_list_record_u_64_auto_owned_rust_opaque_flutter_rust_bridgefor_generated_rust_auto_opaque_inner_contact_payment(
+    dynamic raw,
+  );
+
+  @protected
   List<(BigInt, BigInt)> dco_decode_list_record_u_64_usize(dynamic raw);
 
   @protected
@@ -703,6 +752,9 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
 
   @protected
   MultimintEvent dco_decode_multimint_event(dynamic raw);
+
+  @protected
+  NostrProfile dco_decode_nostr_profile(dynamic raw);
 
   @protected
   NostrWalletConnectConfig dco_decode_nostr_wallet_connect_config(dynamic raw);
@@ -730,6 +782,9 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   dco_decode_opt_box_autoadd_Auto_Owned_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerLightningAddressConfig(
     dynamic raw,
   );
+
+  @protected
+  Contact? dco_decode_opt_box_autoadd_contact(dynamic raw);
 
   @protected
   double? dco_decode_opt_box_autoadd_f_64(dynamic raw);
@@ -859,6 +914,12 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   (int, int) dco_decode_record_u_32_u_32(dynamic raw);
 
   @protected
+  (BigInt, ContactPayment)
+  dco_decode_record_u_64_auto_owned_rust_opaque_flutter_rust_bridgefor_generated_rust_auto_opaque_inner_contact_payment(
+    dynamic raw,
+  );
+
+  @protected
   (BigInt, BigInt) dco_decode_record_u_64_usize(dynamic raw);
 
   @protected
@@ -909,6 +970,12 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   @protected
   ClientConfig
   sse_decode_Auto_Owned_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerClientConfig(
+    SseDeserializer deserializer,
+  );
+
+  @protected
+  ContactPayment
+  sse_decode_Auto_Owned_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerContactPayment(
     SseDeserializer deserializer,
   );
 
@@ -1027,6 +1094,12 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   );
 
   @protected
+  ContactPayment
+  sse_decode_Auto_RefMut_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerContactPayment(
+    SseDeserializer deserializer,
+  );
+
+  @protected
   FederationConfig
   sse_decode_Auto_RefMut_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerFederationConfig(
     SseDeserializer deserializer,
@@ -1077,6 +1150,12 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   @protected
   WithdrawFeesResponse
   sse_decode_Auto_RefMut_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerWithdrawFeesResponse(
+    SseDeserializer deserializer,
+  );
+
+  @protected
+  ContactPayment
+  sse_decode_Auto_Ref_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerContactPayment(
     SseDeserializer deserializer,
   );
 
@@ -1161,6 +1240,12 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   @protected
   ClientConfig
   sse_decode_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerClientConfig(
+    SseDeserializer deserializer,
+  );
+
+  @protected
+  ContactPayment
+  sse_decode_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerContactPayment(
     SseDeserializer deserializer,
   );
 
@@ -1347,6 +1432,9 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   );
 
   @protected
+  Contact sse_decode_box_autoadd_contact(SseDeserializer deserializer);
+
+  @protected
   double sse_decode_box_autoadd_f_64(SseDeserializer deserializer);
 
   @protected
@@ -1403,6 +1491,9 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   Connector sse_decode_connector(SseDeserializer deserializer);
 
   @protected
+  Contact sse_decode_contact(SseDeserializer deserializer);
+
+  @protected
   DepositEventKind sse_decode_deposit_event_kind(SseDeserializer deserializer);
 
   @protected
@@ -1449,12 +1540,23 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   List<String> sse_decode_list_String(SseDeserializer deserializer);
 
   @protected
+  List<Contact> sse_decode_list_contact(SseDeserializer deserializer);
+
+  @protected
   List<FedimintGateway> sse_decode_list_fedimint_gateway(
     SseDeserializer deserializer,
   );
 
   @protected
   List<Guardian> sse_decode_list_guardian(SseDeserializer deserializer);
+
+  @protected
+  List<NostrProfile> sse_decode_list_nostr_profile(
+    SseDeserializer deserializer,
+  );
+
+  @protected
+  List<int> sse_decode_list_prim_u_8_loose(SseDeserializer deserializer);
 
   @protected
   Uint8List sse_decode_list_prim_u_8_strict(SseDeserializer deserializer);
@@ -1488,6 +1590,12 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   );
 
   @protected
+  List<(BigInt, ContactPayment)>
+  sse_decode_list_record_u_64_auto_owned_rust_opaque_flutter_rust_bridgefor_generated_rust_auto_opaque_inner_contact_payment(
+    SseDeserializer deserializer,
+  );
+
+  @protected
   List<(BigInt, BigInt)> sse_decode_list_record_u_64_usize(
     SseDeserializer deserializer,
   );
@@ -1512,6 +1620,9 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
 
   @protected
   MultimintEvent sse_decode_multimint_event(SseDeserializer deserializer);
+
+  @protected
+  NostrProfile sse_decode_nostr_profile(SseDeserializer deserializer);
 
   @protected
   NostrWalletConnectConfig sse_decode_nostr_wallet_connect_config(
@@ -1543,6 +1654,9 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   sse_decode_opt_box_autoadd_Auto_Owned_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerLightningAddressConfig(
     SseDeserializer deserializer,
   );
+
+  @protected
+  Contact? sse_decode_opt_box_autoadd_contact(SseDeserializer deserializer);
 
   @protected
   double? sse_decode_opt_box_autoadd_f_64(SseDeserializer deserializer);
@@ -1678,6 +1792,12 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   (int, int) sse_decode_record_u_32_u_32(SseDeserializer deserializer);
 
   @protected
+  (BigInt, ContactPayment)
+  sse_decode_record_u_64_auto_owned_rust_opaque_flutter_rust_bridgefor_generated_rust_auto_opaque_inner_contact_payment(
+    SseDeserializer deserializer,
+  );
+
+  @protected
   (BigInt, BigInt) sse_decode_record_u_64_usize(SseDeserializer deserializer);
 
   @protected
@@ -1734,6 +1854,13 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   void
   sse_encode_Auto_Owned_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerClientConfig(
     ClientConfig self,
+    SseSerializer serializer,
+  );
+
+  @protected
+  void
+  sse_encode_Auto_Owned_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerContactPayment(
+    ContactPayment self,
     SseSerializer serializer,
   );
 
@@ -1872,6 +1999,13 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
 
   @protected
   void
+  sse_encode_Auto_RefMut_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerContactPayment(
+    ContactPayment self,
+    SseSerializer serializer,
+  );
+
+  @protected
+  void
   sse_encode_Auto_RefMut_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerFederationConfig(
     FederationConfig self,
     SseSerializer serializer,
@@ -1930,6 +2064,13 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   void
   sse_encode_Auto_RefMut_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerWithdrawFeesResponse(
     WithdrawFeesResponse self,
+    SseSerializer serializer,
+  );
+
+  @protected
+  void
+  sse_encode_Auto_Ref_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerContactPayment(
+    ContactPayment self,
     SseSerializer serializer,
   );
 
@@ -2028,6 +2169,13 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   void
   sse_encode_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerClientConfig(
     ClientConfig self,
+    SseSerializer serializer,
+  );
+
+  @protected
+  void
+  sse_encode_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerContactPayment(
+    ContactPayment self,
     SseSerializer serializer,
   );
 
@@ -2247,6 +2395,9 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   );
 
   @protected
+  void sse_encode_box_autoadd_contact(Contact self, SseSerializer serializer);
+
+  @protected
   void sse_encode_box_autoadd_f_64(double self, SseSerializer serializer);
 
   @protected
@@ -2313,6 +2464,9 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   void sse_encode_connector(Connector self, SseSerializer serializer);
 
   @protected
+  void sse_encode_contact(Contact self, SseSerializer serializer);
+
+  @protected
   void sse_encode_deposit_event_kind(
     DepositEventKind self,
     SseSerializer serializer,
@@ -2372,6 +2526,9 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   void sse_encode_list_String(List<String> self, SseSerializer serializer);
 
   @protected
+  void sse_encode_list_contact(List<Contact> self, SseSerializer serializer);
+
+  @protected
   void sse_encode_list_fedimint_gateway(
     List<FedimintGateway> self,
     SseSerializer serializer,
@@ -2379,6 +2536,15 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
 
   @protected
   void sse_encode_list_guardian(List<Guardian> self, SseSerializer serializer);
+
+  @protected
+  void sse_encode_list_nostr_profile(
+    List<NostrProfile> self,
+    SseSerializer serializer,
+  );
+
+  @protected
+  void sse_encode_list_prim_u_8_loose(List<int> self, SseSerializer serializer);
 
   @protected
   void sse_encode_list_prim_u_8_strict(
@@ -2415,6 +2581,13 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   @protected
   void sse_encode_list_record_string_u_64_opt_box_autoadd_u_64(
     List<(String, BigInt, BigInt?)> self,
+    SseSerializer serializer,
+  );
+
+  @protected
+  void
+  sse_encode_list_record_u_64_auto_owned_rust_opaque_flutter_rust_bridgefor_generated_rust_auto_opaque_inner_contact_payment(
+    List<(BigInt, ContactPayment)> self,
     SseSerializer serializer,
   );
 
@@ -2458,6 +2631,9 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   );
 
   @protected
+  void sse_encode_nostr_profile(NostrProfile self, SseSerializer serializer);
+
+  @protected
   void sse_encode_nostr_wallet_connect_config(
     NostrWalletConnectConfig self,
     SseSerializer serializer,
@@ -2490,6 +2666,12 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   void
   sse_encode_opt_box_autoadd_Auto_Owned_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerLightningAddressConfig(
     LightningAddressConfig? self,
+    SseSerializer serializer,
+  );
+
+  @protected
+  void sse_encode_opt_box_autoadd_contact(
+    Contact? self,
     SseSerializer serializer,
   );
 
@@ -2654,6 +2836,13 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   void sse_encode_record_u_32_u_32((int, int) self, SseSerializer serializer);
 
   @protected
+  void
+  sse_encode_record_u_64_auto_owned_rust_opaque_flutter_rust_bridgefor_generated_rust_auto_opaque_inner_contact_payment(
+    (BigInt, ContactPayment) self,
+    SseSerializer serializer,
+  );
+
+  @protected
   void sse_encode_record_u_64_usize(
     (BigInt, BigInt) self,
     SseSerializer serializer,
@@ -2807,6 +2996,40 @@ class RustLibWire implements BaseWire {
       );
   late final _rust_arc_decrement_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerClientConfig =
       _rust_arc_decrement_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerClientConfigPtr
+          .asFunction<void Function(ffi.Pointer<ffi.Void>)>();
+
+  void
+  rust_arc_increment_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerContactPayment(
+    ffi.Pointer<ffi.Void> ptr,
+  ) {
+    return _rust_arc_increment_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerContactPayment(
+      ptr,
+    );
+  }
+
+  late final _rust_arc_increment_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerContactPaymentPtr =
+      _lookup<ffi.NativeFunction<ffi.Void Function(ffi.Pointer<ffi.Void>)>>(
+        'frbgen_ecashapp_rust_arc_increment_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerContactPayment',
+      );
+  late final _rust_arc_increment_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerContactPayment =
+      _rust_arc_increment_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerContactPaymentPtr
+          .asFunction<void Function(ffi.Pointer<ffi.Void>)>();
+
+  void
+  rust_arc_decrement_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerContactPayment(
+    ffi.Pointer<ffi.Void> ptr,
+  ) {
+    return _rust_arc_decrement_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerContactPayment(
+      ptr,
+    );
+  }
+
+  late final _rust_arc_decrement_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerContactPaymentPtr =
+      _lookup<ffi.NativeFunction<ffi.Void Function(ffi.Pointer<ffi.Void>)>>(
+        'frbgen_ecashapp_rust_arc_decrement_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerContactPayment',
+      );
+  late final _rust_arc_decrement_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerContactPayment =
+      _rust_arc_decrement_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerContactPaymentPtr
           .asFunction<void Function(ffi.Pointer<ffi.Void>)>();
 
   void
