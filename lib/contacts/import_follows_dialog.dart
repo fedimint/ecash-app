@@ -481,186 +481,188 @@ class _ImportFollowsDialogState extends State<ImportFollowsDialog> {
     final profilesWithLn =
         _profiles.where((p) => p.lud16 != null && p.lud16!.isNotEmpty).length;
 
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        // Header
-        Padding(
-          padding: const EdgeInsets.all(24),
-          child: Column(
-            children: [
-              Text(
-                'Import Contacts',
-                style: theme.textTheme.titleLarge?.copyWith(
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-              const SizedBox(height: 8),
-              Text(
-                'Found ${_profiles.length} follows ($profilesWithLn with Lightning Address)',
-                style: theme.textTheme.bodyMedium?.copyWith(
-                  color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
-                ),
-                textAlign: TextAlign.center,
-              ),
-            ],
-          ),
-        ),
-
-        // Selection controls
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 24),
-          child: Row(
-            children: [
-              TextButton.icon(
-                onPressed: _toggleSelectAll,
-                icon: Icon(
-                  _selectedNpubs.length == _profiles.length
-                      ? Icons.deselect
-                      : Icons.select_all,
-                  size: 18,
-                ),
-                label: Text(
-                  _selectedNpubs.length == _profiles.length
-                      ? 'Deselect All'
-                      : 'Select All',
-                ),
-              ),
-              const Spacer(),
-              TextButton.icon(
-                onPressed: _selectWithLightning,
-                icon: const Icon(Icons.bolt, size: 18, color: Colors.amber),
-                label: const Text('With LN'),
-              ),
-            ],
-          ),
-        ),
-
-        // Profile list
-        Flexible(
-          child: ListView.builder(
-            shrinkWrap: true,
-            padding: const EdgeInsets.symmetric(horizontal: 16),
-            itemCount: _profiles.length,
-            itemBuilder: (context, index) {
-              final profile = _profiles[index];
-              final isSelected = _selectedNpubs.contains(profile.npub);
-              final hasLn = profile.lud16 != null && profile.lud16!.isNotEmpty;
-
-              String displayName =
-                  profile.displayName ??
-                  profile.name ??
-                  '${profile.npub.substring(0, 8)}...';
-
-              return CheckboxListTile(
-                value: isSelected,
-                onChanged: (value) {
-                  setState(() {
-                    if (value == true) {
-                      _selectedNpubs.add(profile.npub);
-                    } else {
-                      _selectedNpubs.remove(profile.npub);
-                    }
-                  });
-                },
-                secondary: CircleAvatar(
-                  radius: 20,
-                  backgroundColor: theme.colorScheme.primary.withValues(
-                    alpha: 0.2,
+    return SizedBox(
+      height: MediaQuery.of(context).size.height * 0.75,
+      child: Column(
+        children: [
+          // Header
+          Padding(
+            padding: const EdgeInsets.all(24),
+            child: Column(
+              children: [
+                Text(
+                  'Import Contacts',
+                  style: theme.textTheme.titleLarge?.copyWith(
+                    fontWeight: FontWeight.bold,
                   ),
-                  backgroundImage:
-                      profile.picture != null && profile.picture!.isNotEmpty
-                          ? NetworkImage(profile.picture!)
-                          : null,
-                  child:
-                      profile.picture == null || profile.picture!.isEmpty
-                          ? Icon(
-                            Icons.person,
-                            color: theme.colorScheme.primary,
-                            size: 20,
-                          )
-                          : null,
                 ),
-                title: Row(
-                  children: [
-                    Flexible(
-                      child: Text(
-                        displayName,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      ),
+                const SizedBox(height: 8),
+                Text(
+                  'Found ${_profiles.length} follows ($profilesWithLn with Lightning Address)',
+                  style: theme.textTheme.bodyMedium?.copyWith(
+                    color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+              ],
+            ),
+          ),
+
+          // Selection controls
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 24),
+            child: Row(
+              children: [
+                TextButton.icon(
+                  onPressed: _toggleSelectAll,
+                  icon: Icon(
+                    _selectedNpubs.length == _profiles.length
+                        ? Icons.deselect
+                        : Icons.select_all,
+                    size: 18,
+                  ),
+                  label: Text(
+                    _selectedNpubs.length == _profiles.length
+                        ? 'Deselect All'
+                        : 'Select All',
+                  ),
+                ),
+                const Spacer(),
+                TextButton.icon(
+                  onPressed: _selectWithLightning,
+                  icon: const Icon(Icons.bolt, size: 18, color: Colors.amber),
+                  label: const Text('With LN'),
+                ),
+              ],
+            ),
+          ),
+
+          // Profile list
+          Expanded(
+            child: ListView.builder(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              itemCount: _profiles.length,
+              itemBuilder: (context, index) {
+                final profile = _profiles[index];
+                final isSelected = _selectedNpubs.contains(profile.npub);
+                final hasLn =
+                    profile.lud16 != null && profile.lud16!.isNotEmpty;
+
+                String displayName =
+                    profile.displayName ??
+                    profile.name ??
+                    '${profile.npub.substring(0, 8)}...';
+
+                return CheckboxListTile(
+                  value: isSelected,
+                  onChanged: (value) {
+                    setState(() {
+                      if (value == true) {
+                        _selectedNpubs.add(profile.npub);
+                      } else {
+                        _selectedNpubs.remove(profile.npub);
+                      }
+                    });
+                  },
+                  secondary: CircleAvatar(
+                    radius: 20,
+                    backgroundColor: theme.colorScheme.primary.withValues(
+                      alpha: 0.2,
                     ),
-                    if (hasLn) ...[
-                      const SizedBox(width: 4),
-                      const Icon(Icons.bolt, size: 16, color: Colors.amber),
-                    ],
-                  ],
-                ),
-                subtitle:
-                    profile.nip05 != null && profile.nip05!.isNotEmpty
-                        ? Text(
-                          profile.nip05!,
+                    backgroundImage:
+                        profile.picture != null && profile.picture!.isNotEmpty
+                            ? NetworkImage(profile.picture!)
+                            : null,
+                    child:
+                        profile.picture == null || profile.picture!.isEmpty
+                            ? Icon(
+                              Icons.person,
+                              color: theme.colorScheme.primary,
+                              size: 20,
+                            )
+                            : null,
+                  ),
+                  title: Row(
+                    children: [
+                      Flexible(
+                        child: Text(
+                          displayName,
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
-                          style: theme.textTheme.bodySmall,
-                        )
-                        : null,
-              );
-            },
-          ),
-        ),
-
-        // Action buttons
-        Padding(
-          padding: const EdgeInsets.all(24),
-          child: Row(
-            children: [
-              Expanded(
-                child: OutlinedButton(
-                  onPressed:
-                      _importing
-                          ? null
-                          : () {
-                            widget.onSkip();
-                            Navigator.of(context).pop();
-                          },
-                  style: OutlinedButton.styleFrom(
-                    foregroundColor: theme.colorScheme.primary,
-                    side: BorderSide(color: theme.colorScheme.primary),
-                    padding: const EdgeInsets.symmetric(vertical: 16),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
+                        ),
+                      ),
+                      if (hasLn) ...[
+                        const SizedBox(width: 4),
+                        const Icon(Icons.bolt, size: 16, color: Colors.amber),
+                      ],
+                    ],
                   ),
-                  child: const Text('Skip'),
-                ),
-              ),
-              const SizedBox(width: 16),
-              Expanded(
-                child: ElevatedButton(
-                  onPressed: _importing ? null : _importSelected,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: theme.colorScheme.primary,
-                    foregroundColor: Colors.black,
-                    padding: const EdgeInsets.symmetric(vertical: 16),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                  ),
-                  child:
-                      _importing
-                          ? const SizedBox(
-                            width: 20,
-                            height: 20,
-                            child: CircularProgressIndicator(strokeWidth: 2),
+                  subtitle:
+                      profile.nip05 != null && profile.nip05!.isNotEmpty
+                          ? Text(
+                            profile.nip05!,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: theme.textTheme.bodySmall,
                           )
-                          : Text('Import (${_selectedNpubs.length})'),
-                ),
-              ),
-            ],
+                          : null,
+                );
+              },
+            ),
           ),
-        ),
-      ],
+
+          // Action buttons
+          Padding(
+            padding: const EdgeInsets.all(24),
+            child: Row(
+              children: [
+                Expanded(
+                  child: OutlinedButton(
+                    onPressed:
+                        _importing
+                            ? null
+                            : () {
+                              widget.onSkip();
+                              Navigator.of(context).pop();
+                            },
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: theme.colorScheme.primary,
+                      side: BorderSide(color: theme.colorScheme.primary),
+                      padding: const EdgeInsets.symmetric(vertical: 16),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                    ),
+                    child: const Text('Skip'),
+                  ),
+                ),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: ElevatedButton(
+                    onPressed: _importing ? null : _importSelected,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: theme.colorScheme.primary,
+                      foregroundColor: Colors.black,
+                      padding: const EdgeInsets.symmetric(vertical: 16),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                    ),
+                    child:
+                        _importing
+                            ? const SizedBox(
+                              width: 20,
+                              height: 20,
+                              child: CircularProgressIndicator(strokeWidth: 2),
+                            )
+                            : Text('Import (${_selectedNpubs.length})'),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
     );
   }
 }
