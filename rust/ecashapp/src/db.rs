@@ -281,7 +281,7 @@ pub struct Contact {
     pub nip05: Option<String>,
     pub nip05_verified: bool,
     pub about: Option<String>,
-    pub created_at: u64,         // Unix timestamp in milliseconds
+    pub created_at: u64,           // Unix timestamp in milliseconds
     pub last_paid_at: Option<u64>, // Unix timestamp in milliseconds
 }
 
@@ -291,10 +291,7 @@ impl_db_record!(
     db_prefix = DbKeyPrefix::Contact,
 );
 
-impl_db_lookup!(
-    key = ContactKey,
-    query_prefix = ContactKeyPrefix,
-);
+impl_db_lookup!(key = ContactKey, query_prefix = ContactKeyPrefix,);
 
 // ContactPayment - stores payment history per contact
 #[derive(Debug, Clone, Encodable, Decodable, Eq, PartialEq, Hash, Ord, PartialOrd)]
