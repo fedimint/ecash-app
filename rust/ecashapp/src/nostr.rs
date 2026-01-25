@@ -1,10 +1,10 @@
+use nostr_sdk::ToBech32;
 use std::{
     collections::BTreeMap,
     str::FromStr,
     sync::Arc,
     time::{Duration, SystemTime, UNIX_EPOCH},
 };
-use nostr_sdk::ToBech32;
 
 use crate::{
     anyhow, await_send, balance,
@@ -769,7 +769,10 @@ impl NostrClient {
 
     /// Get the user's public key as an npub string
     pub fn get_user_npub(&self) -> String {
-        self.keys.public_key.to_bech32().expect("Could not encode to bech32")
+        self.keys
+            .public_key
+            .to_bech32()
+            .expect("Could not encode to bech32")
     }
 
     /// Fetch the user's follows list (Kind 3 contact list)
@@ -801,7 +804,8 @@ impl NostrClient {
         // Extract p tags (followed pubkeys)
         let mut follows = Vec::new();
         for tag in contact_list.tags.iter() {
-            if let Some(nostr_sdk::TagStandard::PublicKey { public_key, .. }) = tag.as_standardized()
+            if let Some(nostr_sdk::TagStandard::PublicKey { public_key, .. }) =
+                tag.as_standardized()
             {
                 follows.push(public_key.to_bech32().expect("Could not encode to bech32"));
             }
@@ -840,7 +844,8 @@ impl NostrClient {
         // Extract p tags (followed pubkeys)
         let mut follows = Vec::new();
         for tag in contact_list.tags.iter() {
-            if let Some(nostr_sdk::TagStandard::PublicKey { public_key, .. }) = tag.as_standardized()
+            if let Some(nostr_sdk::TagStandard::PublicKey { public_key, .. }) =
+                tag.as_standardized()
             {
                 follows.push(public_key.to_bech32().expect("Could not encode to bech32"));
             }
@@ -851,7 +856,10 @@ impl NostrClient {
     }
 
     /// Fetch Nostr profiles (Kind 0) for a list of npubs
-    pub async fn fetch_nostr_profiles(&self, npubs: Vec<String>) -> anyhow::Result<Vec<NostrProfile>> {
+    pub async fn fetch_nostr_profiles(
+        &self,
+        npubs: Vec<String>,
+    ) -> anyhow::Result<Vec<NostrProfile>> {
         if npubs.is_empty() {
             return Ok(Vec::new());
         }
@@ -859,7 +867,10 @@ impl NostrClient {
         self.nostr_client.connect().await;
 
         // Convert npubs to public keys
-        let pubkeys: Vec<nostr_sdk::PublicKey> = npubs.iter().filter_map(|npub| nostr_sdk::PublicKey::parse(npub).ok()).collect();
+        let pubkeys: Vec<nostr_sdk::PublicKey> = npubs
+            .iter()
+            .filter_map(|npub| nostr_sdk::PublicKey::parse(npub).ok())
+            .collect();
 
         if pubkeys.is_empty() {
             return Ok(Vec::new());
@@ -1074,13 +1085,11 @@ impl NostrClient {
             .await;
 
         // Sort by last_paid_at descending (recent first), then created_at descending
-        contacts.sort_by(|a, b| {
-            match (&b.last_paid_at, &a.last_paid_at) {
-                (Some(b_time), Some(a_time)) => b_time.cmp(a_time),
-                (Some(_), None) => std::cmp::Ordering::Less,
-                (None, Some(_)) => std::cmp::Ordering::Greater,
-                (None, None) => b.created_at.cmp(&a.created_at),
-            }
+        contacts.sort_by(|a, b| match (&b.last_paid_at, &a.last_paid_at) {
+            (Some(b_time), Some(a_time)) => b_time.cmp(a_time),
+            (Some(_), None) => std::cmp::Ordering::Less,
+            (None, Some(_)) => std::cmp::Ordering::Greater,
+            (None, None) => b.created_at.cmp(&a.created_at),
         });
 
         contacts
@@ -1214,7 +1223,11 @@ impl NostrClient {
     }
 
     /// Get payment history for a contact
-    pub async fn get_contact_payments(&self, npub: &str, limit: usize) -> Vec<(u64, ContactPayment)> {
+    pub async fn get_contact_payments(
+        &self,
+        npub: &str,
+        limit: usize,
+    ) -> Vec<(u64, ContactPayment)> {
         let mut dbtx = self.db.begin_transaction_nc().await;
         let mut payments: Vec<(u64, ContactPayment)> = dbtx
             .find_by_prefix(&ContactPaymentByNpubPrefix {
@@ -1432,7 +1445,10 @@ impl TryFrom<nostr_sdk::Event> for NostrProfile {
             bail!("Event is not a metadata event");
         }
 
-        let npub = event.pubkey.to_bech32().expect("Could not encode to bech32");
+        let npub = event
+            .pubkey
+            .to_bech32()
+            .expect("Could not encode to bech32");
         let json: serde_json::Value = serde_json::from_str(&event.content)?;
 
         Ok(NostrProfile {

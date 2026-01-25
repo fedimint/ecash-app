@@ -1297,16 +1297,19 @@ pub async fn record_contact_payment(
     let nostr_client = get_nostr_client();
     let nostr = nostr_client.read().await;
     nostr
-        .record_contact_payment(&npub, amount_msats, federation_id, operation_id.0.to_vec(), note)
+        .record_contact_payment(
+            &npub,
+            amount_msats,
+            federation_id,
+            operation_id.0.to_vec(),
+            note,
+        )
         .await
 }
 
 /// Get payment history for a contact
 #[frb]
-pub async fn get_contact_payments(
-    npub: String,
-    limit: u32,
-) -> Vec<(u64, ContactPayment)> {
+pub async fn get_contact_payments(npub: String, limit: u32) -> Vec<(u64, ContactPayment)> {
     let nostr_client = get_nostr_client();
     let nostr = nostr_client.read().await;
     nostr.get_contact_payments(&npub, limit as usize).await
