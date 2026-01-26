@@ -744,20 +744,22 @@ class _NumberPadState extends State<NumberPad> {
                         // Swap button - fixed width (hidden when price unavailable)
                         widget.btcPrices[fiatCurrency] != null
                             ? SizedBox(
-                                width: 36,
-                                child: IconButton(
-                                  onPressed: _onSwapCurrency,
-                                  icon: const Icon(
-                                    Icons.swap_vert,
-                                    color: Colors.grey,
-                                    size: 28,
-                                  ),
-                                  tooltip: 'Swap input currency',
-                                  padding: EdgeInsets.zero,
-                                  constraints: const BoxConstraints(),
+                              width: 36,
+                              child: IconButton(
+                                onPressed: _onSwapCurrency,
+                                icon: const Icon(
+                                  Icons.swap_vert,
+                                  color: Colors.grey,
+                                  size: 28,
                                 ),
-                              )
-                            : const SizedBox(width: 36), // Empty spacer to maintain layout
+                                tooltip: 'Swap input currency',
+                                padding: EdgeInsets.zero,
+                                constraints: const BoxConstraints(),
+                              ),
+                            )
+                            : const SizedBox(
+                              width: 36,
+                            ), // Empty spacer to maintain layout
                       ],
                     ),
                   ],
