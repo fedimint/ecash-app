@@ -1,5 +1,6 @@
 import 'dart:io';
 
+import 'package:flutter/foundation.dart';
 import 'package:ecashapp/deep_link_handler.dart';
 import 'package:ecashapp/frb_generated.dart';
 import 'package:ecashapp/splash.dart';
@@ -26,7 +27,17 @@ void main() async {
   AppLogger.instance.info(
     "Starting ecashapp. Version ${packageInfo.version} Build Number: ${packageInfo.buildNumber}",
   );
-  final dir = await getApplicationDocumentsDirectory();
+  final Directory dir;
+  if (Platform.isLinux) {
+    final appName = kDebugMode ? 'ecash-app-dev' : 'ecash-app';
+    final homeDir = Platform.environment['HOME']!;
+    dir = Directory('$homeDir/.local/share/$appName');
+    if (!await dir.exists()) {
+      await dir.create(recursive: true);
+    }
+  } else {
+    dir = await getApplicationDocumentsDirectory();
+  }
   runApp(ecashapp(dir: dir));
 }
 

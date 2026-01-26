@@ -1,0 +1,58 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<component type="desktop-application">
+  <id>org.fedimint.ecash-app</id>
+  <name>Ecash App</name>
+  <summary>Multi-federation Fedimint wallet</summary>
+  <metadata_license>MIT</metadata_license>
+  <project_license>MIT</project_license>
+  <developer id="org.fedimint">
+    <name>The Fedimint Developers</name>
+  </developer>
+  <description>
+    <p>
+      Ecash App is a Fedimint wallet supporting Lightning, on-chain, and ecash
+      payments all in one wallet. Connect to multiple federations and manage
+      your Bitcoin with full transparency on fees and wallet details.
+    </p>
+    <p>
+      Users can query registered Lightning Gateways, view the UTXOs of a
+      federation, and view the ecash note denominations in the wallet.
+    </p>
+  </description>
+  <launchable type="desktop-id">ecash-app.desktop</launchable>
+  <url type="homepage">https://ecash.love</url>
+  <url type="bugtracker">https://github.com/fedimint/ecash-app/issues</url>
+  <url type="vcs-browser">https://github.com/fedimint/ecash-app</url>
+  <provides>
+    <binary>ecashapp</binary>
+  </provides>
+  <categories>
+    <category>Finance</category>
+    <category>Network</category>
+  </categories>
+  <keywords>
+    <keyword>bitcoin</keyword>
+    <keyword>lightning</keyword>
+    <keyword>ecash</keyword>
+    <keyword>fedimint</keyword>
+    <keyword>wallet</keyword>
+  </keywords>
+  <screenshots>
+    <screenshot type="default">
+      <caption>Create or recover a wallet</caption>
+      <image>https://raw.githubusercontent.com/fedimint/ecash-app/master/assets/screenshots/create_wallet.png</image>
+    </screenshot>
+    <screenshot>
+      <caption>Discover and join federations</caption>
+      <image>https://raw.githubusercontent.com/fedimint/ecash-app/master/assets/screenshots/discover2.png</image>
+    </screenshot>
+    <screenshot>
+      <caption>Manage multiple federations</caption>
+      <image>https://raw.githubusercontent.com/fedimint/ecash-app/master/assets/screenshots/multimint.png</image>
+    </screenshot>
+  </screenshots>
+  <content_rating type="oars-1.1" />
+  <releases>
+    <release version="0.5.0-alpha" date="2026-01-24" />
+  </releases>
+</component>

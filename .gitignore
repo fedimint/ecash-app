@@ -53,3 +53,5 @@ app.*.map.json
 # Docker APK build artifacts (needed for faster incremental builds)
 .docker-cache/
 .dart_tool.host/
+AppDir/
+*.AppImage

@@ -15,6 +15,13 @@ build-linux:
 build-debug-apk:
   $ROOT/docker/build-apk.sh debug
 
+build-appimage:
+  $ROOT/docker/build-appimage.sh
+
+run-appimage-nixos path:
+  # This is needed in NixOS, if you are on another OS you can simply open the AppImage
+  appimage-run {{path}}
+
 run: build-linux
   flutter run
 
