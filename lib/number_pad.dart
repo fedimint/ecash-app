@@ -232,7 +232,12 @@ class _NumberPadState extends State<NumberPad> {
         final sats = int.tryParse(_rawAmount) ?? 0;
         final fiatValue = (btcPrice * sats) / 100000000;
         // Store as raw fiat input (just the number, formatted on display)
-        _displayedFiatInput = fiatValue.toStringAsFixed(2);
+        // Only strip .00 to allow typing, but keep meaningful decimals
+        String fiatStr = fiatValue.toStringAsFixed(2);
+        if (fiatStr.endsWith('.00')) {
+          fiatStr = fiatStr.substring(0, fiatStr.length - 3); // Remove .00 only
+        }
+        _displayedFiatInput = fiatStr;
         _isFiatInputMode = true;
       }
     });
@@ -483,7 +488,12 @@ class _NumberPadState extends State<NumberPad> {
             // Don't allow more than 2 decimal places
             if (!_canAddFiatDigit()) return;
             _preservedSatsBeforeFiatEdit = null;
-            _displayedFiatInput = (_displayedFiatInput ?? '') + digit;
+            // Replace leading zero instead of appending
+            if (_displayedFiatInput == '0') {
+              _displayedFiatInput = digit;
+            } else {
+              _displayedFiatInput = (_displayedFiatInput ?? '') + digit;
+            }
             final fiatValue = double.tryParse(_displayedFiatInput ?? '0') ?? 0;
             final fiatCurrency =
                 context.read<PreferencesProvider>().fiatCurrency;
@@ -818,8 +828,13 @@ class _NumberPadState extends State<NumberPad> {
                         // Clear preserved sats since user is now editing
                         _preservedSatsBeforeFiatEdit = null;
 
-                        _displayedFiatInput =
-                            (_displayedFiatInput ?? '') + digit.toString();
+                        // Replace leading zero instead of appending
+                        if (_displayedFiatInput == '0') {
+                          _displayedFiatInput = digit.toString();
+                        } else {
+                          _displayedFiatInput =
+                              (_displayedFiatInput ?? '') + digit.toString();
+                        }
 
                         // Convert to sats
                         final fiatValue =
