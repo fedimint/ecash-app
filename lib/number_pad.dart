@@ -741,27 +741,23 @@ class _NumberPadState extends State<NumberPad> {
                             ),
                           ),
                         ),
-                        // Swap button - fixed width
-                        SizedBox(
-                          width: 36,
-                          child: IconButton(
-                            onPressed:
-                                widget.btcPrices[fiatCurrency] != null
-                                    ? _onSwapCurrency
-                                    : null,
-                            icon: Icon(
-                              Icons.swap_vert,
-                              color:
-                                  widget.btcPrices[fiatCurrency] != null
-                                      ? Colors.grey
-                                      : Colors.grey.withValues(alpha: 0.3),
-                              size: 28,
-                            ),
-                            tooltip: 'Swap input currency',
-                            padding: EdgeInsets.zero,
-                            constraints: const BoxConstraints(),
-                          ),
-                        ),
+                        // Swap button - fixed width (hidden when price unavailable)
+                        widget.btcPrices[fiatCurrency] != null
+                            ? SizedBox(
+                                width: 36,
+                                child: IconButton(
+                                  onPressed: _onSwapCurrency,
+                                  icon: const Icon(
+                                    Icons.swap_vert,
+                                    color: Colors.grey,
+                                    size: 28,
+                                  ),
+                                  tooltip: 'Swap input currency',
+                                  padding: EdgeInsets.zero,
+                                  constraints: const BoxConstraints(),
+                                ),
+                              )
+                            : const SizedBox(width: 36), // Empty spacer to maintain layout
                       ],
                     ),
                   ],
