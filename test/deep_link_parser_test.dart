@@ -5,7 +5,9 @@ void main() {
   group('parseDeepLinkUri', () {
     group('lightning: scheme', () {
       test('parses basic lightning invoice', () {
-        final uri = Uri.parse('lightning:lnbc1pvjluezpp5qqqsyqcyq5rqwzqfqqqsyqcyq5rqwzqfqqqsyqcyq5rqwzqfqypqdpl2pkx2ctnv5sxxmmwwd5kgetjypeh2ursdae8g6twvus8g6rfwvs8qun0dfjkxaq');
+        final uri = Uri.parse(
+          'lightning:lnbc1pvjluezpp5qqqsyqcyq5rqwzqfqqqsyqcyq5rqwzqfqqqsyqcyq5rqwzqfqypqdpl2pkx2ctnv5sxxmmwwd5kgetjypeh2ursdae8g6twvus8g6rfwvs8qun0dfjkxaq',
+        );
         final result = parseDeepLinkUri(uri);
 
         expect(result, isNotNull);
@@ -40,7 +42,9 @@ void main() {
 
     group('lnurl: scheme', () {
       test('parses basic LNURL', () {
-        final uri = Uri.parse('lnurl:LNURL1DP68GURN8GHJ7MRWW4EXCTNXD9SHG6NPVCHXXMMD9AKXUATJDSKHQCTE8AEK2UMND9HKU0FKVESNZDFEX4SNXENZV4JNWWF3VENXVV3SHGDP4X4SKVEPJX56RJEP4VYMNSVF5');
+        final uri = Uri.parse(
+          'lnurl:LNURL1DP68GURN8GHJ7MRWW4EXCTNXD9SHG6NPVCHXXMMD9AKXUATJDSKHQCTE8AEK2UMND9HKU0FKVESNZDFEX4SNXENZV4JNWWF3VENXVV3SHGDP4X4SKVEPJX56RJEP4VYMNSVF5',
+        );
         final result = parseDeepLinkUri(uri);
 
         expect(result, isNotNull);
@@ -69,7 +73,9 @@ void main() {
 
     group('bitcoin: scheme (BIP21)', () {
       test('parses basic bitcoin address', () {
-        final uri = Uri.parse('bitcoin:bc1qar0srrr7xfkvy5l643lydnw9re59gtzzwf5mdq');
+        final uri = Uri.parse(
+          'bitcoin:bc1qar0srrr7xfkvy5l643lydnw9re59gtzzwf5mdq',
+        );
         final result = parseDeepLinkUri(uri);
 
         expect(result, isNotNull);
@@ -87,7 +93,9 @@ void main() {
       });
 
       test('parses bitcoin address with multiple parameters', () {
-        final uri = Uri.parse('bitcoin:bc1qtest?amount=0.001&label=Test&message=Hello');
+        final uri = Uri.parse(
+          'bitcoin:bc1qtest?amount=0.001&label=Test&message=Hello',
+        );
         final result = parseDeepLinkUri(uri);
 
         expect(result, isNotNull);
@@ -162,9 +170,15 @@ void main() {
 
     group('DeepLinkData', () {
       test('toString returns readable format', () {
-        final data = DeepLinkData(type: DeepLinkType.lightning, data: 'lnbc1test');
+        final data = DeepLinkData(
+          type: DeepLinkType.lightning,
+          data: 'lnbc1test',
+        );
 
-        expect(data.toString(), 'DeepLinkData(type: DeepLinkType.lightning, data: lnbc1test)');
+        expect(
+          data.toString(),
+          'DeepLinkData(type: DeepLinkType.lightning, data: lnbc1test)',
+        );
       });
 
       test('equality check', () {

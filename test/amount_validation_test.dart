@@ -11,7 +11,7 @@ void main() {
           loadingBalance: true,
           currentBalance: BigInt.from(1000000),
           paymentType: PaymentType.lightning,
-          isLightningReceive: false,
+          generatingLnInvoice: false,
         ),
         false,
       );
@@ -24,7 +24,7 @@ void main() {
           loadingBalance: false,
           currentBalance: BigInt.from(1000000),
           paymentType: PaymentType.lightning,
-          isLightningReceive: false,
+          generatingLnInvoice: false,
         ),
         false,
       );
@@ -37,7 +37,7 @@ void main() {
           loadingBalance: false,
           currentBalance: BigInt.from(1000000),
           paymentType: PaymentType.lightning,
-          isLightningReceive: false,
+          generatingLnInvoice: false,
         ),
         false,
       );
@@ -50,7 +50,7 @@ void main() {
           loadingBalance: false,
           currentBalance: BigInt.from(1000000),
           paymentType: PaymentType.lightning,
-          isLightningReceive: false,
+          generatingLnInvoice: false,
         ),
         false,
       );
@@ -64,7 +64,7 @@ void main() {
             loadingBalance: false,
             currentBalance: BigInt.from(1000), // tiny balance
             paymentType: PaymentType.lightning,
-            isLightningReceive: true,
+            generatingLnInvoice: true,
           ),
           true,
         );
@@ -77,7 +77,7 @@ void main() {
             loadingBalance: false,
             currentBalance: null,
             paymentType: PaymentType.lightning,
-            isLightningReceive: true,
+            generatingLnInvoice: true,
           ),
           true,
         );
@@ -93,7 +93,7 @@ void main() {
             loadingBalance: false,
             currentBalance: BigInt.from(1000000),
             paymentType: PaymentType.lightning,
-            isLightningReceive: false,
+            generatingLnInvoice: false,
           ),
           true,
         );
@@ -107,7 +107,7 @@ void main() {
             loadingBalance: false,
             currentBalance: BigInt.from(1000000),
             paymentType: PaymentType.lightning,
-            isLightningReceive: false,
+            generatingLnInvoice: false,
           ),
           true,
         );
@@ -121,24 +121,27 @@ void main() {
             loadingBalance: false,
             currentBalance: BigInt.from(1000000),
             paymentType: PaymentType.lightning,
-            isLightningReceive: false,
+            generatingLnInvoice: false,
           ),
           false,
         );
       });
 
-      test('returns true when balance is null (error will be caught later)', () {
-        expect(
-          isValidAmount(
-            rawAmount: '100',
-            loadingBalance: false,
-            currentBalance: null,
-            paymentType: PaymentType.lightning,
-            isLightningReceive: false,
-          ),
-          true,
-        );
-      });
+      test(
+        'returns true when balance is null (error will be caught later)',
+        () {
+          expect(
+            isValidAmount(
+              rawAmount: '100',
+              loadingBalance: false,
+              currentBalance: null,
+              paymentType: PaymentType.lightning,
+              generatingLnInvoice: false,
+            ),
+            true,
+          );
+        },
+      );
     });
 
     group('ecash send', () {
@@ -149,7 +152,7 @@ void main() {
             loadingBalance: false,
             currentBalance: BigInt.from(1000000),
             paymentType: PaymentType.ecash,
-            isLightningReceive: false,
+            generatingLnInvoice: false,
           ),
           true,
         );
@@ -162,7 +165,7 @@ void main() {
             loadingBalance: false,
             currentBalance: BigInt.from(1000000),
             paymentType: PaymentType.ecash,
-            isLightningReceive: false,
+            generatingLnInvoice: false,
           ),
           false,
         );
@@ -177,7 +180,7 @@ void main() {
             loadingBalance: false,
             currentBalance: BigInt.from(1000000),
             paymentType: PaymentType.onchain,
-            isLightningReceive: false,
+            generatingLnInvoice: false,
           ),
           true,
         );
@@ -190,7 +193,7 @@ void main() {
             loadingBalance: false,
             currentBalance: BigInt.from(1000000),
             paymentType: PaymentType.onchain,
-            isLightningReceive: false,
+            generatingLnInvoice: false,
           ),
           false,
         );
@@ -205,7 +208,7 @@ void main() {
           rawAmount: '999999',
           loadingBalance: true,
           currentBalance: BigInt.from(1000),
-          isLightningReceive: false,
+          generatingLnInvoice: false,
         ),
         false,
       );
@@ -217,7 +220,7 @@ void main() {
           rawAmount: '999999',
           loadingBalance: false,
           currentBalance: null,
-          isLightningReceive: false,
+          generatingLnInvoice: false,
         ),
         false,
       );
@@ -229,7 +232,7 @@ void main() {
           rawAmount: '',
           loadingBalance: false,
           currentBalance: BigInt.from(1000000),
-          isLightningReceive: false,
+          generatingLnInvoice: false,
         ),
         false,
       );
@@ -241,7 +244,7 @@ void main() {
           rawAmount: '0',
           loadingBalance: false,
           currentBalance: BigInt.from(1000000),
-          isLightningReceive: false,
+          generatingLnInvoice: false,
         ),
         false,
       );
@@ -253,7 +256,7 @@ void main() {
           rawAmount: '999999',
           loadingBalance: false,
           currentBalance: BigInt.from(1000),
-          isLightningReceive: true,
+          generatingLnInvoice: true,
         ),
         false,
       );
@@ -265,7 +268,7 @@ void main() {
           rawAmount: '500',
           loadingBalance: false,
           currentBalance: BigInt.from(1000000),
-          isLightningReceive: false,
+          generatingLnInvoice: false,
         ),
         false,
       );
@@ -277,7 +280,7 @@ void main() {
           rawAmount: '1000',
           loadingBalance: false,
           currentBalance: BigInt.from(1000000),
-          isLightningReceive: false,
+          generatingLnInvoice: false,
         ),
         false,
       );
@@ -289,7 +292,7 @@ void main() {
           rawAmount: '1001',
           loadingBalance: false,
           currentBalance: BigInt.from(1000000),
-          isLightningReceive: false,
+          generatingLnInvoice: false,
         ),
         true,
       );

@@ -120,30 +120,30 @@ class _NumberPadState extends State<NumberPad> {
     );
   }
 
-  bool _isLightningReceive() =>
+  bool _isGeneratingLnInvoice() =>
       widget.paymentType == PaymentType.lightning &&
       widget.lightningAddressOrLnurl == null;
 
   bool _isValidAmount() => isValidAmount(
-        rawAmount: _rawAmount,
-        loadingBalance: _loadingBalance,
-        currentBalance: _currentBalance,
-        paymentType: widget.paymentType,
-        isLightningReceive: _isLightningReceive(),
-      );
+    rawAmount: _rawAmount,
+    loadingBalance: _loadingBalance,
+    currentBalance: _currentBalance,
+    paymentType: widget.paymentType,
+    generatingLnInvoice: _isGeneratingLnInvoice(),
+  );
 
   bool _isAmountOverBalance() => isAmountOverBalance(
-        rawAmount: _rawAmount,
-        loadingBalance: _loadingBalance,
-        currentBalance: _currentBalance,
-        isLightningReceive: _isLightningReceive(),
-      );
+    rawAmount: _rawAmount,
+    loadingBalance: _loadingBalance,
+    currentBalance: _currentBalance,
+    generatingLnInvoice: _isGeneratingLnInvoice(),
+  );
 
   BigInt? _getRemainingBalance() => getRemainingBalance(
-        rawAmount: _rawAmount,
-        loadingBalance: _loadingBalance,
-        currentBalance: _currentBalance,
-      );
+    rawAmount: _rawAmount,
+    loadingBalance: _loadingBalance,
+    currentBalance: _currentBalance,
+  );
 
   bool _canAddFiatDigit() => canAddFiatDigit(_displayedFiatInput);
 

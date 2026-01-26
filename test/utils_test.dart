@@ -49,41 +49,17 @@ void main() {
   group('formatBalance', () {
     group('with null msats', () {
       test('returns correct format for each display type', () {
-        expect(
-          formatBalance(null, false, BitcoinDisplay.bip177),
-          '₿0',
-        );
-        expect(
-          formatBalance(null, false, BitcoinDisplay.sats),
-          '0 sats',
-        );
-        expect(
-          formatBalance(null, false, BitcoinDisplay.nothing),
-          '0',
-        );
-        expect(
-          formatBalance(null, false, BitcoinDisplay.symbol),
-          '0丰',
-        );
+        expect(formatBalance(null, false, BitcoinDisplay.bip177), '₿0');
+        expect(formatBalance(null, false, BitcoinDisplay.sats), '0 sats');
+        expect(formatBalance(null, false, BitcoinDisplay.nothing), '0');
+        expect(formatBalance(null, false, BitcoinDisplay.symbol), '0丰');
       });
 
       test('returns correct format with showMsats', () {
-        expect(
-          formatBalance(null, true, BitcoinDisplay.bip177),
-          '₿0.000',
-        );
-        expect(
-          formatBalance(null, true, BitcoinDisplay.sats),
-          '0.000 sats',
-        );
-        expect(
-          formatBalance(null, true, BitcoinDisplay.nothing),
-          '0.000',
-        );
-        expect(
-          formatBalance(null, true, BitcoinDisplay.symbol),
-          '0.000丰',
-        );
+        expect(formatBalance(null, true, BitcoinDisplay.bip177), '₿0.000');
+        expect(formatBalance(null, true, BitcoinDisplay.sats), '0.000 sats');
+        expect(formatBalance(null, true, BitcoinDisplay.nothing), '0.000');
+        expect(formatBalance(null, true, BitcoinDisplay.symbol), '0.000丰');
       });
     });
 

@@ -11,7 +11,7 @@ bool isValidAmount({
   required bool loadingBalance,
   required BigInt? currentBalance,
   required PaymentType paymentType,
-  required bool isLightningReceive,
+  required bool generatingLnInvoice,
 }) {
   if (loadingBalance) return false;
 
@@ -20,7 +20,7 @@ bool isValidAmount({
     return false;
   }
 
-  if (isLightningReceive) {
+  if (generatingLnInvoice) {
     return true;
   }
 
@@ -40,7 +40,7 @@ bool isAmountOverBalance({
   required String rawAmount,
   required bool loadingBalance,
   required BigInt? currentBalance,
-  required bool isLightningReceive,
+  required bool generatingLnInvoice,
 }) {
   if (loadingBalance || currentBalance == null) return false;
 
@@ -49,7 +49,7 @@ bool isAmountOverBalance({
     return false;
   }
 
-  if (isLightningReceive) {
+  if (generatingLnInvoice) {
     return false;
   }
 
