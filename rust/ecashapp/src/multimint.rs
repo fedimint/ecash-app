@@ -49,7 +49,7 @@ use fedimint_wallet_client::{
     DepositStateV2, PegOutFees, WalletClientInit, WalletClientModule, WalletOperationMeta,
     WalletOperationMetaVariant,
 };
-use futures_util::StreamExt;
+use futures_util::{Stream, StreamExt};
 use lightning_invoice::{Bolt11Invoice, Description};
 use reqwest::StatusCode;
 use serde::{Deserialize, Serialize};
@@ -140,6 +140,19 @@ pub struct FederationMeta {
 pub struct Guardian {
     pub name: String,
     pub version: Option<String>,
+}
+
+#[derive(Debug, Serialize, Clone)]
+pub struct PeerStatus {
+    pub peer_id: u16,
+    pub name: String,
+    pub online: bool,
+}
+
+#[derive(Debug, Serialize, Clone)]
+pub struct FederationPeerStatus {
+    pub federation_id: FederationId,
+    pub peers: Vec<PeerStatus>,
 }
 
 #[derive(Debug, Serialize, Clone)]
@@ -1140,6 +1153,52 @@ impl Multimint {
         .await;
 
         federation_meta
+    }
+
+    pub async fn subscribe_peer_status(&self, federation_id: FederationId) -> anyhow::Result<impl Stream<Item = FederationPeerStatus>> {
+        let clients = self.clients.read().await;
+        let client = clients
+            .get(&federation_id)
+            .ok_or(anyhow!("Federation not found: {}", federation_id))?
+            .clone();
+
+        // Get the peer names from the federation config
+        let config = client.config().await;
+        let peers: BTreeMap<u16, String> = config
+            .global
+            .api_endpoints
+            .iter()
+            .map(|(peer_id, endpoint)| (peer_id.to_usize() as u16, endpoint.name.clone()))
+            .collect();
+
+        // Get the connection status stream from the client
+        let status_stream = client.api().connection_status_stream();
+
+        // Map the BTreeMap<PeerId, bool> to FederationPeerStatus
+        let mapped_stream = status_stream.map(move |status_map| {
+            let peers_status: Vec<PeerStatus> = peers
+                .iter()
+                .map(|(peer_id, name)| {
+                    let online = status_map
+                        .iter()
+                        .find(|(pid, _)| pid.to_usize() as u16 == *peer_id)
+                        .map(|(_, online)| *online)
+                        .unwrap_or(false);
+                    PeerStatus {
+                        peer_id: *peer_id,
+                        name: name.clone(),
+                        online,
+                    }
+                })
+                .collect();
+
+            FederationPeerStatus {
+                federation_id,
+                peers: peers_status,
+            }
+        });
+
+        Ok(mapped_stream)
     }
 
     pub fn get_mnemonic(&self) -> Vec<String> {

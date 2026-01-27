@@ -53,6 +53,10 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
       wire._rust_arc_decrement_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerFederationMetaPtr;
 
   CrossPlatformFinalizerArg
+  get rust_arc_decrement_strong_count_FederationPeerStatusPtr =>
+      wire._rust_arc_decrement_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerFederationPeerStatusPtr;
+
+  CrossPlatformFinalizerArg
   get rust_arc_decrement_strong_count_FederationSelectorPtr =>
       wire._rust_arc_decrement_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerFederationSelectorPtr;
 
@@ -160,6 +164,12 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   );
 
   @protected
+  FederationPeerStatus
+  dco_decode_Auto_Owned_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerFederationPeerStatus(
+    dynamic raw,
+  );
+
+  @protected
   FederationSelector
   dco_decode_Auto_Owned_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerFederationSelector(
     dynamic raw,
@@ -256,6 +266,12 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   );
 
   @protected
+  FederationPeerStatus
+  dco_decode_Auto_RefMut_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerFederationPeerStatus(
+    dynamic raw,
+  );
+
+  @protected
   FederationSelector
   dco_decode_Auto_RefMut_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerFederationSelector(
     dynamic raw,
@@ -312,6 +328,12 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   @protected
   FederationMeta
   dco_decode_Auto_Ref_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerFederationMeta(
+    dynamic raw,
+  );
+
+  @protected
+  FederationPeerStatus
+  dco_decode_Auto_Ref_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerFederationPeerStatus(
     dynamic raw,
   );
 
@@ -412,6 +434,12 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   );
 
   @protected
+  FederationPeerStatus
+  dco_decode_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerFederationPeerStatus(
+    dynamic raw,
+  );
+
+  @protected
   FederationSelector
   dco_decode_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerFederationSelector(
     dynamic raw,
@@ -498,6 +526,12 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   @protected
   WithdrawFeesResponse
   dco_decode_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerWithdrawFeesResponse(
+    dynamic raw,
+  );
+
+  @protected
+  RustStreamSink<FederationPeerStatus>
+  dco_decode_StreamSink_Auto_Owned_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerFederationPeerStatus_Sse(
     dynamic raw,
   );
 
@@ -654,6 +688,9 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   List<Guardian> dco_decode_list_guardian(dynamic raw);
 
   @protected
+  List<PeerStatus> dco_decode_list_peer_status(dynamic raw);
+
+  @protected
   Uint8List dco_decode_list_prim_u_8_strict(dynamic raw);
 
   @protected
@@ -759,6 +796,9 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
 
   @protected
   PaymentPreview dco_decode_payment_preview(dynamic raw);
+
+  @protected
+  PeerStatus dco_decode_peer_status(dynamic raw);
 
   @protected
   (Bolt11Invoice, OperationId)
@@ -943,6 +983,12 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   );
 
   @protected
+  FederationPeerStatus
+  sse_decode_Auto_Owned_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerFederationPeerStatus(
+    SseDeserializer deserializer,
+  );
+
+  @protected
   FederationSelector
   sse_decode_Auto_Owned_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerFederationSelector(
     SseDeserializer deserializer,
@@ -1039,6 +1085,12 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   );
 
   @protected
+  FederationPeerStatus
+  sse_decode_Auto_RefMut_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerFederationPeerStatus(
+    SseDeserializer deserializer,
+  );
+
+  @protected
   FederationSelector
   sse_decode_Auto_RefMut_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerFederationSelector(
     SseDeserializer deserializer,
@@ -1095,6 +1147,12 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   @protected
   FederationMeta
   sse_decode_Auto_Ref_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerFederationMeta(
+    SseDeserializer deserializer,
+  );
+
+  @protected
+  FederationPeerStatus
+  sse_decode_Auto_Ref_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerFederationPeerStatus(
     SseDeserializer deserializer,
   );
 
@@ -1195,6 +1253,12 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   );
 
   @protected
+  FederationPeerStatus
+  sse_decode_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerFederationPeerStatus(
+    SseDeserializer deserializer,
+  );
+
+  @protected
   FederationSelector
   sse_decode_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerFederationSelector(
     SseDeserializer deserializer,
@@ -1281,6 +1345,12 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   @protected
   WithdrawFeesResponse
   sse_decode_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerWithdrawFeesResponse(
+    SseDeserializer deserializer,
+  );
+
+  @protected
+  RustStreamSink<FederationPeerStatus>
+  sse_decode_StreamSink_Auto_Owned_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerFederationPeerStatus_Sse(
     SseDeserializer deserializer,
   );
 
@@ -1457,6 +1527,9 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   List<Guardian> sse_decode_list_guardian(SseDeserializer deserializer);
 
   @protected
+  List<PeerStatus> sse_decode_list_peer_status(SseDeserializer deserializer);
+
+  @protected
   Uint8List sse_decode_list_prim_u_8_strict(SseDeserializer deserializer);
 
   @protected
@@ -1572,6 +1645,9 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
 
   @protected
   PaymentPreview sse_decode_payment_preview(SseDeserializer deserializer);
+
+  @protected
+  PeerStatus sse_decode_peer_status(SseDeserializer deserializer);
 
   @protected
   (Bolt11Invoice, OperationId)
@@ -1774,6 +1850,13 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
 
   @protected
   void
+  sse_encode_Auto_Owned_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerFederationPeerStatus(
+    FederationPeerStatus self,
+    SseSerializer serializer,
+  );
+
+  @protected
+  void
   sse_encode_Auto_Owned_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerFederationSelector(
     FederationSelector self,
     SseSerializer serializer,
@@ -1886,6 +1969,13 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
 
   @protected
   void
+  sse_encode_Auto_RefMut_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerFederationPeerStatus(
+    FederationPeerStatus self,
+    SseSerializer serializer,
+  );
+
+  @protected
+  void
   sse_encode_Auto_RefMut_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerFederationSelector(
     FederationSelector self,
     SseSerializer serializer,
@@ -1951,6 +2041,13 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   void
   sse_encode_Auto_Ref_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerFederationMeta(
     FederationMeta self,
+    SseSerializer serializer,
+  );
+
+  @protected
+  void
+  sse_encode_Auto_Ref_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerFederationPeerStatus(
+    FederationPeerStatus self,
     SseSerializer serializer,
   );
 
@@ -2068,6 +2165,13 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
 
   @protected
   void
+  sse_encode_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerFederationPeerStatus(
+    FederationPeerStatus self,
+    SseSerializer serializer,
+  );
+
+  @protected
+  void
   sse_encode_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerFederationSelector(
     FederationSelector self,
     SseSerializer serializer,
@@ -2168,6 +2272,13 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   void
   sse_encode_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerWithdrawFeesResponse(
     WithdrawFeesResponse self,
+    SseSerializer serializer,
+  );
+
+  @protected
+  void
+  sse_encode_StreamSink_Auto_Owned_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerFederationPeerStatus_Sse(
+    RustStreamSink<FederationPeerStatus> self,
     SseSerializer serializer,
   );
 
@@ -2381,6 +2492,12 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   void sse_encode_list_guardian(List<Guardian> self, SseSerializer serializer);
 
   @protected
+  void sse_encode_list_peer_status(
+    List<PeerStatus> self,
+    SseSerializer serializer,
+  );
+
+  @protected
   void sse_encode_list_prim_u_8_strict(
     Uint8List self,
     SseSerializer serializer,
@@ -2529,6 +2646,9 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
     PaymentPreview self,
     SseSerializer serializer,
   );
+
+  @protected
+  void sse_encode_peer_status(PeerStatus self, SseSerializer serializer);
 
   @protected
   void
@@ -2977,6 +3097,40 @@ class RustLibWire implements BaseWire {
       );
   late final _rust_arc_decrement_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerFederationMeta =
       _rust_arc_decrement_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerFederationMetaPtr
+          .asFunction<void Function(ffi.Pointer<ffi.Void>)>();
+
+  void
+  rust_arc_increment_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerFederationPeerStatus(
+    ffi.Pointer<ffi.Void> ptr,
+  ) {
+    return _rust_arc_increment_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerFederationPeerStatus(
+      ptr,
+    );
+  }
+
+  late final _rust_arc_increment_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerFederationPeerStatusPtr =
+      _lookup<ffi.NativeFunction<ffi.Void Function(ffi.Pointer<ffi.Void>)>>(
+        'frbgen_ecashapp_rust_arc_increment_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerFederationPeerStatus',
+      );
+  late final _rust_arc_increment_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerFederationPeerStatus =
+      _rust_arc_increment_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerFederationPeerStatusPtr
+          .asFunction<void Function(ffi.Pointer<ffi.Void>)>();
+
+  void
+  rust_arc_decrement_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerFederationPeerStatus(
+    ffi.Pointer<ffi.Void> ptr,
+  ) {
+    return _rust_arc_decrement_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerFederationPeerStatus(
+      ptr,
+    );
+  }
+
+  late final _rust_arc_decrement_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerFederationPeerStatusPtr =
+      _lookup<ffi.NativeFunction<ffi.Void Function(ffi.Pointer<ffi.Void>)>>(
+        'frbgen_ecashapp_rust_arc_decrement_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerFederationPeerStatus',
+      );
+  late final _rust_arc_decrement_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerFederationPeerStatus =
+      _rust_arc_decrement_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerFederationPeerStatusPtr
           .asFunction<void Function(ffi.Pointer<ffi.Void>)>();
 
   void
