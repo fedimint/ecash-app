@@ -49,7 +49,7 @@ use fedimint_wallet_client::{
     DepositStateV2, PegOutFees, WalletClientInit, WalletClientModule, WalletOperationMeta,
     WalletOperationMetaVariant,
 };
-use futures_util::{Stream, StreamExt, stream};
+use futures_util::{stream, Stream, StreamExt};
 use lightning_invoice::{Bolt11Invoice, Description};
 use reqwest::StatusCode;
 use serde::{Deserialize, Serialize};
@@ -1149,14 +1149,14 @@ impl Multimint {
         federation_meta
     }
 
-    pub async fn subscribe_peer_status(&self, 
+    pub async fn subscribe_peer_status(
+        &self,
         invite: Option<String>,
-        federation_id: Option<FederationId>
+        federation_id: Option<FederationId>,
     ) -> anyhow::Result<impl Stream<Item = Vec<PeerStatus>>> {
-
         let client = match &invite {
             Some(invite) => {
-                let invite_code = InviteCode::from_str(&invite)?;
+                let invite_code = InviteCode::from_str(invite)?;
                 self.get_or_build_temp_client(invite_code).await?.0
             }
             None => {

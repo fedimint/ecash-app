@@ -1142,9 +1142,17 @@ pub async fn leave_federation(federation_id: &FederationId) {
 }
 
 #[frb]
-pub async fn subscribe_peer_status(sink: StreamSink<Vec<PeerStatus>>, invite: Option<String>, federation_id: Option<FederationId>) -> anyhow::Result<()> {
+pub async fn subscribe_peer_status(
+    sink: StreamSink<Vec<PeerStatus>>,
+    invite: Option<String>,
+    federation_id: Option<FederationId>,
+) -> anyhow::Result<()> {
     let multimint = get_multimint();
-    let mut stream = Box::pin(multimint.subscribe_peer_status(invite, federation_id).await?);
+    let mut stream = Box::pin(
+        multimint
+            .subscribe_peer_status(invite, federation_id)
+            .await?,
+    );
 
     while let Some(status) = stream.next().await {
         if sink.add(status).is_err() {
