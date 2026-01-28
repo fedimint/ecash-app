@@ -49,9 +49,11 @@ class _DashboardState extends State<Dashboard> {
   int _addressRefreshKey = 0;
   int _noteRefreshKey = 0;
   LightningAddressConfig? _lnAddressConfig;
+  List<PeerStatus> _peerStatus = [];
 
   late Stream<MultimintEvent> events;
   late StreamSubscription<MultimintEvent> _subscription;
+  late StreamSubscription<List<PeerStatus>> _peerStatusStream;
 
   @override
   void initState() {
@@ -110,12 +112,23 @@ class _DashboardState extends State<Dashboard> {
         }
       }
     });
+
+    Stream<List<PeerStatus>> peerStream = subscribePeerStatus(
+      federationId: widget.fed.federationId,
+    );
+    _peerStatusStream = peerStream.listen((List<PeerStatus> event) async {
+      if (!mounted) return;
+      setState(() {
+        _peerStatus = event;
+      });
+    });
   }
 
   @override
   void dispose() {
     super.dispose();
     _subscription.cancel();
+    _peerStatusStream.cancel();
   }
 
   void _scheduleAction(VoidCallback action) {
@@ -304,7 +317,11 @@ class _DashboardState extends State<Dashboard> {
         padding: const EdgeInsets.all(24),
         child: Column(
           children: [
-            DashboardHeader(name: name, network: widget.fed.network),
+            DashboardHeader(
+              name: name,
+              network: widget.fed.network,
+              peerStatus: _peerStatus,
+            ),
             if (_lnAddressConfig != null) ...[
               const SizedBox(height: 8),
               GestureDetector(

@@ -1,10 +1,17 @@
 import 'package:flutter/material.dart';
+import 'package:ecashapp/multimint.dart';
 
 class DashboardHeader extends StatelessWidget {
   final String name;
   final String? network;
+  final List<PeerStatus> peerStatus;
 
-  const DashboardHeader({super.key, required this.name, this.network});
+  const DashboardHeader({
+    super.key,
+    required this.name,
+    this.network,
+    this.peerStatus = const [],
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -20,6 +27,27 @@ class DashboardHeader extends StatelessWidget {
           ).createShader(Rect.fromLTWH(0, 0, bounds.width, bounds.height)),
       child: Column(
         children: [
+          if (peerStatus.isNotEmpty)
+            Padding(
+              padding: const EdgeInsets.only(bottom: 8),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children:
+                    peerStatus.map((peer) {
+                      return Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 3),
+                        child: Container(
+                          width: 8,
+                          height: 8,
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            color: peer.online ? Colors.green : Colors.red,
+                          ),
+                        ),
+                      );
+                    }).toList(),
+              ),
+            ),
           Text(
             name.toUpperCase(),
             style: Theme.of(context).textTheme.headlineMedium?.copyWith(
