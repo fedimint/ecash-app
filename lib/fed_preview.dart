@@ -67,19 +67,6 @@ class _FederationPreviewState extends State<FederationPreview> {
         _animatedPercent = totalCount > 0 ? onlineCount / totalCount : 0.0;
       });
     });
-
-    /*
-    Future.delayed(const Duration(milliseconds: 300), () {
-      if (!mounted) return;
-
-      final onlineCount = _peers!.where((p) => p.online).length;
-      final totalCount = _peers!.length;
-
-      setState(() {
-        _animatedPercent = totalCount > 0 ? onlineCount / totalCount : 0.0;
-      });
-    });
-    */
   }
 
   @override
