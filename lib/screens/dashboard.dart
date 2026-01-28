@@ -27,8 +27,14 @@ import 'package:ecashapp/widgets/transactions_list.dart';
 class Dashboard extends StatefulWidget {
   final FederationSelector fed;
   final bool recovering;
+  final VoidCallback? onFederationTap;
 
-  const Dashboard({super.key, required this.fed, required this.recovering});
+  const Dashboard({
+    super.key,
+    required this.fed,
+    required this.recovering,
+    this.onFederationTap,
+  });
 
   @override
   _DashboardState createState() => _DashboardState();
@@ -49,11 +55,9 @@ class _DashboardState extends State<Dashboard> {
   int _addressRefreshKey = 0;
   int _noteRefreshKey = 0;
   LightningAddressConfig? _lnAddressConfig;
-  List<PeerStatus> _peerStatus = [];
 
   late Stream<MultimintEvent> events;
   late StreamSubscription<MultimintEvent> _subscription;
-  late StreamSubscription<List<PeerStatus>> _peerStatusStream;
 
   @override
   void initState() {
@@ -112,23 +116,12 @@ class _DashboardState extends State<Dashboard> {
         }
       }
     });
-
-    Stream<List<PeerStatus>> peerStream = subscribePeerStatus(
-      federationId: widget.fed.federationId,
-    );
-    _peerStatusStream = peerStream.listen((List<PeerStatus> event) async {
-      if (!mounted) return;
-      setState(() {
-        _peerStatus = event;
-      });
-    });
   }
 
   @override
   void dispose() {
     super.dispose();
     _subscription.cancel();
-    _peerStatusStream.cancel();
   }
 
   void _scheduleAction(VoidCallback action) {
@@ -320,7 +313,7 @@ class _DashboardState extends State<Dashboard> {
             DashboardHeader(
               name: name,
               network: widget.fed.network,
-              peerStatus: _peerStatus,
+              onTap: widget.onFederationTap,
             ),
             if (_lnAddressConfig != null) ...[
               const SizedBox(height: 8),

@@ -7,6 +7,7 @@ import 'package:ecashapp/number_pad.dart';
 import 'package:ecashapp/onchain_send.dart';
 import 'package:ecashapp/pay_preview.dart';
 import 'package:ecashapp/screens/dashboard.dart';
+import 'package:ecashapp/fed_preview.dart';
 import 'package:ecashapp/lib.dart';
 import 'package:ecashapp/multimint.dart';
 import 'package:ecashapp/providers/preferences_provider.dart';
@@ -40,10 +41,12 @@ class _MyAppState extends State<MyApp> {
   int _refreshTrigger = 0;
   FederationSelector? _selectedFederation;
   bool? _isRecovering;
+  List<PeerStatus> _peerStatus = [];
 
   late Stream<MultimintEvent> events;
   late StreamSubscription<MultimintEvent> _subscription;
   StreamSubscription<DeepLinkData>? _deepLinkSubscription;
+  StreamSubscription<List<PeerStatus>>? _peerStatusSubscription;
 
   final GlobalKey<NavigatorState> _navigatorKey = ToastService().navigatorKey;
 
@@ -62,6 +65,14 @@ class _MyAppState extends State<MyApp> {
     if (_feds.isNotEmpty) {
       _selectedFederation = _feds.first.$1;
       _isRecovering = _feds.first.$2;
+      _peerStatusSubscription = subscribePeerStatus(
+        federationId: _feds.first.$1.federationId,
+      ).listen((status) {
+        if (!mounted) return;
+        setState(() {
+          _peerStatus = status;
+        });
+      });
     } else if (_feds.isEmpty && widget.recoverFederationInviteCodes) {
       _rejoinFederations();
     }
@@ -191,13 +202,16 @@ class _MyAppState extends State<MyApp> {
   }
 
   Future<void> _leaveFederation() async {
+    _peerStatusSubscription?.cancel();
     await _refreshFederations();
     if (_feds.isNotEmpty) {
-      _selectedFederation = _feds.first.$1;
-      _isRecovering = _feds.first.$2;
+      _setSelectedFederation(_feds.first.$1, _feds.first.$2);
     } else {
-      _selectedFederation = null;
-      _isRecovering = null;
+      setState(() {
+        _selectedFederation = null;
+        _isRecovering = null;
+        _peerStatus = [];
+      });
     }
   }
 
@@ -229,6 +243,7 @@ class _MyAppState extends State<MyApp> {
   void dispose() {
     _subscription.cancel();
     _deepLinkSubscription?.cancel();
+    _peerStatusSubscription?.cancel();
     _recoveryTimer?.cancel();
     super.dispose();
   }
@@ -404,11 +419,22 @@ class _MyAppState extends State<MyApp> {
   }
 
   void _setSelectedFederation(FederationSelector fed, bool recovering) {
+    _peerStatusSubscription?.cancel();
     setState(() {
       _selectedFederation = fed;
       _isRecovering = recovering;
+      _peerStatus = [];
     });
     _recoveryTimer?.cancel();
+
+    _peerStatusSubscription = subscribePeerStatus(
+      federationId: fed.federationId,
+    ).listen((status) {
+      if (!mounted) return;
+      setState(() {
+        _peerStatus = status;
+      });
+    });
   }
 
   Future<void> _refreshFederations() async {
@@ -442,9 +468,35 @@ class _MyAppState extends State<MyApp> {
   }
 
   void _onGettingStarted() {
+    _peerStatusSubscription?.cancel();
     setState(() {
       _selectedFederation = null;
+      _peerStatus = [];
     });
+  }
+
+  void _showFederationPreview() async {
+    if (_selectedFederation == null) return;
+    final context = _navigatorKey.currentContext;
+    if (context == null) return;
+
+    final meta = await getFederationMeta(
+      federationId: _selectedFederation!.federationId,
+    );
+    if (!mounted) return;
+
+    showAppModalBottomSheet(
+      context: context,
+      childBuilder: () async {
+        return FederationPreview(
+          fed: _selectedFederation!,
+          welcomeMessage: meta?.welcome,
+          imageUrl: meta?.picture,
+          joinable: false,
+          guardians: meta?.guardians,
+        );
+      },
+    );
   }
 
   @override
@@ -456,6 +508,7 @@ class _MyAppState extends State<MyApp> {
         key: ValueKey(_selectedFederation!.federationId),
         fed: _selectedFederation!,
         recovering: _isRecovering!,
+        onFederationTap: _showFederationPreview,
       );
     } else {
       if (recoverFederations) {
@@ -500,6 +553,35 @@ class _MyAppState extends State<MyApp> {
           builder:
               (innerContext) => Scaffold(
                 appBar: AppBar(
+                  centerTitle: true,
+                  title:
+                      _peerStatus.isNotEmpty
+                          ? GestureDetector(
+                            onTap: _showFederationPreview,
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children:
+                                  _peerStatus.map((peer) {
+                                    return Padding(
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 4,
+                                      ),
+                                      child: Container(
+                                        width: 8,
+                                        height: 8,
+                                        decoration: BoxDecoration(
+                                          shape: BoxShape.circle,
+                                          color:
+                                              peer.online
+                                                  ? Colors.green
+                                                  : Colors.red,
+                                        ),
+                                      ),
+                                    );
+                                  }).toList(),
+                            ),
+                          )
+                          : null,
                   actions: [
                     IconButton(
                       icon: const Icon(Icons.qr_code_scanner),
