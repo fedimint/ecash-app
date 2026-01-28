@@ -56,9 +56,6 @@ class _FederationPreviewState extends State<FederationPreview> {
       setState(() {
         _peers = event;
       });
-      for (final peer in event) {
-        AppLogger.instance.info("Name: ${peer.name} Online: ${peer.online}");
-      }
 
       final onlineCount = _peers!.where((p) => p.online).length;
       final totalCount = _peers!.length;
@@ -371,22 +368,11 @@ class _FederationPreviewState extends State<FederationPreview> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final isFederationOnline;
-    final onlineGuardians;
-    final totalGuardians;
-    final thresh;
-    if (_peers != null) {
-      totalGuardians = _peers!.length;
-      thresh = threshold(totalGuardians);
-      onlineGuardians = _peers!.where((p) => p.online).toList();
-      isFederationOnline =
-          totalGuardians > 0 && onlineGuardians.length >= thresh;
-    } else {
-      onlineGuardians = [];
-      isFederationOnline = false;
-      totalGuardians = 0;
-      thresh = 0;
-    }
+    final totalGuardians = _peers?.length ?? 0;
+    final thresh = threshold(totalGuardians);
+    final onlineGuardians = _peers?.where((p) => p.online).toList() ?? [];
+    final isFederationOnline =
+        totalGuardians > 0 && onlineGuardians.length >= thresh;
 
     Widget federationInfo = Column(
       crossAxisAlignment: CrossAxisAlignment.center,

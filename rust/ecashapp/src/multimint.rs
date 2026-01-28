@@ -1179,6 +1179,9 @@ impl Multimint {
             .map(|(peer_id, endpoint)| (peer_id.to_usize() as u16, endpoint.name.clone()))
             .collect();
 
+        // If the invite code is available, that means we have not joined the federation yet. We cannot use the `connection_stream_status`
+        // because the client will go out of scope and end the stream. So instead, we just lookup the federation's online status by querying
+        // the fedimintd version.
         if invite.is_some() {
             let mut peer_statuses = Vec::new();
             for (peer_id, name) in peers.iter() {

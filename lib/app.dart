@@ -490,10 +490,10 @@ class _MyAppState extends State<MyApp> {
       childBuilder: () async {
         return FederationPreview(
           fed: _selectedFederation!,
-          welcomeMessage: meta?.welcome,
-          imageUrl: meta?.picture,
+          welcomeMessage: meta.welcome,
+          imageUrl: meta.picture,
           joinable: false,
-          guardians: meta?.guardians,
+          guardians: meta.guardians,
         );
       },
     );

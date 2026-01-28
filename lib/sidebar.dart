@@ -120,10 +120,6 @@ class FederationSidebarState extends State<FederationSidebar> {
         setState(() {
           _peers[fed.$1.federationName] = event;
         });
-
-        for (final peer in event) {
-          AppLogger.instance.info("Name: ${peer.name} Online: ${peer.online}");
-        }
       });
 
       setState(() {
