@@ -41,7 +41,7 @@ class _MyAppState extends State<MyApp> {
   int _refreshTrigger = 0;
   FederationSelector? _selectedFederation;
   bool? _isRecovering;
-  List<PeerStatus> _peerStatus = [];
+  final ValueNotifier<List<PeerStatus>> _peerStatus = ValueNotifier([]);
 
   late Stream<MultimintEvent> events;
   late StreamSubscription<MultimintEvent> _subscription;
@@ -69,9 +69,7 @@ class _MyAppState extends State<MyApp> {
         federationId: _feds.first.$1.federationId,
       ).listen((status) {
         if (!mounted) return;
-        setState(() {
-          _peerStatus = status;
-        });
+        _peerStatus.value = status;
       });
     } else if (_feds.isEmpty && widget.recoverFederationInviteCodes) {
       _rejoinFederations();
@@ -210,8 +208,8 @@ class _MyAppState extends State<MyApp> {
       setState(() {
         _selectedFederation = null;
         _isRecovering = null;
-        _peerStatus = [];
       });
+      _peerStatus.value = [];
     }
   }
 
@@ -244,6 +242,7 @@ class _MyAppState extends State<MyApp> {
     _subscription.cancel();
     _deepLinkSubscription?.cancel();
     _peerStatusSubscription?.cancel();
+    _peerStatus.dispose();
     _recoveryTimer?.cancel();
     super.dispose();
   }
@@ -423,17 +422,15 @@ class _MyAppState extends State<MyApp> {
     setState(() {
       _selectedFederation = fed;
       _isRecovering = recovering;
-      _peerStatus = [];
     });
+    _peerStatus.value = [];
     _recoveryTimer?.cancel();
 
     _peerStatusSubscription = subscribePeerStatus(
       federationId: fed.federationId,
     ).listen((status) {
       if (!mounted) return;
-      setState(() {
-        _peerStatus = status;
-      });
+      _peerStatus.value = status;
     });
   }
 
@@ -471,8 +468,8 @@ class _MyAppState extends State<MyApp> {
     _peerStatusSubscription?.cancel();
     setState(() {
       _selectedFederation = null;
-      _peerStatus = [];
     });
+    _peerStatus.value = [];
   }
 
   void _showFederationPreview() async {
@@ -554,34 +551,37 @@ class _MyAppState extends State<MyApp> {
               (innerContext) => Scaffold(
                 appBar: AppBar(
                   centerTitle: true,
-                  title:
-                      _peerStatus.isNotEmpty
-                          ? GestureDetector(
-                            onTap: _showFederationPreview,
-                            child: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children:
-                                  _peerStatus.map((peer) {
-                                    return Padding(
-                                      padding: const EdgeInsets.symmetric(
-                                        horizontal: 4,
-                                      ),
-                                      child: Container(
-                                        width: 8,
-                                        height: 8,
-                                        decoration: BoxDecoration(
-                                          shape: BoxShape.circle,
-                                          color:
-                                              peer.online
-                                                  ? Colors.green
-                                                  : Colors.red,
-                                        ),
-                                      ),
-                                    );
-                                  }).toList(),
-                            ),
-                          )
-                          : null,
+                  title: ValueListenableBuilder<List<PeerStatus>>(
+                    valueListenable: _peerStatus,
+                    builder: (context, peerStatus, _) {
+                      if (peerStatus.isEmpty) return const SizedBox.shrink();
+                      return GestureDetector(
+                        onTap: _showFederationPreview,
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children:
+                              peerStatus.map((peer) {
+                                return Padding(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 4,
+                                  ),
+                                  child: Container(
+                                    width: 8,
+                                    height: 8,
+                                    decoration: BoxDecoration(
+                                      shape: BoxShape.circle,
+                                      color:
+                                          peer.online
+                                              ? Colors.green
+                                              : Colors.red,
+                                    ),
+                                  ),
+                                );
+                              }).toList(),
+                        ),
+                      );
+                    },
+                  ),
                   actions: [
                     IconButton(
                       icon: const Icon(Icons.qr_code_scanner),
