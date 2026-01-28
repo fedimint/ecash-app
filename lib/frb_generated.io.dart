@@ -53,10 +53,6 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
       wire._rust_arc_decrement_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerFederationMetaPtr;
 
   CrossPlatformFinalizerArg
-  get rust_arc_decrement_strong_count_FederationPeerStatusPtr =>
-      wire._rust_arc_decrement_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerFederationPeerStatusPtr;
-
-  CrossPlatformFinalizerArg
   get rust_arc_decrement_strong_count_FederationSelectorPtr =>
       wire._rust_arc_decrement_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerFederationSelectorPtr;
 
@@ -164,12 +160,6 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   );
 
   @protected
-  FederationPeerStatus
-  dco_decode_Auto_Owned_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerFederationPeerStatus(
-    dynamic raw,
-  );
-
-  @protected
   FederationSelector
   dco_decode_Auto_Owned_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerFederationSelector(
     dynamic raw,
@@ -266,12 +256,6 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   );
 
   @protected
-  FederationPeerStatus
-  dco_decode_Auto_RefMut_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerFederationPeerStatus(
-    dynamic raw,
-  );
-
-  @protected
   FederationSelector
   dco_decode_Auto_RefMut_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerFederationSelector(
     dynamic raw,
@@ -328,12 +312,6 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   @protected
   FederationMeta
   dco_decode_Auto_Ref_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerFederationMeta(
-    dynamic raw,
-  );
-
-  @protected
-  FederationPeerStatus
-  dco_decode_Auto_Ref_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerFederationPeerStatus(
     dynamic raw,
   );
 
@@ -434,12 +412,6 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   );
 
   @protected
-  FederationPeerStatus
-  dco_decode_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerFederationPeerStatus(
-    dynamic raw,
-  );
-
-  @protected
   FederationSelector
   dco_decode_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerFederationSelector(
     dynamic raw,
@@ -530,13 +502,12 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   );
 
   @protected
-  RustStreamSink<FederationPeerStatus>
-  dco_decode_StreamSink_Auto_Owned_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerFederationPeerStatus_Sse(
+  RustStreamSink<DepositEventKind> dco_decode_StreamSink_deposit_event_kind_Sse(
     dynamic raw,
   );
 
   @protected
-  RustStreamSink<DepositEventKind> dco_decode_StreamSink_deposit_event_kind_Sse(
+  RustStreamSink<List<PeerStatus>> dco_decode_StreamSink_list_peer_status_Sse(
     dynamic raw,
   );
 
@@ -983,12 +954,6 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   );
 
   @protected
-  FederationPeerStatus
-  sse_decode_Auto_Owned_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerFederationPeerStatus(
-    SseDeserializer deserializer,
-  );
-
-  @protected
   FederationSelector
   sse_decode_Auto_Owned_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerFederationSelector(
     SseDeserializer deserializer,
@@ -1085,12 +1050,6 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   );
 
   @protected
-  FederationPeerStatus
-  sse_decode_Auto_RefMut_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerFederationPeerStatus(
-    SseDeserializer deserializer,
-  );
-
-  @protected
   FederationSelector
   sse_decode_Auto_RefMut_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerFederationSelector(
     SseDeserializer deserializer,
@@ -1147,12 +1106,6 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   @protected
   FederationMeta
   sse_decode_Auto_Ref_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerFederationMeta(
-    SseDeserializer deserializer,
-  );
-
-  @protected
-  FederationPeerStatus
-  sse_decode_Auto_Ref_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerFederationPeerStatus(
     SseDeserializer deserializer,
   );
 
@@ -1253,12 +1206,6 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   );
 
   @protected
-  FederationPeerStatus
-  sse_decode_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerFederationPeerStatus(
-    SseDeserializer deserializer,
-  );
-
-  @protected
   FederationSelector
   sse_decode_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerFederationSelector(
     SseDeserializer deserializer,
@@ -1349,13 +1296,12 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   );
 
   @protected
-  RustStreamSink<FederationPeerStatus>
-  sse_decode_StreamSink_Auto_Owned_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerFederationPeerStatus_Sse(
+  RustStreamSink<DepositEventKind> sse_decode_StreamSink_deposit_event_kind_Sse(
     SseDeserializer deserializer,
   );
 
   @protected
-  RustStreamSink<DepositEventKind> sse_decode_StreamSink_deposit_event_kind_Sse(
+  RustStreamSink<List<PeerStatus>> sse_decode_StreamSink_list_peer_status_Sse(
     SseDeserializer deserializer,
   );
 
@@ -1850,13 +1796,6 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
 
   @protected
   void
-  sse_encode_Auto_Owned_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerFederationPeerStatus(
-    FederationPeerStatus self,
-    SseSerializer serializer,
-  );
-
-  @protected
-  void
   sse_encode_Auto_Owned_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerFederationSelector(
     FederationSelector self,
     SseSerializer serializer,
@@ -1969,13 +1908,6 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
 
   @protected
   void
-  sse_encode_Auto_RefMut_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerFederationPeerStatus(
-    FederationPeerStatus self,
-    SseSerializer serializer,
-  );
-
-  @protected
-  void
   sse_encode_Auto_RefMut_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerFederationSelector(
     FederationSelector self,
     SseSerializer serializer,
@@ -2041,13 +1973,6 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   void
   sse_encode_Auto_Ref_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerFederationMeta(
     FederationMeta self,
-    SseSerializer serializer,
-  );
-
-  @protected
-  void
-  sse_encode_Auto_Ref_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerFederationPeerStatus(
-    FederationPeerStatus self,
     SseSerializer serializer,
   );
 
@@ -2165,13 +2090,6 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
 
   @protected
   void
-  sse_encode_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerFederationPeerStatus(
-    FederationPeerStatus self,
-    SseSerializer serializer,
-  );
-
-  @protected
-  void
   sse_encode_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerFederationSelector(
     FederationSelector self,
     SseSerializer serializer,
@@ -2276,15 +2194,14 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   );
 
   @protected
-  void
-  sse_encode_StreamSink_Auto_Owned_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerFederationPeerStatus_Sse(
-    RustStreamSink<FederationPeerStatus> self,
+  void sse_encode_StreamSink_deposit_event_kind_Sse(
+    RustStreamSink<DepositEventKind> self,
     SseSerializer serializer,
   );
 
   @protected
-  void sse_encode_StreamSink_deposit_event_kind_Sse(
-    RustStreamSink<DepositEventKind> self,
+  void sse_encode_StreamSink_list_peer_status_Sse(
+    RustStreamSink<List<PeerStatus>> self,
     SseSerializer serializer,
   );
 
@@ -3097,40 +3014,6 @@ class RustLibWire implements BaseWire {
       );
   late final _rust_arc_decrement_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerFederationMeta =
       _rust_arc_decrement_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerFederationMetaPtr
-          .asFunction<void Function(ffi.Pointer<ffi.Void>)>();
-
-  void
-  rust_arc_increment_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerFederationPeerStatus(
-    ffi.Pointer<ffi.Void> ptr,
-  ) {
-    return _rust_arc_increment_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerFederationPeerStatus(
-      ptr,
-    );
-  }
-
-  late final _rust_arc_increment_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerFederationPeerStatusPtr =
-      _lookup<ffi.NativeFunction<ffi.Void Function(ffi.Pointer<ffi.Void>)>>(
-        'frbgen_ecashapp_rust_arc_increment_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerFederationPeerStatus',
-      );
-  late final _rust_arc_increment_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerFederationPeerStatus =
-      _rust_arc_increment_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerFederationPeerStatusPtr
-          .asFunction<void Function(ffi.Pointer<ffi.Void>)>();
-
-  void
-  rust_arc_decrement_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerFederationPeerStatus(
-    ffi.Pointer<ffi.Void> ptr,
-  ) {
-    return _rust_arc_decrement_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerFederationPeerStatus(
-      ptr,
-    );
-  }
-
-  late final _rust_arc_decrement_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerFederationPeerStatusPtr =
-      _lookup<ffi.NativeFunction<ffi.Void Function(ffi.Pointer<ffi.Void>)>>(
-        'frbgen_ecashapp_rust_arc_decrement_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerFederationPeerStatus',
-      );
-  late final _rust_arc_decrement_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerFederationPeerStatus =
-      _rust_arc_decrement_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerFederationPeerStatusPtr
           .asFunction<void Function(ffi.Pointer<ffi.Void>)>();
 
   void

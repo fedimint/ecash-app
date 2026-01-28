@@ -49,7 +49,7 @@ use fedimint_wallet_client::{
     DepositStateV2, PegOutFees, WalletClientInit, WalletClientModule, WalletOperationMeta,
     WalletOperationMetaVariant,
 };
-use futures_util::{Stream, StreamExt};
+use futures_util::{Stream, StreamExt, stream};
 use lightning_invoice::{Bolt11Invoice, Description};
 use reqwest::StatusCode;
 use serde::{Deserialize, Serialize};
@@ -147,12 +147,6 @@ pub struct PeerStatus {
     pub peer_id: u16,
     pub name: String,
     pub online: bool,
-}
-
-#[derive(Debug, Serialize, Clone)]
-pub struct FederationPeerStatus {
-    pub federation_id: FederationId,
-    pub peers: Vec<PeerStatus>,
 }
 
 #[derive(Debug, Serialize, Clone)]
@@ -1155,12 +1149,26 @@ impl Multimint {
         federation_meta
     }
 
-    pub async fn subscribe_peer_status(&self, federation_id: FederationId) -> anyhow::Result<impl Stream<Item = FederationPeerStatus>> {
-        let clients = self.clients.read().await;
-        let client = clients
-            .get(&federation_id)
-            .ok_or(anyhow!("Federation not found: {}", federation_id))?
-            .clone();
+    pub async fn subscribe_peer_status(&self, 
+        invite: Option<String>,
+        federation_id: Option<FederationId>
+    ) -> anyhow::Result<impl Stream<Item = Vec<PeerStatus>>> {
+
+        let client = match &invite {
+            Some(invite) => {
+                let invite_code = InviteCode::from_str(&invite)?;
+                self.get_or_build_temp_client(invite_code).await?.0
+            }
+            None => {
+                let federation_id =
+                    federation_id.expect("Invite code and federation ID cannot both be None");
+                let clients = self.clients.read().await;
+                clients
+                    .get(&federation_id)
+                    .ok_or(anyhow!("No federation exists"))?
+                    .clone()
+            }
+        };
 
         // Get the peer names from the federation config
         let config = client.config().await;
@@ -1170,6 +1178,28 @@ impl Multimint {
             .iter()
             .map(|(peer_id, endpoint)| (peer_id.to_usize() as u16, endpoint.name.clone()))
             .collect();
+
+        if invite.is_some() {
+            let mut peer_statuses = Vec::new();
+            for (peer_id, name) in peers.iter() {
+                let version = client.api().fedimintd_version((*peer_id).into()).await;
+                if version.is_ok() {
+                    peer_statuses.push(PeerStatus {
+                        peer_id: *peer_id,
+                        name: name.clone(),
+                        online: true,
+                    });
+                } else {
+                    peer_statuses.push(PeerStatus {
+                        peer_id: *peer_id,
+                        name: name.clone(),
+                        online: false,
+                    });
+                }
+            }
+
+            return Ok(stream::once(async { peer_statuses }).boxed());
+        }
 
         // Get the connection status stream from the client
         let status_stream = client.api().connection_status_stream();
@@ -1192,13 +1222,10 @@ impl Multimint {
                 })
                 .collect();
 
-            FederationPeerStatus {
-                federation_id,
-                peers: peers_status,
-            }
+            peers_status
         });
 
-        Ok(mapped_stream)
+        Ok(mapped_stream.boxed())
     }
 
     pub fn get_mnemonic(&self) -> Vec<String> {

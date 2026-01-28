@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:ecashapp/db.dart';
 import 'package:ecashapp/lib.dart';
 import 'package:ecashapp/multimint.dart';
@@ -39,22 +41,51 @@ class _FederationPreviewState extends State<FederationPreview> {
   bool isJoining = false;
   bool _showAdvanced = false;
   double _animatedPercent = 0.0;
+  late StreamSubscription<List<PeerStatus>> _peerUpdates;
+  List<PeerStatus>? _peers;
 
   @override
   void initState() {
     super.initState();
 
-    Future.delayed(const Duration(milliseconds: 300), () {
-      if (!mounted) return;
+    Stream<List<PeerStatus>> stream = subscribePeerStatus(
+      invite: widget.inviteCode,
+      federationId: widget.fed.federationId,
+    );
+    _peerUpdates = stream.listen((List<PeerStatus> event) async {
+      setState(() {
+        _peers = event;
+      });
+      for (final peer in event) {
+        AppLogger.instance.info("Name: ${peer.name} Online: ${peer.online}");
+      }
 
-      final onlineCount =
-          widget.guardians?.where((g) => g.version != null).length ?? 0;
-      final totalCount = widget.guardians?.length ?? 0;
+      final onlineCount = _peers!.where((p) => p.online).length;
+      final totalCount = _peers!.length;
 
       setState(() {
         _animatedPercent = totalCount > 0 ? onlineCount / totalCount : 0.0;
       });
     });
+
+    /*
+    Future.delayed(const Duration(milliseconds: 300), () {
+      if (!mounted) return;
+
+      final onlineCount = _peers!.where((p) => p.online).length;
+      final totalCount = _peers!.length;
+
+      setState(() {
+        _animatedPercent = totalCount > 0 ? onlineCount / totalCount : 0.0;
+      });
+    });
+    */
+  }
+
+  @override
+  void dispose() {
+    _peerUpdates.cancel();
+    super.dispose();
   }
 
   Future<void> _onLeavePressed() async {
@@ -353,12 +384,22 @@ class _FederationPreviewState extends State<FederationPreview> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final totalGuardians = widget.guardians?.length ?? 0;
-    final thresh = threshold(totalGuardians);
-    final onlineGuardians =
-        widget.guardians?.where((g) => g.version != null).toList() ?? [];
-    final isFederationOnline =
-        totalGuardians > 0 && onlineGuardians.length >= thresh;
+    final isFederationOnline;
+    final onlineGuardians;
+    final totalGuardians;
+    final thresh;
+    if (_peers != null) {
+      totalGuardians = _peers!.length;
+      thresh = threshold(totalGuardians);
+      onlineGuardians = _peers!.where((p) => p.online).toList();
+      isFederationOnline =
+          totalGuardians > 0 && onlineGuardians.length >= thresh;
+    } else {
+      onlineGuardians = [];
+      isFederationOnline = false;
+      totalGuardians = 0;
+      thresh = 0;
+    }
 
     Widget federationInfo = Column(
       crossAxisAlignment: CrossAxisAlignment.center,
@@ -615,13 +656,13 @@ class _FederationPreviewState extends State<FederationPreview> {
   }
 
   Widget _buildGuardianList(int thresh, int total, bool isFederationOnline) {
-    return widget.guardians != null && widget.guardians!.isNotEmpty
+    return _peers != null && _peers!.isNotEmpty
         ? ListView.builder(
           padding: const EdgeInsets.only(top: 8),
-          itemCount: widget.guardians!.length,
+          itemCount: _peers!.length,
           itemBuilder: (context, index) {
-            final guardian = widget.guardians![index];
-            final isOnline = guardian.version != null;
+            final peer = _peers![index];
+            final isOnline = peer.online;
 
             return ListTile(
               dense: true,
@@ -631,10 +672,10 @@ class _FederationPreviewState extends State<FederationPreview> {
                 color: isOnline ? Colors.green : Colors.red,
                 size: 12,
               ),
-              title: Text(guardian.name),
+              title: Text(peer.name),
               subtitle:
                   isOnline
-                      ? Text('Version: ${guardian.version}')
+                      ? Text('Version: ${widget.guardians![index].version}')
                       : const Text('Offline'),
               trailing: Row(
                 mainAxisSize: MainAxisSize.min,
@@ -655,7 +696,7 @@ class _FederationPreviewState extends State<FederationPreview> {
                             ClipboardData(text: inviteCode),
                           );
                           ToastService().show(
-                            message: "Invite code for ${guardian.name} copied",
+                            message: "Invite code for ${peer.name} copied",
                             duration: const Duration(seconds: 5),
                             onTap: () {},
                             icon: Icon(Icons.check),
@@ -772,7 +813,7 @@ class _FederationPreviewState extends State<FederationPreview> {
             );
           },
         )
-        : const Center(child: Text("No guardians available."));
+        : const Center(child: Text("Loading..."));
   }
 }
 
