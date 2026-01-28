@@ -509,6 +509,11 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   );
 
   @protected
+  RustStreamSink<List<PeerStatus>> dco_decode_StreamSink_list_peer_status_Sse(
+    dynamic raw,
+  );
+
+  @protected
   RustStreamSink<MultimintEvent> dco_decode_StreamSink_multimint_event_Sse(
     dynamic raw,
   );
@@ -656,6 +661,9 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   List<Guardian> dco_decode_list_guardian(dynamic raw);
 
   @protected
+  List<PeerStatus> dco_decode_list_peer_status(dynamic raw);
+
+  @protected
   Uint8List dco_decode_list_prim_u_8_strict(dynamic raw);
 
   @protected
@@ -761,6 +769,9 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
 
   @protected
   PaymentPreview dco_decode_payment_preview(dynamic raw);
+
+  @protected
+  PeerStatus dco_decode_peer_status(dynamic raw);
 
   @protected
   (Bolt11Invoice, OperationId)
@@ -1292,6 +1303,11 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   );
 
   @protected
+  RustStreamSink<List<PeerStatus>> sse_decode_StreamSink_list_peer_status_Sse(
+    SseDeserializer deserializer,
+  );
+
+  @protected
   RustStreamSink<MultimintEvent> sse_decode_StreamSink_multimint_event_Sse(
     SseDeserializer deserializer,
   );
@@ -1459,6 +1475,9 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   List<Guardian> sse_decode_list_guardian(SseDeserializer deserializer);
 
   @protected
+  List<PeerStatus> sse_decode_list_peer_status(SseDeserializer deserializer);
+
+  @protected
   Uint8List sse_decode_list_prim_u_8_strict(SseDeserializer deserializer);
 
   @protected
@@ -1574,6 +1593,9 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
 
   @protected
   PaymentPreview sse_decode_payment_preview(SseDeserializer deserializer);
+
+  @protected
+  PeerStatus sse_decode_peer_status(SseDeserializer deserializer);
 
   @protected
   (Bolt11Invoice, OperationId)
@@ -2180,6 +2202,12 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   );
 
   @protected
+  void sse_encode_StreamSink_list_peer_status_Sse(
+    RustStreamSink<List<PeerStatus>> self,
+    SseSerializer serializer,
+  );
+
+  @protected
   void sse_encode_StreamSink_multimint_event_Sse(
     RustStreamSink<MultimintEvent> self,
     SseSerializer serializer,
@@ -2383,6 +2411,12 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   void sse_encode_list_guardian(List<Guardian> self, SseSerializer serializer);
 
   @protected
+  void sse_encode_list_peer_status(
+    List<PeerStatus> self,
+    SseSerializer serializer,
+  );
+
+  @protected
   void sse_encode_list_prim_u_8_strict(
     Uint8List self,
     SseSerializer serializer,
@@ -2531,6 +2565,9 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
     PaymentPreview self,
     SseSerializer serializer,
   );
+
+  @protected
+  void sse_encode_peer_status(PeerStatus self, SseSerializer serializer);
 
   @protected
   void

@@ -42,7 +42,7 @@ flutter_rust_bridge::frb_generated_boilerplate!(
     default_rust_auto_opaque = RustAutoOpaqueMoi,
 );
 pub(crate) const FLUTTER_RUST_BRIDGE_CODEGEN_VERSION: &str = "2.9.0";
-pub(crate) const FLUTTER_RUST_BRIDGE_CODEGEN_CONTENT_HASH: i32 = -1535762320;
+pub(crate) const FLUTTER_RUST_BRIDGE_CODEGEN_CONTENT_HASH: i32 = 131148032;
 
 // Section: executor
 
@@ -10454,6 +10454,49 @@ fn wire__crate__subscribe_multimint_events_impl(
         },
     )
 }
+fn wire__crate__subscribe_peer_status_impl(
+    port_: flutter_rust_bridge::for_generated::MessagePort,
+    ptr_: flutter_rust_bridge::for_generated::PlatformGeneralizedUint8ListPtr,
+    rust_vec_len_: i32,
+    data_len_: i32,
+) {
+    FLUTTER_RUST_BRIDGE_HANDLER.wrap_async::<flutter_rust_bridge::for_generated::SseCodec, _, _, _>(
+        flutter_rust_bridge::for_generated::TaskInfo {
+            debug_name: "subscribe_peer_status",
+            port: Some(port_),
+            mode: flutter_rust_bridge::for_generated::FfiCallMode::Normal,
+        },
+        move || {
+            let message = unsafe {
+                flutter_rust_bridge::for_generated::Dart2RustMessageSse::from_wire(
+                    ptr_,
+                    rust_vec_len_,
+                    data_len_,
+                )
+            };
+            let mut deserializer =
+                flutter_rust_bridge::for_generated::SseDeserializer::new(message);
+            let api_sink = <StreamSink<
+                Vec<crate::multimint::PeerStatus>,
+                flutter_rust_bridge::for_generated::SseCodec,
+            >>::sse_decode(&mut deserializer);
+            let api_invite = <Option<String>>::sse_decode(&mut deserializer);
+            let api_federation_id = <Option<FederationId>>::sse_decode(&mut deserializer);
+            deserializer.end();
+            move |context| async move {
+                transform_result_sse::<_, flutter_rust_bridge::for_generated::anyhow::Error>(
+                    (move || async move {
+                        let output_ok =
+                            crate::subscribe_peer_status(api_sink, api_invite, api_federation_id)
+                                .await?;
+                        Ok(output_ok)
+                    })()
+                    .await,
+                )
+            }
+        },
+    )
+}
 fn wire__crate__subscribe_recovery_progress_impl(
     port_: flutter_rust_bridge::for_generated::MessagePort,
     ptr_: flutter_rust_bridge::for_generated::PlatformGeneralizedUint8ListPtr,
@@ -11257,6 +11300,16 @@ impl SseDecode
 }
 
 impl SseDecode
+    for StreamSink<Vec<crate::multimint::PeerStatus>, flutter_rust_bridge::for_generated::SseCodec>
+{
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
+        let mut inner = <String>::sse_decode(deserializer);
+        return StreamSink::deserialize(inner);
+    }
+}
+
+impl SseDecode
     for StreamSink<crate::multimint::MultimintEvent, flutter_rust_bridge::for_generated::SseCodec>
 {
     // Codec=Sse (Serialization based), see doc to use other codecs
@@ -11554,6 +11607,18 @@ impl SseDecode for Vec<crate::multimint::Guardian> {
         let mut ans_ = vec![];
         for idx_ in 0..len_ {
             ans_.push(<crate::multimint::Guardian>::sse_decode(deserializer));
+        }
+        return ans_;
+    }
+}
+
+impl SseDecode for Vec<crate::multimint::PeerStatus> {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
+        let mut len_ = <i32>::sse_decode(deserializer);
+        let mut ans_ = vec![];
+        for idx_ in 0..len_ {
+            ans_.push(<crate::multimint::PeerStatus>::sse_decode(deserializer));
         }
         return ans_;
     }
@@ -11997,6 +12062,20 @@ impl SseDecode for crate::multimint::PaymentPreview {
             gateway: var_gateway,
             amount_with_fees: var_amountWithFees,
             is_lnv2: var_isLnv2,
+        };
+    }
+}
+
+impl SseDecode for crate::multimint::PeerStatus {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
+        let mut var_peerId = <u16>::sse_decode(deserializer);
+        let mut var_name = <String>::sse_decode(deserializer);
+        let mut var_online = <bool>::sse_decode(deserializer);
+        return crate::multimint::PeerStatus {
+            peer_id: var_peerId,
+            name: var_name,
+            online: var_online,
         };
     }
 }
@@ -12705,11 +12784,12 @@ fn pde_ffi_dispatcher_primary_impl(
         189 => wire__crate__set_nwc_connection_info_impl(port, ptr, rust_vec_len, data_len),
         190 => wire__crate__subscribe_deposits_impl(port, ptr, rust_vec_len, data_len),
         191 => wire__crate__subscribe_multimint_events_impl(port, ptr, rust_vec_len, data_len),
-        192 => wire__crate__subscribe_recovery_progress_impl(port, ptr, rust_vec_len, data_len),
-        193 => wire__crate__transactions_impl(port, ptr, rust_vec_len, data_len),
-        194 => wire__crate__wallet_summary_impl(port, ptr, rust_vec_len, data_len),
-        195 => wire__crate__withdraw_to_address_impl(port, ptr, rust_vec_len, data_len),
-        196 => wire__crate__word_list_impl(port, ptr, rust_vec_len, data_len),
+        192 => wire__crate__subscribe_peer_status_impl(port, ptr, rust_vec_len, data_len),
+        193 => wire__crate__subscribe_recovery_progress_impl(port, ptr, rust_vec_len, data_len),
+        194 => wire__crate__transactions_impl(port, ptr, rust_vec_len, data_len),
+        195 => wire__crate__wallet_summary_impl(port, ptr, rust_vec_len, data_len),
+        196 => wire__crate__withdraw_to_address_impl(port, ptr, rust_vec_len, data_len),
+        197 => wire__crate__word_list_impl(port, ptr, rust_vec_len, data_len),
         _ => unreachable!(),
     }
 }
@@ -13932,6 +14012,25 @@ impl flutter_rust_bridge::IntoIntoDart<crate::multimint::PaymentPreview>
     }
 }
 // Codec=Dco (DartCObject based), see doc to use other codecs
+impl flutter_rust_bridge::IntoDart for crate::multimint::PeerStatus {
+    fn into_dart(self) -> flutter_rust_bridge::for_generated::DartAbi {
+        [
+            self.peer_id.into_into_dart().into_dart(),
+            self.name.into_into_dart().into_dart(),
+            self.online.into_into_dart().into_dart(),
+        ]
+        .into_dart()
+    }
+}
+impl flutter_rust_bridge::for_generated::IntoDartExceptPrimitive for crate::multimint::PeerStatus {}
+impl flutter_rust_bridge::IntoIntoDart<crate::multimint::PeerStatus>
+    for crate::multimint::PeerStatus
+{
+    fn into_into_dart(self) -> crate::multimint::PeerStatus {
+        self
+    }
+}
+// Codec=Dco (DartCObject based), see doc to use other codecs
 impl flutter_rust_bridge::IntoDart for crate::multimint::Transaction {
     fn into_dart(self) -> flutter_rust_bridge::for_generated::DartAbi {
         [
@@ -14507,6 +14606,15 @@ impl SseEncode
 }
 
 impl SseEncode
+    for StreamSink<Vec<crate::multimint::PeerStatus>, flutter_rust_bridge::for_generated::SseCodec>
+{
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
+        unimplemented!("")
+    }
+}
+
+impl SseEncode
     for StreamSink<crate::multimint::MultimintEvent, flutter_rust_bridge::for_generated::SseCodec>
 {
     // Codec=Sse (Serialization based), see doc to use other codecs
@@ -14768,6 +14876,16 @@ impl SseEncode for Vec<crate::multimint::Guardian> {
         <i32>::sse_encode(self.len() as _, serializer);
         for item in self {
             <crate::multimint::Guardian>::sse_encode(item, serializer);
+        }
+    }
+}
+
+impl SseEncode for Vec<crate::multimint::PeerStatus> {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
+        <i32>::sse_encode(self.len() as _, serializer);
+        for item in self {
+            <crate::multimint::PeerStatus>::sse_encode(item, serializer);
         }
     }
 }
@@ -15153,6 +15271,15 @@ impl SseEncode for crate::multimint::PaymentPreview {
         <String>::sse_encode(self.gateway, serializer);
         <u64>::sse_encode(self.amount_with_fees, serializer);
         <bool>::sse_encode(self.is_lnv2, serializer);
+    }
+}
+
+impl SseEncode for crate::multimint::PeerStatus {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
+        <u16>::sse_encode(self.peer_id, serializer);
+        <String>::sse_encode(self.name, serializer);
+        <bool>::sse_encode(self.online, serializer);
     }
 }
 
