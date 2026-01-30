@@ -24,6 +24,13 @@ class AppLogger {
     Directory? dir;
     if (Platform.isAndroid) {
       dir = await getExternalStorageDirectory();
+    } else if (Platform.isLinux) {
+      final appName = kDebugMode ? 'ecash-app-dev' : 'ecash-app';
+      final homeDir = Platform.environment['HOME']!;
+      dir = Directory('$homeDir/.local/share/$appName');
+      if (!await dir.exists()) {
+        await dir.create(recursive: true);
+      }
     } else {
       dir = await getApplicationDocumentsDirectory();
     }

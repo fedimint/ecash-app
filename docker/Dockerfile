@@ -22,6 +22,9 @@ RUN apt-get update && apt-get install -y \
     libc6-dev-i386 \
     cmake \
     ninja-build \
+    wget \
+    file \
+    libgtk-3-dev \
     pkg-config \
     make \
     && rm -rf /var/lib/apt/lists/*
@@ -64,6 +67,14 @@ RUN yes | sdkmanager --licenses \
         "build-tools;34.0.0" \
         "build-tools;35.0.0" \
         "cmake;3.22.1"
+
+# Install appimagetool for Linux AppImage builds (extract since FUSE unavailable in containers)
+RUN wget -q https://github.com/AppImage/appimagetool/releases/download/continuous/appimagetool-x86_64.AppImage -O /tmp/appimagetool.AppImage \
+    && chmod +x /tmp/appimagetool.AppImage \
+    && cd /tmp && ./appimagetool.AppImage --appimage-extract \
+    && mv /tmp/squashfs-root /opt/appimagetool \
+    && ln -s /opt/appimagetool/AppRun /usr/local/bin/appimagetool \
+    && rm /tmp/appimagetool.AppImage
 
 WORKDIR /workspace
 

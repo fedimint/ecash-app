@@ -1,0 +1,10 @@
+[Desktop Entry]
+Name=Ecash App
+Comment=Multi-federation Fedimint wallet
+Exec=ecashapp
+Icon=ecash-app
+Type=Application
+Categories=Finance;Network;
+Keywords=fedimint;ecash;bitcoin;lightning
+Terminal=false
+StartupNotify=true
