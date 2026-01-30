@@ -27,8 +27,14 @@ import 'package:ecashapp/widgets/transactions_list.dart';
 class Dashboard extends StatefulWidget {
   final FederationSelector fed;
   final bool recovering;
+  final VoidCallback? onFederationTap;
 
-  const Dashboard({super.key, required this.fed, required this.recovering});
+  const Dashboard({
+    super.key,
+    required this.fed,
+    required this.recovering,
+    this.onFederationTap,
+  });
 
   @override
   _DashboardState createState() => _DashboardState();
@@ -304,7 +310,11 @@ class _DashboardState extends State<Dashboard> {
         padding: const EdgeInsets.all(24),
         child: Column(
           children: [
-            DashboardHeader(name: name, network: widget.fed.network),
+            DashboardHeader(
+              name: name,
+              network: widget.fed.network,
+              onTap: widget.onFederationTap,
+            ),
             if (_lnAddressConfig != null) ...[
               const SizedBox(height: 8),
               GestureDetector(
