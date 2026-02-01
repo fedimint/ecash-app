@@ -64,10 +64,10 @@ use crate::{
     anyhow,
     db::{
         BitcoinDisplay, BitcoinDisplayKey, BtcPrice, BtcPriceKey, BtcPrices, BtcPricesKey,
-        Connector, FederationBackupKey, FederationMetaKey, FiatCurrency, FiatCurrencyKey,
-        LightningAddressConfig, LightningAddressKey, LightningAddressKeyPrefix,
+        Connector, ContactSyncConfigKey, FederationBackupKey, FederationMetaKey, FiatCurrency,
+        FiatCurrencyKey, LightningAddressConfig, LightningAddressKey, LightningAddressKeyPrefix,
     },
-    error_to_flutter, info_to_flutter, FederationConfig, FederationConfigKey,
+    error_to_flutter, get_nostr_client, info_to_flutter, FederationConfig, FederationConfigKey,
     FederationConfigKeyPrefix, SeedPhraseAckKey,
 };
 use crate::{event_bus::EventBus, get_event_bus};
@@ -76,6 +76,7 @@ const DEFAULT_EXPIRY_TIME_SECS: u32 = 86400;
 const CACHE_UPDATE_INTERVAL_SECS: u64 = 30;
 const PRICE_CACHE_UPDATE_INTERVAL_SECS: u64 = 60 * 5;
 const FEDERATION_BACKUP_CACHE_UPDATE_INTERVAL_SECS: u64 = 60 * 60 * 24;
+const CONTACT_SYNC_INTERVAL_SECS: u64 = 90;
 
 #[derive(Clone, Eq, PartialEq, Serialize, Debug)]
 pub struct PaymentPreview {
@@ -283,6 +284,13 @@ pub enum LogLevel {
 }
 
 #[derive(Clone, Eq, PartialEq, Serialize, Debug)]
+pub enum ContactSyncEventKind {
+    Started,
+    Completed { added: usize, updated: usize, removed: usize },
+    Error(String),
+}
+
+#[derive(Clone, Eq, PartialEq, Serialize, Debug)]
 pub enum MultimintEvent {
     Deposit((FederationId, DepositEventKind)),
     Lightning((FederationId, LightningEventKind)),
@@ -291,6 +299,7 @@ pub enum MultimintEvent {
     RecoveryProgress(String, u16, u32, u32),
     Ecash((FederationId, u64)),
     NostrRecovery(String, u16, Option<FederationSelector>),
+    ContactSync(ContactSyncEventKind),
 }
 
 #[derive(Clone, Eq, PartialEq, Serialize, Debug)]
@@ -894,6 +903,29 @@ impl Multimint {
                             }
                         } else {
                             self_copy.backup(&federation_id, now).await;
+                        }
+                    }
+
+                    // Check if contact sync is due
+                    let contact_sync_threshold = now
+                        .checked_sub(Duration::from_secs(CONTACT_SYNC_INTERVAL_SECS))
+                        .expect("Cannot be negative");
+                    if let Some(sync_config) = dbtx.get_value(&ContactSyncConfigKey).await {
+                        if sync_config.sync_enabled {
+                            let should_sync = match sync_config.last_sync_at {
+                                Some(last_sync) => {
+                                    let last_sync_time =
+                                        UNIX_EPOCH + Duration::from_millis(last_sync);
+                                    last_sync_time < contact_sync_threshold
+                                }
+                                None => true,
+                            };
+
+                            if should_sync {
+                                let nostr_client = get_nostr_client();
+                                let nostr = nostr_client.read().await;
+                                let _ = nostr.sync_contacts().await;
+                            }
                         }
                     }
 

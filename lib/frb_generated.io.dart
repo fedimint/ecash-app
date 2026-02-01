@@ -587,6 +587,14 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   Contact dco_decode_box_autoadd_contact(dynamic raw);
 
   @protected
+  ContactSyncConfig dco_decode_box_autoadd_contact_sync_config(dynamic raw);
+
+  @protected
+  ContactSyncEventKind dco_decode_box_autoadd_contact_sync_event_kind(
+    dynamic raw,
+  );
+
+  @protected
   double dco_decode_box_autoadd_f_64(dynamic raw);
 
   @protected
@@ -638,6 +646,12 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
 
   @protected
   Contact dco_decode_contact(dynamic raw);
+
+  @protected
+  ContactSyncConfig dco_decode_contact_sync_config(dynamic raw);
+
+  @protected
+  ContactSyncEventKind dco_decode_contact_sync_event_kind(dynamic raw);
 
   @protected
   DepositEventKind dco_decode_deposit_event_kind(dynamic raw);
@@ -787,6 +801,11 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   Contact? dco_decode_opt_box_autoadd_contact(dynamic raw);
 
   @protected
+  ContactSyncConfig? dco_decode_opt_box_autoadd_contact_sync_config(
+    dynamic raw,
+  );
+
+  @protected
   double? dco_decode_opt_box_autoadd_f_64(dynamic raw);
 
   @protected
@@ -921,6 +940,9 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
 
   @protected
   (BigInt, BigInt) dco_decode_record_u_64_usize(dynamic raw);
+
+  @protected
+  (BigInt, BigInt, BigInt) dco_decode_record_usize_usize_usize(dynamic raw);
 
   @protected
   Transaction dco_decode_transaction(dynamic raw);
@@ -1435,6 +1457,16 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   Contact sse_decode_box_autoadd_contact(SseDeserializer deserializer);
 
   @protected
+  ContactSyncConfig sse_decode_box_autoadd_contact_sync_config(
+    SseDeserializer deserializer,
+  );
+
+  @protected
+  ContactSyncEventKind sse_decode_box_autoadd_contact_sync_event_kind(
+    SseDeserializer deserializer,
+  );
+
+  @protected
   double sse_decode_box_autoadd_f_64(SseDeserializer deserializer);
 
   @protected
@@ -1492,6 +1524,16 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
 
   @protected
   Contact sse_decode_contact(SseDeserializer deserializer);
+
+  @protected
+  ContactSyncConfig sse_decode_contact_sync_config(
+    SseDeserializer deserializer,
+  );
+
+  @protected
+  ContactSyncEventKind sse_decode_contact_sync_event_kind(
+    SseDeserializer deserializer,
+  );
 
   @protected
   DepositEventKind sse_decode_deposit_event_kind(SseDeserializer deserializer);
@@ -1659,6 +1701,11 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   Contact? sse_decode_opt_box_autoadd_contact(SseDeserializer deserializer);
 
   @protected
+  ContactSyncConfig? sse_decode_opt_box_autoadd_contact_sync_config(
+    SseDeserializer deserializer,
+  );
+
+  @protected
   double? sse_decode_opt_box_autoadd_f_64(SseDeserializer deserializer);
 
   @protected
@@ -1799,6 +1846,11 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
 
   @protected
   (BigInt, BigInt) sse_decode_record_u_64_usize(SseDeserializer deserializer);
+
+  @protected
+  (BigInt, BigInt, BigInt) sse_decode_record_usize_usize_usize(
+    SseDeserializer deserializer,
+  );
 
   @protected
   Transaction sse_decode_transaction(SseDeserializer deserializer);
@@ -2398,6 +2450,18 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   void sse_encode_box_autoadd_contact(Contact self, SseSerializer serializer);
 
   @protected
+  void sse_encode_box_autoadd_contact_sync_config(
+    ContactSyncConfig self,
+    SseSerializer serializer,
+  );
+
+  @protected
+  void sse_encode_box_autoadd_contact_sync_event_kind(
+    ContactSyncEventKind self,
+    SseSerializer serializer,
+  );
+
+  @protected
   void sse_encode_box_autoadd_f_64(double self, SseSerializer serializer);
 
   @protected
@@ -2465,6 +2529,18 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
 
   @protected
   void sse_encode_contact(Contact self, SseSerializer serializer);
+
+  @protected
+  void sse_encode_contact_sync_config(
+    ContactSyncConfig self,
+    SseSerializer serializer,
+  );
+
+  @protected
+  void sse_encode_contact_sync_event_kind(
+    ContactSyncEventKind self,
+    SseSerializer serializer,
+  );
 
   @protected
   void sse_encode_deposit_event_kind(
@@ -2676,6 +2752,12 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   );
 
   @protected
+  void sse_encode_opt_box_autoadd_contact_sync_config(
+    ContactSyncConfig? self,
+    SseSerializer serializer,
+  );
+
+  @protected
   void sse_encode_opt_box_autoadd_f_64(double? self, SseSerializer serializer);
 
   @protected
@@ -2845,6 +2927,12 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   @protected
   void sse_encode_record_u_64_usize(
     (BigInt, BigInt) self,
+    SseSerializer serializer,
+  );
+
+  @protected
+  void sse_encode_record_usize_usize_usize(
+    (BigInt, BigInt, BigInt) self,
     SseSerializer serializer,
   );
 

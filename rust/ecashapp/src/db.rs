@@ -45,6 +45,7 @@ pub(crate) enum DbKeyPrefix {
     Contact = 0x0D,
     ContactPayment = 0x0E,
     ContactsImported = 0x0F,
+    ContactSyncConfig = 0x10,
 }
 
 #[derive(Debug, Clone, Encodable, Decodable, Eq, PartialEq, Hash, Ord, PartialOrd)]
@@ -332,4 +333,21 @@ impl_db_record!(
     key = ContactsImportedKey,
     value = (),
     db_prefix = DbKeyPrefix::ContactsImported,
+);
+
+// ContactSyncConfig - stores configuration for automatic contact syncing from Nostr
+#[derive(Debug, Encodable, Decodable)]
+pub struct ContactSyncConfigKey;
+
+#[derive(Debug, Clone, Encodable, Decodable, Serialize, Deserialize)]
+pub struct ContactSyncConfig {
+    pub npub: String,              // The npub to sync contacts from
+    pub last_sync_at: Option<u64>, // Unix timestamp in milliseconds
+    pub sync_enabled: bool,        // Whether auto-sync is active
+}
+
+impl_db_record!(
+    key = ContactSyncConfigKey,
+    value = ContactSyncConfig,
+    db_prefix = DbKeyPrefix::ContactSyncConfig,
 );

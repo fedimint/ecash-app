@@ -14,14 +14,12 @@ import 'package:intl/intl.dart';
 class ContactProfile extends StatefulWidget {
   final Contact contact;
   final FederationSelector? selectedFederation;
-  final VoidCallback onContactDeleted;
   final VoidCallback onContactUpdated;
 
   const ContactProfile({
     super.key,
     required this.contact,
     this.selectedFederation,
-    required this.onContactDeleted,
     required this.onContactUpdated,
   });
 
@@ -75,36 +73,6 @@ class _ContactProfileState extends State<ContactProfile> {
       );
     } finally {
       setState(() => _refreshing = false);
-    }
-  }
-
-  Future<void> _deleteContact() async {
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder:
-          (context) => AlertDialog(
-            title: const Text('Delete Contact'),
-            content: Text('Are you sure you want to delete $_displayName?'),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.of(context).pop(false),
-                child: const Text('Cancel'),
-              ),
-              TextButton(
-                onPressed: () => Navigator.of(context).pop(true),
-                style: TextButton.styleFrom(foregroundColor: Colors.red),
-                child: const Text('Delete'),
-              ),
-            ],
-          ),
-    );
-
-    if (confirmed == true) {
-      await deleteContact(npub: _contact.npub);
-      widget.onContactDeleted();
-      if (mounted) {
-        Navigator.of(context).pop();
-      }
     }
   }
 
@@ -444,52 +412,24 @@ class _ContactProfileState extends State<ContactProfile> {
           ),
           const SizedBox(height: 12),
 
-          // Action text links
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              TextButton(
-                onPressed: _refreshing ? null : _refreshProfile,
-                style: TextButton.styleFrom(
-                  minimumSize: Size.zero,
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 12,
-                    vertical: 8,
-                  ),
-                ),
-                child:
-                    _refreshing
-                        ? const SizedBox(
-                          width: 16,
-                          height: 16,
-                          child: CircularProgressIndicator(strokeWidth: 2),
-                        )
-                        : Text(
-                          'Refresh',
-                          style: TextStyle(color: theme.colorScheme.primary),
-                        ),
-              ),
-              Text(
-                ' • ',
-                style: TextStyle(
-                  color: theme.colorScheme.onSurface.withValues(alpha: 0.3),
-                ),
-              ),
-              TextButton(
-                onPressed: _deleteContact,
-                style: TextButton.styleFrom(
-                  minimumSize: Size.zero,
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 12,
-                    vertical: 8,
-                  ),
-                ),
-                child: Text(
-                  'Delete',
-                  style: TextStyle(color: theme.colorScheme.error),
-                ),
-              ),
-            ],
+          // Refresh action
+          TextButton(
+            onPressed: _refreshing ? null : _refreshProfile,
+            style: TextButton.styleFrom(
+              minimumSize: Size.zero,
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+            ),
+            child:
+                _refreshing
+                    ? const SizedBox(
+                      width: 16,
+                      height: 16,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    )
+                    : Text(
+                      'Refresh Profile',
+                      style: TextStyle(color: theme.colorScheme.primary),
+                    ),
           ),
         ],
       ),

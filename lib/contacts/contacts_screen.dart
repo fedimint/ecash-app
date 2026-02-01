@@ -1,4 +1,3 @@
-import 'package:ecashapp/contacts/add_contact_dialog.dart';
 import 'package:ecashapp/contacts/contact_item.dart';
 import 'package:ecashapp/contacts/contact_profile.dart';
 import 'package:ecashapp/contacts/import_follows_dialog.dart';
@@ -6,6 +5,7 @@ import 'package:ecashapp/db.dart';
 import 'package:ecashapp/lib.dart';
 import 'package:ecashapp/multimint.dart';
 import 'package:ecashapp/theme.dart';
+import 'package:ecashapp/toast.dart';
 import 'package:flutter/material.dart';
 
 class ContactsScreen extends StatefulWidget {
@@ -21,7 +21,7 @@ class _ContactsScreenState extends State<ContactsScreen> {
   List<Contact> _contacts = [];
   List<Contact> _filteredContacts = [];
   bool _loading = true;
-  bool _hasImported = false;
+  bool _hasSynced = false;
   final TextEditingController _searchController = TextEditingController();
 
   @override
@@ -60,19 +60,19 @@ class _ContactsScreenState extends State<ContactsScreen> {
   }
 
   Future<void> _initialize() async {
-    final hasImported = await hasImportedContacts();
+    final hasSynced = await hasImportedContacts();
     final contacts = await getAllContacts();
 
     setState(() {
-      _hasImported = hasImported;
+      _hasSynced = hasSynced;
       _contacts = contacts;
       _filteredContacts = contacts;
       _loading = false;
     });
 
-    // Show import dialog if first time
-    if (!hasImported && mounted) {
-      _showImportDialog();
+    // Show sync dialog if first time
+    if (!hasSynced && mounted) {
+      _showSyncDialog();
     }
   }
 
@@ -84,7 +84,7 @@ class _ContactsScreenState extends State<ContactsScreen> {
     });
   }
 
-  void _showImportDialog() {
+  void _showSyncDialog() {
     showAppModalBottomSheet(
       context: context,
       childBuilder: () async {
@@ -93,13 +93,7 @@ class _ContactsScreenState extends State<ContactsScreen> {
             await setContactsImported();
             await _refreshContacts();
             setState(() {
-              _hasImported = true;
-            });
-          },
-          onSkip: () async {
-            await setContactsImported();
-            setState(() {
-              _hasImported = true;
+              _hasSynced = true;
             });
           },
         );
@@ -107,17 +101,44 @@ class _ContactsScreenState extends State<ContactsScreen> {
     );
   }
 
-  void _showAddContactDialog() {
-    showAppModalBottomSheet(
+  Future<void> _stopSyncingAndClearContacts() async {
+    final confirmed = await showDialog<bool>(
       context: context,
-      childBuilder: () async {
-        return AddContactDialog(
-          onContactAdded: () async {
-            await _refreshContacts();
-          },
-        );
-      },
+      builder:
+          (context) => AlertDialog(
+            title: const Text('Stop Syncing'),
+            content: const Text(
+              'This will remove all synced contacts and stop automatic syncing. You can set up syncing again later.',
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(context).pop(false),
+                child: const Text('Cancel'),
+              ),
+              TextButton(
+                onPressed: () => Navigator.of(context).pop(true),
+                style: TextButton.styleFrom(foregroundColor: Colors.red),
+                child: const Text('Stop Syncing'),
+              ),
+            ],
+          ),
     );
+
+    if (confirmed == true) {
+      final count = await clearContactsAndStopSync();
+      await _refreshContacts();
+      setState(() {
+        _hasSynced = false;
+      });
+      if (mounted) {
+        ToastService().show(
+          message: 'Removed $count contacts',
+          duration: const Duration(seconds: 2),
+          onTap: () {},
+          icon: const Icon(Icons.check),
+        );
+      }
+    }
   }
 
   void _showContactProfile(Contact contact) {
@@ -127,9 +148,6 @@ class _ContactsScreenState extends State<ContactsScreen> {
         return ContactProfile(
           contact: contact,
           selectedFederation: widget.selectedFederation,
-          onContactDeleted: () async {
-            await _refreshContacts();
-          },
           onContactUpdated: () async {
             await _refreshContacts();
           },
@@ -146,16 +164,44 @@ class _ContactsScreenState extends State<ContactsScreen> {
       appBar: AppBar(
         title: const Text('Contacts'),
         actions: [
-          if (_hasImported)
-            IconButton(
-              icon: const Icon(Icons.download),
-              onPressed: _showImportDialog,
-              tooltip: 'Import from Nostr',
-            ),
-          IconButton(
-            icon: const Icon(Icons.person_add),
-            onPressed: _showAddContactDialog,
-            tooltip: 'Add contact',
+          PopupMenuButton<String>(
+            icon: const Icon(Icons.more_vert),
+            onSelected: (value) {
+              switch (value) {
+                case 'sync':
+                  _showSyncDialog();
+                  break;
+                case 'stop':
+                  _stopSyncingAndClearContacts();
+                  break;
+              }
+            },
+            itemBuilder:
+                (context) => [
+                  const PopupMenuItem(
+                    value: 'sync',
+                    child: ListTile(
+                      leading: Icon(Icons.sync),
+                      title: Text('Sync from Nostr'),
+                      contentPadding: EdgeInsets.zero,
+                    ),
+                  ),
+                  if (_hasSynced)
+                    PopupMenuItem(
+                      value: 'stop',
+                      child: ListTile(
+                        leading: Icon(
+                          Icons.sync_disabled,
+                          color: theme.colorScheme.error,
+                        ),
+                        title: Text(
+                          'Stop Syncing',
+                          style: TextStyle(color: theme.colorScheme.error),
+                        ),
+                        contentPadding: EdgeInsets.zero,
+                      ),
+                    ),
+                ],
           ),
         ],
       ),
@@ -217,7 +263,7 @@ class _ContactsScreenState extends State<ContactsScreen> {
                                   const SizedBox(height: 8),
                                   if (_searchController.text.isEmpty)
                                     Text(
-                                      'Add contacts manually or import from Nostr',
+                                      'Sync your contacts from Nostr',
                                       style: theme.textTheme.bodyMedium
                                           ?.copyWith(
                                             color: theme.colorScheme.onSurface

@@ -42,7 +42,7 @@ flutter_rust_bridge::frb_generated_boilerplate!(
     default_rust_auto_opaque = RustAutoOpaqueMoi,
 );
 pub(crate) const FLUTTER_RUST_BRIDGE_CODEGEN_VERSION: &str = "2.9.0";
-pub(crate) const FLUTTER_RUST_BRIDGE_CODEGEN_CONTENT_HASH: i32 = -716534105;
+pub(crate) const FLUTTER_RUST_BRIDGE_CODEGEN_CONTENT_HASH: i32 = -213840418;
 
 // Section: executor
 
@@ -5997,126 +5997,6 @@ fn wire__crate__multimint__Multimint_withdraw_to_address_impl(
         },
     )
 }
-fn wire__crate__nostr__NostrClient_add_contact_by_nip05_impl(
-    port_: flutter_rust_bridge::for_generated::MessagePort,
-    ptr_: flutter_rust_bridge::for_generated::PlatformGeneralizedUint8ListPtr,
-    rust_vec_len_: i32,
-    data_len_: i32,
-) {
-    FLUTTER_RUST_BRIDGE_HANDLER.wrap_async::<flutter_rust_bridge::for_generated::SseCodec, _, _, _>(
-        flutter_rust_bridge::for_generated::TaskInfo {
-            debug_name: "NostrClient_add_contact_by_nip05",
-            port: Some(port_),
-            mode: flutter_rust_bridge::for_generated::FfiCallMode::Normal,
-        },
-        move || {
-            let message = unsafe {
-                flutter_rust_bridge::for_generated::Dart2RustMessageSse::from_wire(
-                    ptr_,
-                    rust_vec_len_,
-                    data_len_,
-                )
-            };
-            let mut deserializer =
-                flutter_rust_bridge::for_generated::SseDeserializer::new(message);
-            let api_that = <RustOpaqueMoi<
-                flutter_rust_bridge::for_generated::RustAutoOpaqueInner<NostrClient>,
-            >>::sse_decode(&mut deserializer);
-            let api_nip05_id = <String>::sse_decode(&mut deserializer);
-            deserializer.end();
-            move |context| async move {
-                transform_result_sse::<_, flutter_rust_bridge::for_generated::anyhow::Error>(
-                    (move || async move {
-                        let mut api_that_guard = None;
-                        let decode_indices_ =
-                            flutter_rust_bridge::for_generated::lockable_compute_decode_order(
-                                vec![flutter_rust_bridge::for_generated::LockableOrderInfo::new(
-                                    &api_that, 0, false,
-                                )],
-                            );
-                        for i in decode_indices_ {
-                            match i {
-                                0 => {
-                                    api_that_guard =
-                                        Some(api_that.lockable_decode_async_ref().await)
-                                }
-                                _ => unreachable!(),
-                            }
-                        }
-                        let api_that_guard = api_that_guard.unwrap();
-                        let output_ok = crate::nostr::NostrClient::add_contact_by_nip05(
-                            &*api_that_guard,
-                            api_nip05_id,
-                        )
-                        .await?;
-                        Ok(output_ok)
-                    })()
-                    .await,
-                )
-            }
-        },
-    )
-}
-fn wire__crate__nostr__NostrClient_add_contact_by_npub_impl(
-    port_: flutter_rust_bridge::for_generated::MessagePort,
-    ptr_: flutter_rust_bridge::for_generated::PlatformGeneralizedUint8ListPtr,
-    rust_vec_len_: i32,
-    data_len_: i32,
-) {
-    FLUTTER_RUST_BRIDGE_HANDLER.wrap_async::<flutter_rust_bridge::for_generated::SseCodec, _, _, _>(
-        flutter_rust_bridge::for_generated::TaskInfo {
-            debug_name: "NostrClient_add_contact_by_npub",
-            port: Some(port_),
-            mode: flutter_rust_bridge::for_generated::FfiCallMode::Normal,
-        },
-        move || {
-            let message = unsafe {
-                flutter_rust_bridge::for_generated::Dart2RustMessageSse::from_wire(
-                    ptr_,
-                    rust_vec_len_,
-                    data_len_,
-                )
-            };
-            let mut deserializer =
-                flutter_rust_bridge::for_generated::SseDeserializer::new(message);
-            let api_that = <RustOpaqueMoi<
-                flutter_rust_bridge::for_generated::RustAutoOpaqueInner<NostrClient>,
-            >>::sse_decode(&mut deserializer);
-            let api_npub = <String>::sse_decode(&mut deserializer);
-            deserializer.end();
-            move |context| async move {
-                transform_result_sse::<_, flutter_rust_bridge::for_generated::anyhow::Error>(
-                    (move || async move {
-                        let mut api_that_guard = None;
-                        let decode_indices_ =
-                            flutter_rust_bridge::for_generated::lockable_compute_decode_order(
-                                vec![flutter_rust_bridge::for_generated::LockableOrderInfo::new(
-                                    &api_that, 0, false,
-                                )],
-                            );
-                        for i in decode_indices_ {
-                            match i {
-                                0 => {
-                                    api_that_guard =
-                                        Some(api_that.lockable_decode_async_ref().await)
-                                }
-                                _ => unreachable!(),
-                            }
-                        }
-                        let api_that_guard = api_that_guard.unwrap();
-                        let output_ok = crate::nostr::NostrClient::add_contact_by_npub(
-                            &*api_that_guard,
-                            api_npub,
-                        )
-                        .await?;
-                        Ok(output_ok)
-                    })()
-                    .await,
-                )
-            }
-        },
-    )
-}
 fn wire__crate__nostr__NostrClient_backup_invite_codes_impl(
     port_: flutter_rust_bridge::for_generated::MessagePort,
     ptr_: flutter_rust_bridge::for_generated::PlatformGeneralizedUint8ListPtr,
@@ -6177,7 +6057,7 @@ fn wire__crate__nostr__NostrClient_backup_invite_codes_impl(
         },
     )
 }
-fn wire__crate__nostr__NostrClient_delete_contact_impl(
+fn wire__crate__nostr__NostrClient_clear_contacts_and_stop_sync_impl(
     port_: flutter_rust_bridge::for_generated::MessagePort,
     ptr_: flutter_rust_bridge::for_generated::PlatformGeneralizedUint8ListPtr,
     rust_vec_len_: i32,
@@ -6185,7 +6065,7 @@ fn wire__crate__nostr__NostrClient_delete_contact_impl(
 ) {
     FLUTTER_RUST_BRIDGE_HANDLER.wrap_async::<flutter_rust_bridge::for_generated::SseCodec, _, _, _>(
         flutter_rust_bridge::for_generated::TaskInfo {
-            debug_name: "NostrClient_delete_contact",
+            debug_name: "NostrClient_clear_contacts_and_stop_sync",
             port: Some(port_),
             mode: flutter_rust_bridge::for_generated::FfiCallMode::Normal,
         },
@@ -6202,7 +6082,6 @@ fn wire__crate__nostr__NostrClient_delete_contact_impl(
             let api_that = <RustOpaqueMoi<
                 flutter_rust_bridge::for_generated::RustAutoOpaqueInner<NostrClient>,
             >>::sse_decode(&mut deserializer);
-            let api_npub = <String>::sse_decode(&mut deserializer);
             deserializer.end();
             move |context| async move {
                 transform_result_sse::<_, ()>(
@@ -6224,10 +6103,12 @@ fn wire__crate__nostr__NostrClient_delete_contact_impl(
                             }
                         }
                         let api_that_guard = api_that_guard.unwrap();
-                        let output_ok = Result::<_, ()>::Ok({
-                            crate::nostr::NostrClient::delete_contact(&*api_that_guard, &api_npub)
-                                .await;
-                        })?;
+                        let output_ok = Result::<_, ()>::Ok(
+                            crate::nostr::NostrClient::clear_contacts_and_stop_sync(
+                                &*api_that_guard,
+                            )
+                            .await,
+                        )?;
                         Ok(output_ok)
                     })()
                     .await,
@@ -6585,6 +6466,64 @@ fn wire__crate__nostr__NostrClient_get_contact_payments_impl(
                                 api_limit,
                             )
                             .await,
+                        )?;
+                        Ok(output_ok)
+                    })()
+                    .await,
+                )
+            }
+        },
+    )
+}
+fn wire__crate__nostr__NostrClient_get_contact_sync_config_impl(
+    port_: flutter_rust_bridge::for_generated::MessagePort,
+    ptr_: flutter_rust_bridge::for_generated::PlatformGeneralizedUint8ListPtr,
+    rust_vec_len_: i32,
+    data_len_: i32,
+) {
+    FLUTTER_RUST_BRIDGE_HANDLER.wrap_async::<flutter_rust_bridge::for_generated::SseCodec, _, _, _>(
+        flutter_rust_bridge::for_generated::TaskInfo {
+            debug_name: "NostrClient_get_contact_sync_config",
+            port: Some(port_),
+            mode: flutter_rust_bridge::for_generated::FfiCallMode::Normal,
+        },
+        move || {
+            let message = unsafe {
+                flutter_rust_bridge::for_generated::Dart2RustMessageSse::from_wire(
+                    ptr_,
+                    rust_vec_len_,
+                    data_len_,
+                )
+            };
+            let mut deserializer =
+                flutter_rust_bridge::for_generated::SseDeserializer::new(message);
+            let api_that = <RustOpaqueMoi<
+                flutter_rust_bridge::for_generated::RustAutoOpaqueInner<NostrClient>,
+            >>::sse_decode(&mut deserializer);
+            deserializer.end();
+            move |context| async move {
+                transform_result_sse::<_, ()>(
+                    (move || async move {
+                        let mut api_that_guard = None;
+                        let decode_indices_ =
+                            flutter_rust_bridge::for_generated::lockable_compute_decode_order(
+                                vec![flutter_rust_bridge::for_generated::LockableOrderInfo::new(
+                                    &api_that, 0, false,
+                                )],
+                            );
+                        for i in decode_indices_ {
+                            match i {
+                                0 => {
+                                    api_that_guard =
+                                        Some(api_that.lockable_decode_async_ref().await)
+                                }
+                                _ => unreachable!(),
+                            }
+                        }
+                        let api_that_guard = api_that_guard.unwrap();
+                        let output_ok = Result::<_, ()>::Ok(
+                            crate::nostr::NostrClient::get_contact_sync_config(&*api_that_guard)
+                                .await,
                         )?;
                         Ok(output_ok)
                     })()
@@ -7596,6 +7535,70 @@ fn wire__crate__nostr__NostrClient_search_contacts_impl(
         },
     )
 }
+fn wire__crate__nostr__NostrClient_set_contact_sync_config_impl(
+    port_: flutter_rust_bridge::for_generated::MessagePort,
+    ptr_: flutter_rust_bridge::for_generated::PlatformGeneralizedUint8ListPtr,
+    rust_vec_len_: i32,
+    data_len_: i32,
+) {
+    FLUTTER_RUST_BRIDGE_HANDLER.wrap_async::<flutter_rust_bridge::for_generated::SseCodec, _, _, _>(
+        flutter_rust_bridge::for_generated::TaskInfo {
+            debug_name: "NostrClient_set_contact_sync_config",
+            port: Some(port_),
+            mode: flutter_rust_bridge::for_generated::FfiCallMode::Normal,
+        },
+        move || {
+            let message = unsafe {
+                flutter_rust_bridge::for_generated::Dart2RustMessageSse::from_wire(
+                    ptr_,
+                    rust_vec_len_,
+                    data_len_,
+                )
+            };
+            let mut deserializer =
+                flutter_rust_bridge::for_generated::SseDeserializer::new(message);
+            let api_that = <RustOpaqueMoi<
+                flutter_rust_bridge::for_generated::RustAutoOpaqueInner<NostrClient>,
+            >>::sse_decode(&mut deserializer);
+            let api_npub = <String>::sse_decode(&mut deserializer);
+            let api_enabled = <bool>::sse_decode(&mut deserializer);
+            deserializer.end();
+            move |context| async move {
+                transform_result_sse::<_, ()>(
+                    (move || async move {
+                        let mut api_that_guard = None;
+                        let decode_indices_ =
+                            flutter_rust_bridge::for_generated::lockable_compute_decode_order(
+                                vec![flutter_rust_bridge::for_generated::LockableOrderInfo::new(
+                                    &api_that, 0, false,
+                                )],
+                            );
+                        for i in decode_indices_ {
+                            match i {
+                                0 => {
+                                    api_that_guard =
+                                        Some(api_that.lockable_decode_async_ref().await)
+                                }
+                                _ => unreachable!(),
+                            }
+                        }
+                        let api_that_guard = api_that_guard.unwrap();
+                        let output_ok = Result::<_, ()>::Ok({
+                            crate::nostr::NostrClient::set_contact_sync_config(
+                                &*api_that_guard,
+                                api_npub,
+                                api_enabled,
+                            )
+                            .await;
+                        })?;
+                        Ok(output_ok)
+                    })()
+                    .await,
+                )
+            }
+        },
+    )
+}
 fn wire__crate__nostr__NostrClient_set_contacts_imported_impl(
     port_: flutter_rust_bridge::for_generated::MessagePort,
     ptr_: flutter_rust_bridge::for_generated::PlatformGeneralizedUint8ListPtr,
@@ -7712,6 +7715,62 @@ fn wire__crate__nostr__NostrClient_set_nwc_connection_info_impl(
                             )
                             .await,
                         )?;
+                        Ok(output_ok)
+                    })()
+                    .await,
+                )
+            }
+        },
+    )
+}
+fn wire__crate__nostr__NostrClient_sync_contacts_impl(
+    port_: flutter_rust_bridge::for_generated::MessagePort,
+    ptr_: flutter_rust_bridge::for_generated::PlatformGeneralizedUint8ListPtr,
+    rust_vec_len_: i32,
+    data_len_: i32,
+) {
+    FLUTTER_RUST_BRIDGE_HANDLER.wrap_async::<flutter_rust_bridge::for_generated::SseCodec, _, _, _>(
+        flutter_rust_bridge::for_generated::TaskInfo {
+            debug_name: "NostrClient_sync_contacts",
+            port: Some(port_),
+            mode: flutter_rust_bridge::for_generated::FfiCallMode::Normal,
+        },
+        move || {
+            let message = unsafe {
+                flutter_rust_bridge::for_generated::Dart2RustMessageSse::from_wire(
+                    ptr_,
+                    rust_vec_len_,
+                    data_len_,
+                )
+            };
+            let mut deserializer =
+                flutter_rust_bridge::for_generated::SseDeserializer::new(message);
+            let api_that = <RustOpaqueMoi<
+                flutter_rust_bridge::for_generated::RustAutoOpaqueInner<NostrClient>,
+            >>::sse_decode(&mut deserializer);
+            deserializer.end();
+            move |context| async move {
+                transform_result_sse::<_, flutter_rust_bridge::for_generated::anyhow::Error>(
+                    (move || async move {
+                        let mut api_that_guard = None;
+                        let decode_indices_ =
+                            flutter_rust_bridge::for_generated::lockable_compute_decode_order(
+                                vec![flutter_rust_bridge::for_generated::LockableOrderInfo::new(
+                                    &api_that, 0, false,
+                                )],
+                            );
+                        for i in decode_indices_ {
+                            match i {
+                                0 => {
+                                    api_that_guard =
+                                        Some(api_that.lockable_decode_async_ref().await)
+                                }
+                                _ => unreachable!(),
+                            }
+                        }
+                        let api_that_guard = api_that_guard.unwrap();
+                        let output_ok =
+                            crate::nostr::NostrClient::sync_contacts(&*api_that_guard).await?;
                         Ok(output_ok)
                     })()
                     .await,
@@ -9011,78 +9070,6 @@ fn wire__crate__ack_seed_phrase_impl(
         },
     )
 }
-fn wire__crate__add_contact_by_nip05_impl(
-    port_: flutter_rust_bridge::for_generated::MessagePort,
-    ptr_: flutter_rust_bridge::for_generated::PlatformGeneralizedUint8ListPtr,
-    rust_vec_len_: i32,
-    data_len_: i32,
-) {
-    FLUTTER_RUST_BRIDGE_HANDLER.wrap_async::<flutter_rust_bridge::for_generated::SseCodec, _, _, _>(
-        flutter_rust_bridge::for_generated::TaskInfo {
-            debug_name: "add_contact_by_nip05",
-            port: Some(port_),
-            mode: flutter_rust_bridge::for_generated::FfiCallMode::Normal,
-        },
-        move || {
-            let message = unsafe {
-                flutter_rust_bridge::for_generated::Dart2RustMessageSse::from_wire(
-                    ptr_,
-                    rust_vec_len_,
-                    data_len_,
-                )
-            };
-            let mut deserializer =
-                flutter_rust_bridge::for_generated::SseDeserializer::new(message);
-            let api_nip05_id = <String>::sse_decode(&mut deserializer);
-            deserializer.end();
-            move |context| async move {
-                transform_result_sse::<_, flutter_rust_bridge::for_generated::anyhow::Error>(
-                    (move || async move {
-                        let output_ok = crate::add_contact_by_nip05(api_nip05_id).await?;
-                        Ok(output_ok)
-                    })()
-                    .await,
-                )
-            }
-        },
-    )
-}
-fn wire__crate__add_contact_by_npub_impl(
-    port_: flutter_rust_bridge::for_generated::MessagePort,
-    ptr_: flutter_rust_bridge::for_generated::PlatformGeneralizedUint8ListPtr,
-    rust_vec_len_: i32,
-    data_len_: i32,
-) {
-    FLUTTER_RUST_BRIDGE_HANDLER.wrap_async::<flutter_rust_bridge::for_generated::SseCodec, _, _, _>(
-        flutter_rust_bridge::for_generated::TaskInfo {
-            debug_name: "add_contact_by_npub",
-            port: Some(port_),
-            mode: flutter_rust_bridge::for_generated::FfiCallMode::Normal,
-        },
-        move || {
-            let message = unsafe {
-                flutter_rust_bridge::for_generated::Dart2RustMessageSse::from_wire(
-                    ptr_,
-                    rust_vec_len_,
-                    data_len_,
-                )
-            };
-            let mut deserializer =
-                flutter_rust_bridge::for_generated::SseDeserializer::new(message);
-            let api_npub = <String>::sse_decode(&mut deserializer);
-            deserializer.end();
-            move |context| async move {
-                transform_result_sse::<_, flutter_rust_bridge::for_generated::anyhow::Error>(
-                    (move || async move {
-                        let output_ok = crate::add_contact_by_npub(api_npub).await?;
-                        Ok(output_ok)
-                    })()
-                    .await,
-                )
-            }
-        },
-    )
-}
 fn wire__crate__add_recovery_relay_impl(
     port_: flutter_rust_bridge::for_generated::MessagePort,
     ptr_: flutter_rust_bridge::for_generated::PlatformGeneralizedUint8ListPtr,
@@ -9745,6 +9732,42 @@ fn wire__crate__claim_random_ln_address_impl(
         },
     )
 }
+fn wire__crate__clear_contacts_and_stop_sync_impl(
+    port_: flutter_rust_bridge::for_generated::MessagePort,
+    ptr_: flutter_rust_bridge::for_generated::PlatformGeneralizedUint8ListPtr,
+    rust_vec_len_: i32,
+    data_len_: i32,
+) {
+    FLUTTER_RUST_BRIDGE_HANDLER.wrap_async::<flutter_rust_bridge::for_generated::SseCodec, _, _, _>(
+        flutter_rust_bridge::for_generated::TaskInfo {
+            debug_name: "clear_contacts_and_stop_sync",
+            port: Some(port_),
+            mode: flutter_rust_bridge::for_generated::FfiCallMode::Normal,
+        },
+        move || {
+            let message = unsafe {
+                flutter_rust_bridge::for_generated::Dart2RustMessageSse::from_wire(
+                    ptr_,
+                    rust_vec_len_,
+                    data_len_,
+                )
+            };
+            let mut deserializer =
+                flutter_rust_bridge::for_generated::SseDeserializer::new(message);
+            deserializer.end();
+            move |context| async move {
+                transform_result_sse::<_, ()>(
+                    (move || async move {
+                        let output_ok =
+                            Result::<_, ()>::Ok(crate::clear_contacts_and_stop_sync().await)?;
+                        Ok(output_ok)
+                    })()
+                    .await,
+                )
+            }
+        },
+    )
+}
 fn wire__crate__db__connector_default_impl(
     port_: flutter_rust_bridge::for_generated::MessagePort,
     ptr_: flutter_rust_bridge::for_generated::PlatformGeneralizedUint8ListPtr,
@@ -9848,44 +9871,6 @@ fn wire__crate__create_new_multimint_impl(
                     (move || async move {
                         let output_ok = Result::<_, ()>::Ok({
                             crate::create_new_multimint(api_path, api_is_desktop).await;
-                        })?;
-                        Ok(output_ok)
-                    })()
-                    .await,
-                )
-            }
-        },
-    )
-}
-fn wire__crate__delete_contact_impl(
-    port_: flutter_rust_bridge::for_generated::MessagePort,
-    ptr_: flutter_rust_bridge::for_generated::PlatformGeneralizedUint8ListPtr,
-    rust_vec_len_: i32,
-    data_len_: i32,
-) {
-    FLUTTER_RUST_BRIDGE_HANDLER.wrap_async::<flutter_rust_bridge::for_generated::SseCodec, _, _, _>(
-        flutter_rust_bridge::for_generated::TaskInfo {
-            debug_name: "delete_contact",
-            port: Some(port_),
-            mode: flutter_rust_bridge::for_generated::FfiCallMode::Normal,
-        },
-        move || {
-            let message = unsafe {
-                flutter_rust_bridge::for_generated::Dart2RustMessageSse::from_wire(
-                    ptr_,
-                    rust_vec_len_,
-                    data_len_,
-                )
-            };
-            let mut deserializer =
-                flutter_rust_bridge::for_generated::SseDeserializer::new(message);
-            let api_npub = <String>::sse_decode(&mut deserializer);
-            deserializer.end();
-            move |context| async move {
-                transform_result_sse::<_, ()>(
-                    (move || async move {
-                        let output_ok = Result::<_, ()>::Ok({
-                            crate::delete_contact(api_npub).await;
                         })?;
                         Ok(output_ok)
                     })()
@@ -10306,6 +10291,42 @@ fn wire__crate__get_contact_payments_impl(
                         let output_ok = Result::<_, ()>::Ok(
                             crate::get_contact_payments(api_npub, api_limit).await,
                         )?;
+                        Ok(output_ok)
+                    })()
+                    .await,
+                )
+            }
+        },
+    )
+}
+fn wire__crate__get_contact_sync_config_impl(
+    port_: flutter_rust_bridge::for_generated::MessagePort,
+    ptr_: flutter_rust_bridge::for_generated::PlatformGeneralizedUint8ListPtr,
+    rust_vec_len_: i32,
+    data_len_: i32,
+) {
+    FLUTTER_RUST_BRIDGE_HANDLER.wrap_async::<flutter_rust_bridge::for_generated::SseCodec, _, _, _>(
+        flutter_rust_bridge::for_generated::TaskInfo {
+            debug_name: "get_contact_sync_config",
+            port: Some(port_),
+            mode: flutter_rust_bridge::for_generated::FfiCallMode::Normal,
+        },
+        move || {
+            let message = unsafe {
+                flutter_rust_bridge::for_generated::Dart2RustMessageSse::from_wire(
+                    ptr_,
+                    rust_vec_len_,
+                    data_len_,
+                )
+            };
+            let mut deserializer =
+                flutter_rust_bridge::for_generated::SseDeserializer::new(message);
+            deserializer.end();
+            move |context| async move {
+                transform_result_sse::<_, ()>(
+                    (move || async move {
+                        let output_ok =
+                            Result::<_, ()>::Ok(crate::get_contact_sync_config().await)?;
                         Ok(output_ok)
                     })()
                     .await,
@@ -12584,6 +12605,44 @@ fn wire__crate__set_nwc_connection_info_impl(
         },
     )
 }
+fn wire__crate__setup_contact_sync_impl(
+    port_: flutter_rust_bridge::for_generated::MessagePort,
+    ptr_: flutter_rust_bridge::for_generated::PlatformGeneralizedUint8ListPtr,
+    rust_vec_len_: i32,
+    data_len_: i32,
+) {
+    FLUTTER_RUST_BRIDGE_HANDLER.wrap_async::<flutter_rust_bridge::for_generated::SseCodec, _, _, _>(
+        flutter_rust_bridge::for_generated::TaskInfo {
+            debug_name: "setup_contact_sync",
+            port: Some(port_),
+            mode: flutter_rust_bridge::for_generated::FfiCallMode::Normal,
+        },
+        move || {
+            let message = unsafe {
+                flutter_rust_bridge::for_generated::Dart2RustMessageSse::from_wire(
+                    ptr_,
+                    rust_vec_len_,
+                    data_len_,
+                )
+            };
+            let mut deserializer =
+                flutter_rust_bridge::for_generated::SseDeserializer::new(message);
+            let api_npub = <String>::sse_decode(&mut deserializer);
+            deserializer.end();
+            move |context| async move {
+                transform_result_sse::<_, ()>(
+                    (move || async move {
+                        let output_ok = Result::<_, ()>::Ok({
+                            crate::setup_contact_sync(api_npub).await;
+                        })?;
+                        Ok(output_ok)
+                    })()
+                    .await,
+                )
+            }
+        },
+    )
+}
 fn wire__crate__subscribe_deposits_impl(
     port_: flutter_rust_bridge::for_generated::MessagePort,
     ptr_: flutter_rust_bridge::for_generated::PlatformGeneralizedUint8ListPtr,
@@ -12707,6 +12766,41 @@ fn wire__crate__subscribe_recovery_progress_impl(
                             )
                             .await;
                         })?;
+                        Ok(output_ok)
+                    })()
+                    .await,
+                )
+            }
+        },
+    )
+}
+fn wire__crate__sync_contacts_now_impl(
+    port_: flutter_rust_bridge::for_generated::MessagePort,
+    ptr_: flutter_rust_bridge::for_generated::PlatformGeneralizedUint8ListPtr,
+    rust_vec_len_: i32,
+    data_len_: i32,
+) {
+    FLUTTER_RUST_BRIDGE_HANDLER.wrap_async::<flutter_rust_bridge::for_generated::SseCodec, _, _, _>(
+        flutter_rust_bridge::for_generated::TaskInfo {
+            debug_name: "sync_contacts_now",
+            port: Some(port_),
+            mode: flutter_rust_bridge::for_generated::FfiCallMode::Normal,
+        },
+        move || {
+            let message = unsafe {
+                flutter_rust_bridge::for_generated::Dart2RustMessageSse::from_wire(
+                    ptr_,
+                    rust_vec_len_,
+                    data_len_,
+                )
+            };
+            let mut deserializer =
+                flutter_rust_bridge::for_generated::SseDeserializer::new(message);
+            deserializer.end();
+            move |context| async move {
+                transform_result_sse::<_, flutter_rust_bridge::for_generated::anyhow::Error>(
+                    (move || async move {
+                        let output_ok = crate::sync_contacts_now().await?;
                         Ok(output_ok)
                     })()
                     .await,
@@ -13691,6 +13785,49 @@ impl SseDecode for crate::db::Contact {
     }
 }
 
+impl SseDecode for crate::db::ContactSyncConfig {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
+        let mut var_npub = <String>::sse_decode(deserializer);
+        let mut var_lastSyncAt = <Option<u64>>::sse_decode(deserializer);
+        let mut var_syncEnabled = <bool>::sse_decode(deserializer);
+        return crate::db::ContactSyncConfig {
+            npub: var_npub,
+            last_sync_at: var_lastSyncAt,
+            sync_enabled: var_syncEnabled,
+        };
+    }
+}
+
+impl SseDecode for crate::multimint::ContactSyncEventKind {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
+        let mut tag_ = <i32>::sse_decode(deserializer);
+        match tag_ {
+            0 => {
+                return crate::multimint::ContactSyncEventKind::Started;
+            }
+            1 => {
+                let mut var_added = <usize>::sse_decode(deserializer);
+                let mut var_updated = <usize>::sse_decode(deserializer);
+                let mut var_removed = <usize>::sse_decode(deserializer);
+                return crate::multimint::ContactSyncEventKind::Completed {
+                    added: var_added,
+                    updated: var_updated,
+                    removed: var_removed,
+                };
+            }
+            2 => {
+                let mut var_field0 = <String>::sse_decode(deserializer);
+                return crate::multimint::ContactSyncEventKind::Error(var_field0);
+            }
+            _ => {
+                unimplemented!("");
+            }
+        }
+    }
+}
+
 impl SseDecode for crate::multimint::DepositEventKind {
     // Codec=Sse (Serialization based), see doc to use other codecs
     fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
@@ -14165,6 +14302,11 @@ impl SseDecode for crate::multimint::MultimintEvent {
                     var_field0, var_field1, var_field2,
                 );
             }
+            7 => {
+                let mut var_field0 =
+                    <crate::multimint::ContactSyncEventKind>::sse_decode(deserializer);
+                return crate::multimint::MultimintEvent::ContactSync(var_field0);
+            }
             _ => {
                 unimplemented!("");
             }
@@ -14269,6 +14411,17 @@ impl SseDecode for Option<crate::db::Contact> {
     fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
         if (<bool>::sse_decode(deserializer)) {
             return Some(<crate::db::Contact>::sse_decode(deserializer));
+        } else {
+            return None;
+        }
+    }
+}
+
+impl SseDecode for Option<crate::db::ContactSyncConfig> {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
+        if (<bool>::sse_decode(deserializer)) {
+            return Some(<crate::db::ContactSyncConfig>::sse_decode(deserializer));
         } else {
             return None;
         }
@@ -14603,6 +14756,16 @@ impl SseDecode for (u64, usize) {
         let mut var_field0 = <u64>::sse_decode(deserializer);
         let mut var_field1 = <usize>::sse_decode(deserializer);
         return (var_field0, var_field1);
+    }
+}
+
+impl SseDecode for (usize, usize, usize) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
+        let mut var_field0 = <usize>::sse_decode(deserializer);
+        let mut var_field1 = <usize>::sse_decode(deserializer);
+        let mut var_field2 = <usize>::sse_decode(deserializer);
+        return (var_field0, var_field1, var_field2);
     }
 }
 
@@ -15004,122 +15167,125 @@ fn pde_ffi_dispatcher_primary_impl(
             rust_vec_len,
             data_len,
         ),
-        101 => wire__crate__nostr__NostrClient_add_contact_by_nip05_impl(
+        101 => wire__crate__nostr__NostrClient_backup_invite_codes_impl(
             port,
             ptr,
             rust_vec_len,
             data_len,
         ),
-        102 => wire__crate__nostr__NostrClient_add_contact_by_npub_impl(
+        102 => wire__crate__nostr__NostrClient_clear_contacts_and_stop_sync_impl(
             port,
             ptr,
             rust_vec_len,
             data_len,
         ),
-        103 => wire__crate__nostr__NostrClient_backup_invite_codes_impl(
+        103 => wire__crate__nostr__NostrClient_fetch_nostr_profile_impl(
             port,
             ptr,
             rust_vec_len,
             data_len,
         ),
-        104 => {
-            wire__crate__nostr__NostrClient_delete_contact_impl(port, ptr, rust_vec_len, data_len)
-        }
-        105 => wire__crate__nostr__NostrClient_fetch_nostr_profile_impl(
+        104 => wire__crate__nostr__NostrClient_fetch_nostr_profiles_impl(
             port,
             ptr,
             rust_vec_len,
             data_len,
         ),
-        106 => wire__crate__nostr__NostrClient_fetch_nostr_profiles_impl(
-            port,
-            ptr,
-            rust_vec_len,
-            data_len,
-        ),
-        107 => {
+        105 => {
             wire__crate__nostr__NostrClient_get_all_contacts_impl(port, ptr, rust_vec_len, data_len)
         }
-        108 => wire__crate__nostr__NostrClient_get_backup_invite_codes_impl(
+        106 => wire__crate__nostr__NostrClient_get_backup_invite_codes_impl(
             port,
             ptr,
             rust_vec_len,
             data_len,
         ),
-        109 => wire__crate__nostr__NostrClient_get_contact_impl(port, ptr, rust_vec_len, data_len),
-        110 => wire__crate__nostr__NostrClient_get_contact_payments_impl(
+        107 => wire__crate__nostr__NostrClient_get_contact_impl(port, ptr, rust_vec_len, data_len),
+        108 => wire__crate__nostr__NostrClient_get_contact_payments_impl(
             port,
             ptr,
             rust_vec_len,
             data_len,
         ),
-        111 => wire__crate__nostr__NostrClient_get_follows_for_pubkey_impl(
+        109 => wire__crate__nostr__NostrClient_get_contact_sync_config_impl(
             port,
             ptr,
             rust_vec_len,
             data_len,
         ),
-        112 => wire__crate__nostr__NostrClient_get_nostr_follows_impl(
+        110 => wire__crate__nostr__NostrClient_get_follows_for_pubkey_impl(
             port,
             ptr,
             rust_vec_len,
             data_len,
         ),
-        113 => {
+        111 => wire__crate__nostr__NostrClient_get_nostr_follows_impl(
+            port,
+            ptr,
+            rust_vec_len,
+            data_len,
+        ),
+        112 => {
             wire__crate__nostr__NostrClient_get_nwc_config_impl(port, ptr, rust_vec_len, data_len)
         }
-        114 => wire__crate__nostr__NostrClient_get_nwc_connection_info_impl(
+        113 => wire__crate__nostr__NostrClient_get_nwc_connection_info_impl(
             port,
             ptr,
             rust_vec_len,
             data_len,
         ),
-        115 => wire__crate__nostr__NostrClient_get_public_federations_impl(
+        114 => wire__crate__nostr__NostrClient_get_public_federations_impl(
             port,
             ptr,
             rust_vec_len,
             data_len,
         ),
-        116 => wire__crate__nostr__NostrClient_get_relays_impl(port, ptr, rust_vec_len, data_len),
-        117 => {
+        115 => wire__crate__nostr__NostrClient_get_relays_impl(port, ptr, rust_vec_len, data_len),
+        116 => {
             wire__crate__nostr__NostrClient_get_user_npub_impl(port, ptr, rust_vec_len, data_len)
         }
-        118 => wire__crate__nostr__NostrClient_has_imported_contacts_impl(
+        117 => wire__crate__nostr__NostrClient_has_imported_contacts_impl(
             port,
             ptr,
             rust_vec_len,
             data_len,
         ),
-        119 => {
+        118 => {
             wire__crate__nostr__NostrClient_import_contacts_impl(port, ptr, rust_vec_len, data_len)
         }
-        120 => wire__crate__nostr__NostrClient_insert_relay_impl(port, ptr, rust_vec_len, data_len),
-        121 => {
+        119 => wire__crate__nostr__NostrClient_insert_relay_impl(port, ptr, rust_vec_len, data_len),
+        120 => {
             wire__crate__nostr__NostrClient_listen_for_nwc_impl(port, ptr, rust_vec_len, data_len)
         }
-        122 => wire__crate__nostr__NostrClient_new_impl(port, ptr, rust_vec_len, data_len),
-        123 => wire__crate__nostr__NostrClient_record_contact_payment_impl(
+        121 => wire__crate__nostr__NostrClient_new_impl(port, ptr, rust_vec_len, data_len),
+        122 => wire__crate__nostr__NostrClient_record_contact_payment_impl(
             port,
             ptr,
             rust_vec_len,
             data_len,
         ),
-        124 => wire__crate__nostr__NostrClient_refresh_contact_profile_impl(
+        123 => wire__crate__nostr__NostrClient_refresh_contact_profile_impl(
             port,
             ptr,
             rust_vec_len,
             data_len,
         ),
-        125 => wire__crate__nostr__NostrClient_remove_nwc_connection_info_impl(
+        124 => wire__crate__nostr__NostrClient_remove_nwc_connection_info_impl(
             port,
             ptr,
             rust_vec_len,
             data_len,
         ),
-        126 => wire__crate__nostr__NostrClient_remove_relay_impl(port, ptr, rust_vec_len, data_len),
-        127 => {
+        125 => wire__crate__nostr__NostrClient_remove_relay_impl(port, ptr, rust_vec_len, data_len),
+        126 => {
             wire__crate__nostr__NostrClient_search_contacts_impl(port, ptr, rust_vec_len, data_len)
         }
+        127 => wire__crate__nostr__NostrClient_set_contact_sync_config_impl(
+            port,
+            ptr,
+            rust_vec_len,
+            data_len,
+        ),
         128 => wire__crate__nostr__NostrClient_set_contacts_imported_impl(
             port,
             ptr,
@@ -15132,49 +15298,51 @@ fn pde_ffi_dispatcher_primary_impl(
             rust_vec_len,
             data_len,
         ),
-        130 => wire__crate__nostr__NostrClient_update_contact_nip05_verification_impl(
+        130 => {
+            wire__crate__nostr__NostrClient_sync_contacts_impl(port, ptr, rust_vec_len, data_len)
+        }
+        131 => wire__crate__nostr__NostrClient_update_contact_nip05_verification_impl(
             port,
             ptr,
             rust_vec_len,
             data_len,
         ),
-        131 => wire__crate__nostr__NostrClient_verify_contact_nip05_impl(
+        132 => wire__crate__nostr__NostrClient_verify_contact_nip05_impl(
             port,
             ptr,
             rust_vec_len,
             data_len,
         ),
-        132 => wire__crate__nostr__NostrClient_verify_nip05_impl(port, ptr, rust_vec_len, data_len),
-        155 => wire__crate__ack_seed_phrase_impl(port, ptr, rust_vec_len, data_len),
-        156 => wire__crate__add_contact_by_nip05_impl(port, ptr, rust_vec_len, data_len),
-        157 => wire__crate__add_contact_by_npub_impl(port, ptr, rust_vec_len, data_len),
-        158 => wire__crate__add_recovery_relay_impl(port, ptr, rust_vec_len, data_len),
-        159 => wire__crate__allocate_deposit_address_impl(port, ptr, rust_vec_len, data_len),
-        160 => wire__crate__await_ecash_reissue_impl(port, ptr, rust_vec_len, data_len),
-        161 => wire__crate__await_receive_impl(port, ptr, rust_vec_len, data_len),
-        162 => wire__crate__await_send_impl(port, ptr, rust_vec_len, data_len),
-        163 => wire__crate__await_withdraw_impl(port, ptr, rust_vec_len, data_len),
-        164 => wire__crate__backup_invite_codes_impl(port, ptr, rust_vec_len, data_len),
-        165 => wire__crate__balance_impl(port, ptr, rust_vec_len, data_len),
-        166 => wire__crate__calculate_withdraw_fees_impl(port, ptr, rust_vec_len, data_len),
-        167 => wire__crate__check_ecash_spent_impl(port, ptr, rust_vec_len, data_len),
-        168 => wire__crate__check_ln_address_availability_impl(port, ptr, rust_vec_len, data_len),
-        169 => wire__crate__claim_random_ln_address_impl(port, ptr, rust_vec_len, data_len),
+        133 => wire__crate__nostr__NostrClient_verify_nip05_impl(port, ptr, rust_vec_len, data_len),
+        156 => wire__crate__ack_seed_phrase_impl(port, ptr, rust_vec_len, data_len),
+        157 => wire__crate__add_recovery_relay_impl(port, ptr, rust_vec_len, data_len),
+        158 => wire__crate__allocate_deposit_address_impl(port, ptr, rust_vec_len, data_len),
+        159 => wire__crate__await_ecash_reissue_impl(port, ptr, rust_vec_len, data_len),
+        160 => wire__crate__await_receive_impl(port, ptr, rust_vec_len, data_len),
+        161 => wire__crate__await_send_impl(port, ptr, rust_vec_len, data_len),
+        162 => wire__crate__await_withdraw_impl(port, ptr, rust_vec_len, data_len),
+        163 => wire__crate__backup_invite_codes_impl(port, ptr, rust_vec_len, data_len),
+        164 => wire__crate__balance_impl(port, ptr, rust_vec_len, data_len),
+        165 => wire__crate__calculate_withdraw_fees_impl(port, ptr, rust_vec_len, data_len),
+        166 => wire__crate__check_ecash_spent_impl(port, ptr, rust_vec_len, data_len),
+        167 => wire__crate__check_ln_address_availability_impl(port, ptr, rust_vec_len, data_len),
+        168 => wire__crate__claim_random_ln_address_impl(port, ptr, rust_vec_len, data_len),
+        169 => wire__crate__clear_contacts_and_stop_sync_impl(port, ptr, rust_vec_len, data_len),
         170 => wire__crate__db__connector_default_impl(port, ptr, rust_vec_len, data_len),
         171 => wire__crate__create_multimint_from_words_impl(port, ptr, rust_vec_len, data_len),
         172 => wire__crate__create_new_multimint_impl(port, ptr, rust_vec_len, data_len),
-        173 => wire__crate__delete_contact_impl(port, ptr, rust_vec_len, data_len),
-        174 => wire__crate__federation_id_to_string_impl(port, ptr, rust_vec_len, data_len),
-        175 => wire__crate__federations_impl(port, ptr, rust_vec_len, data_len),
-        176 => wire__crate__fetch_nostr_profile_impl(port, ptr, rust_vec_len, data_len),
-        177 => wire__crate__fetch_nostr_profiles_impl(port, ptr, rust_vec_len, data_len),
-        178 => wire__crate__get_addresses_impl(port, ptr, rust_vec_len, data_len),
-        179 => wire__crate__get_all_btc_prices_impl(port, ptr, rust_vec_len, data_len),
-        180 => wire__crate__get_all_contacts_impl(port, ptr, rust_vec_len, data_len),
-        181 => wire__crate__get_bitcoin_display_impl(port, ptr, rust_vec_len, data_len),
-        182 => wire__crate__get_btc_price_impl(port, ptr, rust_vec_len, data_len),
-        183 => wire__crate__get_contact_impl(port, ptr, rust_vec_len, data_len),
-        184 => wire__crate__get_contact_payments_impl(port, ptr, rust_vec_len, data_len),
+        173 => wire__crate__federation_id_to_string_impl(port, ptr, rust_vec_len, data_len),
+        174 => wire__crate__federations_impl(port, ptr, rust_vec_len, data_len),
+        175 => wire__crate__fetch_nostr_profile_impl(port, ptr, rust_vec_len, data_len),
+        176 => wire__crate__fetch_nostr_profiles_impl(port, ptr, rust_vec_len, data_len),
+        177 => wire__crate__get_addresses_impl(port, ptr, rust_vec_len, data_len),
+        178 => wire__crate__get_all_btc_prices_impl(port, ptr, rust_vec_len, data_len),
+        179 => wire__crate__get_all_contacts_impl(port, ptr, rust_vec_len, data_len),
+        180 => wire__crate__get_bitcoin_display_impl(port, ptr, rust_vec_len, data_len),
+        181 => wire__crate__get_btc_price_impl(port, ptr, rust_vec_len, data_len),
+        182 => wire__crate__get_contact_impl(port, ptr, rust_vec_len, data_len),
+        183 => wire__crate__get_contact_payments_impl(port, ptr, rust_vec_len, data_len),
+        184 => wire__crate__get_contact_sync_config_impl(port, ptr, rust_vec_len, data_len),
         185 => wire__crate__get_event_bus_impl(port, ptr, rust_vec_len, data_len),
         186 => wire__crate__get_federation_meta_impl(port, ptr, rust_vec_len, data_len),
         187 => wire__crate__get_federation_order_impl(port, ptr, rust_vec_len, data_len),
@@ -15229,15 +15397,17 @@ fn pde_ffi_dispatcher_primary_impl(
         232 => wire__crate__set_federation_order_impl(port, ptr, rust_vec_len, data_len),
         233 => wire__crate__set_fiat_currency_impl(port, ptr, rust_vec_len, data_len),
         234 => wire__crate__set_nwc_connection_info_impl(port, ptr, rust_vec_len, data_len),
-        235 => wire__crate__subscribe_deposits_impl(port, ptr, rust_vec_len, data_len),
-        236 => wire__crate__subscribe_multimint_events_impl(port, ptr, rust_vec_len, data_len),
-        237 => wire__crate__subscribe_recovery_progress_impl(port, ptr, rust_vec_len, data_len),
-        238 => wire__crate__transactions_impl(port, ptr, rust_vec_len, data_len),
-        239 => wire__crate__verify_contact_nip05_impl(port, ptr, rust_vec_len, data_len),
-        240 => wire__crate__verify_nip05_impl(port, ptr, rust_vec_len, data_len),
-        241 => wire__crate__wallet_summary_impl(port, ptr, rust_vec_len, data_len),
-        242 => wire__crate__withdraw_to_address_impl(port, ptr, rust_vec_len, data_len),
-        243 => wire__crate__word_list_impl(port, ptr, rust_vec_len, data_len),
+        235 => wire__crate__setup_contact_sync_impl(port, ptr, rust_vec_len, data_len),
+        236 => wire__crate__subscribe_deposits_impl(port, ptr, rust_vec_len, data_len),
+        237 => wire__crate__subscribe_multimint_events_impl(port, ptr, rust_vec_len, data_len),
+        238 => wire__crate__subscribe_recovery_progress_impl(port, ptr, rust_vec_len, data_len),
+        239 => wire__crate__sync_contacts_now_impl(port, ptr, rust_vec_len, data_len),
+        240 => wire__crate__transactions_impl(port, ptr, rust_vec_len, data_len),
+        241 => wire__crate__verify_contact_nip05_impl(port, ptr, rust_vec_len, data_len),
+        242 => wire__crate__verify_nip05_impl(port, ptr, rust_vec_len, data_len),
+        243 => wire__crate__wallet_summary_impl(port, ptr, rust_vec_len, data_len),
+        244 => wire__crate__withdraw_to_address_impl(port, ptr, rust_vec_len, data_len),
+        245 => wire__crate__word_list_impl(port, ptr, rust_vec_len, data_len),
         _ => unreachable!(),
     }
 }
@@ -15496,116 +15666,116 @@ fn pde_ffi_dispatcher_sync_impl(
             rust_vec_len,
             data_len,
         ),
-        133 => wire__crate__nostr__PublicFederation_auto_accessor_get_about_impl(
+        134 => wire__crate__nostr__PublicFederation_auto_accessor_get_about_impl(
             ptr,
             rust_vec_len,
             data_len,
         ),
-        134 => wire__crate__nostr__PublicFederation_auto_accessor_get_federation_id_impl(
+        135 => wire__crate__nostr__PublicFederation_auto_accessor_get_federation_id_impl(
             ptr,
             rust_vec_len,
             data_len,
         ),
-        135 => wire__crate__nostr__PublicFederation_auto_accessor_get_federation_name_impl(
+        136 => wire__crate__nostr__PublicFederation_auto_accessor_get_federation_name_impl(
             ptr,
             rust_vec_len,
             data_len,
         ),
-        136 => wire__crate__nostr__PublicFederation_auto_accessor_get_invite_codes_impl(
+        137 => wire__crate__nostr__PublicFederation_auto_accessor_get_invite_codes_impl(
             ptr,
             rust_vec_len,
             data_len,
         ),
-        137 => wire__crate__nostr__PublicFederation_auto_accessor_get_modules_impl(
+        138 => wire__crate__nostr__PublicFederation_auto_accessor_get_modules_impl(
             ptr,
             rust_vec_len,
             data_len,
         ),
-        138 => wire__crate__nostr__PublicFederation_auto_accessor_get_network_impl(
+        139 => wire__crate__nostr__PublicFederation_auto_accessor_get_network_impl(
             ptr,
             rust_vec_len,
             data_len,
         ),
-        139 => wire__crate__nostr__PublicFederation_auto_accessor_get_picture_impl(
+        140 => wire__crate__nostr__PublicFederation_auto_accessor_get_picture_impl(
             ptr,
             rust_vec_len,
             data_len,
         ),
-        140 => wire__crate__nostr__PublicFederation_auto_accessor_set_about_impl(
+        141 => wire__crate__nostr__PublicFederation_auto_accessor_set_about_impl(
             ptr,
             rust_vec_len,
             data_len,
         ),
-        141 => wire__crate__nostr__PublicFederation_auto_accessor_set_federation_id_impl(
+        142 => wire__crate__nostr__PublicFederation_auto_accessor_set_federation_id_impl(
             ptr,
             rust_vec_len,
             data_len,
         ),
-        142 => wire__crate__nostr__PublicFederation_auto_accessor_set_federation_name_impl(
+        143 => wire__crate__nostr__PublicFederation_auto_accessor_set_federation_name_impl(
             ptr,
             rust_vec_len,
             data_len,
         ),
-        143 => wire__crate__nostr__PublicFederation_auto_accessor_set_invite_codes_impl(
+        144 => wire__crate__nostr__PublicFederation_auto_accessor_set_invite_codes_impl(
             ptr,
             rust_vec_len,
             data_len,
         ),
-        144 => wire__crate__nostr__PublicFederation_auto_accessor_set_modules_impl(
+        145 => wire__crate__nostr__PublicFederation_auto_accessor_set_modules_impl(
             ptr,
             rust_vec_len,
             data_len,
         ),
-        145 => wire__crate__nostr__PublicFederation_auto_accessor_set_network_impl(
+        146 => wire__crate__nostr__PublicFederation_auto_accessor_set_network_impl(
             ptr,
             rust_vec_len,
             data_len,
         ),
-        146 => wire__crate__nostr__PublicFederation_auto_accessor_set_picture_impl(
+        147 => wire__crate__nostr__PublicFederation_auto_accessor_set_picture_impl(
             ptr,
             rust_vec_len,
             data_len,
         ),
-        147 => wire__crate__multimint__WithdrawFeesResponse_auto_accessor_get_fee_amount_impl(
+        148 => wire__crate__multimint__WithdrawFeesResponse_auto_accessor_get_fee_amount_impl(
             ptr,
             rust_vec_len,
             data_len,
         ),
-        148 => {
+        149 => {
             wire__crate__multimint__WithdrawFeesResponse_auto_accessor_get_fee_rate_sats_per_vb_impl(
                 ptr,
                 rust_vec_len,
                 data_len,
             )
         }
-        149 => wire__crate__multimint__WithdrawFeesResponse_auto_accessor_get_peg_out_fees_impl(
+        150 => wire__crate__multimint__WithdrawFeesResponse_auto_accessor_get_peg_out_fees_impl(
             ptr,
             rust_vec_len,
             data_len,
         ),
-        150 => wire__crate__multimint__WithdrawFeesResponse_auto_accessor_get_tx_size_vbytes_impl(
+        151 => wire__crate__multimint__WithdrawFeesResponse_auto_accessor_get_tx_size_vbytes_impl(
             ptr,
             rust_vec_len,
             data_len,
         ),
-        151 => wire__crate__multimint__WithdrawFeesResponse_auto_accessor_set_fee_amount_impl(
+        152 => wire__crate__multimint__WithdrawFeesResponse_auto_accessor_set_fee_amount_impl(
             ptr,
             rust_vec_len,
             data_len,
         ),
-        152 => {
+        153 => {
             wire__crate__multimint__WithdrawFeesResponse_auto_accessor_set_fee_rate_sats_per_vb_impl(
                 ptr,
                 rust_vec_len,
                 data_len,
             )
         }
-        153 => wire__crate__multimint__WithdrawFeesResponse_auto_accessor_set_peg_out_fees_impl(
+        154 => wire__crate__multimint__WithdrawFeesResponse_auto_accessor_set_peg_out_fees_impl(
             ptr,
             rust_vec_len,
             data_len,
         ),
-        154 => wire__crate__multimint__WithdrawFeesResponse_auto_accessor_set_tx_size_vbytes_impl(
+        155 => wire__crate__multimint__WithdrawFeesResponse_auto_accessor_set_tx_size_vbytes_impl(
             ptr,
             rust_vec_len,
             data_len,
@@ -16114,6 +16284,61 @@ impl flutter_rust_bridge::IntoIntoDart<crate::db::Contact> for crate::db::Contac
     }
 }
 // Codec=Dco (DartCObject based), see doc to use other codecs
+impl flutter_rust_bridge::IntoDart for crate::db::ContactSyncConfig {
+    fn into_dart(self) -> flutter_rust_bridge::for_generated::DartAbi {
+        [
+            self.npub.into_into_dart().into_dart(),
+            self.last_sync_at.into_into_dart().into_dart(),
+            self.sync_enabled.into_into_dart().into_dart(),
+        ]
+        .into_dart()
+    }
+}
+impl flutter_rust_bridge::for_generated::IntoDartExceptPrimitive for crate::db::ContactSyncConfig {}
+impl flutter_rust_bridge::IntoIntoDart<crate::db::ContactSyncConfig>
+    for crate::db::ContactSyncConfig
+{
+    fn into_into_dart(self) -> crate::db::ContactSyncConfig {
+        self
+    }
+}
+// Codec=Dco (DartCObject based), see doc to use other codecs
+impl flutter_rust_bridge::IntoDart for crate::multimint::ContactSyncEventKind {
+    fn into_dart(self) -> flutter_rust_bridge::for_generated::DartAbi {
+        match self {
+            crate::multimint::ContactSyncEventKind::Started => [0.into_dart()].into_dart(),
+            crate::multimint::ContactSyncEventKind::Completed {
+                added,
+                updated,
+                removed,
+            } => [
+                1.into_dart(),
+                added.into_into_dart().into_dart(),
+                updated.into_into_dart().into_dart(),
+                removed.into_into_dart().into_dart(),
+            ]
+            .into_dart(),
+            crate::multimint::ContactSyncEventKind::Error(field0) => {
+                [2.into_dart(), field0.into_into_dart().into_dart()].into_dart()
+            }
+            _ => {
+                unimplemented!("");
+            }
+        }
+    }
+}
+impl flutter_rust_bridge::for_generated::IntoDartExceptPrimitive
+    for crate::multimint::ContactSyncEventKind
+{
+}
+impl flutter_rust_bridge::IntoIntoDart<crate::multimint::ContactSyncEventKind>
+    for crate::multimint::ContactSyncEventKind
+{
+    fn into_into_dart(self) -> crate::multimint::ContactSyncEventKind {
+        self
+    }
+}
+// Codec=Dco (DartCObject based), see doc to use other codecs
 impl flutter_rust_bridge::IntoDart for crate::multimint::DepositEventKind {
     fn into_dart(self) -> flutter_rust_bridge::for_generated::DartAbi {
         match self {
@@ -16407,6 +16632,9 @@ impl flutter_rust_bridge::IntoDart for crate::multimint::MultimintEvent {
                 field2.into_into_dart().into_dart(),
             ]
             .into_dart(),
+            crate::multimint::MultimintEvent::ContactSync(field0) => {
+                [7.into_dart(), field0.into_into_dart().into_dart()].into_dart()
+            }
             _ => {
                 unimplemented!("");
             }
@@ -17254,6 +17482,43 @@ impl SseEncode for crate::db::Contact {
     }
 }
 
+impl SseEncode for crate::db::ContactSyncConfig {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
+        <String>::sse_encode(self.npub, serializer);
+        <Option<u64>>::sse_encode(self.last_sync_at, serializer);
+        <bool>::sse_encode(self.sync_enabled, serializer);
+    }
+}
+
+impl SseEncode for crate::multimint::ContactSyncEventKind {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
+        match self {
+            crate::multimint::ContactSyncEventKind::Started => {
+                <i32>::sse_encode(0, serializer);
+            }
+            crate::multimint::ContactSyncEventKind::Completed {
+                added,
+                updated,
+                removed,
+            } => {
+                <i32>::sse_encode(1, serializer);
+                <usize>::sse_encode(added, serializer);
+                <usize>::sse_encode(updated, serializer);
+                <usize>::sse_encode(removed, serializer);
+            }
+            crate::multimint::ContactSyncEventKind::Error(field0) => {
+                <i32>::sse_encode(2, serializer);
+                <String>::sse_encode(field0, serializer);
+            }
+            _ => {
+                unimplemented!("");
+            }
+        }
+    }
+}
+
 impl SseEncode for crate::multimint::DepositEventKind {
     // Codec=Sse (Serialization based), see doc to use other codecs
     fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
@@ -17667,6 +17932,10 @@ impl SseEncode for crate::multimint::MultimintEvent {
                 <u16>::sse_encode(field1, serializer);
                 <Option<FederationSelector>>::sse_encode(field2, serializer);
             }
+            crate::multimint::MultimintEvent::ContactSync(field0) => {
+                <i32>::sse_encode(7, serializer);
+                <crate::multimint::ContactSyncEventKind>::sse_encode(field0, serializer);
+            }
             _ => {
                 unimplemented!("");
             }
@@ -17750,6 +18019,16 @@ impl SseEncode for Option<crate::db::Contact> {
         <bool>::sse_encode(self.is_some(), serializer);
         if let Some(value) = self {
             <crate::db::Contact>::sse_encode(value, serializer);
+        }
+    }
+}
+
+impl SseEncode for Option<crate::db::ContactSyncConfig> {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
+        <bool>::sse_encode(self.is_some(), serializer);
+        if let Some(value) = self {
+            <crate::db::ContactSyncConfig>::sse_encode(value, serializer);
         }
     }
 }
@@ -18043,6 +18322,15 @@ impl SseEncode for (u64, usize) {
     fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
         <u64>::sse_encode(self.0, serializer);
         <usize>::sse_encode(self.1, serializer);
+    }
+}
+
+impl SseEncode for (usize, usize, usize) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
+        <usize>::sse_encode(self.0, serializer);
+        <usize>::sse_encode(self.1, serializer);
+        <usize>::sse_encode(self.2, serializer);
     }
 }
 

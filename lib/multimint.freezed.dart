@@ -13,6 +13,204 @@ part of 'multimint.dart';
 // dart format off
 T _$identity<T>(T value) => value;
 /// @nodoc
+mixin _$ContactSyncEventKind {
+
+
+
+
+
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is ContactSyncEventKind);
+}
+
+
+@override
+int get hashCode => runtimeType.hashCode;
+
+@override
+String toString() {
+  return 'ContactSyncEventKind()';
+}
+
+
+}
+
+/// @nodoc
+class $ContactSyncEventKindCopyWith<$Res>  {
+$ContactSyncEventKindCopyWith(ContactSyncEventKind _, $Res Function(ContactSyncEventKind) __);
+}
+
+
+/// @nodoc
+
+
+class ContactSyncEventKind_Started extends ContactSyncEventKind {
+  const ContactSyncEventKind_Started(): super._();
+  
+
+
+
+
+
+
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is ContactSyncEventKind_Started);
+}
+
+
+@override
+int get hashCode => runtimeType.hashCode;
+
+@override
+String toString() {
+  return 'ContactSyncEventKind.started()';
+}
+
+
+}
+
+
+
+
+/// @nodoc
+
+
+class ContactSyncEventKind_Completed extends ContactSyncEventKind {
+  const ContactSyncEventKind_Completed({required this.added, required this.updated, required this.removed}): super._();
+  
+
+ final  BigInt added;
+ final  BigInt updated;
+ final  BigInt removed;
+
+/// Create a copy of ContactSyncEventKind
+/// with the given fields replaced by the non-null parameter values.
+@JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+$ContactSyncEventKind_CompletedCopyWith<ContactSyncEventKind_Completed> get copyWith => _$ContactSyncEventKind_CompletedCopyWithImpl<ContactSyncEventKind_Completed>(this, _$identity);
+
+
+
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is ContactSyncEventKind_Completed&&(identical(other.added, added) || other.added == added)&&(identical(other.updated, updated) || other.updated == updated)&&(identical(other.removed, removed) || other.removed == removed));
+}
+
+
+@override
+int get hashCode => Object.hash(runtimeType,added,updated,removed);
+
+@override
+String toString() {
+  return 'ContactSyncEventKind.completed(added: $added, updated: $updated, removed: $removed)';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class $ContactSyncEventKind_CompletedCopyWith<$Res> implements $ContactSyncEventKindCopyWith<$Res> {
+  factory $ContactSyncEventKind_CompletedCopyWith(ContactSyncEventKind_Completed value, $Res Function(ContactSyncEventKind_Completed) _then) = _$ContactSyncEventKind_CompletedCopyWithImpl;
+@useResult
+$Res call({
+ BigInt added, BigInt updated, BigInt removed
+});
+
+
+
+
+}
+/// @nodoc
+class _$ContactSyncEventKind_CompletedCopyWithImpl<$Res>
+    implements $ContactSyncEventKind_CompletedCopyWith<$Res> {
+  _$ContactSyncEventKind_CompletedCopyWithImpl(this._self, this._then);
+
+  final ContactSyncEventKind_Completed _self;
+  final $Res Function(ContactSyncEventKind_Completed) _then;
+
+/// Create a copy of ContactSyncEventKind
+/// with the given fields replaced by the non-null parameter values.
+@pragma('vm:prefer-inline') $Res call({Object? added = null,Object? updated = null,Object? removed = null,}) {
+  return _then(ContactSyncEventKind_Completed(
+added: null == added ? _self.added : added // ignore: cast_nullable_to_non_nullable
+as BigInt,updated: null == updated ? _self.updated : updated // ignore: cast_nullable_to_non_nullable
+as BigInt,removed: null == removed ? _self.removed : removed // ignore: cast_nullable_to_non_nullable
+as BigInt,
+  ));
+}
+
+
+}
+
+/// @nodoc
+
+
+class ContactSyncEventKind_Error extends ContactSyncEventKind {
+  const ContactSyncEventKind_Error(this.field0): super._();
+  
+
+ final  String field0;
+
+/// Create a copy of ContactSyncEventKind
+/// with the given fields replaced by the non-null parameter values.
+@JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+$ContactSyncEventKind_ErrorCopyWith<ContactSyncEventKind_Error> get copyWith => _$ContactSyncEventKind_ErrorCopyWithImpl<ContactSyncEventKind_Error>(this, _$identity);
+
+
+
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is ContactSyncEventKind_Error&&(identical(other.field0, field0) || other.field0 == field0));
+}
+
+
+@override
+int get hashCode => Object.hash(runtimeType,field0);
+
+@override
+String toString() {
+  return 'ContactSyncEventKind.error(field0: $field0)';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class $ContactSyncEventKind_ErrorCopyWith<$Res> implements $ContactSyncEventKindCopyWith<$Res> {
+  factory $ContactSyncEventKind_ErrorCopyWith(ContactSyncEventKind_Error value, $Res Function(ContactSyncEventKind_Error) _then) = _$ContactSyncEventKind_ErrorCopyWithImpl;
+@useResult
+$Res call({
+ String field0
+});
+
+
+
+
+}
+/// @nodoc
+class _$ContactSyncEventKind_ErrorCopyWithImpl<$Res>
+    implements $ContactSyncEventKind_ErrorCopyWith<$Res> {
+  _$ContactSyncEventKind_ErrorCopyWithImpl(this._self, this._then);
+
+  final ContactSyncEventKind_Error _self;
+  final $Res Function(ContactSyncEventKind_Error) _then;
+
+/// Create a copy of ContactSyncEventKind
+/// with the given fields replaced by the non-null parameter values.
+@pragma('vm:prefer-inline') $Res call({Object? field0 = null,}) {
+  return _then(ContactSyncEventKind_Error(
+null == field0 ? _self.field0 : field0 // ignore: cast_nullable_to_non_nullable
+as String,
+  ));
+}
+
+
+}
+
+/// @nodoc
 mixin _$DepositEventKind {
 
  Object get field0;
@@ -1454,6 +1652,81 @@ as FederationSelector?,
 }
 
 
+}
+
+/// @nodoc
+
+
+class MultimintEvent_ContactSync extends MultimintEvent {
+  const MultimintEvent_ContactSync(this.field0): super._();
+  
+
+@override final  ContactSyncEventKind field0;
+
+/// Create a copy of MultimintEvent
+/// with the given fields replaced by the non-null parameter values.
+@JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+$MultimintEvent_ContactSyncCopyWith<MultimintEvent_ContactSync> get copyWith => _$MultimintEvent_ContactSyncCopyWithImpl<MultimintEvent_ContactSync>(this, _$identity);
+
+
+
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is MultimintEvent_ContactSync&&(identical(other.field0, field0) || other.field0 == field0));
+}
+
+
+@override
+int get hashCode => Object.hash(runtimeType,field0);
+
+@override
+String toString() {
+  return 'MultimintEvent.contactSync(field0: $field0)';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class $MultimintEvent_ContactSyncCopyWith<$Res> implements $MultimintEventCopyWith<$Res> {
+  factory $MultimintEvent_ContactSyncCopyWith(MultimintEvent_ContactSync value, $Res Function(MultimintEvent_ContactSync) _then) = _$MultimintEvent_ContactSyncCopyWithImpl;
+@useResult
+$Res call({
+ ContactSyncEventKind field0
+});
+
+
+$ContactSyncEventKindCopyWith<$Res> get field0;
+
+}
+/// @nodoc
+class _$MultimintEvent_ContactSyncCopyWithImpl<$Res>
+    implements $MultimintEvent_ContactSyncCopyWith<$Res> {
+  _$MultimintEvent_ContactSyncCopyWithImpl(this._self, this._then);
+
+  final MultimintEvent_ContactSync _self;
+  final $Res Function(MultimintEvent_ContactSync) _then;
+
+/// Create a copy of MultimintEvent
+/// with the given fields replaced by the non-null parameter values.
+@pragma('vm:prefer-inline') $Res call({Object? field0 = null,}) {
+  return _then(MultimintEvent_ContactSync(
+null == field0 ? _self.field0 : field0 // ignore: cast_nullable_to_non_nullable
+as ContactSyncEventKind,
+  ));
+}
+
+/// Create a copy of MultimintEvent
+/// with the given fields replaced by the non-null parameter values.
+@override
+@pragma('vm:prefer-inline')
+$ContactSyncEventKindCopyWith<$Res> get field0 {
+  
+  return $ContactSyncEventKindCopyWith<$Res>(_self.field0, (value) {
+    return _then(_self.copyWith(field0: value));
+  });
+}
 }
 
 /// @nodoc

@@ -46,8 +46,8 @@ use std::path::PathBuf;
 use std::{str::FromStr, sync::Arc};
 
 use crate::db::{
-    BitcoinDisplay, Contact, ContactPayment, FederationConfig, FederationConfigKey,
-    FederationConfigKeyPrefix, FiatCurrency, LightningAddressConfig,
+    BitcoinDisplay, Contact, ContactPayment, ContactSyncConfig, FederationConfig,
+    FederationConfigKey, FederationConfigKeyPrefix, FiatCurrency, LightningAddressConfig,
 };
 use crate::frb_generated::StreamSink;
 use crate::multimint::{DepositEventKind, FedimintGateway, LNAddressStatus};
@@ -79,7 +79,7 @@ async fn get_database(path: String) -> Database {
         .clone()
 }
 
-fn get_nostr_client() -> Arc<RwLock<NostrClient>> {
+pub(crate) fn get_nostr_client() -> Arc<RwLock<NostrClient>> {
     NOSTR.get().expect("NostrClient not initialized").clone()
 }
 
@@ -1207,7 +1207,7 @@ pub async fn set_contacts_imported() {
     nostr.set_contacts_imported().await;
 }
 
-/// Import contacts from Nostr profiles into the database
+/// Import contacts from Nostr profiles into the database (for initial sync setup)
 #[frb]
 pub async fn import_contacts(profiles: Vec<NostrProfile>) -> anyhow::Result<usize> {
     let nostr_client = get_nostr_client();
@@ -1215,20 +1215,36 @@ pub async fn import_contacts(profiles: Vec<NostrProfile>) -> anyhow::Result<usiz
     nostr.import_contacts(profiles).await
 }
 
-/// Add a single contact by npub
+/// Setup contact sync with an npub - configures automatic syncing from Nostr follows
 #[frb]
-pub async fn add_contact_by_npub(npub: String) -> anyhow::Result<Contact> {
+pub async fn setup_contact_sync(npub: String) {
     let nostr_client = get_nostr_client();
     let nostr = nostr_client.read().await;
-    nostr.add_contact_by_npub(npub).await
+    nostr.set_contact_sync_config(npub, true).await;
 }
 
-/// Add a contact by NIP-05 identifier (e.g., "user@domain.com")
+/// Trigger an immediate contact sync
 #[frb]
-pub async fn add_contact_by_nip05(nip05_id: String) -> anyhow::Result<Contact> {
+pub async fn sync_contacts_now() -> anyhow::Result<(usize, usize, usize)> {
     let nostr_client = get_nostr_client();
     let nostr = nostr_client.read().await;
-    nostr.add_contact_by_nip05(nip05_id).await
+    nostr.sync_contacts().await
+}
+
+/// Get the current contact sync configuration
+#[frb]
+pub async fn get_contact_sync_config() -> Option<ContactSyncConfig> {
+    let nostr_client = get_nostr_client();
+    let nostr = nostr_client.read().await;
+    nostr.get_contact_sync_config().await
+}
+
+/// Clear all contacts and stop syncing
+#[frb]
+pub async fn clear_contacts_and_stop_sync() -> usize {
+    let nostr_client = get_nostr_client();
+    let nostr = nostr_client.read().await;
+    nostr.clear_contacts_and_stop_sync().await
 }
 
 /// Get all contacts, sorted by last_paid_at (recent first)
@@ -1245,14 +1261,6 @@ pub async fn get_contact(npub: String) -> Option<Contact> {
     let nostr_client = get_nostr_client();
     let nostr = nostr_client.read().await;
     nostr.get_contact(&npub).await
-}
-
-/// Delete a contact
-#[frb]
-pub async fn delete_contact(npub: String) {
-    let nostr_client = get_nostr_client();
-    let nostr = nostr_client.read().await;
-    nostr.delete_contact(&npub).await;
 }
 
 /// Refresh a contact's profile from Nostr

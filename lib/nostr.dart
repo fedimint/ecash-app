@@ -15,16 +15,10 @@ import 'package:flutter_rust_bridge/flutter_rust_bridge_for_generated.dart';
 
 // Rust type: RustOpaqueMoi<flutter_rust_bridge::for_generated::RustAutoOpaqueInner<NostrClient>>
 abstract class NostrClient implements RustOpaqueInterface {
-  /// Add a contact by NIP-05 identifier
-  Future<Contact> addContactByNip05({required String nip05Id});
-
-  /// Add a single contact by npub
-  Future<Contact> addContactByNpub({required String npub});
-
   Future<void> backupInviteCodes({required List<String> inviteCodes});
 
-  /// Delete a contact
-  Future<void> deleteContact({required String npub});
+  /// Clear all contacts and stop syncing
+  Future<BigInt> clearContactsAndStopSync();
 
   /// Fetch a single profile by npub
   Future<NostrProfile> fetchNostrProfile({required String npub});
@@ -45,6 +39,9 @@ abstract class NostrClient implements RustOpaqueInterface {
     required String npub,
     required BigInt limit,
   });
+
+  /// Get contact sync configuration
+  Future<ContactSyncConfig?> getContactSyncConfig();
 
   /// Fetch follows list for any pubkey (Kind 3 contact list)
   Future<List<String>> getFollowsForPubkey({required String npub});
@@ -117,6 +114,12 @@ abstract class NostrClient implements RustOpaqueInterface {
   /// Search contacts by name, display_name, nip05, or npub
   Future<List<Contact>> searchContacts({required String query});
 
+  /// Set up contact sync with an npub
+  Future<void> setContactSyncConfig({
+    required String npub,
+    required bool enabled,
+  });
+
   /// Mark contacts as having been imported
   Future<void> setContactsImported();
 
@@ -125,6 +128,11 @@ abstract class NostrClient implements RustOpaqueInterface {
     required String relay,
     required bool isDesktop,
   });
+
+  /// Sync contacts from Nostr follows
+  /// Fetches follows from the configured npub, filters to those with lightning addresses,
+  /// and updates the contact database
+  Future<(BigInt, BigInt, BigInt)> syncContacts();
 
   /// Update a contact's NIP-05 verification status
   Future<void> updateContactNip05Verification({

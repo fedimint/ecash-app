@@ -466,17 +466,25 @@ Future<bool> hasImportedContacts() =>
 Future<void> setContactsImported() =>
     RustLib.instance.api.crateSetContactsImported();
 
-/// Import contacts from Nostr profiles into the database
+/// Import contacts from Nostr profiles into the database (for initial sync setup)
 Future<BigInt> importContacts({required List<NostrProfile> profiles}) =>
     RustLib.instance.api.crateImportContacts(profiles: profiles);
 
-/// Add a single contact by npub
-Future<Contact> addContactByNpub({required String npub}) =>
-    RustLib.instance.api.crateAddContactByNpub(npub: npub);
+/// Setup contact sync with an npub - configures automatic syncing from Nostr follows
+Future<void> setupContactSync({required String npub}) =>
+    RustLib.instance.api.crateSetupContactSync(npub: npub);
 
-/// Add a contact by NIP-05 identifier (e.g., "user@domain.com")
-Future<Contact> addContactByNip05({required String nip05Id}) =>
-    RustLib.instance.api.crateAddContactByNip05(nip05Id: nip05Id);
+/// Trigger an immediate contact sync
+Future<(BigInt, BigInt, BigInt)> syncContactsNow() =>
+    RustLib.instance.api.crateSyncContactsNow();
+
+/// Get the current contact sync configuration
+Future<ContactSyncConfig?> getContactSyncConfig() =>
+    RustLib.instance.api.crateGetContactSyncConfig();
+
+/// Clear all contacts and stop syncing
+Future<BigInt> clearContactsAndStopSync() =>
+    RustLib.instance.api.crateClearContactsAndStopSync();
 
 /// Get all contacts, sorted by last_paid_at (recent first)
 Future<List<Contact>> getAllContacts() =>
@@ -485,10 +493,6 @@ Future<List<Contact>> getAllContacts() =>
 /// Get a single contact by npub
 Future<Contact?> getContact({required String npub}) =>
     RustLib.instance.api.crateGetContact(npub: npub);
-
-/// Delete a contact
-Future<void> deleteContact({required String npub}) =>
-    RustLib.instance.api.crateDeleteContact(npub: npub);
 
 /// Refresh a contact's profile from Nostr
 Future<Contact> refreshContactProfile({required String npub}) =>

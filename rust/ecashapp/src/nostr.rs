@@ -1,6 +1,6 @@
 use nostr_sdk::ToBech32;
 use std::{
-    collections::BTreeMap,
+    collections::{BTreeMap, HashSet},
     str::FromStr,
     sync::Arc,
     time::{Duration, SystemTime, UNIX_EPOCH},
@@ -10,11 +10,12 @@ use crate::{
     anyhow, await_send, balance,
     db::{
         Contact, ContactKey, ContactKeyPrefix, ContactPayment, ContactPaymentByNpubPrefix,
-        ContactPaymentKey, ContactsImportedKey, NostrRelaysKey, NostrRelaysKeyPrefix,
-        NostrWalletConnectConfig, NostrWalletConnectKey, NostrWalletConnectKeyPrefix,
+        ContactPaymentKey, ContactSyncConfig, ContactSyncConfigKey, ContactsImportedKey,
+        NostrRelaysKey, NostrRelaysKeyPrefix, NostrWalletConnectConfig, NostrWalletConnectKey,
+        NostrWalletConnectKeyPrefix,
     },
-    error_to_flutter, federations, info_to_flutter,
-    multimint::{FederationSelector, LightningSendOutcome},
+    error_to_flutter, federations, get_event_bus, info_to_flutter,
+    multimint::{ContactSyncEventKind, FederationSelector, LightningSendOutcome, MultimintEvent},
     payment_preview, send,
 };
 use anyhow::bail;
@@ -978,6 +979,241 @@ impl NostrClient {
         dbtx.commit_tx().await;
     }
 
+    /// Get contact sync configuration
+    pub async fn get_contact_sync_config(&self) -> Option<ContactSyncConfig> {
+        let mut dbtx = self.db.begin_transaction_nc().await;
+        dbtx.get_value(&ContactSyncConfigKey).await
+    }
+
+    /// Set up contact sync with an npub
+    pub async fn set_contact_sync_config(&self, npub: String, enabled: bool) {
+        let config = ContactSyncConfig {
+            npub,
+            last_sync_at: None,
+            sync_enabled: enabled,
+        };
+        let mut dbtx = self.db.begin_transaction().await;
+        dbtx.insert_entry(&ContactSyncConfigKey, &config).await;
+        dbtx.commit_tx().await;
+    }
+
+    /// Clear all contacts and stop syncing
+    pub async fn clear_contacts_and_stop_sync(&self) -> usize {
+        let mut dbtx = self.db.begin_transaction().await;
+
+        // Get all contacts to count them
+        let contacts: Vec<_> = dbtx
+            .find_by_prefix(&ContactKeyPrefix)
+            .await
+            .collect()
+            .await;
+        let count = contacts.len();
+
+        // Remove all contacts
+        for (key, _) in contacts {
+            dbtx.remove_entry(&key).await;
+        }
+
+        // Remove sync config (this stops syncing)
+        dbtx.remove_entry(&ContactSyncConfigKey).await;
+
+        // Remove the imported flag so the sync dialog will show again
+        dbtx.remove_entry(&ContactsImportedKey).await;
+
+        dbtx.commit_tx().await;
+
+        info_to_flutter(format!("Cleared {} contacts and stopped syncing", count)).await;
+        count
+    }
+
+    /// Sync contacts from Nostr follows
+    /// Fetches follows from the configured npub, filters to those with lightning addresses,
+    /// and updates the contact database
+    pub async fn sync_contacts(&self) -> anyhow::Result<(usize, usize, usize)> {
+        let config = self
+            .get_contact_sync_config()
+            .await
+            .ok_or_else(|| anyhow!("Contact sync not configured"))?;
+
+        if !config.sync_enabled {
+            return Ok((0, 0, 0));
+        }
+
+        // Publish sync started event
+        get_event_bus()
+            .publish(MultimintEvent::ContactSync(ContactSyncEventKind::Started))
+            .await;
+
+        // Fetch follows for the configured npub
+        let follows = match self.get_follows_for_pubkey(config.npub.clone()).await {
+            Ok(f) => f,
+            Err(e) => {
+                let error_msg = format!("Failed to fetch follows: {}", e);
+                get_event_bus()
+                    .publish(MultimintEvent::ContactSync(ContactSyncEventKind::Error(
+                        error_msg,
+                    )))
+                    .await;
+                return Err(e);
+            }
+        };
+
+        if follows.is_empty() {
+            // Update last sync time even if no follows
+            let updated_config = ContactSyncConfig {
+                npub: config.npub,
+                last_sync_at: Some(Self::now_millis()),
+                sync_enabled: true,
+            };
+            let mut dbtx = self.db.begin_transaction().await;
+            dbtx.insert_entry(&ContactSyncConfigKey, &updated_config)
+                .await;
+            dbtx.commit_tx().await;
+
+            get_event_bus()
+                .publish(MultimintEvent::ContactSync(
+                    ContactSyncEventKind::Completed {
+                        added: 0,
+                        updated: 0,
+                        removed: 0,
+                    },
+                ))
+                .await;
+            return Ok((0, 0, 0));
+        }
+
+        // Fetch profiles for follows
+        let profiles = match self.fetch_nostr_profiles(follows).await {
+            Ok(p) => p,
+            Err(e) => {
+                let error_msg = format!("Failed to fetch profiles: {}", e);
+                get_event_bus()
+                    .publish(MultimintEvent::ContactSync(ContactSyncEventKind::Error(
+                        error_msg,
+                    )))
+                    .await;
+                return Err(e);
+            }
+        };
+
+        // Filter to only profiles with lightning addresses
+        let profiles_with_ln: Vec<NostrProfile> = profiles
+            .into_iter()
+            .filter(|p| p.lud16.as_ref().is_some_and(|l| !l.is_empty()))
+            .collect();
+
+        // Get current contacts
+        let current_contacts = self.get_all_contacts().await;
+        let current_npubs: HashSet<String> =
+            current_contacts.iter().map(|c| c.npub.clone()).collect();
+        let new_npubs: HashSet<String> = profiles_with_ln.iter().map(|p| p.npub.clone()).collect();
+
+        // Determine adds, updates, removes
+        let to_add: Vec<&NostrProfile> = profiles_with_ln
+            .iter()
+            .filter(|p| !current_npubs.contains(&p.npub))
+            .collect();
+        let to_remove: Vec<&Contact> = current_contacts
+            .iter()
+            .filter(|c| !new_npubs.contains(&c.npub))
+            .collect();
+        let to_update: Vec<&NostrProfile> = profiles_with_ln
+            .iter()
+            .filter(|p| current_npubs.contains(&p.npub))
+            .collect();
+
+        let now = Self::now_millis();
+        let mut dbtx = self.db.begin_transaction().await;
+
+        // Remove contacts that are no longer follows (payment history preserved in separate table)
+        for contact in &to_remove {
+            dbtx.remove_entry(&ContactKey {
+                npub: contact.npub.clone(),
+            })
+            .await;
+        }
+
+        // Add new contacts
+        for profile in &to_add {
+            let contact = Contact {
+                npub: profile.npub.clone(),
+                name: profile.name.clone(),
+                display_name: profile.display_name.clone(),
+                picture: profile.picture.clone(),
+                lud16: profile.lud16.clone(),
+                nip05: profile.nip05.clone(),
+                nip05_verified: false,
+                about: profile.about.clone(),
+                created_at: now,
+                last_paid_at: None,
+            };
+            dbtx.insert_entry(
+                &ContactKey {
+                    npub: profile.npub.clone(),
+                },
+                &contact,
+            )
+            .await;
+        }
+
+        // Update existing contacts (preserve last_paid_at and created_at)
+        for profile in &to_update {
+            if let Some(existing) = current_contacts.iter().find(|c| c.npub == profile.npub) {
+                let contact = Contact {
+                    npub: profile.npub.clone(),
+                    name: profile.name.clone(),
+                    display_name: profile.display_name.clone(),
+                    picture: profile.picture.clone(),
+                    lud16: profile.lud16.clone(),
+                    nip05: profile.nip05.clone(),
+                    nip05_verified: existing.nip05_verified,
+                    about: profile.about.clone(),
+                    created_at: existing.created_at,
+                    last_paid_at: existing.last_paid_at,
+                };
+                dbtx.insert_entry(
+                    &ContactKey {
+                        npub: profile.npub.clone(),
+                    },
+                    &contact,
+                )
+                .await;
+            }
+        }
+
+        // Update sync timestamp
+        let updated_config = ContactSyncConfig {
+            npub: config.npub,
+            last_sync_at: Some(now),
+            sync_enabled: true,
+        };
+        dbtx.insert_entry(&ContactSyncConfigKey, &updated_config)
+            .await;
+
+        dbtx.commit_tx().await;
+
+        let result = (to_add.len(), to_update.len(), to_remove.len());
+
+        info_to_flutter(format!(
+            "Contact sync: +{} added, ~{} updated, -{} removed",
+            result.0, result.1, result.2
+        ))
+        .await;
+
+        // Publish sync completed event
+        get_event_bus()
+            .publish(MultimintEvent::ContactSync(
+                ContactSyncEventKind::Completed {
+                    added: result.0,
+                    updated: result.1,
+                    removed: result.2,
+                },
+            ))
+            .await;
+
+        Ok(result)
+    }
+
     /// Helper to get current time as milliseconds since Unix epoch
     fn now_millis() -> u64 {
         SystemTime::now()
@@ -1021,59 +1257,6 @@ impl NostrClient {
         Ok(imported_count)
     }
 
-    /// Add a single contact by npub
-    pub async fn add_contact_by_npub(&self, npub: String) -> anyhow::Result<Contact> {
-        // First fetch the profile from Nostr
-        let profile = self.fetch_nostr_profile(npub.clone()).await?;
-
-        let contact = Contact {
-            npub: profile.npub.clone(),
-            name: profile.name,
-            display_name: profile.display_name,
-            picture: profile.picture,
-            lud16: profile.lud16,
-            nip05: profile.nip05.clone(),
-            nip05_verified: false,
-            about: profile.about,
-            created_at: Self::now_millis(),
-            last_paid_at: None,
-        };
-
-        let mut dbtx = self.db.begin_transaction().await;
-        dbtx.insert_entry(&ContactKey { npub }, &contact).await;
-        dbtx.commit_tx().await;
-
-        Ok(contact)
-    }
-
-    /// Add a contact by NIP-05 identifier
-    pub async fn add_contact_by_nip05(&self, nip05_id: String) -> anyhow::Result<Contact> {
-        // Verify NIP-05 and get the npub
-        let npub = self.verify_nip05(&nip05_id).await?;
-
-        // Fetch the full profile
-        let profile = self.fetch_nostr_profile(npub.clone()).await?;
-
-        let contact = Contact {
-            npub: profile.npub.clone(),
-            name: profile.name,
-            display_name: profile.display_name,
-            picture: profile.picture,
-            lud16: profile.lud16,
-            nip05: Some(nip05_id),
-            nip05_verified: true, // We just verified it
-            about: profile.about,
-            created_at: Self::now_millis(),
-            last_paid_at: None,
-        };
-
-        let mut dbtx = self.db.begin_transaction().await;
-        dbtx.insert_entry(&ContactKey { npub }, &contact).await;
-        dbtx.commit_tx().await;
-
-        Ok(contact)
-    }
-
     /// Get all contacts, sorted by last_paid_at (most recent first), then by created_at
     pub async fn get_all_contacts(&self) -> Vec<Contact> {
         let mut dbtx = self.db.begin_transaction_nc().await;
@@ -1102,16 +1285,6 @@ impl NostrClient {
             npub: npub.to_string(),
         })
         .await
-    }
-
-    /// Delete a contact
-    pub async fn delete_contact(&self, npub: &str) {
-        let mut dbtx = self.db.begin_transaction().await;
-        dbtx.remove_entry(&ContactKey {
-            npub: npub.to_string(),
-        })
-        .await;
-        dbtx.commit_tx().await;
     }
 
     /// Refresh a contact's profile from Nostr

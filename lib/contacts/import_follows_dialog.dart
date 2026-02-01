@@ -1,5 +1,4 @@
 import 'package:ecashapp/lib.dart';
-import 'package:ecashapp/nostr.dart';
 import 'package:ecashapp/toast.dart';
 import 'package:ecashapp/utils.dart';
 import 'package:flutter/material.dart';
@@ -7,17 +6,12 @@ import 'package:flutter/services.dart';
 
 enum _IdentityMethod { npub, nip05 }
 
-enum _DialogState { identityInput, loadingFollows, profileList }
+enum _DialogState { identityInput, loadingFollows, syncPreview }
 
 class ImportFollowsDialog extends StatefulWidget {
   final VoidCallback onImportComplete;
-  final VoidCallback onSkip;
 
-  const ImportFollowsDialog({
-    super.key,
-    required this.onImportComplete,
-    required this.onSkip,
-  });
+  const ImportFollowsDialog({super.key, required this.onImportComplete});
 
   @override
   State<ImportFollowsDialog> createState() => _ImportFollowsDialogState();
@@ -32,9 +26,10 @@ class _ImportFollowsDialogState extends State<ImportFollowsDialog> {
 
   // Follows/profile state
   _DialogState _dialogState = _DialogState.identityInput;
-  bool _importing = false;
-  List<NostrProfile> _profiles = [];
-  Set<String> _selectedNpubs = {};
+  bool _syncing = false;
+  String? _resolvedNpub;
+  int _totalFollows = 0;
+  int _profilesWithLn = 0;
   String? _errorMessage;
 
   @override
@@ -94,6 +89,7 @@ class _ImportFollowsDialogState extends State<ImportFollowsDialog> {
 
       setState(() {
         _resolvingIdentity = false;
+        _resolvedNpub = npub;
         _dialogState = _DialogState.loadingFollows;
       });
 
@@ -101,31 +97,28 @@ class _ImportFollowsDialogState extends State<ImportFollowsDialog> {
       final follows = await getFollowsForPubkey(npub: npub);
       if (follows.isEmpty) {
         setState(() {
-          _dialogState = _DialogState.profileList;
+          _dialogState = _DialogState.syncPreview;
           _errorMessage = 'No follows found for this identity';
         });
         return;
       }
 
-      // Fetch profiles for the follows
+      // Fetch profiles for the follows to count those with lightning addresses
       final profiles = await fetchNostrProfiles(npubs: follows);
+      final withLn =
+          profiles.where((p) => p.lud16 != null && p.lud16!.isNotEmpty).length;
 
       setState(() {
-        _profiles = profiles;
-        // Select all profiles with lightning addresses by default
-        _selectedNpubs =
-            profiles
-                .where((p) => p.lud16 != null && p.lud16!.isNotEmpty)
-                .map((p) => p.npub)
-                .toSet();
-        _dialogState = _DialogState.profileList;
+        _totalFollows = profiles.length;
+        _profilesWithLn = withLn;
+        _dialogState = _DialogState.syncPreview;
       });
     } catch (e) {
       AppLogger.instance.error('Failed to load follows: $e');
       setState(() {
         _resolvingIdentity = false;
         if (_dialogState == _DialogState.loadingFollows) {
-          _dialogState = _DialogState.profileList;
+          _dialogState = _DialogState.syncPreview;
           _errorMessage = 'Failed to load follows from Nostr';
         } else {
           _identityError =
@@ -179,10 +172,10 @@ class _ImportFollowsDialogState extends State<ImportFollowsDialog> {
     }
   }
 
-  Future<void> _importSelected() async {
-    if (_selectedNpubs.isEmpty) {
+  Future<void> _startSync() async {
+    if (_resolvedNpub == null || _profilesWithLn == 0) {
       ToastService().show(
-        message: 'Please select at least one contact',
+        message: 'No contacts with Lightning Address to sync',
         duration: const Duration(seconds: 2),
         onTap: () {},
         icon: const Icon(Icons.warning),
@@ -190,16 +183,17 @@ class _ImportFollowsDialogState extends State<ImportFollowsDialog> {
       return;
     }
 
-    setState(() => _importing = true);
+    setState(() => _syncing = true);
 
     try {
-      final selectedProfiles =
-          _profiles.where((p) => _selectedNpubs.contains(p.npub)).toList();
+      // Setup sync configuration with the resolved npub
+      await setupContactSync(npub: _resolvedNpub!);
 
-      final count = await importContacts(profiles: selectedProfiles);
+      // Trigger immediate sync
+      final (added, _, _) = await syncContactsNow();
 
       ToastService().show(
-        message: 'Imported $count contacts',
+        message: 'Synced $added contacts',
         duration: const Duration(seconds: 2),
         onTap: () {},
         icon: const Icon(Icons.check),
@@ -210,35 +204,15 @@ class _ImportFollowsDialogState extends State<ImportFollowsDialog> {
         Navigator.of(context).pop();
       }
     } catch (e) {
-      AppLogger.instance.error('Failed to import contacts: $e');
+      AppLogger.instance.error('Failed to sync contacts: $e');
       ToastService().show(
-        message: 'Failed to import contacts',
+        message: 'Failed to sync contacts',
         duration: const Duration(seconds: 3),
         onTap: () {},
         icon: const Icon(Icons.error),
       );
-      setState(() => _importing = false);
+      setState(() => _syncing = false);
     }
-  }
-
-  void _toggleSelectAll() {
-    setState(() {
-      if (_selectedNpubs.length == _profiles.length) {
-        _selectedNpubs.clear();
-      } else {
-        _selectedNpubs = _profiles.map((p) => p.npub).toSet();
-      }
-    });
-  }
-
-  void _selectWithLightning() {
-    setState(() {
-      _selectedNpubs =
-          _profiles
-              .where((p) => p.lud16 != null && p.lud16!.isNotEmpty)
-              .map((p) => p.npub)
-              .toSet();
-    });
   }
 
   @override
@@ -248,8 +222,8 @@ class _ImportFollowsDialogState extends State<ImportFollowsDialog> {
         return _buildIdentityInput(context);
       case _DialogState.loadingFollows:
         return _buildLoading(context);
-      case _DialogState.profileList:
-        return _buildProfileList(context);
+      case _DialogState.syncPreview:
+        return _buildSyncPreview(context);
     }
   }
 
@@ -263,7 +237,7 @@ class _ImportFollowsDialogState extends State<ImportFollowsDialog> {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           Text(
-            'Import Contacts',
+            'Sync Contacts',
             style: theme.textTheme.titleLarge?.copyWith(
               fontWeight: FontWeight.bold,
             ),
@@ -271,7 +245,7 @@ class _ImportFollowsDialogState extends State<ImportFollowsDialog> {
           ),
           const SizedBox(height: 8),
           Text(
-            'Enter your Nostr identity to import your follows as contacts',
+            'Enter your Nostr identity to sync your follows as contacts. Contacts will be updated automatically.',
             style: theme.textTheme.bodyMedium?.copyWith(
               color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
             ),
@@ -351,55 +325,31 @@ class _ImportFollowsDialogState extends State<ImportFollowsDialog> {
           ),
           const SizedBox(height: 24),
 
-          // Action buttons
-          Row(
-            children: [
-              Expanded(
-                child: OutlinedButton(
-                  onPressed:
-                      _resolvingIdentity
-                          ? null
-                          : () {
-                            widget.onSkip();
-                            Navigator.of(context).pop();
-                          },
-                  style: OutlinedButton.styleFrom(
-                    foregroundColor: theme.colorScheme.primary,
-                    side: BorderSide(color: theme.colorScheme.primary),
-                    padding: const EdgeInsets.symmetric(vertical: 16),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                  ),
-                  child: const Text('Skip'),
+          // Action button (single button, no skip)
+          SizedBox(
+            width: double.infinity,
+            child: ElevatedButton(
+              onPressed:
+                  _resolvingIdentity || !_isValidInput()
+                      ? null
+                      : _lookUpFollows,
+              style: ElevatedButton.styleFrom(
+                backgroundColor: theme.colorScheme.primary,
+                foregroundColor: Colors.black,
+                padding: const EdgeInsets.symmetric(vertical: 16),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
                 ),
               ),
-              const SizedBox(width: 16),
-              Expanded(
-                child: ElevatedButton(
-                  onPressed:
-                      _resolvingIdentity || !_isValidInput()
-                          ? null
-                          : _lookUpFollows,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: theme.colorScheme.primary,
-                    foregroundColor: Colors.black,
-                    padding: const EdgeInsets.symmetric(vertical: 16),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                  ),
-                  child:
-                      _resolvingIdentity
-                          ? const SizedBox(
-                            width: 20,
-                            height: 20,
-                            child: CircularProgressIndicator(strokeWidth: 2),
-                          )
-                          : const Text('Look Up'),
-                ),
-              ),
-            ],
+              child:
+                  _resolvingIdentity
+                      ? const SizedBox(
+                        width: 20,
+                        height: 20,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
+                      : const Text('Look Up'),
+            ),
           ),
         ],
       ),
@@ -426,10 +376,10 @@ class _ImportFollowsDialogState extends State<ImportFollowsDialog> {
     );
   }
 
-  Widget _buildProfileList(BuildContext context) {
+  Widget _buildSyncPreview(BuildContext context) {
     final theme = Theme.of(context);
 
-    if (_errorMessage != null || _profiles.isEmpty) {
+    if (_errorMessage != null || _profilesWithLn == 0) {
       return Padding(
         padding: const EdgeInsets.all(24),
         child: Column(
@@ -442,13 +392,15 @@ class _ImportFollowsDialogState extends State<ImportFollowsDialog> {
             ),
             const SizedBox(height: 16),
             Text(
-              _errorMessage ?? 'No follows found',
+              _errorMessage ?? 'No contacts with Lightning Address found',
               style: theme.textTheme.titleMedium,
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: 8),
             Text(
-              'You can add contacts manually instead',
+              _totalFollows > 0
+                  ? 'Found $_totalFollows follows, but none have a Lightning Address set up.'
+                  : 'Only contacts with Lightning Addresses can be synced.',
               style: theme.textTheme.bodyMedium?.copyWith(
                 color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
               ),
@@ -459,7 +411,6 @@ class _ImportFollowsDialogState extends State<ImportFollowsDialog> {
               width: double.infinity,
               child: OutlinedButton(
                 onPressed: () {
-                  widget.onSkip();
                   Navigator.of(context).pop();
                 },
                 style: OutlinedButton.styleFrom(
@@ -470,7 +421,7 @@ class _ImportFollowsDialogState extends State<ImportFollowsDialog> {
                     borderRadius: BorderRadius.circular(12),
                   ),
                 ),
-                child: const Text('Continue'),
+                child: const Text('Close'),
               ),
             ),
           ],
@@ -478,187 +429,89 @@ class _ImportFollowsDialogState extends State<ImportFollowsDialog> {
       );
     }
 
-    final profilesWithLn =
-        _profiles.where((p) => p.lud16 != null && p.lud16!.isNotEmpty).length;
-
-    return SizedBox(
-      height: MediaQuery.of(context).size.height * 0.75,
+    return Padding(
+      padding: const EdgeInsets.all(24),
       child: Column(
+        mainAxisSize: MainAxisSize.min,
         children: [
-          // Header
-          Padding(
-            padding: const EdgeInsets.all(24),
-            child: Column(
-              children: [
-                Text(
-                  'Import Contacts',
-                  style: theme.textTheme.titleLarge?.copyWith(
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  'Found ${_profiles.length} follows ($profilesWithLn with Lightning Address)',
-                  style: theme.textTheme.bodyMedium?.copyWith(
-                    color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
-                  ),
-                  textAlign: TextAlign.center,
-                ),
-              ],
+          Icon(Icons.sync, size: 64, color: theme.colorScheme.primary),
+          const SizedBox(height: 16),
+          Text(
+            'Ready to Sync',
+            style: theme.textTheme.titleLarge?.copyWith(
+              fontWeight: FontWeight.bold,
             ),
+            textAlign: TextAlign.center,
           ),
-
-          // Selection controls
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 24),
+          const SizedBox(height: 8),
+          Text(
+            'Found $_totalFollows follows',
+            style: theme.textTheme.bodyLarge,
+            textAlign: TextAlign.center,
+          ),
+          const SizedBox(height: 4),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              const Icon(Icons.bolt, size: 18, color: Colors.amber),
+              const SizedBox(width: 4),
+              Text(
+                '$_profilesWithLn with Lightning Address',
+                style: theme.textTheme.bodyMedium?.copyWith(
+                  color: theme.colorScheme.onSurface.withValues(alpha: 0.7),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: theme.colorScheme.surfaceContainerHighest,
+              borderRadius: BorderRadius.circular(8),
+            ),
             child: Row(
               children: [
-                TextButton.icon(
-                  onPressed: _toggleSelectAll,
-                  icon: Icon(
-                    _selectedNpubs.length == _profiles.length
-                        ? Icons.deselect
-                        : Icons.select_all,
-                    size: 18,
-                  ),
-                  label: Text(
-                    _selectedNpubs.length == _profiles.length
-                        ? 'Deselect All'
-                        : 'Select All',
-                  ),
+                Icon(
+                  Icons.info_outline,
+                  size: 20,
+                  color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
                 ),
-                const Spacer(),
-                TextButton.icon(
-                  onPressed: _selectWithLightning,
-                  icon: const Icon(Icons.bolt, size: 18, color: Colors.amber),
-                  label: const Text('With LN'),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Text(
+                    'Only contacts with Lightning Addresses will be synced. Your contacts will update automatically.',
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
+                    ),
+                  ),
                 ),
               ],
             ),
           ),
+          const SizedBox(height: 24),
 
-          // Profile list
-          Expanded(
-            child: ListView.builder(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              itemCount: _profiles.length,
-              itemBuilder: (context, index) {
-                final profile = _profiles[index];
-                final isSelected = _selectedNpubs.contains(profile.npub);
-                final hasLn =
-                    profile.lud16 != null && profile.lud16!.isNotEmpty;
-
-                String displayName =
-                    profile.displayName ??
-                    profile.name ??
-                    '${profile.npub.substring(0, 8)}...';
-
-                return CheckboxListTile(
-                  value: isSelected,
-                  onChanged: (value) {
-                    setState(() {
-                      if (value == true) {
-                        _selectedNpubs.add(profile.npub);
-                      } else {
-                        _selectedNpubs.remove(profile.npub);
-                      }
-                    });
-                  },
-                  secondary: CircleAvatar(
-                    radius: 20,
-                    backgroundColor: theme.colorScheme.primary.withValues(
-                      alpha: 0.2,
-                    ),
-                    backgroundImage:
-                        profile.picture != null && profile.picture!.isNotEmpty
-                            ? NetworkImage(profile.picture!)
-                            : null,
-                    child:
-                        profile.picture == null || profile.picture!.isEmpty
-                            ? Icon(
-                              Icons.person,
-                              color: theme.colorScheme.primary,
-                              size: 20,
-                            )
-                            : null,
-                  ),
-                  title: Row(
-                    children: [
-                      Flexible(
-                        child: Text(
-                          displayName,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ),
-                      if (hasLn) ...[
-                        const SizedBox(width: 4),
-                        const Icon(Icons.bolt, size: 16, color: Colors.amber),
-                      ],
-                    ],
-                  ),
-                  subtitle:
-                      profile.nip05 != null && profile.nip05!.isNotEmpty
-                          ? Text(
-                            profile.nip05!,
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: theme.textTheme.bodySmall,
-                          )
-                          : null,
-                );
-              },
-            ),
-          ),
-
-          // Action buttons
-          Padding(
-            padding: const EdgeInsets.all(24),
-            child: Row(
-              children: [
-                Expanded(
-                  child: OutlinedButton(
-                    onPressed:
-                        _importing
-                            ? null
-                            : () {
-                              widget.onSkip();
-                              Navigator.of(context).pop();
-                            },
-                    style: OutlinedButton.styleFrom(
-                      foregroundColor: theme.colorScheme.primary,
-                      side: BorderSide(color: theme.colorScheme.primary),
-                      padding: const EdgeInsets.symmetric(vertical: 16),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                    ),
-                    child: const Text('Skip'),
-                  ),
+          // Action button
+          SizedBox(
+            width: double.infinity,
+            child: ElevatedButton(
+              onPressed: _syncing ? null : _startSync,
+              style: ElevatedButton.styleFrom(
+                backgroundColor: theme.colorScheme.primary,
+                foregroundColor: Colors.black,
+                padding: const EdgeInsets.symmetric(vertical: 16),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
                 ),
-                const SizedBox(width: 16),
-                Expanded(
-                  child: ElevatedButton(
-                    onPressed: _importing ? null : _importSelected,
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: theme.colorScheme.primary,
-                      foregroundColor: Colors.black,
-                      padding: const EdgeInsets.symmetric(vertical: 16),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                    ),
-                    child:
-                        _importing
-                            ? const SizedBox(
-                              width: 20,
-                              height: 20,
-                              child: CircularProgressIndicator(strokeWidth: 2),
-                            )
-                            : Text('Import (${_selectedNpubs.length})'),
-                  ),
-                ),
-              ],
+              ),
+              child:
+                  _syncing
+                      ? const SizedBox(
+                        width: 20,
+                        height: 20,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
+                      : const Text('Start Syncing'),
             ),
           ),
         ],
