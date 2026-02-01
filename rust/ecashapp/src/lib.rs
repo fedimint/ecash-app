@@ -46,7 +46,7 @@ use std::path::PathBuf;
 use std::{str::FromStr, sync::Arc};
 
 use crate::db::{
-    BitcoinDisplay, Contact, ContactPayment, ContactSyncConfig, FederationConfig,
+    BitcoinDisplay, Contact, ContactCursor, ContactPayment, ContactSyncConfig, FederationConfig,
     FederationConfigKey, FederationConfigKeyPrefix, FiatCurrency, LightningAddressConfig,
 };
 use crate::frb_generated::StreamSink;
@@ -1255,6 +1255,30 @@ pub async fn get_all_contacts() -> Vec<Contact> {
     nostr.get_all_contacts().await
 }
 
+/// Get paginated contacts with cursor-based pagination
+#[frb]
+pub async fn paginate_contacts(
+    cursor_last_paid_at: Option<u64>,
+    cursor_created_at: Option<u64>,
+    cursor_npub: Option<String>,
+    limit: u32,
+) -> Vec<Contact> {
+    let nostr_client = get_nostr_client();
+    let nostr = nostr_client.read().await;
+
+    let cursor = if let (Some(created_at), Some(npub)) = (cursor_created_at, cursor_npub) {
+        Some(ContactCursor {
+            last_paid_at: cursor_last_paid_at,
+            created_at,
+            npub,
+        })
+    } else {
+        None
+    };
+
+    nostr.paginate_contacts(cursor, limit as usize).await
+}
+
 /// Get a single contact by npub
 #[frb]
 pub async fn get_contact(npub: String) -> Option<Contact> {
@@ -1329,4 +1353,31 @@ pub async fn search_contacts(query: String) -> Vec<Contact> {
     let nostr_client = get_nostr_client();
     let nostr = nostr_client.read().await;
     nostr.search_contacts(&query).await
+}
+
+/// Search contacts with pagination
+#[frb]
+pub async fn paginate_search_contacts(
+    query: String,
+    cursor_last_paid_at: Option<u64>,
+    cursor_created_at: Option<u64>,
+    cursor_npub: Option<String>,
+    limit: u32,
+) -> Vec<Contact> {
+    let nostr_client = get_nostr_client();
+    let nostr = nostr_client.read().await;
+
+    let cursor = if let (Some(created_at), Some(npub)) = (cursor_created_at, cursor_npub) {
+        Some(ContactCursor {
+            last_paid_at: cursor_last_paid_at,
+            created_at,
+            npub,
+        })
+    } else {
+        None
+    };
+
+    nostr
+        .paginate_search_contacts(&query, cursor, limit as usize)
+        .await
 }

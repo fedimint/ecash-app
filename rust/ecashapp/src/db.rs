@@ -286,6 +286,14 @@ pub struct Contact {
     pub last_paid_at: Option<u64>, // Unix timestamp in milliseconds
 }
 
+// ContactCursor - used for paginated contact queries
+#[derive(Debug, Clone, Encodable, Decodable, Serialize, Deserialize)]
+pub struct ContactCursor {
+    pub last_paid_at: Option<u64>,
+    pub created_at: u64,
+    pub npub: String,
+}
+
 impl_db_record!(
     key = ContactKey,
     value = Contact,

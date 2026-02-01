@@ -490,6 +490,19 @@ Future<BigInt> clearContactsAndStopSync() =>
 Future<List<Contact>> getAllContacts() =>
     RustLib.instance.api.crateGetAllContacts();
 
+/// Get paginated contacts with cursor-based pagination
+Future<List<Contact>> paginateContacts({
+  BigInt? cursorLastPaidAt,
+  BigInt? cursorCreatedAt,
+  String? cursorNpub,
+  required int limit,
+}) => RustLib.instance.api.cratePaginateContacts(
+  cursorLastPaidAt: cursorLastPaidAt,
+  cursorCreatedAt: cursorCreatedAt,
+  cursorNpub: cursorNpub,
+  limit: limit,
+);
+
 /// Get a single contact by npub
 Future<Contact?> getContact({required String npub}) =>
     RustLib.instance.api.crateGetContact(npub: npub);
@@ -526,6 +539,21 @@ Future<List<(BigInt, ContactPayment)>> getContactPayments({
 /// Search contacts by name, display_name, nip05, or npub
 Future<List<Contact>> searchContacts({required String query}) =>
     RustLib.instance.api.crateSearchContacts(query: query);
+
+/// Search contacts with pagination
+Future<List<Contact>> paginateSearchContacts({
+  required String query,
+  BigInt? cursorLastPaidAt,
+  BigInt? cursorCreatedAt,
+  String? cursorNpub,
+  required int limit,
+}) => RustLib.instance.api.cratePaginateSearchContacts(
+  query: query,
+  cursorLastPaidAt: cursorLastPaidAt,
+  cursorCreatedAt: cursorCreatedAt,
+  cursorNpub: cursorNpub,
+  limit: limit,
+);
 
 // Rust type: RustOpaqueMoi<flutter_rust_bridge::for_generated::RustAutoOpaqueInner<ClientConfig>>
 abstract class ClientConfig implements RustOpaqueInterface {}

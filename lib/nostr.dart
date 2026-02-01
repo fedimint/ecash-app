@@ -95,6 +95,19 @@ abstract class NostrClient implements RustOpaqueInterface {
     isDesktop: isDesktop,
   );
 
+  /// Get paginated contacts with cursor-based pagination
+  Future<List<Contact>> paginateContacts({
+    ContactCursor? cursor,
+    required BigInt limit,
+  });
+
+  /// Search contacts with pagination
+  Future<List<Contact>> paginateSearchContacts({
+    required String query,
+    ContactCursor? cursor,
+    required BigInt limit,
+  });
+
   /// Record a payment to a contact
   Future<void> recordContactPayment({
     required String npub,

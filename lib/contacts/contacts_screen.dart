@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:ecashapp/contacts/contact_item.dart';
 import 'package:ecashapp/contacts/contact_profile.dart';
 import 'package:ecashapp/contacts/import_follows_dialog.dart';
@@ -19,69 +21,122 @@ class ContactsScreen extends StatefulWidget {
 
 class _ContactsScreenState extends State<ContactsScreen> {
   List<Contact> _contacts = [];
-  List<Contact> _filteredContacts = [];
   bool _loading = true;
   bool _hasSynced = false;
   final TextEditingController _searchController = TextEditingController();
 
+  // Pagination state
+  final ScrollController _scrollController = ScrollController();
+  bool _hasMore = true;
+  bool _isFetchingMore = false;
+  Contact? _lastContact;
+
+  // Search state
+  Timer? _searchDebounce;
+  String _currentSearchQuery = '';
+
   @override
   void initState() {
     super.initState();
-    _initialize();
     _searchController.addListener(_onSearchChanged);
+    _scrollController.addListener(_onScroll);
+    _initialize();
   }
 
   @override
   void dispose() {
     _searchController.removeListener(_onSearchChanged);
     _searchController.dispose();
+    _scrollController.removeListener(_onScroll);
+    _scrollController.dispose();
+    _searchDebounce?.cancel();
     super.dispose();
   }
 
   void _onSearchChanged() {
-    final query = _searchController.text.toLowerCase();
-    if (query.isEmpty) {
+    _searchDebounce?.cancel();
+    _searchDebounce = Timer(const Duration(milliseconds: 300), () {
+      final query = _searchController.text.trim();
+      if (query == _currentSearchQuery) return;
+
       setState(() {
-        _filteredContacts = _contacts;
+        _currentSearchQuery = query;
       });
-    } else {
-      setState(() {
-        _filteredContacts =
-            _contacts.where((contact) {
-              return contact.npub.toLowerCase().contains(query) ||
-                  (contact.name?.toLowerCase().contains(query) ?? false) ||
-                  (contact.displayName?.toLowerCase().contains(query) ??
-                      false) ||
-                  (contact.nip05?.toLowerCase().contains(query) ?? false) ||
-                  (contact.lud16?.toLowerCase().contains(query) ?? false);
-            }).toList();
-      });
-    }
+
+      _loadContacts(); // Reset and load first page
+    });
   }
 
   Future<void> _initialize() async {
     final hasSynced = await hasImportedContacts();
-    final contacts = await getAllContacts();
-
     setState(() {
       _hasSynced = hasSynced;
-      _contacts = contacts;
-      _filteredContacts = contacts;
       _loading = false;
     });
 
-    // Show sync dialog if first time
+    await _loadContacts(); // Load first page
+
     if (!hasSynced && mounted) {
       _showSyncDialog();
     }
   }
 
+  Future<void> _loadContacts({bool loadMore = false}) async {
+    if (_isFetchingMore) return;
+
+    setState(() => _isFetchingMore = true);
+
+    if (!loadMore) {
+      setState(() {
+        _contacts.clear();
+        _hasMore = true;
+        _lastContact = null;
+      });
+    }
+
+    try {
+      final newContacts =
+          _currentSearchQuery.isEmpty
+              ? await paginateContacts(
+                cursorLastPaidAt: loadMore ? _lastContact?.lastPaidAt : null,
+                cursorCreatedAt: loadMore ? _lastContact?.createdAt : null,
+                cursorNpub: loadMore ? _lastContact?.npub : null,
+                limit: 10,
+              )
+              : await paginateSearchContacts(
+                query: _currentSearchQuery,
+                cursorLastPaidAt: loadMore ? _lastContact?.lastPaidAt : null,
+                cursorCreatedAt: loadMore ? _lastContact?.createdAt : null,
+                cursorNpub: loadMore ? _lastContact?.npub : null,
+                limit: 10,
+              );
+
+      if (!mounted) return;
+
+      setState(() {
+        _contacts.addAll(newContacts);
+        if (newContacts.length < 10) _hasMore = false;
+        if (newContacts.isNotEmpty) _lastContact = newContacts.last;
+        _isFetchingMore = false;
+      });
+    } catch (e) {
+      if (mounted) {
+        setState(() => _isFetchingMore = false);
+      }
+    }
+  }
+
+  void _onScroll() {
+    if (_scrollController.position.pixels >=
+            _scrollController.position.maxScrollExtent - 100 &&
+        !_isFetchingMore &&
+        _hasMore) {
+      _loadContacts(loadMore: true);
+    }
+  }
+
   Future<void> _refreshContacts() async {
-    final contacts = await getAllContacts();
-    setState(() {
-      _contacts = contacts;
-      _onSearchChanged(); // Re-apply search filter
-    });
+    await _loadContacts(); // Reload first page
   }
 
   void _showSyncDialog() {
@@ -238,7 +293,7 @@ class _ContactsScreenState extends State<ContactsScreen> {
                   // Contact list
                   Expanded(
                     child:
-                        _filteredContacts.isEmpty
+                        _contacts.isEmpty && !_isFetchingMore
                             ? Center(
                               child: Column(
                                 mainAxisAlignment: MainAxisAlignment.center,
@@ -277,12 +332,26 @@ class _ContactsScreenState extends State<ContactsScreen> {
                             : RefreshIndicator(
                               onRefresh: _refreshContacts,
                               child: ListView.builder(
+                                controller: _scrollController,
                                 padding: const EdgeInsets.symmetric(
                                   horizontal: 16,
                                 ),
-                                itemCount: _filteredContacts.length,
+                                itemCount:
+                                    _contacts.length + (_hasMore ? 1 : 0),
                                 itemBuilder: (context, index) {
-                                  final contact = _filteredContacts[index];
+                                  if (index >= _contacts.length) {
+                                    // Loading indicator for next page
+                                    return const Padding(
+                                      padding: EdgeInsets.symmetric(
+                                        vertical: 12.0,
+                                      ),
+                                      child: Center(
+                                        child: CircularProgressIndicator(),
+                                      ),
+                                    );
+                                  }
+
+                                  final contact = _contacts[index];
                                   return ContactItem(
                                     contact: contact,
                                     onTap: () => _showContactProfile(contact),

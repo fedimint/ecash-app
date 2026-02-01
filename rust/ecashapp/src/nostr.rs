@@ -9,10 +9,10 @@ use std::{
 use crate::{
     anyhow, await_send, balance,
     db::{
-        Contact, ContactKey, ContactKeyPrefix, ContactPayment, ContactPaymentByNpubPrefix,
-        ContactPaymentKey, ContactSyncConfig, ContactSyncConfigKey, ContactsImportedKey,
-        NostrRelaysKey, NostrRelaysKeyPrefix, NostrWalletConnectConfig, NostrWalletConnectKey,
-        NostrWalletConnectKeyPrefix,
+        Contact, ContactCursor, ContactKey, ContactKeyPrefix, ContactPayment,
+        ContactPaymentByNpubPrefix, ContactPaymentKey, ContactSyncConfig, ContactSyncConfigKey,
+        ContactsImportedKey, NostrRelaysKey, NostrRelaysKeyPrefix, NostrWalletConnectConfig,
+        NostrWalletConnectKey, NostrWalletConnectKeyPrefix,
     },
     error_to_flutter, federations, get_event_bus, info_to_flutter,
     multimint::{ContactSyncEventKind, FederationSelector, LightningSendOutcome, MultimintEvent},
@@ -877,29 +877,34 @@ impl NostrClient {
             return Ok(Vec::new());
         }
 
-        let filter = nostr_sdk::Filter::new()
-            .authors(pubkeys.clone())
-            .kind(nostr_sdk::Kind::Metadata);
+        // Chunk requests to avoid timeouts with large batches
+        const CHUNK_SIZE: usize = 100;
+        let mut all_profiles: BTreeMap<nostr_sdk::PublicKey, nostr_sdk::Event> = BTreeMap::new();
 
-        let events = self
-            .nostr_client
-            .fetch_events(filter, Duration::from_secs(15))
-            .await?;
+        for chunk in pubkeys.chunks(CHUNK_SIZE) {
+            let filter = nostr_sdk::Filter::new()
+                .authors(chunk.to_vec())
+                .kind(nostr_sdk::Kind::Metadata);
 
-        // Group by author and take the most recent profile for each
-        let mut latest_profiles: BTreeMap<nostr_sdk::PublicKey, nostr_sdk::Event> = BTreeMap::new();
-        for event in events.to_vec() {
-            latest_profiles
-                .entry(event.pubkey)
-                .and_modify(|existing| {
-                    if event.created_at > existing.created_at {
-                        *existing = event.clone();
-                    }
-                })
-                .or_insert(event);
+            let events = self
+                .nostr_client
+                .fetch_events(filter, Duration::from_secs(15))
+                .await?;
+
+            // Group by author and take the most recent profile for each
+            for event in events.to_vec() {
+                all_profiles
+                    .entry(event.pubkey)
+                    .and_modify(|existing| {
+                        if event.created_at > existing.created_at {
+                            *existing = event.clone();
+                        }
+                    })
+                    .or_insert(event);
+            }
         }
 
-        let profiles: Vec<NostrProfile> = latest_profiles
+        let profiles: Vec<NostrProfile> = all_profiles
             .into_values()
             .filter_map(|event| NostrProfile::try_from(event).ok())
             .collect();
@@ -1278,6 +1283,52 @@ impl NostrClient {
         contacts
     }
 
+    /// Get paginated contacts with cursor-based pagination
+    pub async fn paginate_contacts(
+        &self,
+        cursor: Option<ContactCursor>,
+        limit: usize,
+    ) -> Vec<Contact> {
+        let mut dbtx = self.db.begin_transaction_nc().await;
+        let mut contacts: Vec<Contact> = dbtx
+            .find_by_prefix(&ContactKeyPrefix)
+            .await
+            .map(|(_, contact)| contact)
+            .collect()
+            .await;
+
+        // Sort by last_paid_at descending (recent first), then created_at descending
+        contacts.sort_by(|a, b| match (&b.last_paid_at, &a.last_paid_at) {
+            (Some(b_time), Some(a_time)) => b_time.cmp(a_time),
+            (Some(_), None) => std::cmp::Ordering::Less,
+            (None, Some(_)) => std::cmp::Ordering::Greater,
+            (None, None) => b.created_at.cmp(&a.created_at),
+        });
+
+        // Apply cursor filtering
+        let mut result = Vec::new();
+        let mut skip_until_cursor = cursor.is_some();
+
+        for contact in contacts {
+            if skip_until_cursor {
+                if let Some(ref cur) = cursor {
+                    // Check if this is the cursor contact
+                    if contact.npub == cur.npub {
+                        skip_until_cursor = false;
+                    }
+                }
+                continue;
+            }
+
+            result.push(contact);
+            if result.len() >= limit {
+                break;
+            }
+        }
+
+        result
+    }
+
     /// Get a single contact by npub
     pub async fn get_contact(&self, npub: &str) -> Option<Contact> {
         let mut dbtx = self.db.begin_transaction_nc().await;
@@ -1451,6 +1502,75 @@ impl NostrClient {
                         .unwrap_or(false)
             })
             .collect()
+    }
+
+    /// Search contacts with pagination
+    pub async fn paginate_search_contacts(
+        &self,
+        query: &str,
+        cursor: Option<ContactCursor>,
+        limit: usize,
+    ) -> Vec<Contact> {
+        let query_lower = query.to_lowercase();
+        let all_contacts = self.get_all_contacts().await;
+
+        // Filter contacts based on query
+        let mut filtered: Vec<Contact> = all_contacts
+            .into_iter()
+            .filter(|contact| {
+                contact.npub.to_lowercase().contains(&query_lower)
+                    || contact
+                        .name
+                        .as_ref()
+                        .map(|n| n.to_lowercase().contains(&query_lower))
+                        .unwrap_or(false)
+                    || contact
+                        .display_name
+                        .as_ref()
+                        .map(|d| d.to_lowercase().contains(&query_lower))
+                        .unwrap_or(false)
+                    || contact
+                        .nip05
+                        .as_ref()
+                        .map(|n| n.to_lowercase().contains(&query_lower))
+                        .unwrap_or(false)
+                    || contact
+                        .lud16
+                        .as_ref()
+                        .map(|l| l.to_lowercase().contains(&query_lower))
+                        .unwrap_or(false)
+            })
+            .collect();
+
+        // Sort by last_paid_at descending, then created_at descending (same as get_all_contacts)
+        filtered.sort_by(|a, b| match (&b.last_paid_at, &a.last_paid_at) {
+            (Some(b_time), Some(a_time)) => b_time.cmp(a_time),
+            (Some(_), None) => std::cmp::Ordering::Less,
+            (None, Some(_)) => std::cmp::Ordering::Greater,
+            (None, None) => b.created_at.cmp(&a.created_at),
+        });
+
+        // Apply cursor filtering
+        let mut result = Vec::new();
+        let mut skip_until_cursor = cursor.is_some();
+
+        for contact in filtered {
+            if skip_until_cursor {
+                if let Some(ref cur) = cursor {
+                    if contact.npub == cur.npub {
+                        skip_until_cursor = false;
+                    }
+                }
+                continue;
+            }
+
+            result.push(contact);
+            if result.len() >= limit {
+                break;
+            }
+        }
+
+        result
     }
 }
 

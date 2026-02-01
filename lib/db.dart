@@ -8,7 +8,7 @@ import 'lib.dart';
 import 'package:flutter_rust_bridge/flutter_rust_bridge_for_generated.dart';
 
 // These types are ignored because they are neither used by any `pub` functions nor (for structs and enums) marked `#[frb(unignore)]`: `BitcoinDisplayKey`, `BtcPriceKey`, `BtcPrice`, `BtcPricesKey`, `BtcPrices`, `ContactKeyPrefix`, `ContactKey`, `ContactPaymentByNpubPrefix`, `ContactPaymentKey`, `ContactSyncConfigKey`, `ContactsImportedKey`, `DbKeyPrefix`, `FederationBackupKey`, `FederationConfigKeyPrefix`, `FederationConfigKey`, `FederationMetaKey`, `FederationOrderKey`, `FederationOrder`, `FiatCurrencyKey`, `LightningAddressKeyPrefix`, `NostrRelaysKeyPrefix`, `NostrRelaysKey`, `NostrWalletConnectKeyPrefix`, `NostrWalletConnectKey`, `SeedPhraseAckKey`
-// These function are ignored because they are on traits that is not defined in current crate (put an empty `#[frb]` on it to unignore): `assert_receiver_is_total_eq`, `assert_receiver_is_total_eq`, `assert_receiver_is_total_eq`, `assert_receiver_is_total_eq`, `assert_receiver_is_total_eq`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `cmp`, `cmp`, `cmp`, `consensus_decode_partial_from_finite_reader`, `consensus_decode_partial_from_finite_reader`, `consensus_decode_partial_from_finite_reader`, `consensus_decode_partial_from_finite_reader`, `consensus_decode_partial_from_finite_reader`, `consensus_decode_partial_from_finite_reader`, `consensus_decode_partial_from_finite_reader`, `consensus_decode_partial_from_finite_reader`, `consensus_decode_partial_from_finite_reader`, `consensus_decode_partial_from_finite_reader`, `consensus_decode_partial_from_finite_reader`, `consensus_decode_partial_from_finite_reader`, `consensus_decode_partial_from_finite_reader`, `consensus_decode_partial_from_finite_reader`, `consensus_decode_partial_from_finite_reader`, `consensus_decode_partial_from_finite_reader`, `consensus_decode_partial_from_finite_reader`, `consensus_decode_partial_from_finite_reader`, `consensus_decode_partial_from_finite_reader`, `consensus_decode_partial_from_finite_reader`, `consensus_decode_partial_from_finite_reader`, `consensus_decode_partial_from_finite_reader`, `consensus_decode_partial_from_finite_reader`, `consensus_decode_partial_from_finite_reader`, `consensus_decode_partial_from_finite_reader`, `consensus_decode_partial_from_finite_reader`, `consensus_decode_partial_from_finite_reader`, `consensus_decode_partial_from_finite_reader`, `consensus_decode_partial_from_finite_reader`, `consensus_decode_partial_from_finite_reader`, `consensus_decode_partial_from_finite_reader`, `consensus_decode_partial_from_finite_reader`, `consensus_decode_partial_from_finite_reader`, `consensus_decode_partial_from_finite_reader`, `consensus_encode`, `consensus_encode`, `consensus_encode`, `consensus_encode`, `consensus_encode`, `consensus_encode`, `consensus_encode`, `consensus_encode`, `consensus_encode`, `consensus_encode`, `consensus_encode`, `consensus_encode`, `consensus_encode`, `consensus_encode`, `consensus_encode`, `consensus_encode`, `consensus_encode`, `consensus_encode`, `consensus_encode`, `consensus_encode`, `consensus_encode`, `consensus_encode`, `consensus_encode`, `consensus_encode`, `consensus_encode`, `consensus_encode`, `consensus_encode`, `consensus_encode`, `consensus_encode`, `consensus_encode`, `consensus_encode`, `consensus_encode`, `consensus_encode`, `consensus_encode`, `eq`, `eq`, `eq`, `eq`, `eq`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `hash`, `hash`, `hash`, `partial_cmp`, `partial_cmp`, `partial_cmp`
+// These function are ignored because they are on traits that is not defined in current crate (put an empty `#[frb]` on it to unignore): `assert_receiver_is_total_eq`, `assert_receiver_is_total_eq`, `assert_receiver_is_total_eq`, `assert_receiver_is_total_eq`, `assert_receiver_is_total_eq`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `cmp`, `cmp`, `cmp`, `consensus_decode_partial_from_finite_reader`, `consensus_decode_partial_from_finite_reader`, `consensus_decode_partial_from_finite_reader`, `consensus_decode_partial_from_finite_reader`, `consensus_decode_partial_from_finite_reader`, `consensus_decode_partial_from_finite_reader`, `consensus_decode_partial_from_finite_reader`, `consensus_decode_partial_from_finite_reader`, `consensus_decode_partial_from_finite_reader`, `consensus_decode_partial_from_finite_reader`, `consensus_decode_partial_from_finite_reader`, `consensus_decode_partial_from_finite_reader`, `consensus_decode_partial_from_finite_reader`, `consensus_decode_partial_from_finite_reader`, `consensus_decode_partial_from_finite_reader`, `consensus_decode_partial_from_finite_reader`, `consensus_decode_partial_from_finite_reader`, `consensus_decode_partial_from_finite_reader`, `consensus_decode_partial_from_finite_reader`, `consensus_decode_partial_from_finite_reader`, `consensus_decode_partial_from_finite_reader`, `consensus_decode_partial_from_finite_reader`, `consensus_decode_partial_from_finite_reader`, `consensus_decode_partial_from_finite_reader`, `consensus_decode_partial_from_finite_reader`, `consensus_decode_partial_from_finite_reader`, `consensus_decode_partial_from_finite_reader`, `consensus_decode_partial_from_finite_reader`, `consensus_decode_partial_from_finite_reader`, `consensus_decode_partial_from_finite_reader`, `consensus_decode_partial_from_finite_reader`, `consensus_decode_partial_from_finite_reader`, `consensus_decode_partial_from_finite_reader`, `consensus_decode_partial_from_finite_reader`, `consensus_decode_partial_from_finite_reader`, `consensus_encode`, `consensus_encode`, `consensus_encode`, `consensus_encode`, `consensus_encode`, `consensus_encode`, `consensus_encode`, `consensus_encode`, `consensus_encode`, `consensus_encode`, `consensus_encode`, `consensus_encode`, `consensus_encode`, `consensus_encode`, `consensus_encode`, `consensus_encode`, `consensus_encode`, `consensus_encode`, `consensus_encode`, `consensus_encode`, `consensus_encode`, `consensus_encode`, `consensus_encode`, `consensus_encode`, `consensus_encode`, `consensus_encode`, `consensus_encode`, `consensus_encode`, `consensus_encode`, `consensus_encode`, `consensus_encode`, `consensus_encode`, `consensus_encode`, `consensus_encode`, `consensus_encode`, `eq`, `eq`, `eq`, `eq`, `eq`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `hash`, `hash`, `hash`, `partial_cmp`, `partial_cmp`, `partial_cmp`
 
 // Rust type: RustOpaqueMoi<flutter_rust_bridge::for_generated::RustAutoOpaqueInner<ContactPayment>>
 abstract class ContactPayment implements RustOpaqueInterface {
@@ -152,6 +152,30 @@ class Contact {
           about == other.about &&
           createdAt == other.createdAt &&
           lastPaidAt == other.lastPaidAt;
+}
+
+class ContactCursor {
+  final BigInt? lastPaidAt;
+  final BigInt createdAt;
+  final String npub;
+
+  const ContactCursor({
+    this.lastPaidAt,
+    required this.createdAt,
+    required this.npub,
+  });
+
+  @override
+  int get hashCode => lastPaidAt.hashCode ^ createdAt.hashCode ^ npub.hashCode;
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is ContactCursor &&
+          runtimeType == other.runtimeType &&
+          lastPaidAt == other.lastPaidAt &&
+          createdAt == other.createdAt &&
+          npub == other.npub;
 }
 
 class ContactSyncConfig {

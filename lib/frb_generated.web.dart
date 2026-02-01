@@ -589,6 +589,9 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   Contact dco_decode_box_autoadd_contact(dynamic raw);
 
   @protected
+  ContactCursor dco_decode_box_autoadd_contact_cursor(dynamic raw);
+
+  @protected
   ContactSyncConfig dco_decode_box_autoadd_contact_sync_config(dynamic raw);
 
   @protected
@@ -648,6 +651,9 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
 
   @protected
   Contact dco_decode_contact(dynamic raw);
+
+  @protected
+  ContactCursor dco_decode_contact_cursor(dynamic raw);
 
   @protected
   ContactSyncConfig dco_decode_contact_sync_config(dynamic raw);
@@ -801,6 +807,9 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
 
   @protected
   Contact? dco_decode_opt_box_autoadd_contact(dynamic raw);
+
+  @protected
+  ContactCursor? dco_decode_opt_box_autoadd_contact_cursor(dynamic raw);
 
   @protected
   ContactSyncConfig? dco_decode_opt_box_autoadd_contact_sync_config(
@@ -1459,6 +1468,11 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   Contact sse_decode_box_autoadd_contact(SseDeserializer deserializer);
 
   @protected
+  ContactCursor sse_decode_box_autoadd_contact_cursor(
+    SseDeserializer deserializer,
+  );
+
+  @protected
   ContactSyncConfig sse_decode_box_autoadd_contact_sync_config(
     SseDeserializer deserializer,
   );
@@ -1526,6 +1540,9 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
 
   @protected
   Contact sse_decode_contact(SseDeserializer deserializer);
+
+  @protected
+  ContactCursor sse_decode_contact_cursor(SseDeserializer deserializer);
 
   @protected
   ContactSyncConfig sse_decode_contact_sync_config(
@@ -1701,6 +1718,11 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
 
   @protected
   Contact? sse_decode_opt_box_autoadd_contact(SseDeserializer deserializer);
+
+  @protected
+  ContactCursor? sse_decode_opt_box_autoadd_contact_cursor(
+    SseDeserializer deserializer,
+  );
 
   @protected
   ContactSyncConfig? sse_decode_opt_box_autoadd_contact_sync_config(
@@ -2452,6 +2474,12 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   void sse_encode_box_autoadd_contact(Contact self, SseSerializer serializer);
 
   @protected
+  void sse_encode_box_autoadd_contact_cursor(
+    ContactCursor self,
+    SseSerializer serializer,
+  );
+
+  @protected
   void sse_encode_box_autoadd_contact_sync_config(
     ContactSyncConfig self,
     SseSerializer serializer,
@@ -2531,6 +2559,9 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
 
   @protected
   void sse_encode_contact(Contact self, SseSerializer serializer);
+
+  @protected
+  void sse_encode_contact_cursor(ContactCursor self, SseSerializer serializer);
 
   @protected
   void sse_encode_contact_sync_config(
@@ -2750,6 +2781,12 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   @protected
   void sse_encode_opt_box_autoadd_contact(
     Contact? self,
+    SseSerializer serializer,
+  );
+
+  @protected
+  void sse_encode_opt_box_autoadd_contact_cursor(
+    ContactCursor? self,
     SseSerializer serializer,
   );
 
