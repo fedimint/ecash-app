@@ -1,11 +1,12 @@
 import 'dart:async';
 
 import 'package:ecashapp/contacts/contact_item.dart';
-import 'package:ecashapp/contacts/contact_profile.dart';
 import 'package:ecashapp/contacts/import_follows_dialog.dart';
 import 'package:ecashapp/db.dart';
 import 'package:ecashapp/lib.dart';
+import 'package:ecashapp/models.dart';
 import 'package:ecashapp/multimint.dart';
+import 'package:ecashapp/number_pad.dart';
 import 'package:ecashapp/theme.dart';
 import 'package:ecashapp/toast.dart';
 import 'package:flutter/material.dart';
@@ -196,18 +197,41 @@ class _ContactsScreenState extends State<ContactsScreen> {
     }
   }
 
-  void _showContactProfile(Contact contact) {
-    showAppModalBottomSheet(
-      context: context,
-      childBuilder: () async {
-        return ContactProfile(
-          contact: contact,
-          selectedFederation: widget.selectedFederation,
-          onContactUpdated: () async {
-            await _refreshContacts();
-          },
-        );
-      },
+  void _payContact(Contact contact) async {
+    // Validate Federation Selection
+    if (widget.selectedFederation == null) {
+      ToastService().show(
+        message: 'Please select a federation first',
+        duration: const Duration(seconds: 3),
+        onTap: () {},
+        icon: const Icon(Icons.warning),
+      );
+      return;
+    }
+
+    // Get BTC prices for the number pad
+    final btcPrices = <FiatCurrency, double>{};
+    final prices = await getAllBtcPrices();
+    if (prices != null) {
+      for (final (currency, price) in prices) {
+        btcPrices[currency] = price.toDouble();
+      }
+    }
+
+    if (!mounted) return;
+
+    // Navigate to NumberPad
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder:
+            (context) => NumberPad(
+              fed: widget.selectedFederation!,
+              paymentType: PaymentType.lightning,
+              btcPrices: btcPrices,
+              lightningAddressOrLnurl: contact.lud16,
+            ),
+      ),
     );
   }
 
@@ -308,7 +332,7 @@ class _ContactsScreenState extends State<ContactsScreen> {
                                   Text(
                                     _searchController.text.isNotEmpty
                                         ? 'No contacts found'
-                                        : 'No contacts yet',
+                                        : 'No payable contacts',
                                     style: theme.textTheme.titleMedium
                                         ?.copyWith(
                                           color: theme.colorScheme.onSurface
@@ -318,7 +342,7 @@ class _ContactsScreenState extends State<ContactsScreen> {
                                   const SizedBox(height: 8),
                                   if (_searchController.text.isEmpty)
                                     Text(
-                                      'Sync your contacts from Nostr',
+                                      'Sync contacts with Lightning Addresses',
                                       style: theme.textTheme.bodyMedium
                                           ?.copyWith(
                                             color: theme.colorScheme.onSurface
@@ -354,7 +378,7 @@ class _ContactsScreenState extends State<ContactsScreen> {
                                   final contact = _contacts[index];
                                   return ContactItem(
                                     contact: contact,
-                                    onTap: () => _showContactProfile(contact),
+                                    onTap: () => _payContact(contact),
                                   );
                                 },
                               ),

@@ -1007,11 +1007,7 @@ impl NostrClient {
         let mut dbtx = self.db.begin_transaction().await;
 
         // Get all contacts to count them
-        let contacts: Vec<_> = dbtx
-            .find_by_prefix(&ContactKeyPrefix)
-            .await
-            .collect()
-            .await;
+        let contacts: Vec<_> = dbtx.find_by_prefix(&ContactKeyPrefix).await.collect().await;
         let count = contacts.len();
 
         // Remove all contacts

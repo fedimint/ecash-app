@@ -321,7 +321,7 @@ class _NostrWalletConnectState extends State<NostrWalletConnect> {
       children: [
         DropdownButtonFormField<FederationSelector>(
           decoration: const InputDecoration(labelText: 'Select a Federation'),
-          initialValue: _selectedFederation,
+          value: _selectedFederation,
           items:
               feds
                   .map(
@@ -348,7 +348,7 @@ class _NostrWalletConnectState extends State<NostrWalletConnect> {
         const SizedBox(height: 16),
         DropdownButtonFormField<String>(
           decoration: const InputDecoration(labelText: 'Select a Relay'),
-          initialValue: _selectedRelay,
+          value: _selectedRelay,
           items:
               _relays.map((relay) {
                 final (uri, connected) = relay;
