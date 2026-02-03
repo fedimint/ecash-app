@@ -286,6 +286,7 @@ pub enum LogLevel {
 #[derive(Clone, Eq, PartialEq, Serialize, Debug)]
 pub enum ContactSyncEventKind {
     Started,
+    Progress { synced: usize },
     Completed {
         added: usize,
         updated: usize,

@@ -11195,12 +11195,14 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
       case 0:
         return ContactSyncEventKind_Started();
       case 1:
+        return ContactSyncEventKind_Progress(synced: dco_decode_usize(raw[1]));
+      case 2:
         return ContactSyncEventKind_Completed(
           added: dco_decode_usize(raw[1]),
           updated: dco_decode_usize(raw[2]),
           removed: dco_decode_usize(raw[3]),
         );
-      case 2:
+      case 3:
         return ContactSyncEventKind_Error(dco_decode_String(raw[1]));
       default:
         throw Exception("unreachable");
@@ -13310,6 +13312,9 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
       case 0:
         return ContactSyncEventKind_Started();
       case 1:
+        var var_synced = sse_decode_usize(deserializer);
+        return ContactSyncEventKind_Progress(synced: var_synced);
+      case 2:
         var var_added = sse_decode_usize(deserializer);
         var var_updated = sse_decode_usize(deserializer);
         var var_removed = sse_decode_usize(deserializer);
@@ -13318,7 +13323,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           updated: var_updated,
           removed: var_removed,
         );
-      case 2:
+      case 3:
         var var_field0 = sse_decode_String(deserializer);
         return ContactSyncEventKind_Error(var_field0);
       default:
@@ -15660,17 +15665,20 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
     switch (self) {
       case ContactSyncEventKind_Started():
         sse_encode_i_32(0, serializer);
+      case ContactSyncEventKind_Progress(synced: final synced):
+        sse_encode_i_32(1, serializer);
+        sse_encode_usize(synced, serializer);
       case ContactSyncEventKind_Completed(
         added: final added,
         updated: final updated,
         removed: final removed,
       ):
-        sse_encode_i_32(1, serializer);
+        sse_encode_i_32(2, serializer);
         sse_encode_usize(added, serializer);
         sse_encode_usize(updated, serializer);
         sse_encode_usize(removed, serializer);
       case ContactSyncEventKind_Error(field0: final field0):
-        sse_encode_i_32(2, serializer);
+        sse_encode_i_32(3, serializer);
         sse_encode_String(field0, serializer);
     }
   }

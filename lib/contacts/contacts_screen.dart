@@ -25,6 +25,7 @@ class _ContactsScreenState extends State<ContactsScreen> {
   bool _loading = true;
   bool _hasSynced = false;
   bool _syncing = false;
+  int _syncedCount = 0;
   final TextEditingController _searchController = TextEditingController();
 
   // Pagination state
@@ -55,19 +56,32 @@ class _ContactsScreenState extends State<ContactsScreen> {
         final syncEvent = event.field0;
         if (syncEvent is ContactSyncEventKind_Started) {
           if (mounted) {
-            setState(() => _syncing = true);
+            setState(() {
+              _syncing = true;
+              _syncedCount = 0;
+            });
+          }
+        } else if (syncEvent is ContactSyncEventKind_Progress) {
+          if (mounted) {
+            setState(() {
+              _syncedCount = syncEvent.synced.toInt();
+            });
           }
         } else if (syncEvent is ContactSyncEventKind_Completed) {
           if (mounted) {
             setState(() {
               _syncing = false;
               _hasSynced = true;
+              _syncedCount = 0;
             });
             _refreshContacts();
           }
         } else if (syncEvent is ContactSyncEventKind_Error) {
           if (mounted) {
-            setState(() => _syncing = false);
+            setState(() {
+              _syncing = false;
+              _syncedCount = 0;
+            });
           }
         }
       }
@@ -324,7 +338,9 @@ class _ContactsScreenState extends State<ContactsScreen> {
                     if (_syncing) ...[
                       const SizedBox(height: 24),
                       Text(
-                        'Syncing contacts...',
+                        _syncedCount > 0
+                            ? 'Syncing contacts: $_syncedCount synced'
+                            : 'Syncing contacts...',
                         style: theme.textTheme.bodyLarge,
                       ),
                     ],

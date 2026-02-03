@@ -13362,6 +13362,10 @@ impl SseDecode for crate::multimint::ContactSyncEventKind {
                 return crate::multimint::ContactSyncEventKind::Started;
             }
             1 => {
+                let mut var_synced = <usize>::sse_decode(deserializer);
+                return crate::multimint::ContactSyncEventKind::Progress { synced: var_synced };
+            }
+            2 => {
                 let mut var_added = <usize>::sse_decode(deserializer);
                 let mut var_updated = <usize>::sse_decode(deserializer);
                 let mut var_removed = <usize>::sse_decode(deserializer);
@@ -13371,7 +13375,7 @@ impl SseDecode for crate::multimint::ContactSyncEventKind {
                     removed: var_removed,
                 };
             }
-            2 => {
+            3 => {
                 let mut var_field0 = <String>::sse_decode(deserializer);
                 return crate::multimint::ContactSyncEventKind::Error(var_field0);
             }
@@ -15811,19 +15815,22 @@ impl flutter_rust_bridge::IntoDart for crate::multimint::ContactSyncEventKind {
     fn into_dart(self) -> flutter_rust_bridge::for_generated::DartAbi {
         match self {
             crate::multimint::ContactSyncEventKind::Started => [0.into_dart()].into_dart(),
+            crate::multimint::ContactSyncEventKind::Progress { synced } => {
+                [1.into_dart(), synced.into_into_dart().into_dart()].into_dart()
+            }
             crate::multimint::ContactSyncEventKind::Completed {
                 added,
                 updated,
                 removed,
             } => [
-                1.into_dart(),
+                2.into_dart(),
                 added.into_into_dart().into_dart(),
                 updated.into_into_dart().into_dart(),
                 removed.into_into_dart().into_dart(),
             ]
             .into_dart(),
             crate::multimint::ContactSyncEventKind::Error(field0) => {
-                [2.into_dart(), field0.into_into_dart().into_dart()].into_dart()
+                [3.into_dart(), field0.into_into_dart().into_dart()].into_dart()
             }
             _ => {
                 unimplemented!("");
@@ -16993,18 +17000,22 @@ impl SseEncode for crate::multimint::ContactSyncEventKind {
             crate::multimint::ContactSyncEventKind::Started => {
                 <i32>::sse_encode(0, serializer);
             }
+            crate::multimint::ContactSyncEventKind::Progress { synced } => {
+                <i32>::sse_encode(1, serializer);
+                <usize>::sse_encode(synced, serializer);
+            }
             crate::multimint::ContactSyncEventKind::Completed {
                 added,
                 updated,
                 removed,
             } => {
-                <i32>::sse_encode(1, serializer);
+                <i32>::sse_encode(2, serializer);
                 <usize>::sse_encode(added, serializer);
                 <usize>::sse_encode(updated, serializer);
                 <usize>::sse_encode(removed, serializer);
             }
             crate::multimint::ContactSyncEventKind::Error(field0) => {
-                <i32>::sse_encode(2, serializer);
+                <i32>::sse_encode(3, serializer);
                 <String>::sse_encode(field0, serializer);
             }
             _ => {

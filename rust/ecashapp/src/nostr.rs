@@ -901,6 +901,21 @@ impl NostrClient {
                     })
                     .or_insert(event);
             }
+
+            // Emit progress event with count of profiles with lightning addresses
+            let synced_count = all_profiles
+                .values()
+                .filter_map(|event| NostrProfile::try_from(event.clone()).ok())
+                .filter(|profile| profile.lud16.as_ref().is_some_and(|l| !l.is_empty()))
+                .count();
+
+            get_event_bus()
+                .publish(MultimintEvent::ContactSync(
+                    ContactSyncEventKind::Progress {
+                        synced: synced_count,
+                    },
+                ))
+                .await;
         }
 
         let profiles: Vec<NostrProfile> = all_profiles

@@ -77,6 +77,72 @@ String toString() {
 /// @nodoc
 
 
+class ContactSyncEventKind_Progress extends ContactSyncEventKind {
+  const ContactSyncEventKind_Progress({required this.synced}): super._();
+  
+
+ final  BigInt synced;
+
+/// Create a copy of ContactSyncEventKind
+/// with the given fields replaced by the non-null parameter values.
+@JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+$ContactSyncEventKind_ProgressCopyWith<ContactSyncEventKind_Progress> get copyWith => _$ContactSyncEventKind_ProgressCopyWithImpl<ContactSyncEventKind_Progress>(this, _$identity);
+
+
+
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is ContactSyncEventKind_Progress&&(identical(other.synced, synced) || other.synced == synced));
+}
+
+
+@override
+int get hashCode => Object.hash(runtimeType,synced);
+
+@override
+String toString() {
+  return 'ContactSyncEventKind.progress(synced: $synced)';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class $ContactSyncEventKind_ProgressCopyWith<$Res> implements $ContactSyncEventKindCopyWith<$Res> {
+  factory $ContactSyncEventKind_ProgressCopyWith(ContactSyncEventKind_Progress value, $Res Function(ContactSyncEventKind_Progress) _then) = _$ContactSyncEventKind_ProgressCopyWithImpl;
+@useResult
+$Res call({
+ BigInt synced
+});
+
+
+
+
+}
+/// @nodoc
+class _$ContactSyncEventKind_ProgressCopyWithImpl<$Res>
+    implements $ContactSyncEventKind_ProgressCopyWith<$Res> {
+  _$ContactSyncEventKind_ProgressCopyWithImpl(this._self, this._then);
+
+  final ContactSyncEventKind_Progress _self;
+  final $Res Function(ContactSyncEventKind_Progress) _then;
+
+/// Create a copy of ContactSyncEventKind
+/// with the given fields replaced by the non-null parameter values.
+@pragma('vm:prefer-inline') $Res call({Object? synced = null,}) {
+  return _then(ContactSyncEventKind_Progress(
+synced: null == synced ? _self.synced : synced // ignore: cast_nullable_to_non_nullable
+as BigInt,
+  ));
+}
+
+
+}
+
+/// @nodoc
+
+
 class ContactSyncEventKind_Completed extends ContactSyncEventKind {
   const ContactSyncEventKind_Completed({required this.added, required this.updated, required this.removed}): super._();
   

@@ -394,6 +394,8 @@ sealed class ContactSyncEventKind with _$ContactSyncEventKind {
   const ContactSyncEventKind._();
 
   const factory ContactSyncEventKind.started() = ContactSyncEventKind_Started;
+  const factory ContactSyncEventKind.progress({required BigInt synced}) =
+      ContactSyncEventKind_Progress;
   const factory ContactSyncEventKind.completed({
     required BigInt added,
     required BigInt updated,
