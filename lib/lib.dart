@@ -462,10 +462,6 @@ Future<String> verifyNip05({required String nip05Id}) =>
 Future<bool> hasImportedContacts() =>
     RustLib.instance.api.crateHasImportedContacts();
 
-/// Mark contacts as having been imported
-Future<void> setContactsImported() =>
-    RustLib.instance.api.crateSetContactsImported();
-
 /// Import contacts from Nostr profiles into the database (for initial sync setup)
 Future<BigInt> importContacts({required List<NostrProfile> profiles}) =>
     RustLib.instance.api.crateImportContacts(profiles: profiles);
@@ -514,27 +510,6 @@ Future<Contact> refreshContactProfile({required String npub}) =>
 /// Verify a contact's NIP-05 identifier
 Future<bool> verifyContactNip05({required String npub}) =>
     RustLib.instance.api.crateVerifyContactNip05(npub: npub);
-
-/// Record a payment to a contact
-Future<void> recordContactPayment({
-  required String npub,
-  required BigInt amountMsats,
-  required FederationId federationId,
-  required OperationId operationId,
-  String? note,
-}) => RustLib.instance.api.crateRecordContactPayment(
-  npub: npub,
-  amountMsats: amountMsats,
-  federationId: federationId,
-  operationId: operationId,
-  note: note,
-);
-
-/// Get payment history for a contact
-Future<List<(BigInt, ContactPayment)>> getContactPayments({
-  required String npub,
-  required int limit,
-}) => RustLib.instance.api.crateGetContactPayments(npub: npub, limit: limit);
 
 /// Search contacts by name, display_name, nip05, or npub
 Future<List<Contact>> searchContacts({required String query}) =>

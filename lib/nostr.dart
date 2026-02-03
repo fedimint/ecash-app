@@ -34,12 +34,6 @@ abstract class NostrClient implements RustOpaqueInterface {
   /// Get a single contact by npub
   Future<Contact?> getContact({required String npub});
 
-  /// Get payment history for a contact
-  Future<List<(BigInt, ContactPayment)>> getContactPayments({
-    required String npub,
-    required BigInt limit,
-  });
-
   /// Get contact sync configuration
   Future<ContactSyncConfig?> getContactSyncConfig();
 
@@ -66,7 +60,7 @@ abstract class NostrClient implements RustOpaqueInterface {
   /// Get the user's public key as an npub string
   Future<String> getUserNpub();
 
-  /// Check if contacts have been imported (first-time flag)
+  /// Check if contacts have been imported (by checking if any contacts exist)
   Future<bool> hasImportedContacts();
 
   /// Import contacts from Nostr profiles into the database
@@ -108,15 +102,6 @@ abstract class NostrClient implements RustOpaqueInterface {
     required BigInt limit,
   });
 
-  /// Record a payment to a contact
-  Future<void> recordContactPayment({
-    required String npub,
-    required BigInt amountMsats,
-    required FederationId federationId,
-    required List<int> operationId,
-    String? note,
-  });
-
   /// Refresh a contact's profile from Nostr
   Future<Contact> refreshContactProfile({required String npub});
 
@@ -132,9 +117,6 @@ abstract class NostrClient implements RustOpaqueInterface {
     required String npub,
     required bool enabled,
   });
-
-  /// Mark contacts as having been imported
-  Future<void> setContactsImported();
 
   Future<NWCConnectionInfo> setNwcConnectionInfo({
     required FederationId federationId,

@@ -21,7 +21,7 @@ class ContactsScreen extends StatefulWidget {
 }
 
 class _ContactsScreenState extends State<ContactsScreen> {
-  List<Contact> _contacts = [];
+  final List<Contact> _contacts = [];
   bool _loading = true;
   bool _hasSynced = false;
   final TextEditingController _searchController = TextEditingController();
@@ -146,7 +146,6 @@ class _ContactsScreenState extends State<ContactsScreen> {
       childBuilder: () async {
         return ImportFollowsDialog(
           onImportComplete: () async {
-            await setContactsImported();
             await _refreshContacts();
             setState(() {
               _hasSynced = true;

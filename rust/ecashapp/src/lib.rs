@@ -46,7 +46,7 @@ use std::path::PathBuf;
 use std::{str::FromStr, sync::Arc};
 
 use crate::db::{
-    BitcoinDisplay, Contact, ContactCursor, ContactPayment, ContactSyncConfig, FederationConfig,
+    BitcoinDisplay, Contact, ContactCursor, ContactSyncConfig, FederationConfig,
     FederationConfigKey, FederationConfigKeyPrefix, FiatCurrency, LightningAddressConfig,
 };
 use crate::frb_generated::StreamSink;
@@ -1199,13 +1199,6 @@ pub async fn has_imported_contacts() -> bool {
     nostr.has_imported_contacts().await
 }
 
-/// Mark contacts as having been imported
-#[frb]
-pub async fn set_contacts_imported() {
-    let nostr_client = get_nostr_client();
-    let nostr = nostr_client.read().await;
-    nostr.set_contacts_imported().await;
-}
 
 /// Import contacts from Nostr profiles into the database (for initial sync setup)
 #[frb]
@@ -1317,35 +1310,7 @@ pub async fn verify_contact_nip05(npub: String) -> anyhow::Result<bool> {
     }
 }
 
-/// Record a payment to a contact
-#[frb]
-pub async fn record_contact_payment(
-    npub: String,
-    amount_msats: u64,
-    federation_id: FederationId,
-    operation_id: OperationId,
-    note: Option<String>,
-) -> anyhow::Result<()> {
-    let nostr_client = get_nostr_client();
-    let nostr = nostr_client.read().await;
-    nostr
-        .record_contact_payment(
-            &npub,
-            amount_msats,
-            federation_id,
-            operation_id.0.to_vec(),
-            note,
-        )
-        .await
-}
 
-/// Get payment history for a contact
-#[frb]
-pub async fn get_contact_payments(npub: String, limit: u32) -> Vec<(u64, ContactPayment)> {
-    let nostr_client = get_nostr_client();
-    let nostr = nostr_client.read().await;
-    nostr.get_contact_payments(&npub, limit as usize).await
-}
 
 /// Search contacts by name, display_name, nip05, or npub
 #[frb]

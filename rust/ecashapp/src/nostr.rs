@@ -9,9 +9,8 @@ use std::{
 use crate::{
     anyhow, await_send, balance,
     db::{
-        Contact, ContactCursor, ContactKey, ContactKeyPrefix, ContactPayment,
-        ContactPaymentByNpubPrefix, ContactPaymentKey, ContactSyncConfig, ContactSyncConfigKey,
-        ContactsImportedKey, NostrRelaysKey, NostrRelaysKeyPrefix, NostrWalletConnectConfig,
+        Contact, ContactCursor, ContactKey, ContactKeyPrefix, ContactSyncConfig,
+        ContactSyncConfigKey, NostrRelaysKey, NostrRelaysKeyPrefix, NostrWalletConnectConfig,
         NostrWalletConnectKey, NostrWalletConnectKeyPrefix,
     },
     error_to_flutter, federations, get_event_bus, info_to_flutter,
@@ -971,17 +970,15 @@ impl NostrClient {
 
     // === Contact Database Operations ===
 
-    /// Check if contacts have been imported (first-time flag)
+    /// Check if contacts have been imported (by checking if any contacts exist)
     pub async fn has_imported_contacts(&self) -> bool {
         let mut dbtx = self.db.begin_transaction_nc().await;
-        dbtx.get_value(&ContactsImportedKey).await.is_some()
-    }
-
-    /// Mark contacts as having been imported
-    pub async fn set_contacts_imported(&self) {
-        let mut dbtx = self.db.begin_transaction().await;
-        dbtx.insert_entry(&ContactsImportedKey, &()).await;
-        dbtx.commit_tx().await;
+        let contacts: Vec<_> = dbtx
+            .find_by_prefix(&ContactKeyPrefix)
+            .await
+            .collect::<Vec<_>>()
+            .await;
+        !contacts.is_empty()
     }
 
     /// Get contact sync configuration
@@ -1017,9 +1014,6 @@ impl NostrClient {
 
         // Remove sync config (this stops syncing)
         dbtx.remove_entry(&ContactSyncConfigKey).await;
-
-        // Remove the imported flag so the sync dialog will show again
-        dbtx.remove_entry(&ContactsImportedKey).await;
 
         dbtx.commit_tx().await;
 
@@ -1395,77 +1389,6 @@ impl NostrClient {
         Ok(())
     }
 
-    /// Record a payment to a contact
-    pub async fn record_contact_payment(
-        &self,
-        npub: &str,
-        amount_msats: u64,
-        federation_id: FederationId,
-        operation_id: Vec<u8>,
-        note: Option<String>,
-    ) -> anyhow::Result<()> {
-        let now = Self::now_millis();
-
-        // Update the contact's last_paid_at
-        if let Some(mut contact) = self.get_contact(npub).await {
-            contact.last_paid_at = Some(now);
-
-            let mut dbtx = self.db.begin_transaction().await;
-            dbtx.insert_entry(
-                &ContactKey {
-                    npub: npub.to_string(),
-                },
-                &contact,
-            )
-            .await;
-
-            // Record the payment
-            let payment = ContactPayment {
-                amount_msats,
-                federation_id,
-                operation_id,
-                note,
-            };
-
-            dbtx.insert_entry(
-                &ContactPaymentKey {
-                    npub: npub.to_string(),
-                    timestamp: now,
-                },
-                &payment,
-            )
-            .await;
-
-            dbtx.commit_tx().await;
-        }
-
-        Ok(())
-    }
-
-    /// Get payment history for a contact
-    pub async fn get_contact_payments(
-        &self,
-        npub: &str,
-        limit: usize,
-    ) -> Vec<(u64, ContactPayment)> {
-        let mut dbtx = self.db.begin_transaction_nc().await;
-        let mut payments: Vec<(u64, ContactPayment)> = dbtx
-            .find_by_prefix(&ContactPaymentByNpubPrefix {
-                npub: npub.to_string(),
-            })
-            .await
-            .map(|(key, payment)| (key.timestamp, payment))
-            .collect()
-            .await;
-
-        // Sort by timestamp descending (most recent first)
-        payments.sort_by(|a, b| b.0.cmp(&a.0));
-
-        // Limit results
-        payments.truncate(limit);
-
-        payments
-    }
 
     /// Search contacts by name, display_name, nip05, or npub
     pub async fn search_contacts(&self, query: &str) -> Vec<Contact> {

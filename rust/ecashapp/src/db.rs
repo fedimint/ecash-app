@@ -43,8 +43,6 @@ pub(crate) enum DbKeyPrefix {
     FiatCurrency = 0x0B,
     BtcPrices = 0x0C,
     Contact = 0x0D,
-    ContactPayment = 0x0E,
-    ContactsImported = 0x0F,
     ContactSyncConfig = 0x10,
 }
 
@@ -302,46 +300,6 @@ impl_db_record!(
 
 impl_db_lookup!(key = ContactKey, query_prefix = ContactKeyPrefix,);
 
-// ContactPayment - stores payment history per contact
-#[derive(Debug, Clone, Encodable, Decodable, Eq, PartialEq, Hash, Ord, PartialOrd)]
-pub struct ContactPaymentKey {
-    pub npub: String,
-    pub timestamp: u64, // Unix timestamp in milliseconds
-}
-
-#[derive(Debug, Encodable, Decodable)]
-pub struct ContactPaymentByNpubPrefix {
-    pub npub: String,
-}
-
-#[derive(Debug, Clone, Encodable, Decodable, Serialize, Deserialize)]
-pub struct ContactPayment {
-    pub amount_msats: u64,
-    pub federation_id: FederationId,
-    pub operation_id: Vec<u8>,
-    pub note: Option<String>,
-}
-
-impl_db_record!(
-    key = ContactPaymentKey,
-    value = ContactPayment,
-    db_prefix = DbKeyPrefix::ContactPayment,
-);
-
-impl_db_lookup!(
-    key = ContactPaymentKey,
-    query_prefix = ContactPaymentByNpubPrefix,
-);
-
-// ContactsImported - flag indicating first-time import prompt has been shown
-#[derive(Debug, Encodable, Decodable)]
-pub struct ContactsImportedKey;
-
-impl_db_record!(
-    key = ContactsImportedKey,
-    value = (),
-    db_prefix = DbKeyPrefix::ContactsImported,
-);
 
 // ContactSyncConfig - stores configuration for automatic contact syncing from Nostr
 #[derive(Debug, Encodable, Decodable)]
