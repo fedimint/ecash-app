@@ -137,7 +137,10 @@ class _MyAppState extends State<MyApp> {
               message: 'Synced $added contacts',
               duration: const Duration(seconds: 3),
               onTap: () {},
-              icon: Icon(Icons.people, color: Theme.of(context).colorScheme.primary),
+              icon: Icon(
+                Icons.people,
+                color: Theme.of(context).colorScheme.primary,
+              ),
             );
           }
         } else if (syncEvent is ContactSyncEventKind_Error) {
