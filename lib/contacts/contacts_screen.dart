@@ -421,7 +421,8 @@ class _ContactsScreenState extends State<ContactsScreen> {
                                   horizontal: 16,
                                 ),
                                 itemCount:
-                                    _contacts.length + (_hasMore ? 1 : 0),
+                                    _contacts.length +
+                                    (_isFetchingMore ? 1 : 0),
                                 itemBuilder: (context, index) {
                                   if (index >= _contacts.length) {
                                     // Loading indicator for next page
