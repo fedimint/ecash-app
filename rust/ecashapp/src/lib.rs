@@ -1224,6 +1224,23 @@ pub async fn sync_contacts_now() -> anyhow::Result<(usize, usize, usize)> {
     nostr.sync_contacts().await
 }
 
+/// Start contact sync in the background (non-blocking)
+/// Configures sync and spawns a background task to perform the sync
+#[frb]
+pub async fn start_contact_sync_background(npub: String) {
+    let nostr_client = get_nostr_client();
+    let nostr = nostr_client.read().await;
+    nostr.set_contact_sync_config(npub, true).await;
+    drop(nostr);
+
+    // Spawn sync as background task
+    tokio::spawn(async move {
+        let nostr_client = get_nostr_client();
+        let nostr = nostr_client.read().await;
+        let _ = nostr.sync_contacts().await;
+    });
+}
+
 /// Get the current contact sync configuration
 #[frb]
 pub async fn get_contact_sync_config() -> Option<ContactSyncConfig> {

@@ -24,6 +24,7 @@ class _ContactsScreenState extends State<ContactsScreen> {
   final List<Contact> _contacts = [];
   bool _loading = true;
   bool _hasSynced = false;
+  bool _syncing = false;
   final TextEditingController _searchController = TextEditingController();
 
   // Pagination state
@@ -36,16 +37,46 @@ class _ContactsScreenState extends State<ContactsScreen> {
   Timer? _searchDebounce;
   String _currentSearchQuery = '';
 
+  // Event subscription for sync events
+  StreamSubscription<MultimintEvent>? _eventSubscription;
+
   @override
   void initState() {
     super.initState();
     _searchController.addListener(_onSearchChanged);
     _scrollController.addListener(_onScroll);
+    _subscribeToSyncEvents();
     _initialize();
+  }
+
+  void _subscribeToSyncEvents() {
+    _eventSubscription = subscribeMultimintEvents().listen((event) {
+      if (event is MultimintEvent_ContactSync) {
+        final syncEvent = event.field0;
+        if (syncEvent is ContactSyncEventKind_Started) {
+          if (mounted) {
+            setState(() => _syncing = true);
+          }
+        } else if (syncEvent is ContactSyncEventKind_Completed) {
+          if (mounted) {
+            setState(() {
+              _syncing = false;
+              _hasSynced = true;
+            });
+            _refreshContacts();
+          }
+        } else if (syncEvent is ContactSyncEventKind_Error) {
+          if (mounted) {
+            setState(() => _syncing = false);
+          }
+        }
+      }
+    });
   }
 
   @override
   void dispose() {
+    _eventSubscription?.cancel();
     _searchController.removeListener(_onSearchChanged);
     _searchController.dispose();
     _scrollController.removeListener(_onScroll);
@@ -77,7 +108,7 @@ class _ContactsScreenState extends State<ContactsScreen> {
 
     await _loadContacts(); // Load first page
 
-    if (!hasSynced && mounted) {
+    if (!_syncing && !hasSynced && mounted) {
       _showSyncDialog();
     }
   }
@@ -284,8 +315,22 @@ class _ContactsScreenState extends State<ContactsScreen> {
         ],
       ),
       body:
-          _loading
-              ? const Center(child: CircularProgressIndicator())
+          _loading || _syncing
+              ? Center(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    const CircularProgressIndicator(),
+                    if (_syncing) ...[
+                      const SizedBox(height: 24),
+                      Text(
+                        'Syncing contacts...',
+                        style: theme.textTheme.bodyLarge,
+                      ),
+                    ],
+                  ],
+                ),
+              )
               : Column(
                 children: [
                   // Search bar

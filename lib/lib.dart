@@ -474,6 +474,11 @@ Future<void> setupContactSync({required String npub}) =>
 Future<(BigInt, BigInt, BigInt)> syncContactsNow() =>
     RustLib.instance.api.crateSyncContactsNow();
 
+/// Start contact sync in the background (non-blocking)
+/// Configures sync and spawns a background task to perform the sync
+Future<void> startContactSyncBackground({required String npub}) =>
+    RustLib.instance.api.crateStartContactSyncBackground(npub: npub);
+
 /// Get the current contact sync configuration
 Future<ContactSyncConfig?> getContactSyncConfig() =>
     RustLib.instance.api.crateGetContactSyncConfig();

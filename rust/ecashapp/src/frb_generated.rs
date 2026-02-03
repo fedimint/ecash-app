@@ -42,7 +42,7 @@ flutter_rust_bridge::frb_generated_boilerplate!(
     default_rust_auto_opaque = RustAutoOpaqueMoi,
 );
 pub(crate) const FLUTTER_RUST_BRIDGE_CODEGEN_VERSION: &str = "2.9.0";
-pub(crate) const FLUTTER_RUST_BRIDGE_CODEGEN_CONTENT_HASH: i32 = -472223840;
+pub(crate) const FLUTTER_RUST_BRIDGE_CODEGEN_CONTENT_HASH: i32 = -1308488499;
 
 // Section: executor
 
@@ -12168,6 +12168,44 @@ fn wire__crate__setup_contact_sync_impl(
         },
     )
 }
+fn wire__crate__start_contact_sync_background_impl(
+    port_: flutter_rust_bridge::for_generated::MessagePort,
+    ptr_: flutter_rust_bridge::for_generated::PlatformGeneralizedUint8ListPtr,
+    rust_vec_len_: i32,
+    data_len_: i32,
+) {
+    FLUTTER_RUST_BRIDGE_HANDLER.wrap_async::<flutter_rust_bridge::for_generated::SseCodec, _, _, _>(
+        flutter_rust_bridge::for_generated::TaskInfo {
+            debug_name: "start_contact_sync_background",
+            port: Some(port_),
+            mode: flutter_rust_bridge::for_generated::FfiCallMode::Normal,
+        },
+        move || {
+            let message = unsafe {
+                flutter_rust_bridge::for_generated::Dart2RustMessageSse::from_wire(
+                    ptr_,
+                    rust_vec_len_,
+                    data_len_,
+                )
+            };
+            let mut deserializer =
+                flutter_rust_bridge::for_generated::SseDeserializer::new(message);
+            let api_npub = <String>::sse_decode(&mut deserializer);
+            deserializer.end();
+            move |context| async move {
+                transform_result_sse::<_, ()>(
+                    (move || async move {
+                        let output_ok = Result::<_, ()>::Ok({
+                            crate::start_contact_sync_background(api_npub).await;
+                        })?;
+                        Ok(output_ok)
+                    })()
+                    .await,
+                )
+            }
+        },
+    )
+}
 fn wire__crate__subscribe_deposits_impl(
     port_: flutter_rust_bridge::for_generated::MessagePort,
     ptr_: flutter_rust_bridge::for_generated::PlatformGeneralizedUint8ListPtr,
@@ -14897,16 +14935,17 @@ fn pde_ffi_dispatcher_primary_impl(
         223 => wire__crate__set_fiat_currency_impl(port, ptr, rust_vec_len, data_len),
         224 => wire__crate__set_nwc_connection_info_impl(port, ptr, rust_vec_len, data_len),
         225 => wire__crate__setup_contact_sync_impl(port, ptr, rust_vec_len, data_len),
-        226 => wire__crate__subscribe_deposits_impl(port, ptr, rust_vec_len, data_len),
-        227 => wire__crate__subscribe_multimint_events_impl(port, ptr, rust_vec_len, data_len),
-        228 => wire__crate__subscribe_recovery_progress_impl(port, ptr, rust_vec_len, data_len),
-        229 => wire__crate__sync_contacts_now_impl(port, ptr, rust_vec_len, data_len),
-        230 => wire__crate__transactions_impl(port, ptr, rust_vec_len, data_len),
-        231 => wire__crate__verify_contact_nip05_impl(port, ptr, rust_vec_len, data_len),
-        232 => wire__crate__verify_nip05_impl(port, ptr, rust_vec_len, data_len),
-        233 => wire__crate__wallet_summary_impl(port, ptr, rust_vec_len, data_len),
-        234 => wire__crate__withdraw_to_address_impl(port, ptr, rust_vec_len, data_len),
-        235 => wire__crate__word_list_impl(port, ptr, rust_vec_len, data_len),
+        226 => wire__crate__start_contact_sync_background_impl(port, ptr, rust_vec_len, data_len),
+        227 => wire__crate__subscribe_deposits_impl(port, ptr, rust_vec_len, data_len),
+        228 => wire__crate__subscribe_multimint_events_impl(port, ptr, rust_vec_len, data_len),
+        229 => wire__crate__subscribe_recovery_progress_impl(port, ptr, rust_vec_len, data_len),
+        230 => wire__crate__sync_contacts_now_impl(port, ptr, rust_vec_len, data_len),
+        231 => wire__crate__transactions_impl(port, ptr, rust_vec_len, data_len),
+        232 => wire__crate__verify_contact_nip05_impl(port, ptr, rust_vec_len, data_len),
+        233 => wire__crate__verify_nip05_impl(port, ptr, rust_vec_len, data_len),
+        234 => wire__crate__wallet_summary_impl(port, ptr, rust_vec_len, data_len),
+        235 => wire__crate__withdraw_to_address_impl(port, ptr, rust_vec_len, data_len),
+        236 => wire__crate__word_list_impl(port, ptr, rust_vec_len, data_len),
         _ => unreachable!(),
     }
 }
