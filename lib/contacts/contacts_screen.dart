@@ -301,15 +301,16 @@ class _ContactsScreenState extends State<ContactsScreen> {
             },
             itemBuilder:
                 (context) => [
-                  const PopupMenuItem(
-                    value: 'sync',
-                    child: ListTile(
-                      leading: Icon(Icons.sync),
-                      title: Text('Sync from Nostr'),
-                      contentPadding: EdgeInsets.zero,
+                  if (!_syncing && !_hasSynced)
+                    const PopupMenuItem(
+                      value: 'sync',
+                      child: ListTile(
+                        leading: Icon(Icons.sync),
+                        title: Text('Sync from Nostr'),
+                        contentPadding: EdgeInsets.zero,
+                      ),
                     ),
-                  ),
-                  if (_hasSynced)
+                  if (_syncing || _hasSynced)
                     PopupMenuItem(
                       value: 'stop',
                       child: ListTile(
