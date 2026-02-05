@@ -192,9 +192,6 @@ class _ContactsScreenState extends State<ContactsScreen> {
         return ImportFollowsDialog(
           onImportComplete: () async {
             await _refreshContacts();
-            setState(() {
-              _hasSynced = true;
-            });
           },
         );
       },
@@ -330,7 +327,7 @@ class _ContactsScreenState extends State<ContactsScreen> {
         ],
       ),
       body:
-          _loading || _syncing
+          _loading || (_syncing && !_hasSynced)
               ? Center(
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
