@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <component type="desktop-application">
-  <id>org.fedimint.ecash-app</id>
+  <id>org.fedimint.app</id>
   <name>Ecash App</name>
   <summary>Multi-federation Fedimint wallet</summary>
   <metadata_license>MIT</metadata_license>
@@ -19,7 +19,7 @@
       federation, and view the ecash note denominations in the wallet.
     </p>
   </description>
-  <launchable type="desktop-id">ecash-app.desktop</launchable>
+  <launchable type="desktop-id">org.fedimint.app.desktop</launchable>
   <url type="homepage">https://ecash.love</url>
   <url type="bugtracker">https://github.com/fedimint/ecash-app/issues</url>
   <url type="vcs-browser">https://github.com/fedimint/ecash-app</url>
