@@ -165,6 +165,18 @@ class _ContactsScreenState extends State<ContactsScreen> {
         if (newContacts.isNotEmpty) _lastContact = newContacts.last;
         _isFetchingMore = false;
       });
+
+      // Check if we need to load more after the frame renders
+      // (handles case where initial items don't fill the screen)
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) return;
+        if (_scrollController.hasClients &&
+            _hasMore &&
+            !_isFetchingMore &&
+            _scrollController.position.maxScrollExtent <= 0) {
+          _loadContacts(loadMore: true);
+        }
+      });
     } catch (e) {
       if (mounted) {
         setState(() => _isFetchingMore = false);
@@ -415,6 +427,7 @@ class _ContactsScreenState extends State<ContactsScreen> {
                               onRefresh: _refreshContacts,
                               child: ListView.builder(
                                 controller: _scrollController,
+                                physics: const AlwaysScrollableScrollPhysics(),
                                 padding: const EdgeInsets.symmetric(
                                   horizontal: 16,
                                 ),
