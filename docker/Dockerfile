@@ -27,6 +27,7 @@ RUN apt-get update && apt-get install -y \
     libgtk-3-dev \
     pkg-config \
     make \
+    appstream \
     && rm -rf /var/lib/apt/lists/*
 
 # Install Flutter (version from .flutter-version)
