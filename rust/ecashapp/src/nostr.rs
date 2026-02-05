@@ -1404,7 +1404,6 @@ impl NostrClient {
         Ok(())
     }
 
-
     /// Search contacts by name, display_name, nip05, or npub
     pub async fn search_contacts(&self, query: &str) -> Vec<Contact> {
         let query_lower = query.to_lowercase();

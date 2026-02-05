@@ -300,7 +300,6 @@ impl_db_record!(
 
 impl_db_lookup!(key = ContactKey, query_prefix = ContactKeyPrefix,);
 
-
 // ContactSyncConfig - stores configuration for automatic contact syncing from Nostr
 #[derive(Debug, Encodable, Decodable)]
 pub struct ContactSyncConfigKey;

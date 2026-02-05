@@ -1199,7 +1199,6 @@ pub async fn has_imported_contacts() -> bool {
     nostr.has_imported_contacts().await
 }
 
-
 /// Import contacts from Nostr profiles into the database (for initial sync setup)
 #[frb]
 pub async fn import_contacts(profiles: Vec<NostrProfile>) -> anyhow::Result<usize> {
@@ -1326,8 +1325,6 @@ pub async fn verify_contact_nip05(npub: String) -> anyhow::Result<bool> {
         Ok(false)
     }
 }
-
-
 
 /// Search contacts by name, display_name, nip05, or npub
 #[frb]
