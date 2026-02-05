@@ -21,7 +21,7 @@
 - Update versions:
   - `pubspec.yaml`: `version: X.Y.Z`
   - `rust/ecashapp/Cargo.toml`: `version = "X.Y.Z"`
-  - `linux/appstream/ecash-app.appdata.xml`: Add `<release version="X.Y.Z" date="YYYY-MM-DD" />` entry
+  - `linux/appstream/org.fedimint.app.appdata.xml`: Add `<release version="X.Y.Z" date="YYYY-MM-DD" />` entry
 - Commit: `git commit -am "chore: bump version to vX.Y.Z"`
 - Push: `git push upstream releases/vX.Y.Z`
 - Tag: `git tag -a -s vX.Y.Z`
