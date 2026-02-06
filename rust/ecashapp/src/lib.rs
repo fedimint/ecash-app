@@ -50,7 +50,7 @@ use crate::db::{
     FederationConfigKeyPrefix, FiatCurrency, LightningAddressConfig,
 };
 use crate::frb_generated::StreamSink;
-use crate::multimint::{DepositEventKind, FedimintGateway, LNAddressStatus};
+use crate::multimint::{DepositEventKind, FedimintGateway, LNAddressStatus, PeerStatus};
 use crate::words::{ADJECTIVES, NOUNS};
 
 static MULTIMINT: OnceCell<Multimint> = OnceCell::const_new();
@@ -1139,6 +1139,28 @@ pub async fn claim_random_ln_address(
 pub async fn leave_federation(federation_id: &FederationId) {
     let mut multimint = get_multimint();
     multimint.leave_federation(federation_id).await;
+}
+
+#[frb]
+pub async fn subscribe_peer_status(
+    sink: StreamSink<Vec<PeerStatus>>,
+    invite: Option<String>,
+    federation_id: Option<FederationId>,
+) -> anyhow::Result<()> {
+    let multimint = get_multimint();
+    let mut stream = Box::pin(
+        multimint
+            .subscribe_peer_status(invite, federation_id)
+            .await?,
+    );
+
+    while let Some(status) = stream.next().await {
+        if sink.add(status).is_err() {
+            break;
+        }
+    }
+
+    Ok(())
 }
 
 // === Contact Address Book Functions ===
