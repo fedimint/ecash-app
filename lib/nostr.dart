@@ -20,9 +20,6 @@ abstract class NostrClient implements RustOpaqueInterface {
   /// Clear all contacts and stop syncing
   Future<BigInt> clearContactsAndStopSync();
 
-  /// Fetch a single profile by npub
-  Future<NostrProfile> fetchNostrProfile({required String npub});
-
   /// Fetch Nostr profiles (Kind 0) for a list of npubs
   Future<List<NostrProfile>> fetchNostrProfiles({required List<String> npubs});
 
@@ -40,9 +37,6 @@ abstract class NostrClient implements RustOpaqueInterface {
   /// Fetch follows list for any pubkey (Kind 3 contact list)
   Future<List<String>> getFollowsForPubkey({required String npub});
 
-  /// Fetch the user's follows list (Kind 3 contact list)
-  Future<List<String>> getNostrFollows();
-
   /// Get NWC config for a federation and return it.
   /// This is used by the blocking listen function.
   Future<(NostrWalletConnectConfig, NWCConnectionInfo)> getNwcConfig({
@@ -57,14 +51,8 @@ abstract class NostrClient implements RustOpaqueInterface {
 
   Future<List<(String, bool)>> getRelays();
 
-  /// Get the user's public key as an npub string
-  Future<String> getUserNpub();
-
   /// Check if contacts have been imported (by checking if any contacts exist)
   Future<bool> hasImportedContacts();
-
-  /// Import contacts from Nostr profiles into the database
-  Future<BigInt> importContacts({required List<NostrProfile> profiles});
 
   Future<void> insertRelay({required String relayUri});
 
@@ -102,15 +90,9 @@ abstract class NostrClient implements RustOpaqueInterface {
     required BigInt limit,
   });
 
-  /// Refresh a contact's profile from Nostr
-  Future<Contact> refreshContactProfile({required String npub});
-
   Future<void> removeNwcConnectionInfo({required FederationId federationId});
 
   Future<void> removeRelay({required String relayUri});
-
-  /// Search contacts by name, display_name, nip05, or npub
-  Future<List<Contact>> searchContacts({required String query});
 
   /// Set up contact sync with an npub
   Future<void> setContactSyncConfig({
@@ -128,18 +110,6 @@ abstract class NostrClient implements RustOpaqueInterface {
   /// Fetches follows from the configured npub, filters to those with lightning addresses,
   /// and updates the contact database
   Future<void> syncContacts();
-
-  /// Update a contact's NIP-05 verification status
-  Future<void> updateContactNip05Verification({
-    required String npub,
-    required bool verified,
-  });
-
-  /// Check if a contact's NIP-05 is still valid
-  Future<bool> verifyContactNip05({
-    required String npub,
-    required String nip05,
-  });
 
   /// Resolve and verify a NIP-05 identifier, returning the npub if valid
   Future<String> verifyNip05({required String nip05Id});

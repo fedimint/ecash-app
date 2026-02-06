@@ -767,54 +767,6 @@ impl NostrClient {
         Ok(())
     }
 
-    /// Get the user's public key as an npub string
-    pub fn get_user_npub(&self) -> String {
-        self.keys
-            .public_key
-            .to_bech32()
-            .expect("Could not encode to bech32")
-    }
-
-    /// Fetch the user's follows list (Kind 3 contact list)
-    pub async fn get_nostr_follows(&self) -> anyhow::Result<Vec<String>> {
-        self.nostr_client.connect().await;
-
-        let pubkey = self.keys.public_key;
-        let filter = nostr_sdk::Filter::new()
-            .author(pubkey)
-            .kind(nostr_sdk::Kind::ContactList)
-            .limit(1);
-
-        let events = self
-            .nostr_client
-            .fetch_events(filter, Duration::from_secs(10))
-            .await?;
-
-        let events_vec = events.to_vec();
-        if events_vec.is_empty() {
-            return Ok(Vec::new());
-        }
-
-        // Get the most recent event
-        let contact_list = events_vec
-            .into_iter()
-            .max_by_key(|e| e.created_at)
-            .ok_or_else(|| anyhow!("No contact list found"))?;
-
-        // Extract p tags (followed pubkeys)
-        let mut follows = Vec::new();
-        for tag in contact_list.tags.iter() {
-            if let Some(nostr_sdk::TagStandard::PublicKey { public_key, .. }) =
-                tag.as_standardized()
-            {
-                follows.push(public_key.to_bech32().expect("Could not encode to bech32"));
-            }
-        }
-
-        info_to_flutter(format!("Found {} follows", follows.len())).await;
-        Ok(follows)
-    }
-
     /// Fetch follows list for any pubkey (Kind 3 contact list)
     pub async fn get_follows_for_pubkey(&self, npub: String) -> anyhow::Result<Vec<String>> {
         self.nostr_client.connect().await;
@@ -927,15 +879,6 @@ impl NostrClient {
         Ok(profiles)
     }
 
-    /// Fetch a single profile by npub
-    pub async fn fetch_nostr_profile(&self, npub: String) -> anyhow::Result<NostrProfile> {
-        let profiles = self.fetch_nostr_profiles(vec![npub.clone()]).await?;
-        profiles
-            .into_iter()
-            .next()
-            .ok_or_else(|| anyhow!("Profile not found for {}", npub))
-    }
-
     /// Resolve and verify a NIP-05 identifier, returning the npub if valid
     pub async fn verify_nip05(&self, nip05_id: &str) -> anyhow::Result<String> {
         // Parse the NIP-05 identifier (user@domain.com or _@domain.com)
@@ -973,14 +916,6 @@ impl NostrClient {
         // Convert hex public key to npub
         let pubkey = nostr_sdk::PublicKey::from_hex(pubkey_hex)?;
         Ok(pubkey.to_bech32().expect("Could not encode to bech32"))
-    }
-
-    /// Check if a contact's NIP-05 is still valid
-    pub async fn verify_contact_nip05(&self, npub: &str, nip05: &str) -> bool {
-        match self.verify_nip05(nip05).await {
-            Ok(verified_npub) => verified_npub == npub,
-            Err(_) => false,
-        }
     }
 
     // === Contact Database Operations ===
@@ -1228,41 +1163,6 @@ impl NostrClient {
             .unwrap_or(0)
     }
 
-    /// Import contacts from Nostr profiles into the database
-    pub async fn import_contacts(&self, profiles: Vec<NostrProfile>) -> anyhow::Result<usize> {
-        let mut dbtx = self.db.begin_transaction().await;
-        let mut imported_count = 0;
-        let now = Self::now_millis();
-
-        for profile in profiles {
-            let contact = Contact {
-                npub: profile.npub.clone(),
-                name: profile.name,
-                display_name: profile.display_name,
-                picture: profile.picture,
-                lud16: profile.lud16,
-                nip05: profile.nip05.clone(),
-                nip05_verified: false, // Will be verified separately
-                about: profile.about,
-                created_at: now,
-                last_paid_at: None,
-            };
-
-            dbtx.insert_entry(
-                &ContactKey {
-                    npub: profile.npub.clone(),
-                },
-                &contact,
-            )
-            .await;
-            imported_count += 1;
-        }
-
-        dbtx.commit_tx().await;
-        info_to_flutter(format!("Imported {} contacts", imported_count)).await;
-        Ok(imported_count)
-    }
-
     /// Get all contacts, sorted by last_paid_at (most recent first), then by created_at
     pub async fn get_all_contacts(&self) -> Vec<Contact> {
         let mut dbtx = self.db.begin_transaction_nc().await;
@@ -1337,100 +1237,6 @@ impl NostrClient {
             npub: npub.to_string(),
         })
         .await
-    }
-
-    /// Refresh a contact's profile from Nostr
-    pub async fn refresh_contact_profile(&self, npub: &str) -> anyhow::Result<Contact> {
-        let existing = self
-            .get_contact(npub)
-            .await
-            .ok_or_else(|| anyhow!("Contact not found"))?;
-
-        let profile = self.fetch_nostr_profile(npub.to_string()).await?;
-
-        let updated_contact = Contact {
-            npub: profile.npub.clone(),
-            name: profile.name,
-            display_name: profile.display_name,
-            picture: profile.picture,
-            lud16: profile.lud16,
-            nip05: profile.nip05,
-            nip05_verified: existing.nip05_verified, // Preserve verification status
-            about: profile.about,
-            created_at: existing.created_at, // Preserve original creation time
-            last_paid_at: existing.last_paid_at, // Preserve payment history
-        };
-
-        let mut dbtx = self.db.begin_transaction().await;
-        dbtx.insert_entry(
-            &ContactKey {
-                npub: npub.to_string(),
-            },
-            &updated_contact,
-        )
-        .await;
-        dbtx.commit_tx().await;
-
-        Ok(updated_contact)
-    }
-
-    /// Update a contact's NIP-05 verification status
-    pub async fn update_contact_nip05_verification(
-        &self,
-        npub: &str,
-        verified: bool,
-    ) -> anyhow::Result<()> {
-        let mut contact = self
-            .get_contact(npub)
-            .await
-            .ok_or_else(|| anyhow!("Contact not found"))?;
-
-        contact.nip05_verified = verified;
-
-        let mut dbtx = self.db.begin_transaction().await;
-        dbtx.insert_entry(
-            &ContactKey {
-                npub: npub.to_string(),
-            },
-            &contact,
-        )
-        .await;
-        dbtx.commit_tx().await;
-
-        Ok(())
-    }
-
-    /// Search contacts by name, display_name, nip05, or npub
-    pub async fn search_contacts(&self, query: &str) -> Vec<Contact> {
-        let query_lower = query.to_lowercase();
-        let all_contacts = self.get_all_contacts().await;
-
-        all_contacts
-            .into_iter()
-            .filter(|contact| {
-                contact.npub.to_lowercase().contains(&query_lower)
-                    || contact
-                        .name
-                        .as_ref()
-                        .map(|n| n.to_lowercase().contains(&query_lower))
-                        .unwrap_or(false)
-                    || contact
-                        .display_name
-                        .as_ref()
-                        .map(|n| n.to_lowercase().contains(&query_lower))
-                        .unwrap_or(false)
-                    || contact
-                        .nip05
-                        .as_ref()
-                        .map(|n| n.to_lowercase().contains(&query_lower))
-                        .unwrap_or(false)
-                    || contact
-                        .lud16
-                        .as_ref()
-                        .map(|l| l.to_lowercase().contains(&query_lower))
-                        .unwrap_or(false)
-            })
-            .collect()
     }
 
     /// Search contacts with pagination

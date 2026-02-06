@@ -1163,7 +1163,8 @@ pub async fn has_imported_contacts() -> bool {
 #[frb]
 pub async fn sync_contacts(npub: String) {
     let nostr_client = get_nostr_client();
-    let nostr = nostr_client.read().await;
+    // Use write lock in case background thread is also syncing
+    let nostr = nostr_client.write().await;
     nostr.set_contact_sync_config(npub, true).await;
     nostr.sync_contacts().await;
 }
