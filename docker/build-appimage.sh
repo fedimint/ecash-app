@@ -40,25 +40,7 @@ docker run --rm \
     -e CARGO_HOME="/cargo-cache" \
     -e HOME="/workspace" \
     $IMAGE_NAME \
-    bash -c '
-        rm -rf build/linux AppDir *.AppImage
-        cargo build --release --manifest-path rust/ecashapp/Cargo.toml --target-dir rust/ecashapp/target
-        flutter pub get
-        flutter build linux --release
-        cp rust/ecashapp/target/release/libecashapp.so build/linux/x64/release/bundle/lib/
-        mkdir -p AppDir/usr/share/icons/hicolor/512x512/apps
-        mkdir -p AppDir/usr/share/metainfo
-        mkdir -p AppDir/usr/share/applications
-        cp -r build/linux/x64/release/bundle/* AppDir/
-        cp linux/runner/ecash-app.png AppDir/usr/share/icons/hicolor/512x512/apps/
-        cp linux/runner/ecash-app.png AppDir/ecash-app.png
-        cp linux/runner/org.fedimint.app.desktop AppDir/
-        cp linux/runner/org.fedimint.app.desktop AppDir/usr/share/applications/
-        cp linux/appstream/org.fedimint.app.appdata.xml AppDir/usr/share/metainfo/
-        ln -sf ecashapp AppDir/AppRun
-        VERSION=$(grep "^version:" pubspec.yaml | cut -d" " -f2)
-        ARCH=x86_64 appimagetool AppDir "ecash-app-${VERSION}-x86_64.AppImage"
-    '
+    bash scripts/package-linux.sh
 
 # Restore host's .dart_tool
 rm -rf "$PROJECT_ROOT/.dart_tool"
