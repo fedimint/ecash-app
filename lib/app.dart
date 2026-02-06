@@ -130,20 +130,7 @@ class _MyAppState extends State<MyApp> {
       } else if (event is MultimintEvent_ContactSync) {
         if (!mounted) return;
         final syncEvent = event.field0;
-        if (syncEvent is ContactSyncEventKind_Completed) {
-          final added = syncEvent.added.toInt();
-          if (added > 0) {
-            ToastService().show(
-              message: 'Synced $added contacts',
-              duration: const Duration(seconds: 3),
-              onTap: () {},
-              icon: Icon(
-                Icons.people,
-                color: Theme.of(context).colorScheme.primary,
-              ),
-            );
-          }
-        } else if (syncEvent is ContactSyncEventKind_Error) {
+        if (syncEvent is ContactSyncEventKind_Error) {
           ToastService().show(
             message: 'Contact sync failed',
             duration: const Duration(seconds: 3),
