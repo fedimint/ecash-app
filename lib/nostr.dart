@@ -127,7 +127,7 @@ abstract class NostrClient implements RustOpaqueInterface {
   /// Sync contacts from Nostr follows
   /// Fetches follows from the configured npub, filters to those with lightning addresses,
   /// and updates the contact database
-  Future<(BigInt, BigInt, BigInt)> syncContacts();
+  Future<void> syncContacts();
 
   /// Update a contact's NIP-05 verification status
   Future<void> updateContactNip05Verification({

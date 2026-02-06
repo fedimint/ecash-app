@@ -276,7 +276,7 @@ class _ContactsScreenState extends State<ContactsScreen>
     // Validate Federation Selection
     if (widget.selectedFederation == null) {
       ToastService().show(
-        message: 'Please select a federation first',
+        message: 'Please join a federation first',
         duration: const Duration(seconds: 3),
         onTap: () {},
         icon: const Icon(Icons.warning),

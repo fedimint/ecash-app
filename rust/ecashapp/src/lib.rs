@@ -25,7 +25,7 @@ use multimint::{
     FederationMeta, FederationSelector, LightningSendOutcome, LogLevel, Multimint,
     MultimintCreation, MultimintEvent, PaymentPreview, Transaction, Utxo, WithdrawFeesResponse,
 };
-use nostr::{NWCConnectionInfo, NostrClient, NostrProfile, PublicFederation};
+use nostr::{NWCConnectionInfo, NostrClient, PublicFederation};
 use serde::Serialize;
 use tokio::sync::{Mutex, OnceCell, RwLock};
 
@@ -46,8 +46,8 @@ use std::path::PathBuf;
 use std::{str::FromStr, sync::Arc};
 
 use crate::db::{
-    BitcoinDisplay, Contact, ContactCursor, ContactSyncConfig, FederationConfig,
-    FederationConfigKey, FederationConfigKeyPrefix, FiatCurrency, LightningAddressConfig,
+    BitcoinDisplay, Contact, ContactCursor, FederationConfig, FederationConfigKey,
+    FederationConfigKeyPrefix, FiatCurrency, LightningAddressConfig,
 };
 use crate::frb_generated::StreamSink;
 use crate::multimint::{DepositEventKind, FedimintGateway, LNAddressStatus};
@@ -1143,46 +1143,6 @@ pub async fn leave_federation(federation_id: &FederationId) {
 
 // === Contact Address Book Functions ===
 
-/// Get the user's own Nostr npub
-#[frb]
-pub async fn get_user_npub() -> String {
-    let nostr_client = get_nostr_client();
-    let nostr = nostr_client.read().await;
-    nostr.get_user_npub()
-}
-
-/// Fetch the user's follows list from Nostr (Kind 3 contact list)
-#[frb]
-pub async fn get_nostr_follows() -> anyhow::Result<Vec<String>> {
-    let nostr_client = get_nostr_client();
-    let nostr = nostr_client.read().await;
-    nostr.get_nostr_follows().await
-}
-
-/// Fetch follows list for any pubkey from Nostr (Kind 3 contact list)
-#[frb]
-pub async fn get_follows_for_pubkey(npub: String) -> anyhow::Result<Vec<String>> {
-    let nostr_client = get_nostr_client();
-    let nostr = nostr_client.read().await;
-    nostr.get_follows_for_pubkey(npub).await
-}
-
-/// Fetch Nostr profiles for a list of npubs
-#[frb]
-pub async fn fetch_nostr_profiles(npubs: Vec<String>) -> anyhow::Result<Vec<NostrProfile>> {
-    let nostr_client = get_nostr_client();
-    let nostr = nostr_client.read().await;
-    nostr.fetch_nostr_profiles(npubs).await
-}
-
-/// Fetch a single Nostr profile by npub
-#[frb]
-pub async fn fetch_nostr_profile(npub: String) -> anyhow::Result<NostrProfile> {
-    let nostr_client = get_nostr_client();
-    let nostr = nostr_client.read().await;
-    nostr.fetch_nostr_profile(npub).await
-}
-
 /// Verify a NIP-05 identifier and return the associated npub
 #[frb]
 pub async fn verify_nip05(nip05_id: String) -> anyhow::Result<String> {
@@ -1199,53 +1159,13 @@ pub async fn has_imported_contacts() -> bool {
     nostr.has_imported_contacts().await
 }
 
-/// Import contacts from Nostr profiles into the database (for initial sync setup)
+/// Starts contact sync
 #[frb]
-pub async fn import_contacts(profiles: Vec<NostrProfile>) -> anyhow::Result<usize> {
-    let nostr_client = get_nostr_client();
-    let nostr = nostr_client.read().await;
-    nostr.import_contacts(profiles).await
-}
-
-/// Setup contact sync with an npub - configures automatic syncing from Nostr follows
-#[frb]
-pub async fn setup_contact_sync(npub: String) {
+pub async fn sync_contacts(npub: String) {
     let nostr_client = get_nostr_client();
     let nostr = nostr_client.read().await;
     nostr.set_contact_sync_config(npub, true).await;
-}
-
-/// Trigger an immediate contact sync
-#[frb]
-pub async fn sync_contacts_now() -> anyhow::Result<(usize, usize, usize)> {
-    let nostr_client = get_nostr_client();
-    let nostr = nostr_client.read().await;
-    nostr.sync_contacts().await
-}
-
-/// Start contact sync in the background (non-blocking)
-/// Configures sync and spawns a background task to perform the sync
-#[frb]
-pub async fn start_contact_sync_background(npub: String) {
-    let nostr_client = get_nostr_client();
-    let nostr = nostr_client.read().await;
-    nostr.set_contact_sync_config(npub, true).await;
-    drop(nostr);
-
-    // Spawn sync as background task
-    tokio::spawn(async move {
-        let nostr_client = get_nostr_client();
-        let nostr = nostr_client.read().await;
-        let _ = nostr.sync_contacts().await;
-    });
-}
-
-/// Get the current contact sync configuration
-#[frb]
-pub async fn get_contact_sync_config() -> Option<ContactSyncConfig> {
-    let nostr_client = get_nostr_client();
-    let nostr = nostr_client.read().await;
-    nostr.get_contact_sync_config().await
+    nostr.sync_contacts().await;
 }
 
 /// Clear all contacts and stop syncing
@@ -1286,52 +1206,6 @@ pub async fn paginate_contacts(
     };
 
     nostr.paginate_contacts(cursor, limit as usize).await
-}
-
-/// Get a single contact by npub
-#[frb]
-pub async fn get_contact(npub: String) -> Option<Contact> {
-    let nostr_client = get_nostr_client();
-    let nostr = nostr_client.read().await;
-    nostr.get_contact(&npub).await
-}
-
-/// Refresh a contact's profile from Nostr
-#[frb]
-pub async fn refresh_contact_profile(npub: String) -> anyhow::Result<Contact> {
-    let nostr_client = get_nostr_client();
-    let nostr = nostr_client.read().await;
-    nostr.refresh_contact_profile(&npub).await
-}
-
-/// Verify a contact's NIP-05 identifier
-#[frb]
-pub async fn verify_contact_nip05(npub: String) -> anyhow::Result<bool> {
-    let nostr_client = get_nostr_client();
-    let nostr = nostr_client.read().await;
-
-    let contact = nostr
-        .get_contact(&npub)
-        .await
-        .ok_or_else(|| anyhow!("Contact not found"))?;
-
-    if let Some(nip05) = &contact.nip05 {
-        let verified = nostr.verify_contact_nip05(&npub, nip05).await;
-        nostr
-            .update_contact_nip05_verification(&npub, verified)
-            .await?;
-        Ok(verified)
-    } else {
-        Ok(false)
-    }
-}
-
-/// Search contacts by name, display_name, nip05, or npub
-#[frb]
-pub async fn search_contacts(query: String) -> Vec<Contact> {
-    let nostr_client = get_nostr_client();
-    let nostr = nostr_client.read().await;
-    nostr.search_contacts(&query).await
 }
 
 /// Search contacts with pagination

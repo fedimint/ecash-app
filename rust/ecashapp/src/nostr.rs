@@ -1022,10 +1022,7 @@ impl NostrClient {
         let contacts: Vec<_> = dbtx.find_by_prefix(&ContactKeyPrefix).await.collect().await;
         let count = contacts.len();
 
-        // Remove all contacts
-        for (key, _) in contacts {
-            dbtx.remove_entry(&key).await;
-        }
+        dbtx.remove_by_prefix(&ContactKeyPrefix).await;
 
         // Remove sync config (this stops syncing)
         dbtx.remove_entry(&ContactSyncConfigKey).await;
@@ -1039,14 +1036,13 @@ impl NostrClient {
     /// Sync contacts from Nostr follows
     /// Fetches follows from the configured npub, filters to those with lightning addresses,
     /// and updates the contact database
-    pub async fn sync_contacts(&self) -> anyhow::Result<(usize, usize, usize)> {
-        let config = self
-            .get_contact_sync_config()
-            .await
-            .ok_or_else(|| anyhow!("Contact sync not configured"))?;
+    pub async fn sync_contacts(&self) {
+        let Some(config) = self.get_contact_sync_config().await else {
+            return;
+        };
 
         if !config.sync_enabled {
-            return Ok((0, 0, 0));
+            return;
         }
 
         // Publish sync started event
@@ -1059,12 +1055,13 @@ impl NostrClient {
             Ok(f) => f,
             Err(e) => {
                 let error_msg = format!("Failed to fetch follows: {}", e);
+                error_to_flutter(error_msg).await;
                 get_event_bus()
                     .publish(MultimintEvent::ContactSync(ContactSyncEventKind::Error(
-                        error_msg,
+                        "Failed to fetch follows".to_string(),
                     )))
                     .await;
-                return Err(e);
+                return;
             }
         };
 
@@ -1089,7 +1086,7 @@ impl NostrClient {
                     },
                 ))
                 .await;
-            return Ok((0, 0, 0));
+            return;
         }
 
         // Fetch profiles for follows
@@ -1097,12 +1094,13 @@ impl NostrClient {
             Ok(p) => p,
             Err(e) => {
                 let error_msg = format!("Failed to fetch profiles: {}", e);
+                error_to_flutter(error_msg).await;
                 get_event_bus()
                     .publish(MultimintEvent::ContactSync(ContactSyncEventKind::Error(
-                        error_msg,
+                        "Failed to fetch profiles".to_string(),
                     )))
                     .await;
-                return Err(e);
+                return;
             }
         };
 
@@ -1135,7 +1133,7 @@ impl NostrClient {
         let now = Self::now_millis();
         let mut dbtx = self.db.begin_transaction().await;
 
-        // Remove contacts that are no longer follows (payment history preserved in separate table)
+        // Remove contacts that are no longer follows
         for contact in &to_remove {
             dbtx.remove_entry(&ContactKey {
                 npub: contact.npub.clone(),
@@ -1220,8 +1218,6 @@ impl NostrClient {
                 },
             ))
             .await;
-
-        Ok(result)
     }
 
     /// Helper to get current time as milliseconds since Unix epoch

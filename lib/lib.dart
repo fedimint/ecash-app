@@ -435,25 +435,6 @@ Future<(String, String)> claimRandomLnAddress({
 Future<void> leaveFederation({required FederationId federationId}) =>
     RustLib.instance.api.crateLeaveFederation(federationId: federationId);
 
-/// Get the user's own Nostr npub
-Future<String> getUserNpub() => RustLib.instance.api.crateGetUserNpub();
-
-/// Fetch the user's follows list from Nostr (Kind 3 contact list)
-Future<List<String>> getNostrFollows() =>
-    RustLib.instance.api.crateGetNostrFollows();
-
-/// Fetch follows list for any pubkey from Nostr (Kind 3 contact list)
-Future<List<String>> getFollowsForPubkey({required String npub}) =>
-    RustLib.instance.api.crateGetFollowsForPubkey(npub: npub);
-
-/// Fetch Nostr profiles for a list of npubs
-Future<List<NostrProfile>> fetchNostrProfiles({required List<String> npubs}) =>
-    RustLib.instance.api.crateFetchNostrProfiles(npubs: npubs);
-
-/// Fetch a single Nostr profile by npub
-Future<NostrProfile> fetchNostrProfile({required String npub}) =>
-    RustLib.instance.api.crateFetchNostrProfile(npub: npub);
-
 /// Verify a NIP-05 identifier and return the associated npub
 Future<String> verifyNip05({required String nip05Id}) =>
     RustLib.instance.api.crateVerifyNip05(nip05Id: nip05Id);
@@ -462,26 +443,9 @@ Future<String> verifyNip05({required String nip05Id}) =>
 Future<bool> hasImportedContacts() =>
     RustLib.instance.api.crateHasImportedContacts();
 
-/// Import contacts from Nostr profiles into the database (for initial sync setup)
-Future<BigInt> importContacts({required List<NostrProfile> profiles}) =>
-    RustLib.instance.api.crateImportContacts(profiles: profiles);
-
-/// Setup contact sync with an npub - configures automatic syncing from Nostr follows
-Future<void> setupContactSync({required String npub}) =>
-    RustLib.instance.api.crateSetupContactSync(npub: npub);
-
-/// Trigger an immediate contact sync
-Future<(BigInt, BigInt, BigInt)> syncContactsNow() =>
-    RustLib.instance.api.crateSyncContactsNow();
-
-/// Start contact sync in the background (non-blocking)
-/// Configures sync and spawns a background task to perform the sync
-Future<void> startContactSyncBackground({required String npub}) =>
-    RustLib.instance.api.crateStartContactSyncBackground(npub: npub);
-
-/// Get the current contact sync configuration
-Future<ContactSyncConfig?> getContactSyncConfig() =>
-    RustLib.instance.api.crateGetContactSyncConfig();
+/// Starts contact sync
+Future<void> syncContacts({required String npub}) =>
+    RustLib.instance.api.crateSyncContacts(npub: npub);
 
 /// Clear all contacts and stop syncing
 Future<BigInt> clearContactsAndStopSync() =>
@@ -503,22 +467,6 @@ Future<List<Contact>> paginateContacts({
   cursorNpub: cursorNpub,
   limit: limit,
 );
-
-/// Get a single contact by npub
-Future<Contact?> getContact({required String npub}) =>
-    RustLib.instance.api.crateGetContact(npub: npub);
-
-/// Refresh a contact's profile from Nostr
-Future<Contact> refreshContactProfile({required String npub}) =>
-    RustLib.instance.api.crateRefreshContactProfile(npub: npub);
-
-/// Verify a contact's NIP-05 identifier
-Future<bool> verifyContactNip05({required String npub}) =>
-    RustLib.instance.api.crateVerifyContactNip05(npub: npub);
-
-/// Search contacts by name, display_name, nip05, or npub
-Future<List<Contact>> searchContacts({required String query}) =>
-    RustLib.instance.api.crateSearchContacts(query: query);
 
 /// Search contacts with pagination
 Future<List<Contact>> paginateSearchContacts({

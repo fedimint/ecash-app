@@ -77,7 +77,7 @@ class _ImportFollowsDialogState extends State<ImportFollowsDialog> {
       }
 
       // Start background sync (non-blocking)
-      await startContactSyncBackground(npub: npub);
+      syncContacts(npub: npub);
 
       ToastService().show(
         message: 'Syncing contacts in background...',
