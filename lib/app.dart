@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:ecashapp/contacts/contacts_screen.dart';
 import 'package:ecashapp/deep_link_handler.dart';
 import 'package:ecashapp/discover.dart';
 import 'package:ecashapp/models.dart';
@@ -125,6 +126,17 @@ class _MyAppState extends State<MyApp> {
                   "Trying to re-join ${event.field0} using peer ${event.field1}...";
             });
           }
+        }
+      } else if (event is MultimintEvent_ContactSync) {
+        if (!mounted) return;
+        final syncEvent = event.field0;
+        if (syncEvent is ContactSyncEventKind_Error) {
+          ToastService().show(
+            message: 'Contact sync failed',
+            duration: const Duration(seconds: 3),
+            onTap: () {},
+            icon: Icon(Icons.error, color: Colors.red),
+          );
         }
       }
     });
@@ -518,6 +530,17 @@ class _MyAppState extends State<MyApp> {
                     initialFederations: _feds,
                     onFederationSelected: _setSelectedFederation,
                     onLeaveFederation: _leaveFederation,
+                    onContactsPressed: () {
+                      Navigator.push(
+                        innerContext,
+                        MaterialPageRoute(
+                          builder:
+                              (context) => ContactsScreen(
+                                selectedFederation: _selectedFederation,
+                              ),
+                        ),
+                      );
+                    },
                     onSettingsPressed: () {
                       Navigator.push(
                         innerContext,

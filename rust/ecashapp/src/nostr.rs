@@ -1,18 +1,20 @@
+use nostr_sdk::ToBech32;
 use std::{
-    collections::BTreeMap,
+    collections::{BTreeMap, HashSet},
     str::FromStr,
     sync::Arc,
-    time::{Duration, SystemTime},
+    time::{Duration, SystemTime, UNIX_EPOCH},
 };
 
 use crate::{
     anyhow, await_send, balance,
     db::{
-        NostrRelaysKey, NostrRelaysKeyPrefix, NostrWalletConnectConfig, NostrWalletConnectKey,
-        NostrWalletConnectKeyPrefix,
+        Contact, ContactCursor, ContactKey, ContactKeyPrefix, ContactSyncConfig,
+        ContactSyncConfigKey, NostrRelaysKey, NostrRelaysKeyPrefix, NostrWalletConnectConfig,
+        NostrWalletConnectKey, NostrWalletConnectKeyPrefix,
     },
-    error_to_flutter, federations, info_to_flutter,
-    multimint::{FederationSelector, LightningSendOutcome},
+    error_to_flutter, federations, get_event_bus, info_to_flutter,
+    multimint::{ContactSyncEventKind, FederationSelector, LightningSendOutcome, MultimintEvent},
     payment_preview, send,
 };
 use anyhow::bail;
@@ -764,6 +766,550 @@ impl NostrClient {
 
         Ok(())
     }
+
+    /// Fetch follows list for any pubkey (Kind 3 contact list)
+    pub async fn get_follows_for_pubkey(&self, npub: String) -> anyhow::Result<Vec<String>> {
+        self.nostr_client.connect().await;
+
+        let pubkey = nostr_sdk::PublicKey::parse(&npub)?;
+        let filter = nostr_sdk::Filter::new()
+            .author(pubkey)
+            .kind(nostr_sdk::Kind::ContactList)
+            .limit(1);
+
+        let events = self
+            .nostr_client
+            .fetch_events(filter, Duration::from_secs(10))
+            .await?;
+
+        let events_vec = events.to_vec();
+        if events_vec.is_empty() {
+            return Ok(Vec::new());
+        }
+
+        // Get the most recent event
+        let contact_list = events_vec
+            .into_iter()
+            .max_by_key(|e| e.created_at)
+            .ok_or_else(|| anyhow!("No contact list found"))?;
+
+        // Extract p tags (followed pubkeys)
+        let mut follows = Vec::new();
+        for tag in contact_list.tags.iter() {
+            if let Some(nostr_sdk::TagStandard::PublicKey { public_key, .. }) =
+                tag.as_standardized()
+            {
+                follows.push(public_key.to_bech32().expect("Could not encode to bech32"));
+            }
+        }
+
+        info_to_flutter(format!("Found {} follows for {}", follows.len(), npub)).await;
+        Ok(follows)
+    }
+
+    /// Fetch Nostr profiles (Kind 0) for a list of npubs
+    pub async fn fetch_nostr_profiles(
+        &self,
+        npubs: Vec<String>,
+    ) -> anyhow::Result<Vec<NostrProfile>> {
+        if npubs.is_empty() {
+            return Ok(Vec::new());
+        }
+
+        self.nostr_client.connect().await;
+
+        // Convert npubs to public keys
+        let pubkeys: Vec<nostr_sdk::PublicKey> = npubs
+            .iter()
+            .filter_map(|npub| nostr_sdk::PublicKey::parse(npub).ok())
+            .collect();
+
+        if pubkeys.is_empty() {
+            return Ok(Vec::new());
+        }
+
+        // Chunk requests to avoid timeouts with large batches
+        const CHUNK_SIZE: usize = 100;
+        let mut all_profiles: BTreeMap<nostr_sdk::PublicKey, nostr_sdk::Event> = BTreeMap::new();
+
+        for chunk in pubkeys.chunks(CHUNK_SIZE) {
+            let filter = nostr_sdk::Filter::new()
+                .authors(chunk.to_vec())
+                .kind(nostr_sdk::Kind::Metadata);
+
+            let events = self
+                .nostr_client
+                .fetch_events(filter, Duration::from_secs(15))
+                .await?;
+
+            // Group by author and take the most recent profile for each
+            for event in events.to_vec() {
+                all_profiles
+                    .entry(event.pubkey)
+                    .and_modify(|existing| {
+                        if event.created_at > existing.created_at {
+                            *existing = event.clone();
+                        }
+                    })
+                    .or_insert(event);
+            }
+
+            // Emit progress event with count of profiles with lightning addresses
+            let synced_count = all_profiles
+                .values()
+                .filter_map(|event| NostrProfile::try_from(event.clone()).ok())
+                .filter(|profile| profile.lud16.as_ref().is_some_and(|l| !l.is_empty()))
+                .count();
+
+            get_event_bus()
+                .publish(MultimintEvent::ContactSync(
+                    ContactSyncEventKind::Progress {
+                        synced: synced_count,
+                    },
+                ))
+                .await;
+        }
+
+        let profiles: Vec<NostrProfile> = all_profiles
+            .into_values()
+            .filter_map(|event| NostrProfile::try_from(event).ok())
+            .collect();
+
+        info_to_flutter(format!("Fetched {} profiles", profiles.len())).await;
+        Ok(profiles)
+    }
+
+    /// Resolve and verify a NIP-05 identifier, returning the npub if valid
+    pub async fn verify_nip05(&self, nip05_id: &str) -> anyhow::Result<String> {
+        // Parse the NIP-05 identifier (user@domain.com or _@domain.com)
+        let parts: Vec<&str> = nip05_id.split('@').collect();
+        if parts.len() != 2 {
+            bail!("Invalid NIP-05 identifier format");
+        }
+
+        let name = parts[0];
+        let domain = parts[1];
+
+        // Build the URL for the well-known file
+        let url = format!("https://{}/.well-known/nostr.json?name={}", domain, name);
+
+        // Make the HTTP request
+        let client = reqwest::Client::builder()
+            .timeout(Duration::from_secs(10))
+            .build()?;
+
+        let response = client.get(&url).send().await?;
+
+        if !response.status().is_success() {
+            bail!("NIP-05 verification failed: HTTP {}", response.status());
+        }
+
+        let json: serde_json::Value = response.json().await?;
+
+        // Extract the public key from the response
+        let pubkey_hex = json
+            .get("names")
+            .and_then(|names| names.get(name))
+            .and_then(|pk| pk.as_str())
+            .ok_or_else(|| anyhow!("Name not found in NIP-05 response"))?;
+
+        // Convert hex public key to npub
+        let pubkey = nostr_sdk::PublicKey::from_hex(pubkey_hex)?;
+        Ok(pubkey.to_bech32().expect("Could not encode to bech32"))
+    }
+
+    // === Contact Database Operations ===
+
+    /// Check if contacts have been imported (by checking if any contacts exist)
+    pub async fn has_imported_contacts(&self) -> bool {
+        let mut dbtx = self.db.begin_transaction_nc().await;
+        let contacts: Vec<_> = dbtx
+            .find_by_prefix(&ContactKeyPrefix)
+            .await
+            .collect::<Vec<_>>()
+            .await;
+        !contacts.is_empty()
+    }
+
+    /// Get contact sync configuration
+    pub async fn get_contact_sync_config(&self) -> Option<ContactSyncConfig> {
+        let mut dbtx = self.db.begin_transaction_nc().await;
+        dbtx.get_value(&ContactSyncConfigKey).await
+    }
+
+    /// Set up contact sync with an npub
+    pub async fn set_contact_sync_config(&self, npub: String, enabled: bool) {
+        let config = ContactSyncConfig {
+            npub,
+            last_sync_at: None,
+            sync_enabled: enabled,
+        };
+        let mut dbtx = self.db.begin_transaction().await;
+        dbtx.insert_entry(&ContactSyncConfigKey, &config).await;
+        dbtx.commit_tx().await;
+    }
+
+    /// Clear all contacts and stop syncing
+    pub async fn clear_contacts_and_stop_sync(&self) -> usize {
+        let mut dbtx = self.db.begin_transaction().await;
+
+        // Get all contacts to count them
+        let contacts: Vec<_> = dbtx.find_by_prefix(&ContactKeyPrefix).await.collect().await;
+        let count = contacts.len();
+
+        dbtx.remove_by_prefix(&ContactKeyPrefix).await;
+
+        // Remove sync config (this stops syncing)
+        dbtx.remove_entry(&ContactSyncConfigKey).await;
+
+        dbtx.commit_tx().await;
+
+        info_to_flutter(format!("Cleared {} contacts and stopped syncing", count)).await;
+        count
+    }
+
+    /// Sync contacts from Nostr follows
+    /// Fetches follows from the configured npub, filters to those with lightning addresses,
+    /// and updates the contact database
+    pub async fn sync_contacts(&self) {
+        let Some(config) = self.get_contact_sync_config().await else {
+            return;
+        };
+
+        if !config.sync_enabled {
+            return;
+        }
+
+        // Publish sync started event
+        get_event_bus()
+            .publish(MultimintEvent::ContactSync(ContactSyncEventKind::Started))
+            .await;
+
+        // Fetch follows for the configured npub
+        let follows = match self.get_follows_for_pubkey(config.npub.clone()).await {
+            Ok(f) => f,
+            Err(e) => {
+                let error_msg = format!("Failed to fetch follows: {}", e);
+                error_to_flutter(error_msg).await;
+                get_event_bus()
+                    .publish(MultimintEvent::ContactSync(ContactSyncEventKind::Error(
+                        "Failed to fetch follows".to_string(),
+                    )))
+                    .await;
+                return;
+            }
+        };
+
+        if follows.is_empty() {
+            // Update last sync time even if no follows
+            let updated_config = ContactSyncConfig {
+                npub: config.npub,
+                last_sync_at: Some(Self::now_millis()),
+                sync_enabled: true,
+            };
+            let mut dbtx = self.db.begin_transaction().await;
+            dbtx.insert_entry(&ContactSyncConfigKey, &updated_config)
+                .await;
+            dbtx.commit_tx().await;
+
+            get_event_bus()
+                .publish(MultimintEvent::ContactSync(
+                    ContactSyncEventKind::Completed {
+                        added: 0,
+                        updated: 0,
+                        removed: 0,
+                    },
+                ))
+                .await;
+            return;
+        }
+
+        // Fetch profiles for follows
+        let profiles = match self.fetch_nostr_profiles(follows).await {
+            Ok(p) => p,
+            Err(e) => {
+                let error_msg = format!("Failed to fetch profiles: {}", e);
+                error_to_flutter(error_msg).await;
+                get_event_bus()
+                    .publish(MultimintEvent::ContactSync(ContactSyncEventKind::Error(
+                        "Failed to fetch profiles".to_string(),
+                    )))
+                    .await;
+                return;
+            }
+        };
+
+        // Filter to only profiles with lightning addresses
+        let profiles_with_ln: Vec<NostrProfile> = profiles
+            .into_iter()
+            .filter(|p| p.lud16.as_ref().is_some_and(|l| !l.is_empty()))
+            .collect();
+
+        // Get current contacts
+        let current_contacts = self
+            .get_all_contacts()
+            .await
+            .into_iter()
+            .map(|c| (c.npub.clone(), c))
+            .collect::<BTreeMap<String, _>>();
+        let new_npubs: HashSet<String> = profiles_with_ln.iter().map(|p| p.npub.clone()).collect();
+
+        // Determine adds, updates, removes
+        let to_add: Vec<&NostrProfile> = profiles_with_ln
+            .iter()
+            .filter(|p| !current_contacts.contains_key(&p.npub))
+            .collect();
+        let to_remove: Vec<&Contact> = current_contacts
+            .values()
+            .filter(|p| !new_npubs.contains(&p.npub))
+            .collect();
+        let to_update: Vec<&NostrProfile> = profiles_with_ln
+            .iter()
+            .filter(|p| current_contacts.contains_key(&p.npub))
+            .collect();
+
+        let now = Self::now_millis();
+        let mut dbtx = self.db.begin_transaction().await;
+
+        // Remove contacts that are no longer follows
+        for contact in &to_remove {
+            dbtx.remove_entry(&ContactKey {
+                npub: contact.npub.clone(),
+            })
+            .await;
+        }
+
+        // Add new contacts
+        for profile in &to_add {
+            let contact = Contact {
+                npub: profile.npub.clone(),
+                name: profile.name.clone(),
+                display_name: profile.display_name.clone(),
+                picture: profile.picture.clone(),
+                lud16: profile.lud16.clone(),
+                nip05: profile.nip05.clone(),
+                nip05_verified: false,
+                about: profile.about.clone(),
+                created_at: now,
+                last_paid_at: None,
+            };
+            dbtx.insert_entry(
+                &ContactKey {
+                    npub: profile.npub.clone(),
+                },
+                &contact,
+            )
+            .await;
+        }
+
+        // Update existing contacts (preserve last_paid_at and created_at)
+        for profile in &to_update {
+            if let Some(existing) = current_contacts.get(&profile.npub) {
+                let contact = Contact {
+                    npub: profile.npub.clone(),
+                    name: profile.name.clone(),
+                    display_name: profile.display_name.clone(),
+                    picture: profile.picture.clone(),
+                    lud16: profile.lud16.clone(),
+                    nip05: profile.nip05.clone(),
+                    nip05_verified: existing.nip05_verified,
+                    about: profile.about.clone(),
+                    created_at: existing.created_at,
+                    last_paid_at: existing.last_paid_at,
+                };
+                dbtx.insert_entry(
+                    &ContactKey {
+                        npub: profile.npub.clone(),
+                    },
+                    &contact,
+                )
+                .await;
+            }
+        }
+
+        // Update sync timestamp
+        let updated_config = ContactSyncConfig {
+            npub: config.npub,
+            last_sync_at: Some(now),
+            sync_enabled: true,
+        };
+        dbtx.insert_entry(&ContactSyncConfigKey, &updated_config)
+            .await;
+
+        dbtx.commit_tx().await;
+
+        let result = (to_add.len(), to_update.len(), to_remove.len());
+
+        info_to_flutter(format!(
+            "Contact sync: +{} added, ~{} updated, -{} removed",
+            result.0, result.1, result.2
+        ))
+        .await;
+
+        // Publish sync completed event
+        get_event_bus()
+            .publish(MultimintEvent::ContactSync(
+                ContactSyncEventKind::Completed {
+                    added: result.0,
+                    updated: result.1,
+                    removed: result.2,
+                },
+            ))
+            .await;
+    }
+
+    /// Helper to get current time as milliseconds since Unix epoch
+    fn now_millis() -> u64 {
+        SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .map(|d| d.as_millis() as u64)
+            .unwrap_or(0)
+    }
+
+    /// Get all contacts, sorted by last_paid_at (most recent first), then by created_at
+    pub async fn get_all_contacts(&self) -> Vec<Contact> {
+        let mut dbtx = self.db.begin_transaction_nc().await;
+        let mut contacts: Vec<Contact> = dbtx
+            .find_by_prefix(&ContactKeyPrefix)
+            .await
+            .map(|(_, contact)| contact)
+            .collect()
+            .await;
+
+        // Sort by last_paid_at descending (recent first), then created_at descending
+        contacts.sort_by(|a, b| match (&b.last_paid_at, &a.last_paid_at) {
+            (Some(b_time), Some(a_time)) => b_time.cmp(a_time),
+            (Some(_), None) => std::cmp::Ordering::Less,
+            (None, Some(_)) => std::cmp::Ordering::Greater,
+            (None, None) => b.created_at.cmp(&a.created_at),
+        });
+
+        contacts
+    }
+
+    /// Get paginated contacts with cursor-based pagination
+    pub async fn paginate_contacts(
+        &self,
+        cursor: Option<ContactCursor>,
+        limit: usize,
+    ) -> Vec<Contact> {
+        let mut dbtx = self.db.begin_transaction_nc().await;
+        let mut contacts: Vec<Contact> = dbtx
+            .find_by_prefix(&ContactKeyPrefix)
+            .await
+            .map(|(_, contact)| contact)
+            .collect()
+            .await;
+
+        // Sort by last_paid_at descending (recent first), then created_at descending
+        contacts.sort_by(|a, b| match (&b.last_paid_at, &a.last_paid_at) {
+            (Some(b_time), Some(a_time)) => b_time.cmp(a_time),
+            (Some(_), None) => std::cmp::Ordering::Less,
+            (None, Some(_)) => std::cmp::Ordering::Greater,
+            (None, None) => b.created_at.cmp(&a.created_at),
+        });
+
+        // Apply cursor filtering
+        let mut result = Vec::new();
+        let mut skip_until_cursor = cursor.is_some();
+
+        for contact in contacts {
+            if skip_until_cursor {
+                if let Some(ref cur) = cursor {
+                    // Check if this is the cursor contact
+                    if contact.npub == cur.npub {
+                        skip_until_cursor = false;
+                    }
+                }
+                continue;
+            }
+
+            result.push(contact);
+            if result.len() >= limit {
+                break;
+            }
+        }
+
+        result
+    }
+
+    /// Get a single contact by npub
+    pub async fn get_contact(&self, npub: &str) -> Option<Contact> {
+        let mut dbtx = self.db.begin_transaction_nc().await;
+        dbtx.get_value(&ContactKey {
+            npub: npub.to_string(),
+        })
+        .await
+    }
+
+    /// Search contacts with pagination
+    pub async fn paginate_search_contacts(
+        &self,
+        query: &str,
+        cursor: Option<ContactCursor>,
+        limit: usize,
+    ) -> Vec<Contact> {
+        let query_lower = query.to_lowercase();
+        let all_contacts = self.get_all_contacts().await;
+
+        // Filter contacts based on query
+        let mut filtered: Vec<Contact> = all_contacts
+            .into_iter()
+            .filter(|contact| {
+                contact.npub.to_lowercase().contains(&query_lower)
+                    || contact
+                        .name
+                        .as_ref()
+                        .map(|n| n.to_lowercase().contains(&query_lower))
+                        .unwrap_or(false)
+                    || contact
+                        .display_name
+                        .as_ref()
+                        .map(|d| d.to_lowercase().contains(&query_lower))
+                        .unwrap_or(false)
+                    || contact
+                        .nip05
+                        .as_ref()
+                        .map(|n| n.to_lowercase().contains(&query_lower))
+                        .unwrap_or(false)
+                    || contact
+                        .lud16
+                        .as_ref()
+                        .map(|l| l.to_lowercase().contains(&query_lower))
+                        .unwrap_or(false)
+            })
+            .collect();
+
+        // Sort by last_paid_at descending, then created_at descending (same as get_all_contacts)
+        filtered.sort_by(|a, b| match (&b.last_paid_at, &a.last_paid_at) {
+            (Some(b_time), Some(a_time)) => b_time.cmp(a_time),
+            (Some(_), None) => std::cmp::Ordering::Less,
+            (None, Some(_)) => std::cmp::Ordering::Greater,
+            (None, None) => b.created_at.cmp(&a.created_at),
+        });
+
+        // Apply cursor filtering
+        let mut result = Vec::new();
+        let mut skip_until_cursor = cursor.is_some();
+
+        for contact in filtered {
+            if skip_until_cursor {
+                if let Some(ref cur) = cursor {
+                    if contact.npub == cur.npub {
+                        skip_until_cursor = false;
+                    }
+                }
+                continue;
+            }
+
+            result.push(contact);
+            if result.len() >= limit {
+                break;
+            }
+        }
+
+        result
+    }
 }
 
 #[derive(Debug, Clone)]
@@ -907,5 +1453,49 @@ impl PublicFederation {
             .map(|m| m.to_string())
             .collect::<Vec<_>>();
         Ok(modules)
+    }
+}
+
+/// Nostr profile data parsed from Kind 0 events
+#[derive(Clone, Debug, Serialize, Deserialize)]
+pub struct NostrProfile {
+    pub npub: String,
+    pub name: Option<String>,
+    pub display_name: Option<String>,
+    pub picture: Option<String>,
+    pub lud16: Option<String>,
+    pub nip05: Option<String>,
+    pub about: Option<String>,
+}
+
+impl TryFrom<nostr_sdk::Event> for NostrProfile {
+    type Error = anyhow::Error;
+
+    fn try_from(event: nostr_sdk::Event) -> Result<Self, Self::Error> {
+        if event.kind != nostr_sdk::Kind::Metadata {
+            bail!("Event is not a metadata event");
+        }
+
+        let npub = event
+            .pubkey
+            .to_bech32()
+            .expect("Could not encode to bech32");
+        let json: serde_json::Value = serde_json::from_str(&event.content)?;
+
+        Ok(NostrProfile {
+            npub,
+            name: json.get("name").and_then(|v| v.as_str()).map(String::from),
+            display_name: json
+                .get("display_name")
+                .and_then(|v| v.as_str())
+                .map(String::from),
+            picture: json
+                .get("picture")
+                .and_then(|v| v.as_str())
+                .map(String::from),
+            lud16: json.get("lud16").and_then(|v| v.as_str()).map(String::from),
+            nip05: json.get("nip05").and_then(|v| v.as_str()).map(String::from),
+            about: json.get("about").and_then(|v| v.as_str()).map(String::from),
+        })
     }
 }

@@ -9,15 +9,33 @@ import 'lib.dart';
 import 'multimint.dart';
 import 'package:flutter_rust_bridge/flutter_rust_bridge_for_generated.dart';
 
-// These functions are ignored because they are not marked as `pub`: `add_relays_from_db`, `broadcast_nwc_info`, `broadcast_response`, `get_or_insert_default_relays`, `handle_request`, `parse_content`, `parse_federation_id`, `parse_federation_name`, `parse_invite_codes`, `parse_modules`, `parse_network`, `parse_picture`, `spawn_listen_for_nwc`, `update_federations_from_nostr`
+// These functions are ignored because they are not marked as `pub`: `add_relays_from_db`, `broadcast_nwc_info`, `broadcast_response`, `get_or_insert_default_relays`, `handle_request`, `now_millis`, `parse_content`, `parse_federation_id`, `parse_federation_name`, `parse_invite_codes`, `parse_modules`, `parse_network`, `parse_picture`, `spawn_listen_for_nwc`, `update_federations_from_nostr`
 // These types are ignored because they are neither used by any `pub` functions nor (for structs and enums) marked `#[frb(unignore)]`: `WalletConnectRequest`, `WalletConnectResponse`
-// These function are ignored because they are on traits that is not defined in current crate (put an empty `#[frb]` on it to unignore): `assert_receiver_is_total_eq`, `clone`, `clone`, `clone`, `eq`, `fmt`, `fmt`, `fmt`, `fmt`, `try_from`
+// These function are ignored because they are on traits that is not defined in current crate (put an empty `#[frb]` on it to unignore): `assert_receiver_is_total_eq`, `clone`, `clone`, `clone`, `clone`, `eq`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `try_from`, `try_from`
 
 // Rust type: RustOpaqueMoi<flutter_rust_bridge::for_generated::RustAutoOpaqueInner<NostrClient>>
 abstract class NostrClient implements RustOpaqueInterface {
   Future<void> backupInviteCodes({required List<String> inviteCodes});
 
+  /// Clear all contacts and stop syncing
+  Future<BigInt> clearContactsAndStopSync();
+
+  /// Fetch Nostr profiles (Kind 0) for a list of npubs
+  Future<List<NostrProfile>> fetchNostrProfiles({required List<String> npubs});
+
+  /// Get all contacts, sorted by last_paid_at (most recent first), then by created_at
+  Future<List<Contact>> getAllContacts();
+
   Future<List<String>> getBackupInviteCodes();
+
+  /// Get a single contact by npub
+  Future<Contact?> getContact({required String npub});
+
+  /// Get contact sync configuration
+  Future<ContactSyncConfig?> getContactSyncConfig();
+
+  /// Fetch follows list for any pubkey (Kind 3 contact list)
+  Future<List<String>> getFollowsForPubkey({required String npub});
 
   /// Get NWC config for a federation and return it.
   /// This is used by the blocking listen function.
@@ -32,6 +50,9 @@ abstract class NostrClient implements RustOpaqueInterface {
   });
 
   Future<List<(String, bool)>> getRelays();
+
+  /// Check if contacts have been imported (by checking if any contacts exist)
+  Future<bool> hasImportedContacts();
 
   Future<void> insertRelay({required String relayUri});
 
@@ -56,15 +77,42 @@ abstract class NostrClient implements RustOpaqueInterface {
     isDesktop: isDesktop,
   );
 
+  /// Get paginated contacts with cursor-based pagination
+  Future<List<Contact>> paginateContacts({
+    ContactCursor? cursor,
+    required BigInt limit,
+  });
+
+  /// Search contacts with pagination
+  Future<List<Contact>> paginateSearchContacts({
+    required String query,
+    ContactCursor? cursor,
+    required BigInt limit,
+  });
+
   Future<void> removeNwcConnectionInfo({required FederationId federationId});
 
   Future<void> removeRelay({required String relayUri});
+
+  /// Set up contact sync with an npub
+  Future<void> setContactSyncConfig({
+    required String npub,
+    required bool enabled,
+  });
 
   Future<NWCConnectionInfo> setNwcConnectionInfo({
     required FederationId federationId,
     required String relay,
     required bool isDesktop,
   });
+
+  /// Sync contacts from Nostr follows
+  /// Fetches follows from the configured npub, filters to those with lightning addresses,
+  /// and updates the contact database
+  Future<void> syncContacts();
+
+  /// Resolve and verify a NIP-05 identifier, returning the npub if valid
+  Future<String> verifyNip05({required String nip05Id});
 }
 
 // Rust type: RustOpaqueMoi<flutter_rust_bridge::for_generated::RustAutoOpaqueInner<PublicFederation>>
@@ -96,6 +144,50 @@ abstract class PublicFederation implements RustOpaqueInterface {
   set network(String network);
 
   set picture(String? picture);
+}
+
+/// Nostr profile data parsed from Kind 0 events
+class NostrProfile {
+  final String npub;
+  final String? name;
+  final String? displayName;
+  final String? picture;
+  final String? lud16;
+  final String? nip05;
+  final String? about;
+
+  const NostrProfile({
+    required this.npub,
+    this.name,
+    this.displayName,
+    this.picture,
+    this.lud16,
+    this.nip05,
+    this.about,
+  });
+
+  @override
+  int get hashCode =>
+      npub.hashCode ^
+      name.hashCode ^
+      displayName.hashCode ^
+      picture.hashCode ^
+      lud16.hashCode ^
+      nip05.hashCode ^
+      about.hashCode;
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is NostrProfile &&
+          runtimeType == other.runtimeType &&
+          npub == other.npub &&
+          name == other.name &&
+          displayName == other.displayName &&
+          picture == other.picture &&
+          lud16 == other.lud16 &&
+          nip05 == other.nip05 &&
+          about == other.about;
 }
 
 class NWCConnectionInfo {

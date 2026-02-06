@@ -29,6 +29,7 @@ class FederationSidebar extends StatefulWidget {
   final void Function(FederationSelector, bool) onFederationSelected;
   final VoidCallback onLeaveFederation;
   final VoidCallback onSettingsPressed;
+  final VoidCallback onContactsPressed;
 
   const FederationSidebar({
     super.key,
@@ -36,6 +37,7 @@ class FederationSidebar extends StatefulWidget {
     required this.onFederationSelected,
     required this.onLeaveFederation,
     required this.onSettingsPressed,
+    required this.onContactsPressed,
   });
 
   @override
@@ -211,7 +213,49 @@ class FederationSidebarState extends State<FederationSidebar> {
             Padding(
               padding: const EdgeInsets.symmetric(
                 horizontal: 12.0,
-                vertical: 12,
+                vertical: 6,
+              ),
+              child: Material(
+                color: Colors.grey[900],
+                borderRadius: BorderRadius.circular(12),
+                child: InkWell(
+                  borderRadius: BorderRadius.circular(12),
+                  onTap: () {
+                    Navigator.of(context).pop();
+                    widget.onContactsPressed();
+                  },
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 16,
+                    ),
+                    child: Row(
+                      children: [
+                        Icon(
+                          Icons.people,
+                          color: Theme.of(context).colorScheme.primary,
+                          size: 24,
+                        ),
+                        const SizedBox(width: 16),
+                        Text(
+                          'Contacts',
+                          style: Theme.of(
+                            context,
+                          ).textTheme.bodyLarge!.copyWith(
+                            fontWeight: FontWeight.bold,
+                            color: Theme.of(context).colorScheme.primary,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.symmetric(
+                horizontal: 12.0,
+                vertical: 6,
               ),
               child: Material(
                 color: Colors.grey[900],
@@ -250,6 +294,7 @@ class FederationSidebarState extends State<FederationSidebar> {
                 ),
               ),
             ),
+            const SizedBox(height: 6),
           ],
         ),
       ),
