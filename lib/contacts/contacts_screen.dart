@@ -20,7 +20,8 @@ class ContactsScreen extends StatefulWidget {
   State<ContactsScreen> createState() => _ContactsScreenState();
 }
 
-class _ContactsScreenState extends State<ContactsScreen> {
+class _ContactsScreenState extends State<ContactsScreen>
+    with WidgetsBindingObserver {
   final List<Contact> _contacts = [];
   bool _loading = true;
   bool _hasSynced = false;
@@ -44,10 +45,27 @@ class _ContactsScreenState extends State<ContactsScreen> {
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     _searchController.addListener(_onSearchChanged);
     _scrollController.addListener(_onScroll);
     _subscribeToSyncEvents();
     _initialize();
+  }
+
+  @override
+  void didChangeMetrics() {
+    super.didChangeMetrics();
+    // When viewport changes (e.g., keyboard dismissed), check if we need to load more
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      if (_scrollController.hasClients) {
+        final position = _scrollController.position;
+        // If content doesn't fill viewport after resize, load more items
+        if (position.maxScrollExtent <= 0 && _hasMore && !_isFetchingMore) {
+          _loadContacts(loadMore: true);
+        }
+      }
+    });
   }
 
   void _subscribeToSyncEvents() {
@@ -90,6 +108,7 @@ class _ContactsScreenState extends State<ContactsScreen> {
 
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     _eventSubscription?.cancel();
     _searchController.removeListener(_onSearchChanged);
     _searchController.dispose();
@@ -138,6 +157,9 @@ class _ContactsScreenState extends State<ContactsScreen> {
         _hasMore = true;
         _lastContact = null;
       });
+      if (_scrollController.hasClients) {
+        _scrollController.jumpTo(0);
+      }
     }
 
     try {
