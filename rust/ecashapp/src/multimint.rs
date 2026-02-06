@@ -873,10 +873,11 @@ impl Multimint {
                             }
                         }
 
-                        if let Some(client) = self_copy.clients.read().await.get(&federation_id) {
-                            if !client.has_pending_recoveries() {
-                                self_copy.cache_federation_meta(client.clone(), now).await;
-                            }
+                        let client = self_copy.clients.read().await.get(&federation_id).cloned();
+                        let Some(client) = client else { continue };
+
+                        if !client.has_pending_recoveries() {
+                            self_copy.cache_federation_meta(client.clone(), now).await;
                         }
                     }
 
