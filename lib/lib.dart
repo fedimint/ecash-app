@@ -435,6 +435,14 @@ Future<(String, String)> claimRandomLnAddress({
 Future<void> leaveFederation({required FederationId federationId}) =>
     RustLib.instance.api.crateLeaveFederation(federationId: federationId);
 
+Stream<List<PeerStatus>> subscribePeerStatus({
+  String? invite,
+  FederationId? federationId,
+}) => RustLib.instance.api.crateSubscribePeerStatus(
+  invite: invite,
+  federationId: federationId,
+);
+
 /// Verify a NIP-05 identifier and return the associated npub
 Future<String> verifyNip05({required String nip05Id}) =>
     RustLib.instance.api.crateVerifyNip05(nip05Id: nip05Id);
