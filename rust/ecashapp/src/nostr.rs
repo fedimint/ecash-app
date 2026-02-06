@@ -1046,23 +1046,26 @@ impl NostrClient {
             .collect();
 
         // Get current contacts
-        let current_contacts = self.get_all_contacts().await;
-        let current_npubs: HashSet<String> =
-            current_contacts.iter().map(|c| c.npub.clone()).collect();
+        let current_contacts = self
+            .get_all_contacts()
+            .await
+            .into_iter()
+            .map(|c| (c.npub.clone(), c))
+            .collect::<BTreeMap<String, _>>();
         let new_npubs: HashSet<String> = profiles_with_ln.iter().map(|p| p.npub.clone()).collect();
 
         // Determine adds, updates, removes
         let to_add: Vec<&NostrProfile> = profiles_with_ln
             .iter()
-            .filter(|p| !current_npubs.contains(&p.npub))
+            .filter(|p| !current_contacts.contains_key(&p.npub))
             .collect();
         let to_remove: Vec<&Contact> = current_contacts
-            .iter()
-            .filter(|c| !new_npubs.contains(&c.npub))
+            .values()
+            .filter(|p| !new_npubs.contains(&p.npub))
             .collect();
         let to_update: Vec<&NostrProfile> = profiles_with_ln
             .iter()
-            .filter(|p| current_npubs.contains(&p.npub))
+            .filter(|p| current_contacts.contains_key(&p.npub))
             .collect();
 
         let now = Self::now_millis();
@@ -1101,7 +1104,7 @@ impl NostrClient {
 
         // Update existing contacts (preserve last_paid_at and created_at)
         for profile in &to_update {
-            if let Some(existing) = current_contacts.iter().find(|c| c.npub == profile.npub) {
+            if let Some(existing) = current_contacts.get(&profile.npub) {
                 let contact = Contact {
                     npub: profile.npub.clone(),
                     name: profile.name.clone(),
