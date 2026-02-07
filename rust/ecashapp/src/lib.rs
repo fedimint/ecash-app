@@ -46,11 +46,11 @@ use std::path::PathBuf;
 use std::{str::FromStr, sync::Arc};
 
 use crate::db::{
-    BitcoinDisplay, FederationConfig, FederationConfigKey, FederationConfigKeyPrefix, FiatCurrency,
-    LightningAddressConfig,
+    BitcoinDisplay, Contact, ContactCursor, FederationConfig, FederationConfigKey,
+    FederationConfigKeyPrefix, FiatCurrency, LightningAddressConfig,
 };
 use crate::frb_generated::StreamSink;
-use crate::multimint::{DepositEventKind, FedimintGateway, LNAddressStatus};
+use crate::multimint::{DepositEventKind, FedimintGateway, LNAddressStatus, PeerStatus};
 use crate::words::{ADJECTIVES, NOUNS};
 
 static MULTIMINT: OnceCell<Multimint> = OnceCell::const_new();
@@ -79,7 +79,7 @@ async fn get_database(path: String) -> Database {
         .clone()
 }
 
-fn get_nostr_client() -> Arc<RwLock<NostrClient>> {
+pub(crate) fn get_nostr_client() -> Arc<RwLock<NostrClient>> {
     NOSTR.get().expect("NostrClient not initialized").clone()
 }
 
@@ -1139,4 +1139,121 @@ pub async fn claim_random_ln_address(
 pub async fn leave_federation(federation_id: &FederationId) {
     let mut multimint = get_multimint();
     multimint.leave_federation(federation_id).await;
+}
+
+#[frb]
+pub async fn subscribe_peer_status(
+    sink: StreamSink<Vec<PeerStatus>>,
+    invite: Option<String>,
+    federation_id: Option<FederationId>,
+) -> anyhow::Result<()> {
+    let multimint = get_multimint();
+    let mut stream = Box::pin(
+        multimint
+            .subscribe_peer_status(invite, federation_id)
+            .await?,
+    );
+
+    while let Some(status) = stream.next().await {
+        if sink.add(status).is_err() {
+            break;
+        }
+    }
+
+    Ok(())
+}
+
+// === Contact Address Book Functions ===
+
+/// Verify a NIP-05 identifier and return the associated npub
+#[frb]
+pub async fn verify_nip05(nip05_id: String) -> anyhow::Result<String> {
+    let nostr_client = get_nostr_client();
+    let nostr = nostr_client.read().await;
+    nostr.verify_nip05(&nip05_id).await
+}
+
+/// Check if contacts have been imported (first-time flag)
+#[frb]
+pub async fn has_imported_contacts() -> bool {
+    let nostr_client = get_nostr_client();
+    let nostr = nostr_client.read().await;
+    nostr.has_imported_contacts().await
+}
+
+/// Starts contact sync
+#[frb]
+pub async fn sync_contacts(npub: String) {
+    let nostr_client = get_nostr_client();
+    // Use write lock in case background thread is also syncing
+    let nostr = nostr_client.write().await;
+    nostr.set_contact_sync_config(npub, true).await;
+    nostr.sync_contacts().await;
+}
+
+/// Clear all contacts and stop syncing
+#[frb]
+pub async fn clear_contacts_and_stop_sync() -> usize {
+    let nostr_client = get_nostr_client();
+    let nostr = nostr_client.read().await;
+    nostr.clear_contacts_and_stop_sync().await
+}
+
+/// Get all contacts, sorted by last_paid_at (recent first)
+#[frb]
+pub async fn get_all_contacts() -> Vec<Contact> {
+    let nostr_client = get_nostr_client();
+    let nostr = nostr_client.read().await;
+    nostr.get_all_contacts().await
+}
+
+/// Get paginated contacts with cursor-based pagination
+#[frb]
+pub async fn paginate_contacts(
+    cursor_last_paid_at: Option<u64>,
+    cursor_created_at: Option<u64>,
+    cursor_npub: Option<String>,
+    limit: u32,
+) -> Vec<Contact> {
+    let nostr_client = get_nostr_client();
+    let nostr = nostr_client.read().await;
+
+    let cursor = if let (Some(created_at), Some(npub)) = (cursor_created_at, cursor_npub) {
+        Some(ContactCursor {
+            last_paid_at: cursor_last_paid_at,
+            created_at,
+            npub,
+        })
+    } else {
+        None
+    };
+
+    nostr.paginate_contacts(cursor, limit as usize).await
+}
+
+/// Search contacts with pagination
+#[frb]
+pub async fn paginate_search_contacts(
+    query: String,
+    cursor_last_paid_at: Option<u64>,
+    cursor_created_at: Option<u64>,
+    cursor_npub: Option<String>,
+    limit: u32,
+) -> Vec<Contact> {
+    let nostr_client = get_nostr_client();
+    let nostr = nostr_client.read().await;
+
+    let cursor = if let (Some(created_at), Some(npub)) = (cursor_created_at, cursor_npub) {
+        Some(ContactCursor {
+            last_paid_at: cursor_last_paid_at,
+            created_at,
+            npub,
+        })
+    } else {
+        None
+    };
+
+    nostr
+        .paginate_search_contacts(&query, cursor, limit as usize)
+        .await
 }

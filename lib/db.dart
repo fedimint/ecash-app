@@ -7,8 +7,8 @@ import 'frb_generated.dart';
 import 'lib.dart';
 import 'package:flutter_rust_bridge/flutter_rust_bridge_for_generated.dart';
 
-// These types are ignored because they are neither used by any `pub` functions nor (for structs and enums) marked `#[frb(unignore)]`: `BitcoinDisplayKey`, `BtcPriceKey`, `BtcPrice`, `BtcPricesKey`, `BtcPrices`, `DbKeyPrefix`, `FederationBackupKey`, `FederationConfigKeyPrefix`, `FederationConfigKey`, `FederationMetaKey`, `FederationOrderKey`, `FederationOrder`, `FiatCurrencyKey`, `LightningAddressKeyPrefix`, `NostrRelaysKeyPrefix`, `NostrRelaysKey`, `NostrWalletConnectKeyPrefix`, `NostrWalletConnectKey`, `SeedPhraseAckKey`
-// These function are ignored because they are on traits that is not defined in current crate (put an empty `#[frb]` on it to unignore): `assert_receiver_is_total_eq`, `assert_receiver_is_total_eq`, `assert_receiver_is_total_eq`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `cmp`, `consensus_decode_partial_from_finite_reader`, `consensus_decode_partial_from_finite_reader`, `consensus_decode_partial_from_finite_reader`, `consensus_decode_partial_from_finite_reader`, `consensus_decode_partial_from_finite_reader`, `consensus_decode_partial_from_finite_reader`, `consensus_decode_partial_from_finite_reader`, `consensus_decode_partial_from_finite_reader`, `consensus_decode_partial_from_finite_reader`, `consensus_decode_partial_from_finite_reader`, `consensus_decode_partial_from_finite_reader`, `consensus_decode_partial_from_finite_reader`, `consensus_decode_partial_from_finite_reader`, `consensus_decode_partial_from_finite_reader`, `consensus_decode_partial_from_finite_reader`, `consensus_decode_partial_from_finite_reader`, `consensus_decode_partial_from_finite_reader`, `consensus_decode_partial_from_finite_reader`, `consensus_decode_partial_from_finite_reader`, `consensus_decode_partial_from_finite_reader`, `consensus_decode_partial_from_finite_reader`, `consensus_decode_partial_from_finite_reader`, `consensus_decode_partial_from_finite_reader`, `consensus_decode_partial_from_finite_reader`, `consensus_decode_partial_from_finite_reader`, `consensus_encode`, `consensus_encode`, `consensus_encode`, `consensus_encode`, `consensus_encode`, `consensus_encode`, `consensus_encode`, `consensus_encode`, `consensus_encode`, `consensus_encode`, `consensus_encode`, `consensus_encode`, `consensus_encode`, `consensus_encode`, `consensus_encode`, `consensus_encode`, `consensus_encode`, `consensus_encode`, `consensus_encode`, `consensus_encode`, `consensus_encode`, `consensus_encode`, `consensus_encode`, `consensus_encode`, `consensus_encode`, `eq`, `eq`, `eq`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `hash`, `partial_cmp`
+// These types are ignored because they are neither used by any `pub` functions nor (for structs and enums) marked `#[frb(unignore)]`: `BitcoinDisplayKey`, `BtcPriceKey`, `BtcPrice`, `BtcPricesKey`, `BtcPrices`, `ContactKeyPrefix`, `ContactKey`, `ContactSyncConfigKey`, `DbKeyPrefix`, `FederationBackupKey`, `FederationConfigKeyPrefix`, `FederationConfigKey`, `FederationMetaKey`, `FederationOrderKey`, `FederationOrder`, `FiatCurrencyKey`, `LightningAddressKeyPrefix`, `NostrRelaysKeyPrefix`, `NostrRelaysKey`, `NostrWalletConnectKeyPrefix`, `NostrWalletConnectKey`, `SeedPhraseAckKey`
+// These function are ignored because they are on traits that is not defined in current crate (put an empty `#[frb]` on it to unignore): `assert_receiver_is_total_eq`, `assert_receiver_is_total_eq`, `assert_receiver_is_total_eq`, `assert_receiver_is_total_eq`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `cmp`, `cmp`, `consensus_decode_partial_from_finite_reader`, `consensus_decode_partial_from_finite_reader`, `consensus_decode_partial_from_finite_reader`, `consensus_decode_partial_from_finite_reader`, `consensus_decode_partial_from_finite_reader`, `consensus_decode_partial_from_finite_reader`, `consensus_decode_partial_from_finite_reader`, `consensus_decode_partial_from_finite_reader`, `consensus_decode_partial_from_finite_reader`, `consensus_decode_partial_from_finite_reader`, `consensus_decode_partial_from_finite_reader`, `consensus_decode_partial_from_finite_reader`, `consensus_decode_partial_from_finite_reader`, `consensus_decode_partial_from_finite_reader`, `consensus_decode_partial_from_finite_reader`, `consensus_decode_partial_from_finite_reader`, `consensus_decode_partial_from_finite_reader`, `consensus_decode_partial_from_finite_reader`, `consensus_decode_partial_from_finite_reader`, `consensus_decode_partial_from_finite_reader`, `consensus_decode_partial_from_finite_reader`, `consensus_decode_partial_from_finite_reader`, `consensus_decode_partial_from_finite_reader`, `consensus_decode_partial_from_finite_reader`, `consensus_decode_partial_from_finite_reader`, `consensus_decode_partial_from_finite_reader`, `consensus_decode_partial_from_finite_reader`, `consensus_decode_partial_from_finite_reader`, `consensus_decode_partial_from_finite_reader`, `consensus_decode_partial_from_finite_reader`, `consensus_decode_partial_from_finite_reader`, `consensus_encode`, `consensus_encode`, `consensus_encode`, `consensus_encode`, `consensus_encode`, `consensus_encode`, `consensus_encode`, `consensus_encode`, `consensus_encode`, `consensus_encode`, `consensus_encode`, `consensus_encode`, `consensus_encode`, `consensus_encode`, `consensus_encode`, `consensus_encode`, `consensus_encode`, `consensus_encode`, `consensus_encode`, `consensus_encode`, `consensus_encode`, `consensus_encode`, `consensus_encode`, `consensus_encode`, `consensus_encode`, `consensus_encode`, `consensus_encode`, `consensus_encode`, `consensus_encode`, `consensus_encode`, `consensus_encode`, `eq`, `eq`, `eq`, `eq`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `hash`, `hash`, `partial_cmp`, `partial_cmp`
 
 // Rust type: RustOpaqueMoi<flutter_rust_bridge::for_generated::RustAutoOpaqueInner<FederationConfig>>
 abstract class FederationConfig implements RustOpaqueInterface {
@@ -78,6 +78,110 @@ enum Connector {
 
   static Future<Connector> default_() =>
       RustLib.instance.api.crateDbConnectorDefault();
+}
+
+class Contact {
+  final String npub;
+  final String? name;
+  final String? displayName;
+  final String? picture;
+  final String? lud16;
+  final String? nip05;
+  final bool nip05Verified;
+  final String? about;
+  final BigInt createdAt;
+  final BigInt? lastPaidAt;
+
+  const Contact({
+    required this.npub,
+    this.name,
+    this.displayName,
+    this.picture,
+    this.lud16,
+    this.nip05,
+    required this.nip05Verified,
+    this.about,
+    required this.createdAt,
+    this.lastPaidAt,
+  });
+
+  @override
+  int get hashCode =>
+      npub.hashCode ^
+      name.hashCode ^
+      displayName.hashCode ^
+      picture.hashCode ^
+      lud16.hashCode ^
+      nip05.hashCode ^
+      nip05Verified.hashCode ^
+      about.hashCode ^
+      createdAt.hashCode ^
+      lastPaidAt.hashCode;
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is Contact &&
+          runtimeType == other.runtimeType &&
+          npub == other.npub &&
+          name == other.name &&
+          displayName == other.displayName &&
+          picture == other.picture &&
+          lud16 == other.lud16 &&
+          nip05 == other.nip05 &&
+          nip05Verified == other.nip05Verified &&
+          about == other.about &&
+          createdAt == other.createdAt &&
+          lastPaidAt == other.lastPaidAt;
+}
+
+class ContactCursor {
+  final BigInt? lastPaidAt;
+  final BigInt createdAt;
+  final String npub;
+
+  const ContactCursor({
+    this.lastPaidAt,
+    required this.createdAt,
+    required this.npub,
+  });
+
+  @override
+  int get hashCode => lastPaidAt.hashCode ^ createdAt.hashCode ^ npub.hashCode;
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is ContactCursor &&
+          runtimeType == other.runtimeType &&
+          lastPaidAt == other.lastPaidAt &&
+          createdAt == other.createdAt &&
+          npub == other.npub;
+}
+
+class ContactSyncConfig {
+  final String npub;
+  final BigInt? lastSyncAt;
+  final bool syncEnabled;
+
+  const ContactSyncConfig({
+    required this.npub,
+    this.lastSyncAt,
+    required this.syncEnabled,
+  });
+
+  @override
+  int get hashCode =>
+      npub.hashCode ^ lastSyncAt.hashCode ^ syncEnabled.hashCode;
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is ContactSyncConfig &&
+          runtimeType == other.runtimeType &&
+          npub == other.npub &&
+          lastSyncAt == other.lastSyncAt &&
+          syncEnabled == other.syncEnabled;
 }
 
 enum FiatCurrency { usd, eur, gbp, cad, chf, aud, jpy }

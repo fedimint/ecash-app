@@ -507,6 +507,11 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   );
 
   @protected
+  RustStreamSink<List<PeerStatus>> dco_decode_StreamSink_list_peer_status_Sse(
+    dynamic raw,
+  );
+
+  @protected
   RustStreamSink<MultimintEvent> dco_decode_StreamSink_multimint_event_Sse(
     dynamic raw,
   );
@@ -554,6 +559,20 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
 
   @protected
   ConfirmedEvent dco_decode_box_autoadd_confirmed_event(dynamic raw);
+
+  @protected
+  Contact dco_decode_box_autoadd_contact(dynamic raw);
+
+  @protected
+  ContactCursor dco_decode_box_autoadd_contact_cursor(dynamic raw);
+
+  @protected
+  ContactSyncConfig dco_decode_box_autoadd_contact_sync_config(dynamic raw);
+
+  @protected
+  ContactSyncEventKind dco_decode_box_autoadd_contact_sync_event_kind(
+    dynamic raw,
+  );
 
   @protected
   double dco_decode_box_autoadd_f_64(dynamic raw);
@@ -606,6 +625,18 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   Connector dco_decode_connector(dynamic raw);
 
   @protected
+  Contact dco_decode_contact(dynamic raw);
+
+  @protected
+  ContactCursor dco_decode_contact_cursor(dynamic raw);
+
+  @protected
+  ContactSyncConfig dco_decode_contact_sync_config(dynamic raw);
+
+  @protected
+  ContactSyncEventKind dco_decode_contact_sync_event_kind(dynamic raw);
+
+  @protected
   DepositEventKind dco_decode_deposit_event_kind(dynamic raw);
 
   @protected
@@ -648,10 +679,19 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   List<String> dco_decode_list_String(dynamic raw);
 
   @protected
+  List<Contact> dco_decode_list_contact(dynamic raw);
+
+  @protected
   List<FedimintGateway> dco_decode_list_fedimint_gateway(dynamic raw);
 
   @protected
   List<Guardian> dco_decode_list_guardian(dynamic raw);
+
+  @protected
+  List<NostrProfile> dco_decode_list_nostr_profile(dynamic raw);
+
+  @protected
+  List<PeerStatus> dco_decode_list_peer_status(dynamic raw);
 
   @protected
   Uint8List dco_decode_list_prim_u_8_strict(dynamic raw);
@@ -705,6 +745,9 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   MultimintEvent dco_decode_multimint_event(dynamic raw);
 
   @protected
+  NostrProfile dco_decode_nostr_profile(dynamic raw);
+
+  @protected
   NostrWalletConnectConfig dco_decode_nostr_wallet_connect_config(dynamic raw);
 
   @protected
@@ -728,6 +771,17 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   @protected
   LightningAddressConfig?
   dco_decode_opt_box_autoadd_Auto_Owned_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerLightningAddressConfig(
+    dynamic raw,
+  );
+
+  @protected
+  Contact? dco_decode_opt_box_autoadd_contact(dynamic raw);
+
+  @protected
+  ContactCursor? dco_decode_opt_box_autoadd_contact_cursor(dynamic raw);
+
+  @protected
+  ContactSyncConfig? dco_decode_opt_box_autoadd_contact_sync_config(
     dynamic raw,
   );
 
@@ -759,6 +813,9 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
 
   @protected
   PaymentPreview dco_decode_payment_preview(dynamic raw);
+
+  @protected
+  PeerStatus dco_decode_peer_status(dynamic raw);
 
   @protected
   (Bolt11Invoice, OperationId)
@@ -1290,6 +1347,11 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   );
 
   @protected
+  RustStreamSink<List<PeerStatus>> sse_decode_StreamSink_list_peer_status_Sse(
+    SseDeserializer deserializer,
+  );
+
+  @protected
   RustStreamSink<MultimintEvent> sse_decode_StreamSink_multimint_event_Sse(
     SseDeserializer deserializer,
   );
@@ -1343,6 +1405,24 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
 
   @protected
   ConfirmedEvent sse_decode_box_autoadd_confirmed_event(
+    SseDeserializer deserializer,
+  );
+
+  @protected
+  Contact sse_decode_box_autoadd_contact(SseDeserializer deserializer);
+
+  @protected
+  ContactCursor sse_decode_box_autoadd_contact_cursor(
+    SseDeserializer deserializer,
+  );
+
+  @protected
+  ContactSyncConfig sse_decode_box_autoadd_contact_sync_config(
+    SseDeserializer deserializer,
+  );
+
+  @protected
+  ContactSyncEventKind sse_decode_box_autoadd_contact_sync_event_kind(
     SseDeserializer deserializer,
   );
 
@@ -1403,6 +1483,22 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   Connector sse_decode_connector(SseDeserializer deserializer);
 
   @protected
+  Contact sse_decode_contact(SseDeserializer deserializer);
+
+  @protected
+  ContactCursor sse_decode_contact_cursor(SseDeserializer deserializer);
+
+  @protected
+  ContactSyncConfig sse_decode_contact_sync_config(
+    SseDeserializer deserializer,
+  );
+
+  @protected
+  ContactSyncEventKind sse_decode_contact_sync_event_kind(
+    SseDeserializer deserializer,
+  );
+
+  @protected
   DepositEventKind sse_decode_deposit_event_kind(SseDeserializer deserializer);
 
   @protected
@@ -1449,12 +1545,23 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   List<String> sse_decode_list_String(SseDeserializer deserializer);
 
   @protected
+  List<Contact> sse_decode_list_contact(SseDeserializer deserializer);
+
+  @protected
   List<FedimintGateway> sse_decode_list_fedimint_gateway(
     SseDeserializer deserializer,
   );
 
   @protected
   List<Guardian> sse_decode_list_guardian(SseDeserializer deserializer);
+
+  @protected
+  List<NostrProfile> sse_decode_list_nostr_profile(
+    SseDeserializer deserializer,
+  );
+
+  @protected
+  List<PeerStatus> sse_decode_list_peer_status(SseDeserializer deserializer);
 
   @protected
   Uint8List sse_decode_list_prim_u_8_strict(SseDeserializer deserializer);
@@ -1514,6 +1621,9 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   MultimintEvent sse_decode_multimint_event(SseDeserializer deserializer);
 
   @protected
+  NostrProfile sse_decode_nostr_profile(SseDeserializer deserializer);
+
+  @protected
   NostrWalletConnectConfig sse_decode_nostr_wallet_connect_config(
     SseDeserializer deserializer,
   );
@@ -1545,6 +1655,19 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   );
 
   @protected
+  Contact? sse_decode_opt_box_autoadd_contact(SseDeserializer deserializer);
+
+  @protected
+  ContactCursor? sse_decode_opt_box_autoadd_contact_cursor(
+    SseDeserializer deserializer,
+  );
+
+  @protected
+  ContactSyncConfig? sse_decode_opt_box_autoadd_contact_sync_config(
+    SseDeserializer deserializer,
+  );
+
+  @protected
   double? sse_decode_opt_box_autoadd_f_64(SseDeserializer deserializer);
 
   @protected
@@ -1572,6 +1695,9 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
 
   @protected
   PaymentPreview sse_decode_payment_preview(SseDeserializer deserializer);
+
+  @protected
+  PeerStatus sse_decode_peer_status(SseDeserializer deserializer);
 
   @protected
   (Bolt11Invoice, OperationId)
@@ -2178,6 +2304,12 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   );
 
   @protected
+  void sse_encode_StreamSink_list_peer_status_Sse(
+    RustStreamSink<List<PeerStatus>> self,
+    SseSerializer serializer,
+  );
+
+  @protected
   void sse_encode_StreamSink_multimint_event_Sse(
     RustStreamSink<MultimintEvent> self,
     SseSerializer serializer,
@@ -2243,6 +2375,27 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   @protected
   void sse_encode_box_autoadd_confirmed_event(
     ConfirmedEvent self,
+    SseSerializer serializer,
+  );
+
+  @protected
+  void sse_encode_box_autoadd_contact(Contact self, SseSerializer serializer);
+
+  @protected
+  void sse_encode_box_autoadd_contact_cursor(
+    ContactCursor self,
+    SseSerializer serializer,
+  );
+
+  @protected
+  void sse_encode_box_autoadd_contact_sync_config(
+    ContactSyncConfig self,
+    SseSerializer serializer,
+  );
+
+  @protected
+  void sse_encode_box_autoadd_contact_sync_event_kind(
+    ContactSyncEventKind self,
     SseSerializer serializer,
   );
 
@@ -2313,6 +2466,24 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   void sse_encode_connector(Connector self, SseSerializer serializer);
 
   @protected
+  void sse_encode_contact(Contact self, SseSerializer serializer);
+
+  @protected
+  void sse_encode_contact_cursor(ContactCursor self, SseSerializer serializer);
+
+  @protected
+  void sse_encode_contact_sync_config(
+    ContactSyncConfig self,
+    SseSerializer serializer,
+  );
+
+  @protected
+  void sse_encode_contact_sync_event_kind(
+    ContactSyncEventKind self,
+    SseSerializer serializer,
+  );
+
+  @protected
   void sse_encode_deposit_event_kind(
     DepositEventKind self,
     SseSerializer serializer,
@@ -2372,6 +2543,9 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   void sse_encode_list_String(List<String> self, SseSerializer serializer);
 
   @protected
+  void sse_encode_list_contact(List<Contact> self, SseSerializer serializer);
+
+  @protected
   void sse_encode_list_fedimint_gateway(
     List<FedimintGateway> self,
     SseSerializer serializer,
@@ -2379,6 +2553,18 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
 
   @protected
   void sse_encode_list_guardian(List<Guardian> self, SseSerializer serializer);
+
+  @protected
+  void sse_encode_list_nostr_profile(
+    List<NostrProfile> self,
+    SseSerializer serializer,
+  );
+
+  @protected
+  void sse_encode_list_peer_status(
+    List<PeerStatus> self,
+    SseSerializer serializer,
+  );
 
   @protected
   void sse_encode_list_prim_u_8_strict(
@@ -2458,6 +2644,9 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   );
 
   @protected
+  void sse_encode_nostr_profile(NostrProfile self, SseSerializer serializer);
+
+  @protected
   void sse_encode_nostr_wallet_connect_config(
     NostrWalletConnectConfig self,
     SseSerializer serializer,
@@ -2490,6 +2679,24 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   void
   sse_encode_opt_box_autoadd_Auto_Owned_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerLightningAddressConfig(
     LightningAddressConfig? self,
+    SseSerializer serializer,
+  );
+
+  @protected
+  void sse_encode_opt_box_autoadd_contact(
+    Contact? self,
+    SseSerializer serializer,
+  );
+
+  @protected
+  void sse_encode_opt_box_autoadd_contact_cursor(
+    ContactCursor? self,
+    SseSerializer serializer,
+  );
+
+  @protected
+  void sse_encode_opt_box_autoadd_contact_sync_config(
+    ContactSyncConfig? self,
     SseSerializer serializer,
   );
 
@@ -2529,6 +2736,9 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
     PaymentPreview self,
     SseSerializer serializer,
   );
+
+  @protected
+  void sse_encode_peer_status(PeerStatus self, SseSerializer serializer);
 
   @protected
   void

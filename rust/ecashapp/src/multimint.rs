@@ -49,7 +49,7 @@ use fedimint_wallet_client::{
     DepositStateV2, PegOutFees, WalletClientInit, WalletClientModule, WalletOperationMeta,
     WalletOperationMetaVariant,
 };
-use futures_util::StreamExt;
+use futures_util::{stream, Stream, StreamExt};
 use lightning_invoice::{Bolt11Invoice, Description};
 use reqwest::StatusCode;
 use serde::{Deserialize, Serialize};
@@ -64,10 +64,10 @@ use crate::{
     anyhow,
     db::{
         BitcoinDisplay, BitcoinDisplayKey, BtcPrice, BtcPriceKey, BtcPrices, BtcPricesKey,
-        Connector, FederationBackupKey, FederationMetaKey, FiatCurrency, FiatCurrencyKey,
-        LightningAddressConfig, LightningAddressKey, LightningAddressKeyPrefix,
+        Connector, ContactSyncConfigKey, FederationBackupKey, FederationMetaKey, FiatCurrency,
+        FiatCurrencyKey, LightningAddressConfig, LightningAddressKey, LightningAddressKeyPrefix,
     },
-    error_to_flutter, info_to_flutter, FederationConfig, FederationConfigKey,
+    error_to_flutter, get_nostr_client, info_to_flutter, FederationConfig, FederationConfigKey,
     FederationConfigKeyPrefix, SeedPhraseAckKey,
 };
 use crate::{event_bus::EventBus, get_event_bus};
@@ -76,6 +76,7 @@ const DEFAULT_EXPIRY_TIME_SECS: u32 = 86400;
 const CACHE_UPDATE_INTERVAL_SECS: u64 = 30;
 const PRICE_CACHE_UPDATE_INTERVAL_SECS: u64 = 60 * 5;
 const FEDERATION_BACKUP_CACHE_UPDATE_INTERVAL_SECS: u64 = 60 * 60 * 24;
+const CONTACT_SYNC_INTERVAL_SECS: u64 = 90;
 
 #[derive(Clone, Eq, PartialEq, Serialize, Debug)]
 pub struct PaymentPreview {
@@ -140,6 +141,13 @@ pub struct FederationMeta {
 pub struct Guardian {
     pub name: String,
     pub version: Option<String>,
+}
+
+#[derive(Debug, Serialize, Clone)]
+pub struct PeerStatus {
+    pub peer_id: u16,
+    pub name: String,
+    pub online: bool,
 }
 
 #[derive(Debug, Serialize, Clone)]
@@ -283,6 +291,20 @@ pub enum LogLevel {
 }
 
 #[derive(Clone, Eq, PartialEq, Serialize, Debug)]
+pub enum ContactSyncEventKind {
+    Started,
+    Progress {
+        synced: usize,
+    },
+    Completed {
+        added: usize,
+        updated: usize,
+        removed: usize,
+    },
+    Error(String),
+}
+
+#[derive(Clone, Eq, PartialEq, Serialize, Debug)]
 pub enum MultimintEvent {
     Deposit((FederationId, DepositEventKind)),
     Lightning((FederationId, LightningEventKind)),
@@ -291,6 +313,7 @@ pub enum MultimintEvent {
     RecoveryProgress(String, u16, u32, u32),
     Ecash((FederationId, u64)),
     NostrRecovery(String, u16, Option<FederationSelector>),
+    ContactSync(ContactSyncEventKind),
 }
 
 #[derive(Clone, Eq, PartialEq, Serialize, Debug)]
@@ -857,10 +880,11 @@ impl Multimint {
                             }
                         }
 
-                        if let Some(client) = self_copy.clients.read().await.get(&federation_id) {
-                            if !client.has_pending_recoveries() {
-                                self_copy.cache_federation_meta(client.clone(), now).await;
-                            }
+                        let client = self_copy.clients.read().await.get(&federation_id).cloned();
+                        let Some(client) = client else { continue };
+
+                        if !client.has_pending_recoveries() {
+                            self_copy.cache_federation_meta(client.clone(), now).await;
                         }
                     }
 
@@ -894,6 +918,29 @@ impl Multimint {
                             }
                         } else {
                             self_copy.backup(&federation_id, now).await;
+                        }
+                    }
+
+                    // Check if contact sync is due
+                    let contact_sync_threshold = now
+                        .checked_sub(Duration::from_secs(CONTACT_SYNC_INTERVAL_SECS))
+                        .expect("Cannot be negative");
+                    if let Some(sync_config) = dbtx.get_value(&ContactSyncConfigKey).await {
+                        if sync_config.sync_enabled {
+                            let should_sync = match sync_config.last_sync_at {
+                                Some(last_sync) => {
+                                    let last_sync_time =
+                                        UNIX_EPOCH + Duration::from_millis(last_sync);
+                                    last_sync_time < contact_sync_threshold
+                                }
+                                None => true,
+                            };
+
+                            if should_sync {
+                                let nostr_client = get_nostr_client();
+                                let nostr = nostr_client.read().await;
+                                let _ = nostr.sync_contacts().await;
+                            }
                         }
                     }
 
@@ -1140,6 +1187,81 @@ impl Multimint {
         .await;
 
         federation_meta
+    }
+
+    pub async fn subscribe_peer_status(
+        &self,
+        invite: Option<String>,
+        federation_id: Option<FederationId>,
+    ) -> anyhow::Result<impl Stream<Item = Vec<PeerStatus>>> {
+        let client = match &invite {
+            Some(invite) => {
+                let invite_code = InviteCode::from_str(invite)?;
+                self.get_or_build_temp_client(invite_code).await?.0
+            }
+            None => {
+                let federation_id =
+                    federation_id.expect("Invite code and federation ID cannot both be None");
+                let clients = self.clients.read().await;
+                clients
+                    .get(&federation_id)
+                    .ok_or(anyhow!("No federation exists"))?
+                    .clone()
+            }
+        };
+
+        // Get the peer names from the federation config
+        let config = client.config().await;
+        let peers: BTreeMap<u16, String> = config
+            .global
+            .api_endpoints
+            .iter()
+            .map(|(peer_id, endpoint)| (peer_id.to_usize() as u16, endpoint.name.clone()))
+            .collect();
+
+        // If the invite code is available, that means we have not joined the federation yet. We cannot use the `connection_stream_status`
+        // because the client will go out of scope and end the stream. So instead, we just lookup the federation's online status by querying
+        // the fedimintd version.
+        if invite.is_some() {
+            let peer_statuses =
+                futures_util::future::join_all(peers.iter().map(|(peer_id, name)| async {
+                    let online = client
+                        .api()
+                        .fedimintd_version((*peer_id).into())
+                        .await
+                        .is_ok();
+                    PeerStatus {
+                        peer_id: *peer_id,
+                        name: name.clone(),
+                        online,
+                    }
+                }))
+                .await;
+
+            return Ok(stream::once(async { peer_statuses }).boxed());
+        }
+
+        // Get the connection status stream from the client
+        let status_stream = client.api().connection_status_stream();
+
+        // Map the BTreeMap<PeerId, bool> to FederationPeerStatus
+        let mapped_stream = status_stream.map(move |status_map| {
+            let peers_status: Vec<PeerStatus> = peers
+                .iter()
+                .map(|(peer_id, name)| {
+                    let online = status_map.get(&(*peer_id).into()).copied().unwrap_or(false);
+                    PeerStatus {
+                        peer_id: *peer_id,
+                        name: name.clone(),
+                        online,
+                    }
+                })
+                .collect();
+
+            peers_status
+        });
+
+        Ok(mapped_stream.boxed())
     }
 
     pub fn get_mnemonic(&self) -> Vec<String> {

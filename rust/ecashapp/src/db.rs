@@ -42,6 +42,8 @@ pub(crate) enum DbKeyPrefix {
     FederationOrder = 0x0A,
     FiatCurrency = 0x0B,
     BtcPrices = 0x0C,
+    Contact = 0x0D,
+    ContactSyncConfig = 0x10,
 }
 
 #[derive(Debug, Clone, Encodable, Decodable, Eq, PartialEq, Hash, Ord, PartialOrd)]
@@ -257,4 +259,60 @@ impl_db_record!(
     key = FederationOrderKey,
     value = FederationOrder,
     db_prefix = DbKeyPrefix::FederationOrder,
+);
+
+// Contact - stores Nostr profile data for address book
+#[derive(Debug, Clone, Encodable, Decodable, Eq, PartialEq, Hash, Ord, PartialOrd)]
+pub struct ContactKey {
+    pub npub: String,
+}
+
+#[derive(Debug, Encodable, Decodable)]
+pub struct ContactKeyPrefix;
+
+#[derive(Debug, Clone, Encodable, Decodable, Serialize, Deserialize)]
+pub struct Contact {
+    pub npub: String,
+    pub name: Option<String>,
+    pub display_name: Option<String>,
+    pub picture: Option<String>,
+    pub lud16: Option<String>, // Lightning Address
+    pub nip05: Option<String>,
+    pub nip05_verified: bool,
+    pub about: Option<String>,
+    pub created_at: u64,           // Unix timestamp in milliseconds
+    pub last_paid_at: Option<u64>, // Unix timestamp in milliseconds
+}
+
+// ContactCursor - used for paginated contact queries
+#[derive(Debug, Clone, Encodable, Decodable, Serialize, Deserialize)]
+pub struct ContactCursor {
+    pub last_paid_at: Option<u64>,
+    pub created_at: u64,
+    pub npub: String,
+}
+
+impl_db_record!(
+    key = ContactKey,
+    value = Contact,
+    db_prefix = DbKeyPrefix::Contact,
+);
+
+impl_db_lookup!(key = ContactKey, query_prefix = ContactKeyPrefix,);
+
+// ContactSyncConfig - stores configuration for automatic contact syncing from Nostr
+#[derive(Debug, Encodable, Decodable)]
+pub struct ContactSyncConfigKey;
+
+#[derive(Debug, Clone, Encodable, Decodable, Serialize, Deserialize)]
+pub struct ContactSyncConfig {
+    pub npub: String,              // The npub to sync contacts from
+    pub last_sync_at: Option<u64>, // Unix timestamp in milliseconds
+    pub sync_enabled: bool,        // Whether auto-sync is active
+}
+
+impl_db_record!(
+    key = ContactSyncConfigKey,
+    value = ContactSyncConfig,
+    db_prefix = DbKeyPrefix::ContactSyncConfig,
 );

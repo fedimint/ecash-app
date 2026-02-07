@@ -435,6 +435,62 @@ Future<(String, String)> claimRandomLnAddress({
 Future<void> leaveFederation({required FederationId federationId}) =>
     RustLib.instance.api.crateLeaveFederation(federationId: federationId);
 
+Stream<List<PeerStatus>> subscribePeerStatus({
+  String? invite,
+  FederationId? federationId,
+}) => RustLib.instance.api.crateSubscribePeerStatus(
+  invite: invite,
+  federationId: federationId,
+);
+
+/// Verify a NIP-05 identifier and return the associated npub
+Future<String> verifyNip05({required String nip05Id}) =>
+    RustLib.instance.api.crateVerifyNip05(nip05Id: nip05Id);
+
+/// Check if contacts have been imported (first-time flag)
+Future<bool> hasImportedContacts() =>
+    RustLib.instance.api.crateHasImportedContacts();
+
+/// Starts contact sync
+Future<void> syncContacts({required String npub}) =>
+    RustLib.instance.api.crateSyncContacts(npub: npub);
+
+/// Clear all contacts and stop syncing
+Future<BigInt> clearContactsAndStopSync() =>
+    RustLib.instance.api.crateClearContactsAndStopSync();
+
+/// Get all contacts, sorted by last_paid_at (recent first)
+Future<List<Contact>> getAllContacts() =>
+    RustLib.instance.api.crateGetAllContacts();
+
+/// Get paginated contacts with cursor-based pagination
+Future<List<Contact>> paginateContacts({
+  BigInt? cursorLastPaidAt,
+  BigInt? cursorCreatedAt,
+  String? cursorNpub,
+  required int limit,
+}) => RustLib.instance.api.cratePaginateContacts(
+  cursorLastPaidAt: cursorLastPaidAt,
+  cursorCreatedAt: cursorCreatedAt,
+  cursorNpub: cursorNpub,
+  limit: limit,
+);
+
+/// Search contacts with pagination
+Future<List<Contact>> paginateSearchContacts({
+  required String query,
+  BigInt? cursorLastPaidAt,
+  BigInt? cursorCreatedAt,
+  String? cursorNpub,
+  required int limit,
+}) => RustLib.instance.api.cratePaginateSearchContacts(
+  query: query,
+  cursorLastPaidAt: cursorLastPaidAt,
+  cursorCreatedAt: cursorCreatedAt,
+  cursorNpub: cursorNpub,
+  limit: limit,
+);
+
 // Rust type: RustOpaqueMoi<flutter_rust_bridge::for_generated::RustAutoOpaqueInner<ClientConfig>>
 abstract class ClientConfig implements RustOpaqueInterface {}
 

@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:ecashapp/db.dart';
 import 'package:ecashapp/fed_preview.dart';
 import 'package:ecashapp/lib.dart';
@@ -14,6 +16,7 @@ class FederationPreviewData {
   String? federationImageUrl;
   String? welcomeMessage;
   List<Guardian>? guardians;
+  String? fedIdStr;
 
   FederationPreviewData({
     this.balanceMsats,
@@ -21,6 +24,7 @@ class FederationPreviewData {
     this.federationImageUrl,
     this.welcomeMessage,
     this.guardians,
+    this.fedIdStr,
   });
 }
 
@@ -29,6 +33,7 @@ class FederationSidebar extends StatefulWidget {
   final void Function(FederationSelector, bool) onFederationSelected;
   final VoidCallback onLeaveFederation;
   final VoidCallback onSettingsPressed;
+  final VoidCallback onContactsPressed;
 
   const FederationSidebar({
     super.key,
@@ -36,6 +41,7 @@ class FederationSidebar extends StatefulWidget {
     required this.onFederationSelected,
     required this.onLeaveFederation,
     required this.onSettingsPressed,
+    required this.onContactsPressed,
   });
 
   @override
@@ -44,6 +50,9 @@ class FederationSidebar extends StatefulWidget {
 
 class FederationSidebarState extends State<FederationSidebar> {
   late List<(FederationSelector, bool, FederationPreviewData)> _feds;
+
+  final Map<String, List<PeerStatus>> _peers = {};
+  final Map<String, StreamSubscription<List<PeerStatus>>> _streams = {};
 
   @override
   void initState() {
@@ -61,6 +70,8 @@ class FederationSidebarState extends State<FederationSidebar> {
     bool isRecovering,
   ) async {
     final data = FederationPreviewData();
+
+    data.fedIdStr = await federationIdToString(federationId: fed.federationId);
 
     // Load balance
     if (!isRecovering) {
@@ -106,6 +117,33 @@ class FederationSidebarState extends State<FederationSidebar> {
     setState(() {
       _feds = fedsWithData;
     });
+
+    for (final fed in _feds) {
+      final fedIdStr = await federationIdToString(
+        federationId: fed.$1.federationId,
+      );
+      Stream<List<PeerStatus>> stream = subscribePeerStatus(
+        federationId: fed.$1.federationId,
+      );
+      final updates = stream.listen((List<PeerStatus> event) async {
+        setState(() {
+          _peers[fedIdStr] = event;
+        });
+      });
+
+      setState(() {
+        _streams.putIfAbsent(fedIdStr, () => updates);
+      });
+    }
+  }
+
+  @override
+  void dispose() {
+    _peers.clear();
+    for (final stream in _streams.values) {
+      stream.cancel();
+    }
+    super.dispose();
   }
 
   Future<void> _onReorder(int oldIndex, int newIndex) async {
@@ -199,6 +237,11 @@ class FederationSidebarState extends State<FederationSidebar> {
                                                 },
                                                 onLeaveFederation:
                                                     widget.onLeaveFederation,
+                                                peers:
+                                                    _peers[selector
+                                                        .value
+                                                        .$3
+                                                        .fedIdStr],
                                               ),
                                             ),
                                       )
@@ -211,7 +254,49 @@ class FederationSidebarState extends State<FederationSidebar> {
             Padding(
               padding: const EdgeInsets.symmetric(
                 horizontal: 12.0,
-                vertical: 12,
+                vertical: 6,
+              ),
+              child: Material(
+                color: Colors.grey[900],
+                borderRadius: BorderRadius.circular(12),
+                child: InkWell(
+                  borderRadius: BorderRadius.circular(12),
+                  onTap: () {
+                    Navigator.of(context).pop();
+                    widget.onContactsPressed();
+                  },
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 16,
+                    ),
+                    child: Row(
+                      children: [
+                        Icon(
+                          Icons.people,
+                          color: Theme.of(context).colorScheme.primary,
+                          size: 24,
+                        ),
+                        const SizedBox(width: 16),
+                        Text(
+                          'Contacts',
+                          style: Theme.of(
+                            context,
+                          ).textTheme.bodyLarge!.copyWith(
+                            fontWeight: FontWeight.bold,
+                            color: Theme.of(context).colorScheme.primary,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.symmetric(
+                horizontal: 12.0,
+                vertical: 6,
               ),
               child: Material(
                 color: Colors.grey[900],
@@ -250,6 +335,7 @@ class FederationSidebarState extends State<FederationSidebar> {
                 ),
               ),
             ),
+            const SizedBox(height: 6),
           ],
         ),
       ),
@@ -263,6 +349,7 @@ class FederationListItem extends StatelessWidget {
   final FederationPreviewData data;
   final VoidCallback onTap;
   final VoidCallback onLeaveFederation;
+  final List<PeerStatus>? peers;
 
   const FederationListItem({
     super.key,
@@ -271,17 +358,14 @@ class FederationListItem extends StatelessWidget {
     required this.data,
     required this.onTap,
     required this.onLeaveFederation,
+    required this.peers,
   });
 
   bool get allGuardiansOnline =>
-      data.guardians != null &&
-      data.guardians!.isNotEmpty &&
-      data.guardians!.every((g) => g.version != null);
+      peers != null && peers!.isNotEmpty && peers!.every((g) => g.online);
 
   int get numOnlineGuardians =>
-      data.guardians != null
-          ? data.guardians!.where((g) => g.version != null).length
-          : 0;
+      peers != null ? peers!.where((g) => g.online).length : 0;
 
   @override
   Widget build(BuildContext context) {
