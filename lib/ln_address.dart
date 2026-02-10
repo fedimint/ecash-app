@@ -24,7 +24,7 @@ class LightningAddressScreen extends StatefulWidget {
 
 class _LightningAddressScreenState extends State<LightningAddressScreen> {
   String _lnAddressApi = "https://ecash.love";
-  String _recurringdApi = "https://lnurl.ecash.love";
+  String _recurringdApi = "https://recurring.ecash.love";
   bool _loading = true;
   FederationSelector? _selectedFederation;
 
@@ -509,9 +509,7 @@ class _LightningAddressScreenState extends State<LightningAddressScreen> {
         url.endsWith('/') ? url.substring(0, url.length - 1) : url;
 
     final lnOnline = await check(trimSlash(_lnAddressApi));
-    final recOnline = await check(
-      "${trimSlash(_recurringdApi)}/lnv1/federations",
-    );
+    final recOnline = await check(trimSlash(_recurringdApi));
     setState(() {
       _lnAddressApiOnline = lnOnline;
       _recurringdApiOnline = recOnline;
