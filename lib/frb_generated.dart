@@ -10575,11 +10575,12 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   Guardian dco_decode_guardian(dynamic raw) {
     // Codec=Dco (DartCObject based), see doc to use other codecs
     final arr = raw as List<dynamic>;
-    if (arr.length != 2)
-      throw Exception('unexpected arr length: expect 2 but see ${arr.length}');
+    if (arr.length != 3)
+      throw Exception('unexpected arr length: expect 3 but see ${arr.length}');
     return Guardian(
-      name: dco_decode_String(arr[0]),
-      version: dco_decode_opt_String(arr[1]),
+      peerId: dco_decode_u_16(arr[0]),
+      name: dco_decode_String(arr[1]),
+      version: dco_decode_opt_String(arr[2]),
     );
   }
 
@@ -12714,9 +12715,10 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   @protected
   Guardian sse_decode_guardian(SseDeserializer deserializer) {
     // Codec=Sse (Serialization based), see doc to use other codecs
+    var var_peerId = sse_decode_u_16(deserializer);
     var var_name = sse_decode_String(deserializer);
     var var_version = sse_decode_opt_String(deserializer);
-    return Guardian(name: var_name, version: var_version);
+    return Guardian(peerId: var_peerId, name: var_name, version: var_version);
   }
 
   @protected
@@ -15083,6 +15085,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   @protected
   void sse_encode_guardian(Guardian self, SseSerializer serializer) {
     // Codec=Sse (Serialization based), see doc to use other codecs
+    sse_encode_u_16(self.peerId, serializer);
     sse_encode_String(self.name, serializer);
     sse_encode_opt_String(self.version, serializer);
   }

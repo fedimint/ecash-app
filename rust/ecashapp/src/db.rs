@@ -44,6 +44,7 @@ pub(crate) enum DbKeyPrefix {
     BtcPrices = 0x0C,
     Contact = 0x0D,
     ContactSyncConfig = 0x10,
+    SchemaVersion = 0x11,
 }
 
 #[derive(Debug, Clone, Encodable, Decodable, Eq, PartialEq, Hash, Ord, PartialOrd)]
@@ -116,6 +117,14 @@ impl_db_record!(
     key = FederationMetaKey,
     value = FederationMeta,
     db_prefix = DbKeyPrefix::FederationMeta,
+);
+
+#[derive(Debug, Encodable, Decodable)]
+pub(crate) struct FederationMetaKeyPrefix;
+
+impl_db_lookup!(
+    key = FederationMetaKey,
+    query_prefix = FederationMetaKeyPrefix,
 );
 
 #[derive(Debug, Encodable, Decodable)]
@@ -315,4 +324,13 @@ impl_db_record!(
     key = ContactSyncConfigKey,
     value = ContactSyncConfig,
     db_prefix = DbKeyPrefix::ContactSyncConfig,
+);
+
+#[derive(Debug, Encodable, Decodable)]
+pub(crate) struct SchemaVersionKey;
+
+impl_db_record!(
+    key = SchemaVersionKey,
+    value = u64,
+    db_prefix = DbKeyPrefix::SchemaVersion,
 );

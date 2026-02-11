@@ -273,7 +273,7 @@ class _FederationPreviewState extends State<FederationPreview> {
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         Text(
-          "$onlineCount / $totalCount Guardians Online",
+          "Connected to $onlineCount / $totalCount Guardians",
           textAlign: TextAlign.center,
           style: theme.textTheme.bodySmall?.copyWith(color: borderColor),
         ),
@@ -649,7 +649,7 @@ class _FederationPreviewState extends State<FederationPreview> {
               subtitle:
                   isOnline
                       ? Text('Version: ${widget.guardians![index].version}')
-                      : const Text('Offline'),
+                      : const Text('Disconnected'),
               trailing: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
@@ -662,7 +662,7 @@ class _FederationPreviewState extends State<FederationPreview> {
                         try {
                           final inviteCode = await getInviteCode(
                             federationId: widget.fed.federationId,
-                            peer: index,
+                            peer: peer.peerId,
                           );
                           if (!context.mounted) return;
                           await Clipboard.setData(
@@ -696,7 +696,7 @@ class _FederationPreviewState extends State<FederationPreview> {
                         try {
                           final inviteCode = await getInviteCode(
                             federationId: widget.fed.federationId,
-                            peer: index,
+                            peer: peer.peerId,
                           );
                           if (!context.mounted) return;
                           showDialog(
@@ -853,7 +853,7 @@ class _FederationUtxoListState extends State<FederationUtxoList> {
 
     if (!widget.isFederationOnline) {
       return const Center(
-        child: Text("Federation is offline, cannot retrieve UTXOs."),
+        child: Text("Cannot connect to federation to retrieve UTXOs."),
       );
     }
 

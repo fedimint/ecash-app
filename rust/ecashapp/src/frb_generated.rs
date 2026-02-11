@@ -12574,9 +12574,11 @@ impl SseDecode for crate::db::FiatCurrency {
 impl SseDecode for crate::multimint::Guardian {
     // Codec=Sse (Serialization based), see doc to use other codecs
     fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
+        let mut var_peerId = <u16>::sse_decode(deserializer);
         let mut var_name = <String>::sse_decode(deserializer);
         let mut var_version = <Option<String>>::sse_decode(deserializer);
         return crate::multimint::Guardian {
+            peer_id: var_peerId,
             name: var_name,
             version: var_version,
         };
@@ -15008,6 +15010,7 @@ impl flutter_rust_bridge::IntoIntoDart<crate::db::FiatCurrency> for crate::db::F
 impl flutter_rust_bridge::IntoDart for crate::multimint::Guardian {
     fn into_dart(self) -> flutter_rust_bridge::for_generated::DartAbi {
         [
+            self.peer_id.into_into_dart().into_dart(),
             self.name.into_into_dart().into_dart(),
             self.version.into_into_dart().into_dart(),
         ]
@@ -16199,6 +16202,7 @@ impl SseEncode for crate::db::FiatCurrency {
 impl SseEncode for crate::multimint::Guardian {
     // Codec=Sse (Serialization based), see doc to use other codecs
     fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
+        <u16>::sse_encode(self.peer_id, serializer);
         <String>::sse_encode(self.name, serializer);
         <Option<String>>::sse_encode(self.version, serializer);
     }
