@@ -1,0 +1,13 @@
+Ecash App is a Fedimint wallet that supports Lightning, On-chain, and Ecash payments. It is built with Flutter and Rust, and is fully free and open source.
+
+Key features:
+
+* Join multiple Fedimint federations and manage them in one wallet
+* Send and receive Lightning payments via LNv1 and LNv2
+* Send and receive on-chain Bitcoin
+* Mint and redeem Ecash tokens
+* Claim a Lightning Address for easy receiving
+* Connect external apps via Nostr Wallet Connect (NWC)
+* Discover federations via Nostr
+* Back up and recover your wallet using a seed phrase
+* Privacy-focused with no tracking or analytics

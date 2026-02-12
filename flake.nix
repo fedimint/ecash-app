@@ -42,6 +42,7 @@
               pkgs.zlib
               flutter_rust_bridge_codegen
               pkgs.cargo-expand
+              pkgs.fdroidserver
               (pkgs.appimage-run.override {
                 extraPkgs = pkgs: [ pkgs.libepoxy pkgs.gtk3 ];
               })
