@@ -220,24 +220,30 @@ class _NumberPadState extends State<NumberPad> {
 
   Future<void> _handleLightningReceive(BigInt amountSats) async {
     try {
+      final requestedAmountMsats = amountSats * BigInt.from(1000);
+
+      // Select gateway before showing modal so we can catch errors properly
+      final gateway = await selectReceiveGateway(
+        federationId: widget.fed.federationId,
+        amountMsats: requestedAmountMsats,
+      );
+      final contractAmount = gateway.$2;
+
+      // Create the invoice
+      final invoice = await receive(
+        federationId: widget.fed.federationId,
+        amountMsatsWithFees: contractAmount,
+        amountMsatsWithoutFees: requestedAmountMsats,
+        gateway: gateway.$1,
+        isLnv2: gateway.$3,
+      );
+
+      invoicePaidToastVisible.value = false;
+
+      // Only show modal on success
       await showAppModalBottomSheet(
         context: context,
         childBuilder: () async {
-          final requestedAmountMsats = amountSats * BigInt.from(1000);
-          final gateway = await selectReceiveGateway(
-            federationId: widget.fed.federationId,
-            amountMsats: requestedAmountMsats,
-          );
-          final contractAmount = gateway.$2;
-          final invoice = await receive(
-            federationId: widget.fed.federationId,
-            amountMsatsWithFees: contractAmount,
-            amountMsatsWithoutFees: requestedAmountMsats,
-            gateway: gateway.$1,
-            isLnv2: gateway.$3,
-          );
-          invoicePaidToastVisible.value = false;
-
           return Request(
             invoice: invoice.$1,
             fed: widget.fed,
@@ -253,8 +259,14 @@ class _NumberPadState extends State<NumberPad> {
       );
     } catch (e) {
       AppLogger.instance.error("Could not create invoice: $e");
+
+      String errorMessage = "Could not create invoice";
+      if (e.toString().contains("No available gateways")) {
+        errorMessage = "No lightning gateways available for this federation";
+      }
+
       ToastService().show(
-        message: "Could not create invoice",
+        message: errorMessage,
         duration: const Duration(seconds: 5),
         onTap: () {},
         icon: Icon(Icons.error),
