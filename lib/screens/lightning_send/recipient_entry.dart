@@ -180,6 +180,8 @@ class _RecipientEntryState extends State<RecipientEntry> {
     try {
       await showAppModalBottomSheet(
         context: context,
+        errorMessage:
+            'Invalid lightning invoice. Please check the invoice and try again.',
         childBuilder: () async {
           final preview = await paymentPreview(
             federationId: widget.fed.federationId,
@@ -220,6 +222,8 @@ class _RecipientEntryState extends State<RecipientEntry> {
       if (!mounted) return;
       await showAppModalBottomSheet(
         context: context,
+        errorMessage:
+            'Could not reach that lightning address. Please check it and try again.',
         childBuilder: () async {
           final invoice = await getInvoiceFromLnaddressOrLnurl(
             amountMsats: widget.amountMsats,
