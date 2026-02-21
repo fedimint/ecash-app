@@ -7,6 +7,8 @@ import 'package:ecashapp/onchain_send.dart';
 import 'package:ecashapp/pay_preview.dart';
 import 'package:ecashapp/providers/preferences_provider.dart';
 import 'package:ecashapp/request.dart';
+import 'package:ecashapp/scan.dart';
+import 'package:ecashapp/screens/lightning_send/recipient_entry.dart';
 import 'package:ecashapp/theme.dart';
 import 'package:ecashapp/toast.dart';
 import 'package:ecashapp/utils.dart';
@@ -28,6 +30,8 @@ class NumberPad extends StatefulWidget {
   final VoidCallback? onWithdrawCompleted;
   final String? bitcoinAddress;
   final String? lightningAddressOrLnurl;
+  final bool showScanButton;
+  final void Function(BigInt amountSats)? onAmountConfirmed;
   const NumberPad({
     super.key,
     required this.fed,
@@ -36,6 +40,8 @@ class NumberPad extends StatefulWidget {
     this.onWithdrawCompleted,
     this.bitcoinAddress,
     this.lightningAddressOrLnurl,
+    this.showScanButton = false,
+    this.onAmountConfirmed,
   });
 
   @override
@@ -143,6 +149,73 @@ class _NumberPadState extends State<NumberPad> {
   void dispose() {
     _numpadFocus.dispose();
     super.dispose();
+  }
+
+  void _openScanner() async {
+    final scannedText = await Navigator.push<String>(
+      context,
+      MaterialPageRoute(
+        builder: (_) => ScanQRPage(
+          selectedFed: widget.fed,
+          paymentType: PaymentType.lightning,
+          interceptMode: true,
+          onPay: (_, _) {},
+        ),
+      ),
+    );
+
+    if (scannedText == null || !mounted) return;
+
+    try {
+      final result = await parseScannedTextForFederation(
+        text: scannedText,
+        federation: widget.fed,
+      );
+      final parsed = result.$1;
+
+      if (parsed is ParsedText_LightningInvoice) {
+        // Bolt11 has embedded amount — skip to preview directly
+        if (!mounted) return;
+        await showAppModalBottomSheet(
+          context: context,
+          childBuilder: () async {
+            final preview = await paymentPreview(
+              federationId: widget.fed.federationId,
+              bolt11: parsed.field0,
+            );
+            return PaymentPreviewWidget(
+              fed: widget.fed,
+              paymentPreview: preview,
+            );
+          },
+        );
+      } else if (parsed is ParsedText_LightningAddressOrLnurl) {
+        // LN address scanned — go to recipient screen with it pre-filled
+        final amountSats = BigInt.tryParse(_rawAmount);
+        final amountMsats = amountSats != null && amountSats > BigInt.zero
+            ? amountSats * BigInt.from(1000)
+            : BigInt.zero;
+        if (!mounted) return;
+        await Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (_) => RecipientEntry(
+              fed: widget.fed,
+              amountMsats: amountMsats,
+              prefilledRecipient: parsed.field0,
+            ),
+          ),
+        );
+      }
+    } catch (e) {
+      AppLogger.instance.error('Error parsing scanned text: $e');
+      ToastService().show(
+        message: 'Could not parse scanned code',
+        duration: const Duration(seconds: 5),
+        onTap: () {},
+        icon: const Icon(Icons.error),
+      );
+    }
   }
 
   String _formatAmount(String value, BitcoinDisplay bitcoinDisplay) {
@@ -407,7 +480,14 @@ class _NumberPadState extends State<NumberPad> {
       // Handle Enter for confirm
       if (key == LogicalKeyboardKey.enter ||
           key == LogicalKeyboardKey.numpadEnter) {
-        _onConfirm();
+        if (widget.onAmountConfirmed != null) {
+          final amountSats = BigInt.tryParse(_rawAmount);
+          if (amountSats != null) {
+            widget.onAmountConfirmed!(amountSats);
+          }
+        } else {
+          _onConfirm();
+        }
         return;
       }
 
@@ -679,6 +759,15 @@ class _NumberPadState extends State<NumberPad> {
           centerTitle: true,
           backgroundColor: Colors.transparent,
           elevation: 0,
+          actions: widget.showScanButton
+              ? [
+                  IconButton(
+                    icon: const Icon(Icons.qr_code_scanner),
+                    onPressed: _openScanner,
+                    tooltip: 'Scan QR code',
+                  ),
+                ]
+              : null,
         ),
         body: Column(
           children: [
@@ -795,7 +884,16 @@ class _NumberPadState extends State<NumberPad> {
               child: SizedBox(
                 width: double.infinity,
                 child: ElevatedButton(
-                  onPressed: _isValidAmount() ? _onConfirm : null,
+                  onPressed: _isValidAmount()
+                      ? (widget.onAmountConfirmed != null
+                          ? () {
+                              final amountSats = BigInt.tryParse(_rawAmount);
+                              if (amountSats != null) {
+                                widget.onAmountConfirmed!(amountSats);
+                              }
+                            }
+                          : _onConfirm)
+                      : null,
                   style: ElevatedButton.styleFrom(
                     backgroundColor: const Color(0xFF42CFFF),
                     foregroundColor: Colors.black,

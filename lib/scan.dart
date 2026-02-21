@@ -22,12 +22,14 @@ class ScanQRPage extends StatefulWidget {
   final FederationSelector? selectedFed;
   final PaymentType? paymentType;
   final void Function(FederationSelector fed, bool recovering) onPay;
+  final bool interceptMode;
 
   const ScanQRPage({
     super.key,
     this.selectedFed,
     this.paymentType,
     required this.onPay,
+    this.interceptMode = false,
   });
 
   @override
@@ -191,6 +193,11 @@ class _ScanQRPageState extends State<ScanQRPage> {
   }
 
   Future<bool> _handleText(String text) async {
+    if (widget.interceptMode) {
+      if (mounted) Navigator.pop(context, text);
+      return true;
+    }
+
     try {
       ParsedText action;
       FederationSelector? chosenFederation;
