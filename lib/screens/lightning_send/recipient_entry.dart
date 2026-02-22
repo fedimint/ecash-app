@@ -86,9 +86,10 @@ class _RecipientEntryState extends State<RecipientEntry> {
   Future<void> _loadContacts() async {
     try {
       final allContacts = await getAllContacts();
-      final payable = allContacts
-          .where((c) => c.lud16 != null && c.lud16!.isNotEmpty)
-          .toList();
+      final payable =
+          allContacts
+              .where((c) => c.lud16 != null && c.lud16!.isNotEmpty)
+              .toList();
       if (!mounted) return;
       setState(() {
         _contacts = payable;
@@ -109,12 +110,13 @@ class _RecipientEntryState extends State<RecipientEntry> {
     }
     final lower = query.toLowerCase();
     setState(() {
-      _filteredContacts = _contacts.where((contact) {
-        return (contact.name?.toLowerCase().contains(lower) ?? false) ||
-            (contact.displayName?.toLowerCase().contains(lower) ?? false) ||
-            (contact.nip05?.toLowerCase().contains(lower) ?? false) ||
-            (contact.lud16?.toLowerCase().contains(lower) ?? false);
-      }).toList();
+      _filteredContacts =
+          _contacts.where((contact) {
+            return (contact.name?.toLowerCase().contains(lower) ?? false) ||
+                (contact.displayName?.toLowerCase().contains(lower) ?? false) ||
+                (contact.nip05?.toLowerCase().contains(lower) ?? false) ||
+                (contact.lud16?.toLowerCase().contains(lower) ?? false);
+          }).toList();
     });
   }
 
@@ -127,7 +129,8 @@ class _RecipientEntryState extends State<RecipientEntry> {
     final trimmed = text.trim();
     final lower = trimmed.toLowerCase();
 
-    final isBolt11 = lower.startsWith('lnbc') ||
+    final isBolt11 =
+        lower.startsWith('lnbc') ||
         lower.startsWith('lntb') ||
         lower.startsWith('lnbcrt') ||
         lower.startsWith('lntbs');
@@ -135,8 +138,7 @@ class _RecipientEntryState extends State<RecipientEntry> {
     final atIndex = lower.indexOf('@');
     final isLnAddress = atIndex > 0 && atIndex == lower.lastIndexOf('@');
 
-    final isLnurl =
-        lower.startsWith('lnurl') || lower.startsWith('lightning:');
+    final isLnurl = lower.startsWith('lnurl') || lower.startsWith('lightning:');
 
     setState(() {
       if (isBolt11) {
@@ -187,10 +189,7 @@ class _RecipientEntryState extends State<RecipientEntry> {
             federationId: widget.fed.federationId,
             bolt11: bolt11,
           );
-          return PaymentPreviewWidget(
-            fed: widget.fed,
-            paymentPreview: preview,
-          );
+          return PaymentPreviewWidget(fed: widget.fed, paymentPreview: preview);
         },
       );
     } catch (e) {
@@ -206,9 +205,7 @@ class _RecipientEntryState extends State<RecipientEntry> {
 
   Future<void> _showPreviewForLnAddress(String lnAddressOrLnurl) async {
     try {
-      final fedBalance = await balance(
-        federationId: widget.fed.federationId,
-      );
+      final fedBalance = await balance(federationId: widget.fed.federationId);
       if (widget.amountMsats > fedBalance) {
         ToastService().show(
           message: 'Balance is too low!',
@@ -233,10 +230,7 @@ class _RecipientEntryState extends State<RecipientEntry> {
             federationId: widget.fed.federationId,
             bolt11: invoice,
           );
-          return PaymentPreviewWidget(
-            fed: widget.fed,
-            paymentPreview: preview,
-          );
+          return PaymentPreviewWidget(fed: widget.fed, paymentPreview: preview);
         },
       );
     } catch (e) {
@@ -277,19 +271,20 @@ class _RecipientEntryState extends State<RecipientEntry> {
                   labelText: 'To',
                   hintText: 'Name, lightning address, or invoice',
                   prefixIcon: const Icon(Icons.search),
-                  suffixIcon: _inputController.text.isNotEmpty
-                      ? IconButton(
-                          icon: const Icon(Icons.clear),
-                          onPressed: () {
-                            _inputController.clear();
-                            setState(() {
-                              _parsedInput = null;
-                              _filteredContacts = _contacts;
-                              _currentQuery = '';
-                            });
-                          },
-                        )
-                      : null,
+                  suffixIcon:
+                      _inputController.text.isNotEmpty
+                          ? IconButton(
+                            icon: const Icon(Icons.clear),
+                            onPressed: () {
+                              _inputController.clear();
+                              setState(() {
+                                _parsedInput = null;
+                                _filteredContacts = _contacts;
+                                _currentQuery = '';
+                              });
+                            },
+                          )
+                          : null,
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(12),
                   ),
@@ -300,9 +295,7 @@ class _RecipientEntryState extends State<RecipientEntry> {
             ),
 
             // Content area
-            Expanded(
-              child: _buildContent(theme),
-            ),
+            Expanded(child: _buildContent(theme)),
           ],
         ),
       ),
@@ -342,10 +335,7 @@ class _RecipientEntryState extends State<RecipientEntry> {
       }
     }
 
-    return ListView(
-      controller: _scrollController,
-      children: items,
-    );
+    return ListView(controller: _scrollController, children: items);
   }
 
   Widget _buildParsedInputTile(ThemeData theme) {
@@ -399,10 +389,10 @@ class _RecipientEntryState extends State<RecipientEntry> {
           ),
           Text(
             'Try a lightning address or invoice instead',
-              style: theme.textTheme.bodySmall?.copyWith(
-                color: theme.colorScheme.onSurface.withValues(alpha: 0.4),
-              ),
+            style: theme.textTheme.bodySmall?.copyWith(
+              color: theme.colorScheme.onSurface.withValues(alpha: 0.4),
             ),
+          ),
         ],
       ),
     );
@@ -433,9 +423,10 @@ class _ContactTile extends StatelessWidget {
             contact.picture != null && contact.picture!.isNotEmpty
                 ? NetworkImage(contact.picture!)
                 : null,
-        child: contact.picture == null || contact.picture!.isEmpty
-            ? Icon(Icons.person, color: theme.colorScheme.primary, size: 20)
-            : null,
+        child:
+            contact.picture == null || contact.picture!.isEmpty
+                ? Icon(Icons.person, color: theme.colorScheme.primary, size: 20)
+                : null,
       ),
       title: Row(
         children: [

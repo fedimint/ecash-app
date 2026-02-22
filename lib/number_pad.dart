@@ -155,12 +155,13 @@ class _NumberPadState extends State<NumberPad> {
     final scannedText = await Navigator.push<String>(
       context,
       MaterialPageRoute(
-        builder: (_) => ScanQRPage(
-          selectedFed: widget.fed,
-          paymentType: PaymentType.lightning,
-          interceptMode: true,
-          onPay: (_, _) {},
-        ),
+        builder:
+            (_) => ScanQRPage(
+              selectedFed: widget.fed,
+              paymentType: PaymentType.lightning,
+              interceptMode: true,
+              onPay: (_, _) {},
+            ),
       ),
     );
 
@@ -192,18 +193,20 @@ class _NumberPadState extends State<NumberPad> {
       } else if (parsed is ParsedText_LightningAddressOrLnurl) {
         // LN address scanned — go to recipient screen with it pre-filled
         final amountSats = BigInt.tryParse(_rawAmount);
-        final amountMsats = amountSats != null && amountSats > BigInt.zero
-            ? amountSats * BigInt.from(1000)
-            : BigInt.zero;
+        final amountMsats =
+            amountSats != null && amountSats > BigInt.zero
+                ? amountSats * BigInt.from(1000)
+                : BigInt.zero;
         if (!mounted) return;
         await Navigator.push(
           context,
           MaterialPageRoute(
-            builder: (_) => RecipientEntry(
-              fed: widget.fed,
-              amountMsats: amountMsats,
-              prefilledRecipient: parsed.field0,
-            ),
+            builder:
+                (_) => RecipientEntry(
+                  fed: widget.fed,
+                  amountMsats: amountMsats,
+                  prefilledRecipient: parsed.field0,
+                ),
           ),
         );
       }
@@ -759,15 +762,16 @@ class _NumberPadState extends State<NumberPad> {
           centerTitle: true,
           backgroundColor: Colors.transparent,
           elevation: 0,
-          actions: widget.showScanButton
-              ? [
-                  IconButton(
-                    icon: const Icon(Icons.qr_code_scanner),
-                    onPressed: _openScanner,
-                    tooltip: 'Scan QR code',
-                  ),
-                ]
-              : null,
+          actions:
+              widget.showScanButton
+                  ? [
+                    IconButton(
+                      icon: const Icon(Icons.qr_code_scanner),
+                      onPressed: _openScanner,
+                      tooltip: 'Scan QR code',
+                    ),
+                  ]
+                  : null,
         ),
         body: Column(
           children: [
@@ -884,16 +888,17 @@ class _NumberPadState extends State<NumberPad> {
               child: SizedBox(
                 width: double.infinity,
                 child: ElevatedButton(
-                  onPressed: _isValidAmount()
-                      ? (widget.onAmountConfirmed != null
-                          ? () {
-                              final amountSats = BigInt.tryParse(_rawAmount);
-                              if (amountSats != null) {
-                                widget.onAmountConfirmed!(amountSats);
+                  onPressed:
+                      _isValidAmount()
+                          ? (widget.onAmountConfirmed != null
+                              ? () {
+                                final amountSats = BigInt.tryParse(_rawAmount);
+                                if (amountSats != null) {
+                                  widget.onAmountConfirmed!(amountSats);
+                                }
                               }
-                            }
-                          : _onConfirm)
-                      : null,
+                              : _onConfirm)
+                          : null,
                   style: ElevatedButton.styleFrom(
                     backgroundColor: const Color(0xFF42CFFF),
                     foregroundColor: Colors.black,
