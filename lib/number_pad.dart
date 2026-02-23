@@ -797,8 +797,7 @@ class _NumberPadState extends State<NumberPad> {
               child: SizedBox(
                 width: double.infinity,
                 child: ElevatedButton(
-                  onPressed:
-                      _isValidAmount() ? _onConfirm : null,
+                  onPressed: _isValidAmount() ? _onConfirm : null,
                   style: ElevatedButton.styleFrom(
                     backgroundColor: const Color(0xFF42CFFF),
                     foregroundColor: Colors.black,
