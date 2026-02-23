@@ -186,24 +186,7 @@ class _DashboardState extends State<Dashboard> {
         context,
         MaterialPageRoute(
           builder:
-              (_) => NumberPad(
-                fed: widget.fed,
-                paymentType: PaymentType.lightning,
-                btcPrices: _btcPrices,
-                showScanButton: true,
-                onAmountConfirmed: (amountSats) {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder:
-                          (_) => RecipientEntry(
-                            fed: widget.fed,
-                            amountMsats: amountSats * BigInt.from(1000),
-                          ),
-                    ),
-                  );
-                },
-              ),
+              (_) => RecipientEntry(fed: widget.fed, btcPrices: _btcPrices),
         ),
       );
     } else if (_selectedPaymentType == PaymentType.ecash ||

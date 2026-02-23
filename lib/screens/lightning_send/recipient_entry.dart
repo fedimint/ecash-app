@@ -3,10 +3,13 @@ import 'dart:async';
 import 'package:ecashapp/db.dart';
 import 'package:ecashapp/lib.dart';
 import 'package:ecashapp/multimint.dart';
+import 'package:ecashapp/number_pad.dart';
 import 'package:ecashapp/pay_preview.dart';
+import 'package:ecashapp/scan.dart';
 import 'package:ecashapp/theme.dart';
 import 'package:ecashapp/toast.dart';
 import 'package:ecashapp/utils.dart';
+import 'package:ecashapp/models.dart';
 import 'package:flutter/material.dart';
 
 sealed class _DetectedInput {
@@ -25,13 +28,13 @@ class _DetectedLnAddress extends _DetectedInput {
 
 class RecipientEntry extends StatefulWidget {
   final FederationSelector fed;
-  final BigInt amountMsats;
+  final Map<FiatCurrency, double> btcPrices;
   final String? prefilledRecipient;
 
   const RecipientEntry({
     super.key,
     required this.fed,
-    required this.amountMsats,
+    required this.btcPrices,
     this.prefilledRecipient,
   });
 
@@ -166,7 +169,7 @@ class _RecipientEntryState extends State<RecipientEntry> {
   }
 
   void _selectContact(Contact contact) {
-    _showPreviewForLnAddress(contact.lud16!);
+    _navigateToNumberPad(contact.lud16!);
   }
 
   void _selectParsedInput() {
@@ -174,7 +177,7 @@ class _RecipientEntryState extends State<RecipientEntry> {
       case _DetectedBolt11(:final invoice):
         _showPreviewForBolt11(invoice);
       case _DetectedLnAddress(:final address):
-        _showPreviewForLnAddress(address);
+        _navigateToNumberPad(address);
     }
   }
 
@@ -203,40 +206,55 @@ class _RecipientEntryState extends State<RecipientEntry> {
     }
   }
 
-  Future<void> _showPreviewForLnAddress(String lnAddressOrLnurl) async {
-    try {
-      final fedBalance = await balance(federationId: widget.fed.federationId);
-      if (widget.amountMsats > fedBalance) {
-        ToastService().show(
-          message: 'Balance is too low!',
-          duration: const Duration(seconds: 5),
-          onTap: () {},
-          icon: const Icon(Icons.warning),
-        );
-        return;
-      }
+  void _navigateToNumberPad(String lnAddressOrLnurl) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder:
+            (_) => NumberPad(
+              fed: widget.fed,
+              paymentType: PaymentType.lightning,
+              btcPrices: widget.btcPrices,
+              lightningAddressOrLnurl: lnAddressOrLnurl,
+            ),
+      ),
+    );
+  }
 
-      if (!mounted) return;
-      await showAppModalBottomSheet(
-        context: context,
-        errorMessage:
-            'Could not reach that lightning address. Please check it and try again.',
-        childBuilder: () async {
-          final invoice = await getInvoiceFromLnaddressOrLnurl(
-            amountMsats: widget.amountMsats,
-            lnaddressOrLnurl: lnAddressOrLnurl,
-          );
-          final preview = await paymentPreview(
-            federationId: widget.fed.federationId,
-            bolt11: invoice,
-          );
-          return PaymentPreviewWidget(fed: widget.fed, paymentPreview: preview);
-        },
+  void _openScanner() async {
+    final scannedText = await Navigator.push<String>(
+      context,
+      MaterialPageRoute(
+        builder:
+            (_) => ScanQRPage(
+              selectedFed: widget.fed,
+              paymentType: PaymentType.lightning,
+              interceptMode: true,
+              onPay: (_, _) {},
+            ),
+      ),
+    );
+
+    if (scannedText == null || !mounted) return;
+
+    try {
+      final result = await parseScannedTextForFederation(
+        text: scannedText,
+        federation: widget.fed,
       );
+      final parsed = result.$1;
+
+      if (parsed is ParsedText_LightningInvoice) {
+        if (!mounted) return;
+        _showPreviewForBolt11(parsed.field0);
+      } else if (parsed is ParsedText_LightningAddressOrLnurl) {
+        if (!mounted) return;
+        _inputController.text = parsed.field0;
+      }
     } catch (e) {
-      AppLogger.instance.error('Error showing payment preview: $e');
+      AppLogger.instance.error('Error parsing scanned text: $e');
       ToastService().show(
-        message: 'Could not get payment details',
+        message: 'Could not parse scanned code',
         duration: const Duration(seconds: 5),
         onTap: () {},
         icon: const Icon(Icons.error),
@@ -258,6 +276,13 @@ class _RecipientEntryState extends State<RecipientEntry> {
           centerTitle: true,
           backgroundColor: Colors.transparent,
           elevation: 0,
+          actions: [
+            IconButton(
+              icon: const Icon(Icons.qr_code_scanner),
+              onPressed: _openScanner,
+              tooltip: 'Scan QR code',
+            ),
+          ],
         ),
         body: Column(
           children: [
