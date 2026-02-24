@@ -15,6 +15,7 @@ import 'package:ecashapp/models.dart';
 import 'package:flutter/material.dart';
 import 'package:ecashapp/widgets/numpad/custom_numpad.dart';
 import 'package:ecashapp/widgets/numpad/numpad_button.dart';
+import 'package:ecashapp/widgets/federation_picker.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 
@@ -44,6 +45,9 @@ class NumberPad extends StatefulWidget {
 class _NumberPadState extends State<NumberPad> {
   final FocusNode _numpadFocus = FocusNode();
 
+  late FederationSelector _selectedFed;
+  List<(FederationSelector, bool)>? _allFederations;
+
   String _rawAmount = '';
   bool _creating = false;
   bool _loadingMax = false;
@@ -58,6 +62,7 @@ class _NumberPadState extends State<NumberPad> {
   @override
   void initState() {
     super.initState();
+    _selectedFed = widget.fed;
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _numpadFocus.requestFocus();
@@ -65,11 +70,14 @@ class _NumberPadState extends State<NumberPad> {
 
     _fetchBalance();
     _fetchFederationMeta();
+    _fetchAllFederations();
   }
 
   Future<void> _fetchBalance() async {
     try {
-      final balanceMsats = await balance(federationId: widget.fed.federationId);
+      final balanceMsats = await balance(
+        federationId: _selectedFed.federationId,
+      );
       setState(() {
         _currentBalance = balanceMsats;
         _loadingBalance = false;
@@ -85,13 +93,49 @@ class _NumberPadState extends State<NumberPad> {
   Future<void> _fetchFederationMeta() async {
     try {
       final meta = await getFederationMeta(
-        federationId: widget.fed.federationId,
+        federationId: _selectedFed.federationId,
       );
       setState(() {
         _federationMeta = meta;
       });
     } catch (e) {
       AppLogger.instance.error('Failed to fetch federation metadata: $e');
+    }
+  }
+
+  Future<void> _fetchAllFederations() async {
+    try {
+      final feds = await federations();
+      if (mounted) {
+        setState(() {
+          _allFederations = feds;
+        });
+      }
+    } catch (e) {
+      AppLogger.instance.error('Failed to fetch federations: $e');
+    }
+  }
+
+  Future<void> _onFederationCardTapped() async {
+    final feds = _allFederations;
+    if (feds == null || feds.length <= 1) return;
+
+    final selected = await showFederationPicker(
+      context: context,
+      federations: feds,
+      title: 'Select Mint',
+    );
+
+    if (selected != null && mounted) {
+      setState(() {
+        _selectedFed = selected.$1;
+        _currentBalance = null;
+        _loadingBalance = true;
+        _federationMeta = null;
+        _withdrawalMode = WithdrawalMode.specificAmount;
+      });
+      _fetchBalance();
+      _fetchFederationMeta();
     }
   }
 
@@ -198,7 +242,9 @@ class _NumberPadState extends State<NumberPad> {
     setState(() => _loadingMax = true);
 
     try {
-      final balanceMsats = await balance(federationId: widget.fed.federationId);
+      final balanceMsats = await balance(
+        federationId: _selectedFed.federationId,
+      );
       final balanceSats = balanceMsats.toSats;
 
       setState(() {
@@ -224,14 +270,14 @@ class _NumberPadState extends State<NumberPad> {
 
       // Select gateway before showing modal so we can catch errors properly
       final gateway = await selectReceiveGateway(
-        federationId: widget.fed.federationId,
+        federationId: _selectedFed.federationId,
         amountMsats: requestedAmountMsats,
       );
       final contractAmount = gateway.$2;
 
       // Create the invoice
       final invoice = await receive(
-        federationId: widget.fed.federationId,
+        federationId: _selectedFed.federationId,
         amountMsatsWithFees: contractAmount,
         amountMsatsWithoutFees: requestedAmountMsats,
         gateway: gateway.$1,
@@ -246,7 +292,7 @@ class _NumberPadState extends State<NumberPad> {
         childBuilder: () async {
           return Request(
             invoice: invoice.$1,
-            fed: widget.fed,
+            fed: _selectedFed,
             operationId: invoice.$2,
             requestedAmountMsats: requestedAmountMsats,
             totalMsats: contractAmount,
@@ -286,7 +332,7 @@ class _NumberPadState extends State<NumberPad> {
 
           // Check balance first
           final fedBalance = await balance(
-            federationId: widget.fed.federationId,
+            federationId: _selectedFed.federationId,
           );
           if (amountMsats > fedBalance) {
             ToastService().show(
@@ -312,12 +358,12 @@ class _NumberPadState extends State<NumberPad> {
 
               // Get and show payment preview
               final preview = await paymentPreview(
-                federationId: widget.fed.federationId,
+                federationId: _selectedFed.federationId,
                 bolt11: invoice,
               );
 
               return PaymentPreviewWidget(
-                fed: widget.fed,
+                fed: _selectedFed,
                 paymentPreview: preview,
               );
             },
@@ -331,9 +377,9 @@ class _NumberPadState extends State<NumberPad> {
           childBuilder: () async {
             BigInt amount = amountSats * BigInt.from(1000);
             if (_withdrawalMode == WithdrawalMode.maxBalance) {
-              amount = await balance(federationId: widget.fed.federationId);
+              amount = await balance(federationId: _selectedFed.federationId);
             }
-            return EcashSend(fed: widget.fed, amountMsats: amount);
+            return EcashSend(fed: _selectedFed, amountMsats: amount);
           },
         );
       } else if (widget.paymentType == PaymentType.onchain) {
@@ -341,7 +387,7 @@ class _NumberPadState extends State<NumberPad> {
           context: context,
           childBuilder: () async {
             return OnchainSend(
-              fed: widget.fed,
+              fed: _selectedFed,
               amountSats: amountSats,
               withdrawalMode: _withdrawalMode,
               onWithdrawCompleted: widget.onWithdrawCompleted,
@@ -486,117 +532,124 @@ class _NumberPadState extends State<NumberPad> {
       (prefs) => prefs.bitcoinDisplay,
     );
 
+    final hasMultipleFeds = (_allFederations?.length ?? 0) > 1;
+
     return Center(
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 300),
-        curve: Curves.easeInOut,
-        constraints: const BoxConstraints(maxWidth: 400),
-        margin: const EdgeInsets.fromLTRB(16, 16, 16, 12),
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          color: theme.colorScheme.surface,
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(
-            color:
-                isOverBalance
-                    ? Colors.red.withValues(alpha: 0.4)
-                    : theme.colorScheme.primary.withValues(alpha: 0.1),
-            width: 1,
-          ),
-          boxShadow: [
-            if (isOverBalance)
-              BoxShadow(
-                color: Colors.red.withValues(alpha: 0.2),
-                blurRadius: 12,
-                spreadRadius: 2,
-                offset: const Offset(0, 2),
-              )
-            else
-              BoxShadow(
-                color: Colors.black.withValues(alpha: 0.3),
-                blurRadius: 8,
-                offset: const Offset(0, 2),
-              ),
-          ],
-        ),
-        child: Row(
-          children: [
-            // Federation Image
-            ClipRRect(
-              borderRadius: BorderRadius.circular(28),
-              child: SizedBox(
-                width: 56,
-                height: 56,
-                child:
-                    _federationMeta?.picture != null &&
-                            _federationMeta!.picture!.isNotEmpty
-                        ? Image.network(
-                          _federationMeta!.picture!,
-                          fit: BoxFit.cover,
-                          errorBuilder: (context, error, stackTrace) {
-                            return Image.asset(
-                              'assets/images/fedimint-icon-color.png',
-                              fit: BoxFit.cover,
-                            );
-                          },
-                        )
-                        : Image.asset(
-                          'assets/images/fedimint-icon-color.png',
-                          fit: BoxFit.cover,
-                        ),
-              ),
+      child: GestureDetector(
+        onTap: hasMultipleFeds ? _onFederationCardTapped : null,
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 300),
+          curve: Curves.easeInOut,
+          constraints: const BoxConstraints(maxWidth: 400),
+          margin: const EdgeInsets.fromLTRB(16, 16, 16, 12),
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: theme.colorScheme.surface,
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(
+              color:
+                  isOverBalance
+                      ? Colors.red.withValues(alpha: 0.4)
+                      : theme.colorScheme.primary.withValues(alpha: 0.1),
+              width: 1,
             ),
-            const SizedBox(width: 12),
-            // Federation Name and Balance
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Text(
-                    widget.fed.federationName,
-                    style: const TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.white,
+            boxShadow: [
+              if (isOverBalance)
+                BoxShadow(
+                  color: Colors.red.withValues(alpha: 0.2),
+                  blurRadius: 12,
+                  spreadRadius: 2,
+                  offset: const Offset(0, 2),
+                )
+              else
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.3),
+                  blurRadius: 8,
+                  offset: const Offset(0, 2),
+                ),
+            ],
+          ),
+          child: Row(
+            children: [
+              // Federation Image
+              ClipRRect(
+                borderRadius: BorderRadius.circular(28),
+                child: SizedBox(
+                  width: 56,
+                  height: 56,
+                  child:
+                      _federationMeta?.picture != null &&
+                              _federationMeta!.picture!.isNotEmpty
+                          ? Image.network(
+                            _federationMeta!.picture!,
+                            fit: BoxFit.cover,
+                            errorBuilder: (context, error, stackTrace) {
+                              return Image.asset(
+                                'assets/images/fedimint-icon-color.png',
+                                fit: BoxFit.cover,
+                              );
+                            },
+                          )
+                          : Image.asset(
+                            'assets/images/fedimint-icon-color.png',
+                            fit: BoxFit.cover,
+                          ),
+                ),
+              ),
+              const SizedBox(width: 12),
+              // Federation Name and Balance
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      _selectedFed.federationName,
+                      style: const TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.white,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
                     ),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                  const SizedBox(height: 6),
-                  const Text(
-                    'Available',
-                    style: TextStyle(fontSize: 11, color: Colors.grey),
-                  ),
-                  const SizedBox(height: 2),
-                  remainingBalance == null
-                      ? const SizedBox(
-                        width: 16,
-                        height: 16,
-                        child: CircularProgressIndicator(
-                          strokeWidth: 2,
-                          color: Colors.grey,
-                        ),
-                      )
-                      : AnimatedDefaultTextStyle(
-                        duration: const Duration(milliseconds: 300),
-                        curve: Curves.easeInOut,
-                        style: TextStyle(
-                          fontSize: 14,
-                          color: isOverBalance ? Colors.red : Colors.grey,
-                        ),
-                        child: Text(
-                          formatBalance(
-                            remainingBalance,
-                            false,
-                            bitcoinDisplay,
+                    const SizedBox(height: 6),
+                    const Text(
+                      'Available',
+                      style: TextStyle(fontSize: 11, color: Colors.grey),
+                    ),
+                    const SizedBox(height: 2),
+                    remainingBalance == null
+                        ? const SizedBox(
+                          width: 16,
+                          height: 16,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            color: Colors.grey,
+                          ),
+                        )
+                        : AnimatedDefaultTextStyle(
+                          duration: const Duration(milliseconds: 300),
+                          curve: Curves.easeInOut,
+                          style: TextStyle(
+                            fontSize: 14,
+                            color: isOverBalance ? Colors.red : Colors.grey,
+                          ),
+                          child: Text(
+                            formatBalance(
+                              remainingBalance,
+                              false,
+                              bitcoinDisplay,
+                            ),
                           ),
                         ),
-                      ),
-                ],
+                  ],
+                ),
               ),
-            ),
-          ],
+              if (hasMultipleFeds)
+                Icon(Icons.unfold_more, color: Colors.grey[500], size: 20),
+            ],
+          ),
         ),
       ),
     );

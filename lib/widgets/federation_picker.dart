@@ -191,59 +191,62 @@ class _FederationPickerTile extends StatelessWidget {
       balanceText = 'Unknown balance';
     }
 
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 8),
-      child: Material(
-        color: Colors.grey[900],
-        borderRadius: BorderRadius.circular(12),
-        child: InkWell(
+    return Opacity(
+      opacity: item.isRecovering ? 0.5 : 1.0,
+      child: Padding(
+        padding: const EdgeInsets.only(bottom: 8),
+        child: Material(
+          color: Colors.grey[900],
           borderRadius: BorderRadius.circular(12),
-          onTap: onTap,
-          child: Padding(
-            padding: const EdgeInsets.all(16),
-            child: Row(
-              children: [
-                Container(
-                  width: 48,
-                  height: 48,
-                  decoration: BoxDecoration(
-                    color: theme.colorScheme.primary.withValues(alpha: 0.2),
-                    borderRadius: BorderRadius.circular(8),
+          child: InkWell(
+            borderRadius: BorderRadius.circular(12),
+            onTap: item.isRecovering ? null : onTap,
+            child: Padding(
+              padding: const EdgeInsets.all(16),
+              child: Row(
+                children: [
+                  Container(
+                    width: 48,
+                    height: 48,
+                    decoration: BoxDecoration(
+                      color: theme.colorScheme.primary.withValues(alpha: 0.2),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Icon(
+                      Icons.account_balance,
+                      color: theme.colorScheme.primary,
+                      size: 24,
+                    ),
                   ),
-                  child: Icon(
-                    Icons.account_balance,
-                    color: theme.colorScheme.primary,
-                    size: 24,
-                  ),
-                ),
-                const SizedBox(width: 16),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        item.selector.federationName,
-                        style: theme.textTheme.bodyLarge?.copyWith(
-                          fontWeight: FontWeight.bold,
-                          color: Colors.white,
+                  const SizedBox(width: 16),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          item.selector.federationName,
+                          style: theme.textTheme.bodyLarge?.copyWith(
+                            fontWeight: FontWeight.bold,
+                            color: Colors.white,
+                          ),
+                          overflow: TextOverflow.ellipsis,
                         ),
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        balanceText,
-                        style: theme.textTheme.bodyMedium?.copyWith(
-                          color:
-                              item.isRecovering
-                                  ? Colors.amber
-                                  : Colors.grey[400],
+                        const SizedBox(height: 4),
+                        Text(
+                          balanceText,
+                          style: theme.textTheme.bodyMedium?.copyWith(
+                            color:
+                                item.isRecovering
+                                    ? Colors.amber
+                                    : Colors.grey[400],
+                          ),
                         ),
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
-                ),
-                Icon(Icons.chevron_right, color: Colors.grey[600]),
-              ],
+                  Icon(Icons.chevron_right, color: Colors.grey[600]),
+                ],
+              ),
             ),
           ),
         ),
