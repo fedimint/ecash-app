@@ -144,6 +144,9 @@ class _NostrWalletConnectState extends State<NostrWalletConnect> {
         serviceId: 256,
         notificationTitle: 'NWC Active',
         notificationText: 'Connected to ${federation.federationName}',
+        notificationIcon: const NotificationIcon(
+          metaDataName: 'com.ecashapp.NOTIFICATION_ICON',
+        ),
         callback: startNWCCallback,
       );
 
