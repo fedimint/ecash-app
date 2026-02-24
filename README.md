@@ -5,6 +5,12 @@
 # Ecash App – A Fedimint Wallet
 
 <p align="center">
+  <a href="https://zapstore.dev/apps/naddr1qvzqqqr7pvpzq9qaypfuk22ntt29420gvhx7cjf9yncwcqrxf94e3dcfnk4tt4jcqqgx7un89enx2erfd45kuapwv9c8q4xktv6">
+    <img src="https://github.com/zapstore/zapstore/raw/master/assets/images/badge.png" alt="Get it on Zapstore" height="60"/>
+  </a>
+</p>
+
+<p align="center">
   <img src="assets/screenshots/create_wallet.png" alt="Create Wallet" width="300"/>
   <img src="assets/screenshots/discover2.png" alt="Discover Federations" width="300"/>
 </p>
