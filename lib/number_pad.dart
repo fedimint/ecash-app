@@ -349,6 +349,8 @@ class _NumberPadState extends State<NumberPad> {
 
           await showAppModalBottomSheet(
             context: context,
+            errorMessage:
+                'Could not reach that lightning address. Please check it and try again.',
             childBuilder: () async {
               // Get invoice from LN Address
               final invoice = await getInvoiceFromLnaddressOrLnurl(

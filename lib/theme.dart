@@ -57,6 +57,7 @@ Future<T?> showAppModalBottomSheet<T>({
   required BuildContext context,
   required Future<Widget> Function() childBuilder,
   double? heightFactor,
+  String errorMessage = 'Something went wrong. Please try again.',
 }) {
   final childFuture = childBuilder();
   return showModalBottomSheet<T>(
@@ -100,13 +101,54 @@ Future<T?> showAppModalBottomSheet<T>({
                           ),
                         );
                       } else if (snapshot.hasError) {
-                        return Center(
-                          child: Padding(
-                            padding: const EdgeInsets.all(24.0),
-                            child: Text(
-                              'Error loading content',
-                              style: TextStyle(color: Colors.red),
-                            ),
+                        final theme = Theme.of(context);
+                        return Padding(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 16,
+                            vertical: 24,
+                          ),
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Icon(
+                                Icons.warning_amber_rounded,
+                                color: theme.colorScheme.error,
+                                size: 64,
+                              ),
+                              const SizedBox(height: 16),
+                              Text(
+                                'Something Went Wrong',
+                                style: theme.textTheme.headlineSmall?.copyWith(
+                                  color: theme.colorScheme.error,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                                textAlign: TextAlign.center,
+                              ),
+                              const SizedBox(height: 12),
+                              Text(
+                                errorMessage,
+                                style: theme.textTheme.bodyMedium,
+                                textAlign: TextAlign.center,
+                              ),
+                              const SizedBox(height: 32),
+                              SizedBox(
+                                width: double.infinity,
+                                child: ElevatedButton(
+                                  onPressed: () => Navigator.of(context).pop(),
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor: theme.colorScheme.primary,
+                                    foregroundColor: Colors.black,
+                                    padding: const EdgeInsets.symmetric(
+                                      vertical: 16,
+                                    ),
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(16),
+                                    ),
+                                  ),
+                                  child: const Text('Close'),
+                                ),
+                              ),
+                            ],
                           ),
                         );
                       } else {

@@ -14,7 +14,7 @@ import 'package:flutter_speed_dial/flutter_speed_dial.dart';
 import 'package:ecashapp/lib.dart';
 import 'package:ecashapp/multimint.dart';
 import 'package:ecashapp/number_pad.dart';
-import 'package:ecashapp/payment_selector.dart';
+import 'package:ecashapp/screens/lightning_send/recipient_entry.dart';
 import 'package:ecashapp/onchain_receive.dart';
 import 'package:ecashapp/scan.dart';
 import 'package:ecashapp/theme.dart';
@@ -182,11 +182,12 @@ class _DashboardState extends State<Dashboard> {
 
   void _onSendPressed() async {
     if (_selectedPaymentType == PaymentType.lightning) {
-      await showAppModalBottomSheet(
-        context: context,
-        childBuilder: () async {
-          return PaymentMethodSelector(fed: widget.fed);
-        },
+      await Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder:
+              (_) => RecipientEntry(fed: widget.fed, btcPrices: _btcPrices),
+        ),
       );
     } else if (_selectedPaymentType == PaymentType.ecash ||
         _selectedPaymentType == PaymentType.onchain) {
