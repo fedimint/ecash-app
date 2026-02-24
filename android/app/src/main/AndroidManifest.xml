@@ -48,6 +48,10 @@
         <meta-data
             android:name="flutterEmbedding"
             android:value="2" />
+        <!-- Notification icon for foreground service -->
+        <meta-data
+            android:name="com.ecashapp.NOTIFICATION_ICON"
+            android:resource="@drawable/ic_notification" />
         <!-- Foreground service for NWC -->
         <service
             android:name="com.pravera.flutter_foreground_task.service.ForegroundService"
