@@ -12,20 +12,6 @@ import 'package:ecashapp/utils.dart';
 import 'package:ecashapp/models.dart';
 import 'package:flutter/material.dart';
 
-sealed class _DetectedInput {
-  const _DetectedInput();
-}
-
-class _DetectedBolt11 extends _DetectedInput {
-  final String invoice;
-  const _DetectedBolt11(this.invoice);
-}
-
-class _DetectedLnAddress extends _DetectedInput {
-  final String address;
-  const _DetectedLnAddress(this.address);
-}
-
 class RecipientEntry extends StatefulWidget {
   final FederationSelector fed;
   final Map<FiatCurrency, double> btcPrices;
@@ -53,7 +39,9 @@ class _RecipientEntryState extends State<RecipientEntry> {
   Timer? _searchDebounce;
   String _currentQuery = '';
 
-  _DetectedInput? _parsedInput;
+  ParsedText? _parsedInput;
+  bool _isParsing = false;
+  int _parseVersion = 0;
 
   @override
   void initState() {
@@ -82,7 +70,7 @@ class _RecipientEntryState extends State<RecipientEntry> {
       if (query == _currentQuery) return;
       _currentQuery = query;
       _filterContacts(query);
-      _tryParseInput(query);
+      _parseInputAsync(query);
     });
   }
 
@@ -123,35 +111,51 @@ class _RecipientEntryState extends State<RecipientEntry> {
     });
   }
 
-  void _tryParseInput(String text) {
+  Future<void> _parseInputAsync(String text) async {
     if (text.isEmpty) {
-      setState(() => _parsedInput = null);
+      setState(() {
+        _parsedInput = null;
+        _isParsing = false;
+      });
       return;
     }
 
-    final trimmed = text.trim();
-    final lower = trimmed.toLowerCase();
+    final currentVersion = ++_parseVersion;
+    setState(() => _isParsing = true);
 
-    final isBolt11 =
-        lower.startsWith('lnbc') ||
-        lower.startsWith('lntb') ||
-        lower.startsWith('lnbcrt') ||
-        lower.startsWith('lntbs');
+    try {
+      final result = await parseScannedTextForFederation(
+        text: text.trim(),
+        federation: widget.fed,
+      );
 
-    final atIndex = lower.indexOf('@');
-    final isLnAddress = atIndex > 0 && atIndex == lower.lastIndexOf('@');
+      // Check if this parse is still relevant
+      if (currentVersion != _parseVersion || !mounted) return;
 
-    final isLnurl = lower.startsWith('lnurl') || lower.startsWith('lightning:');
+      final parsed = result.$1;
 
-    setState(() {
-      if (isBolt11) {
-        _parsedInput = _DetectedBolt11(trimmed);
-      } else if (isLnAddress || isLnurl) {
-        _parsedInput = _DetectedLnAddress(trimmed);
+      // Accept Lightning types and Bitcoin addresses (for informative message)
+      if (parsed is ParsedText_LightningInvoice ||
+          parsed is ParsedText_LightningAddressOrLnurl ||
+          parsed is ParsedText_BitcoinAddress) {
+        setState(() {
+          _parsedInput = parsed;
+          _isParsing = false;
+        });
       } else {
-        _parsedInput = null;
+        setState(() {
+          _parsedInput = null;
+          _isParsing = false;
+        });
       }
-    });
+    } catch (e) {
+      if (currentVersion != _parseVersion || !mounted) return;
+      AppLogger.instance.debug('Could not parse input: $e');
+      setState(() {
+        _parsedInput = null;
+        _isParsing = false;
+      });
+    }
   }
 
   String _getDisplayName(Contact contact) {
@@ -174,10 +178,15 @@ class _RecipientEntryState extends State<RecipientEntry> {
 
   void _selectParsedInput() {
     switch (_parsedInput!) {
-      case _DetectedBolt11(:final invoice):
-        _showPreviewForBolt11(invoice);
-      case _DetectedLnAddress(:final address):
-        _navigateToNumberPad(address);
+      case ParsedText_LightningInvoice(:final field0):
+        _showPreviewForBolt11(field0);
+      case ParsedText_LightningAddressOrLnurl(:final field0):
+        _navigateToNumberPad(field0);
+      case ParsedText_BitcoinAddress():
+        // Non-actionable - user should use on-chain send
+        break;
+      default:
+        break;
     }
   }
 
@@ -330,8 +339,8 @@ class _RecipientEntryState extends State<RecipientEntry> {
   Widget _buildContent(ThemeData theme) {
     final items = <Widget>[];
 
-    // Parsed input suggestion
-    if (_parsedInput != null) {
+    // Parsed input suggestion (or loading indicator)
+    if (_parsedInput != null || _isParsing) {
       items.add(_buildParsedInputTile(theme));
       items.add(const Divider());
     }
@@ -364,34 +373,82 @@ class _RecipientEntryState extends State<RecipientEntry> {
   }
 
   Widget _buildParsedInputTile(ThemeData theme) {
+    // Show loading spinner while parsing
+    if (_isParsing) {
+      return ListTile(
+        leading: CircleAvatar(
+          backgroundColor: Colors.amber.withValues(alpha: 0.2),
+          child: const SizedBox(
+            width: 20,
+            height: 20,
+            child: CircularProgressIndicator(strokeWidth: 2),
+          ),
+        ),
+        title: Text(
+          'Checking...',
+          style: TextStyle(
+            fontWeight: FontWeight.w600,
+            color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
+          ),
+        ),
+      );
+    }
+
     final String title;
     final String subtitle;
     final IconData icon;
+    final bool isActionable;
 
     switch (_parsedInput!) {
-      case _DetectedBolt11(:final invoice):
+      case ParsedText_LightningInvoice(:final field0):
         title = 'Lightning Invoice';
-        subtitle = getAbbreviatedText(invoice);
+        subtitle = getAbbreviatedText(field0);
         icon = Icons.flash_on;
-      case _DetectedLnAddress(:final address):
-        title = address;
-        subtitle = 'Lightning Address';
-        icon = Icons.alternate_email;
+        isActionable = true;
+      case ParsedText_LightningAddressOrLnurl(:final field0):
+        // Differentiate between Lightning Address and LNURL
+        final isLightningAddress = field0.contains('@');
+        title = field0;
+        subtitle = isLightningAddress ? 'Lightning Address' : 'LNURL';
+        icon = isLightningAddress ? Icons.alternate_email : Icons.link;
+        isActionable = true;
+      case ParsedText_BitcoinAddress():
+        title = 'Bitcoin Address';
+        subtitle = 'Use On-chain Send for this address';
+        icon = Icons.currency_bitcoin;
+        isActionable = false;
+      default:
+        return const SizedBox.shrink();
     }
 
     return ListTile(
       leading: CircleAvatar(
-        backgroundColor: Colors.amber.withValues(alpha: 0.2),
-        child: Icon(icon, color: Colors.amber),
+        backgroundColor:
+            isActionable
+                ? Colors.amber.withValues(alpha: 0.2)
+                : theme.colorScheme.surfaceContainerHighest,
+        child: Icon(
+          icon,
+          color:
+              isActionable
+                  ? Colors.amber
+                  : theme.colorScheme.onSurface.withValues(alpha: 0.6),
+        ),
       ),
       title: Text(
         title,
         maxLines: 1,
         overflow: TextOverflow.ellipsis,
-        style: const TextStyle(fontWeight: FontWeight.w600),
+        style: TextStyle(
+          fontWeight: FontWeight.w600,
+          color:
+              isActionable
+                  ? null
+                  : theme.colorScheme.onSurface.withValues(alpha: 0.6),
+        ),
       ),
       subtitle: Text(subtitle),
-      onTap: _selectParsedInput,
+      onTap: isActionable ? _selectParsedInput : null,
     );
   }
 
