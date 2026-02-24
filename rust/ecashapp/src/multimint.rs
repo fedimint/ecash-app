@@ -3473,34 +3473,51 @@ impl Multimint {
             .get(federation_id)
             .context("No federation exists")?
             .clone();
-        let lnv1 = client.get_first_module::<LightningClientModule>()?;
+        let lnv2_gateways = self.lnv2_gateways(federation_id).await;
 
-        // Verify at least one LNv1 gateway is registered
-        let lnv1_gateways = lnv1.list_gateways().await;
-        if lnv1_gateways.is_empty() {
-            bail!("No LNv1 gateways");
-        }
-
-        // First, register an LNURL with recurringd
         let safe_recurringd_api = SafeUrl::parse(&recurringd_api)?;
+        let lnv1_recurringd_api = SafeUrl::parse("https://lnurl.ecash.love")?;
 
-        let meta = serde_json::to_string(&json!([["text/plain", "Fedimint LNURL Pay"]]))
-            .expect("serialization can't fail");
+        let payment_code = match lnv2_gateways {
+            // LNv2 is available, use that to generate an LNURL
+            Ok(gws) if !gws.is_empty() => {
+                let lnv2 =
+                    client.get_first_module::<fedimint_lnv2_client::LightningClientModule>()?;
+                let safe_recurringd_api = SafeUrl::parse(&recurringd_api)?;
+                let payment_code = lnv2.generate_lnurl(safe_recurringd_api, None).await?;
+                info_to_flutter(format!("Registered LNv2 LNURL {:?}", payment_code)).await;
+                payment_code
+            }
+            // Only LNv1 is available, use that to generate an LNURL
+            _ => {
+                let lnv1 = client.get_first_module::<LightningClientModule>()?;
 
-        let lnurl = lnv1
-            .register_recurring_payment_code(
-                fedimint_ln_client::recurring::RecurringPaymentProtocol::LNURL,
-                safe_recurringd_api.clone(),
-                meta.as_str(),
-            )
-            .await?;
-        info_to_flutter(format!("Registered LNURL {:?}", lnurl)).await;
+                // Verify at least one LNv1 gateway is registered
+                let lnv1_gateways = lnv1.list_gateways().await;
+                if lnv1_gateways.is_empty() {
+                    bail!("No LNv1 gateways");
+                }
+
+                let meta = serde_json::to_string(&json!([["text/plain", "Fedimint LNURL Pay"]]))
+                    .expect("serialization can't fail");
+
+                let lnurl = lnv1
+                    .register_recurring_payment_code(
+                        fedimint_ln_client::recurring::RecurringPaymentProtocol::LNURL,
+                        lnv1_recurringd_api,
+                        meta.as_str(),
+                    )
+                    .await?;
+                info_to_flutter(format!("Registered LNv1 LNURL {:?}", lnurl)).await;
+                lnurl.code
+            }
+        };
 
         let safe_ln_address_api = SafeUrl::parse(&ln_address_api)?;
         let register_request = LNAddressRegisterRequest {
             username: username.clone(),
             domain: domain.clone(),
-            lnurl: lnurl.code.clone(),
+            lnurl: payment_code.clone(),
         };
 
         let http_client = reqwest::Client::new();
@@ -3536,7 +3553,7 @@ impl Multimint {
                 domain,
                 recurringd_api: safe_recurringd_api,
                 ln_address_api: safe_ln_address_api,
-                lnurl: lnurl.code.clone(),
+                lnurl: payment_code.clone(),
                 authentication_token: authentication_token.to_string(),
             },
         )
@@ -3545,11 +3562,21 @@ impl Multimint {
 
         info_to_flutter(format!(
             "Successfully registered LN Address. LNURL: {}",
-            lnurl.code
+            payment_code
         ))
         .await;
 
         Ok(())
+    }
+
+    async fn lnv2_gateways(&self, federation_id: &FederationId) -> anyhow::Result<Vec<SafeUrl>> {
+        let guard = self.clients.read().await;
+        let client = guard
+            .get(federation_id)
+            .ok_or(anyhow!("No federation exists"))?;
+        let lnv2 = client.get_first_module::<fedimint_lnv2_client::LightningClientModule>()?;
+        let lnv2_gateways = lnv2.list_gateways(None).await?;
+        Ok(lnv2_gateways)
     }
 
     // Check LN Address status (registered or not)
@@ -3569,9 +3596,16 @@ impl Multimint {
         }
 
         // Check that the selected federation is supported by recurringd
-        let supported_federations = self.get_recurringd_federations(recurringd_api).await?;
-        if !supported_federations.contains(federation_id) {
-            return Ok(LNAddressStatus::UnsupportedFederation);
+        let lnv2_gateways = self.lnv2_gateways(federation_id).await;
+        match lnv2_gateways {
+            // Verify that if LNv2 is available and has a gateway, there is nothing to check
+            Ok(gws) if !gws.is_empty() => {}
+            _ => {
+                let supported_federations = self.get_recurringd_federations(recurringd_api).await?;
+                if !supported_federations.contains(federation_id) {
+                    return Ok(LNAddressStatus::UnsupportedFederation);
+                }
+            }
         }
 
         // Validate that the given username and domain are a valid Lightning Address
