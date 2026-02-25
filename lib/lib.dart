@@ -151,6 +151,14 @@ Future<PaymentPreview> paymentPreview({
   bolt11: bolt11,
 );
 
+Future<PaymentPreviewWithGateways> paymentPreviewWithGateways({
+  required FederationId federationId,
+  required String bolt11,
+}) => RustLib.instance.api.cratePaymentPreviewWithGateways(
+  federationId: federationId,
+  bolt11: bolt11,
+);
+
 Future<FederationMeta> getFederationMeta({
   String? inviteCode,
   FederationId? federationId,

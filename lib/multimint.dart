@@ -10,9 +10,9 @@ import 'package:flutter_rust_bridge/flutter_rust_bridge_for_generated.dart';
 import 'package:freezed_annotation/freezed_annotation.dart' hide protected;
 part 'multimint.freezed.dart';
 
-// These functions are ignored because they are not marked as `pub`: `await_receive_lnv1`, `await_receive_lnv2`, `await_send_lnv1`, `await_send_lnv2`, `backup`, `build_client`, `cache_btc_price`, `cache_federation_meta`, `compute_receive_amount`, `compute_send_amount`, `finish_active_subscriptions`, `from_peg_out_fees`, `get_client_database`, `get_ecash_amount_from_meta`, `get_lnv1_amount_from_meta`, `get_lnv1_receive_tx`, `get_lnv1_send_tx`, `get_lnv2_amount_from_meta`, `get_or_build_temp_client`, `get_recurringd_federations`, `get_url`, `init_recovery_progress_cache`, `invoice_routes_back_to_federation`, `lnv1_select_gateway`, `lnv1_update_gateway_cache`, `lnv2_select_gateway`, `load_clients`, `monitor_all_unused_pegin_addresses`, `pay_lnv1`, `pay_lnv2`, `receive_amount_after_fees`, `receive_lnv1`, `receive_lnv2`, `remove_existing_ln_address`, `remove_recovery_progress_cache`, `run_migrations`, `spawn_await_ecash_reissue`, `spawn_await_ecash_send`, `spawn_await_receive`, `spawn_await_recurringd_receive`, `spawn_await_send`, `spawn_cache_task`, `spawn_pegin_address_watcher`, `spawn_recovery_progress`, `spawn_recurring_invoice_listener`, `spend_until_exact_amount`, `update_recovery_progress_cache`, `wait_for_recovery`, `watch_pegin_address`
+// These functions are ignored because they are not marked as `pub`: `await_receive_lnv1`, `await_receive_lnv2`, `await_send_lnv1`, `await_send_lnv2`, `backup`, `build_client`, `cache_btc_price`, `cache_federation_meta`, `compute_receive_amount`, `compute_send_amount`, `finish_active_subscriptions`, `from_peg_out_fees`, `get_client_database`, `get_ecash_amount_from_meta`, `get_lnv1_amount_from_meta`, `get_lnv1_receive_tx`, `get_lnv1_send_tx`, `get_lnv2_amount_from_meta`, `get_or_build_temp_client`, `get_recurringd_federations`, `get_url`, `init_recovery_progress_cache`, `invoice_routes_back_to_federation`, `lnv1_select_gateway`, `lnv1_update_gateway_cache`, `lnv2_gateways`, `lnv2_select_gateway`, `load_clients`, `monitor_all_unused_pegin_addresses`, `pay_lnv1`, `pay_lnv2`, `receive_amount_after_fees`, `receive_lnv1`, `receive_lnv2`, `remove_existing_ln_address`, `remove_recovery_progress_cache`, `run_migrations`, `spawn_await_ecash_reissue`, `spawn_await_ecash_send`, `spawn_await_receive`, `spawn_await_recurringd_receive`, `spawn_await_send`, `spawn_cache_task`, `spawn_pegin_address_watcher`, `spawn_recovery_progress`, `spawn_recurring_invoice_listener`, `spend_until_exact_amount`, `update_recovery_progress_cache`, `wait_for_recovery`, `watch_pegin_address`
 // These types are ignored because they are neither used by any `pub` functions nor (for structs and enums) marked `#[frb(unignore)]`: `ClientType`, `LNAddressRegisterRequest`, `LNAddressRemoveRequest`, `OnChainWithdrawalMeta`
-// These function are ignored because they are on traits that is not defined in current crate (put an empty `#[frb]` on it to unignore): `assert_receiver_is_total_eq`, `assert_receiver_is_total_eq`, `assert_receiver_is_total_eq`, `assert_receiver_is_total_eq`, `assert_receiver_is_total_eq`, `assert_receiver_is_total_eq`, `assert_receiver_is_total_eq`, `assert_receiver_is_total_eq`, `assert_receiver_is_total_eq`, `assert_receiver_is_total_eq`, `assert_receiver_is_total_eq`, `assert_receiver_is_total_eq`, `assert_receiver_is_total_eq`, `assert_receiver_is_total_eq`, `assert_receiver_is_total_eq`, `assert_receiver_is_total_eq`, `assert_receiver_is_total_eq`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `consensus_decode_partial_from_finite_reader`, `consensus_decode_partial_from_finite_reader`, `consensus_decode_partial_from_finite_reader`, `consensus_encode`, `consensus_encode`, `consensus_encode`, `eq`, `eq`, `eq`, `eq`, `eq`, `eq`, `eq`, `eq`, `eq`, `eq`, `eq`, `eq`, `eq`, `eq`, `eq`, `eq`, `eq`, `eq`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `from`
+// These function are ignored because they are on traits that is not defined in current crate (put an empty `#[frb]` on it to unignore): `assert_receiver_is_total_eq`, `assert_receiver_is_total_eq`, `assert_receiver_is_total_eq`, `assert_receiver_is_total_eq`, `assert_receiver_is_total_eq`, `assert_receiver_is_total_eq`, `assert_receiver_is_total_eq`, `assert_receiver_is_total_eq`, `assert_receiver_is_total_eq`, `assert_receiver_is_total_eq`, `assert_receiver_is_total_eq`, `assert_receiver_is_total_eq`, `assert_receiver_is_total_eq`, `assert_receiver_is_total_eq`, `assert_receiver_is_total_eq`, `assert_receiver_is_total_eq`, `assert_receiver_is_total_eq`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `consensus_decode_partial_from_finite_reader`, `consensus_decode_partial_from_finite_reader`, `consensus_decode_partial_from_finite_reader`, `consensus_encode`, `consensus_encode`, `consensus_encode`, `eq`, `eq`, `eq`, `eq`, `eq`, `eq`, `eq`, `eq`, `eq`, `eq`, `eq`, `eq`, `eq`, `eq`, `eq`, `eq`, `eq`, `eq`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `from`
 // These functions have error during generation (see debug logs or enable `stop_on_error: true` for more details): `subscribe_peer_status`
 
 // Rust type: RustOpaqueMoi<flutter_rust_bridge::for_generated::RustAutoOpaqueInner<Amount>>
@@ -123,6 +123,12 @@ abstract class Multimint implements RustOpaqueInterface {
   });
 
   Future<void> clearPinHash();
+
+  Future<List<GatewayPaymentPreview>> computeAllGatewayPreviews({
+    required FederationId federationId,
+    required Amount amount,
+    required Bolt11Invoice bolt11,
+  });
 
   Future<bool> containsClient({required FederationId federationId});
 
@@ -440,6 +446,7 @@ class FedimintGateway {
   final BigInt ppmTransactionFee;
   final String? lightningAlias;
   final String? lightningNode;
+  final bool isLnv2;
 
   const FedimintGateway({
     required this.endpoint,
@@ -449,6 +456,7 @@ class FedimintGateway {
     required this.ppmTransactionFee,
     this.lightningAlias,
     this.lightningNode,
+    required this.isLnv2,
   });
 
   @override
@@ -459,7 +467,8 @@ class FedimintGateway {
       baseTransactionFee.hashCode ^
       ppmTransactionFee.hashCode ^
       lightningAlias.hashCode ^
-      lightningNode.hashCode;
+      lightningNode.hashCode ^
+      isLnv2.hashCode;
 
   @override
   bool operator ==(Object other) =>
@@ -472,7 +481,29 @@ class FedimintGateway {
           baseTransactionFee == other.baseTransactionFee &&
           ppmTransactionFee == other.ppmTransactionFee &&
           lightningAlias == other.lightningAlias &&
-          lightningNode == other.lightningNode;
+          lightningNode == other.lightningNode &&
+          isLnv2 == other.isLnv2;
+}
+
+class GatewayPaymentPreview {
+  final FedimintGateway gateway;
+  final BigInt amountWithFees;
+
+  const GatewayPaymentPreview({
+    required this.gateway,
+    required this.amountWithFees,
+  });
+
+  @override
+  int get hashCode => gateway.hashCode ^ amountWithFees.hashCode;
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is GatewayPaymentPreview &&
+          runtimeType == other.runtimeType &&
+          gateway == other.gateway &&
+          amountWithFees == other.amountWithFees;
 }
 
 class Guardian {
@@ -647,6 +678,45 @@ class PaymentPreview {
           gateway == other.gateway &&
           amountWithFees == other.amountWithFees &&
           isLnv2 == other.isLnv2;
+}
+
+class PaymentPreviewWithGateways {
+  final BigInt amountMsats;
+  final String paymentHash;
+  final String network;
+  final String invoice;
+  final List<GatewayPaymentPreview> gatewayPreviews;
+  final BigInt selectedIndex;
+
+  const PaymentPreviewWithGateways({
+    required this.amountMsats,
+    required this.paymentHash,
+    required this.network,
+    required this.invoice,
+    required this.gatewayPreviews,
+    required this.selectedIndex,
+  });
+
+  @override
+  int get hashCode =>
+      amountMsats.hashCode ^
+      paymentHash.hashCode ^
+      network.hashCode ^
+      invoice.hashCode ^
+      gatewayPreviews.hashCode ^
+      selectedIndex.hashCode;
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is PaymentPreviewWithGateways &&
+          runtimeType == other.runtimeType &&
+          amountMsats == other.amountMsats &&
+          paymentHash == other.paymentHash &&
+          network == other.network &&
+          invoice == other.invoice &&
+          gatewayPreviews == other.gatewayPreviews &&
+          selectedIndex == other.selectedIndex;
 }
 
 class PeerStatus {
