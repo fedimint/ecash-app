@@ -121,11 +121,26 @@ class _PaymentPreviewWidgetState extends State<PaymentPreviewWidget> {
                         ),
                     ],
                   ),
-                  subtitle: Text(
-                    'Total: ${formatBalance(preview.amountWithFees, true, bitcoinDisplay)}',
-                    style: theme.textTheme.bodySmall?.copyWith(
-                      color: theme.colorScheme.onSurface.withOpacity(0.6),
-                    ),
+                  subtitle: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        gw.endpoint,
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: theme.colorScheme.onSurface.withOpacity(0.4),
+                          fontFamily: 'monospace',
+                          fontSize: 11,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      Text(
+                        'Total: ${formatBalance(preview.amountWithFees, true, bitcoinDisplay)}',
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: theme.colorScheme.onSurface.withOpacity(0.6),
+                        ),
+                      ),
+                    ],
                   ),
                   trailing:
                       isSelected
