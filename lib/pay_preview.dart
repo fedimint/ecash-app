@@ -135,7 +135,7 @@ class _PaymentPreviewWidgetState extends State<PaymentPreviewWidget> {
                         overflow: TextOverflow.ellipsis,
                       ),
                       Text(
-                        'Total: ${formatBalance(preview.amountWithFees, true, bitcoinDisplay)}',
+                        'Fee: ${formatBalance(preview.amountWithFees - widget.previewData.amountMsats, true, bitcoinDisplay)}',
                         style: theme.textTheme.bodySmall?.copyWith(
                           color: theme.colorScheme.onSurface.withOpacity(0.6),
                         ),
