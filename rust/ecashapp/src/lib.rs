@@ -740,7 +740,9 @@ pub async fn parse_scanned_text_for_federation(
         }
     }
 
-    if lnurl::lnurl::LnUrl::from_str(&text).is_ok() {
+    if lnurl::lnurl::LnUrl::from_str(&text).is_ok()
+        || lnurl::lightning_address::LightningAddress::from_str(&text).is_ok()
+    {
         return Ok((
             ParsedText::LightningAddressOrLnurl(text),
             federation.clone(),
@@ -811,7 +813,9 @@ pub async fn parsed_scanned_text(
         }
     }
 
-    if lnurl::lnurl::LnUrl::from_str(&text).is_ok() {
+    if lnurl::lnurl::LnUrl::from_str(&text).is_ok()
+        || lnurl::lightning_address::LightningAddress::from_str(&text).is_ok()
+    {
         // get a test invoice so we can determine the network
         let invoice = get_invoice_from_lnaddress_or_lnurl(1, text.clone()).await?;
         let bolt11 = Bolt11Invoice::from_str(&invoice)?;
