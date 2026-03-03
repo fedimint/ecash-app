@@ -256,14 +256,14 @@ class _ScanQRPageState extends State<ScanQRPage> {
               await showAppModalBottomSheet(
                 context: context,
                 childBuilder: () async {
-                  final preview = await paymentPreview(
+                  final preview = await paymentPreviewWithGateways(
                     federationId: chosenFederation!.federationId,
                     bolt11: field0,
                   );
 
                   return PaymentPreviewWidget(
                     fed: chosenFederation,
-                    paymentPreview: preview,
+                    previewData: preview,
                   );
                 },
               );

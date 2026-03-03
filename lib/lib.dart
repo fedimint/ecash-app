@@ -143,10 +143,10 @@ Future<List<PublicFederation>> listFederationsFromNostr({
   forceUpdate: forceUpdate,
 );
 
-Future<PaymentPreview> paymentPreview({
+Future<PaymentPreviewWithGateways> paymentPreviewWithGateways({
   required FederationId federationId,
   required String bolt11,
-}) => RustLib.instance.api.cratePaymentPreview(
+}) => RustLib.instance.api.cratePaymentPreviewWithGateways(
   federationId: federationId,
   bolt11: bolt11,
 );

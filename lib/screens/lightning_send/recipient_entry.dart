@@ -197,11 +197,11 @@ class _RecipientEntryState extends State<RecipientEntry> {
         errorMessage:
             'Invalid lightning invoice. Please check the invoice and try again.',
         childBuilder: () async {
-          final preview = await paymentPreview(
+          final preview = await paymentPreviewWithGateways(
             federationId: widget.fed.federationId,
             bolt11: bolt11,
           );
-          return PaymentPreviewWidget(fed: widget.fed, paymentPreview: preview);
+          return PaymentPreviewWidget(fed: widget.fed, previewData: preview);
         },
       );
     } catch (e) {

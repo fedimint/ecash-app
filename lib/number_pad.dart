@@ -359,14 +359,14 @@ class _NumberPadState extends State<NumberPad> {
               );
 
               // Get and show payment preview
-              final preview = await paymentPreview(
+              final preview = await paymentPreviewWithGateways(
                 federationId: _selectedFed.federationId,
                 bolt11: invoice,
               );
 
               return PaymentPreviewWidget(
                 fed: _selectedFed,
-                paymentPreview: preview,
+                previewData: preview,
               );
             },
           );

@@ -300,6 +300,12 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   );
 
   @protected
+  Bolt11Invoice
+  dco_decode_Auto_Ref_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerBolt11Invoice(
+    dynamic raw,
+  );
+
+  @protected
   FederationConfig
   dco_decode_Auto_Ref_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerFederationConfig(
     dynamic raw,
@@ -651,6 +657,9 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   FiatCurrency dco_decode_fiat_currency(dynamic raw);
 
   @protected
+  GatewayPaymentPreview dco_decode_gateway_payment_preview(dynamic raw);
+
+  @protected
   Guardian dco_decode_guardian(dynamic raw);
 
   @protected
@@ -685,6 +694,11 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
 
   @protected
   List<FedimintGateway> dco_decode_list_fedimint_gateway(dynamic raw);
+
+  @protected
+  List<GatewayPaymentPreview> dco_decode_list_gateway_payment_preview(
+    dynamic raw,
+  );
 
   @protected
   List<Guardian> dco_decode_list_guardian(dynamic raw);
@@ -814,7 +828,9 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   ParsedText dco_decode_parsed_text(dynamic raw);
 
   @protected
-  PaymentPreview dco_decode_payment_preview(dynamic raw);
+  PaymentPreviewWithGateways dco_decode_payment_preview_with_gateways(
+    dynamic raw,
+  );
 
   @protected
   PeerStatus dco_decode_peer_status(dynamic raw);
@@ -1136,6 +1152,12 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   @protected
   WithdrawFeesResponse
   sse_decode_Auto_RefMut_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerWithdrawFeesResponse(
+    SseDeserializer deserializer,
+  );
+
+  @protected
+  Bolt11Invoice
+  sse_decode_Auto_Ref_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerBolt11Invoice(
     SseDeserializer deserializer,
   );
 
@@ -1513,6 +1535,11 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   FiatCurrency sse_decode_fiat_currency(SseDeserializer deserializer);
 
   @protected
+  GatewayPaymentPreview sse_decode_gateway_payment_preview(
+    SseDeserializer deserializer,
+  );
+
+  @protected
   Guardian sse_decode_guardian(SseDeserializer deserializer);
 
   @protected
@@ -1551,6 +1578,11 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
 
   @protected
   List<FedimintGateway> sse_decode_list_fedimint_gateway(
+    SseDeserializer deserializer,
+  );
+
+  @protected
+  List<GatewayPaymentPreview> sse_decode_list_gateway_payment_preview(
     SseDeserializer deserializer,
   );
 
@@ -1696,7 +1728,9 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   ParsedText sse_decode_parsed_text(SseDeserializer deserializer);
 
   @protected
-  PaymentPreview sse_decode_payment_preview(SseDeserializer deserializer);
+  PaymentPreviewWithGateways sse_decode_payment_preview_with_gateways(
+    SseDeserializer deserializer,
+  );
 
   @protected
   PeerStatus sse_decode_peer_status(SseDeserializer deserializer);
@@ -2058,6 +2092,13 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   void
   sse_encode_Auto_RefMut_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerWithdrawFeesResponse(
     WithdrawFeesResponse self,
+    SseSerializer serializer,
+  );
+
+  @protected
+  void
+  sse_encode_Auto_Ref_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerBolt11Invoice(
+    Bolt11Invoice self,
     SseSerializer serializer,
   );
 
@@ -2504,6 +2545,12 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   void sse_encode_fiat_currency(FiatCurrency self, SseSerializer serializer);
 
   @protected
+  void sse_encode_gateway_payment_preview(
+    GatewayPaymentPreview self,
+    SseSerializer serializer,
+  );
+
+  @protected
   void sse_encode_guardian(Guardian self, SseSerializer serializer);
 
   @protected
@@ -2550,6 +2597,12 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   @protected
   void sse_encode_list_fedimint_gateway(
     List<FedimintGateway> self,
+    SseSerializer serializer,
+  );
+
+  @protected
+  void sse_encode_list_gateway_payment_preview(
+    List<GatewayPaymentPreview> self,
     SseSerializer serializer,
   );
 
@@ -2734,8 +2787,8 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   void sse_encode_parsed_text(ParsedText self, SseSerializer serializer);
 
   @protected
-  void sse_encode_payment_preview(
-    PaymentPreview self,
+  void sse_encode_payment_preview_with_gateways(
+    PaymentPreviewWithGateways self,
     SseSerializer serializer,
   );
 

@@ -15,7 +15,7 @@ use crate::{
     },
     error_to_flutter, federations, get_event_bus, info_to_flutter,
     multimint::{ContactSyncEventKind, FederationSelector, LightningSendOutcome, MultimintEvent},
-    payment_preview, send,
+    payment_preview_with_gateways, send,
 };
 use anyhow::bail;
 use bitcoin::Network;
@@ -469,18 +469,24 @@ impl NostrClient {
                 .await?;
             }
             WalletConnectRequest::PayInvoice { invoice } => {
-                let payment_preview = payment_preview(federation_id, invoice.clone()).await?;
+                let payment_preview =
+                    payment_preview_with_gateways(federation_id, invoice.clone()).await?;
+                let preview = payment_preview
+                    .gateway_previews
+                    .first()
+                    .ok_or(anyhow!("Not gateways available"))?;
+                let gateway = &preview.gateway;
                 info_to_flutter(format!(
                     "Processing NWC PayInvoice. PaymentPreview Gateway: {} IsLNv2: {}",
-                    payment_preview.gateway, payment_preview.is_lnv2
+                    gateway.endpoint, gateway.is_lnv2
                 ))
                 .await;
                 let operation_id = send(
                     federation_id,
                     invoice,
-                    payment_preview.gateway,
-                    payment_preview.is_lnv2,
-                    payment_preview.amount_with_fees,
+                    gateway.endpoint.clone(),
+                    gateway.is_lnv2,
+                    preview.amount_with_fees,
                     None,
                 )
                 .await?;

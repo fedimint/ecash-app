@@ -336,11 +336,11 @@ class _MyAppState extends State<MyApp> {
           await showAppModalBottomSheet(
             context: context,
             childBuilder: () async {
-              final preview = await paymentPreview(
+              final preview = await paymentPreviewWithGateways(
                 federationId: fed.federationId,
                 bolt11: field0,
               );
-              return PaymentPreviewWidget(fed: fed, paymentPreview: preview);
+              return PaymentPreviewWidget(fed: fed, previewData: preview);
             },
           );
           _onJoinPressed(fed, false);
