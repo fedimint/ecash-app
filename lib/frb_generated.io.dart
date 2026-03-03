@@ -826,9 +826,6 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   ParsedText dco_decode_parsed_text(dynamic raw);
 
   @protected
-  PaymentPreview dco_decode_payment_preview(dynamic raw);
-
-  @protected
   PaymentPreviewWithGateways dco_decode_payment_preview_with_gateways(
     dynamic raw,
   );
@@ -1727,9 +1724,6 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
 
   @protected
   ParsedText sse_decode_parsed_text(SseDeserializer deserializer);
-
-  @protected
-  PaymentPreview sse_decode_payment_preview(SseDeserializer deserializer);
 
   @protected
   PaymentPreviewWithGateways sse_decode_payment_preview_with_gateways(
@@ -2789,12 +2783,6 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
 
   @protected
   void sse_encode_parsed_text(ParsedText self, SseSerializer serializer);
-
-  @protected
-  void sse_encode_payment_preview(
-    PaymentPreview self,
-    SseSerializer serializer,
-  );
 
   @protected
   void sse_encode_payment_preview_with_gateways(

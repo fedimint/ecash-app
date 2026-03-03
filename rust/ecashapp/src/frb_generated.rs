@@ -42,7 +42,7 @@ flutter_rust_bridge::frb_generated_boilerplate!(
     default_rust_auto_opaque = RustAutoOpaqueMoi,
 );
 pub(crate) const FLUTTER_RUST_BRIDGE_CODEGEN_VERSION: &str = "2.9.0";
-pub(crate) const FLUTTER_RUST_BRIDGE_CODEGEN_CONTENT_HASH: i32 = -2054811820;
+pub(crate) const FLUTTER_RUST_BRIDGE_CODEGEN_CONTENT_HASH: i32 = 2036829703;
 
 // Section: executor
 
@@ -11009,65 +11009,6 @@ fn wire__crate__parsed_scanned_text_impl(
         },
     )
 }
-fn wire__crate__payment_preview_impl(
-    port_: flutter_rust_bridge::for_generated::MessagePort,
-    ptr_: flutter_rust_bridge::for_generated::PlatformGeneralizedUint8ListPtr,
-    rust_vec_len_: i32,
-    data_len_: i32,
-) {
-    FLUTTER_RUST_BRIDGE_HANDLER.wrap_async::<flutter_rust_bridge::for_generated::SseCodec, _, _, _>(
-        flutter_rust_bridge::for_generated::TaskInfo {
-            debug_name: "payment_preview",
-            port: Some(port_),
-            mode: flutter_rust_bridge::for_generated::FfiCallMode::Normal,
-        },
-        move || {
-            let message = unsafe {
-                flutter_rust_bridge::for_generated::Dart2RustMessageSse::from_wire(
-                    ptr_,
-                    rust_vec_len_,
-                    data_len_,
-                )
-            };
-            let mut deserializer =
-                flutter_rust_bridge::for_generated::SseDeserializer::new(message);
-            let api_federation_id = <RustOpaqueMoi<
-                flutter_rust_bridge::for_generated::RustAutoOpaqueInner<FederationId>,
-            >>::sse_decode(&mut deserializer);
-            let api_bolt11 = <String>::sse_decode(&mut deserializer);
-            deserializer.end();
-            move |context| async move {
-                transform_result_sse::<_, flutter_rust_bridge::for_generated::anyhow::Error>(
-                    (move || async move {
-                        let mut api_federation_id_guard = None;
-                        let decode_indices_ =
-                            flutter_rust_bridge::for_generated::lockable_compute_decode_order(
-                                vec![flutter_rust_bridge::for_generated::LockableOrderInfo::new(
-                                    &api_federation_id,
-                                    0,
-                                    false,
-                                )],
-                            );
-                        for i in decode_indices_ {
-                            match i {
-                                0 => {
-                                    api_federation_id_guard =
-                                        Some(api_federation_id.lockable_decode_async_ref().await)
-                                }
-                                _ => unreachable!(),
-                            }
-                        }
-                        let api_federation_id_guard = api_federation_id_guard.unwrap();
-                        let output_ok =
-                            crate::payment_preview(&*api_federation_id_guard, api_bolt11).await?;
-                        Ok(output_ok)
-                    })()
-                    .await,
-                )
-            }
-        },
-    )
-}
 fn wire__crate__payment_preview_with_gateways_impl(
     port_: flutter_rust_bridge::for_generated::MessagePort,
     ptr_: flutter_rust_bridge::for_generated::PlatformGeneralizedUint8ListPtr,
@@ -13970,28 +13911,6 @@ impl SseDecode for crate::ParsedText {
     }
 }
 
-impl SseDecode for crate::multimint::PaymentPreview {
-    // Codec=Sse (Serialization based), see doc to use other codecs
-    fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
-        let mut var_amountMsats = <u64>::sse_decode(deserializer);
-        let mut var_paymentHash = <String>::sse_decode(deserializer);
-        let mut var_network = <String>::sse_decode(deserializer);
-        let mut var_invoice = <String>::sse_decode(deserializer);
-        let mut var_gateway = <String>::sse_decode(deserializer);
-        let mut var_amountWithFees = <u64>::sse_decode(deserializer);
-        let mut var_isLnv2 = <bool>::sse_decode(deserializer);
-        return crate::multimint::PaymentPreview {
-            amount_msats: var_amountMsats,
-            payment_hash: var_paymentHash,
-            network: var_network,
-            invoice: var_invoice,
-            gateway: var_gateway,
-            amount_with_fees: var_amountWithFees,
-            is_lnv2: var_isLnv2,
-        };
-    }
-}
-
 impl SseDecode for crate::multimint::PaymentPreviewWithGateways {
     // Codec=Sse (Serialization based), see doc to use other codecs
     fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
@@ -14805,36 +14724,35 @@ fn pde_ffi_dispatcher_primary_impl(
             wire__crate__parse_scanned_text_for_federation_impl(port, ptr, rust_vec_len, data_len)
         }
         200 => wire__crate__parsed_scanned_text_impl(port, ptr, rust_vec_len, data_len),
-        201 => wire__crate__payment_preview_impl(port, ptr, rust_vec_len, data_len),
-        202 => wire__crate__payment_preview_with_gateways_impl(port, ptr, rust_vec_len, data_len),
-        203 => wire__crate__receive_impl(port, ptr, rust_vec_len, data_len),
-        204 => wire__crate__recheck_address_impl(port, ptr, rust_vec_len, data_len),
-        205 => wire__crate__register_ln_address_impl(port, ptr, rust_vec_len, data_len),
-        206 => wire__crate__reissue_ecash_impl(port, ptr, rust_vec_len, data_len),
-        207 => wire__crate__rejoin_from_backup_invites_impl(port, ptr, rust_vec_len, data_len),
-        208 => wire__crate__remove_nwc_connection_info_impl(port, ptr, rust_vec_len, data_len),
-        209 => wire__crate__remove_relay_impl(port, ptr, rust_vec_len, data_len),
-        210 => wire__crate__select_receive_gateway_impl(port, ptr, rust_vec_len, data_len),
-        211 => wire__crate__send_impl(port, ptr, rust_vec_len, data_len),
-        212 => wire__crate__send_ecash_impl(port, ptr, rust_vec_len, data_len),
-        213 => wire__crate__send_lnaddress_impl(port, ptr, rust_vec_len, data_len),
-        214 => wire__crate__set_bitcoin_display_impl(port, ptr, rust_vec_len, data_len),
-        215 => wire__crate__set_federation_order_impl(port, ptr, rust_vec_len, data_len),
-        216 => wire__crate__set_fiat_currency_impl(port, ptr, rust_vec_len, data_len),
-        217 => wire__crate__set_nwc_connection_info_impl(port, ptr, rust_vec_len, data_len),
-        218 => wire__crate__set_pin_code_impl(port, ptr, rust_vec_len, data_len),
-        219 => wire__crate__set_require_pin_for_spending_impl(port, ptr, rust_vec_len, data_len),
-        220 => wire__crate__subscribe_deposits_impl(port, ptr, rust_vec_len, data_len),
-        221 => wire__crate__subscribe_multimint_events_impl(port, ptr, rust_vec_len, data_len),
-        222 => wire__crate__subscribe_peer_status_impl(port, ptr, rust_vec_len, data_len),
-        223 => wire__crate__subscribe_recovery_progress_impl(port, ptr, rust_vec_len, data_len),
-        224 => wire__crate__sync_contacts_impl(port, ptr, rust_vec_len, data_len),
-        225 => wire__crate__transactions_impl(port, ptr, rust_vec_len, data_len),
-        226 => wire__crate__verify_nip05_impl(port, ptr, rust_vec_len, data_len),
-        227 => wire__crate__verify_pin_impl(port, ptr, rust_vec_len, data_len),
-        228 => wire__crate__wallet_summary_impl(port, ptr, rust_vec_len, data_len),
-        229 => wire__crate__withdraw_to_address_impl(port, ptr, rust_vec_len, data_len),
-        230 => wire__crate__word_list_impl(port, ptr, rust_vec_len, data_len),
+        201 => wire__crate__payment_preview_with_gateways_impl(port, ptr, rust_vec_len, data_len),
+        202 => wire__crate__receive_impl(port, ptr, rust_vec_len, data_len),
+        203 => wire__crate__recheck_address_impl(port, ptr, rust_vec_len, data_len),
+        204 => wire__crate__register_ln_address_impl(port, ptr, rust_vec_len, data_len),
+        205 => wire__crate__reissue_ecash_impl(port, ptr, rust_vec_len, data_len),
+        206 => wire__crate__rejoin_from_backup_invites_impl(port, ptr, rust_vec_len, data_len),
+        207 => wire__crate__remove_nwc_connection_info_impl(port, ptr, rust_vec_len, data_len),
+        208 => wire__crate__remove_relay_impl(port, ptr, rust_vec_len, data_len),
+        209 => wire__crate__select_receive_gateway_impl(port, ptr, rust_vec_len, data_len),
+        210 => wire__crate__send_impl(port, ptr, rust_vec_len, data_len),
+        211 => wire__crate__send_ecash_impl(port, ptr, rust_vec_len, data_len),
+        212 => wire__crate__send_lnaddress_impl(port, ptr, rust_vec_len, data_len),
+        213 => wire__crate__set_bitcoin_display_impl(port, ptr, rust_vec_len, data_len),
+        214 => wire__crate__set_federation_order_impl(port, ptr, rust_vec_len, data_len),
+        215 => wire__crate__set_fiat_currency_impl(port, ptr, rust_vec_len, data_len),
+        216 => wire__crate__set_nwc_connection_info_impl(port, ptr, rust_vec_len, data_len),
+        217 => wire__crate__set_pin_code_impl(port, ptr, rust_vec_len, data_len),
+        218 => wire__crate__set_require_pin_for_spending_impl(port, ptr, rust_vec_len, data_len),
+        219 => wire__crate__subscribe_deposits_impl(port, ptr, rust_vec_len, data_len),
+        220 => wire__crate__subscribe_multimint_events_impl(port, ptr, rust_vec_len, data_len),
+        221 => wire__crate__subscribe_peer_status_impl(port, ptr, rust_vec_len, data_len),
+        222 => wire__crate__subscribe_recovery_progress_impl(port, ptr, rust_vec_len, data_len),
+        223 => wire__crate__sync_contacts_impl(port, ptr, rust_vec_len, data_len),
+        224 => wire__crate__transactions_impl(port, ptr, rust_vec_len, data_len),
+        225 => wire__crate__verify_nip05_impl(port, ptr, rust_vec_len, data_len),
+        226 => wire__crate__verify_pin_impl(port, ptr, rust_vec_len, data_len),
+        227 => wire__crate__wallet_summary_impl(port, ptr, rust_vec_len, data_len),
+        228 => wire__crate__withdraw_to_address_impl(port, ptr, rust_vec_len, data_len),
+        229 => wire__crate__word_list_impl(port, ptr, rust_vec_len, data_len),
         _ => unreachable!(),
     }
 }
@@ -16173,32 +16091,6 @@ impl flutter_rust_bridge::IntoDart for crate::ParsedText {
 impl flutter_rust_bridge::for_generated::IntoDartExceptPrimitive for crate::ParsedText {}
 impl flutter_rust_bridge::IntoIntoDart<crate::ParsedText> for crate::ParsedText {
     fn into_into_dart(self) -> crate::ParsedText {
-        self
-    }
-}
-// Codec=Dco (DartCObject based), see doc to use other codecs
-impl flutter_rust_bridge::IntoDart for crate::multimint::PaymentPreview {
-    fn into_dart(self) -> flutter_rust_bridge::for_generated::DartAbi {
-        [
-            self.amount_msats.into_into_dart().into_dart(),
-            self.payment_hash.into_into_dart().into_dart(),
-            self.network.into_into_dart().into_dart(),
-            self.invoice.into_into_dart().into_dart(),
-            self.gateway.into_into_dart().into_dart(),
-            self.amount_with_fees.into_into_dart().into_dart(),
-            self.is_lnv2.into_into_dart().into_dart(),
-        ]
-        .into_dart()
-    }
-}
-impl flutter_rust_bridge::for_generated::IntoDartExceptPrimitive
-    for crate::multimint::PaymentPreview
-{
-}
-impl flutter_rust_bridge::IntoIntoDart<crate::multimint::PaymentPreview>
-    for crate::multimint::PaymentPreview
-{
-    fn into_into_dart(self) -> crate::multimint::PaymentPreview {
         self
     }
 }
@@ -17627,19 +17519,6 @@ impl SseEncode for crate::ParsedText {
                 unimplemented!("");
             }
         }
-    }
-}
-
-impl SseEncode for crate::multimint::PaymentPreview {
-    // Codec=Sse (Serialization based), see doc to use other codecs
-    fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
-        <u64>::sse_encode(self.amount_msats, serializer);
-        <String>::sse_encode(self.payment_hash, serializer);
-        <String>::sse_encode(self.network, serializer);
-        <String>::sse_encode(self.invoice, serializer);
-        <String>::sse_encode(self.gateway, serializer);
-        <u64>::sse_encode(self.amount_with_fees, serializer);
-        <bool>::sse_encode(self.is_lnv2, serializer);
     }
 }
 

@@ -12,7 +12,7 @@ part 'multimint.freezed.dart';
 
 // These functions are ignored because they are not marked as `pub`: `await_receive_lnv1`, `await_receive_lnv2`, `await_send_lnv1`, `await_send_lnv2`, `backup`, `build_client`, `cache_btc_price`, `cache_federation_meta`, `compute_receive_amount`, `compute_send_amount`, `finish_active_subscriptions`, `from_peg_out_fees`, `get_client_database`, `get_ecash_amount_from_meta`, `get_lnv1_amount_from_meta`, `get_lnv1_receive_tx`, `get_lnv1_send_tx`, `get_lnv2_amount_from_meta`, `get_or_build_temp_client`, `get_recurringd_federations`, `get_url`, `init_recovery_progress_cache`, `invoice_routes_back_to_federation`, `lnv1_select_gateway`, `lnv1_update_gateway_cache`, `lnv2_gateways`, `lnv2_select_gateway`, `load_clients`, `monitor_all_unused_pegin_addresses`, `pay_lnv1`, `pay_lnv2`, `receive_amount_after_fees`, `receive_lnv1`, `receive_lnv2`, `remove_existing_ln_address`, `remove_recovery_progress_cache`, `run_migrations`, `spawn_await_ecash_reissue`, `spawn_await_ecash_send`, `spawn_await_receive`, `spawn_await_recurringd_receive`, `spawn_await_send`, `spawn_cache_task`, `spawn_pegin_address_watcher`, `spawn_recovery_progress`, `spawn_recurring_invoice_listener`, `spend_until_exact_amount`, `update_recovery_progress_cache`, `wait_for_recovery`, `watch_pegin_address`
 // These types are ignored because they are neither used by any `pub` functions nor (for structs and enums) marked `#[frb(unignore)]`: `ClientType`, `LNAddressRegisterRequest`, `LNAddressRemoveRequest`, `OnChainWithdrawalMeta`
-// These function are ignored because they are on traits that is not defined in current crate (put an empty `#[frb]` on it to unignore): `assert_receiver_is_total_eq`, `assert_receiver_is_total_eq`, `assert_receiver_is_total_eq`, `assert_receiver_is_total_eq`, `assert_receiver_is_total_eq`, `assert_receiver_is_total_eq`, `assert_receiver_is_total_eq`, `assert_receiver_is_total_eq`, `assert_receiver_is_total_eq`, `assert_receiver_is_total_eq`, `assert_receiver_is_total_eq`, `assert_receiver_is_total_eq`, `assert_receiver_is_total_eq`, `assert_receiver_is_total_eq`, `assert_receiver_is_total_eq`, `assert_receiver_is_total_eq`, `assert_receiver_is_total_eq`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `consensus_decode_partial_from_finite_reader`, `consensus_decode_partial_from_finite_reader`, `consensus_decode_partial_from_finite_reader`, `consensus_encode`, `consensus_encode`, `consensus_encode`, `eq`, `eq`, `eq`, `eq`, `eq`, `eq`, `eq`, `eq`, `eq`, `eq`, `eq`, `eq`, `eq`, `eq`, `eq`, `eq`, `eq`, `eq`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `from`
+// These function are ignored because they are on traits that is not defined in current crate (put an empty `#[frb]` on it to unignore): `assert_receiver_is_total_eq`, `assert_receiver_is_total_eq`, `assert_receiver_is_total_eq`, `assert_receiver_is_total_eq`, `assert_receiver_is_total_eq`, `assert_receiver_is_total_eq`, `assert_receiver_is_total_eq`, `assert_receiver_is_total_eq`, `assert_receiver_is_total_eq`, `assert_receiver_is_total_eq`, `assert_receiver_is_total_eq`, `assert_receiver_is_total_eq`, `assert_receiver_is_total_eq`, `assert_receiver_is_total_eq`, `assert_receiver_is_total_eq`, `assert_receiver_is_total_eq`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `consensus_decode_partial_from_finite_reader`, `consensus_decode_partial_from_finite_reader`, `consensus_decode_partial_from_finite_reader`, `consensus_encode`, `consensus_encode`, `consensus_encode`, `eq`, `eq`, `eq`, `eq`, `eq`, `eq`, `eq`, `eq`, `eq`, `eq`, `eq`, `eq`, `eq`, `eq`, `eq`, `eq`, `eq`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `from`
 // These functions have error during generation (see debug logs or enable `stop_on_error: true` for more details): `subscribe_peer_status`
 
 // Rust type: RustOpaqueMoi<flutter_rust_bridge::for_generated::RustAutoOpaqueInner<Amount>>
@@ -635,49 +635,6 @@ sealed class MultimintEvent with _$MultimintEvent {
   ]) = MultimintEvent_NostrRecovery;
   const factory MultimintEvent.contactSync(ContactSyncEventKind field0) =
       MultimintEvent_ContactSync;
-}
-
-class PaymentPreview {
-  final BigInt amountMsats;
-  final String paymentHash;
-  final String network;
-  final String invoice;
-  final String gateway;
-  final BigInt amountWithFees;
-  final bool isLnv2;
-
-  const PaymentPreview({
-    required this.amountMsats,
-    required this.paymentHash,
-    required this.network,
-    required this.invoice,
-    required this.gateway,
-    required this.amountWithFees,
-    required this.isLnv2,
-  });
-
-  @override
-  int get hashCode =>
-      amountMsats.hashCode ^
-      paymentHash.hashCode ^
-      network.hashCode ^
-      invoice.hashCode ^
-      gateway.hashCode ^
-      amountWithFees.hashCode ^
-      isLnv2.hashCode;
-
-  @override
-  bool operator ==(Object other) =>
-      identical(this, other) ||
-      other is PaymentPreview &&
-          runtimeType == other.runtimeType &&
-          amountMsats == other.amountMsats &&
-          paymentHash == other.paymentHash &&
-          network == other.network &&
-          invoice == other.invoice &&
-          gateway == other.gateway &&
-          amountWithFees == other.amountWithFees &&
-          isLnv2 == other.isLnv2;
 }
 
 class PaymentPreviewWithGateways {

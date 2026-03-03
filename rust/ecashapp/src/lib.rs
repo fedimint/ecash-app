@@ -23,8 +23,8 @@ use flutter_rust_bridge::frb;
 use futures_util::StreamExt;
 use multimint::{
     FederationMeta, FederationSelector, LightningSendOutcome, LogLevel, Multimint,
-    MultimintCreation, MultimintEvent, PaymentPreview, PaymentPreviewWithGateways, Transaction,
-    Utxo, WithdrawFeesResponse,
+    MultimintCreation, MultimintEvent, PaymentPreviewWithGateways, Transaction, Utxo,
+    WithdrawFeesResponse,
 };
 use nostr::{NWCConnectionInfo, NostrClient, PublicFederation};
 use serde::Serialize;
@@ -392,34 +392,6 @@ pub async fn list_federations_from_nostr(force_update: bool) -> Vec<PublicFedera
     }
 
     joinable_federations
-}
-
-#[frb]
-pub async fn payment_preview(
-    federation_id: &FederationId,
-    bolt11: String,
-) -> anyhow::Result<PaymentPreview> {
-    let invoice = Bolt11Invoice::from_str(&bolt11)?;
-    let amount_msats = invoice
-        .amount_milli_satoshis()
-        .expect("No amount specified");
-    let payment_hash = invoice.payment_hash().consensus_encode_to_hex();
-    let network = invoice.network().to_string();
-
-    let multimint = get_multimint();
-    let (gateway, amount_with_fees, is_lnv2) = multimint
-        .select_send_gateway(federation_id, Amount::from_msats(amount_msats), invoice)
-        .await?;
-
-    Ok(PaymentPreview {
-        amount_msats,
-        payment_hash,
-        network,
-        invoice: bolt11,
-        gateway,
-        amount_with_fees,
-        is_lnv2,
-    })
 }
 
 #[frb]

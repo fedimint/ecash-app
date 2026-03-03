@@ -81,17 +81,6 @@ const PRICE_CACHE_UPDATE_INTERVAL_SECS: u64 = 60 * 5;
 const FEDERATION_BACKUP_CACHE_UPDATE_INTERVAL_SECS: u64 = 60 * 60 * 24;
 const CONTACT_SYNC_INTERVAL_SECS: u64 = 90;
 
-#[derive(Clone, Eq, PartialEq, Serialize, Debug)]
-pub struct PaymentPreview {
-    pub amount_msats: u64,
-    pub payment_hash: String,
-    pub network: String,
-    pub invoice: String,
-    pub gateway: String,
-    pub amount_with_fees: u64,
-    pub is_lnv2: bool,
-}
-
 #[derive(Clone, Eq, PartialEq, Serialize, Debug, Encodable, Decodable)]
 pub struct FederationSelector {
     pub federation_name: String,
