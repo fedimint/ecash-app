@@ -15,6 +15,9 @@ build-linux:
 build-debug-apk:
   $ROOT/docker/build-apk.sh debug
 
+build-release-apk:
+  $ROOT/docker/build-apk.sh release
+
 build-appimage:
   $ROOT/docker/build-appimage.sh
 
@@ -27,3 +30,15 @@ run: build-linux
 
 test:
   flutter test
+
+# Scan the latest APK for F-Droid compatibility (checks for Google Play Services dependencies)
+scan-apk:
+  #!/usr/bin/env bash
+  set -euo pipefail
+  APK=$(ls -t build/app/outputs/flutter-apk/ecashapp-*.apk 2>/dev/null | head -1)
+  if [ -z "$APK" ]; then
+    echo "No APK found. Run 'just build-debug-apk' first."
+    exit 1
+  fi
+  echo "Scanning: $APK"
+  fdroid scanner -v --exit-code "$APK"

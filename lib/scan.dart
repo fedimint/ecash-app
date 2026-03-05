@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:io';
 
 import 'package:ecashapp/app.dart';
 import 'package:ecashapp/fed_preview.dart';
@@ -16,7 +17,8 @@ import 'package:collection/collection.dart';
 import 'package:crypto/crypto.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:mobile_scanner/mobile_scanner.dart';
+import 'package:permission_handler/permission_handler.dart';
+import 'package:qr_code_scanner_plus/qr_code_scanner_plus.dart';
 
 class ScanQRPage extends StatefulWidget {
   final FederationSelector? selectedFed;
@@ -39,11 +41,60 @@ class ScanQRPage extends StatefulWidget {
 class _ScanQRPageState extends State<ScanQRPage> {
   bool _scanned = false;
   bool _isPasting = false;
+  bool _permissionDenied = false;
   _QrLoopSession? _currentSession;
+
+  final GlobalKey qrKey = GlobalKey(debugLabel: 'QR');
+  QRViewController? _qrController;
 
   final List<_FountainFramePending> _pendingFountains = [];
   final Set<String> _exploredFountains = {};
   static const int FOUNTAIN_V1_CONST = 100;
+
+  @override
+  void initState() {
+    super.initState();
+    _requestCameraPermission();
+  }
+
+  Future<void> _requestCameraPermission() async {
+    // Skip permission check on desktop platforms where it's not supported
+    if (Platform.isLinux || Platform.isMacOS || Platform.isWindows) {
+      return;
+    }
+    final status = await Permission.camera.status;
+    if (!status.isGranted) {
+      final result = await Permission.camera.request();
+      if (!result.isGranted) {
+        setState(() => _permissionDenied = true);
+      }
+    }
+  }
+
+  // Required for hot reload to work properly with qr_code_scanner_plus
+  @override
+  void reassemble() {
+    super.reassemble();
+    if (Platform.isAndroid) {
+      _qrController?.pauseCamera();
+    }
+    _qrController?.resumeCamera();
+  }
+
+  @override
+  void dispose() {
+    _qrController?.dispose();
+    super.dispose();
+  }
+
+  void _onQRViewCreated(QRViewController controller) {
+    _qrController = controller;
+    controller.scannedDataStream.listen((scanData) {
+      if (scanData.code != null && scanData.code!.isNotEmpty) {
+        _handleQrLoopChunk(scanData.code!);
+      }
+    });
+  }
 
   void _handleQrLoopChunk(String base64Str) async {
     if (_scanned) return;
@@ -496,13 +547,48 @@ class _ScanQRPageState extends State<ScanQRPage> {
         body: Stack(
           children: [
             Positioned.fill(
-              child: MobileScanner(
-                onDetect: (capture) {
-                  final barcode = capture.barcodes.first;
-                  final String? code = barcode.rawValue;
-                  if (code != null) _handleQrLoopChunk(code);
-                },
-              ),
+              child:
+                  (_permissionDenied || Platform.isLinux)
+                      ? Center(
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            const Icon(
+                              Icons.camera_alt_outlined,
+                              size: 64,
+                              color: Colors.grey,
+                            ),
+                            const SizedBox(height: 16),
+                            Text(
+                              Platform.isLinux
+                                  ? 'Camera scanning is not supported on Linux.\nUse the "Paste from Clipboard" button below.'
+                                  : 'Camera permission is required to scan QR codes',
+                              textAlign: TextAlign.center,
+                              style: const TextStyle(color: Colors.grey),
+                            ),
+                            if (_permissionDenied && !Platform.isLinux) ...[
+                              const SizedBox(height: 16),
+                              ElevatedButton(
+                                onPressed: () async {
+                                  await openAppSettings();
+                                },
+                                child: const Text('Open Settings'),
+                              ),
+                            ],
+                          ],
+                        ),
+                      )
+                      : QRView(
+                        key: qrKey,
+                        onQRViewCreated: _onQRViewCreated,
+                        overlay: QrScannerOverlayShape(
+                          borderColor: Theme.of(context).colorScheme.primary,
+                          borderRadius: 10,
+                          borderLength: 30,
+                          borderWidth: 10,
+                          cutOutSize: 280,
+                        ),
+                      ),
             ),
             if (_progress != null)
               Align(
