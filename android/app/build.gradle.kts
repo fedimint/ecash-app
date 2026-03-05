@@ -10,7 +10,9 @@ plugins {
 val keystorePropertiesFile = rootProject.file("key.properties")
 val keystoreProperties = Properties()
 
-if (keystorePropertiesFile.exists()) {
+val hasSigningConfig = keystorePropertiesFile.exists()
+
+if (hasSigningConfig) {
     keystoreProperties.load(keystorePropertiesFile.inputStream())
 }
 
@@ -40,21 +42,31 @@ android {
         }
     }
 
-    signingConfigs {
-        create("release") {
-            storeFile = keystoreProperties["storeFile"]?.let { file(it as String) }
-            storePassword = keystoreProperties["storePassword"] as String?
-            keyAlias = keystoreProperties["keyAlias"] as String?
-            keyPassword = keystoreProperties["keyPassword"] as String?
-            storeType = "pkcs12"
+    // Only configure signing if key.properties exists
+    // F-Droid builds unsigned APKs and signs them with their own key
+    if (hasSigningConfig) {
+        signingConfigs {
+            create("release") {
+                storeFile = keystoreProperties["storeFile"]?.let { file(it as String) }
+                storePassword = keystoreProperties["storePassword"] as String?
+                keyAlias = keystoreProperties["keyAlias"] as String?
+                keyPassword = keystoreProperties["keyPassword"] as String?
+                storeType = "pkcs12"
+            }
         }
     }
 
     buildTypes {
         release {
-            signingConfig = signingConfigs.getByName("release")
-            isMinifyEnabled = false
-            isShrinkResources = false
+            if (hasSigningConfig) {
+                signingConfig = signingConfigs.getByName("release")
+            }
+            isMinifyEnabled = true
+            isShrinkResources = true
+            proguardFiles(
+                getDefaultProguardFile("proguard-android-optimize.txt"),
+                "proguard-rules.pro"
+            )
         }
     }
 }

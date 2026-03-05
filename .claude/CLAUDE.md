@@ -163,6 +163,15 @@ Key concepts:
 
 No test commands are currently defined in the justfile. Manual testing is done by running the app.
 
+### Build Verification
+
+**IMPORTANT:** After making any code changes, always verify the Android build by running:
+```bash
+just build-debug-apk
+```
+
+This ensures changes don't break the Android build, which uses a Docker-based reproducible build system.
+
 ## Code Generation
 
 The project uses multiple code generation tools:
