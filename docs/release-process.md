@@ -45,9 +45,6 @@ Before submitting to F-Droid, test the build locally:
 ```bash
 # Scan APK for Google Play Services dependencies
 just scan-apk
-
-# Test full F-Droid build using their Docker image
-just test-fdroid
 ```
 
 ## Version Code Reference
