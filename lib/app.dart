@@ -127,7 +127,11 @@ class _MyAppState extends State<MyApp> {
         if (event.field2 != null) {
           final l10n = _navigatorKey.currentContext?.l10n;
           ToastService().show(
-            message: l10n?.joinedFederationRecovering(event.field2!.federationName) ?? "Joined ${event.field2!.federationName}. Recovering...",
+            message:
+                l10n?.joinedFederationRecovering(
+                  event.field2!.federationName,
+                ) ??
+                "Joined ${event.field2!.federationName}. Recovering...",
             duration: const Duration(seconds: 5),
             onTap: () {},
             icon: Icon(Icons.info),
@@ -249,7 +253,9 @@ class _MyAppState extends State<MyApp> {
 
     final l10n = _navigatorKey.currentContext?.l10n;
     ToastService().show(
-      message: l10n?.reJoinedAllFederations ?? "Re-joined all federations from Nostr",
+      message:
+          l10n?.reJoinedAllFederations ??
+          "Re-joined all federations from Nostr",
       duration: const Duration(seconds: 5),
       onTap: () {},
       icon: Icon(Icons.info),
@@ -284,7 +290,8 @@ class _MyAppState extends State<MyApp> {
       AppLogger.instance.warn('No federations available for deep link');
       final l10n = _navigatorKey.currentContext?.l10n;
       ToastService().show(
-        message: l10n?.pleaseJoinFederationFirst ?? 'Please join a federation first',
+        message:
+            l10n?.pleaseJoinFederationFirst ?? 'Please join a federation first',
         duration: const Duration(seconds: 5),
         onTap: () {},
         icon: const Icon(Icons.warning, color: Colors.amber),
@@ -424,7 +431,9 @@ class _MyAppState extends State<MyApp> {
       AppLogger.instance.error('Error handling deep link: $e');
       final catchL10n = _navigatorKey.currentContext?.l10n;
       ToastService().show(
-        message: catchL10n?.failedToProcessPaymentLink ?? 'Failed to process payment link',
+        message:
+            catchL10n?.failedToProcessPaymentLink ??
+            'Failed to process payment link',
         duration: const Duration(seconds: 5),
         onTap: () {},
         icon: const Icon(Icons.error, color: Colors.red),
@@ -477,7 +486,9 @@ class _MyAppState extends State<MyApp> {
       _refreshFederations();
       final joinL10n = _navigatorKey.currentContext?.l10n;
       ToastService().show(
-        message: joinL10n?.joinedFederation(result.$1.federationName) ?? "Joined ${result.$1.federationName}",
+        message:
+            joinL10n?.joinedFederation(result.$1.federationName) ??
+            "Joined ${result.$1.federationName}",
         duration: const Duration(seconds: 5),
         onTap: () {},
         icon: Icon(Icons.info),
@@ -578,10 +589,7 @@ class _MyAppState extends State<MyApp> {
           GlobalWidgetsLocalizations.delegate,
           GlobalCupertinoLocalizations.delegate,
         ],
-        supportedLocales: const [
-          Locale('en'),
-          Locale('es'),
-        ],
+        supportedLocales: const [Locale('en'), Locale('es')],
         home: Builder(
           builder:
               (innerContext) => Scaffold(

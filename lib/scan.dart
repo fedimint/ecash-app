@@ -646,7 +646,9 @@ class _ScanQRPageState extends State<ScanQRPage> {
                           )
                           : const Icon(Icons.paste),
                   label: Text(
-                    _isPasting ? context.l10n.pasting : context.l10n.pasteFromClipboard,
+                    _isPasting
+                        ? context.l10n.pasting
+                        : context.l10n.pasteFromClipboard,
                   ),
                 ),
               ),

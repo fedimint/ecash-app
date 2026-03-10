@@ -103,7 +103,9 @@ Future<T?> showAppModalBottomSheet<T>({
                         );
                       } else if (snapshot.hasError) {
                         final theme = Theme.of(context);
-                        final msg = errorMessage ?? context.l10n.somethingWentWrongDefault;
+                        final msg =
+                            errorMessage ??
+                            context.l10n.somethingWentWrongDefault;
                         return Padding(
                           padding: const EdgeInsets.symmetric(
                             horizontal: 16,

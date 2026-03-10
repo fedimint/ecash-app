@@ -350,8 +350,7 @@ class _NumberPadState extends State<NumberPad> {
 
           await showAppModalBottomSheet(
             context: context,
-            errorMessage:
-                context.l10n.couldNotReachLnAddress,
+            errorMessage: context.l10n.couldNotReachLnAddress,
             childBuilder: () async {
               // Get invoice from LN Address
               final invoice = await getInvoiceFromLnaddressOrLnurl(

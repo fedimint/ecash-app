@@ -84,9 +84,7 @@ class _FederationPreviewState extends State<FederationPreview> {
           builder: (context, setState) {
             return AlertDialog(
               title: Text(context.l10n.leaveFederation),
-              content: Text(
-                context.l10n.leaveFederationConfirm,
-              ),
+              content: Text(context.l10n.leaveFederationConfirm),
               actions: [
                 TextButton(
                   onPressed:
@@ -496,7 +494,9 @@ class _FederationPreviewState extends State<FederationPreview> {
                       const SizedBox(width: 8),
                       Expanded(
                         child: Text(
-                          context.l10n.testNetworkWarning(widget.fed.network ?? ''),
+                          context.l10n.testNetworkWarning(
+                            widget.fed.network ?? '',
+                          ),
                           style: const TextStyle(color: Colors.orange),
                         ),
                       ),
@@ -552,7 +552,10 @@ class _FederationPreviewState extends State<FederationPreview> {
                 labelColor: theme.colorScheme.primary,
                 unselectedLabelColor: Colors.grey,
                 indicatorColor: theme.colorScheme.primary,
-                tabs: [Tab(text: context.l10n.guardianTab), Tab(text: context.l10n.utxoTab)],
+                tabs: [
+                  Tab(text: context.l10n.guardianTab),
+                  Tab(text: context.l10n.utxoTab),
+                ],
               ),
 
               SizedBox(
@@ -649,7 +652,11 @@ class _FederationPreviewState extends State<FederationPreview> {
               title: Text(peer.name),
               subtitle:
                   isOnline
-                      ? Text(context.l10n.versionLabel(widget.guardians?[index].version ?? ''))
+                      ? Text(
+                        context.l10n.versionLabel(
+                          widget.guardians?[index].version ?? '',
+                        ),
+                      )
                       : Text(context.l10n.disconnected),
               trailing: Row(
                 mainAxisSize: MainAxisSize.min,
@@ -855,9 +862,7 @@ class _FederationUtxoListState extends State<FederationUtxoList> {
     );
 
     if (!widget.isFederationOnline) {
-      return Center(
-        child: Text(context.l10n.cannotConnectForUtxos),
-      );
+      return Center(child: Text(context.l10n.cannotConnectForUtxos));
     }
 
     if (utxos == null) {

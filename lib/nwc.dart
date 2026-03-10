@@ -129,8 +129,7 @@ class _NostrWalletConnectState extends State<NostrWalletConnect> {
         androidNotificationOptions: AndroidNotificationOptions(
           channelId: 'nwc_foreground_service',
           channelName: context.l10n.nwcForegroundService,
-          channelDescription:
-              context.l10n.nwcForegroundServiceDescription,
+          channelDescription: context.l10n.nwcForegroundServiceDescription,
           onlyAlertOnce: true,
         ),
         iosNotificationOptions: const IOSNotificationOptions(
@@ -144,7 +143,9 @@ class _NostrWalletConnectState extends State<NostrWalletConnect> {
       await FlutterForegroundTask.startService(
         serviceId: 256,
         notificationTitle: context.l10n.nwcActive,
-        notificationText: context.l10n.nwcConnectedTo(federation.federationName),
+        notificationText: context.l10n.nwcConnectedTo(
+          federation.federationName,
+        ),
         notificationIcon: const NotificationIcon(
           metaDataName: 'com.ecashapp.NOTIFICATION_ICON',
         ),
@@ -324,7 +325,9 @@ class _NostrWalletConnectState extends State<NostrWalletConnect> {
     return Column(
       children: [
         DropdownButtonFormField<FederationSelector>(
-          decoration: InputDecoration(labelText: context.l10n.selectAFederation),
+          decoration: InputDecoration(
+            labelText: context.l10n.selectAFederation,
+          ),
           initialValue: _selectedFederation,
           items:
               feds
@@ -356,7 +359,10 @@ class _NostrWalletConnectState extends State<NostrWalletConnect> {
           items:
               _relays.map((relay) {
                 final (uri, connected) = relay;
-                final statusText = connected ? context.l10n.connected : context.l10n.disconnected;
+                final statusText =
+                    connected
+                        ? context.l10n.connected
+                        : context.l10n.disconnected;
                 final statusColor =
                     connected ? Colors.greenAccent : Colors.redAccent;
 
@@ -515,8 +521,14 @@ class _NostrWalletConnectState extends State<NostrWalletConnect> {
                   label: context.l10n.publicKey,
                   value: _nwc!.publicKey,
                 ),
-                _buildCopyableField(label: context.l10n.relays, value: _nwc!.relay),
-                _buildCopyableField(label: context.l10n.secret, value: _nwc!.secret),
+                _buildCopyableField(
+                  label: context.l10n.relays,
+                  value: _nwc!.relay,
+                ),
+                _buildCopyableField(
+                  label: context.l10n.secret,
+                  value: _nwc!.secret,
+                ),
               ],
             ],
           ),

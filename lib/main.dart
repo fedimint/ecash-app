@@ -59,10 +59,7 @@ class ecashapp extends StatelessWidget {
         GlobalWidgetsLocalizations.delegate,
         GlobalCupertinoLocalizations.delegate,
       ],
-      supportedLocales: const [
-        Locale('en'),
-        Locale('es'),
-      ],
+      supportedLocales: const [Locale('en'), Locale('es')],
       home: Splash(dir: dir),
     );
   }

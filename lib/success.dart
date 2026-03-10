@@ -68,9 +68,10 @@ class _SuccessState extends State<Success> {
       false,
       bitcoinDisplay,
     );
-    final successMessage = widget.received
-        ? context.l10n.youReceived(displayAmount)
-        : context.l10n.youSent(displayAmount);
+    final successMessage =
+        widget.received
+            ? context.l10n.youReceived(displayAmount)
+            : context.l10n.youSent(displayAmount);
 
     return Scaffold(
       body: GestureDetector(

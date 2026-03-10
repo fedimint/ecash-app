@@ -105,7 +105,10 @@ class _Discover extends State<Discover> with SingleTickerProviderStateMixin {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     return Scaffold(
-      appBar: widget.showAppBar ? AppBar(title: Text(context.l10n.discoverTitle)) : null,
+      appBar:
+          widget.showAppBar
+              ? AppBar(title: Text(context.l10n.discoverTitle))
+              : null,
       backgroundColor: Colors.black,
       body: SafeArea(
         child: FutureBuilder<List<PublicFederation>>(
@@ -121,9 +124,7 @@ class _Discover extends State<Discover> with SingleTickerProviderStateMixin {
                 ),
               );
             } else if (!snapshot.hasData || snapshot.data!.isEmpty) {
-              return Center(
-                child: Text(context.l10n.noPublicFederations),
-              );
+              return Center(child: Text(context.l10n.noPublicFederations));
             }
 
             final federations = snapshot.data!;
@@ -342,7 +343,11 @@ class _Discover extends State<Discover> with SingleTickerProviderStateMixin {
                       ),
                       const SizedBox(height: 4),
                       Text(
-                        context.l10n.networkLabel(federation.network == 'bitcoin' ? 'mainnet' : federation.network),
+                        context.l10n.networkLabel(
+                          federation.network == 'bitcoin'
+                              ? 'mainnet'
+                              : federation.network,
+                        ),
                         style: theme.textTheme.bodySmall?.copyWith(
                           color: Colors.grey[400],
                         ),

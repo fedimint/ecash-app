@@ -247,8 +247,9 @@ class _EcashSendState extends State<EcashSend> {
                 if (mounted) {
                   Navigator.of(context).popUntil((route) => route.isFirst);
                   ToastService().show(
-                    message:
-                        context.l10n.amountSpent(formatBalance(widget.amountMsats, false, bitcoinDisplay)),
+                    message: context.l10n.amountSpent(
+                      formatBalance(widget.amountMsats, false, bitcoinDisplay),
+                    ),
                     duration: const Duration(seconds: 5),
                     onTap: () {},
                     icon: Icon(Icons.currency_bitcoin),

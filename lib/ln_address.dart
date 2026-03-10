@@ -228,7 +228,9 @@ class _LightningAddressScreenState extends State<LightningAddressScreen> {
       children: [
         if (_domains.isNotEmpty) ...[
           DropdownButtonFormField<FederationSelector>(
-            decoration: InputDecoration(labelText: context.l10n.selectAFederation),
+            decoration: InputDecoration(
+              labelText: context.l10n.selectAFederation,
+            ),
             initialValue: _selectedFederation,
             items:
                 feds
@@ -260,7 +262,9 @@ class _LightningAddressScreenState extends State<LightningAddressScreen> {
               Expanded(
                 flex: 3,
                 child: DropdownButtonFormField<String>(
-                  decoration: InputDecoration(labelText: context.l10n.domainLabel),
+                  decoration: InputDecoration(
+                    labelText: context.l10n.domainLabel,
+                  ),
                   initialValue: _selectedDomain,
                   items:
                       _domains

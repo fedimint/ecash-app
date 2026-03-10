@@ -410,7 +410,10 @@ class _RecipientEntryState extends State<RecipientEntry> {
         // Differentiate between Lightning Address and LNURL
         final isLightningAddress = field0.contains('@');
         title = field0;
-        subtitle = isLightningAddress ? context.l10n.lightningAddress : context.l10n.lnurl;
+        subtitle =
+            isLightningAddress
+                ? context.l10n.lightningAddress
+                : context.l10n.lnurl;
         icon = isLightningAddress ? Icons.alternate_email : Icons.link;
         isActionable = true;
       case ParsedText_BitcoinAddress():

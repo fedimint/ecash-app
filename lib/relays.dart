@@ -67,7 +67,8 @@ class _RelaysState extends State<Relays> {
 
   Widget _buildRelayTile(String relay, bool isConnected) {
     final statusColor = isConnected ? Colors.greenAccent : Colors.redAccent;
-    final statusText = isConnected ? context.l10n.connected : context.l10n.disconnected;
+    final statusText =
+        isConnected ? context.l10n.connected : context.l10n.disconnected;
 
     return ListTile(
       leading: ColorFiltered(

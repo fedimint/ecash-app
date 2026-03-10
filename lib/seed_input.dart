@@ -296,7 +296,9 @@ class _SeedPhraseInputState extends State<SeedPhraseInput>
                                     border: InputBorder.none,
                                     isDense: true,
                                     hintText: context.l10n.word,
-                                    hintStyle: const TextStyle(color: Colors.white38),
+                                    hintStyle: const TextStyle(
+                                      color: Colors.white38,
+                                    ),
                                   ),
                                 );
                               },
