@@ -648,7 +648,7 @@ class _FederationPreviewState extends State<FederationPreview> {
               title: Text(peer.name),
               subtitle:
                   isOnline
-                      ? Text('Version: ${widget.guardians![index].version}')
+                      ? Text('Version: ${widget.guardians?[index].version ?? 'Unknown'}')
                       : const Text('Disconnected'),
               trailing: Row(
                 mainAxisSize: MainAxisSize.min,
