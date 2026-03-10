@@ -107,7 +107,7 @@ class _ImportFollowsDialogState extends State<ImportFollowsDialog> {
     final data = await Clipboard.getData(Clipboard.kTextPlain);
     if (data == null || data.text == null || data.text!.isEmpty) {
       ToastService().show(
-        message: 'Clipboard is empty',
+        message: context.l10n.clipboardIsEmpty,
         duration: const Duration(seconds: 2),
         onTap: () {},
         icon: const Icon(Icons.warning),

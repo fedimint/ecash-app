@@ -1196,5 +1196,44 @@
         "type": "String"
       }
     }
-  }
+  },
+
+  "confirmPin": "Confirm PIN",
+  "@confirmPin": {},
+
+  "enterNewPin": "Enter New PIN",
+  "@enterNewPin": {},
+
+  "enterCurrentPin": "Enter Current PIN",
+  "@enterCurrentPin": {},
+
+  "enterPin": "Enter PIN",
+  "@enterPin": {},
+
+  "reenterPinToConfirm": "Re-enter your PIN to confirm",
+  "@reenterPinToConfirm": {},
+
+  "pinDigitsHint": "4-6 digits",
+  "@pinDigitsHint": {},
+
+  "pinsDoNotMatch": "PINs do not match",
+  "@pinsDoNotMatch": {},
+
+  "incorrectPin": "Incorrect PIN",
+  "@incorrectPin": {},
+
+  "continueButton": "Continue",
+  "@continueButton": {},
+
+  "cameraScanNotSupportedLinux": "Camera scanning is not supported on Linux.\nUse the \"Paste from Clipboard\" button below.",
+  "@cameraScanNotSupportedLinux": {},
+
+  "cameraPermissionRequired": "Camera permission is required to scan QR codes",
+  "@cameraPermissionRequired": {},
+
+  "openSettings": "Open Settings",
+  "@openSettings": {},
+
+  "scanQrCodeTooltip": "Scan QR code",
+  "@scanQrCodeTooltip": {}
 }

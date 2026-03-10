@@ -149,7 +149,7 @@ class _ContactPickerState extends State<ContactPicker> {
                 const SizedBox(height: 12),
                 Text(
                   _searchController.text.isNotEmpty
-                      ? 'No contacts found'
+                      ? context.l10n.noContactsFound
                       : context.l10n.noPayableContacts,
                   style: theme.textTheme.bodyLarge?.copyWith(
                     color: theme.colorScheme.onSurface.withValues(alpha: 0.6),

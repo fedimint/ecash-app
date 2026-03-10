@@ -561,8 +561,8 @@ class _ScanQRPageState extends State<ScanQRPage> {
                             const SizedBox(height: 16),
                             Text(
                               Platform.isLinux
-                                  ? 'Camera scanning is not supported on Linux.\nUse the "Paste from Clipboard" button below.'
-                                  : 'Camera permission is required to scan QR codes',
+                                  ? context.l10n.cameraScanNotSupportedLinux
+                                  : context.l10n.cameraPermissionRequired,
                               textAlign: TextAlign.center,
                               style: const TextStyle(color: Colors.grey),
                             ),
@@ -572,7 +572,7 @@ class _ScanQRPageState extends State<ScanQRPage> {
                                 onPressed: () async {
                                   await openAppSettings();
                                 },
-                                child: const Text('Open Settings'),
+                                child: Text(context.l10n.openSettings),
                               ),
                             ],
                           ],

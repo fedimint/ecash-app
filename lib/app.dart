@@ -579,7 +579,7 @@ class _MyAppState extends State<MyApp> {
     return ChangeNotifierProvider(
       create: (_) => PreferencesProvider(),
       child: MaterialApp(
-        title: 'Ecash App',
+        title: 'Ecash App', // i18n-ignore - app name for task switcher
         debugShowCheckedModeBanner: false,
         theme: cypherpunkNinjaTheme,
         navigatorKey: _navigatorKey,

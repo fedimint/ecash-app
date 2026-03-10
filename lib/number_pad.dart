@@ -124,7 +124,7 @@ class _NumberPadState extends State<NumberPad> {
     final selected = await showFederationPicker(
       context: context,
       federations: feds,
-      title: 'Select Mint',
+      title: context.l10n.selectMint,
     );
 
     if (selected != null && mounted) {

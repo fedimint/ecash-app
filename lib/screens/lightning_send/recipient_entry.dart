@@ -290,7 +290,7 @@ class _RecipientEntryState extends State<RecipientEntry> {
             IconButton(
               icon: const Icon(Icons.qr_code_scanner),
               onPressed: _openScanner,
-              tooltip: 'Scan QR code',
+              tooltip: context.l10n.scanQrCodeTooltip,
             ),
           ],
         ),

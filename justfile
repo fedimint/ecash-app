@@ -37,6 +37,10 @@ test:
 lint-translations:
   $ROOT/scripts/check-translations.sh
 
+# Regenerate localization files from ARB sources
+gen-l10n:
+  flutter gen-l10n
+
 # Scan the latest APK for F-Droid compatibility (checks for Google Play Services dependencies)
 scan-apk:
   #!/usr/bin/env bash

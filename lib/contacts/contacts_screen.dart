@@ -275,7 +275,7 @@ class _ContactsScreenState extends State<ContactsScreen>
     // Validate Federation Selection
     if (widget.selectedFederation == null) {
       ToastService().show(
-        message: 'Please join a federation first',
+        message: context.l10n.pleaseJoinFederationFirst,
         duration: const Duration(seconds: 3),
         onTap: () {},
         icon: const Icon(Icons.warning),
@@ -422,7 +422,7 @@ class _ContactsScreenState extends State<ContactsScreen>
                                   const SizedBox(height: 16),
                                   Text(
                                     _searchController.text.isNotEmpty
-                                        ? 'No contacts found'
+                                        ? context.l10n.noContactsFound
                                         : context.l10n.noPayableContacts,
                                     style: theme.textTheme.titleMedium
                                         ?.copyWith(

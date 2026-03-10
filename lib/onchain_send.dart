@@ -288,7 +288,7 @@ class _OnchainSendState extends State<OnchainSend> {
                 controller: _addressController,
                 style: const TextStyle(fontFamily: 'monospace', fontSize: 14),
                 decoration: InputDecoration(
-                  labelText: 'Bitcoin Address',
+                  labelText: context.l10n.bitcoinAddress,
                   hintText: context.l10n.enterDestinationAddress,
                   suffixIcon: IconButton(
                     icon: const Icon(Icons.paste),
