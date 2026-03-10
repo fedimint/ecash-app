@@ -617,9 +617,9 @@ class _NumberPadState extends State<NumberPad> {
                       overflow: TextOverflow.ellipsis,
                     ),
                     const SizedBox(height: 6),
-                    const Text(
-                      'Available',
-                      style: TextStyle(fontSize: 11, color: Colors.grey),
+                    Text(
+                      context.l10n.available,
+                      style: const TextStyle(fontSize: 11, color: Colors.grey),
                     ),
                     const SizedBox(height: 2),
                     remainingBalance == null
@@ -819,9 +819,9 @@ class _NumberPadState extends State<NumberPad> {
                               ),
                             ),
                           )
-                          : const Text(
-                            'Confirm',
-                            style: TextStyle(
+                          : Text(
+                            context.l10n.confirm,
+                            style: const TextStyle(
                               fontSize: 18,
                               fontWeight: FontWeight.bold,
                             ),

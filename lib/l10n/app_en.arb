@@ -1133,5 +1133,68 @@
   "@txConfirmedClaimingEcash": {},
 
   "couldNotGetFederationMetadataScan": "Sorry! Could not get federation metadata",
-  "@couldNotGetFederationMetadataScan": {}
+  "@couldNotGetFederationMetadataScan": {},
+
+  "txSent": "Sent",
+  "@txSent": {},
+
+  "txReceived": "Received",
+  "@txReceived": {},
+
+  "testNetworkMessage": "This is a test network and is not worth anything.",
+  "@testNetworkMessage": {},
+
+  "yourRecoveryPhrase": "Your Recovery Phrase",
+  "@yourRecoveryPhrase": {},
+
+  "seedPhraseAckWarning": "Please acknowledge that you have written your seed phrase down by holding the button below",
+  "@seedPhraseAckWarning": {},
+
+  "seedPhraseAckButton": "I have written my seed down",
+  "@seedPhraseAckButton": {},
+
+  "networkLabel": "Network: {network}",
+  "@networkLabel": {
+    "placeholders": {
+      "network": {
+        "type": "String"
+      }
+    }
+  },
+
+  "observerLink": "Explore more at observer.fedimint.org",
+  "@observerLink": {},
+
+  "welcomeToEcashApp": "Welcome to Ecash App",
+  "@welcomeToEcashApp": {},
+
+  "chooseHowToGetStarted": "Choose how you want to get started.",
+  "@chooseHowToGetStarted": {},
+
+  "createNewWallet": "Create New Wallet",
+  "@createNewWallet": {},
+
+  "createNewWalletDescription": "Set up a brand new wallet with a secure seed phrase.",
+  "@createNewWalletDescription": {},
+
+  "recoverWallet": "Recover Wallet",
+  "@recoverWallet": {},
+
+  "recoverWalletDescription": "Restore your wallet using a recovery phrase.",
+  "@recoverWalletDescription": {},
+
+  "loadingPrices": "Loading prices...",
+  "@loadingPrices": {},
+
+  "priceUnavailable": "Price unavailable",
+  "@priceUnavailable": {},
+
+  "moduleProgress": "{module} module progress",
+  "@moduleProgress": {
+    "placeholders": {
+      "module": {
+        "type": "String"
+      }
+    }
+  }
 }

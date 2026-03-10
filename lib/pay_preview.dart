@@ -1,6 +1,5 @@
 import 'package:ecashapp/db.dart';
 import 'package:ecashapp/detail_row.dart';
-import 'constants/transaction_keys.dart';
 import 'package:ecashapp/multimint.dart';
 import 'package:ecashapp/providers/preferences_provider.dart';
 import 'package:ecashapp/send.dart';
@@ -268,19 +267,19 @@ class _PaymentPreviewWidgetState extends State<PaymentPreviewWidget> {
                 value: widget.fed.federationName,
               ),
               CopyableDetailRow(
-                label: TransactionDetailKeys.amount,
+                label: context.l10n.txDetailAmount,
                 value: formatBalance(amount, true, bitcoinDisplay),
               ),
               CopyableDetailRow(
-                label: TransactionDetailKeys.fees,
+                label: context.l10n.txDetailFees,
                 value: formatBalance(fees, true, bitcoinDisplay),
               ),
               CopyableDetailRow(
-                label: TransactionDetailKeys.total,
+                label: context.l10n.txDetailTotal,
                 value: formatBalance(amountWithFees, true, bitcoinDisplay),
               ),
               CopyableDetailRow(
-                label: TransactionDetailKeys.paymentHash,
+                label: context.l10n.txDetailPaymentHash,
                 value: widget.previewData.paymentHash,
               ),
             ],

@@ -1,4 +1,5 @@
 import 'package:ecashapp/app.dart';
+import '../constants/transaction_key_labels.dart';
 import '../constants/transaction_keys.dart';
 import 'package:ecashapp/detail_row.dart';
 import 'package:ecashapp/lib.dart';
@@ -185,7 +186,7 @@ class _TransactionDetailsState extends State<TransactionDetails> {
                             : null;
 
                     return CopyableDetailRow(
-                      label: entry.key,
+                      label: localizedTxLabel(context.l10n, entry.key),
                       value: entry.value,
                       abbreviate: abbreviate,
                       additionalAction:
@@ -214,7 +215,7 @@ class _TransactionDetailsState extends State<TransactionDetails> {
                   }
 
                   return CopyableDetailRow(
-                    label: entry.key,
+                    label: localizedTxLabel(context.l10n, entry.key),
                     value: entry.value,
                     abbreviate: abbreviate,
                   );

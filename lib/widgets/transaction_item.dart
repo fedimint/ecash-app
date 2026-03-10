@@ -1,4 +1,5 @@
 import 'package:ecashapp/db.dart';
+import 'package:ecashapp/extensions/build_context_l10n.dart';
 import 'package:ecashapp/providers/preferences_provider.dart';
 import 'package:ecashapp/theme.dart';
 import '../constants/transaction_keys.dart';
@@ -293,7 +294,7 @@ class TransactionItem extends StatelessWidget {
           ),
         ),
         title: Text(
-          isIncoming ? "Received" : "Sent",
+          isIncoming ? context.l10n.txReceived : context.l10n.txSent,
           style: Theme.of(context).textTheme.bodyMedium,
         ),
         subtitle: Text(

@@ -1,4 +1,5 @@
 import 'package:ecashapp/db.dart';
+import 'package:ecashapp/extensions/build_context_l10n.dart';
 import 'package:ecashapp/providers/preferences_provider.dart';
 import 'package:ecashapp/utils.dart';
 import 'package:flutter/material.dart';
@@ -41,7 +42,7 @@ class DashboardBalance extends StatelessWidget {
     if (recovering) {
       return Center(
         child: Text(
-          "Recovering...",
+          context.l10n.recovering,
           style: Theme.of(context).textTheme.displaySmall?.copyWith(
             color: Theme.of(context).colorScheme.primary,
             fontWeight: FontWeight.bold,
@@ -73,15 +74,15 @@ class DashboardBalance extends StatelessWidget {
                 textAlign: TextAlign.center,
               ),
               if (isLoadingPrices)
-                const Text(
-                  'Loading prices...',
-                  style: TextStyle(fontSize: 16, color: Colors.grey),
+                Text(
+                  context.l10n.loadingPrices,
+                  style: const TextStyle(fontSize: 16, color: Colors.grey),
                   textAlign: TextAlign.center,
                 )
               else if (pricesFailed)
-                const Text(
-                  'Price unavailable',
-                  style: TextStyle(fontSize: 16, color: Colors.grey),
+                Text(
+                  context.l10n.priceUnavailable,
+                  style: const TextStyle(fontSize: 16, color: Colors.grey),
                   textAlign: TextAlign.center,
                 )
               else if (btcPrices.isNotEmpty)

@@ -264,7 +264,7 @@ class _Discover extends State<Discover> with SingleTickerProviderStateMixin {
       child: GestureDetector(
         onTap: () => launchUrl(Uri.parse("https://observer.fedimint.org/")),
         child: Text(
-          "Explore more at observer.fedimint.org",
+          context.l10n.observerLink,
           style: theme.textTheme.bodyMedium?.copyWith(
             color: Theme.of(context).colorScheme.primary,
             decoration: TextDecoration.underline,
@@ -342,7 +342,7 @@ class _Discover extends State<Discover> with SingleTickerProviderStateMixin {
                       ),
                       const SizedBox(height: 4),
                       Text(
-                        "Network: ${federation.network == 'bitcoin' ? 'mainnet' : federation.network}",
+                        context.l10n.networkLabel(federation.network == 'bitcoin' ? 'mainnet' : federation.network),
                         style: theme.textTheme.bodySmall?.copyWith(
                           color: Colors.grey[400],
                         ),

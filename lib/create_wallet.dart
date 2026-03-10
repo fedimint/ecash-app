@@ -5,6 +5,7 @@ import 'package:ecashapp/lib.dart';
 import 'package:ecashapp/pin_gated_app.dart';
 import 'package:ecashapp/seed_input.dart';
 import 'package:ecashapp/utils.dart';
+import 'package:ecashapp/extensions/build_context_l10n.dart';
 import 'package:flutter/material.dart';
 
 class CreateWallet extends StatefulWidget {
@@ -103,7 +104,7 @@ class _CreateWalletState extends State<CreateWallet> {
               Image.asset('assets/images/ecash-app.png', width: 64, height: 64),
               const SizedBox(height: 24),
               Text(
-                'Welcome to Ecash App',
+                context.l10n.welcomeToEcashApp,
                 style: theme.textTheme.headlineSmall?.copyWith(
                   fontWeight: FontWeight.bold,
                   color: theme.colorScheme.primary,
@@ -112,7 +113,7 @@ class _CreateWalletState extends State<CreateWallet> {
               ),
               const SizedBox(height: 12),
               Text(
-                'Choose how you want to get started.',
+                context.l10n.chooseHowToGetStarted,
                 style: theme.textTheme.bodyMedium,
                 textAlign: TextAlign.center,
               ),
@@ -120,9 +121,8 @@ class _CreateWalletState extends State<CreateWallet> {
 
               _WalletOptionCard(
                 icon: Icons.fiber_new,
-                title: 'Create New Wallet',
-                description:
-                    'Set up a brand new wallet with a secure seed phrase.',
+                title: context.l10n.createNewWallet,
+                description: context.l10n.createNewWalletDescription,
                 onTap: _isCreating ? null : _handleCreateWallet,
                 trailing:
                     _isCreating
@@ -142,8 +142,8 @@ class _CreateWalletState extends State<CreateWallet> {
 
               _WalletOptionCard(
                 icon: Icons.settings_backup_restore,
-                title: 'Recover Wallet',
-                description: 'Restore your wallet using a recovery phrase.',
+                title: context.l10n.recoverWallet,
+                description: context.l10n.recoverWalletDescription,
                 onTap:
                     _isCreating
                         ? null

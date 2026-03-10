@@ -323,5 +323,24 @@
   "txInMempool": "Tx en mempool",
   "txInBlockRemainingConfs": "Tx en bloque {blockHeight}. Confirmaciones restantes: {needed}",
   "txConfirmedClaimingEcash": "Tx confirmada, reclamando ecash",
-  "couldNotGetFederationMetadataScan": "¡Lo siento! No se pudieron obtener los metadatos de la federación"
+  "couldNotGetFederationMetadataScan": "¡Lo siento! No se pudieron obtener los metadatos de la federación",
+
+  "txSent": "Enviado",
+  "txReceived": "Recibido",
+  "testNetworkMessage": "Esta es una red de prueba y no tiene valor.",
+  "yourRecoveryPhrase": "Tu frase de recuperación",
+  "seedPhraseAckWarning": "Por favor, confirme que ha escrito su frase semilla manteniendo presionado el botón de abajo",
+  "seedPhraseAckButton": "He escrito mi frase semilla",
+  "networkLabel": "Red: {network}",
+  "observerLink": "Explorar más en observer.fedimint.org",
+
+  "welcomeToEcashApp": "Bienvenido a Ecash App",
+  "chooseHowToGetStarted": "Elige cómo quieres empezar.",
+  "createNewWallet": "Crear Nueva Billetera",
+  "createNewWalletDescription": "Configura una billetera nueva con una frase semilla segura.",
+  "recoverWallet": "Recuperar Billetera",
+  "recoverWalletDescription": "Restaura tu billetera usando una frase de recuperación.",
+  "loadingPrices": "Cargando precios...",
+  "priceUnavailable": "Precio no disponible",
+  "moduleProgress": "Progreso del módulo {module}"
 }
