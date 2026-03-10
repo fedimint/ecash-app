@@ -3485,22 +3485,38 @@ impl Multimint {
             })
             .collect::<BTreeMap<_, _>>();
 
-        // TODO: This only adds 1 LNv2 gateway. Good enough for now, but needs Fedimint changes to display all
         if let Ok(lnv2) = client.get_first_module::<fedimint_lnv2_client::LightningClientModule>() {
-            if let Ok((lnv2_api, lnv2_routing_info)) = lnv2.select_gateway(None).await {
-                gateways.insert(
-                    lnv2_api.clone(),
-                    FedimintGateway {
-                        endpoint: lnv2_api.to_string(),
-                        base_routing_fee: lnv2_routing_info.send_fee_default.base.msats,
-                        ppm_routing_fee: lnv2_routing_info.send_fee_default.parts_per_million,
-                        base_transaction_fee: lnv2_routing_info.receive_fee.base.msats,
-                        ppm_transaction_fee: lnv2_routing_info.receive_fee.parts_per_million,
-                        lightning_alias: None,
-                        lightning_node: Some(lnv2_routing_info.lightning_public_key.to_string()),
-                        is_lnv2: true,
-                    },
-                );
+            let lnv2_gateways = lnv2.list_gateways(None).await;
+            if let Ok(lnv2_urls) = lnv2_gateways {
+                let routing_infos =
+                    futures_util::future::join_all(lnv2_urls.iter().map(|url| async {
+                        let routing_info = lnv2.routing_info(url).await;
+                        (url.clone(), routing_info)
+                    }))
+                    .await;
+
+                let lnv2_gw_infos = routing_infos
+                    .iter()
+                    .filter_map(|(url, info)| {
+                        if let Ok(Some(info)) = info {
+                            let gw = FedimintGateway {
+                                endpoint: url.to_string(),
+                                base_routing_fee: info.send_fee_default.base.msats,
+                                ppm_routing_fee: info.send_fee_default.parts_per_million,
+                                base_transaction_fee: info.receive_fee.base.msats,
+                                ppm_transaction_fee: info.receive_fee.parts_per_million,
+                                lightning_alias: None,
+                                lightning_node: Some(info.lightning_public_key.to_string()),
+                                is_lnv2: true,
+                            };
+                            Some((url.clone(), gw))
+                        } else {
+                            None
+                        }
+                    })
+                    .collect::<BTreeMap<_, _>>();
+
+                gateways.extend(lnv2_gw_infos);
             }
         }
 
