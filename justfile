@@ -33,6 +33,10 @@ run: build-linux
 test:
   flutter test
 
+# Check translations/i18n for issues (missing keys, placeholders, hardcoded strings)
+lint-translations:
+  $ROOT/scripts/check-translations.sh
+
 # Scan the latest APK for F-Droid compatibility (checks for Google Play Services dependencies)
 scan-apk:
   #!/usr/bin/env bash
