@@ -5,8 +5,16 @@
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-25.11";
   };
 
-  outputs = { self, fedimint, flake-utils, nixpkgs, ... }:
-    flake-utils.lib.eachDefaultSystem (system:
+  outputs =
+    {
+      self,
+      fedimint,
+      flake-utils,
+      nixpkgs,
+      ...
+    }:
+    flake-utils.lib.eachDefaultSystem (
+      system:
       let
         pkgs = import nixpkgs {
           inherit system;
@@ -32,11 +40,12 @@
           # For some reason flutter_rust_bridge unit tests are failing
           doCheck = false;
         };
-      in {
+      in
+      {
         devShells = {
           # You can expose all or specific shells from the original flake
           default = devShells.cross.overrideAttrs (old: {
-            nativeBuildInputs = old.nativeBuildInputs or [] ++ [
+            nativeBuildInputs = old.nativeBuildInputs or [ ] ++ [
               pkgs.flutter
               pkgs.just
               pkgs.zlib
@@ -44,26 +53,30 @@
               pkgs.cargo-expand
               pkgs.fdroidserver
               (pkgs.appimage-run.override {
-                extraPkgs = pkgs: [ pkgs.libepoxy pkgs.gtk3 ];
+                extraPkgs = pkgs: [
+                  pkgs.libepoxy
+                  pkgs.gtk3
+                ];
               })
             ];
 
-	    shellHook = ''
-	      ${old.shellHook or ""}
+            shellHook = ''
+              	      ${old.shellHook or ""}
 
-              export LD_LIBRARY_PATH="${pkgs.zlib}/lib:$LD_LIBRARY_PATH"
-              export NIXPKGS_ALLOW_UNFREE=1
-              export ROOT="$PWD"
+                            export LD_LIBRARY_PATH="${pkgs.zlib}/lib:$LD_LIBRARY_PATH"
+                            export NIXPKGS_ALLOW_UNFREE=1
+                            export FLUTTER_SUPPRESS_ANALYTICS=true
+                            export ROOT="$PWD"
 
-              if [ -d .git ]; then
-                ln -sf "$PWD/scripts/git-hooks/pre-commit.sh" .git/hooks/pre-commit
-              fi
-              # Ensure flutter deps are resolved (needed for dart format in pre-commit hook)
-              if [ ! -f .dart_tool/package_config.json ]; then
-                echo "Running flutter pub get (first-time setup)..."
-                flutter pub get > /dev/null 2>&1
-              fi
-	    '';
+                            if [ -d .git ]; then
+                              ln -sf "$PWD/scripts/git-hooks/pre-commit.sh" .git/hooks/pre-commit
+                            fi
+                            # Ensure flutter deps are resolved (needed for dart format in pre-commit hook)
+                            if [ ! -f .dart_tool/package_config.json ]; then
+                              echo "Running flutter pub get (first-time setup)..."
+                              flutter pub get > /dev/null 2>&1
+                            fi
+              	    '';
           });
         };
       }

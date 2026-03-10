@@ -73,6 +73,7 @@ docker run --rm \
     -e CARGO_HOME="/cargo-cache" \
     -e ANDROID_USER_HOME="/android-home" \
     -e HOME="/workspace" \
+    -e FLUTTER_SUPPRESS_ANALYTICS=true \
     $IMAGE_NAME \
     bash /workspace/docker/entrypoint.sh "$BUILD_MODE"
 
