@@ -1,5 +1,6 @@
 import 'package:ecashapp/db.dart';
 import 'package:ecashapp/detail_row.dart';
+import 'package:ecashapp/extensions/build_context_l10n.dart';
 import 'package:ecashapp/lib.dart';
 import 'package:ecashapp/multimint.dart';
 import 'package:ecashapp/providers/preferences_provider.dart';
@@ -49,7 +50,7 @@ class _OnChainReceiveContentState extends State<OnChainReceiveContent> {
         "Could not allocate deposit address or fetch peg-in fee: $e",
       );
       ToastService().show(
-        message: "Could not get new address",
+        message: context.l10n.couldNotGetNewAddress,
         duration: const Duration(seconds: 5),
         onTap: () {},
         icon: Icon(Icons.error),
@@ -64,7 +65,7 @@ class _OnChainReceiveContentState extends State<OnChainReceiveContent> {
       _addressCopied = true;
     });
     ToastService().show(
-      message: "Address copied to clipboard",
+      message: context.l10n.addressCopiedToClipboard,
       duration: const Duration(seconds: 5),
       onTap: () {},
       icon: Icon(Icons.check),
@@ -123,7 +124,7 @@ class _OnChainReceiveContentState extends State<OnChainReceiveContent> {
                     CrossAxisAlignment.stretch, // Stretch children
                 children: [
                   Text(
-                    'You can use this address to deposit funds to the federation:',
+                    context.l10n.depositInstructions,
                     textAlign: TextAlign.center,
                     style: theme.textTheme.bodyMedium,
                   ),
@@ -256,7 +257,7 @@ class _OnChainReceiveContentState extends State<OnChainReceiveContent> {
                             ),
                             const SizedBox(width: 8),
                             Text(
-                              'Deposit Information',
+                              context.l10n.depositInformation,
                               style: theme.textTheme.titleMedium?.copyWith(
                                 color: theme.colorScheme.onSurface,
                                 fontWeight: FontWeight.w600,
@@ -266,12 +267,12 @@ class _OnChainReceiveContentState extends State<OnChainReceiveContent> {
                         ),
                         const SizedBox(height: 12),
                         CopyableDetailRow(
-                          label: 'Peg-in Fee',
+                          label: context.l10n.peginFee,
                           value:
                               _peginFee == null
-                                  ? 'Unable to fetch fee'
+                                  ? context.l10n.unableToFetchFee
                                   : _peginFee == BigInt.zero
-                                  ? 'No fee configured'
+                                  ? context.l10n.noFeeConfigured
                                   : formatBalance(
                                     _peginFee!,
                                     false,
@@ -280,7 +281,7 @@ class _OnChainReceiveContentState extends State<OnChainReceiveContent> {
                         ),
                         const SizedBox(height: 8),
                         Text(
-                          'This fee is deducted by the federation when your deposit is claimed.',
+                          context.l10n.peginFeeDescription,
                           style: theme.textTheme.bodySmall?.copyWith(
                             color: theme.colorScheme.onSurface.withOpacity(0.7),
                             fontSize: 12,

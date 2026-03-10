@@ -6,6 +6,7 @@ import 'package:ecashapp/multimint.dart';
 import 'package:ecashapp/providers/preferences_provider.dart';
 import 'package:ecashapp/toast.dart';
 import 'package:ecashapp/utils.dart';
+import 'package:ecashapp/extensions/build_context_l10n.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
@@ -82,15 +83,15 @@ class _FederationPreviewState extends State<FederationPreview> {
         return StatefulBuilder(
           builder: (context, setState) {
             return AlertDialog(
-              title: const Text("Leave Federation"),
-              content: const Text(
-                "Are you sure you want to leave this federation? You will need to re-join this federation to access any remaining funds.",
+              title: Text(context.l10n.leaveFederation),
+              content: Text(
+                context.l10n.leaveFederationConfirm,
               ),
               actions: [
                 TextButton(
                   onPressed:
                       isLeaving ? null : () => Navigator.of(context).pop(),
-                  child: const Text("Cancel"),
+                  child: Text(context.l10n.cancel),
                 ),
                 TextButton(
                   onPressed:
@@ -149,7 +150,7 @@ class _FederationPreviewState extends State<FederationPreview> {
                             width: 20,
                             child: CircularProgressIndicator(strokeWidth: 2),
                           )
-                          : const Text("Confirm"),
+                          : Text(context.l10n.confirm),
                 ),
               ],
             );
@@ -208,7 +209,7 @@ class _FederationPreviewState extends State<FederationPreview> {
       } catch (e) {
         AppLogger.instance.error('Could not join federation $e');
         ToastService().show(
-          message: "Could not join federation",
+          message: context.l10n.couldNotJoinFederation,
           duration: const Duration(seconds: 5),
           onTap: () {},
           icon: Icon(Icons.error),
@@ -230,7 +231,7 @@ class _FederationPreviewState extends State<FederationPreview> {
 
       if (isSpent) {
         ToastService().show(
-          message: "This Ecash has already been claimed",
+          message: context.l10n.ecashAlreadyClaimed,
           duration: const Duration(seconds: 5),
           onTap: () {},
           icon: Icon(Icons.error),
@@ -242,7 +243,7 @@ class _FederationPreviewState extends State<FederationPreview> {
     } catch (e) {
       AppLogger.instance.error("Could not reissue Ecash $e");
       ToastService().show(
-        message: "Could not claim Ecash",
+        message: context.l10n.couldNotClaimEcash,
         duration: const Duration(seconds: 5),
         onTap: () {},
         icon: Icon(Icons.error),
@@ -273,7 +274,7 @@ class _FederationPreviewState extends State<FederationPreview> {
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         Text(
-          "Connected to $onlineCount / $totalCount Guardians",
+          context.l10n.connectedToGuardians(onlineCount, totalCount),
           textAlign: TextAlign.center,
           style: theme.textTheme.bodySmall?.copyWith(color: borderColor),
         ),
@@ -443,8 +444,8 @@ class _FederationPreviewState extends State<FederationPreview> {
                     ),
                   )
                   : widget.ecash == null
-                  ? const Text("Join Federation")
-                  : const Text("Join and Redeem Ecash"),
+                  ? Text(context.l10n.joinFederation)
+                  : Text(context.l10n.joinAndRedeemEcash),
         ),
         if (!isJoining) ...[
           const SizedBox(height: 12),
@@ -453,7 +454,7 @@ class _FederationPreviewState extends State<FederationPreview> {
               _onJoinPressed(true);
             },
             icon: const Icon(Icons.history),
-            label: const Text('Recover'),
+            label: Text(context.l10n.recover),
             style: OutlinedButton.styleFrom(
               foregroundColor: theme.colorScheme.secondary,
               side: BorderSide(
@@ -495,7 +496,7 @@ class _FederationPreviewState extends State<FederationPreview> {
                       const SizedBox(width: 8),
                       Expanded(
                         child: Text(
-                          'Warning: This is a test network (${widget.fed.network}) and is not worth anything.',
+                          context.l10n.testNetworkWarning(widget.fed.network ?? ''),
                           style: const TextStyle(color: Colors.orange),
                         ),
                       ),
@@ -551,7 +552,7 @@ class _FederationPreviewState extends State<FederationPreview> {
                 labelColor: theme.colorScheme.primary,
                 unselectedLabelColor: Colors.grey,
                 indicatorColor: theme.colorScheme.primary,
-                tabs: const [Tab(text: 'Guardians'), Tab(text: 'UTXOs')],
+                tabs: [Tab(text: context.l10n.guardianTab), Tab(text: context.l10n.utxoTab)],
               ),
 
               SizedBox(
@@ -590,7 +591,7 @@ class _FederationPreviewState extends State<FederationPreview> {
                       ),
                       const SizedBox(width: 8),
                       Text(
-                        "Advanced",
+                        context.l10n.advanced,
                         style: theme.textTheme.labelLarge?.copyWith(
                           color: theme.colorScheme.secondary,
                           fontWeight: FontWeight.bold,
@@ -605,7 +606,7 @@ class _FederationPreviewState extends State<FederationPreview> {
                   OutlinedButton.icon(
                     onPressed: _onLeavePressed,
                     icon: const Icon(Icons.logout),
-                    label: const Text("Leave Federation"),
+                    label: Text(context.l10n.leaveFederation),
                     style: OutlinedButton.styleFrom(
                       foregroundColor: Colors.red,
                       side: const BorderSide(color: Colors.red),
@@ -648,17 +649,15 @@ class _FederationPreviewState extends State<FederationPreview> {
               title: Text(peer.name),
               subtitle:
                   isOnline
-                      ? Text(
-                        'Version: ${widget.guardians?[index].version ?? 'Unknown'}',
-                      )
-                      : const Text('Disconnected'),
+                      ? Text(context.l10n.versionLabel(widget.guardians?[index].version ?? ''))
+                      : Text(context.l10n.disconnected),
               trailing: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   if (!widget.joinable && isFederationOnline) ...[
                     // Copy invite code button
                     IconButton(
-                      tooltip: "Copy invite code",
+                      tooltip: context.l10n.copyInviteCode,
                       icon: const Icon(Icons.copy, size: 20),
                       onPressed: () async {
                         try {
@@ -671,7 +670,7 @@ class _FederationPreviewState extends State<FederationPreview> {
                             ClipboardData(text: inviteCode),
                           );
                           ToastService().show(
-                            message: "Invite code for ${peer.name} copied",
+                            message: context.l10n.inviteCodeCopied(peer.name),
                             duration: const Duration(seconds: 5),
                             onTap: () {},
                             icon: Icon(Icons.check),
@@ -681,7 +680,7 @@ class _FederationPreviewState extends State<FederationPreview> {
                             "Error getting invite code: $e",
                           );
                           ToastService().show(
-                            message: "Could not get invite code",
+                            message: context.l10n.couldNotGetInviteCode,
                             duration: const Duration(seconds: 5),
                             onTap: () {},
                             icon: Icon(Icons.error),
@@ -692,7 +691,7 @@ class _FederationPreviewState extends State<FederationPreview> {
 
                     // Show invite code popup button
                     IconButton(
-                      tooltip: "View invite code",
+                      tooltip: context.l10n.viewInviteCode,
                       icon: const Icon(Icons.qr_code, size: 20),
                       onPressed: () async {
                         try {
@@ -705,9 +704,9 @@ class _FederationPreviewState extends State<FederationPreview> {
                             context: context,
                             builder:
                                 (context) => AlertDialog(
-                                  title: const Center(
+                                  title: Center(
                                     child: Text(
-                                      "Invite Code",
+                                      context.l10n.inviteCode,
                                       textAlign: TextAlign.center,
                                     ),
                                   ),
@@ -764,7 +763,7 @@ class _FederationPreviewState extends State<FederationPreview> {
                                     TextButton(
                                       onPressed:
                                           () => Navigator.of(context).pop(),
-                                      child: const Text("Close"),
+                                      child: Text(context.l10n.close),
                                     ),
                                   ],
                                 ),
@@ -774,7 +773,7 @@ class _FederationPreviewState extends State<FederationPreview> {
                             "Error getting invite code: $e",
                           );
                           ToastService().show(
-                            message: "Could not get invite code",
+                            message: context.l10n.couldNotGetInviteCode,
                             duration: const Duration(seconds: 5),
                             onTap: () {},
                             icon: Icon(Icons.error),
@@ -788,7 +787,7 @@ class _FederationPreviewState extends State<FederationPreview> {
             );
           },
         )
-        : const Center(child: Text("Loading..."));
+        : Center(child: Text(context.l10n.loading));
   }
 }
 
@@ -829,12 +828,14 @@ class _FederationUtxoListState extends State<FederationUtxoList> {
         });
       } catch (e) {
         AppLogger.instance.error("Could not load wallet summary: $e");
-        ToastService().show(
-          message: "Could not load Federation's UTXOs",
-          duration: const Duration(seconds: 5),
-          onTap: () {},
-          icon: Icon(Icons.error),
-        );
+        if (mounted) {
+          ToastService().show(
+            message: context.l10n.couldNotLoadUtxos,
+            duration: const Duration(seconds: 5),
+            onTap: () {},
+            icon: Icon(Icons.error),
+          );
+        }
       }
     }
   }
@@ -854,8 +855,8 @@ class _FederationUtxoListState extends State<FederationUtxoList> {
     );
 
     if (!widget.isFederationOnline) {
-      return const Center(
-        child: Text("Cannot connect to federation to retrieve UTXOs."),
+      return Center(
+        child: Text(context.l10n.cannotConnectForUtxos),
       );
     }
 
@@ -864,7 +865,7 @@ class _FederationUtxoListState extends State<FederationUtxoList> {
     }
 
     if (utxos!.isEmpty) {
-      return const Center(child: Text("No UTXOs found."));
+      return Center(child: Text(context.l10n.noUtxosFound));
     }
 
     return ListView.separated(
@@ -906,14 +907,14 @@ class _FederationUtxoListState extends State<FederationUtxoList> {
                   ),
 
                   IconButton(
-                    tooltip: 'Copy txid',
+                    tooltip: context.l10n.copyTxid,
                     icon: const Icon(Icons.copy),
                     color: Theme.of(context).colorScheme.secondary,
                     onPressed: () async {
                       await Clipboard.setData(ClipboardData(text: utxo.txid));
                       if (!context.mounted) return;
                       ToastService().show(
-                        message: "Txid $abbreviatedTxid copied",
+                        message: context.l10n.txidCopied(abbreviatedTxid),
                         duration: const Duration(seconds: 2),
                         onTap: () {},
                         icon: Icon(Icons.check),
@@ -923,7 +924,7 @@ class _FederationUtxoListState extends State<FederationUtxoList> {
 
                   if (explorerUrl != null)
                     IconButton(
-                      tooltip: 'View on mempool.space',
+                      tooltip: context.l10n.viewOnMempoolSpace,
                       icon: const Icon(Icons.open_in_new),
                       color: Theme.of(context).colorScheme.secondary,
                       onPressed: () async {

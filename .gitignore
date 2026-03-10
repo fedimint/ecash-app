@@ -55,3 +55,6 @@ app.*.map.json
 .dart_tool.host/
 AppDir/
 *.AppImage
+
+# Flutter gen_l10n output
+lib/generated/

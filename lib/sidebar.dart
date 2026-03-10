@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:ecashapp/db.dart';
+import 'package:ecashapp/extensions/build_context_l10n.dart';
 import 'package:ecashapp/fed_preview.dart';
 import 'package:ecashapp/lib.dart';
 import 'package:ecashapp/multimint.dart';
@@ -179,7 +180,7 @@ class FederationSidebarState extends State<FederationSidebar> {
             Expanded(
               child:
                   _feds.isEmpty
-                      ? const Center(child: Text('No federations found'))
+                      ? Center(child: Text(context.l10n.noFederationsFound))
                       : Column(
                         children: [
                           Container(
@@ -193,7 +194,7 @@ class FederationSidebarState extends State<FederationSidebar> {
                             ),
                             alignment: Alignment.centerLeft,
                             child: Text(
-                              'Federations',
+                              context.l10n.federations,
                               style: TextStyle(
                                 color: Theme.of(context).colorScheme.primary,
                                 fontSize: 18,
@@ -279,7 +280,7 @@ class FederationSidebarState extends State<FederationSidebar> {
                         ),
                         const SizedBox(width: 16),
                         Text(
-                          'Contacts',
+                          context.l10n.contacts,
                           style: Theme.of(
                             context,
                           ).textTheme.bodyLarge!.copyWith(
@@ -321,7 +322,7 @@ class FederationSidebarState extends State<FederationSidebar> {
                         ),
                         const SizedBox(width: 16),
                         Text(
-                          'Settings',
+                          context.l10n.settings,
                           style: Theme.of(
                             context,
                           ).textTheme.bodyLarge!.copyWith(
@@ -414,9 +415,9 @@ class FederationListItem extends StatelessWidget {
                       const SizedBox(height: 4),
                       Text(
                         isRecovering
-                            ? "Recovering..."
+                            ? context.l10n.recovering
                             : data.isLoading
-                            ? 'Loading...'
+                            ? context.l10n.loading
                             : formatBalance(
                               data.balanceMsats,
                               false,
@@ -441,10 +442,8 @@ class FederationListItem extends StatelessWidget {
                             children: [
                               Text(
                                 data.guardians!.isEmpty
-                                    ? 'Offline'
-                                    : numGuardians == 1
-                                    ? '1 guardian'
-                                    : '$numGuardians guardians',
+                                    ? context.l10n.offline
+                                    : context.l10n.guardianCount(numGuardians),
                                 style: Theme.of(context).textTheme.bodySmall,
                               ),
                               const SizedBox(width: 6),

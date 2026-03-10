@@ -1,3 +1,4 @@
+import 'package:ecashapp/extensions/build_context_l10n.dart';
 import 'package:ecashapp/failure.dart';
 import 'package:ecashapp/lib.dart';
 import 'package:ecashapp/multimint.dart';
@@ -110,7 +111,7 @@ class _SendPaymentState extends State<SendPayment> {
       AppLogger.instance.error('Error while sending payment: $e');
       if (!mounted) return;
       ToastService().show(
-        message: "Failed to send payment",
+        message: context.l10n.failedToSendPayment,
         duration: const Duration(seconds: 5),
         onTap: () {},
         icon: Icon(Icons.error),
@@ -145,7 +146,7 @@ class _SendPaymentState extends State<SendPayment> {
                     ),
                     const SizedBox(height: 24),
                     Text(
-                      'Sending Payment',
+                      context.l10n.sendingPayment,
                       style: theme.textTheme.titleLarge?.copyWith(
                         fontWeight: FontWeight.bold,
                         color: theme.colorScheme.onSurface,

@@ -1,8 +1,8 @@
 import 'dart:async';
-import 'constants/transaction_keys.dart';
 
 import 'package:ecashapp/db.dart';
 import 'package:ecashapp/detail_row.dart';
+import 'package:ecashapp/extensions/build_context_l10n.dart';
 import 'package:ecashapp/lib.dart';
 import 'package:ecashapp/multimint.dart';
 import 'package:ecashapp/providers/preferences_provider.dart';
@@ -97,7 +97,7 @@ class _RequestState extends State<Request> with SingleTickerProviderStateMixin {
     } catch (e) {
       AppLogger.instance.error("Error occurred while receiving payment: $e");
       ToastService().show(
-        message: "Could not receive payment",
+        message: context.l10n.couldNotReceivePayment,
         duration: const Duration(seconds: 5),
         onTap: () {},
         icon: Icon(Icons.error),
@@ -113,7 +113,7 @@ class _RequestState extends State<Request> with SingleTickerProviderStateMixin {
     Clipboard.setData(ClipboardData(text: widget.invoice));
     setState(() => _copied = true);
     ToastService().show(
-      message: "Invoice copied to clipboard",
+      message: context.l10n.invoiceCopiedToClipboard,
       duration: const Duration(seconds: 5),
       onTap: () {},
       icon: Icon(Icons.check),
@@ -176,7 +176,7 @@ class _RequestState extends State<Request> with SingleTickerProviderStateMixin {
           ),
           const SizedBox(height: 8),
           Text(
-            'Lightning Request',
+            context.l10n.lightningRequest,
             style: theme.textTheme.headlineSmall?.copyWith(
               color: theme.colorScheme.primary,
               fontWeight: FontWeight.bold,
@@ -285,7 +285,7 @@ class _RequestState extends State<Request> with SingleTickerProviderStateMixin {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 CopyableDetailRow(
-                  label: TransactionDetailKeys.amount,
+                  label: context.l10n.txDetailAmount,
                   value: formatBalance(
                     widget.requestedAmountMsats,
                     true,
@@ -293,19 +293,19 @@ class _RequestState extends State<Request> with SingleTickerProviderStateMixin {
                   ),
                 ),
                 CopyableDetailRow(
-                  label: TransactionDetailKeys.fees,
+                  label: context.l10n.txDetailFees,
                   value: formatBalance(fees, true, bitcoinDisplay),
                 ),
                 CopyableDetailRow(
-                  label: TransactionDetailKeys.gateway,
+                  label: context.l10n.txDetailGateway,
                   value: widget.gateway,
                 ),
                 CopyableDetailRow(
-                  label: TransactionDetailKeys.payeePublicKey,
+                  label: context.l10n.txDetailPayeePubkey,
                   value: widget.pubkey,
                 ),
                 CopyableDetailRow(
-                  label: TransactionDetailKeys.paymentHash,
+                  label: context.l10n.txDetailPaymentHash,
                   value: widget.paymentHash,
                 ),
               ],

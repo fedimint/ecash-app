@@ -1,6 +1,7 @@
 import 'dart:io';
 
 import 'package:ecashapp/db.dart';
+import 'package:ecashapp/extensions/build_context_l10n.dart';
 import 'package:ecashapp/lib.dart';
 import 'package:ecashapp/models.dart';
 import 'package:ecashapp/multimint.dart';
@@ -263,20 +264,16 @@ Future<void> showExplorerConfirmation(BuildContext context, Uri url) async {
     context: context,
     builder:
         (context) => AlertDialog(
-          title: const Text('External Link Warning'),
-          content: const Text(
-            'You are about to navigate to an external block explorer. '
-            'Before accepting, please consider the privacy implications '
-            'and consider using a self hosted block explorer.',
-          ),
+          title: Text(context.l10n.externalLinkWarning),
+          content: Text(context.l10n.externalLinkBody),
           actions: [
             TextButton(
               onPressed: () => Navigator.of(context).pop(false),
-              child: const Text('Cancel'),
+              child: Text(context.l10n.cancel),
             ),
             TextButton(
               onPressed: () => Navigator.of(context).pop(true),
-              child: const Text('Confirm'),
+              child: Text(context.l10n.confirm),
             ),
           ],
         ),

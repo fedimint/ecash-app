@@ -1,3 +1,4 @@
+import 'package:ecashapp/extensions/build_context_l10n.dart';
 import 'package:ecashapp/lib.dart';
 import 'package:ecashapp/utils.dart';
 import 'package:flutter/material.dart';
@@ -142,7 +143,7 @@ class _SeedPhraseInputState extends State<SeedPhraseInput>
         const SizedBox(width: 12),
         Expanded(
           child: Text(
-            "Want to use a custom Nostr relay for recovery? Add it here",
+            context.l10n.customNostrRelayPrompt,
             style: theme.textTheme.bodyMedium,
           ),
         ),
@@ -200,7 +201,7 @@ class _SeedPhraseInputState extends State<SeedPhraseInput>
                                   Theme.of(context).colorScheme.primary,
                               foregroundColor: Colors.black,
                             ),
-                            child: const Text('Add Relay'),
+                            child: Text(context.l10n.addRelay),
                           ),
                 ),
               ),
@@ -216,7 +217,7 @@ class _SeedPhraseInputState extends State<SeedPhraseInput>
     final theme = Theme.of(context);
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Enter Seed Phrase')),
+      appBar: AppBar(title: Text(context.l10n.enterSeedPhrase)),
       body: SafeArea(
         child: Padding(
           padding: const EdgeInsets.all(24),
@@ -224,7 +225,7 @@ class _SeedPhraseInputState extends State<SeedPhraseInput>
             children: [
               const SizedBox(height: 16),
               Text(
-                'Enter your 12-word recovery phrase',
+                context.l10n.enter12WordRecoveryPhrase,
                 style: theme.textTheme.titleLarge?.copyWith(
                   fontWeight: FontWeight.bold,
                   color: theme.colorScheme.primary,
@@ -291,11 +292,11 @@ class _SeedPhraseInputState extends State<SeedPhraseInput>
                                   style: theme.textTheme.bodyMedium?.copyWith(
                                     color: Colors.white,
                                   ),
-                                  decoration: const InputDecoration(
+                                  decoration: InputDecoration(
                                     border: InputBorder.none,
                                     isDense: true,
-                                    hintText: 'word',
-                                    hintStyle: TextStyle(color: Colors.white38),
+                                    hintText: context.l10n.word,
+                                    hintStyle: const TextStyle(color: Colors.white38),
                                   ),
                                 );
                               },
@@ -341,7 +342,7 @@ class _SeedPhraseInputState extends State<SeedPhraseInput>
                 width: double.infinity,
                 child: ElevatedButton.icon(
                   icon: const Icon(Icons.check_circle_outline),
-                  label: const Text('Recover'),
+                  label: Text(context.l10n.recover),
                   style: ElevatedButton.styleFrom(
                     padding: const EdgeInsets.symmetric(vertical: 16),
                     backgroundColor:
@@ -376,7 +377,7 @@ class _SeedPhraseInputState extends State<SeedPhraseInput>
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    const Text('Advanced'),
+                    Text(context.l10n.advanced),
                     Icon(
                       _showAdvanced
                           ? Icons.keyboard_arrow_up

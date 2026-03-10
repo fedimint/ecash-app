@@ -5,6 +5,7 @@ import 'package:ecashapp/providers/preferences_provider.dart';
 import 'package:ecashapp/success.dart';
 import 'package:ecashapp/toast.dart';
 import 'package:ecashapp/utils.dart';
+import 'package:ecashapp/extensions/build_context_l10n.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
@@ -32,7 +33,8 @@ class _EcashRedeemPromptState extends State<EcashRedeemPrompt> {
       _isLoading = true;
     });
 
-    final failureMessage = "Could not claim Ecash";
+    final l10n = context.l10n;
+    final failureMessage = l10n.couldNotClaimEcash;
 
     try {
       final isSpent = await checkEcashSpent(
@@ -43,7 +45,7 @@ class _EcashRedeemPromptState extends State<EcashRedeemPrompt> {
       if (isSpent) {
         if (mounted) {
           ToastService().show(
-            message: "This Ecash has already been claimed",
+            message: l10n.ecashAlreadyClaimed,
             duration: const Duration(seconds: 5),
             onTap: () {},
             icon: Icon(Icons.error),
@@ -120,6 +122,7 @@ class _EcashRedeemPromptState extends State<EcashRedeemPrompt> {
   }
 
   Future<void> _handleAsyncRedeem() async {
+    final l10n = context.l10n;
     try {
       final isSpent = await checkEcashSpent(
         federationId: widget.fed.federationId,
@@ -128,7 +131,7 @@ class _EcashRedeemPromptState extends State<EcashRedeemPrompt> {
 
       if (isSpent) {
         ToastService().show(
-          message: "This Ecash has already been claimed",
+          message: l10n.ecashAlreadyClaimed,
           duration: const Duration(seconds: 5),
           onTap: () {},
           icon: Icon(Icons.error),
@@ -145,7 +148,7 @@ class _EcashRedeemPromptState extends State<EcashRedeemPrompt> {
 
       Navigator.of(context).popUntil((route) => route.isFirst);
       ToastService().show(
-        message: "Ecash redeem started in background",
+        message: l10n.ecashRedeemStarted,
         duration: const Duration(seconds: 3),
         onTap: () {},
         icon: Icon(Icons.check),
@@ -153,7 +156,7 @@ class _EcashRedeemPromptState extends State<EcashRedeemPrompt> {
     } catch (e) {
       AppLogger.instance.error("Could not reissue Ecash $e");
       ToastService().show(
-        message: "Could not claim Ecash",
+        message: l10n.couldNotClaimEcash,
         duration: const Duration(seconds: 5),
         onTap: () {},
         icon: Icon(Icons.error),
@@ -172,7 +175,7 @@ class _EcashRedeemPromptState extends State<EcashRedeemPrompt> {
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         Text(
-          'Do you want to redeem the following Ecash to ${widget.fed.federationName}?',
+          context.l10n.redeemEcashPrompt(widget.fed.federationName),
           style: theme.textTheme.titleLarge,
           textAlign: TextAlign.center,
         ),
@@ -215,7 +218,7 @@ class _EcashRedeemPromptState extends State<EcashRedeemPrompt> {
                       valueColor: AlwaysStoppedAnimation<Color>(Colors.black),
                     ),
                   )
-                  : const Text('Redeem now'),
+                  : Text(context.l10n.redeemNow),
         ),
         const SizedBox(height: 16),
         OutlinedButton(
@@ -228,7 +231,7 @@ class _EcashRedeemPromptState extends State<EcashRedeemPrompt> {
               borderRadius: BorderRadius.circular(12),
             ),
           ),
-          child: const Text('Redeem when online'),
+          child: Text(context.l10n.redeemWhenOnline),
         ),
       ],
     );

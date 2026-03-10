@@ -10,6 +10,7 @@ import 'package:ecashapp/success.dart';
 import 'package:ecashapp/toast.dart';
 import 'package:ecashapp/utils.dart';
 import 'package:ecashapp/utils/pin_guard.dart';
+import 'package:ecashapp/extensions/build_context_l10n.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
@@ -127,7 +128,7 @@ class _OnchainSendState extends State<OnchainSend> {
     } catch (e) {
       AppLogger.instance.error('Failed to calculate fees: $e');
       ToastService().show(
-        message: "Failed to calculate fees",
+        message: context.l10n.failedToCalculateFees,
         duration: const Duration(seconds: 5),
         onTap: () {},
         icon: Icon(Icons.error),
@@ -161,8 +162,8 @@ class _OnchainSendState extends State<OnchainSend> {
   String _getQuoteTimeRemaining() {
     if (_quoteExpiry == null) return '';
     final remaining = _quoteExpiry!.difference(DateTime.now()).inSeconds;
-    if (remaining <= 0) return 'Expired';
-    return '${remaining}s remaining';
+    if (remaining <= 0) return context.l10n.expired;
+    return context.l10n.secondsRemaining(remaining);
   }
 
   String _formatFeeRate(double? feeRate) {
@@ -216,7 +217,7 @@ class _OnchainSendState extends State<OnchainSend> {
     } catch (e) {
       AppLogger.instance.error('Failed to withdraw: $e');
       ToastService().show(
-        message: "Withdrawl failed",
+        message: context.l10n.withdrawalFailed,
         duration: const Duration(seconds: 5),
         onTap: () {},
         icon: Icon(Icons.error),
@@ -288,11 +289,11 @@ class _OnchainSendState extends State<OnchainSend> {
                 style: const TextStyle(fontFamily: 'monospace', fontSize: 14),
                 decoration: InputDecoration(
                   labelText: 'Bitcoin Address',
-                  hintText: 'Enter destination address',
+                  hintText: context.l10n.enterDestinationAddress,
                   suffixIcon: IconButton(
                     icon: const Icon(Icons.paste),
                     onPressed: _pasteFromClipboard,
-                    tooltip: 'Paste',
+                    tooltip: context.l10n.paste,
                   ),
                 ),
                 maxLines: 1,
@@ -305,28 +306,28 @@ class _OnchainSendState extends State<OnchainSend> {
                   onPressed: _loadingFees ? null : _calculateFees,
                   child:
                       _loadingFees
-                          ? const Row(
+                          ? Row(
                             mainAxisSize: MainAxisSize.min,
                             children: [
-                              SizedBox(
+                              const SizedBox(
                                 width: 16,
                                 height: 16,
                                 child: CircularProgressIndicator(
                                   strokeWidth: 2,
                                 ),
                               ),
-                              SizedBox(width: 8),
-                              Text('Calculating...'),
+                              const SizedBox(width: 8),
+                              Text(context.l10n.calculating),
                             ],
                           )
-                          : const Text('Calculate Fees'),
+                          : Text(context.l10n.calculateFees),
                 ),
 
               // Fee quote display
               if (_feeQuote != null) ...[
                 const SizedBox(height: 16),
                 Text(
-                  'Withdrawal Quote',
+                  context.l10n.withdrawalQuote,
                   style: Theme.of(context).textTheme.titleMedium?.copyWith(
                     color: Theme.of(context).colorScheme.onSurface,
                     fontWeight: FontWeight.w600,
@@ -357,11 +358,11 @@ class _OnchainSendState extends State<OnchainSend> {
                         ),
                       ),
                       CopyableDetailRow(
-                        label: 'Fee Rate',
+                        label: context.l10n.feeRate,
                         value: _formatFeeRate(_feeRateSatsPerVbyte),
                       ),
                       CopyableDetailRow(
-                        label: 'Tx Size',
+                        label: context.l10n.txSize,
                         value: '${_txSizeVbytes ?? 0} vB',
                       ),
                       CopyableDetailRow(
@@ -415,21 +416,21 @@ class _OnchainSendState extends State<OnchainSend> {
                                 : _calculateFees,
                         child:
                             _loadingFees
-                                ? const Row(
+                                ? Row(
                                   mainAxisSize: MainAxisSize.min,
                                   children: [
-                                    SizedBox(
+                                    const SizedBox(
                                       width: 14,
                                       height: 14,
                                       child: CircularProgressIndicator(
                                         strokeWidth: 2,
                                       ),
                                     ),
-                                    SizedBox(width: 6),
-                                    Text('Updating...'),
+                                    const SizedBox(width: 6),
+                                    Text(context.l10n.updating),
                                   ],
                                 )
-                                : const Text('Recalculate'),
+                                : Text(context.l10n.recalculate),
                       ),
                     ),
                     const SizedBox(width: 8),
@@ -452,7 +453,7 @@ class _OnchainSendState extends State<OnchainSend> {
                                     strokeWidth: 2,
                                   ),
                                 )
-                                : const Text('Confirm Withdrawal'),
+                                : Text(context.l10n.confirmWithdrawal),
                       ),
                     ),
                   ],

@@ -4,6 +4,7 @@ import 'package:ecashapp/utils.dart';
 import 'package:flutter/material.dart';
 import 'package:ecashapp/lib.dart';
 import 'package:flutter/services.dart';
+import 'package:ecashapp/extensions/build_context_l10n.dart';
 
 class OnchainAddressesList extends StatefulWidget {
   final FederationSelector fed;
@@ -64,7 +65,7 @@ class _OnchainAddressesListState extends State<OnchainAddressesList> {
       widget.updateAddresses();
 
       ToastService().show(
-        message: 'Rechecked ${abbreviateAddress(address)}',
+        message: context.l10n.recheckedAddress(abbreviateAddress(address)),
         duration: const Duration(seconds: 5),
         onTap: () {},
         icon: Icon(Icons.info),
@@ -72,7 +73,7 @@ class _OnchainAddressesListState extends State<OnchainAddressesList> {
     } catch (e) {
       AppLogger.instance.error("Failed to refresh address: $e");
       ToastService().show(
-        message: "Failed to refresh address",
+        message: context.l10n.failedToRefreshAddress,
         duration: const Duration(seconds: 5),
         onTap: () {},
         icon: Icon(Icons.error),
@@ -90,14 +91,14 @@ class _OnchainAddressesListState extends State<OnchainAddressesList> {
         } else if (snapshot.hasError) {
           return Center(
             child: Text(
-              'Failed to load addresses',
+              context.l10n.failedToLoadAddresses,
               style: Theme.of(context).textTheme.bodyMedium,
             ),
           );
         } else if (!snapshot.hasData || snapshot.data!.isEmpty) {
           return Center(
             child: Text(
-              'No addresses found',
+              context.l10n.noAddressesFound,
               style: Theme.of(context).textTheme.bodyMedium,
             ),
           );
@@ -149,7 +150,7 @@ class _OnchainAddressesListState extends State<OnchainAddressesList> {
                         // mempool.space link button
                         if (explorerUrl != null)
                           IconButton(
-                            tooltip: 'View on mempool.space',
+                            tooltip: context.l10n.viewOnMempoolSpace,
                             icon: const Icon(Icons.open_in_new),
                             color: Theme.of(context).colorScheme.secondary,
                             onPressed: () async {
@@ -160,13 +161,13 @@ class _OnchainAddressesListState extends State<OnchainAddressesList> {
 
                         // Copy button
                         IconButton(
-                          tooltip: 'Copy address',
+                          tooltip: context.l10n.copyAddress,
                           icon: const Icon(Icons.copy),
                           color: Theme.of(context).colorScheme.primary,
                           onPressed: () {
                             Clipboard.setData(ClipboardData(text: address));
                             ToastService().show(
-                              message: "Address copied to clipboard",
+                              message: context.l10n.addressCopiedToClipboard,
                               duration: const Duration(seconds: 5),
                               onTap: () {},
                               icon: Icon(Icons.check),
@@ -176,7 +177,7 @@ class _OnchainAddressesListState extends State<OnchainAddressesList> {
 
                         // Refresh button
                         IconButton(
-                          tooltip: 'Recheck address',
+                          tooltip: context.l10n.recheckAddress,
                           icon: const Icon(Icons.refresh),
                           color: Theme.of(context).colorScheme.primary,
                           onPressed: () async {

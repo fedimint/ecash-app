@@ -1,6 +1,7 @@
 import 'package:ecashapp/lib.dart';
 import 'package:ecashapp/toast.dart';
 import 'package:ecashapp/utils.dart';
+import 'package:ecashapp/extensions/build_context_l10n.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
@@ -27,7 +28,7 @@ class _ImportFollowsDialogState extends State<ImportFollowsDialog> {
     super.dispose();
   }
 
-  String get _hintText {
+  String _hintText(BuildContext context) {
     switch (_method) {
       case _IdentityMethod.npub:
         return 'npub1...';
@@ -36,12 +37,12 @@ class _ImportFollowsDialogState extends State<ImportFollowsDialog> {
     }
   }
 
-  String get _labelText {
+  String _labelText(BuildContext context) {
     switch (_method) {
       case _IdentityMethod.npub:
-        return 'Nostr Public Key (npub)';
+        return context.l10n.nostrPublicKeyNpub;
       case _IdentityMethod.nip05:
-        return 'NIP-05 Identifier';
+        return context.l10n.nip05Identifier;
     }
   }
 
@@ -80,7 +81,7 @@ class _ImportFollowsDialogState extends State<ImportFollowsDialog> {
       syncContacts(npub: npub);
 
       ToastService().show(
-        message: 'Syncing contacts in background...',
+        message: context.l10n.syncingContactsInBackground,
         duration: const Duration(seconds: 2),
         onTap: () {},
         icon: const Icon(Icons.sync),
@@ -96,8 +97,8 @@ class _ImportFollowsDialogState extends State<ImportFollowsDialog> {
         _processing = false;
         _identityError =
             _method == _IdentityMethod.nip05
-                ? 'Could not verify NIP-05 identifier'
-                : 'Could not find this npub on Nostr';
+                ? context.l10n.couldNotVerifyNip05
+                : context.l10n.couldNotFindNpub;
       });
     }
   }
@@ -136,7 +137,7 @@ class _ImportFollowsDialogState extends State<ImportFollowsDialog> {
       });
     } else {
       ToastService().show(
-        message: 'Unrecognized format',
+        message: context.l10n.unrecognizedFormat,
         duration: const Duration(seconds: 3),
         onTap: () {},
         icon: const Icon(Icons.warning),
@@ -155,7 +156,7 @@ class _ImportFollowsDialogState extends State<ImportFollowsDialog> {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           Text(
-            'Sync Contacts',
+            context.l10n.syncContactsTitle,
             style: theme.textTheme.titleLarge?.copyWith(
               fontWeight: FontWeight.bold,
             ),
@@ -163,7 +164,7 @@ class _ImportFollowsDialogState extends State<ImportFollowsDialog> {
           ),
           const SizedBox(height: 8),
           Text(
-            'Enter your Nostr identity to sync your follows as contacts. Contacts will be updated automatically.',
+            context.l10n.syncContactsDescription,
             style: theme.textTheme.bodyMedium?.copyWith(
               color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
             ),
@@ -199,8 +200,8 @@ class _ImportFollowsDialogState extends State<ImportFollowsDialog> {
           TextField(
             controller: _inputController,
             decoration: InputDecoration(
-              labelText: _labelText,
-              hintText: _hintText,
+              labelText: _labelText(context),
+              hintText: _hintText(context),
               errorText: _identityError,
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(12),
@@ -208,7 +209,7 @@ class _ImportFollowsDialogState extends State<ImportFollowsDialog> {
               suffixIcon: IconButton(
                 icon: const Icon(Icons.content_paste),
                 onPressed: _pasteFromClipboard,
-                tooltip: 'Paste from clipboard',
+                tooltip: context.l10n.pasteFromClipboardTooltip,
               ),
             ),
             keyboardType:
@@ -235,8 +236,8 @@ class _ImportFollowsDialogState extends State<ImportFollowsDialog> {
           // Help text
           Text(
             _method == _IdentityMethod.nip05
-                ? 'Enter your NIP-05 identifier like user@domain.com'
-                : 'Enter your Nostr public key starting with npub1',
+                ? context.l10n.enterNip05Hint
+                : context.l10n.enterNpubHint,
             style: theme.textTheme.bodySmall?.copyWith(
               color: theme.colorScheme.onSurface.withValues(alpha: 0.5),
             ),
@@ -263,7 +264,7 @@ class _ImportFollowsDialogState extends State<ImportFollowsDialog> {
                         height: 20,
                         child: CircularProgressIndicator(strokeWidth: 2),
                       )
-                      : const Text('Start Syncing'),
+                      : Text(context.l10n.startSyncing),
             ),
           ),
         ],

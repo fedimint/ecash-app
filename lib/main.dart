@@ -3,11 +3,13 @@ import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:ecashapp/deep_link_handler.dart';
 import 'package:ecashapp/frb_generated.dart';
+import 'package:ecashapp/generated/app_localizations.dart';
 import 'package:ecashapp/splash.dart';
 import 'package:ecashapp/theme.dart';
 import 'package:ecashapp/utils.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_foreground_task/flutter_foreground_task.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:path_provider/path_provider.dart';
 
@@ -51,6 +53,16 @@ class ecashapp extends StatelessWidget {
       title: "ecashapp",
       debugShowCheckedModeBanner: false,
       theme: cypherpunkNinjaTheme,
+      localizationsDelegates: const [
+        AppLocalizations.delegate,
+        GlobalMaterialLocalizations.delegate,
+        GlobalWidgetsLocalizations.delegate,
+        GlobalCupertinoLocalizations.delegate,
+      ],
+      supportedLocales: const [
+        Locale('en'),
+        Locale('es'),
+      ],
       home: Splash(dir: dir),
     );
   }

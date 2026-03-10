@@ -1,3 +1,4 @@
+import 'package:ecashapp/extensions/build_context_l10n.dart';
 import 'package:ecashapp/lib.dart';
 import 'package:ecashapp/toast.dart';
 import 'package:ecashapp/utils.dart';
@@ -52,7 +53,7 @@ class _RelaysState extends State<Relays> {
     } catch (e) {
       AppLogger.instance.error("Could not add relay: $e");
       ToastService().show(
-        message: "Could not add relay",
+        message: context.l10n.couldNotAddRelay,
         duration: const Duration(seconds: 5),
         onTap: () {},
         icon: Icon(Icons.error),
@@ -66,7 +67,7 @@ class _RelaysState extends State<Relays> {
 
   Widget _buildRelayTile(String relay, bool isConnected) {
     final statusColor = isConnected ? Colors.greenAccent : Colors.redAccent;
-    final statusText = isConnected ? "Connected" : "Disconnected";
+    final statusText = isConnected ? context.l10n.connected : context.l10n.disconnected;
 
     return ListTile(
       leading: ColorFiltered(
@@ -83,7 +84,7 @@ class _RelaysState extends State<Relays> {
       ),
       trailing: IconButton(
         icon: const Icon(Icons.delete, color: Colors.redAccent),
-        tooltip: 'Delete Relay',
+        tooltip: context.l10n.deleteRelay,
         onPressed: () async {
           try {
             await removeRelay(relayUri: relay);
@@ -91,7 +92,7 @@ class _RelaysState extends State<Relays> {
           } catch (e) {
             AppLogger.instance.error("Could not delete relay: $e");
             ToastService().show(
-              message: "Could not delete relay",
+              message: context.l10n.couldNotDeleteRelay,
               duration: const Duration(seconds: 5),
               onTap: () {},
               icon: Icon(Icons.error),
@@ -110,7 +111,7 @@ class _RelaysState extends State<Relays> {
         children: [
           Expanded(
             child: Text(
-              "Ecash App uses Nostr relays to back up which federations you have joined. You can customize them below.",
+              context.l10n.relaysDescription,
               style: theme.textTheme.bodyMedium,
             ),
           ),
@@ -136,7 +137,7 @@ class _RelaysState extends State<Relays> {
     }
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Nostr Relays')),
+      appBar: AppBar(title: Text(context.l10n.nostrRelays)),
       body: SafeArea(
         child: Column(
           children: [
@@ -187,7 +188,7 @@ class _RelaysState extends State<Relays> {
                                 ),
                               ),
                             )
-                            : const Text('Add Relay'),
+                            : Text(context.l10n.addRelay),
                   ),
                 ],
               ),
@@ -213,10 +214,10 @@ class _RelaysState extends State<Relays> {
                   } else {
                     final relays = snapshot.data!;
                     if (relays.isEmpty) {
-                      return const Center(
+                      return Center(
                         child: Text(
-                          'No relays found.',
-                          style: TextStyle(color: Colors.white70),
+                          context.l10n.noRelaysFound,
+                          style: const TextStyle(color: Colors.white70),
                         ),
                       );
                     }

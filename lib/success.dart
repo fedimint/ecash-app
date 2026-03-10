@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'package:ecashapp/db.dart';
+import 'package:ecashapp/extensions/build_context_l10n.dart';
 import 'package:ecashapp/providers/preferences_provider.dart';
 import 'package:ecashapp/utils.dart';
 import 'package:flutter/material.dart';
@@ -62,12 +63,14 @@ class _SuccessState extends State<Success> {
     final bitcoinDisplay = context.select<PreferencesProvider, BitcoinDisplay>(
       (prefs) => prefs.bitcoinDisplay,
     );
-    final actionText = widget.received ? 'received' : 'sent';
     final displayAmount = formatBalance(
       widget.amountMsats,
       false,
       bitcoinDisplay,
     );
+    final successMessage = widget.received
+        ? context.l10n.youReceived(displayAmount)
+        : context.l10n.youSent(displayAmount);
 
     return Scaffold(
       body: GestureDetector(
@@ -115,7 +118,7 @@ class _SuccessState extends State<Success> {
 
                     // Success message
                     Text(
-                      'You $actionText $displayAmount',
+                      successMessage,
                       style: const TextStyle(
                         fontSize: 28,
                         fontWeight: FontWeight.bold,
@@ -125,7 +128,7 @@ class _SuccessState extends State<Success> {
                     const SizedBox(height: 12),
                     if (widget.txid != null) ...[
                       Text(
-                        'Transaction ID:',
+                        context.l10n.transactionId,
                         style: TextStyle(
                           fontSize: 14,
                           color: Colors.grey[600],

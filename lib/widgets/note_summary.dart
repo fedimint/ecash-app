@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:ecashapp/db.dart';
+import 'package:ecashapp/extensions/build_context_l10n.dart';
 import 'package:ecashapp/lib.dart';
 import 'package:ecashapp/multimint.dart';
 import 'package:ecashapp/providers/preferences_provider.dart';
@@ -44,7 +45,7 @@ class _NoteSummaryState extends State<NoteSummary> {
           );
           return Center(
             child: Text(
-              'Could not load note summary',
+              context.l10n.couldNotLoadNoteSummary,
               style: theme.textTheme.bodyMedium?.copyWith(
                 color: Colors.redAccent,
               ),
@@ -54,7 +55,7 @@ class _NoteSummaryState extends State<NoteSummary> {
 
         final summary = snapshot.data!;
         if (summary.isEmpty) {
-          return const Center(child: Text("No notes available"));
+          return Center(child: Text(context.l10n.noNotesAvailable));
         }
 
         return SingleChildScrollView(
@@ -64,9 +65,9 @@ class _NoteSummaryState extends State<NoteSummary> {
             dataRowColor: WidgetStatePropertyAll(const Color(0xFF1A1A1A)),
             headingTextStyle: theme.textTheme.titleLarge,
             dataTextStyle: theme.textTheme.bodyLarge,
-            columns: const [
-              DataColumn(label: Text('Denomination')),
-              DataColumn(label: Text('Count')),
+            columns: [
+              DataColumn(label: Text(context.l10n.denomination)),
+              DataColumn(label: Text(context.l10n.countLabel)),
             ],
             rows:
                 summary.map((entry) {

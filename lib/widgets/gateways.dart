@@ -7,6 +7,7 @@ import 'package:ecashapp/utils.dart';
 import 'package:ecashapp/widgets/gateway_details.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:ecashapp/extensions/build_context_l10n.dart';
 
 class GatewaysList extends StatelessWidget {
   final FederationSelector fed;
@@ -31,9 +32,9 @@ class GatewaysList extends StatelessWidget {
           return const Center(child: CircularProgressIndicator());
         } else if (snapshot.hasError) {
           AppLogger.instance.error("Error loading gateways: ${snapshot.error}");
-          return Center(child: Text("Error loading gateways"));
+          return Center(child: Text(context.l10n.errorLoadingGateways));
         } else if (!snapshot.hasData || snapshot.data!.isEmpty) {
-          return const Center(child: Text("No gateways available"));
+          return Center(child: Text(context.l10n.noGatewaysAvailableShort));
         }
 
         final gateways = snapshot.data!;

@@ -9,6 +9,7 @@ import 'package:ecashapp/multimint.dart';
 import 'package:ecashapp/number_pad.dart';
 import 'package:ecashapp/theme.dart';
 import 'package:ecashapp/toast.dart';
+import 'package:ecashapp/extensions/build_context_l10n.dart';
 import 'package:flutter/material.dart';
 
 class ContactsScreen extends StatefulWidget {
@@ -237,19 +238,17 @@ class _ContactsScreenState extends State<ContactsScreen>
       context: context,
       builder:
           (context) => AlertDialog(
-            title: const Text('Stop Syncing'),
-            content: const Text(
-              'This will remove all synced contacts and stop automatic syncing. You can set up syncing again later.',
-            ),
+            title: Text(context.l10n.stopSyncing),
+            content: Text(context.l10n.stopSyncingConfirm),
             actions: [
               TextButton(
                 onPressed: () => Navigator.of(context).pop(false),
-                child: const Text('Cancel'),
+                child: Text(context.l10n.cancel),
               ),
               TextButton(
                 onPressed: () => Navigator.of(context).pop(true),
                 style: TextButton.styleFrom(foregroundColor: Colors.red),
-                child: const Text('Stop Syncing'),
+                child: Text(context.l10n.stopSyncing),
               ),
             ],
           ),
@@ -263,7 +262,7 @@ class _ContactsScreenState extends State<ContactsScreen>
       });
       if (mounted) {
         ToastService().show(
-          message: 'Removed $count contacts',
+          message: context.l10n.removedContacts(count.toInt()),
           duration: const Duration(seconds: 2),
           onTap: () {},
           icon: const Icon(Icons.check),
@@ -316,7 +315,7 @@ class _ContactsScreenState extends State<ContactsScreen>
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Contacts'),
+        title: Text(context.l10n.contacts),
         actions: [
           PopupMenuButton<String>(
             icon: const Icon(Icons.more_vert),
@@ -333,11 +332,11 @@ class _ContactsScreenState extends State<ContactsScreen>
             itemBuilder:
                 (context) => [
                   if (!_syncing && !_hasSynced)
-                    const PopupMenuItem(
+                    PopupMenuItem(
                       value: 'sync',
                       child: ListTile(
                         leading: Icon(Icons.sync),
-                        title: Text('Sync from Nostr'),
+                        title: Text(context.l10n.syncFromNostr),
                         contentPadding: EdgeInsets.zero,
                       ),
                     ),
@@ -350,7 +349,7 @@ class _ContactsScreenState extends State<ContactsScreen>
                           color: theme.colorScheme.error,
                         ),
                         title: Text(
-                          'Stop Syncing',
+                          context.l10n.stopSyncing,
                           style: TextStyle(color: theme.colorScheme.error),
                         ),
                         contentPadding: EdgeInsets.zero,
@@ -371,8 +370,8 @@ class _ContactsScreenState extends State<ContactsScreen>
                       const SizedBox(height: 24),
                       Text(
                         _syncedCount > 0
-                            ? 'Syncing contacts: $_syncedCount synced'
-                            : 'Syncing contacts...',
+                            ? context.l10n.syncingContactsCount(_syncedCount)
+                            : context.l10n.syncingContacts,
                         style: theme.textTheme.bodyLarge,
                       ),
                     ],
@@ -387,7 +386,7 @@ class _ContactsScreenState extends State<ContactsScreen>
                     child: TextField(
                       controller: _searchController,
                       decoration: InputDecoration(
-                        hintText: 'Search contacts...',
+                        hintText: context.l10n.searchContacts,
                         prefixIcon: const Icon(Icons.search),
                         suffixIcon:
                             _searchController.text.isNotEmpty
@@ -424,7 +423,7 @@ class _ContactsScreenState extends State<ContactsScreen>
                                   Text(
                                     _searchController.text.isNotEmpty
                                         ? 'No contacts found'
-                                        : 'No payable contacts',
+                                        : context.l10n.noPayableContacts,
                                     style: theme.textTheme.titleMedium
                                         ?.copyWith(
                                           color: theme.colorScheme.onSurface
@@ -434,7 +433,7 @@ class _ContactsScreenState extends State<ContactsScreen>
                                   const SizedBox(height: 8),
                                   if (_searchController.text.isEmpty)
                                     Text(
-                                      'Sync contacts with Lightning Addresses',
+                                      context.l10n.syncContactsWithLnAddresses,
                                       style: theme.textTheme.bodyMedium
                                           ?.copyWith(
                                             color: theme.colorScheme.onSurface
