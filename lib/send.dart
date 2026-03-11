@@ -33,6 +33,37 @@ class SendPayment extends StatefulWidget {
 class _SendPaymentState extends State<SendPayment> {
   bool _isSending = true;
 
+  String _mapSendErrorToMessage(Object error) {
+    final raw = error.toString();
+    final lower = raw.toLowerCase();
+
+    if (lower.contains('insufficient') ||
+        lower.contains('not enough funds') ||
+        lower.contains('insufficient funds') ||
+        lower.contains('insufficient balance')) {
+      return 'Insufficient balance to pay this invoice (including fees).';
+    }
+
+    if (lower.contains('expired') ||
+        lower.contains('invoice has expired') ||
+        lower.contains('invoice expired')) {
+      return 'This invoice has expired and can no longer be paid.';
+    }
+
+    if (lower.contains('route') ||
+        lower.contains('routing') ||
+        lower.contains('no route') ||
+        lower.contains('could not find a route')) {
+      return 'Could not route your payment. Try a smaller amount or try again later.';
+    }
+
+    // Fallback: include a short version of the backend message if present
+    const maxLength = 120;
+    final trimmed =
+        raw.length <= maxLength ? raw : '${raw.substring(0, maxLength)}…';
+    return trimmed.isEmpty ? 'Failed to send payment.' : trimmed;
+  }
+
   @override
   void initState() {
     super.initState();
@@ -106,11 +137,12 @@ class _SendPaymentState extends State<SendPayment> {
           Navigator.of(context).popUntil((route) => route.isFirst);
         }
       }
-    } catch (e) {
+    } catch (e, stackTrace) {
       AppLogger.instance.error('Error while sending payment: $e');
+      AppLogger.instance.error('Stack trace while sending payment: $stackTrace');
       if (!mounted) return;
       ToastService().show(
-        message: "Failed to send payment",
+        message: _mapSendErrorToMessage(e),
         duration: const Duration(seconds: 5),
         onTap: () {},
         icon: Icon(Icons.error),
