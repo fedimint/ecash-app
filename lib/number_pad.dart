@@ -1,6 +1,7 @@
 import 'package:ecashapp/app.dart';
 import 'package:ecashapp/db.dart';
 import 'package:ecashapp/ecash_send.dart';
+import 'package:ecashapp/extensions/build_context_l10n.dart';
 import 'package:ecashapp/lib.dart';
 import 'package:ecashapp/multimint.dart';
 import 'package:ecashapp/onchain_send.dart';
@@ -123,7 +124,7 @@ class _NumberPadState extends State<NumberPad> {
     final selected = await showFederationPicker(
       context: context,
       federations: feds,
-      title: 'Select Mint',
+      title: context.l10n.selectMint,
     );
 
     if (selected != null && mounted) {
@@ -198,7 +199,7 @@ class _NumberPadState extends State<NumberPad> {
     // Don't allow swap if price data unavailable
     if (btcPrice == null) {
       ToastService().show(
-        message: "Price data unavailable",
+        message: context.l10n.priceDataUnavailable,
         duration: const Duration(seconds: 3),
         onTap: () {},
         icon: const Icon(Icons.warning),
@@ -254,7 +255,7 @@ class _NumberPadState extends State<NumberPad> {
     } catch (e) {
       AppLogger.instance.error('Failed to get balance: $e');
       ToastService().show(
-        message: "Failed to get balance",
+        message: context.l10n.failedToGetBalance,
         duration: const Duration(seconds: 5),
         onTap: () {},
         icon: Icon(Icons.error),
@@ -306,9 +307,9 @@ class _NumberPadState extends State<NumberPad> {
     } catch (e) {
       AppLogger.instance.error("Could not create invoice: $e");
 
-      String errorMessage = "Could not create invoice";
+      String errorMessage = context.l10n.couldNotCreateInvoice;
       if (e.toString().contains("No available gateways")) {
-        errorMessage = "No lightning gateways available for this federation";
+        errorMessage = context.l10n.noGatewaysAvailable;
       }
 
       ToastService().show(
@@ -336,7 +337,7 @@ class _NumberPadState extends State<NumberPad> {
           );
           if (amountMsats > fedBalance) {
             ToastService().show(
-              message: "Balance is too low!",
+              message: context.l10n.balanceTooLow,
               duration: const Duration(seconds: 5),
               onTap: () {},
               icon: Icon(Icons.warning),
@@ -349,8 +350,7 @@ class _NumberPadState extends State<NumberPad> {
 
           await showAppModalBottomSheet(
             context: context,
-            errorMessage:
-                'Could not reach that lightning address. Please check it and try again.',
+            errorMessage: context.l10n.couldNotReachLnAddress,
             childBuilder: () async {
               // Get invoice from LN Address
               final invoice = await getInvoiceFromLnaddressOrLnurl(
@@ -616,9 +616,9 @@ class _NumberPadState extends State<NumberPad> {
                       overflow: TextOverflow.ellipsis,
                     ),
                     const SizedBox(height: 6),
-                    const Text(
-                      'Available',
-                      style: TextStyle(fontSize: 11, color: Colors.grey),
+                    Text(
+                      context.l10n.available,
+                      style: const TextStyle(fontSize: 11, color: Colors.grey),
                     ),
                     const SizedBox(height: 2),
                     remainingBalance == null
@@ -674,9 +674,9 @@ class _NumberPadState extends State<NumberPad> {
     return SafeArea(
       child: Scaffold(
         appBar: AppBar(
-          title: const Text(
-            'Enter Amount',
-            style: TextStyle(fontWeight: FontWeight.bold),
+          title: Text(
+            context.l10n.enterAmount,
+            style: const TextStyle(fontWeight: FontWeight.bold),
           ),
           centerTitle: true,
           backgroundColor: Colors.transparent,
@@ -778,7 +778,7 @@ class _NumberPadState extends State<NumberPad> {
                                   color: Colors.grey,
                                   size: 28,
                                 ),
-                                tooltip: 'Swap input currency',
+                                tooltip: context.l10n.swapInputCurrency,
                                 padding: EdgeInsets.zero,
                                 constraints: const BoxConstraints(),
                               ),
@@ -818,9 +818,9 @@ class _NumberPadState extends State<NumberPad> {
                               ),
                             ),
                           )
-                          : const Text(
-                            'Confirm',
-                            style: TextStyle(
+                          : Text(
+                            context.l10n.confirm,
+                            style: const TextStyle(
                               fontSize: 18,
                               fontWeight: FontWeight.bold,
                             ),

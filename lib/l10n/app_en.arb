@@ -1,0 +1,1239 @@
+{
+  "@@locale": "en",
+
+  "appTitle": "Ecash App",
+  "@appTitle": {},
+
+  "receive": "Receive",
+  "@receive": {},
+
+  "send": "Send",
+  "@send": {},
+
+  "settings": "Settings",
+  "@settings": {},
+
+  "contacts": "Contacts",
+  "@contacts": {},
+
+  "federations": "Federations",
+  "@federations": {},
+
+  "recentTransactions": "Recent Transactions",
+  "@recentTransactions": {},
+
+  "addresses": "Addresses",
+  "@addresses": {},
+
+  "notes": "Notes",
+  "@notes": {},
+
+  "gateways": "Gateways",
+  "@gateways": {},
+
+  "lightning": "Lightning",
+  "@lightning": {},
+
+  "onchain": "Onchain",
+  "@onchain": {},
+
+  "ecash": "Ecash",
+  "@ecash": {},
+
+  "noFederationsFound": "No federations found",
+  "@noFederationsFound": {},
+
+  "recovering": "Recovering...",
+  "@recovering": {},
+
+  "loading": "Loading...",
+  "@loading": {},
+
+  "offline": "Offline",
+  "@offline": {},
+
+  "guardianCount": "{count, plural, =1{1 guardian} other{{count} guardians}}",
+  "@guardianCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+
+  "retrievingFederationBackup": "Retrieving federation backup from Nostr...",
+  "@retrievingFederationBackup": {},
+
+  "tryingToRejoin": "Trying to re-join {host} using peer {peer}...",
+  "@tryingToRejoin": {
+    "placeholders": {
+      "host": {
+        "type": "String"
+      },
+      "peer": {
+        "type": "String"
+      }
+    }
+  },
+
+  "peerMightBeOffline": "Peer might be offline, trying for {seconds} more seconds...",
+  "@peerMightBeOffline": {
+    "placeholders": {
+      "seconds": {
+        "type": "int"
+      }
+    }
+  },
+
+  "joinedFederationRecovering": "Joined {federationName}. Recovering...",
+  "@joinedFederationRecovering": {
+    "placeholders": {
+      "federationName": {
+        "type": "String"
+      }
+    }
+  },
+
+  "joinedFederation": "Joined {federationName}",
+  "@joinedFederation": {
+    "placeholders": {
+      "federationName": {
+        "type": "String"
+      }
+    }
+  },
+
+  "federationReceivedAmount": "{federationName} received {amount}",
+  "@federationReceivedAmount": {
+    "placeholders": {
+      "federationName": {
+        "type": "String"
+      },
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+
+  "contactSyncFailed": "Contact sync failed",
+  "@contactSyncFailed": {},
+
+  "selectFederationToPayFrom": "Select Federation to Pay From",
+  "@selectFederationToPayFrom": {},
+
+  "selectFederation": "Select Federation",
+  "@selectFederation": {},
+
+  "cannotSendWhileRecovering": "Cannot send payments while federation is recovering",
+  "@cannotSendWhileRecovering": {},
+
+  "reJoinedAllFederations": "Re-joined all federations from Nostr",
+  "@reJoinedAllFederations": {},
+
+  "pleaseJoinFederationFirst": "Please join a federation first",
+  "@pleaseJoinFederationFirst": {},
+
+  "unsupportedPaymentType": "Unsupported payment type",
+  "@unsupportedPaymentType": {},
+
+  "failedToProcessPaymentLink": "Failed to process payment link",
+  "@failedToProcessPaymentLink": {},
+
+  "sendTo": "Send To",
+  "@sendTo": {},
+
+  "toLabelText": "To",
+  "@toLabelText": {},
+
+  "recipientHint": "Name, lightning address, or invoice",
+  "@recipientHint": {},
+
+  "checking": "Checking...",
+  "@checking": {},
+
+  "lightningInvoice": "Lightning Invoice",
+  "@lightningInvoice": {},
+
+  "lightningAddress": "Lightning Address",
+  "@lightningAddress": {},
+
+  "lnurl": "LNURL",
+  "@lnurl": {},
+
+  "bitcoinAddress": "Bitcoin Address",
+  "@bitcoinAddress": {},
+
+  "useOnchainSend": "Use On-chain Send for this address",
+  "@useOnchainSend": {},
+
+  "noContactsFound": "No contacts found",
+  "@noContactsFound": {},
+
+  "tryLightningAddressOrInvoice": "Try a lightning address or invoice instead",
+  "@tryLightningAddressOrInvoice": {},
+
+  "couldNotGetPaymentDetails": "Could not get payment details",
+  "@couldNotGetPaymentDetails": {},
+
+  "couldNotParseScannedCode": "Could not parse scanned code",
+  "@couldNotParseScannedCode": {},
+
+  "lightningRequest": "Lightning Request",
+  "@lightningRequest": {},
+
+  "invoiceCopiedToClipboard": "Invoice copied to clipboard",
+  "@invoiceCopiedToClipboard": {},
+
+  "couldNotReceivePayment": "Could not receive payment",
+  "@couldNotReceivePayment": {},
+
+  "settingsTitle": "Settings",
+  "@settingsTitle": {},
+
+  "discoverTitle": "Discover",
+  "@discoverTitle": {},
+
+  "discoverSubtitle": "Find new or join existing federations",
+  "@discoverSubtitle": {},
+
+  "lightningAddressTitle": "Lightning Address",
+  "@lightningAddressTitle": {},
+
+  "lightningAddressSubtitle": "Claim and configure your Lightning Address",
+  "@lightningAddressSubtitle": {},
+
+  "nostrWalletConnect": "Nostr Wallet Connect",
+  "@nostrWalletConnect": {},
+
+  "nostrWalletConnectSubtitle": "Connect to NWC-compatible apps",
+  "@nostrWalletConnectSubtitle": {},
+
+  "nostrRelays": "Nostr Relays",
+  "@nostrRelays": {},
+
+  "nostrRelaysSubtitle": "Add or remove Nostr relays",
+  "@nostrRelaysSubtitle": {},
+
+  "displayTitle": "Display",
+  "@displayTitle": {},
+
+  "displaySubtitle": "Configure Bitcoin and fiat currency display",
+  "@displaySubtitle": {},
+
+  "accessControl": "Access Control",
+  "@accessControl": {},
+
+  "accessControlSubtitle": "Set up PIN code and spending protection",
+  "@accessControlSubtitle": {},
+
+  "mnemonic": "Mnemonic",
+  "@mnemonic": {},
+
+  "mnemonicSubtitle": "View your seed phrase",
+  "@mnemonicSubtitle": {},
+
+  "versionLabel": "Version: {version}",
+  "@versionLabel": {
+    "placeholders": {
+      "version": {
+        "type": "String"
+      }
+    }
+  },
+
+  "enterInviteCode": "Enter invite code",
+  "@enterInviteCode": {},
+
+  "preview": "Preview",
+  "@preview": {},
+
+  "noPublicFederations": "No public federations available to join",
+  "@noPublicFederations": {},
+
+  "couldNotGetFederationMetadata": "Sorry! Could not get federation metadata",
+  "@couldNotGetFederationMetadata": {},
+
+  "sendingPayment": "Sending Payment",
+  "@sendingPayment": {},
+
+  "failedToSendPayment": "Failed to send payment",
+  "@failedToSendPayment": {},
+
+  "youReceived": "You received {amount}",
+  "@youReceived": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+
+  "youSent": "You sent {amount}",
+  "@youSent": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+
+  "transactionId": "Transaction ID:",
+  "@transactionId": {},
+
+  "failedToSend": "Failed to send {amount}",
+  "@failedToSend": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+
+  "pinCode": "PIN Code",
+  "@pinCode": {},
+
+  "pinEnabledDescription": "PIN is enabled. The app will be locked on open and after 30 seconds in the background.",
+  "@pinEnabledDescription": {},
+
+  "pinDisabledDescription": "Set a PIN to protect your wallet. Required on app open and after 30 seconds in the background.",
+  "@pinDisabledDescription": {},
+
+  "removePin": "Remove PIN",
+  "@removePin": {},
+
+  "setUpPin": "Set Up PIN",
+  "@setUpPin": {},
+
+  "requirePinForSpending": "Require PIN for Spending",
+  "@requirePinForSpending": {},
+
+  "requirePinForSpendingDescription": "Require PIN before sending Lightning, ecash, or on-chain payments",
+  "@requirePinForSpendingDescription": {},
+
+  "pinSetSuccessfully": "PIN set successfully",
+  "@pinSetSuccessfully": {},
+
+  "pinRemoved": "PIN removed",
+  "@pinRemoved": {},
+
+  "displaySettings": "Display Settings",
+  "@displaySettings": {},
+
+  "bitcoinDisplay": "Bitcoin Display",
+  "@bitcoinDisplay": {},
+
+  "bip177Option": "BIP177 (₿1,234)",
+  "@bip177Option": {},
+
+  "bip177Description": "Display amounts in bitcoins with leading ₿ prefix",
+  "@bip177Description": {},
+
+  "satsStandardOption": "Sats are the Standard (1,234 sats)",
+  "@satsStandardOption": {},
+
+  "satsStandardDescription": "Display amounts in satoshis with \"sats\" label",
+  "@satsStandardDescription": {},
+
+  "satSymbolOption": "Sat Symbol (1,234丰)",
+  "@satSymbolOption": {},
+
+  "satSymbolDescription": "Use the satoshi symbol (丰) suffix",
+  "@satSymbolDescription": {},
+
+  "noLabelOption": "No label (1,234)",
+  "@noLabelOption": {},
+
+  "noLabelDescription": "Plain numbers without currency indicators",
+  "@noLabelDescription": {},
+
+  "fiatCurrency": "Fiat Currency",
+  "@fiatCurrency": {},
+
+  "usDollar": "US Dollar ($)",
+  "@usDollar": {},
+
+  "unitedStates": "United States",
+  "@unitedStates": {},
+
+  "euro": "Euro (€)",
+  "@euro": {},
+
+  "europeanUnion": "European Union",
+  "@europeanUnion": {},
+
+  "britishPound": "British Pound (£)",
+  "@britishPound": {},
+
+  "unitedKingdom": "United Kingdom",
+  "@unitedKingdom": {},
+
+  "canadianDollar": "Canadian Dollar (C$)",
+  "@canadianDollar": {},
+
+  "canada": "Canada",
+  "@canada": {},
+
+  "swissFranc": "Swiss Franc (CHF)",
+  "@swissFranc": {},
+
+  "switzerland": "Switzerland",
+  "@switzerland": {},
+
+  "australianDollar": "Australian Dollar (A$)",
+  "@australianDollar": {},
+
+  "australia": "Australia",
+  "@australia": {},
+
+  "japaneseYen": "Japanese Yen (¥)",
+  "@japaneseYen": {},
+
+  "japan": "Japan",
+  "@japan": {},
+
+  "displaySettingsUpdated": "Display settings updated!",
+  "@displaySettingsUpdated": {},
+
+  "txDetailAmount": "Amount",
+  "@txDetailAmount": {},
+
+  "txDetailFees": "Fees",
+  "@txDetailFees": {},
+
+  "txDetailTimestamp": "Timestamp",
+  "@txDetailTimestamp": {},
+
+  "txDetailTxid": "Txid",
+  "@txDetailTxid": {},
+
+  "txDetailAddress": "Address",
+  "@txDetailAddress": {},
+
+  "txDetailGateway": "Gateway",
+  "@txDetailGateway": {},
+
+  "txDetailPayeePubkey": "Payee Pubkey",
+  "@txDetailPayeePubkey": {},
+
+  "txDetailPaymentHash": "Payment Hash",
+  "@txDetailPaymentHash": {},
+
+  "txDetailPreimage": "Preimage",
+  "@txDetailPreimage": {},
+
+  "txDetailLnAddress": "LN Address",
+  "@txDetailLnAddress": {},
+
+  "txDetailMinFeeRate": "Min Fee Rate",
+  "@txDetailMinFeeRate": {},
+
+  "txDetailMaxTxSize": "Max Tx Size",
+  "@txDetailMaxTxSize": {},
+
+  "txDetailFee": "Fee",
+  "@txDetailFee": {},
+
+  "txDetailTotal": "Total",
+  "@txDetailTotal": {},
+
+  "somethingWentWrong": "Something Went Wrong",
+  "@somethingWentWrong": {},
+
+  "somethingWentWrongDefault": "Something went wrong. Please try again.",
+  "@somethingWentWrongDefault": {},
+
+  "close": "Close",
+  "@close": {},
+
+  "externalLinkWarning": "External Link Warning",
+  "@externalLinkWarning": {},
+
+  "externalLinkBody": "You are about to navigate to an external block explorer. Before accepting, please consider the privacy implications and consider using a self hosted block explorer.",
+  "@externalLinkBody": {},
+
+  "cancel": "Cancel",
+  "@cancel": {},
+
+  "confirm": "Confirm",
+  "@confirm": {},
+
+  "selectMint": "Select Mint",
+  "@selectMint": {},
+
+  "unknownBalance": "Unknown balance",
+  "@unknownBalance": {},
+
+  "selectAFederation": "Select a Federation",
+  "@selectAFederation": {},
+
+  "selectARelay": "Select a Relay",
+  "@selectARelay": {},
+
+  "connected": "Connected",
+  "@connected": {},
+
+  "disconnected": "Disconnected",
+  "@disconnected": {},
+
+  "disconnect": "Disconnect",
+  "@disconnect": {},
+
+  "showConnectionInfo": "Show Connection Info",
+  "@showConnectionInfo": {},
+
+  "noFederationsJoined": "You haven't joined any federations yet.\nPlease join one to continue.",
+  "@noFederationsJoined": {},
+
+  "scanNwcInstructions": "Scan with your NWC-compatible wallet to connect.",
+  "@scanNwcInstructions": {},
+
+  "connectionString": "Connection String",
+  "@connectionString": {},
+
+  "publicKey": "Public Key",
+  "@publicKey": {},
+
+  "relays": "Relays",
+  "@relays": {},
+
+  "secret": "Secret",
+  "@secret": {},
+
+  "notificationPermissionRequired": "Notification permission required for NWC",
+  "@notificationPermissionRequired": {},
+
+  "nwcActive": "NWC Active",
+  "@nwcActive": {},
+
+  "nwcConnectedTo": "Connected to {federationName}",
+  "@nwcConnectedTo": {
+    "placeholders": {
+      "federationName": {
+        "type": "String"
+      }
+    }
+  },
+
+  "nwcForegroundService": "NWC Foreground Service",
+  "@nwcForegroundService": {},
+
+  "nwcForegroundServiceDescription": "Keeps NWC wallet connections active in the background",
+  "@nwcForegroundServiceDescription": {},
+
+  "username": "Username",
+  "@username": {},
+
+  "domainLabel": "Domain",
+  "@domainLabel": {},
+
+  "checkingAvailability": "Checking availability...",
+  "@checkingAvailability": {},
+
+  "available": "Available",
+  "@available": {},
+
+  "alreadyRegistered": "Already registered",
+  "@alreadyRegistered": {},
+
+  "currentLightningAddress": "This is your current Lightning Address",
+  "@currentLightningAddress": {},
+
+  "unsupportedFederation": "Sorry, this federation is not currently supported",
+  "@unsupportedFederation": {},
+
+  "invalidLightningAddress": "Invalid Lightning Address",
+  "@invalidLightningAddress": {},
+
+  "unavailable": "Unavailable",
+  "@unavailable": {},
+
+  "register": "Register",
+  "@register": {},
+
+  "couldNotContactServer": "Could not contact Lightning Address Server.",
+  "@couldNotContactServer": {},
+
+  "advanced": "Advanced",
+  "@advanced": {},
+
+  "lightningAddressApi": "Lightning Address API",
+  "@lightningAddressApi": {},
+
+  "recurringdApi": "Recurringd API",
+  "@recurringdApi": {},
+
+  "setLabel": "Set {label}",
+  "@setLabel": {
+    "placeholders": {
+      "label": {
+        "type": "String"
+      }
+    }
+  },
+
+  "unableToGetDomains": "Unable to get Lightning Address domains",
+  "@unableToGetDomains": {},
+
+  "unableToCheckAvailability": "Unable to check Lightning Address availability",
+  "@unableToCheckAvailability": {},
+
+  "claimedAddress": "Claimed {address}",
+  "@claimedAddress": {
+    "placeholders": {
+      "address": {
+        "type": "String"
+      }
+    }
+  },
+
+  "couldNotRegisterLnAddress": "Could not register Lightning Address",
+  "@couldNotRegisterLnAddress": {},
+
+  "leaveFederation": "Leave Federation",
+  "@leaveFederation": {},
+
+  "leaveFederationConfirm": "Are you sure you want to leave this federation? You will need to re-join this federation to access any remaining funds.",
+  "@leaveFederationConfirm": {},
+
+  "joinFederation": "Join Federation",
+  "@joinFederation": {},
+
+  "joinAndRedeemEcash": "Join and Redeem Ecash",
+  "@joinAndRedeemEcash": {},
+
+  "recover": "Recover",
+  "@recover": {},
+
+  "guardianTab": "Guardians",
+  "@guardianTab": {},
+
+  "utxoTab": "UTXOs",
+  "@utxoTab": {},
+
+  "connectedToGuardians": "Connected to {online} / {total} Guardians",
+  "@connectedToGuardians": {
+    "placeholders": {
+      "online": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
+
+  "testNetworkWarning": "Warning: This is a test network ({network}) and is not worth anything.",
+  "@testNetworkWarning": {
+    "placeholders": {
+      "network": {
+        "type": "String"
+      }
+    }
+  },
+
+  "copyInviteCode": "Copy invite code",
+  "@copyInviteCode": {},
+
+  "viewInviteCode": "View invite code",
+  "@viewInviteCode": {},
+
+  "inviteCode": "Invite Code",
+  "@inviteCode": {},
+
+  "inviteCodeCopied": "Invite code for {name} copied",
+  "@inviteCodeCopied": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+
+  "couldNotGetInviteCode": "Could not get invite code",
+  "@couldNotGetInviteCode": {},
+
+  "couldNotJoinFederation": "Could not join federation",
+  "@couldNotJoinFederation": {},
+
+  "ecashAlreadyClaimed": "This Ecash has already been claimed",
+  "@ecashAlreadyClaimed": {},
+
+  "couldNotClaimEcash": "Could not claim Ecash",
+  "@couldNotClaimEcash": {},
+
+  "cannotConnectForUtxos": "Cannot connect to federation to retrieve UTXOs.",
+  "@cannotConnectForUtxos": {},
+
+  "noUtxosFound": "No UTXOs found.",
+  "@noUtxosFound": {},
+
+  "couldNotLoadUtxos": "Could not load Federation's UTXOs",
+  "@couldNotLoadUtxos": {},
+
+  "copyTxid": "Copy txid",
+  "@copyTxid": {},
+
+  "txidCopied": "Txid {txid} copied",
+  "@txidCopied": {
+    "placeholders": {
+      "txid": {
+        "type": "String"
+      }
+    }
+  },
+
+  "viewOnMempoolSpace": "View on mempool.space",
+  "@viewOnMempoolSpace": {},
+
+  "enterDestinationAddress": "Enter destination address",
+  "@enterDestinationAddress": {},
+
+  "paste": "Paste",
+  "@paste": {},
+
+  "calculating": "Calculating...",
+  "@calculating": {},
+
+  "calculateFees": "Calculate Fees",
+  "@calculateFees": {},
+
+  "withdrawalQuote": "Withdrawal Quote",
+  "@withdrawalQuote": {},
+
+  "feeRate": "Fee Rate",
+  "@feeRate": {},
+
+  "txSize": "Tx Size",
+  "@txSize": {},
+
+  "expired": "Expired",
+  "@expired": {},
+
+  "secondsRemaining": "{seconds}s remaining",
+  "@secondsRemaining": {
+    "placeholders": {
+      "seconds": {
+        "type": "int"
+      }
+    }
+  },
+
+  "updating": "Updating...",
+  "@updating": {},
+
+  "recalculate": "Recalculate",
+  "@recalculate": {},
+
+  "confirmWithdrawal": "Confirm Withdrawal",
+  "@confirmWithdrawal": {},
+
+  "withdrawalFailed": "Withdrawal failed",
+  "@withdrawalFailed": {},
+
+  "failedToCalculateFees": "Failed to calculate fees",
+  "@failedToCalculateFees": {},
+
+  "scanQr": "Scan QR",
+  "@scanQr": {},
+
+  "cannotBeParsed": "Sorry! That cannot be parsed.",
+  "@cannotBeParsed": {},
+
+  "couldNotGetLightningPaymentDetails": "Sorry! Could not get Lightning payment details",
+  "@couldNotGetLightningPaymentDetails": {},
+
+  "validEcashNoFederation": "Valid ecash detected, but we cannot determine the federation",
+  "@validEcashNoFederation": {},
+
+  "noSufficientBalance": "No federation with sufficient balance.",
+  "@noSufficientBalance": {},
+
+  "clipboardIsEmpty": "Clipboard is empty",
+  "@clipboardIsEmpty": {},
+
+  "pasting": "Pasting...",
+  "@pasting": {},
+
+  "pasteFromClipboard": "Paste from Clipboard",
+  "@pasteFromClipboard": {},
+
+  "gettingChangeFromMint": "Getting change from mint...",
+  "@gettingChangeFromMint": {},
+
+  "failedToLoadEcash": "Failed to load Ecash",
+  "@failedToLoadEcash": {},
+
+  "ecashWithdrawn": "Ecash Withdrawn",
+  "@ecashWithdrawn": {},
+
+  "ecashCopiedToClipboard": "Ecash copied to clipboard",
+  "@ecashCopiedToClipboard": {},
+
+  "federationLabel": "Federation",
+  "@federationLabel": {},
+
+  "confirmPayment": "Confirm Payment",
+  "@confirmPayment": {},
+
+  "amountSpent": "{amount} spent",
+  "@amountSpent": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+
+  "couldNotSendEcash": "Could not send Ecash",
+  "@couldNotSendEcash": {},
+
+  "redeemEcashPrompt": "Do you want to redeem the following Ecash to {federationName}?",
+  "@redeemEcashPrompt": {
+    "placeholders": {
+      "federationName": {
+        "type": "String"
+      }
+    }
+  },
+
+  "redeemNow": "Redeem now",
+  "@redeemNow": {},
+
+  "redeemWhenOnline": "Redeem when online",
+  "@redeemWhenOnline": {},
+
+  "ecashRedeemStarted": "Ecash redeem started in background",
+  "@ecashRedeemStarted": {},
+
+  "confirmLightningPayment": "Confirm Lightning Payment",
+  "@confirmLightningPayment": {},
+
+  "selectGateway": "Select Gateway",
+  "@selectGateway": {},
+
+  "gateway": "Gateway",
+  "@gateway": {},
+
+  "payerFederation": "Payer Federation",
+  "@payerFederation": {},
+
+  "sendPayment": "Send Payment",
+  "@sendPayment": {},
+
+  "enterAmount": "Enter Amount",
+  "@enterAmount": {},
+
+  "priceDataUnavailable": "Price data unavailable",
+  "@priceDataUnavailable": {},
+
+  "balanceTooLow": "Balance is too low!",
+  "@balanceTooLow": {},
+
+  "swapInputCurrency": "Swap input currency",
+  "@swapInputCurrency": {},
+
+  "couldNotCreateInvoice": "Could not create invoice",
+  "@couldNotCreateInvoice": {},
+
+  "noGatewaysAvailable": "No lightning gateways available for this federation",
+  "@noGatewaysAvailable": {},
+
+  "couldNotReachLnAddress": "Could not reach that lightning address. Please check it and try again.",
+  "@couldNotReachLnAddress": {},
+
+  "failedToGetBalance": "Failed to get balance",
+  "@failedToGetBalance": {},
+
+  "enterSeedPhrase": "Enter Seed Phrase",
+  "@enterSeedPhrase": {},
+
+  "enter12WordRecoveryPhrase": "Enter your 12-word recovery phrase",
+  "@enter12WordRecoveryPhrase": {},
+
+  "word": "word",
+  "@word": {},
+
+  "addRelay": "Add Relay",
+  "@addRelay": {},
+
+  "customNostrRelayPrompt": "Want to use a custom Nostr relay for recovery? Add it here",
+  "@customNostrRelayPrompt": {},
+
+  "relaysDescription": "Ecash App uses Nostr relays to back up which federations you have joined. You can customize them below.",
+  "@relaysDescription": {},
+
+  "deleteRelay": "Delete Relay",
+  "@deleteRelay": {},
+
+  "noRelaysFound": "No relays found.",
+  "@noRelaysFound": {},
+
+  "couldNotAddRelay": "Could not add relay",
+  "@couldNotAddRelay": {},
+
+  "couldNotDeleteRelay": "Could not delete relay",
+  "@couldNotDeleteRelay": {},
+
+  "depositInstructions": "You can use this address to deposit funds to the federation:",
+  "@depositInstructions": {},
+
+  "depositInformation": "Deposit Information",
+  "@depositInformation": {},
+
+  "peginFee": "Peg-in Fee",
+  "@peginFee": {},
+
+  "unableToFetchFee": "Unable to fetch fee",
+  "@unableToFetchFee": {},
+
+  "noFeeConfigured": "No fee configured",
+  "@noFeeConfigured": {},
+
+  "peginFeeDescription": "This fee is deducted by the federation when your deposit is claimed.",
+  "@peginFeeDescription": {},
+
+  "couldNotGetNewAddress": "Could not get new address",
+  "@couldNotGetNewAddress": {},
+
+  "addressCopiedToClipboard": "Address copied to clipboard",
+  "@addressCopiedToClipboard": {},
+
+  "noLightningTransactionsYet": "No lightning transactions yet",
+  "@noLightningTransactionsYet": {},
+
+  "noOnchainTransactionsYet": "No onchain transactions yet",
+  "@noOnchainTransactionsYet": {},
+
+  "noEcashTransactionsYet": "No Ecash transactions yet",
+  "@noEcashTransactionsYet": {},
+
+  "lightningReceiveTitle": "Lightning Receive",
+  "@lightningReceiveTitle": {},
+
+  "lightningSendTitle": "Lightning Send",
+  "@lightningSendTitle": {},
+
+  "lightningAddressReceiveTitle": "Lightning Address Receive",
+  "@lightningAddressReceiveTitle": {},
+
+  "ecashReceiveTitle": "Ecash Receive",
+  "@ecashReceiveTitle": {},
+
+  "ecashSendTitle": "Ecash Send",
+  "@ecashSendTitle": {},
+
+  "onchainReceiveTitle": "Onchain Receive",
+  "@onchainReceiveTitle": {},
+
+  "onchainSendTitle": "Onchain Send",
+  "@onchainSendTitle": {},
+
+  "checkClaimStatus": "Check Claim Status",
+  "@checkClaimStatus": {},
+
+  "redeemEcash": "Redeem Ecash",
+  "@redeemEcash": {},
+
+  "ecashHasBeenClaimed": "This Ecash has been claimed",
+  "@ecashHasBeenClaimed": {},
+
+  "ecashNotClaimedYet": "This Ecash has not been claimed yet",
+  "@ecashNotClaimedYet": {},
+
+  "unableToCheckEcashStatus": "Unable to check Ecash status",
+  "@unableToCheckEcashStatus": {},
+
+  "viewOnBlockExplorer": "View on Block Explorer",
+  "@viewOnBlockExplorer": {},
+
+  "failedToLoadAddresses": "Failed to load addresses",
+  "@failedToLoadAddresses": {},
+
+  "noAddressesFound": "No addresses found",
+  "@noAddressesFound": {},
+
+  "recheckedAddress": "Rechecked {address}",
+  "@recheckedAddress": {
+    "placeholders": {
+      "address": {
+        "type": "String"
+      }
+    }
+  },
+
+  "failedToRefreshAddress": "Failed to refresh address",
+  "@failedToRefreshAddress": {},
+
+  "copyAddress": "Copy address",
+  "@copyAddress": {},
+
+  "recheckAddress": "Recheck address",
+  "@recheckAddress": {},
+
+  "errorLoadingGateways": "Error loading gateways",
+  "@errorLoadingGateways": {},
+
+  "noGatewaysAvailableShort": "No gateways available",
+  "@noGatewaysAvailableShort": {},
+
+  "couldNotLoadNoteSummary": "Could not load note summary",
+  "@couldNotLoadNoteSummary": {},
+
+  "noNotesAvailable": "No notes available",
+  "@noNotesAvailable": {},
+
+  "denomination": "Denomination",
+  "@denomination": {},
+
+  "countLabel": "Count",
+  "@countLabel": {},
+
+  "lightningGateway": "Lightning Gateway",
+  "@lightningGateway": {},
+
+  "endpointLabel": "Endpoint",
+  "@endpointLabel": {},
+
+  "routingFee": "Routing Fee",
+  "@routingFee": {},
+
+  "transactionFee": "Transaction Fee",
+  "@transactionFee": {},
+
+  "lightningAliasLabel": "Lightning Alias",
+  "@lightningAliasLabel": {},
+
+  "nodePublicKey": "Node Public Key",
+  "@nodePublicKey": {},
+
+  "viewOnAmboss": "View on Amboss",
+  "@viewOnAmboss": {},
+
+  "copyTitle": "Copy {title}",
+  "@copyTitle": {
+    "placeholders": {
+      "title": {
+        "type": "String"
+      }
+    }
+  },
+
+  "copiedText": "Copied {text}",
+  "@copiedText": {
+    "placeholders": {
+      "text": {
+        "type": "String"
+      }
+    }
+  },
+
+  "stopSyncing": "Stop Syncing",
+  "@stopSyncing": {},
+
+  "stopSyncingConfirm": "This will remove all synced contacts and stop automatic syncing. You can set up syncing again later.",
+  "@stopSyncingConfirm": {},
+
+  "syncFromNostr": "Sync from Nostr",
+  "@syncFromNostr": {},
+
+  "searchContacts": "Search contacts...",
+  "@searchContacts": {},
+
+  "removedContacts": "Removed {count} contacts",
+  "@removedContacts": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+
+  "noPayableContacts": "No payable contacts",
+  "@noPayableContacts": {},
+
+  "syncContactsWithLnAddresses": "Sync contacts with Lightning Addresses",
+  "@syncContactsWithLnAddresses": {},
+
+  "syncingContacts": "Syncing contacts...",
+  "@syncingContacts": {},
+
+  "syncingContactsCount": "Syncing contacts: {count} synced",
+  "@syncingContactsCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+
+  "syncContactsTitle": "Sync Contacts",
+  "@syncContactsTitle": {},
+
+  "syncContactsDescription": "Enter your Nostr identity to sync your follows as contacts. Contacts will be updated automatically.",
+  "@syncContactsDescription": {},
+
+  "nostrPublicKeyNpub": "Nostr Public Key (npub)",
+  "@nostrPublicKeyNpub": {},
+
+  "nip05Identifier": "NIP-05 Identifier",
+  "@nip05Identifier": {},
+
+  "startSyncing": "Start Syncing",
+  "@startSyncing": {},
+
+  "pasteFromClipboardTooltip": "Paste from clipboard",
+  "@pasteFromClipboardTooltip": {},
+
+  "syncingContactsInBackground": "Syncing contacts in background...",
+  "@syncingContactsInBackground": {},
+
+  "unrecognizedFormat": "Unrecognized format",
+  "@unrecognizedFormat": {},
+
+  "couldNotVerifyNip05": "Could not verify NIP-05 identifier",
+  "@couldNotVerifyNip05": {},
+
+  "couldNotFindNpub": "Could not find this npub on Nostr",
+  "@couldNotFindNpub": {},
+
+  "enterNip05Hint": "Enter your NIP-05 identifier like user@domain.com",
+  "@enterNip05Hint": {},
+
+  "enterNpubHint": "Enter your Nostr public key starting with npub1",
+  "@enterNpubHint": {},
+
+  "selectContact": "Select Contact",
+  "@selectContact": {},
+
+  "addContactsWithLnAddresses": "Add contacts with Lightning Addresses",
+  "@addContactsWithLnAddresses": {},
+
+  "scan": "Scan",
+  "@scan": {},
+
+  "pendingReceive": "Pending Receive",
+  "@pendingReceive": {},
+
+  "txInMempool": "Tx in mempool",
+  "@txInMempool": {},
+
+  "txInBlockRemainingConfs": "Tx in block {blockHeight}. Remaining confs: {needed}",
+  "@txInBlockRemainingConfs": {
+    "placeholders": {
+      "blockHeight": {
+        "type": "String"
+      },
+      "needed": {
+        "type": "String"
+      }
+    }
+  },
+
+  "txConfirmedClaimingEcash": "Tx confirmed, claiming ecash",
+  "@txConfirmedClaimingEcash": {},
+
+  "couldNotGetFederationMetadataScan": "Sorry! Could not get federation metadata",
+  "@couldNotGetFederationMetadataScan": {},
+
+  "txSent": "Sent",
+  "@txSent": {},
+
+  "txReceived": "Received",
+  "@txReceived": {},
+
+  "testNetworkMessage": "This is a test network and is not worth anything.",
+  "@testNetworkMessage": {},
+
+  "yourRecoveryPhrase": "Your Recovery Phrase",
+  "@yourRecoveryPhrase": {},
+
+  "seedPhraseAckWarning": "Please acknowledge that you have written your seed phrase down by holding the button below",
+  "@seedPhraseAckWarning": {},
+
+  "seedPhraseAckButton": "I have written my seed down",
+  "@seedPhraseAckButton": {},
+
+  "networkLabel": "Network: {network}",
+  "@networkLabel": {
+    "placeholders": {
+      "network": {
+        "type": "String"
+      }
+    }
+  },
+
+  "observerLink": "Explore more at observer.fedimint.org",
+  "@observerLink": {},
+
+  "welcomeToEcashApp": "Welcome to Ecash App",
+  "@welcomeToEcashApp": {},
+
+  "chooseHowToGetStarted": "Choose how you want to get started.",
+  "@chooseHowToGetStarted": {},
+
+  "createNewWallet": "Create New Wallet",
+  "@createNewWallet": {},
+
+  "createNewWalletDescription": "Set up a brand new wallet with a secure seed phrase.",
+  "@createNewWalletDescription": {},
+
+  "recoverWallet": "Recover Wallet",
+  "@recoverWallet": {},
+
+  "recoverWalletDescription": "Restore your wallet using a recovery phrase.",
+  "@recoverWalletDescription": {},
+
+  "loadingPrices": "Loading prices...",
+  "@loadingPrices": {},
+
+  "priceUnavailable": "Price unavailable",
+  "@priceUnavailable": {},
+
+  "moduleProgress": "{module} module progress",
+  "@moduleProgress": {
+    "placeholders": {
+      "module": {
+        "type": "String"
+      }
+    }
+  },
+
+  "confirmPin": "Confirm PIN",
+  "@confirmPin": {},
+
+  "enterNewPin": "Enter New PIN",
+  "@enterNewPin": {},
+
+  "enterCurrentPin": "Enter Current PIN",
+  "@enterCurrentPin": {},
+
+  "enterPin": "Enter PIN",
+  "@enterPin": {},
+
+  "reenterPinToConfirm": "Re-enter your PIN to confirm",
+  "@reenterPinToConfirm": {},
+
+  "pinDigitsHint": "4-6 digits",
+  "@pinDigitsHint": {},
+
+  "pinsDoNotMatch": "PINs do not match",
+  "@pinsDoNotMatch": {},
+
+  "incorrectPin": "Incorrect PIN",
+  "@incorrectPin": {},
+
+  "continueButton": "Continue",
+  "@continueButton": {},
+
+  "cameraScanNotSupportedLinux": "Camera scanning is not supported on Linux.\nUse the \"Paste from Clipboard\" button below.",
+  "@cameraScanNotSupportedLinux": {},
+
+  "cameraPermissionRequired": "Camera permission is required to scan QR codes",
+  "@cameraPermissionRequired": {},
+
+  "openSettings": "Open Settings",
+  "@openSettings": {},
+
+  "scanQrCodeTooltip": "Scan QR code",
+  "@scanQrCodeTooltip": {}
+}

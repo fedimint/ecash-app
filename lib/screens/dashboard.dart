@@ -1,7 +1,7 @@
 import 'dart:async';
-import '../constants/transaction_keys.dart';
 
 import 'package:ecashapp/db.dart';
+import 'package:ecashapp/extensions/build_context_l10n.dart';
 import 'package:ecashapp/recovery_progress.dart';
 import 'package:ecashapp/utils.dart';
 import 'package:ecashapp/widgets/addresses.dart';
@@ -293,14 +293,14 @@ class _DashboardState extends State<Dashboard> {
                 children: [
                   SpeedDialChild(
                     child: const Icon(Icons.download),
-                    label: 'Receive',
+                    label: context.l10n.receive,
                     backgroundColor: Colors.green,
                     onTap: () => _scheduleAction(_onReceivePressed),
                   ),
                   if (balanceMsats != null && balanceMsats! > BigInt.zero) ...[
                     SpeedDialChild(
                       child: const Icon(Icons.upload),
-                      label: 'Send',
+                      label: context.l10n.send,
                       backgroundColor: Colors.blue,
                       onTap: () => _scheduleAction(_onSendPressed),
                     ),
@@ -389,13 +389,13 @@ class _DashboardState extends State<Dashboard> {
                         labelColor: Theme.of(context).colorScheme.primary,
                         unselectedLabelColor: Colors.grey,
                         tabs: [
-                          const Tab(text: 'Recent Transactions'),
+                          Tab(text: context.l10n.recentTransactions),
                           if (_selectedPaymentType == PaymentType.onchain)
-                            const Tab(text: 'Addresses'),
+                            Tab(text: context.l10n.addresses),
                           if (_selectedPaymentType == PaymentType.ecash)
-                            const Tab(text: 'Notes'),
+                            Tab(text: context.l10n.notes),
                           if (_selectedPaymentType == PaymentType.lightning)
-                            const Tab(text: "Gateways"),
+                            Tab(text: context.l10n.gateways),
                         ],
                       ),
                       const SizedBox(height: 8),
@@ -448,15 +448,18 @@ class _DashboardState extends State<Dashboard> {
         },
         selectedItemColor: Theme.of(context).colorScheme.primary,
         unselectedItemColor: Colors.grey,
-        items: const [
+        items: [
           BottomNavigationBarItem(
-            icon: Icon(Icons.flash_on),
-            label: 'Lightning',
+            icon: const Icon(Icons.flash_on),
+            label: context.l10n.lightning,
           ),
-          BottomNavigationBarItem(icon: Icon(Icons.link), label: 'Onchain'),
           BottomNavigationBarItem(
-            icon: Icon(Icons.currency_bitcoin),
-            label: TransactionDetailKeys.ecash,
+            icon: const Icon(Icons.link),
+            label: context.l10n.onchain,
+          ),
+          BottomNavigationBarItem(
+            icon: const Icon(Icons.currency_bitcoin),
+            label: context.l10n.ecash,
           ),
         ],
       ),

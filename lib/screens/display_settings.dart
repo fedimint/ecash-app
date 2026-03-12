@@ -1,4 +1,5 @@
 import 'package:ecashapp/db.dart';
+import 'package:ecashapp/extensions/build_context_l10n.dart';
 import 'package:ecashapp/providers/preferences_provider.dart';
 import 'package:ecashapp/toast.dart';
 import 'package:flutter/material.dart';
@@ -33,7 +34,7 @@ class _DisplaySettingsScreenState extends State<DisplaySettingsScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Display Settings'),
+        title: Text(context.l10n.displaySettings),
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
           onPressed: _handleBackNavigation,
@@ -52,7 +53,7 @@ class _DisplaySettingsScreenState extends State<DisplaySettingsScreen> {
               ),
               const SizedBox(width: 12),
               Text(
-                'Bitcoin Display',
+                context.l10n.bitcoinDisplay,
                 style: theme.textTheme.titleLarge?.copyWith(
                   fontWeight: FontWeight.bold,
                   color: theme.colorScheme.primary,
@@ -74,7 +75,7 @@ class _DisplaySettingsScreenState extends State<DisplaySettingsScreen> {
                     vertical: 8,
                   ),
                   title: Text(
-                    'BIP177 (₿1,234)',
+                    context.l10n.bip177Option,
                     style: TextStyle(
                       fontWeight:
                           _selectedBitcoinDisplay == BitcoinDisplay.bip177
@@ -87,7 +88,7 @@ class _DisplaySettingsScreenState extends State<DisplaySettingsScreen> {
                     ),
                   ),
                   subtitle: Text(
-                    'Display amounts in bitcoins with leading ₿ prefix',
+                    context.l10n.bip177Description,
                     style: theme.textTheme.bodySmall?.copyWith(
                       color: theme.colorScheme.onSurfaceVariant,
                     ),
@@ -106,7 +107,7 @@ class _DisplaySettingsScreenState extends State<DisplaySettingsScreen> {
                     vertical: 8,
                   ),
                   title: Text(
-                    'Sats are the Standard (1,234 sats)',
+                    context.l10n.satsStandardOption,
                     style: TextStyle(
                       fontWeight:
                           _selectedBitcoinDisplay == BitcoinDisplay.sats
@@ -119,7 +120,7 @@ class _DisplaySettingsScreenState extends State<DisplaySettingsScreen> {
                     ),
                   ),
                   subtitle: Text(
-                    'Display amounts in satoshis with "sats" label',
+                    context.l10n.satsStandardDescription,
                     style: theme.textTheme.bodySmall?.copyWith(
                       color: theme.colorScheme.onSurfaceVariant,
                     ),
@@ -138,7 +139,7 @@ class _DisplaySettingsScreenState extends State<DisplaySettingsScreen> {
                     vertical: 8,
                   ),
                   title: Text(
-                    'Sat Symbol (1,234丰)',
+                    context.l10n.satSymbolOption,
                     style: TextStyle(
                       fontWeight:
                           _selectedBitcoinDisplay == BitcoinDisplay.symbol
@@ -151,7 +152,7 @@ class _DisplaySettingsScreenState extends State<DisplaySettingsScreen> {
                     ),
                   ),
                   subtitle: Text(
-                    'Use the satoshi symbol (丰) suffix',
+                    context.l10n.satSymbolDescription,
                     style: theme.textTheme.bodySmall?.copyWith(
                       color: theme.colorScheme.onSurfaceVariant,
                     ),
@@ -170,7 +171,7 @@ class _DisplaySettingsScreenState extends State<DisplaySettingsScreen> {
                     vertical: 8,
                   ),
                   title: Text(
-                    'No label (1,234)',
+                    context.l10n.noLabelOption,
                     style: TextStyle(
                       fontWeight:
                           _selectedBitcoinDisplay == BitcoinDisplay.nothing
@@ -183,7 +184,7 @@ class _DisplaySettingsScreenState extends State<DisplaySettingsScreen> {
                     ),
                   ),
                   subtitle: Text(
-                    'Plain numbers without currency indicators',
+                    context.l10n.noLabelDescription,
                     style: theme.textTheme.bodySmall?.copyWith(
                       color: theme.colorScheme.onSurfaceVariant,
                     ),
@@ -212,7 +213,7 @@ class _DisplaySettingsScreenState extends State<DisplaySettingsScreen> {
               ),
               const SizedBox(width: 12),
               Text(
-                'Fiat Currency',
+                context.l10n.fiatCurrency,
                 style: theme.textTheme.titleLarge?.copyWith(
                   fontWeight: FontWeight.bold,
                   color: theme.colorScheme.primary,
@@ -234,7 +235,7 @@ class _DisplaySettingsScreenState extends State<DisplaySettingsScreen> {
                     vertical: 8,
                   ),
                   title: Text(
-                    'US Dollar (\$)',
+                    context.l10n.usDollar,
                     style: TextStyle(
                       fontWeight:
                           _selectedFiatCurrency == FiatCurrency.usd
@@ -247,7 +248,7 @@ class _DisplaySettingsScreenState extends State<DisplaySettingsScreen> {
                     ),
                   ),
                   subtitle: Text(
-                    'United States',
+                    context.l10n.unitedStates,
                     style: theme.textTheme.bodySmall?.copyWith(
                       color: theme.colorScheme.onSurfaceVariant,
                     ),
@@ -266,7 +267,7 @@ class _DisplaySettingsScreenState extends State<DisplaySettingsScreen> {
                     vertical: 8,
                   ),
                   title: Text(
-                    'Euro (€)',
+                    context.l10n.euro,
                     style: TextStyle(
                       fontWeight:
                           _selectedFiatCurrency == FiatCurrency.eur
@@ -279,7 +280,7 @@ class _DisplaySettingsScreenState extends State<DisplaySettingsScreen> {
                     ),
                   ),
                   subtitle: Text(
-                    'European Union',
+                    context.l10n.europeanUnion,
                     style: theme.textTheme.bodySmall?.copyWith(
                       color: theme.colorScheme.onSurfaceVariant,
                     ),
@@ -298,7 +299,7 @@ class _DisplaySettingsScreenState extends State<DisplaySettingsScreen> {
                     vertical: 8,
                   ),
                   title: Text(
-                    'British Pound (£)',
+                    context.l10n.britishPound,
                     style: TextStyle(
                       fontWeight:
                           _selectedFiatCurrency == FiatCurrency.gbp
@@ -311,7 +312,7 @@ class _DisplaySettingsScreenState extends State<DisplaySettingsScreen> {
                     ),
                   ),
                   subtitle: Text(
-                    'United Kingdom',
+                    context.l10n.unitedKingdom,
                     style: theme.textTheme.bodySmall?.copyWith(
                       color: theme.colorScheme.onSurfaceVariant,
                     ),
@@ -330,7 +331,7 @@ class _DisplaySettingsScreenState extends State<DisplaySettingsScreen> {
                     vertical: 8,
                   ),
                   title: Text(
-                    'Canadian Dollar (C\$)',
+                    context.l10n.canadianDollar,
                     style: TextStyle(
                       fontWeight:
                           _selectedFiatCurrency == FiatCurrency.cad
@@ -343,7 +344,7 @@ class _DisplaySettingsScreenState extends State<DisplaySettingsScreen> {
                     ),
                   ),
                   subtitle: Text(
-                    'Canada',
+                    context.l10n.canada,
                     style: theme.textTheme.bodySmall?.copyWith(
                       color: theme.colorScheme.onSurfaceVariant,
                     ),
@@ -362,7 +363,7 @@ class _DisplaySettingsScreenState extends State<DisplaySettingsScreen> {
                     vertical: 8,
                   ),
                   title: Text(
-                    'Swiss Franc (CHF)',
+                    context.l10n.swissFranc,
                     style: TextStyle(
                       fontWeight:
                           _selectedFiatCurrency == FiatCurrency.chf
@@ -375,7 +376,7 @@ class _DisplaySettingsScreenState extends State<DisplaySettingsScreen> {
                     ),
                   ),
                   subtitle: Text(
-                    'Switzerland',
+                    context.l10n.switzerland,
                     style: theme.textTheme.bodySmall?.copyWith(
                       color: theme.colorScheme.onSurfaceVariant,
                     ),
@@ -394,7 +395,7 @@ class _DisplaySettingsScreenState extends State<DisplaySettingsScreen> {
                     vertical: 8,
                   ),
                   title: Text(
-                    'Australian Dollar (A\$)',
+                    context.l10n.australianDollar,
                     style: TextStyle(
                       fontWeight:
                           _selectedFiatCurrency == FiatCurrency.aud
@@ -407,7 +408,7 @@ class _DisplaySettingsScreenState extends State<DisplaySettingsScreen> {
                     ),
                   ),
                   subtitle: Text(
-                    'Australia',
+                    context.l10n.australia,
                     style: theme.textTheme.bodySmall?.copyWith(
                       color: theme.colorScheme.onSurfaceVariant,
                     ),
@@ -426,7 +427,7 @@ class _DisplaySettingsScreenState extends State<DisplaySettingsScreen> {
                     vertical: 8,
                   ),
                   title: Text(
-                    'Japanese Yen (¥)',
+                    context.l10n.japaneseYen,
                     style: TextStyle(
                       fontWeight:
                           _selectedFiatCurrency == FiatCurrency.jpy
@@ -439,7 +440,7 @@ class _DisplaySettingsScreenState extends State<DisplaySettingsScreen> {
                     ),
                   ),
                   subtitle: Text(
-                    'Japan',
+                    context.l10n.japan,
                     style: theme.textTheme.bodySmall?.copyWith(
                       color: theme.colorScheme.onSurfaceVariant,
                     ),
@@ -468,7 +469,7 @@ class _DisplaySettingsScreenState extends State<DisplaySettingsScreen> {
   void _handleBackNavigation() {
     if (_hasSettingsChanged()) {
       ToastService().show(
-        message: "Display settings updated!",
+        message: context.l10n.displaySettingsUpdated,
         duration: const Duration(seconds: 2),
         onTap: () {},
         icon: const Icon(Icons.check),

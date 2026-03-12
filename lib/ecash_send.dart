@@ -10,6 +10,7 @@ import 'package:ecashapp/multimint.dart';
 import 'package:ecashapp/toast.dart';
 import 'package:ecashapp/utils.dart';
 import 'package:ecashapp/utils/pin_guard.dart';
+import 'package:ecashapp/extensions/build_context_l10n.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
@@ -71,7 +72,7 @@ class _EcashSendState extends State<EcashSend> {
     } catch (e) {
       AppLogger.instance.error("Could not send Ecash: $e");
       ToastService().show(
-        message: "Could not send Ecash",
+        message: context.l10n.couldNotSendEcash,
         duration: const Duration(seconds: 5),
         onTap: () {},
         icon: Icon(Icons.error),
@@ -96,7 +97,7 @@ class _EcashSendState extends State<EcashSend> {
     Clipboard.setData(ClipboardData(text: _ecash!));
     setState(() => _copied = true);
     ToastService().show(
-      message: "Ecash copied to clipboard",
+      message: context.l10n.ecashCopiedToClipboard,
       duration: const Duration(seconds: 5),
       onTap: () {},
       icon: Icon(Icons.check),
@@ -114,15 +115,15 @@ class _EcashSendState extends State<EcashSend> {
     );
 
     if (_loading) {
-      return const Center(
+      return Center(
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            CircularProgressIndicator(),
-            SizedBox(height: 16),
+            const CircularProgressIndicator(),
+            const SizedBox(height: 16),
             Text(
-              "Getting change from mint...",
-              style: TextStyle(color: Colors.white70),
+              context.l10n.gettingChangeFromMint,
+              style: const TextStyle(color: Colors.white70),
             ),
           ],
         ),
@@ -130,7 +131,7 @@ class _EcashSendState extends State<EcashSend> {
     }
 
     if (_ecash == null) {
-      return const Center(child: Text("⚠️ Failed to load Ecash"));
+      return Center(child: Text(context.l10n.failedToLoadEcash));
     }
 
     final abbreviatedEcash = getAbbreviatedText(_ecash!);
@@ -143,7 +144,7 @@ class _EcashSendState extends State<EcashSend> {
           const Icon(Icons.lock_outline, size: 48),
           const SizedBox(height: 12),
           Text(
-            'Ecash Withdrawn',
+            context.l10n.ecashWithdrawn,
             style: theme.textTheme.headlineSmall?.copyWith(
               color: theme.colorScheme.primary,
               fontWeight: FontWeight.bold,
@@ -232,7 +233,7 @@ class _EcashSendState extends State<EcashSend> {
                   ),
                 ),
                 CopyableDetailRow(
-                  label: 'Federation',
+                  label: context.l10n.federationLabel,
                   value: widget.fed.federationName,
                 ),
               ],
@@ -246,8 +247,9 @@ class _EcashSendState extends State<EcashSend> {
                 if (mounted) {
                   Navigator.of(context).popUntil((route) => route.isFirst);
                   ToastService().show(
-                    message:
-                        '${formatBalance(widget.amountMsats, false, bitcoinDisplay)} spent',
+                    message: context.l10n.amountSpent(
+                      formatBalance(widget.amountMsats, false, bitcoinDisplay),
+                    ),
                     duration: const Duration(seconds: 5),
                     onTap: () {},
                     icon: Icon(Icons.currency_bitcoin),
@@ -262,7 +264,7 @@ class _EcashSendState extends State<EcashSend> {
                   borderRadius: BorderRadius.circular(12),
                 ),
               ),
-              child: const Text("Confirm Payment"),
+              child: Text(context.l10n.confirmPayment),
             ),
           ),
         ],

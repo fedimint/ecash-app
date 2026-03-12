@@ -3,6 +3,8 @@ import 'dart:async';
 import 'package:ecashapp/contacts/contacts_screen.dart';
 import 'package:ecashapp/deep_link_handler.dart';
 import 'package:ecashapp/discover.dart';
+import 'package:ecashapp/extensions/build_context_l10n.dart';
+import 'package:ecashapp/generated/app_localizations.dart';
 import 'package:ecashapp/models.dart';
 import 'package:ecashapp/number_pad.dart';
 import 'package:ecashapp/onchain_send.dart';
@@ -20,6 +22,7 @@ import 'package:ecashapp/toast.dart';
 import 'package:ecashapp/utils.dart';
 import 'package:ecashapp/widgets/federation_picker.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:provider/provider.dart';
 
 final invoicePaidToastVisible = ValueNotifier<bool>(true);
@@ -54,7 +57,8 @@ class _MyAppState extends State<MyApp> {
   bool recoverFederations = false;
   bool _processingDeepLink = false;
 
-  String _recoveryStatus = "Retrieving federation backup from Nostr...";
+  String? _rejoinHost;
+  String? _rejoinPeer;
   Timer? _recoveryTimer;
   int _recoverySecondsRemaining = 30;
 
@@ -121,8 +125,13 @@ class _MyAppState extends State<MyApp> {
         );
       } else if (event is MultimintEvent_NostrRecovery) {
         if (event.field2 != null) {
+          final l10n = _navigatorKey.currentContext?.l10n;
           ToastService().show(
-            message: "Joined ${event.field2!.federationName}. Recovering...",
+            message:
+                l10n?.joinedFederationRecovering(
+                  event.field2!.federationName,
+                ) ??
+                "Joined ${event.field2!.federationName}. Recovering...",
             duration: const Duration(seconds: 5),
             onTap: () {},
             icon: Icon(Icons.info),
@@ -131,8 +140,8 @@ class _MyAppState extends State<MyApp> {
           if (_selectedFederation == null) {
             _startOrResetRecoveryTimer();
             setState(() {
-              _recoveryStatus =
-                  "Trying to re-join ${event.field0} using peer ${event.field1}...";
+              _rejoinHost = event.field0.toString();
+              _rejoinPeer = event.field1.toString();
             });
           }
         }
@@ -140,8 +149,9 @@ class _MyAppState extends State<MyApp> {
         if (!mounted) return;
         final syncEvent = event.field0;
         if (syncEvent is ContactSyncEventKind_Error) {
+          final l10n = _navigatorKey.currentContext?.l10n;
           ToastService().show(
-            message: 'Contact sync failed',
+            message: l10n?.contactSyncFailed ?? 'Contact sync failed',
             duration: const Duration(seconds: 3),
             onTap: () {},
             icon: Icon(Icons.error, color: Colors.red),
@@ -201,7 +211,7 @@ class _MyAppState extends State<MyApp> {
     AppLogger.instance.info("$name received $amount");
 
     ToastService().show(
-      message: "$name received $amount",
+      message: context.l10n.federationReceivedAmount(name, amount),
       duration: const Duration(seconds: 7),
       onTap: () {
         _navigatorKey.currentState?.popUntil((route) => route.isFirst);
@@ -241,8 +251,11 @@ class _MyAppState extends State<MyApp> {
       recoverFederations = false;
     });
 
+    final l10n = _navigatorKey.currentContext?.l10n;
     ToastService().show(
-      message: "Re-joined all federations from Nostr",
+      message:
+          l10n?.reJoinedAllFederations ??
+          "Re-joined all federations from Nostr",
       duration: const Duration(seconds: 5),
       onTap: () {},
       icon: Icon(Icons.info),
@@ -275,8 +288,10 @@ class _MyAppState extends State<MyApp> {
 
     if (_feds.isEmpty) {
       AppLogger.instance.warn('No federations available for deep link');
+      final l10n = _navigatorKey.currentContext?.l10n;
       ToastService().show(
-        message: 'Please join a federation first',
+        message:
+            l10n?.pleaseJoinFederationFirst ?? 'Please join a federation first',
         duration: const Duration(seconds: 5),
         onTap: () {},
         icon: const Icon(Icons.warning, color: Colors.amber),
@@ -295,13 +310,14 @@ class _MyAppState extends State<MyApp> {
       }
 
       // Show federation picker if multiple federations
+      final l10n = context.l10n;
       final selectedFed = await showFederationPicker(
         context: context,
         federations: _feds,
         title:
             deepLink.type == DeepLinkType.lightning
-                ? 'Select Federation to Pay From'
-                : 'Select Federation',
+                ? l10n.selectFederationToPayFrom
+                : l10n.selectFederation,
       );
 
       if (selectedFed == null) {
@@ -313,7 +329,7 @@ class _MyAppState extends State<MyApp> {
 
       if (recovering) {
         ToastService().show(
-          message: 'Cannot send payments while federation is recovering',
+          message: l10n.cannotSendWhileRecovering,
           duration: const Duration(seconds: 5),
           onTap: () {},
           icon: const Icon(Icons.warning, color: Colors.amber),
@@ -405,7 +421,7 @@ class _MyAppState extends State<MyApp> {
         default:
           AppLogger.instance.warn('Unsupported deep link type: $action');
           ToastService().show(
-            message: 'Unsupported payment type',
+            message: l10n.unsupportedPaymentType,
             duration: const Duration(seconds: 5),
             onTap: () {},
             icon: const Icon(Icons.error, color: Colors.red),
@@ -413,8 +429,11 @@ class _MyAppState extends State<MyApp> {
       }
     } catch (e) {
       AppLogger.instance.error('Error handling deep link: $e');
+      final catchL10n = _navigatorKey.currentContext?.l10n;
       ToastService().show(
-        message: 'Failed to process payment link',
+        message:
+            catchL10n?.failedToProcessPaymentLink ??
+            'Failed to process payment link',
         duration: const Duration(seconds: 5),
         onTap: () {},
         icon: const Icon(Icons.error, color: Colors.red),
@@ -465,8 +484,11 @@ class _MyAppState extends State<MyApp> {
     if (result != null) {
       _setSelectedFederation(result.$1, result.$2);
       _refreshFederations();
+      final joinL10n = _navigatorKey.currentContext?.l10n;
       ToastService().show(
-        message: "Joined ${result.$1.federationName}",
+        message:
+            joinL10n?.joinedFederation(result.$1.federationName) ??
+            "Joined ${result.$1.federationName}",
         duration: const Duration(seconds: 5),
         onTap: () {},
         icon: Icon(Icons.info),
@@ -529,14 +551,16 @@ class _MyAppState extends State<MyApp> {
               const CircularProgressIndicator(),
               const SizedBox(height: 16),
               Text(
-                _recoveryStatus,
+                _rejoinHost != null
+                    ? context.l10n.tryingToRejoin(_rejoinHost!, _rejoinPeer!)
+                    : context.l10n.retrievingFederationBackup,
                 style: const TextStyle(fontSize: 16),
                 textAlign: TextAlign.center,
               ),
               const SizedBox(height: 16),
               if (_recoverySecondsRemaining <= 15)
                 Text(
-                  "Peer might be offline, trying for $_recoverySecondsRemaining more seconds...",
+                  context.l10n.peerMightBeOffline(_recoverySecondsRemaining),
                   style: const TextStyle(
                     fontSize: 16,
                     color: Colors.red,
@@ -555,10 +579,17 @@ class _MyAppState extends State<MyApp> {
     return ChangeNotifierProvider(
       create: (_) => PreferencesProvider(),
       child: MaterialApp(
-        title: 'Ecash App',
+        title: 'Ecash App', // i18n-ignore - app name for task switcher
         debugShowCheckedModeBanner: false,
         theme: cypherpunkNinjaTheme,
         navigatorKey: _navigatorKey,
+        localizationsDelegates: const [
+          AppLocalizations.delegate,
+          GlobalMaterialLocalizations.delegate,
+          GlobalWidgetsLocalizations.delegate,
+          GlobalCupertinoLocalizations.delegate,
+        ],
+        supportedLocales: const [Locale('en'), Locale('es')],
         home: Builder(
           builder:
               (innerContext) => Scaffold(
@@ -598,7 +629,7 @@ class _MyAppState extends State<MyApp> {
                   actions: [
                     IconButton(
                       icon: const Icon(Icons.qr_code_scanner),
-                      tooltip: 'Scan',
+                      tooltip: innerContext.l10n.scan,
                       constraints: const BoxConstraints(
                         minWidth: 56,
                         minHeight: 56,

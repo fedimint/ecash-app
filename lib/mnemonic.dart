@@ -1,3 +1,4 @@
+import 'package:ecashapp/extensions/build_context_l10n.dart';
 import 'package:ecashapp/lib.dart';
 import 'package:flutter/material.dart';
 import 'dart:async';
@@ -78,7 +79,7 @@ class _MnemonicState extends State<Mnemonic> {
                 const SizedBox(width: 8),
                 Expanded(
                   child: Text(
-                    'Please acknowledge that you have written your seed phrase down by holding the button below',
+                    context.l10n.seedPhraseAckWarning,
                     style: const TextStyle(color: Colors.orange),
                   ),
                 ),
@@ -88,7 +89,7 @@ class _MnemonicState extends State<Mnemonic> {
         ],
         const SizedBox(height: 16),
         Text(
-          "Your Recovery Phrase",
+          context.l10n.yourRecoveryPhrase,
           style: theme.textTheme.titleLarge,
           textAlign: TextAlign.center,
         ),
@@ -155,7 +156,7 @@ class _MnemonicState extends State<Mnemonic> {
                         height: 48,
                         child: Center(
                           child: Text(
-                            "I have written my seed down",
+                            context.l10n.seedPhraseAckButton,
                             style: theme.textTheme.bodyLarge?.copyWith(
                               color: Colors.black,
                               fontWeight: FontWeight.bold,

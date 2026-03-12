@@ -1,3 +1,4 @@
+import 'package:ecashapp/extensions/build_context_l10n.dart';
 import 'package:flutter/material.dart';
 
 class DashboardHeader extends StatelessWidget {
@@ -50,7 +51,7 @@ class DashboardHeader extends StatelessWidget {
               Padding(
                 padding: const EdgeInsets.only(top: 8.0),
                 child: Text(
-                  "This is a test network and is not worth anything.",
+                  context.l10n.testNetworkMessage,
                   style: Theme.of(context).textTheme.bodySmall?.copyWith(
                     color: Theme.of(context).colorScheme.secondary,
                     fontStyle: FontStyle.italic,

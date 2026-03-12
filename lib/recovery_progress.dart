@@ -4,6 +4,7 @@ import 'package:ecashapp/lib.dart';
 import 'package:ecashapp/models.dart';
 import 'package:ecashapp/multimint.dart';
 import 'package:ecashapp/utils.dart';
+import 'package:ecashapp/extensions/build_context_l10n.dart';
 import 'package:flutter/material.dart';
 
 class RecoveryStatus extends StatefulWidget {
@@ -62,7 +63,9 @@ class _RecoveryStatusState extends State<RecoveryStatus> {
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           Text(
-            '${widget.paymentType.name[0].toUpperCase()}${widget.paymentType.name.substring(1)} module progress',
+            context.l10n.moduleProgress(
+              '${widget.paymentType.name[0].toUpperCase()}${widget.paymentType.name.substring(1)}',
+            ),
             style: Theme.of(context).textTheme.titleLarge,
           ),
           const SizedBox(height: 24),

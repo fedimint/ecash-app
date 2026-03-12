@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:ecashapp/db.dart';
+import 'package:ecashapp/extensions/build_context_l10n.dart';
 import 'package:ecashapp/lib.dart';
 import 'package:ecashapp/multimint.dart';
 import 'package:ecashapp/number_pad.dart';
@@ -207,7 +208,7 @@ class _RecipientEntryState extends State<RecipientEntry> {
     } catch (e) {
       AppLogger.instance.error('Error showing payment preview: $e');
       ToastService().show(
-        message: 'Could not get payment details',
+        message: context.l10n.couldNotGetPaymentDetails,
         duration: const Duration(seconds: 5),
         onTap: () {},
         icon: const Icon(Icons.error),
@@ -263,7 +264,7 @@ class _RecipientEntryState extends State<RecipientEntry> {
     } catch (e) {
       AppLogger.instance.error('Error parsing scanned text: $e');
       ToastService().show(
-        message: 'Could not parse scanned code',
+        message: context.l10n.couldNotParseScannedCode,
         duration: const Duration(seconds: 5),
         onTap: () {},
         icon: const Icon(Icons.error),
@@ -278,9 +279,9 @@ class _RecipientEntryState extends State<RecipientEntry> {
     return SafeArea(
       child: Scaffold(
         appBar: AppBar(
-          title: const Text(
-            'Send To',
-            style: TextStyle(fontWeight: FontWeight.bold),
+          title: Text(
+            context.l10n.sendTo,
+            style: const TextStyle(fontWeight: FontWeight.bold),
           ),
           centerTitle: true,
           backgroundColor: Colors.transparent,
@@ -289,7 +290,7 @@ class _RecipientEntryState extends State<RecipientEntry> {
             IconButton(
               icon: const Icon(Icons.qr_code_scanner),
               onPressed: _openScanner,
-              tooltip: 'Scan QR code',
+              tooltip: context.l10n.scanQrCodeTooltip,
             ),
           ],
         ),
@@ -302,8 +303,8 @@ class _RecipientEntryState extends State<RecipientEntry> {
                 controller: _inputController,
                 autofocus: true,
                 decoration: InputDecoration(
-                  labelText: 'To',
-                  hintText: 'Name, lightning address, or invoice',
+                  labelText: context.l10n.toLabelText,
+                  hintText: context.l10n.recipientHint,
                   prefixIcon: const Icon(Icons.search),
                   suffixIcon:
                       _inputController.text.isNotEmpty
@@ -385,7 +386,7 @@ class _RecipientEntryState extends State<RecipientEntry> {
           ),
         ),
         title: Text(
-          'Checking...',
+          context.l10n.checking,
           style: TextStyle(
             fontWeight: FontWeight.w600,
             color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
@@ -401,7 +402,7 @@ class _RecipientEntryState extends State<RecipientEntry> {
 
     switch (_parsedInput!) {
       case ParsedText_LightningInvoice(:final field0):
-        title = 'Lightning Invoice';
+        title = context.l10n.lightningInvoice;
         subtitle = getAbbreviatedText(field0);
         icon = Icons.flash_on;
         isActionable = true;
@@ -409,12 +410,15 @@ class _RecipientEntryState extends State<RecipientEntry> {
         // Differentiate between Lightning Address and LNURL
         final isLightningAddress = field0.contains('@');
         title = field0;
-        subtitle = isLightningAddress ? 'Lightning Address' : 'LNURL';
+        subtitle =
+            isLightningAddress
+                ? context.l10n.lightningAddress
+                : context.l10n.lnurl;
         icon = isLightningAddress ? Icons.alternate_email : Icons.link;
         isActionable = true;
       case ParsedText_BitcoinAddress():
-        title = 'Bitcoin Address';
-        subtitle = 'Use On-chain Send for this address';
+        title = context.l10n.bitcoinAddress;
+        subtitle = context.l10n.useOnchainSend;
         icon = Icons.currency_bitcoin;
         isActionable = false;
       default:
@@ -464,13 +468,13 @@ class _RecipientEntryState extends State<RecipientEntry> {
           ),
           const SizedBox(height: 12),
           Text(
-            'No contacts found',
+            context.l10n.noContactsFound,
             style: theme.textTheme.bodyLarge?.copyWith(
               color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
             ),
           ),
           Text(
-            'Try a lightning address or invoice instead',
+            context.l10n.tryLightningAddressOrInvoice,
             style: theme.textTheme.bodySmall?.copyWith(
               color: theme.colorScheme.onSurface.withValues(alpha: 0.4),
             ),

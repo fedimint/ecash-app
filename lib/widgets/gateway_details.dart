@@ -1,5 +1,6 @@
 import 'package:ecashapp/db.dart';
 import 'package:ecashapp/detail_row.dart';
+import 'package:ecashapp/extensions/build_context_l10n.dart';
 import 'package:ecashapp/multimint.dart';
 import 'package:ecashapp/providers/preferences_provider.dart';
 import 'package:flutter/material.dart';
@@ -30,7 +31,7 @@ class GatewayDetailsSheet extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          "Lightning Gateway",
+          context.l10n.lightningGateway,
           style: theme.textTheme.headlineSmall?.copyWith(
             fontWeight: FontWeight.bold,
             color: theme.colorScheme.primary,
@@ -50,32 +51,35 @@ class GatewayDetailsSheet extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              CopyableDetailRow(label: 'Endpoint', value: gateway.endpoint),
               CopyableDetailRow(
-                label: 'Routing Fee',
+                label: context.l10n.endpointLabel,
+                value: gateway.endpoint,
+              ),
+              CopyableDetailRow(
+                label: context.l10n.routingFee,
                 value:
                     "${formatBalance(gateway.baseRoutingFee, true, bitcoinDisplay)} + ${gateway.ppmRoutingFee} ppm",
               ),
               CopyableDetailRow(
-                label: 'Transaction Fee',
+                label: context.l10n.transactionFee,
                 value:
                     "${formatBalance(gateway.baseTransactionFee, true, bitcoinDisplay)} + ${gateway.ppmTransactionFee} ppm",
               ),
               if (gateway.lightningAlias != null)
                 CopyableDetailRow(
-                  label: 'Lightning Alias',
+                  label: context.l10n.lightningAliasLabel,
                   value: gateway.lightningAlias!,
                 ),
               if (gateway.lightningNode != null) ...[
                 CopyableDetailRow(
-                  label: 'Node Public Key',
+                  label: context.l10n.nodePublicKey,
                   value: gateway.lightningNode!,
                 ),
                 const SizedBox(height: 4),
                 GestureDetector(
                   onTap: () => _launchAmboss(gateway.lightningNode!),
                   child: Text(
-                    "View on Amboss",
+                    context.l10n.viewOnAmboss,
                     style: theme.textTheme.bodyMedium?.copyWith(
                       color: theme.colorScheme.secondary,
                       decoration: TextDecoration.underline,

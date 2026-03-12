@@ -1,3 +1,4 @@
+import 'package:ecashapp/extensions/build_context_l10n.dart';
 import 'package:ecashapp/toast.dart';
 import 'package:ecashapp/utils.dart';
 import 'package:flutter/material.dart';
@@ -141,7 +142,7 @@ class _LightningAddressDialogState extends State<_LightningAddressDialog> {
             foregroundColor: Theme.of(context).colorScheme.primary,
           ),
           onPressed: () => Navigator.of(context).pop(),
-          child: const Text("Close"),
+          child: Text(context.l10n.close),
         ),
       ],
     );
@@ -236,7 +237,10 @@ class _LightningAddressPage extends StatelessWidget {
             width: double.infinity,
             child: ElevatedButton.icon(
               icon: const Icon(Icons.copy, size: 18, color: Colors.black),
-              label: Text("Copy $title", style: TextStyle(color: Colors.black)),
+              label: Text(
+                context.l10n.copyTitle(title),
+                style: TextStyle(color: Colors.black),
+              ),
               style: ElevatedButton.styleFrom(
                 backgroundColor: Theme.of(context).colorScheme.primary,
                 padding: const EdgeInsets.symmetric(vertical: 14),
@@ -248,7 +252,7 @@ class _LightningAddressPage extends StatelessWidget {
               onPressed: () {
                 Clipboard.setData(ClipboardData(text: data));
                 ToastService().show(
-                  message: "Copied $toastText",
+                  message: context.l10n.copiedText(toastText),
                   duration: const Duration(seconds: 5),
                   onTap: () {},
                   icon: Icon(Icons.check),

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:ecashapp/extensions/build_context_l10n.dart';
 import 'package:ecashapp/widgets/numpad/custom_numpad.dart';
 
 enum PinEntryMode { setup, verify, disable }
@@ -22,32 +23,47 @@ class PinEntry extends StatefulWidget {
 class _PinEntryState extends State<PinEntry> {
   String _pin = '';
   String? _firstPin;
-  String? _error;
+  String? _errorKey;
   bool _confirming = false;
   bool _submitting = false;
 
-  String get _title {
+  String _getTitle(BuildContext context) {
+    final l10n = context.l10n;
     if (widget.mode == PinEntryMode.setup) {
-      return _confirming ? 'Confirm PIN' : 'Enter New PIN';
+      return _confirming ? l10n.confirmPin : l10n.enterNewPin;
     }
     if (widget.mode == PinEntryMode.disable) {
-      return 'Enter Current PIN';
+      return l10n.enterCurrentPin;
     }
-    return 'Enter PIN';
+    return l10n.enterPin;
   }
 
-  String get _subtitle {
+  String _getSubtitle(BuildContext context) {
+    final l10n = context.l10n;
     if (widget.mode == PinEntryMode.setup) {
-      return _confirming ? 'Re-enter your PIN to confirm' : '4-6 digits';
+      return _confirming ? l10n.reenterPinToConfirm : l10n.pinDigitsHint;
     }
     return '';
+  }
+
+  String? _getErrorText(BuildContext context) {
+    if (_errorKey == null) return null;
+    final l10n = context.l10n;
+    switch (_errorKey) {
+      case 'pinsDoNotMatch':
+        return l10n.pinsDoNotMatch;
+      case 'incorrectPin':
+        return l10n.incorrectPin;
+      default:
+        return _errorKey;
+    }
   }
 
   void _onDigit(int digit) {
     if (_pin.length >= 6 || _submitting) return;
     setState(() {
       _pin += digit.toString();
-      _error = null;
+      _errorKey = null;
     });
   }
 
@@ -55,7 +71,7 @@ class _PinEntryState extends State<PinEntry> {
     if (_pin.isEmpty || _submitting) return;
     setState(() {
       _pin = _pin.substring(0, _pin.length - 1);
-      _error = null;
+      _errorKey = null;
     });
   }
 
@@ -74,7 +90,7 @@ class _PinEntryState extends State<PinEntry> {
     if (widget.mode == PinEntryMode.setup && _confirming) {
       if (_pin != _firstPin) {
         setState(() {
-          _error = 'PINs do not match';
+          _errorKey = 'pinsDoNotMatch';
           _pin = '';
           _confirming = false;
           _firstPin = null;
@@ -87,7 +103,7 @@ class _PinEntryState extends State<PinEntry> {
     final result = await widget.onPinSubmitted?.call(_pin) ?? false;
     if (!result && mounted) {
       setState(() {
-        _error = 'Incorrect PIN';
+        _errorKey = 'incorrectPin';
         _pin = '';
         _submitting = false;
       });
@@ -97,6 +113,10 @@ class _PinEntryState extends State<PinEntry> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final l10n = context.l10n;
+    final title = _getTitle(context);
+    final subtitle = _getSubtitle(context);
+    final errorText = _getErrorText(context);
 
     return Scaffold(
       appBar: AppBar(
@@ -113,16 +133,16 @@ class _PinEntryState extends State<PinEntry> {
           children: [
             const Spacer(flex: 1),
             Text(
-              _title,
+              title,
               style: theme.textTheme.headlineSmall?.copyWith(
                 fontWeight: FontWeight.bold,
                 color: theme.colorScheme.primary,
               ),
             ),
-            if (_subtitle.isNotEmpty) ...[
+            if (subtitle.isNotEmpty) ...[
               const SizedBox(height: 8),
               Text(
-                _subtitle,
+                subtitle,
                 style: theme.textTheme.bodyMedium?.copyWith(
                   color: theme.colorScheme.onSurfaceVariant,
                 ),
@@ -159,10 +179,10 @@ class _PinEntryState extends State<PinEntry> {
                 );
               }),
             ),
-            if (_error != null) ...[
+            if (errorText != null) ...[
               const SizedBox(height: 16),
               Text(
-                _error!,
+                errorText,
                 style: theme.textTheme.bodyMedium?.copyWith(color: Colors.red),
               ),
             ],
@@ -200,8 +220,8 @@ class _PinEntryState extends State<PinEntry> {
                           )
                           : Text(
                             widget.mode == PinEntryMode.setup && !_confirming
-                                ? 'Continue'
-                                : 'Confirm',
+                                ? l10n.continueButton
+                                : l10n.confirm,
                             style: const TextStyle(
                               fontSize: 18,
                               fontWeight: FontWeight.bold,

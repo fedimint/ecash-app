@@ -1,5 +1,6 @@
 import 'package:ecashapp/db.dart';
 import 'package:ecashapp/lib.dart';
+import 'package:ecashapp/extensions/build_context_l10n.dart';
 import 'package:flutter/material.dart';
 
 /// A quick picker for selecting a contact with a lightning address.
@@ -93,7 +94,7 @@ class _ContactPickerState extends State<ContactPicker> {
         Padding(
           padding: const EdgeInsets.all(16),
           child: Text(
-            'Select Contact',
+            context.l10n.selectContact,
             style: theme.textTheme.titleLarge?.copyWith(
               fontWeight: FontWeight.bold,
             ),
@@ -106,7 +107,7 @@ class _ContactPickerState extends State<ContactPicker> {
           child: TextField(
             controller: _searchController,
             decoration: InputDecoration(
-              hintText: 'Search contacts...',
+              hintText: context.l10n.searchContacts,
               prefixIcon: const Icon(Icons.search),
               suffixIcon:
                   _searchController.text.isNotEmpty
@@ -148,15 +149,15 @@ class _ContactPickerState extends State<ContactPicker> {
                 const SizedBox(height: 12),
                 Text(
                   _searchController.text.isNotEmpty
-                      ? 'No contacts found'
-                      : 'No payable contacts',
+                      ? context.l10n.noContactsFound
+                      : context.l10n.noPayableContacts,
                   style: theme.textTheme.bodyLarge?.copyWith(
                     color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
                   ),
                 ),
                 if (_searchController.text.isEmpty)
                   Text(
-                    'Add contacts with Lightning Addresses',
+                    context.l10n.addContactsWithLnAddresses,
                     style: theme.textTheme.bodySmall?.copyWith(
                       color: theme.colorScheme.onSurface.withValues(alpha: 0.4),
                     ),
@@ -199,7 +200,7 @@ class _ContactPickerState extends State<ContactPicker> {
                   borderRadius: BorderRadius.circular(12),
                 ),
               ),
-              child: const Text('Cancel'),
+              child: Text(context.l10n.cancel),
             ),
           ),
         ),

@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:io';
 
+import 'package:ecashapp/extensions/build_context_l10n.dart';
 import 'package:ecashapp/lib.dart';
 import 'package:ecashapp/multimint.dart';
 import 'package:ecashapp/toast.dart';
@@ -72,7 +73,7 @@ class _LightningAddressScreenState extends State<LightningAddressScreen> {
     } catch (e) {
       AppLogger.instance.error("Unable to get doamins: $e");
       ToastService().show(
-        message: "Unable to get Lightning Address domains",
+        message: context.l10n.unableToGetDomains,
         duration: const Duration(seconds: 5),
         onTap: () {},
         icon: Icon(Icons.error),
@@ -130,7 +131,7 @@ class _LightningAddressScreenState extends State<LightningAddressScreen> {
       } catch (e) {
         AppLogger.instance.error("Error checking availability: $e");
         ToastService().show(
-          message: "Unable to get check Lightning Address availability",
+          message: context.l10n.unableToCheckAvailability,
           duration: const Duration(seconds: 5),
           onTap: () {},
           icon: Icon(Icons.error),
@@ -157,7 +158,7 @@ class _LightningAddressScreenState extends State<LightningAddressScreen> {
       widget.onLnAddressRegistered(_selectedFederation!, false);
       Navigator.of(context).pop();
       ToastService().show(
-        message: "Claimed $username@$_selectedDomain",
+        message: context.l10n.claimedAddress("$username@$_selectedDomain"),
         duration: const Duration(seconds: 5),
         onTap: () {},
         icon: Icon(Icons.check),
@@ -165,7 +166,7 @@ class _LightningAddressScreenState extends State<LightningAddressScreen> {
     } catch (e) {
       AppLogger.instance.error("Could not register Lightning Address: $e");
       ToastService().show(
-        message: "Could not register Lightning Address",
+        message: context.l10n.couldNotRegisterLnAddress,
         duration: const Duration(seconds: 5),
         onTap: () {},
         icon: Icon(Icons.error),
@@ -227,7 +228,9 @@ class _LightningAddressScreenState extends State<LightningAddressScreen> {
       children: [
         if (_domains.isNotEmpty) ...[
           DropdownButtonFormField<FederationSelector>(
-            decoration: const InputDecoration(labelText: 'Select a Federation'),
+            decoration: InputDecoration(
+              labelText: context.l10n.selectAFederation,
+            ),
             initialValue: _selectedFederation,
             items:
                 feds
@@ -250,7 +253,7 @@ class _LightningAddressScreenState extends State<LightningAddressScreen> {
                 flex: 3,
                 child: TextFormField(
                   controller: _usernameController,
-                  decoration: const InputDecoration(labelText: 'Username'),
+                  decoration: InputDecoration(labelText: context.l10n.username),
                 ),
               ),
               const SizedBox(width: 8),
@@ -259,7 +262,9 @@ class _LightningAddressScreenState extends State<LightningAddressScreen> {
               Expanded(
                 flex: 3,
                 child: DropdownButtonFormField<String>(
-                  decoration: const InputDecoration(labelText: 'Domain'),
+                  decoration: InputDecoration(
+                    labelText: context.l10n.domainLabel,
+                  ),
                   initialValue: _selectedDomain,
                   items:
                       _domains
@@ -300,20 +305,20 @@ class _LightningAddressScreenState extends State<LightningAddressScreen> {
                     Text(
                       () {
                         if (_status == null) {
-                          return "Checking availability...";
+                          return context.l10n.checkingAvailability;
                         } else if (_status is LNAddressStatus_Available) {
-                          return "Available";
+                          return context.l10n.available;
                         } else if (_status is LNAddressStatus_Registered) {
-                          return "Already registered";
+                          return context.l10n.alreadyRegistered;
                         } else if (_status is LNAddressStatus_CurrentConfig) {
-                          return "This is your current Lightning Address";
+                          return context.l10n.currentLightningAddress;
                         } else if (_status
                             is LNAddressStatus_UnsupportedFederation) {
-                          return "Sorry, this federation is not currently supported";
+                          return context.l10n.unsupportedFederation;
                         } else if (_status is LNAddressStatus_Invalid) {
-                          return "Invalid Lightning Address";
+                          return context.l10n.invalidLightningAddress;
                         } else {
-                          return "Unavailable";
+                          return context.l10n.unavailable;
                         }
                       }(),
                       style: TextStyle(
@@ -355,7 +360,7 @@ class _LightningAddressScreenState extends State<LightningAddressScreen> {
                           color: Colors.white,
                         ),
                       )
-                      : const Text('Register'),
+                      : Text(context.l10n.register),
             ),
           ),
           const SizedBox(height: 16),
@@ -364,7 +369,7 @@ class _LightningAddressScreenState extends State<LightningAddressScreen> {
             padding: const EdgeInsets.only(bottom: 24),
             child: Center(
               child: Text(
-                "Could not contact Lightning Address Server.",
+                context.l10n.couldNotContactServer,
                 textAlign: TextAlign.center,
                 style: TextStyle(
                   color: Theme.of(context).colorScheme.error,
@@ -385,7 +390,7 @@ class _LightningAddressScreenState extends State<LightningAddressScreen> {
           child: Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              const Text('Advanced'),
+              Text(context.l10n.advanced),
               Icon(
                 _showAdvanced
                     ? Icons.keyboard_arrow_up
@@ -446,7 +451,7 @@ class _LightningAddressScreenState extends State<LightningAddressScreen> {
             Center(
               child: ElevatedButton(
                 onPressed: onSet,
-                child: Text('Set $label'),
+                child: Text(context.l10n.setLabel(label)),
               ),
             ),
           ],
@@ -458,7 +463,7 @@ class _LightningAddressScreenState extends State<LightningAddressScreen> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         buildRow(
-          label: 'Lightning Address API',
+          label: context.l10n.lightningAddressApi,
           controller: _lnApiController,
           onSet: () async {
             setState(() {
@@ -474,7 +479,7 @@ class _LightningAddressScreenState extends State<LightningAddressScreen> {
           isOnline: _lnAddressApiOnline,
         ),
         buildRow(
-          label: 'Recurringd API',
+          label: context.l10n.recurringdApi,
           controller: _recurringdApiController,
           onSet: () {
             setState(() {
@@ -522,12 +527,12 @@ class _LightningAddressScreenState extends State<LightningAddressScreen> {
 
     if (widget.federations.isEmpty) {
       return Scaffold(
-        appBar: AppBar(title: const Text("Lightning Address")),
+        appBar: AppBar(title: Text(context.l10n.lightningAddressTitle)),
         body: Center(
           child: Padding(
             padding: const EdgeInsets.all(24),
             child: Text(
-              'You haven’t joined any federations yet.\nPlease join one to continue.',
+              context.l10n.noFederationsJoined,
               textAlign: TextAlign.center,
               style: theme.textTheme.bodyLarge?.copyWith(
                 color: theme.colorScheme.onSurface.withOpacity(0.8),
@@ -540,13 +545,13 @@ class _LightningAddressScreenState extends State<LightningAddressScreen> {
 
     if (_loading) {
       return Scaffold(
-        appBar: AppBar(title: const Text('Lightning Address')),
+        appBar: AppBar(title: Text(context.l10n.lightningAddressTitle)),
         body: const Center(child: CircularProgressIndicator()),
       );
     }
 
     return Scaffold(
-      appBar: AppBar(title: const Text("Lightning Address")),
+      appBar: AppBar(title: Text(context.l10n.lightningAddressTitle)),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(24),
         child: Column(

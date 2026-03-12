@@ -15,6 +15,7 @@ import 'package:ecashapp/toast.dart';
 import 'package:ecashapp/utils.dart';
 import 'package:collection/collection.dart';
 import 'package:crypto/crypto.dart';
+import 'package:ecashapp/extensions/build_context_l10n.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:permission_handler/permission_handler.dart';
@@ -232,7 +233,7 @@ class _ScanQRPageState extends State<ScanQRPage> {
       final parsed = await _handleText(actualPayload);
       if (!parsed) {
         ToastService().show(
-          message: "Sorry! That cannot be parsed.",
+          message: context.l10n.cannotBeParsed,
           duration: const Duration(seconds: 5),
           onTap: () {},
           icon: Icon(Icons.error),
@@ -292,7 +293,7 @@ class _ScanQRPageState extends State<ScanQRPage> {
                 "Error when retrieving federation meta: $e",
               );
               ToastService().show(
-                message: "Sorry! Could not get federation metadata",
+                message: context.l10n.couldNotGetFederationMetadataScan,
                 duration: const Duration(seconds: 5),
                 onTap: () {},
                 icon: Icon(Icons.error),
@@ -325,7 +326,7 @@ class _ScanQRPageState extends State<ScanQRPage> {
                 "Error when retrieving payment preview: $e",
               );
               ToastService().show(
-                message: "Sorry! Could not get Lightning payment details",
+                message: context.l10n.couldNotGetLightningPaymentDetails,
                 duration: const Duration(seconds: 5),
                 onTap: () {},
                 icon: Icon(Icons.error),
@@ -432,7 +433,7 @@ class _ScanQRPageState extends State<ScanQRPage> {
                 "Error when retrieving federation meta: $e",
               );
               ToastService().show(
-                message: "Sorry! Could not get federation metadata",
+                message: context.l10n.couldNotGetFederationMetadataScan,
                 duration: const Duration(seconds: 5),
                 onTap: () {},
                 icon: Icon(Icons.error),
@@ -442,8 +443,7 @@ class _ScanQRPageState extends State<ScanQRPage> {
           break;
         case ParsedText_EcashNoFederation():
           ToastService().show(
-            message:
-                "Valid ecash detected, but we cannot determine the federation",
+            message: context.l10n.validEcashNoFederation,
             duration: const Duration(seconds: 5),
             onTap: () {},
             icon: Icon(Icons.error),
@@ -461,7 +461,7 @@ class _ScanQRPageState extends State<ScanQRPage> {
       if (e.toString().contains("sufficient balance")) {
         AppLogger.instance.warn("No federation with sufficient balance");
         ToastService().show(
-          message: "No federation with sufficient balance.",
+          message: context.l10n.noSufficientBalance,
           duration: const Duration(seconds: 5),
           onTap: () {},
           icon: Icon(Icons.error),
@@ -481,7 +481,7 @@ class _ScanQRPageState extends State<ScanQRPage> {
     if (!parsed) {
       AppLogger.instance.warn("$code cannot be parsed");
       ToastService().show(
-        message: "Sorry! That cannot be parsed.",
+        message: context.l10n.cannotBeParsed,
         duration: const Duration(seconds: 5),
         onTap: () {},
         icon: Icon(Icons.error),
@@ -496,7 +496,7 @@ class _ScanQRPageState extends State<ScanQRPage> {
 
     if (text.isEmpty) {
       ToastService().show(
-        message: "Clipboard is empty",
+        message: context.l10n.clipboardIsEmpty,
         duration: const Duration(seconds: 5),
         onTap: () {},
         icon: Icon(Icons.warning),
@@ -509,7 +509,7 @@ class _ScanQRPageState extends State<ScanQRPage> {
     if (!parsed) {
       AppLogger.instance.warn("$text cannot be parsed");
       ToastService().show(
-        message: "Sorry! That cannot be parsed.",
+        message: context.l10n.cannotBeParsed,
         duration: const Duration(seconds: 5),
         onTap: () {},
         icon: Icon(Icons.error),
@@ -532,9 +532,9 @@ class _ScanQRPageState extends State<ScanQRPage> {
     return SafeArea(
       child: Scaffold(
         appBar: AppBar(
-          title: const Text(
-            'Scan QR',
-            style: TextStyle(fontWeight: FontWeight.bold),
+          title: Text(
+            context.l10n.scanQr,
+            style: const TextStyle(fontWeight: FontWeight.bold),
           ),
           centerTitle: true,
           backgroundColor: Colors.transparent,
@@ -561,8 +561,8 @@ class _ScanQRPageState extends State<ScanQRPage> {
                             const SizedBox(height: 16),
                             Text(
                               Platform.isLinux
-                                  ? 'Camera scanning is not supported on Linux.\nUse the "Paste from Clipboard" button below.'
-                                  : 'Camera permission is required to scan QR codes',
+                                  ? context.l10n.cameraScanNotSupportedLinux
+                                  : context.l10n.cameraPermissionRequired,
                               textAlign: TextAlign.center,
                               style: const TextStyle(color: Colors.grey),
                             ),
@@ -572,7 +572,7 @@ class _ScanQRPageState extends State<ScanQRPage> {
                                 onPressed: () async {
                                   await openAppSettings();
                                 },
-                                child: const Text('Open Settings'),
+                                child: Text(context.l10n.openSettings),
                               ),
                             ],
                           ],
@@ -646,7 +646,9 @@ class _ScanQRPageState extends State<ScanQRPage> {
                           )
                           : const Icon(Icons.paste),
                   label: Text(
-                    _isPasting ? "Pasting..." : "Paste from Clipboard",
+                    _isPasting
+                        ? context.l10n.pasting
+                        : context.l10n.pasteFromClipboard,
                   ),
                 ),
               ),

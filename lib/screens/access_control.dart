@@ -1,3 +1,4 @@
+import 'package:ecashapp/extensions/build_context_l10n.dart';
 import 'package:ecashapp/lib.dart';
 import 'package:ecashapp/toast.dart';
 import 'package:ecashapp/widgets/pin_entry.dart';
@@ -48,7 +49,7 @@ class _AccessControlScreenState extends State<AccessControlScreen> {
                     Navigator.pop(context);
                     _load();
                     ToastService().show(
-                      message: 'PIN set successfully',
+                      message: context.l10n.pinSetSuccessfully,
                       duration: const Duration(seconds: 3),
                       onTap: () {},
                       icon: const Icon(Icons.check),
@@ -79,7 +80,7 @@ class _AccessControlScreenState extends State<AccessControlScreen> {
                     Navigator.pop(context);
                     _load();
                     ToastService().show(
-                      message: 'PIN removed',
+                      message: context.l10n.pinRemoved,
                       duration: const Duration(seconds: 3),
                       onTap: () {},
                       icon: const Icon(Icons.check),
@@ -101,13 +102,13 @@ class _AccessControlScreenState extends State<AccessControlScreen> {
 
     if (_loading) {
       return Scaffold(
-        appBar: AppBar(title: const Text('Access Control')),
+        appBar: AppBar(title: Text(context.l10n.accessControl)),
         body: const Center(child: CircularProgressIndicator()),
       );
     }
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Access Control')),
+      appBar: AppBar(title: Text(context.l10n.accessControl)),
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [
@@ -126,7 +127,7 @@ class _AccessControlScreenState extends State<AccessControlScreen> {
                       Icon(Icons.lock, color: theme.colorScheme.primary),
                       const SizedBox(width: 12),
                       Text(
-                        'PIN Code',
+                        context.l10n.pinCode,
                         style: theme.textTheme.titleMedium?.copyWith(
                           fontWeight: FontWeight.w600,
                         ),
@@ -136,8 +137,8 @@ class _AccessControlScreenState extends State<AccessControlScreen> {
                   const SizedBox(height: 8),
                   Text(
                     _hasPin
-                        ? 'PIN is enabled. The app will be locked on open and after 30 seconds in the background.'
-                        : 'Set a PIN to protect your wallet. Required on app open and after 30 seconds in the background.',
+                        ? context.l10n.pinEnabledDescription
+                        : context.l10n.pinDisabledDescription,
                     style: theme.textTheme.bodySmall?.copyWith(
                       color: theme.colorScheme.onSurfaceVariant,
                     ),
@@ -159,7 +160,11 @@ class _AccessControlScreenState extends State<AccessControlScreen> {
                           borderRadius: BorderRadius.circular(12),
                         ),
                       ),
-                      child: Text(_hasPin ? 'Remove PIN' : 'Set Up PIN'),
+                      child: Text(
+                        _hasPin
+                            ? context.l10n.removePin
+                            : context.l10n.setUpPin,
+                      ),
                     ),
                   ),
                 ],
@@ -173,9 +178,9 @@ class _AccessControlScreenState extends State<AccessControlScreen> {
               borderRadius: BorderRadius.circular(16),
             ),
             child: SwitchListTile(
-              title: const Text('Require PIN for Spending'),
+              title: Text(context.l10n.requirePinForSpending),
               subtitle: Text(
-                'Require PIN before sending Lightning, ecash, or on-chain payments',
+                context.l10n.requirePinForSpendingDescription,
                 style: theme.textTheme.bodySmall?.copyWith(
                   color: theme.colorScheme.onSurfaceVariant,
                 ),

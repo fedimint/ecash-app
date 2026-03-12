@@ -178,11 +178,43 @@ The project uses multiple code generation tools:
 1. **flutter_rust_bridge_codegen** - Generates Dart/Rust FFI bindings
 2. **build_runner** (freezed) - Generates immutable data classes with pattern matching
 3. **flutter_launcher_icons** - Generates app icons
+4. **flutter gen-l10n** - Generates localization code from ARB files
 
 Always run `just generate` after:
 - Modifying Rust functions marked with `#[frb]`
 - Adding new Rust types exposed to Dart
 - Modifying freezed-annotated Dart classes
+
+## Internationalization (i18n)
+
+The app uses Flutter's built-in localization system with ARB files.
+
+### Localization Files
+- `lib/l10n/app_en.arb` - English translations (source of truth)
+- `lib/l10n/app_es.arb` - Spanish translations
+- `lib/generated/app_localizations*.dart` - Generated localization code
+
+### Adding/Modifying Translations
+1. Add or modify keys in `lib/l10n/app_en.arb`
+2. Add corresponding translations in `lib/l10n/app_es.arb`
+3. Run `just gen-l10n` to regenerate the localization code
+4. Use translations in Dart code via `context.l10n.keyName`
+
+### Using Translations in Dart
+```dart
+import 'package:ecashapp/extensions/build_context_l10n.dart';
+
+// In a widget with BuildContext:
+Text(context.l10n.someKey)
+
+// With placeholders:
+Text(context.l10n.welcomeMessage(userName))
+```
+
+### Translation Checks
+- `just lint-translations` - Check for missing translations, placeholder mismatches, and hardcoded strings
+- The check runs automatically in CI on every PR
+- To ignore a hardcoded string intentionally, add `// i18n-ignore` comment on the same line
 
 ## Custom Commands & Skills
 

@@ -1,4 +1,5 @@
 import 'package:ecashapp/db.dart';
+import 'package:ecashapp/extensions/build_context_l10n.dart';
 import 'package:ecashapp/providers/preferences_provider.dart';
 import 'package:ecashapp/utils.dart';
 import 'package:flutter/material.dart';
@@ -48,7 +49,7 @@ class Failure extends StatelessWidget {
 
                   // Failure message
                   Text(
-                    'Failed to send $displayAmount',
+                    context.l10n.failedToSend(displayAmount),
                     style: const TextStyle(
                       fontSize: 28,
                       fontWeight: FontWeight.bold,

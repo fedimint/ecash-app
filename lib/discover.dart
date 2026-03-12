@@ -1,3 +1,4 @@
+import 'package:ecashapp/extensions/build_context_l10n.dart';
 import 'package:ecashapp/fed_preview.dart';
 import 'package:ecashapp/lib.dart';
 import 'package:ecashapp/multimint.dart';
@@ -82,7 +83,7 @@ class _Discover extends State<Discover> with SingleTickerProviderStateMixin {
         }
 
         ToastService().show(
-          message: "Joined $name",
+          message: context.l10n.joinedFederation(name),
           duration: const Duration(seconds: 5),
           onTap: () {},
           icon: const Icon(Icons.info),
@@ -91,7 +92,7 @@ class _Discover extends State<Discover> with SingleTickerProviderStateMixin {
     } catch (e) {
       AppLogger.instance.warn("Error when retrieving federation meta: $e");
       ToastService().show(
-        message: "Sorry! Could not get federation metadata",
+        message: context.l10n.couldNotGetFederationMetadata,
         duration: const Duration(seconds: 5),
         onTap: () {},
         icon: const Icon(Icons.error),
@@ -104,7 +105,10 @@ class _Discover extends State<Discover> with SingleTickerProviderStateMixin {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     return Scaffold(
-      appBar: widget.showAppBar ? AppBar(title: const Text('Discover')) : null,
+      appBar:
+          widget.showAppBar
+              ? AppBar(title: Text(context.l10n.discoverTitle))
+              : null,
       backgroundColor: Colors.black,
       body: SafeArea(
         child: FutureBuilder<List<PublicFederation>>(
@@ -120,9 +124,7 @@ class _Discover extends State<Discover> with SingleTickerProviderStateMixin {
                 ),
               );
             } else if (!snapshot.hasData || snapshot.data!.isEmpty) {
-              return const Center(
-                child: Text("No public federations available to join"),
-              );
+              return Center(child: Text(context.l10n.noPublicFederations));
             }
 
             final federations = snapshot.data!;
@@ -208,7 +210,7 @@ class _Discover extends State<Discover> with SingleTickerProviderStateMixin {
               controller: _inviteCodeController,
               style: const TextStyle(color: Colors.white),
               decoration: InputDecoration(
-                labelText: 'Enter invite code',
+                labelText: context.l10n.enterInviteCode,
                 labelStyle: TextStyle(color: Colors.grey[400]),
                 border: InputBorder.none,
               ),
@@ -251,7 +253,7 @@ class _Discover extends State<Discover> with SingleTickerProviderStateMixin {
                         color: Colors.black,
                       ),
                     )
-                    : const Text('Preview'),
+                    : Text(context.l10n.preview),
           ),
         ],
       ),
@@ -263,7 +265,7 @@ class _Discover extends State<Discover> with SingleTickerProviderStateMixin {
       child: GestureDetector(
         onTap: () => launchUrl(Uri.parse("https://observer.fedimint.org/")),
         child: Text(
-          "Explore more at observer.fedimint.org",
+          context.l10n.observerLink,
           style: theme.textTheme.bodyMedium?.copyWith(
             color: Theme.of(context).colorScheme.primary,
             decoration: TextDecoration.underline,
@@ -341,7 +343,11 @@ class _Discover extends State<Discover> with SingleTickerProviderStateMixin {
                       ),
                       const SizedBox(height: 4),
                       Text(
-                        "Network: ${federation.network == 'bitcoin' ? 'mainnet' : federation.network}",
+                        context.l10n.networkLabel(
+                          federation.network == 'bitcoin'
+                              ? 'mainnet'
+                              : federation.network,
+                        ),
                         style: theme.textTheme.bodySmall?.copyWith(
                           color: Colors.grey[400],
                         ),
@@ -388,7 +394,7 @@ class _Discover extends State<Discover> with SingleTickerProviderStateMixin {
                               }
                               : null,
                       icon: const Icon(Icons.info_outline, size: 18),
-                      label: const Text("Preview"),
+                      label: Text(context.l10n.preview),
                     ),
               ],
             ),

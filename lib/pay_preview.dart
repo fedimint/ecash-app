@@ -1,11 +1,11 @@
 import 'package:ecashapp/db.dart';
 import 'package:ecashapp/detail_row.dart';
-import 'constants/transaction_keys.dart';
 import 'package:ecashapp/multimint.dart';
 import 'package:ecashapp/providers/preferences_provider.dart';
 import 'package:ecashapp/send.dart';
 import 'package:ecashapp/utils.dart';
 import 'package:ecashapp/utils/pin_guard.dart';
+import 'package:ecashapp/extensions/build_context_l10n.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
@@ -62,7 +62,7 @@ class _PaymentPreviewWidgetState extends State<PaymentPreviewWidget> {
               Padding(
                 padding: const EdgeInsets.fromLTRB(20, 20, 20, 12),
                 child: Text(
-                  'Select Gateway',
+                  context.l10n.selectGateway,
                   style: theme.textTheme.titleMedium?.copyWith(
                     fontWeight: FontWeight.bold,
                   ),
@@ -135,7 +135,7 @@ class _PaymentPreviewWidgetState extends State<PaymentPreviewWidget> {
                         overflow: TextOverflow.ellipsis,
                       ),
                       Text(
-                        'Fee: ${formatBalance(preview.amountWithFees - widget.previewData.amountMsats, true, bitcoinDisplay)}',
+                        '${context.l10n.txDetailFee}: ${formatBalance(preview.amountWithFees - widget.previewData.amountMsats, true, bitcoinDisplay)}',
                         style: theme.textTheme.bodySmall?.copyWith(
                           color: theme.colorScheme.onSurface.withOpacity(0.6),
                         ),
@@ -180,7 +180,7 @@ class _PaymentPreviewWidgetState extends State<PaymentPreviewWidget> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          'Confirm Lightning Payment',
+          context.l10n.confirmLightningPayment,
           style: theme.textTheme.headlineSmall?.copyWith(
             color: theme.colorScheme.primary,
             fontWeight: FontWeight.bold,
@@ -221,7 +221,7 @@ class _PaymentPreviewWidgetState extends State<PaymentPreviewWidget> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        'Gateway',
+                        context.l10n.gateway,
                         style: theme.textTheme.bodySmall?.copyWith(
                           color: theme.colorScheme.onSurface.withOpacity(0.6),
                         ),
@@ -263,23 +263,23 @@ class _PaymentPreviewWidgetState extends State<PaymentPreviewWidget> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               CopyableDetailRow(
-                label: "Payer Federation",
+                label: context.l10n.payerFederation,
                 value: widget.fed.federationName,
               ),
               CopyableDetailRow(
-                label: TransactionDetailKeys.amount,
+                label: context.l10n.txDetailAmount,
                 value: formatBalance(amount, true, bitcoinDisplay),
               ),
               CopyableDetailRow(
-                label: TransactionDetailKeys.fees,
+                label: context.l10n.txDetailFees,
                 value: formatBalance(fees, true, bitcoinDisplay),
               ),
               CopyableDetailRow(
-                label: TransactionDetailKeys.total,
+                label: context.l10n.txDetailTotal,
                 value: formatBalance(amountWithFees, true, bitcoinDisplay),
               ),
               CopyableDetailRow(
-                label: TransactionDetailKeys.paymentHash,
+                label: context.l10n.txDetailPaymentHash,
                 value: widget.previewData.paymentHash,
               ),
             ],
@@ -290,7 +290,7 @@ class _PaymentPreviewWidgetState extends State<PaymentPreviewWidget> {
           width: double.infinity,
           child: ElevatedButton.icon(
             icon: const Icon(Icons.send, color: Colors.black),
-            label: const Text('Send Payment'),
+            label: Text(context.l10n.sendPayment),
             style: ElevatedButton.styleFrom(
               backgroundColor: theme.colorScheme.primary,
               foregroundColor: Colors.black,

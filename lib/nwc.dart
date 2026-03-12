@@ -1,5 +1,6 @@
 import 'dart:io';
 
+import 'package:ecashapp/extensions/build_context_l10n.dart';
 import 'package:ecashapp/frb_generated.dart';
 import 'package:ecashapp/utils.dart';
 import 'package:flutter/material.dart';
@@ -104,8 +105,8 @@ class _NostrWalletConnectState extends State<NostrWalletConnect> {
         AppLogger.instance.warn('[NWC] Notification permission denied');
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Notification permission required for NWC'),
+            SnackBar(
+              content: Text(context.l10n.notificationPermissionRequired),
             ),
           );
         }
@@ -127,9 +128,8 @@ class _NostrWalletConnectState extends State<NostrWalletConnect> {
       FlutterForegroundTask.init(
         androidNotificationOptions: AndroidNotificationOptions(
           channelId: 'nwc_foreground_service',
-          channelName: 'NWC Foreground Service',
-          channelDescription:
-              'Keeps NWC wallet connections active in the background',
+          channelName: context.l10n.nwcForegroundService,
+          channelDescription: context.l10n.nwcForegroundServiceDescription,
           onlyAlertOnce: true,
         ),
         iosNotificationOptions: const IOSNotificationOptions(
@@ -142,8 +142,10 @@ class _NostrWalletConnectState extends State<NostrWalletConnect> {
 
       await FlutterForegroundTask.startService(
         serviceId: 256,
-        notificationTitle: 'NWC Active',
-        notificationText: 'Connected to ${federation.federationName}',
+        notificationTitle: context.l10n.nwcActive,
+        notificationText: context.l10n.nwcConnectedTo(
+          federation.federationName,
+        ),
         notificationIcon: const NotificationIcon(
           metaDataName: 'com.ecashapp.NOTIFICATION_ICON',
         ),
@@ -323,7 +325,9 @@ class _NostrWalletConnectState extends State<NostrWalletConnect> {
     return Column(
       children: [
         DropdownButtonFormField<FederationSelector>(
-          decoration: const InputDecoration(labelText: 'Select a Federation'),
+          decoration: InputDecoration(
+            labelText: context.l10n.selectAFederation,
+          ),
           initialValue: _selectedFederation,
           items:
               feds
@@ -350,12 +354,15 @@ class _NostrWalletConnectState extends State<NostrWalletConnect> {
         ),
         const SizedBox(height: 16),
         DropdownButtonFormField<String>(
-          decoration: const InputDecoration(labelText: 'Select a Relay'),
+          decoration: InputDecoration(labelText: context.l10n.selectARelay),
           initialValue: _selectedRelay,
           items:
               _relays.map((relay) {
                 final (uri, connected) = relay;
-                final statusText = connected ? 'Connected' : 'Disconnected';
+                final statusText =
+                    connected
+                        ? context.l10n.connected
+                        : context.l10n.disconnected;
                 final statusColor =
                     connected ? Colors.greenAccent : Colors.redAccent;
 
@@ -434,8 +441,8 @@ class _NostrWalletConnectState extends State<NostrWalletConnect> {
                   : null,
           child: Text(
             isSelectedFederationConnected
-                ? 'Disconnect'
-                : 'Show Connection Info',
+                ? context.l10n.disconnect
+                : context.l10n.showConnectionInfo,
           ),
         ),
       ],
@@ -448,13 +455,13 @@ class _NostrWalletConnectState extends State<NostrWalletConnect> {
 
     if (widget.federations.isEmpty) {
       return Scaffold(
-        appBar: AppBar(title: const Text('Nostr Wallet Connect')),
+        appBar: AppBar(title: Text(context.l10n.nostrWalletConnect)),
         body: SafeArea(
           child: Center(
             child: Padding(
               padding: const EdgeInsets.all(24),
               child: Text(
-                'You haven\'t joined any federations yet.\nPlease join one to continue.',
+                context.l10n.noFederationsJoined,
                 textAlign: TextAlign.center,
                 style: theme.textTheme.bodyLarge?.copyWith(
                   color: theme.colorScheme.onSurface.withOpacity(0.8),
@@ -468,7 +475,7 @@ class _NostrWalletConnectState extends State<NostrWalletConnect> {
 
     if (_loading) {
       return Scaffold(
-        appBar: AppBar(title: const Text('Nostr Wallet Connect')),
+        appBar: AppBar(title: Text(context.l10n.nostrWalletConnect)),
         body: SafeArea(child: const Center(child: CircularProgressIndicator())),
       );
     }
@@ -479,7 +486,7 @@ class _NostrWalletConnectState extends State<NostrWalletConnect> {
             : null;
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Nostr Wallet Connect')),
+      appBar: AppBar(title: Text(context.l10n.nostrWalletConnect)),
       body: SafeArea(
         child: SingleChildScrollView(
           padding: const EdgeInsets.all(24),
@@ -499,7 +506,7 @@ class _NostrWalletConnectState extends State<NostrWalletConnect> {
                 ),
                 const SizedBox(height: 32),
                 Text(
-                  'Scan with your NWC-compatible wallet to connect.',
+                  context.l10n.scanNwcInstructions,
                   style: theme.textTheme.bodyMedium?.copyWith(
                     color: theme.colorScheme.onSurface.withOpacity(0.8),
                   ),
@@ -507,15 +514,21 @@ class _NostrWalletConnectState extends State<NostrWalletConnect> {
                 ),
                 const SizedBox(height: 32),
                 _buildCopyableField(
-                  label: 'Connection String',
+                  label: context.l10n.connectionString,
                   value: connectionString,
                 ),
                 _buildCopyableField(
-                  label: 'Public Key',
+                  label: context.l10n.publicKey,
                   value: _nwc!.publicKey,
                 ),
-                _buildCopyableField(label: 'Relays', value: _nwc!.relay),
-                _buildCopyableField(label: 'Secret', value: _nwc!.secret),
+                _buildCopyableField(
+                  label: context.l10n.relays,
+                  value: _nwc!.relay,
+                ),
+                _buildCopyableField(
+                  label: context.l10n.secret,
+                  value: _nwc!.secret,
+                ),
               ],
             ],
           ),

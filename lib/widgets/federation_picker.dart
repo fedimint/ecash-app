@@ -1,3 +1,4 @@
+import 'package:ecashapp/extensions/build_context_l10n.dart';
 import 'package:ecashapp/lib.dart';
 import 'package:ecashapp/multimint.dart';
 import 'package:ecashapp/providers/preferences_provider.dart';
@@ -129,7 +130,7 @@ class _FederationPickerSheetState extends State<FederationPickerSheet> {
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
           child: Text(
-            widget.title ?? 'Select Federation',
+            widget.title ?? context.l10n.selectMint,
             style: theme.textTheme.titleLarge?.copyWith(
               fontWeight: FontWeight.bold,
               color: theme.colorScheme.primary,
@@ -178,9 +179,9 @@ class _FederationPickerTile extends StatelessWidget {
 
     String balanceText;
     if (item.isRecovering) {
-      balanceText = 'Recovering...';
+      balanceText = context.l10n.recovering;
     } else if (isLoading) {
-      balanceText = 'Loading...';
+      balanceText = context.l10n.loading;
     } else if (item.balanceMsats != null) {
       balanceText = formatBalance(
         item.balanceMsats!,
@@ -188,7 +189,7 @@ class _FederationPickerTile extends StatelessWidget {
         prefs.bitcoinDisplay,
       );
     } else {
-      balanceText = 'Unknown balance';
+      balanceText = context.l10n.unknownBalance;
     }
 
     return Opacity(

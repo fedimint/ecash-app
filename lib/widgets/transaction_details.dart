@@ -1,4 +1,5 @@
 import 'package:ecashapp/app.dart';
+import '../constants/transaction_key_labels.dart';
 import '../constants/transaction_keys.dart';
 import 'package:ecashapp/detail_row.dart';
 import 'package:ecashapp/lib.dart';
@@ -8,6 +9,7 @@ import 'package:ecashapp/theme.dart';
 import 'package:ecashapp/toast.dart';
 import 'package:ecashapp/utils.dart';
 import 'package:flutter/material.dart';
+import 'package:ecashapp/extensions/build_context_l10n.dart';
 
 class TransactionDetails extends StatefulWidget {
   final Transaction tx;
@@ -30,22 +32,22 @@ class TransactionDetails extends StatefulWidget {
 class _TransactionDetailsState extends State<TransactionDetails> {
   bool _checking = false;
 
-  String _getTitleFromKind() {
+  String _getTitleFromKind(BuildContext context) {
     switch (widget.tx.kind) {
       case TransactionKind_LightningReceive():
-        return "Lightning Receive";
+        return context.l10n.lightningReceiveTitle;
       case TransactionKind_LightningSend():
-        return "Lightning Send";
+        return context.l10n.lightningSendTitle;
       case TransactionKind_LightningRecurring():
-        return "Lightning Address Receive";
+        return context.l10n.lightningAddressReceiveTitle;
       case TransactionKind_EcashReceive():
-        return "Ecash Receive";
+        return context.l10n.ecashReceiveTitle;
       case TransactionKind_EcashSend():
-        return "Ecash Send";
+        return context.l10n.ecashSendTitle;
       case TransactionKind_OnchainReceive():
-        return "Onchain Receive";
+        return context.l10n.onchainReceiveTitle;
       case TransactionKind_OnchainSend():
-        return "Onchain Send";
+        return context.l10n.onchainSendTitle;
     }
   }
 
@@ -63,14 +65,14 @@ class _TransactionDetailsState extends State<TransactionDetails> {
         );
         if (result) {
           ToastService().show(
-            message: "This Ecash has been claimed",
+            message: context.l10n.ecashHasBeenClaimed,
             duration: const Duration(seconds: 5),
             onTap: () {},
             icon: Icon(Icons.info),
           );
         } else {
           ToastService().show(
-            message: "This Ecash has not been claimed yet",
+            message: context.l10n.ecashNotClaimedYet,
             duration: const Duration(seconds: 5),
             onTap: () {},
             icon: Icon(Icons.info),
@@ -80,7 +82,7 @@ class _TransactionDetailsState extends State<TransactionDetails> {
     } catch (e) {
       AppLogger.instance.error("Error checking claim status: $e");
       ToastService().show(
-        message: "Unable to check Ecash status",
+        message: context.l10n.unableToCheckEcashStatus,
         duration: const Duration(seconds: 5),
         onTap: () {},
         icon: Icon(Icons.error),
@@ -133,7 +135,7 @@ class _TransactionDetailsState extends State<TransactionDetails> {
             Icon(widget.icon.icon, color: theme.colorScheme.primary, size: 24),
             const SizedBox(width: 8),
             Text(
-              _getTitleFromKind(),
+              _getTitleFromKind(context),
               style: theme.textTheme.headlineSmall?.copyWith(
                 fontWeight: FontWeight.bold,
                 color: theme.colorScheme.primary,
@@ -184,7 +186,7 @@ class _TransactionDetailsState extends State<TransactionDetails> {
                             : null;
 
                     return CopyableDetailRow(
-                      label: entry.key,
+                      label: localizedTxLabel(context.l10n, entry.key),
                       value: entry.value,
                       abbreviate: abbreviate,
                       additionalAction:
@@ -192,7 +194,7 @@ class _TransactionDetailsState extends State<TransactionDetails> {
                               ? Padding(
                                 padding: const EdgeInsets.only(left: 8),
                                 child: IconButton(
-                                  tooltip: 'View on Block Explorer',
+                                  tooltip: context.l10n.viewOnBlockExplorer,
                                   iconSize: 20,
                                   padding: EdgeInsets.zero,
                                   visualDensity: VisualDensity.compact,
@@ -213,7 +215,7 @@ class _TransactionDetailsState extends State<TransactionDetails> {
                   }
 
                   return CopyableDetailRow(
-                    label: entry.key,
+                    label: localizedTxLabel(context.l10n, entry.key),
                     value: entry.value,
                     abbreviate: abbreviate,
                   );
@@ -247,7 +249,7 @@ class _TransactionDetailsState extends State<TransactionDetails> {
                             ),
                           ),
                         )
-                        : const Text("Check Claim Status"),
+                        : Text(context.l10n.checkClaimStatus),
               ),
               const SizedBox(height: 16),
               OutlinedButton(
@@ -260,7 +262,7 @@ class _TransactionDetailsState extends State<TransactionDetails> {
                     borderRadius: BorderRadius.circular(12),
                   ),
                 ),
-                child: const Text("Redeem Ecash"),
+                child: Text(context.l10n.redeemEcash),
               ),
             ],
           ),

@@ -5,6 +5,7 @@ import 'package:ecashapp/lib.dart';
 import 'package:ecashapp/models.dart';
 import 'package:ecashapp/widgets/pending_deposit_item.dart';
 import 'package:ecashapp/widgets/transaction_item.dart';
+import 'package:ecashapp/extensions/build_context_l10n.dart';
 
 class TransactionsList extends StatefulWidget {
   final FederationSelector fed;
@@ -203,13 +204,13 @@ class _TransactionsListState extends State<TransactionsList> {
       String message;
       switch (widget.selectedPaymentType) {
         case PaymentType.lightning:
-          message = "No lightning transactions yet";
+          message = context.l10n.noLightningTransactionsYet;
           break;
         case PaymentType.onchain:
-          message = "No onchain transactions yet";
+          message = context.l10n.noOnchainTransactionsYet;
           break;
         case PaymentType.ecash:
-          message = "No Ecash transactions yet";
+          message = context.l10n.noEcashTransactionsYet;
           break;
       }
       return SizedBox(height: 20, child: Center(child: Text(message)));

@@ -1,4 +1,5 @@
 import 'package:ecashapp/discover.dart';
+import 'package:ecashapp/extensions/build_context_l10n.dart';
 import 'package:ecashapp/lib.dart';
 import 'package:ecashapp/ln_address.dart';
 import 'package:ecashapp/mnemonic.dart';
@@ -52,7 +53,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Settings')),
+      appBar: AppBar(title: Text(context.l10n.settingsTitle)),
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [
@@ -61,8 +62,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
               Icons.group_add,
               color: Theme.of(context).colorScheme.primary,
             ),
-            title: "Discover",
-            subtitle: "Find new or join existing federations",
+            title: context.l10n.discoverTitle,
+            subtitle: context.l10n.discoverSubtitle,
             onTap: () {
               Navigator.push(
                 context,
@@ -79,8 +80,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
               Icons.flash_on,
               color: Theme.of(context).colorScheme.primary,
             ),
-            title: 'Lightning Address',
-            subtitle: 'Claim and configure your Lightning Address',
+            title: context.l10n.lightningAddressTitle,
+            subtitle: context.l10n.lightningAddressSubtitle,
             onTap: () async {
               final feds = await federations();
               Navigator.push(
@@ -100,8 +101,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
               Icons.link,
               color: Theme.of(context).colorScheme.primary,
             ),
-            title: 'Nostr Wallet Connect',
-            subtitle: 'Connect to NWC-compatible apps',
+            title: context.l10n.nostrWalletConnect,
+            subtitle: context.l10n.nostrWalletConnectSubtitle,
             onTap: () async {
               final feds = await federations();
               Navigator.push(
@@ -117,8 +118,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
               'assets/images/nostr.png',
               color: Theme.of(context).colorScheme.primary,
             ),
-            title: 'Nostr Relays',
-            subtitle: 'Add or remove Nostr relays',
+            title: context.l10n.nostrRelays,
+            subtitle: context.l10n.nostrRelaysSubtitle,
             onTap: () async {
               Navigator.push(
                 context,
@@ -131,8 +132,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
               Icons.display_settings,
               color: Theme.of(context).colorScheme.primary,
             ),
-            title: 'Display',
-            subtitle: 'Configure Bitcoin and fiat currency display',
+            title: context.l10n.displayTitle,
+            subtitle: context.l10n.displaySubtitle,
             onTap: () {
               Navigator.push(
                 context,
@@ -147,8 +148,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
               Icons.lock,
               color: Theme.of(context).colorScheme.primary,
             ),
-            title: 'Access Control',
-            subtitle: 'Set up PIN code and spending protection',
+            title: context.l10n.accessControl,
+            subtitle: context.l10n.accessControlSubtitle,
             onTap: () {
               Navigator.push(
                 context,
@@ -163,8 +164,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
               Icons.vpn_key,
               color: Theme.of(context).colorScheme.primary,
             ),
-            title: 'Mnemonic',
-            subtitle: 'View your seed phrase',
+            title: context.l10n.mnemonic,
+            subtitle: context.l10n.mnemonicSubtitle,
             warning: hasAck == false,
             onTap: () async {
               await showAppModalBottomSheet(
@@ -181,7 +182,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
           if (_version != null)
             Center(
               child: Text(
-                "Version: ${_version!}",
+                context.l10n.versionLabel(_version!),
                 style: Theme.of(context).textTheme.bodySmall?.copyWith(
                   color: Theme.of(context).colorScheme.onSurfaceVariant,
                 ),

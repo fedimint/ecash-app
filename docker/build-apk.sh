@@ -73,6 +73,7 @@ docker run --rm \
     -e CARGO_HOME="/cargo-cache" \
     -e ANDROID_USER_HOME="/android-home" \
     -e HOME="/workspace" \
+    -e FLUTTER_SUPPRESS_ANALYTICS=true \
     $IMAGE_NAME \
     bash /workspace/docker/entrypoint.sh "$BUILD_MODE"
 
@@ -81,4 +82,7 @@ rm -rf "$PROJECT_ROOT/.dart_tool"
 if [ -d "$PROJECT_ROOT/.dart_tool.host" ]; then
     mv "$PROJECT_ROOT/.dart_tool.host" "$PROJECT_ROOT/.dart_tool"
 fi
+
+# Remove .dart-tool telemetry directory created by unified_analytics
+rm -rf "$PROJECT_ROOT/.dart-tool"
 

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:ecashapp/db.dart';
+import 'package:ecashapp/extensions/build_context_l10n.dart';
 import 'package:ecashapp/multimint.dart';
 import 'package:ecashapp/providers/preferences_provider.dart';
 import 'package:ecashapp/utils.dart';
@@ -20,15 +21,18 @@ class PendingDepositItem extends StatelessWidget {
 
     switch (event) {
       case DepositEventKind_Mempool(field0: final e):
-        msg = 'Tx in mempool';
+        msg = context.l10n.txInMempool;
         amount = e.amount;
         break;
       case DepositEventKind_AwaitingConfs(field0: final e):
-        msg = 'Tx in block ${e.blockHeight}. Remaining confs: ${e.needed}';
+        msg = context.l10n.txInBlockRemainingConfs(
+          e.blockHeight.toString(),
+          e.needed.toString(),
+        );
         amount = e.amount;
         break;
       case DepositEventKind_Confirmed(field0: final e):
-        msg = 'Tx confirmed, claiming ecash';
+        msg = context.l10n.txConfirmedClaimingEcash;
         amount = e.amount;
         break;
       case DepositEventKind_Claimed():
@@ -53,7 +57,7 @@ class PendingDepositItem extends StatelessWidget {
           child: const Icon(Icons.link, color: Colors.yellowAccent),
         ),
         title: Text(
-          "Pending Receive",
+          context.l10n.pendingReceive,
           style: Theme.of(context).textTheme.bodyMedium,
         ),
         subtitle: Text(msg, style: Theme.of(context).textTheme.bodyMedium),

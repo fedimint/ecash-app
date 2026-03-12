@@ -1,3 +1,4 @@
+import 'package:ecashapp/extensions/build_context_l10n.dart';
 import 'package:flutter/material.dart';
 
 const Color vibrantBlue = Color(0xFF42CFFF);
@@ -57,7 +58,7 @@ Future<T?> showAppModalBottomSheet<T>({
   required BuildContext context,
   required Future<Widget> Function() childBuilder,
   double? heightFactor,
-  String errorMessage = 'Something went wrong. Please try again.',
+  String? errorMessage,
 }) {
   final childFuture = childBuilder();
   return showModalBottomSheet<T>(
@@ -102,6 +103,9 @@ Future<T?> showAppModalBottomSheet<T>({
                         );
                       } else if (snapshot.hasError) {
                         final theme = Theme.of(context);
+                        final msg =
+                            errorMessage ??
+                            context.l10n.somethingWentWrongDefault;
                         return Padding(
                           padding: const EdgeInsets.symmetric(
                             horizontal: 16,
@@ -117,7 +121,7 @@ Future<T?> showAppModalBottomSheet<T>({
                               ),
                               const SizedBox(height: 16),
                               Text(
-                                'Something Went Wrong',
+                                context.l10n.somethingWentWrong,
                                 style: theme.textTheme.headlineSmall?.copyWith(
                                   color: theme.colorScheme.error,
                                   fontWeight: FontWeight.bold,
@@ -126,7 +130,7 @@ Future<T?> showAppModalBottomSheet<T>({
                               ),
                               const SizedBox(height: 12),
                               Text(
-                                errorMessage,
+                                msg,
                                 style: theme.textTheme.bodyMedium,
                                 textAlign: TextAlign.center,
                               ),
@@ -145,7 +149,7 @@ Future<T?> showAppModalBottomSheet<T>({
                                       borderRadius: BorderRadius.circular(16),
                                     ),
                                   ),
-                                  child: const Text('Close'),
+                                  child: Text(context.l10n.close),
                                 ),
                               ),
                             ],
