@@ -83,3 +83,6 @@ if [ -d "$PROJECT_ROOT/.dart_tool.host" ]; then
     mv "$PROJECT_ROOT/.dart_tool.host" "$PROJECT_ROOT/.dart_tool"
 fi
 
+# Remove .dart-tool telemetry directory created by unified_analytics
+rm -rf "$PROJECT_ROOT/.dart-tool"
+

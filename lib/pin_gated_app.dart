@@ -1,6 +1,6 @@
 import 'package:ecashapp/lib.dart';
 import 'package:ecashapp/screens/pin_lock_screen.dart';
-import 'package:ecashapp/theme.dart';
+
 import 'package:flutter/material.dart';
 
 enum _LockState { locked, unlocking, unlocked }
@@ -104,11 +104,7 @@ class _PinGatedAppState extends State<PinGatedApp>
                 ),
               );
             },
-            child: MaterialApp(
-              debugShowCheckedModeBanner: false,
-              theme: cypherpunkNinjaTheme,
-              home: PinLockScreen(onUnlocked: _unlock),
-            ),
+            child: PinLockScreen(onUnlocked: _unlock),
           ),
       ],
     );
