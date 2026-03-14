@@ -158,49 +158,49 @@ class _MnemonicState extends State<Mnemonic>
                 );
               },
               child: LayoutBuilder(
-              builder: (context, constraints) {
-                final fillWidth = constraints.maxWidth * _progress;
-                return Container(
-                  decoration: BoxDecoration(
-                    color: baseColor,
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  padding: const EdgeInsets.symmetric(vertical: 14),
-                  child: Stack(
-                    children: [
-                      // Fill progress bar container:
-                      AnimatedContainer(
-                        duration: const Duration(milliseconds: 50),
-                        width: fillWidth,
-                        decoration: BoxDecoration(
-                          color: fillColor,
-                          borderRadius: BorderRadius.horizontal(
-                            left: Radius.circular(12),
-                            right: Radius.circular(_progress == 1 ? 12 : 0),
+                builder: (context, constraints) {
+                  final fillWidth = constraints.maxWidth * _progress;
+                  return Container(
+                    decoration: BoxDecoration(
+                      color: baseColor,
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    padding: const EdgeInsets.symmetric(vertical: 14),
+                    child: Stack(
+                      children: [
+                        // Fill progress bar container:
+                        AnimatedContainer(
+                          duration: const Duration(milliseconds: 50),
+                          width: fillWidth,
+                          decoration: BoxDecoration(
+                            color: fillColor,
+                            borderRadius: BorderRadius.horizontal(
+                              left: Radius.circular(12),
+                              right: Radius.circular(_progress == 1 ? 12 : 0),
+                            ),
                           ),
+                          height:
+                              48, // matches button height padding + line height
                         ),
-                        height:
-                            48, // matches button height padding + line height
-                      ),
 
-                      // Centered text:
-                      SizedBox(
-                        height: 48,
-                        child: Center(
-                          child: Text(
-                            context.l10n.seedPhraseAckButton,
-                            style: theme.textTheme.bodyLarge?.copyWith(
-                              color: Colors.black,
-                              fontWeight: FontWeight.bold,
+                        // Centered text:
+                        SizedBox(
+                          height: 48,
+                          child: Center(
+                            child: Text(
+                              context.l10n.seedPhraseAckButton,
+                              style: theme.textTheme.bodyLarge?.copyWith(
+                                color: Colors.black,
+                                fontWeight: FontWeight.bold,
+                              ),
                             ),
                           ),
                         ),
-                      ),
-                    ],
-                  ),
-                );
-              },
-            ),
+                      ],
+                    ),
+                  );
+                },
+              ),
             ),
           ),
           const SizedBox(height: 24),
