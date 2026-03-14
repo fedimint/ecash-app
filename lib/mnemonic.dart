@@ -1,6 +1,8 @@
 import 'package:ecashapp/lib.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'dart:async';
+import 'dart:math';
 
 class Mnemonic extends StatefulWidget {
   final List<String> words;
@@ -13,12 +15,23 @@ class Mnemonic extends StatefulWidget {
   State<Mnemonic> createState() => _MnemonicState();
 }
 
-class _MnemonicState extends State<Mnemonic> {
+class _MnemonicState extends State<Mnemonic>
+    with SingleTickerProviderStateMixin {
   double _progress = 0.0;
   Timer? _timer;
+  late AnimationController _shakeController;
 
   static const int holdDurationMs = 1500;
   static const int tickIntervalMs = 50;
+
+  @override
+  void initState() {
+    super.initState();
+    _shakeController = AnimationController(
+      duration: const Duration(milliseconds: 400),
+      vsync: this,
+    );
+  }
 
   void _startHold() {
     _timer?.cancel();
@@ -44,6 +57,11 @@ class _MnemonicState extends State<Mnemonic> {
     });
   }
 
+  void _onTap() {
+    HapticFeedback.lightImpact();
+    _shakeController.forward(from: 0);
+  }
+
   Future<void> _onHoldComplete() async {
     await ackSeedPhrase();
     if (mounted) Navigator.of(context).pop();
@@ -52,6 +70,7 @@ class _MnemonicState extends State<Mnemonic> {
   @override
   void dispose() {
     _timer?.cancel();
+    _shakeController.dispose();
     super.dispose();
   }
 
@@ -121,10 +140,23 @@ class _MnemonicState extends State<Mnemonic> {
         if (!widget.hasAck) ...[
           const SizedBox(height: 32),
           GestureDetector(
+            onTap: _onTap,
             onLongPressStart: (_) => _startHold(),
             onLongPressEnd: (_) => _cancelHold(),
             onLongPressCancel: _cancelHold,
-            child: LayoutBuilder(
+            child: AnimatedBuilder(
+              animation: _shakeController,
+              builder: (context, child) {
+                final offset =
+                    sin(_shakeController.value * pi * 4) *
+                    4 *
+                    (1 - _shakeController.value);
+                return Transform.translate(
+                  offset: Offset(offset, 0),
+                  child: child,
+                );
+              },
+              child: LayoutBuilder(
               builder: (context, constraints) {
                 final fillWidth = constraints.maxWidth * _progress;
                 return Container(
@@ -167,6 +199,7 @@ class _MnemonicState extends State<Mnemonic> {
                   ),
                 );
               },
+            ),
             ),
           ),
           const SizedBox(height: 24),
