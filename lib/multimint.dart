@@ -447,6 +447,7 @@ class FedimintGateway {
   final String? lightningAlias;
   final String? lightningNode;
   final bool isLnv2;
+  final bool isVettted;
 
   const FedimintGateway({
     required this.endpoint,
@@ -457,6 +458,7 @@ class FedimintGateway {
     this.lightningAlias,
     this.lightningNode,
     required this.isLnv2,
+    required this.isVettted,
   });
 
   @override
@@ -468,7 +470,8 @@ class FedimintGateway {
       ppmTransactionFee.hashCode ^
       lightningAlias.hashCode ^
       lightningNode.hashCode ^
-      isLnv2.hashCode;
+      isLnv2.hashCode ^
+      isVettted.hashCode;
 
   @override
   bool operator ==(Object other) =>
@@ -482,7 +485,8 @@ class FedimintGateway {
           ppmTransactionFee == other.ppmTransactionFee &&
           lightningAlias == other.lightningAlias &&
           lightningNode == other.lightningNode &&
-          isLnv2 == other.isLnv2;
+          isLnv2 == other.isLnv2 &&
+          isVettted == other.isVettted;
 }
 
 class GatewayPaymentPreview {
