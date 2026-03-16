@@ -369,13 +369,15 @@ class _DashboardState extends State<Dashboard> {
               isLoadingPrices: _isLoadingPrices,
               pricesFailed: _pricesFailed,
             ),
-            const SizedBox(height: 8),
+            if (!recovering) const SizedBox(height: 8),
             if (recovering) ...[
-              RecoveryStatus(
-                key: ValueKey(_selectedPaymentType),
-                paymentType: _selectedPaymentType,
-                fed: widget.fed,
-                initialProgress: _recoveryProgress,
+              Expanded(
+                child: RecoveryStatus(
+                  key: ValueKey(_selectedPaymentType),
+                  paymentType: _selectedPaymentType,
+                  fed: widget.fed,
+                  initialProgress: _recoveryProgress,
+                ),
               ),
             ] else ...[
               Expanded(

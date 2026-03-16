@@ -5,7 +5,6 @@ import 'package:ecashapp/lib.dart';
 import 'package:ecashapp/models.dart';
 import 'package:ecashapp/multimint.dart';
 import 'package:ecashapp/utils.dart';
-import 'package:ecashapp/extensions/build_context_l10n.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 
@@ -73,20 +72,6 @@ class _RecoveryStatusState extends State<RecoveryStatus> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(
-              Icons.sync,
-              size: 32,
-              color: theme.colorScheme.primary.withOpacity(0.7),
-            ),
-            const SizedBox(height: 12),
-            Text(
-              context.l10n.moduleProgress(moduleName),
-              style: theme.textTheme.bodyMedium?.copyWith(
-                fontSize: 16,
-                letterSpacing: 1.2,
-              ),
-            ),
-            const SizedBox(height: 40),
             TweenAnimationBuilder<double>(
               tween: Tween<double>(begin: 0, end: _progress),
               duration: const Duration(milliseconds: 300),
@@ -146,6 +131,35 @@ class _RecoveryStatusState extends State<RecoveryStatus> {
                   ),
                 );
               },
+            ),
+            const SizedBox(height: 32),
+            Animate(
+              onPlay: (controller) => controller.repeat(reverse: true),
+              effects: [
+                FadeEffect(
+                  begin: 0.5,
+                  end: 1.0,
+                  duration: 1500.ms,
+                  curve: Curves.easeInOut,
+                ),
+              ],
+              child: Text(
+                'Recovering wallet...',
+                style: theme.textTheme.bodyLarge?.copyWith(
+                  fontSize: 16,
+                  color: Colors.white70,
+                  letterSpacing: 0.5,
+                ),
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              '$moduleName module',
+              style: theme.textTheme.bodySmall?.copyWith(
+                fontSize: 13,
+                color: theme.colorScheme.secondary.withOpacity(0.6),
+                letterSpacing: 1.0,
+              ),
             ),
           ],
         ),
