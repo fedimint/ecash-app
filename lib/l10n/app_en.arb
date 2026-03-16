@@ -1235,5 +1235,11 @@
   "@openSettings": {},
 
   "scanQrCodeTooltip": "Scan QR code",
-  "@scanQrCodeTooltip": {}
+  "@scanQrCodeTooltip": {},
+
+  "recoveringWallet": "Recovering wallet...",
+  "@recoveringWallet": {},
+
+  "complete": "complete",
+  "@complete": {}
 }

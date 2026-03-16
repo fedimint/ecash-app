@@ -5,6 +5,7 @@ import 'package:ecashapp/lib.dart';
 import 'package:ecashapp/models.dart';
 import 'package:ecashapp/multimint.dart';
 import 'package:ecashapp/utils.dart';
+import 'package:ecashapp/extensions/build_context_l10n.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 
@@ -118,7 +119,7 @@ class _RecoveryStatusState extends State<RecoveryStatus> {
                           ),
                           const SizedBox(height: 4),
                           Text(
-                            'complete',
+                            context.l10n.complete,
                             style: TextStyle(
                               fontSize: 13,
                               color: Colors.white54,
@@ -144,7 +145,7 @@ class _RecoveryStatusState extends State<RecoveryStatus> {
                 ),
               ],
               child: Text(
-                'Recovering wallet...',
+                context.l10n.recoveringWallet,
                 style: theme.textTheme.bodyLarge?.copyWith(
                   fontSize: 16,
                   color: Colors.white70,
@@ -154,7 +155,7 @@ class _RecoveryStatusState extends State<RecoveryStatus> {
             ),
             const SizedBox(height: 8),
             Text(
-              '$moduleName module',
+              context.l10n.moduleProgress(moduleName),
               style: theme.textTheme.bodySmall?.copyWith(
                 fontSize: 13,
                 color: theme.colorScheme.secondary.withOpacity(0.6),

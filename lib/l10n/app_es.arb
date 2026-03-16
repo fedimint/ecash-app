@@ -356,5 +356,7 @@
   "cameraScanNotSupportedLinux": "El escaneo de cámara no es compatible en Linux.\nUsa el botón \"Pegar del portapapeles\" de abajo.",
   "cameraPermissionRequired": "Se requiere permiso de cámara para escanear códigos QR",
   "openSettings": "Abrir configuración",
-  "scanQrCodeTooltip": "Escanear código QR"
+  "scanQrCodeTooltip": "Escanear código QR",
+  "recoveringWallet": "Recuperando billetera...",
+  "complete": "completo"
 }
