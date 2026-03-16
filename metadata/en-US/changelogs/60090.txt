@@ -1,0 +1,8 @@
+Ecash App v0.6.0
+- New Lightning Send Flow
+- Change Federations on the Number Pad
+- Change Gateways on the invoice preview
+- Adds LNv2 LNURL
+- Adds pin protection feature
+- Adds internationalization with Spanish as the first supported language
+- Various bug fixes
