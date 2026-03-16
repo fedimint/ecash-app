@@ -325,6 +325,7 @@ pub struct FedimintGateway {
     pub lightning_alias: Option<String>,
     pub lightning_node: Option<String>,
     pub is_lnv2: bool,
+    pub is_vettted: bool,
 }
 
 #[derive(Clone, Serialize, Debug)]
@@ -1898,6 +1899,8 @@ impl Multimint {
         amount: Amount,
         bolt11: &Bolt11Invoice,
     ) -> anyhow::Result<Vec<GatewayPaymentPreview>> {
+        let mut previews: BTreeMap<SafeUrl, GatewayPaymentPreview> = BTreeMap::new();
+
         let client = self
             .clients
             .read()
@@ -1906,59 +1909,24 @@ impl Multimint {
             .ok_or(anyhow!("No federation exists"))?
             .clone();
 
-        let mut previews: Vec<GatewayPaymentPreview> = Vec::new();
-        let mut lnv2_endpoint: Option<String> = None;
-
-        // Try LNv2 gateway
-        if let Ok((url, send_fee, fed_base, fed_ppm)) =
-            Self::lnv2_select_gateway(&client, Some(bolt11.clone())).await
-        {
-            let amount_with_fees = compute_send_amount(amount, fed_base, fed_ppm, send_fee);
-            lnv2_endpoint = Some(url.to_string());
-
-            // Get routing info for fee display
-            let lnv2 = client.get_first_module::<fedimint_lnv2_client::LightningClientModule>()?;
-            let (_gw, routing_info) = lnv2.select_gateway(Some(bolt11.clone())).await?;
-
-            previews.push(GatewayPaymentPreview {
-                gateway: FedimintGateway {
-                    endpoint: url.to_string(),
-                    base_routing_fee: routing_info.send_fee_default.base.msats,
-                    ppm_routing_fee: routing_info.send_fee_default.parts_per_million,
-                    base_transaction_fee: routing_info.receive_fee.base.msats,
-                    ppm_transaction_fee: routing_info.receive_fee.parts_per_million,
-                    lightning_alias: None,
-                    lightning_node: Some(routing_info.lightning_public_key.to_string()),
-                    is_lnv2: true,
-                },
-                amount_with_fees,
-            });
-        }
-
-        // Add LNv1 gateways
         if let Ok(lnv1) = client.get_first_module::<LightningClientModule>() {
-            let lnv1_gateways = lnv1.list_gateways().await;
-            for g in lnv1_gateways {
-                let info = g.info;
-                // Skip if this endpoint is already covered by LNv2
-                if let Some(ref lnv2_ep) = lnv2_endpoint {
-                    if info.api.to_string() == *lnv2_ep {
-                        continue;
-                    }
-                }
+            let lnv1_gateways_list = lnv1.list_gateways().await;
+            let lnv1_gateways = lnv1_gateways_list
+                .into_iter()
+                .map(|g| {
+                    let info = g.info;
 
-                let fees = if Self::invoice_routes_back_to_federation(bolt11, info.clone()) {
-                    PaymentFee {
-                        base: Amount::ZERO,
-                        parts_per_million: 0,
-                    }
-                } else {
-                    info.fees.into()
-                };
-                let amount_with_fees = compute_send_amount(amount, 0, 0, fees);
+                    let fees = if Self::invoice_routes_back_to_federation(bolt11, info.clone()) {
+                        PaymentFee {
+                            base: Amount::ZERO,
+                            parts_per_million: 0,
+                        }
+                    } else {
+                        info.fees.into()
+                    };
+                    let amount_with_fees = compute_send_amount(amount, 0, 0, fees);
 
-                previews.push(GatewayPaymentPreview {
-                    gateway: FedimintGateway {
+                    let gw = FedimintGateway {
                         endpoint: info.api.to_string(),
                         base_routing_fee: info.fees.base_msat as u64,
                         ppm_routing_fee: info.fees.proportional_millionths as u64,
@@ -1967,25 +1935,90 @@ impl Multimint {
                         lightning_alias: Some(info.lightning_alias),
                         lightning_node: Some(info.node_pub_key.to_string()),
                         is_lnv2: false,
-                    },
-                    amount_with_fees,
-                });
+                        is_vettted: g.vetted,
+                    };
+                    (
+                        info.api,
+                        GatewayPaymentPreview {
+                            gateway: gw,
+                            amount_with_fees,
+                        },
+                    )
+                })
+                .collect::<BTreeMap<_, _>>();
+
+            previews.extend(lnv1_gateways);
+        }
+
+        if let Ok(lnv2) = client.get_first_module::<fedimint_lnv2_client::LightningClientModule>() {
+            let client_module_config = client.config().await.modules;
+            let config = client_module_config
+                .get(&lnv2.id)
+                .ok_or(anyhow!("Could not get LNv2 config"))?
+                .cast::<fedimint_lnv2_common::config::LightningClientConfig>()?;
+            let fed_base = config.fee_consensus.base.msats;
+            let fed_ppm = config.fee_consensus.parts_per_million;
+
+            let lnv2_gateways = lnv2.list_gateways(None).await;
+            if let Ok(lnv2_urls) = lnv2_gateways {
+                let routing_infos =
+                    futures_util::future::join_all(lnv2_urls.iter().map(|url| async {
+                        let routing_info = lnv2.routing_info(url).await;
+                        (url.clone(), routing_info)
+                    }))
+                    .await;
+
+                let lnv2_gw_infos = routing_infos
+                    .iter()
+                    .filter_map(|(url, info)| {
+                        if let Ok(Some(info)) = info {
+                            let send_fee =
+                                if bolt11.get_payee_pub_key() == info.lightning_public_key {
+                                    info.send_fee_minimum
+                                } else {
+                                    info.send_fee_default
+                                };
+                            let amount_with_fees =
+                                compute_send_amount(amount, fed_base, fed_ppm, send_fee);
+                            let gw = FedimintGateway {
+                                endpoint: url.to_string(),
+                                base_routing_fee: info.send_fee_default.base.msats,
+                                ppm_routing_fee: info.send_fee_default.parts_per_million,
+                                base_transaction_fee: info.receive_fee.base.msats,
+                                ppm_transaction_fee: info.receive_fee.parts_per_million,
+                                lightning_alias: None,
+                                lightning_node: Some(info.lightning_public_key.to_string()),
+                                is_lnv2: true,
+                                is_vettted: true, // all LNv2 gateways are vetted
+                            };
+                            Some((
+                                url.clone(),
+                                GatewayPaymentPreview {
+                                    gateway: gw,
+                                    amount_with_fees,
+                                },
+                            ))
+                        } else {
+                            None
+                        }
+                    })
+                    .collect::<BTreeMap<_, _>>();
+
+                previews.extend(lnv2_gw_infos);
             }
         }
 
-        // Sort: LNv2 first, then by lowest fees
-        previews.sort_by(|a, b| {
+        // Sort: LNv2 first, then if its vetted, then by lowest fees
+        let mut gateway_previews = previews.into_values().collect::<Vec<_>>();
+        gateway_previews.sort_by(|a, b| {
             b.gateway
                 .is_lnv2
                 .cmp(&a.gateway.is_lnv2)
+                .then(a.gateway.is_vettted.cmp(&b.gateway.is_vettted))
                 .then(a.amount_with_fees.cmp(&b.amount_with_fees))
         });
 
-        if previews.is_empty() {
-            return Err(anyhow!("No available gateways"));
-        }
-
-        Ok(previews)
+        Ok(gateway_previews)
     }
 
     pub async fn send(
@@ -3465,25 +3498,31 @@ impl Multimint {
             .get(federation_id)
             .context("No federation exists")?
             .clone();
-        let lnv1 = client.get_first_module::<LightningClientModule>()?;
-        let lnv1_gateways = lnv1.list_gateways().await;
-        let mut gateways = lnv1_gateways
-            .into_iter()
-            .map(|g| {
-                let info = g.info;
-                let gw = FedimintGateway {
-                    endpoint: info.api.to_string(),
-                    base_routing_fee: info.fees.base_msat as u64,
-                    ppm_routing_fee: info.fees.proportional_millionths as u64,
-                    base_transaction_fee: 0,
-                    ppm_transaction_fee: 0,
-                    lightning_alias: Some(info.lightning_alias),
-                    lightning_node: Some(info.node_pub_key.to_string()),
-                    is_lnv2: false,
-                };
-                (info.api, gw)
-            })
-            .collect::<BTreeMap<_, _>>();
+        let mut gateways = BTreeMap::new();
+
+        if let Ok(lnv1) = client.get_first_module::<LightningClientModule>() {
+            let lnv1_gateways_list = lnv1.list_gateways().await;
+            let lnv1_gateways = lnv1_gateways_list
+                .into_iter()
+                .map(|g| {
+                    let info = g.info;
+                    let gw = FedimintGateway {
+                        endpoint: info.api.to_string(),
+                        base_routing_fee: info.fees.base_msat as u64,
+                        ppm_routing_fee: info.fees.proportional_millionths as u64,
+                        base_transaction_fee: 0,
+                        ppm_transaction_fee: 0,
+                        lightning_alias: Some(info.lightning_alias),
+                        lightning_node: Some(info.node_pub_key.to_string()),
+                        is_lnv2: false,
+                        is_vettted: g.vetted,
+                    };
+                    (info.api, gw)
+                })
+                .collect::<BTreeMap<_, _>>();
+
+            gateways.extend(lnv1_gateways);
+        }
 
         if let Ok(lnv2) = client.get_first_module::<fedimint_lnv2_client::LightningClientModule>() {
             let lnv2_gateways = lnv2.list_gateways(None).await;
@@ -3508,6 +3547,7 @@ impl Multimint {
                                 lightning_alias: None,
                                 lightning_node: Some(info.lightning_public_key.to_string()),
                                 is_lnv2: true,
+                                is_vettted: true, // all LNv2 gateways are vetted
                             };
                             Some((url.clone(), gw))
                         } else {
@@ -3520,7 +3560,15 @@ impl Multimint {
             }
         }
 
-        Ok(gateways.into_values().collect())
+        // Sort: LNv2 first, then if its vetted
+        let mut gateway_previews = gateways.into_values().collect::<Vec<_>>();
+        gateway_previews.sort_by(|a, b| {
+            b.is_lnv2
+                .cmp(&a.is_lnv2)
+                .then(a.is_vettted.cmp(&b.is_vettted))
+        });
+
+        Ok(gateway_previews)
     }
 
     /// Retreives currently configured Lightning Address
