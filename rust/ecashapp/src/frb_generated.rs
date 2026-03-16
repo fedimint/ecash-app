@@ -13208,6 +13208,7 @@ impl SseDecode for crate::multimint::FedimintGateway {
         let mut var_lightningAlias = <Option<String>>::sse_decode(deserializer);
         let mut var_lightningNode = <Option<String>>::sse_decode(deserializer);
         let mut var_isLnv2 = <bool>::sse_decode(deserializer);
+        let mut var_isVettted = <bool>::sse_decode(deserializer);
         return crate::multimint::FedimintGateway {
             endpoint: var_endpoint,
             base_routing_fee: var_baseRoutingFee,
@@ -13217,6 +13218,7 @@ impl SseDecode for crate::multimint::FedimintGateway {
             lightning_alias: var_lightningAlias,
             lightning_node: var_lightningNode,
             is_lnv2: var_isLnv2,
+            is_vettted: var_isVettted,
         };
     }
 }
@@ -15697,6 +15699,7 @@ impl flutter_rust_bridge::IntoDart for crate::multimint::FedimintGateway {
             self.lightning_alias.into_into_dart().into_dart(),
             self.lightning_node.into_into_dart().into_dart(),
             self.is_lnv2.into_into_dart().into_dart(),
+            self.is_vettted.into_into_dart().into_dart(),
         ]
         .into_dart()
     }
@@ -16923,6 +16926,7 @@ impl SseEncode for crate::multimint::FedimintGateway {
         <Option<String>>::sse_encode(self.lightning_alias, serializer);
         <Option<String>>::sse_encode(self.lightning_node, serializer);
         <bool>::sse_encode(self.is_lnv2, serializer);
+        <bool>::sse_encode(self.is_vettted, serializer);
     }
 }
 

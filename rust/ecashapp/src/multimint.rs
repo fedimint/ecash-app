@@ -1899,7 +1899,7 @@ impl Multimint {
         amount: Amount,
         bolt11: &Bolt11Invoice,
     ) -> anyhow::Result<Vec<GatewayPaymentPreview>> {
-        let mut previews: BTreeMap<SafeUrl, GatewayPaymentPreview> = BTreeMap::new();
+        let mut previews: BTreeMap<String, GatewayPaymentPreview> = BTreeMap::new();
 
         let client = self
             .clients
@@ -1937,8 +1937,9 @@ impl Multimint {
                         is_lnv2: false,
                         is_vettted: g.vetted,
                     };
+                    let url = info.api.host_str().expect("No host in URL").to_string();
                     (
-                        info.api,
+                        url,
                         GatewayPaymentPreview {
                             gateway: gw,
                             amount_with_fees,
@@ -1963,7 +1964,8 @@ impl Multimint {
             if let Ok(lnv2_urls) = lnv2_gateways {
                 let routing_infos =
                     futures_util::future::join_all(lnv2_urls.iter().map(|url| async {
-                        let routing_info = lnv2.routing_info(url).await;
+                        let routing_info =
+                            timeout(Duration::from_secs(5), lnv2.routing_info(url)).await;
                         (url.clone(), routing_info)
                     }))
                     .await;
@@ -1971,7 +1973,7 @@ impl Multimint {
                 let lnv2_gw_infos = routing_infos
                     .iter()
                     .filter_map(|(url, info)| {
-                        if let Ok(Some(info)) = info {
+                        if let Ok(Ok(Some(info))) = info {
                             let send_fee =
                                 if bolt11.get_payee_pub_key() == info.lightning_public_key {
                                     info.send_fee_minimum
@@ -1991,8 +1993,9 @@ impl Multimint {
                                 is_lnv2: true,
                                 is_vettted: true, // all LNv2 gateways are vetted
                             };
+                            let url = url.host_str().expect("No host in URL").to_string();
                             Some((
-                                url.clone(),
+                                url,
                                 GatewayPaymentPreview {
                                     gateway: gw,
                                     amount_with_fees,
@@ -2014,7 +2017,7 @@ impl Multimint {
             b.gateway
                 .is_lnv2
                 .cmp(&a.gateway.is_lnv2)
-                .then(a.gateway.is_vettted.cmp(&b.gateway.is_vettted))
+                .then(b.gateway.is_vettted.cmp(&a.gateway.is_vettted))
                 .then(a.amount_with_fees.cmp(&b.amount_with_fees))
         });
 
@@ -3517,7 +3520,8 @@ impl Multimint {
                         is_lnv2: false,
                         is_vettted: g.vetted,
                     };
-                    (info.api, gw)
+                    let url = info.api.host_str().expect("No host in URL").to_string();
+                    (url, gw)
                 })
                 .collect::<BTreeMap<_, _>>();
 
@@ -3529,7 +3533,8 @@ impl Multimint {
             if let Ok(lnv2_urls) = lnv2_gateways {
                 let routing_infos =
                     futures_util::future::join_all(lnv2_urls.iter().map(|url| async {
-                        let routing_info = lnv2.routing_info(url).await;
+                        let routing_info =
+                            timeout(Duration::from_secs(15), lnv2.routing_info(url)).await;
                         (url.clone(), routing_info)
                     }))
                     .await;
@@ -3537,7 +3542,7 @@ impl Multimint {
                 let lnv2_gw_infos = routing_infos
                     .iter()
                     .filter_map(|(url, info)| {
-                        if let Ok(Some(info)) = info {
+                        if let Ok(Ok(Some(info))) = info {
                             let gw = FedimintGateway {
                                 endpoint: url.to_string(),
                                 base_routing_fee: info.send_fee_default.base.msats,
@@ -3549,7 +3554,8 @@ impl Multimint {
                                 is_lnv2: true,
                                 is_vettted: true, // all LNv2 gateways are vetted
                             };
-                            Some((url.clone(), gw))
+                            let url = url.host_str().expect("No host in URL").to_string();
+                            Some((url, gw))
                         } else {
                             None
                         }
@@ -3565,7 +3571,7 @@ impl Multimint {
         gateway_previews.sort_by(|a, b| {
             b.is_lnv2
                 .cmp(&a.is_lnv2)
-                .then(a.is_vettted.cmp(&b.is_vettted))
+                .then(b.is_vettted.cmp(&a.is_vettted))
         });
 
         Ok(gateway_previews)
