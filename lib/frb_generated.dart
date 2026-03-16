@@ -11048,8 +11048,8 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   FedimintGateway dco_decode_fedimint_gateway(dynamic raw) {
     // Codec=Dco (DartCObject based), see doc to use other codecs
     final arr = raw as List<dynamic>;
-    if (arr.length != 8)
-      throw Exception('unexpected arr length: expect 8 but see ${arr.length}');
+    if (arr.length != 9)
+      throw Exception('unexpected arr length: expect 9 but see ${arr.length}');
     return FedimintGateway(
       endpoint: dco_decode_String(arr[0]),
       baseRoutingFee: dco_decode_u_64(arr[1]),
@@ -11059,6 +11059,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
       lightningAlias: dco_decode_opt_String(arr[5]),
       lightningNode: dco_decode_opt_String(arr[6]),
       isLnv2: dco_decode_bool(arr[7]),
+      isVettted: dco_decode_bool(arr[8]),
     );
   }
 
@@ -13227,6 +13228,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
     var var_lightningAlias = sse_decode_opt_String(deserializer);
     var var_lightningNode = sse_decode_opt_String(deserializer);
     var var_isLnv2 = sse_decode_bool(deserializer);
+    var var_isVettted = sse_decode_bool(deserializer);
     return FedimintGateway(
       endpoint: var_endpoint,
       baseRoutingFee: var_baseRoutingFee,
@@ -13236,6 +13238,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
       lightningAlias: var_lightningAlias,
       lightningNode: var_lightningNode,
       isLnv2: var_isLnv2,
+      isVettted: var_isVettted,
     );
   }
 
@@ -15651,6 +15654,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
     sse_encode_opt_String(self.lightningAlias, serializer);
     sse_encode_opt_String(self.lightningNode, serializer);
     sse_encode_bool(self.isLnv2, serializer);
+    sse_encode_bool(self.isVettted, serializer);
   }
 
   @protected
