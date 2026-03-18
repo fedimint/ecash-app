@@ -40,16 +40,7 @@ class DashboardBalance extends StatelessWidget {
       fiatCurrency,
     );
     if (recovering) {
-      return Center(
-        child: Text(
-          context.l10n.recovering,
-          style: Theme.of(context).textTheme.displaySmall?.copyWith(
-            color: Theme.of(context).colorScheme.primary,
-            fontWeight: FontWeight.bold,
-          ),
-          textAlign: TextAlign.center,
-        ),
-      );
+      return const SizedBox.shrink();
     } else if (isLoading) {
       return const Center(child: CircularProgressIndicator());
     } else {
