@@ -377,5 +377,8 @@
   "openSettings": "Abrir configuración",
   "scanQrCodeTooltip": "Escanear código QR",
   "recoveringWallet": "Recuperando billetera...",
-  "complete": "completo"
+  "complete": "completo",
+  "viewAllTransactions": "Ver todas",
+  "recentActivity": "Actividad Reciente",
+  "noRecentTransactions": "No hay transacciones recientes"
 }

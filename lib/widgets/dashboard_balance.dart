@@ -14,6 +14,8 @@ class DashboardBalance extends StatelessWidget {
   final Map<FiatCurrency, double> btcPrices;
   final bool isLoadingPrices;
   final bool pricesFailed;
+  final LightningAddressConfig? lnAddressConfig;
+  final VoidCallback? onLnAddressTap;
 
   const DashboardBalance({
     super.key,
@@ -25,6 +27,8 @@ class DashboardBalance extends StatelessWidget {
     required this.btcPrices,
     required this.isLoadingPrices,
     required this.pricesFailed,
+    this.lnAddressConfig,
+    this.onLnAddressTap,
   });
 
   @override
@@ -61,6 +65,7 @@ class DashboardBalance extends StatelessWidget {
                 style: Theme.of(context).textTheme.displayLarge?.copyWith(
                   color: Theme.of(context).colorScheme.primary,
                   fontWeight: FontWeight.bold,
+                  fontSize: 48,
                 ),
                 textAlign: TextAlign.center,
               ),
@@ -79,9 +84,42 @@ class DashboardBalance extends StatelessWidget {
               else if (btcPrices.isNotEmpty)
                 Text(
                   fiatText,
-                  style: const TextStyle(fontSize: 24, color: Colors.grey),
+                  style: const TextStyle(fontSize: 28, color: Colors.grey),
                   textAlign: TextAlign.center,
                 ),
+              if (lnAddressConfig != null) ...[
+                const SizedBox(height: 8),
+                GestureDetector(
+                  onTap: onLnAddressTap,
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 10,
+                      vertical: 6,
+                    ),
+                    decoration: BoxDecoration(
+                      color: Colors.white.withValues(alpha: 0.08),
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Icon(
+                          Icons.flash_on,
+                          color: Colors.amber,
+                          size: 14,
+                        ),
+                        const SizedBox(width: 4),
+                        Text(
+                          '${lnAddressConfig!.username}@${lnAddressConfig!.domain}',
+                          style: Theme.of(
+                            context,
+                          ).textTheme.bodySmall?.copyWith(color: Colors.grey),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
             ],
           ),
         ),

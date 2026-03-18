@@ -4,10 +4,7 @@ import 'package:ecashapp/db.dart';
 import 'package:ecashapp/extensions/build_context_l10n.dart';
 import 'package:ecashapp/recovery_progress.dart';
 import 'package:ecashapp/utils.dart';
-import 'package:ecashapp/widgets/addresses.dart';
-import 'package:ecashapp/widgets/gateways.dart';
 import 'package:ecashapp/widgets/ln_address_dialog.dart';
-import 'package:ecashapp/widgets/note_summary.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_speed_dial/flutter_speed_dial.dart';
 
@@ -15,26 +12,20 @@ import 'package:ecashapp/lib.dart';
 import 'package:ecashapp/multimint.dart';
 import 'package:ecashapp/number_pad.dart';
 import 'package:ecashapp/screens/lightning_send/recipient_entry.dart';
+import 'package:ecashapp/screens/transactions_screen.dart';
 import 'package:ecashapp/onchain_receive.dart';
 import 'package:ecashapp/scan.dart';
 import 'package:ecashapp/theme.dart';
 import 'package:ecashapp/models.dart';
 
-import 'package:ecashapp/widgets/dashboard_header.dart';
 import 'package:ecashapp/widgets/dashboard_balance.dart';
-import 'package:ecashapp/widgets/transactions_list.dart';
+import 'package:ecashapp/widgets/transaction_item.dart';
 
 class Dashboard extends StatefulWidget {
   final FederationSelector fed;
   final bool recovering;
-  final VoidCallback? onFederationTap;
 
-  const Dashboard({
-    super.key,
-    required this.fed,
-    required this.recovering,
-    this.onFederationTap,
-  });
+  const Dashboard({super.key, required this.fed, required this.recovering});
 
   @override
   _DashboardState createState() => _DashboardState();
@@ -47,14 +38,14 @@ class _DashboardState extends State<Dashboard> {
   late bool recovering;
   double _recoveryProgress = 0.0;
   PaymentType _selectedPaymentType = PaymentType.lightning;
-  VoidCallback? _pendingAction;
-  VoidCallback? _refreshTransactionsList;
   Map<FiatCurrency, double> _btcPrices = {};
   bool _isLoadingPrices = false;
   bool _pricesFailed = false;
-  int _addressRefreshKey = 0;
-  int _noteRefreshKey = 0;
+  VoidCallback? _pendingAction;
   LightningAddressConfig? _lnAddressConfig;
+
+  List<Transaction> _recentTransactions = [];
+  bool _isLoadingTransactions = true;
 
   late Stream<MultimintEvent> events;
   late StreamSubscription<MultimintEvent> _subscription;
@@ -66,6 +57,7 @@ class _DashboardState extends State<Dashboard> {
     _loadBalance();
     _loadBtcPrices();
     _loadLightningAddress();
+    _loadRecentTransactions();
 
     events = subscribeMultimintEvents().asBroadcastStream();
     _subscription = events.listen((event) async {
@@ -80,6 +72,7 @@ class _DashboardState extends State<Dashboard> {
           );
           if (federationIdString == selectorIdString) {
             _loadBalance();
+            _loadRecentTransactions();
           }
         } else if (ln is LightningEventKind_PaymentSent) {
           final federationIdString = await federationIdToString(
@@ -90,6 +83,7 @@ class _DashboardState extends State<Dashboard> {
           );
           if (federationIdString == selectorIdString) {
             _loadBalance();
+            _loadRecentTransactions();
           }
         }
       } else if (event is MultimintEvent_RecoveryDone) {
@@ -102,6 +96,7 @@ class _DashboardState extends State<Dashboard> {
           setState(() => recovering = false);
           _loadBalance();
           _loadLightningAddress();
+          _loadRecentTransactions();
         }
       } else if (event is MultimintEvent_Ecash) {
         final federationIdString = await federationIdToString(
@@ -112,8 +107,7 @@ class _DashboardState extends State<Dashboard> {
         );
         if (federationIdString == selectorIdString) {
           _loadBalance();
-          _selectedPaymentType = PaymentType.ecash;
-          _loadNotes();
+          _loadRecentTransactions();
         }
       }
     });
@@ -127,18 +121,6 @@ class _DashboardState extends State<Dashboard> {
 
   void _scheduleAction(VoidCallback action) {
     setState(() => _pendingAction = action);
-  }
-
-  Future<void> _loadAddresses() async {
-    setState(() {
-      _addressRefreshKey++;
-    });
-  }
-
-  Future<void> _loadNotes() async {
-    setState(() {
-      _noteRefreshKey++;
-    });
   }
 
   Future<void> _loadBalance() async {
@@ -177,8 +159,28 @@ class _DashboardState extends State<Dashboard> {
     });
   }
 
-  void _refreshTransactions() {
-    _refreshTransactionsList?.call();
+  List<String> _getModulesForPaymentType() {
+    switch (_selectedPaymentType) {
+      case PaymentType.lightning:
+        return ['ln', 'lnv2'];
+      case PaymentType.onchain:
+        return ['wallet'];
+      case PaymentType.ecash:
+        return ['mint'];
+    }
+  }
+
+  Future<void> _loadRecentTransactions() async {
+    if (recovering) return;
+    final txs = await transactions(
+      federationId: widget.fed.federationId,
+      modules: _getModulesForPaymentType(),
+    );
+    if (!mounted) return;
+    setState(() {
+      _recentTransactions = txs.take(5).toList();
+      _isLoadingTransactions = false;
+    });
   }
 
   void _onSendPressed() async {
@@ -200,16 +202,13 @@ class _DashboardState extends State<Dashboard> {
                 fed: widget.fed,
                 paymentType: _selectedPaymentType,
                 btcPrices: _btcPrices,
-                onWithdrawCompleted:
-                    _selectedPaymentType == PaymentType.onchain
-                        ? _refreshTransactions
-                        : null,
+                onWithdrawCompleted: null,
               ),
         ),
       );
-      _loadNotes();
     }
     _loadBalance();
+    _loadRecentTransactions();
   }
 
   void _onReceivePressed() async {
@@ -234,7 +233,6 @@ class _DashboardState extends State<Dashboard> {
         },
         heightFactor: 0.8,
       );
-      _loadAddresses();
     } else if (_selectedPaymentType == PaymentType.ecash) {
       await Navigator.push(
         context,
@@ -249,6 +247,28 @@ class _DashboardState extends State<Dashboard> {
       );
     }
     _loadBalance();
+    _loadRecentTransactions();
+  }
+
+  void _openAllTransactions() {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder:
+            (_) => TransactionsScreen(
+              fed: widget.fed,
+              paymentType: _selectedPaymentType,
+              onClaimed: () {
+                _loadBalance();
+                _loadRecentTransactions();
+              },
+              onWithdrawCompleted: () => _loadRecentTransactions(),
+              onAddressesUpdated: () => _loadBalance(),
+            ),
+      ),
+    ).then((_) {
+      _loadRecentTransactions();
+    });
   }
 
   Future<void> _loadProgress(PaymentType paymentType) async {
@@ -271,8 +291,6 @@ class _DashboardState extends State<Dashboard> {
 
   @override
   Widget build(BuildContext context) {
-    final name = widget.fed.federationName;
-
     return Scaffold(
       floatingActionButton:
           recovering
@@ -309,145 +327,123 @@ class _DashboardState extends State<Dashboard> {
                 ],
               ),
       body: Padding(
-        padding: const EdgeInsets.all(24),
-        child: Column(
-          children: [
-            DashboardHeader(
-              name: name,
-              network: widget.fed.network,
-              onTap: widget.onFederationTap,
-            ),
-            if (_lnAddressConfig != null) ...[
-              const SizedBox(height: 8),
-              GestureDetector(
-                onTap: () {
-                  showLightningAddressDialog(
-                    context,
-                    _lnAddressConfig!.username,
-                    _lnAddressConfig!.domain,
-                    _lnAddressConfig!.lnurl,
-                  );
-                },
-                child: Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 12,
-                    vertical: 8,
-                  ),
-                  decoration: BoxDecoration(
-                    color: Colors.black.withOpacity(0.7),
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(
-                      color: Theme.of(
-                        context,
-                      ).colorScheme.secondary.withOpacity(0.6),
+        padding: const EdgeInsets.symmetric(horizontal: 24),
+        child:
+            recovering
+                ? Column(
+                  children: [
+                    const Spacer(),
+                    DashboardBalance(
+                      balanceMsats: balanceMsats,
+                      isLoading: isLoadingBalance,
+                      recovering: recovering,
+                      showMsats: showMsats,
+                      onToggle: () => setState(() => showMsats = !showMsats),
+                      btcPrices: _btcPrices,
+                      isLoadingPrices: _isLoadingPrices,
+                      pricesFailed: _pricesFailed,
                     ),
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      const Icon(Icons.flash_on, color: Colors.amber, size: 18),
-                      const SizedBox(width: 8),
-                      Text(
-                        '${_lnAddressConfig!.username}@${_lnAddressConfig!.domain}',
-                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                          color: Theme.of(context).colorScheme.secondary,
-                          fontWeight: FontWeight.w500,
+                    const SizedBox(height: 24),
+                    RecoveryStatus(
+                      key: ValueKey(_selectedPaymentType),
+                      paymentType: _selectedPaymentType,
+                      fed: widget.fed,
+                      initialProgress: _recoveryProgress,
+                    ),
+                    const Spacer(),
+                  ],
+                )
+                : ListView(
+                  children: [
+                    const SizedBox(height: 48),
+                    DashboardBalance(
+                      balanceMsats: balanceMsats,
+                      isLoading: isLoadingBalance,
+                      recovering: recovering,
+                      showMsats: showMsats,
+                      onToggle: () => setState(() => showMsats = !showMsats),
+                      btcPrices: _btcPrices,
+                      isLoadingPrices: _isLoadingPrices,
+                      pricesFailed: _pricesFailed,
+                      lnAddressConfig: _lnAddressConfig,
+                      onLnAddressTap:
+                          _lnAddressConfig != null
+                              ? () => showLightningAddressDialog(
+                                context,
+                                _lnAddressConfig!.username,
+                                _lnAddressConfig!.domain,
+                                _lnAddressConfig!.lnurl,
+                              )
+                              : null,
+                    ),
+                    if (widget.fed.network != null &&
+                        widget.fed.network!.toLowerCase() != 'bitcoin')
+                      Padding(
+                        padding: const EdgeInsets.only(top: 4.0),
+                        child: Text(
+                          context.l10n.testNetworkMessage,
+                          style: Theme.of(
+                            context,
+                          ).textTheme.bodySmall?.copyWith(
+                            color: Theme.of(context).colorScheme.secondary,
+                            fontStyle: FontStyle.italic,
+                          ),
+                          textAlign: TextAlign.center,
                         ),
                       ),
-                    ],
-                  ),
-                ),
-              ),
-            ],
-            const SizedBox(height: 8),
-            DashboardBalance(
-              balanceMsats: balanceMsats,
-              isLoading: isLoadingBalance,
-              recovering: recovering,
-              showMsats: showMsats,
-              onToggle: () => setState(() => showMsats = !showMsats),
-              btcPrices: _btcPrices,
-              isLoadingPrices: _isLoadingPrices,
-              pricesFailed: _pricesFailed,
-            ),
-            if (!recovering) const SizedBox(height: 8),
-            if (recovering) ...[
-              Expanded(
-                child: RecoveryStatus(
-                  key: ValueKey(_selectedPaymentType),
-                  paymentType: _selectedPaymentType,
-                  fed: widget.fed,
-                  initialProgress: _recoveryProgress,
-                ),
-              ),
-            ] else ...[
-              Expanded(
-                child: DefaultTabController(
-                  length: 2,
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      TabBar(
-                        indicatorColor: Theme.of(context).colorScheme.primary,
-                        labelColor: Theme.of(context).colorScheme.primary,
-                        unselectedLabelColor: Colors.grey,
-                        tabs: [
-                          Tab(text: context.l10n.recentTransactions),
-                          if (_selectedPaymentType == PaymentType.onchain)
-                            Tab(text: context.l10n.addresses),
-                          if (_selectedPaymentType == PaymentType.ecash)
-                            Tab(text: context.l10n.notes),
-                          if (_selectedPaymentType == PaymentType.lightning)
-                            Tab(text: context.l10n.gateways),
-                        ],
+                    const SizedBox(height: 48),
+                    Text(
+                      context.l10n.recentActivity,
+                      style: Theme.of(
+                        context,
+                      ).textTheme.titleSmall?.copyWith(color: Colors.grey),
+                    ),
+                    const SizedBox(height: 8),
+                    if (_isLoadingTransactions)
+                      const Padding(
+                        padding: EdgeInsets.symmetric(vertical: 32),
+                        child: Center(child: CircularProgressIndicator()),
+                      )
+                    else if (_recentTransactions.isEmpty)
+                      Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 32),
+                        child: Center(
+                          child: Text(
+                            context.l10n.noRecentTransactions,
+                            style: const TextStyle(color: Colors.grey),
+                          ),
+                        ),
+                      )
+                    else ...[
+                      ..._recentTransactions.map(
+                        (tx) => TransactionItem(tx: tx, fed: widget.fed),
                       ),
                       const SizedBox(height: 8),
-                      Expanded(
-                        child: TabBarView(
-                          children: [
-                            TransactionsList(
-                              key: ValueKey(balanceMsats),
-                              fed: widget.fed,
-                              selectedPaymentType: _selectedPaymentType,
-                              recovering: recovering,
-                              onClaimed: _loadBalance,
-                              onWithdrawCompleted: _refreshTransactions,
-                              onRefreshRequested: (refreshCallback) {
-                                _refreshTransactionsList = refreshCallback;
-                              },
+                      Center(
+                        child: TextButton(
+                          onPressed: _openAllTransactions,
+                          child: Text(
+                            context.l10n.viewAllTransactions,
+                            style: TextStyle(
+                              color: Theme.of(context).colorScheme.primary,
                             ),
-                            if (_selectedPaymentType == PaymentType.onchain)
-                              OnchainAddressesList(
-                                key: ValueKey(_addressRefreshKey),
-                                fed: widget.fed,
-                                updateAddresses: () {
-                                  _loadBalance();
-                                  _loadAddresses();
-                                },
-                              ),
-                            if (_selectedPaymentType == PaymentType.ecash)
-                              NoteSummary(
-                                key: ValueKey(_noteRefreshKey),
-                                fed: widget.fed,
-                              ),
-                            if (_selectedPaymentType == PaymentType.lightning)
-                              GatewaysList(fed: widget.fed),
-                          ],
+                          ),
                         ),
                       ),
                     ],
-                  ),
+                    const SizedBox(height: 8),
+                  ],
                 ),
-              ),
-            ],
-          ],
-        ),
       ),
       bottomNavigationBar: BottomNavigationBar(
         currentIndex: _selectedPaymentType.index,
         onTap: (index) async {
           await _loadProgress(PaymentType.values[index]);
-          setState(() => _selectedPaymentType = PaymentType.values[index]);
+          setState(() {
+            _selectedPaymentType = PaymentType.values[index];
+            _isLoadingTransactions = true;
+          });
+          _loadRecentTransactions();
         },
         selectedItemColor: Theme.of(context).colorScheme.primary,
         unselectedItemColor: Colors.grey,

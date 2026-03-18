@@ -541,7 +541,6 @@ class _MyAppState extends State<MyApp> {
         key: ValueKey(_selectedFederation!.federationId),
         fed: _selectedFederation!,
         recovering: _isRecovering!,
-        onFederationTap: _showFederationPreview,
       );
     } else {
       if (recoverFederations) {
@@ -578,30 +577,50 @@ class _MyAppState extends State<MyApp> {
                   title: ValueListenableBuilder<List<PeerStatus>>(
                     valueListenable: _peerStatus,
                     builder: (context, peerStatus, _) {
-                      if (peerStatus.isEmpty) return const SizedBox.shrink();
+                      if (_selectedFederation == null) {
+                        return const SizedBox.shrink();
+                      }
                       return GestureDetector(
                         onTap: _showFederationPreview,
-                        child: Row(
+                        child: Column(
                           mainAxisSize: MainAxisSize.min,
-                          children:
-                              peerStatus.map((peer) {
-                                return Padding(
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: 4,
-                                  ),
-                                  child: Container(
-                                    width: 8,
-                                    height: 8,
-                                    decoration: BoxDecoration(
-                                      shape: BoxShape.circle,
-                                      color:
-                                          peer.online
-                                              ? Colors.green
-                                              : Colors.red,
-                                    ),
-                                  ),
-                                );
-                              }).toList(),
+                          children: [
+                            if (peerStatus.isNotEmpty)
+                              Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children:
+                                    peerStatus.map((peer) {
+                                      return Padding(
+                                        padding: const EdgeInsets.symmetric(
+                                          horizontal: 4,
+                                        ),
+                                        child: Container(
+                                          width: 8,
+                                          height: 8,
+                                          decoration: BoxDecoration(
+                                            shape: BoxShape.circle,
+                                            color:
+                                                peer.online
+                                                    ? Colors.green
+                                                    : Colors.red,
+                                          ),
+                                        ),
+                                      );
+                                    }).toList(),
+                              ),
+                            if (peerStatus.isNotEmpty)
+                              const SizedBox(height: 4),
+                            Text(
+                              _selectedFederation!.federationName.toUpperCase(),
+                              style: Theme.of(
+                                context,
+                              ).textTheme.bodySmall?.copyWith(
+                                color: Theme.of(context).colorScheme.primary,
+                                fontWeight: FontWeight.w600,
+                              ),
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ],
                         ),
                       );
                     },

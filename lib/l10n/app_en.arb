@@ -1324,5 +1324,14 @@
   "@recoveringWallet": {},
 
   "complete": "complete",
-  "@complete": {}
+  "@complete": {},
+
+  "viewAllTransactions": "View all",
+  "@viewAllTransactions": {},
+
+  "recentActivity": "Recent Activity",
+  "@recentActivity": {},
+
+  "noRecentTransactions": "No recent transactions",
+  "@noRecentTransactions": {}
 }
