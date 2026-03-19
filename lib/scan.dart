@@ -381,7 +381,7 @@ class _ScanQRPageState extends State<ScanQRPage> {
                   amount: field0,
                 );
               },
-              heightFactor: 0.33,
+              heightFactor: 0.5,
             );
             invoicePaidToastVisible.value = true;
             widget.onPay(chosenFederation!, false);
