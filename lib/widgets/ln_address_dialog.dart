@@ -183,7 +183,7 @@ class _LightningAddressPage extends StatelessWidget {
     String qrText = data;
     if (data.contains('@')) {
       toastText = data;
-      qrText = "lightning:$data";
+      qrText = data;
     } else {
       toastText = getAbbreviatedText(data);
     }
