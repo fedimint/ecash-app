@@ -169,7 +169,7 @@ class _FederationPreviewState extends State<FederationPreview> {
 
   Future<void> _claimLnAddress(FederationSelector fed) async {
     String defaultLnAddress = "https://ecash.love";
-    String defaultRecurringd = "https://lnurl.ecash.love";
+    String defaultRecurringd = "https://recurring.ecash.love";
     try {
       await claimRandomLnAddress(
         federationId: fed.federationId,
