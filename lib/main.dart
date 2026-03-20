@@ -16,8 +16,10 @@ import 'package:path_provider/path_provider.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  // Initialize foreground task
-  FlutterForegroundTask.initCommunicationPort();
+  // Initialize foreground task (Android/iOS only)
+  if (Platform.isAndroid || Platform.isIOS) {
+    FlutterForegroundTask.initCommunicationPort();
+  }
 
   await AppLogger.init();
 
