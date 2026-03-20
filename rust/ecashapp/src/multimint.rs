@@ -39,10 +39,11 @@ use fedimint_lnv2_client::{
 use fedimint_lnv2_common::{gateway_api::PaymentFee, Bolt11InvoiceDescription};
 use fedimint_meta_client::{common::DEFAULT_META_KEY, MetaClientInit};
 use fedimint_mint_client::{
-    api::MintFederationApi, MintClientInit, MintClientModule, MintOperationMeta,
+    api::MintFederationApi, represent_amount, MintClientInit, MintClientModule, MintOperationMeta,
     MintOperationMetaVariant, OOBNotes, ReissueExternalNotesState, SelectNotesWithAtleastAmount,
     SpendOOBState,
 };
+use fedimint_mint_common::config::MintClientConfig;
 use fedimint_wallet_client::client_db::TweakIdx;
 use fedimint_wallet_client::WithdrawState;
 use fedimint_wallet_client::{api::WalletFederationApi, TxOutputSummary};
@@ -100,6 +101,13 @@ pub struct WithdrawFeesResponse {
     pub fee_rate_sats_per_vb: f64,
     pub tx_size_vbytes: u32,
     pub peg_out_fees: PegOutFees,
+}
+
+pub struct ReissueFees {
+    pub total_msats: u64,
+    pub input_msats: u64,
+    pub output_msats: u64,
+    pub dust_msats: u64,
 }
 
 #[allow(clippy::type_complexity)]
@@ -3046,6 +3054,91 @@ impl Multimint {
         }
         let total_amount = notes.total_amount();
         Ok(total_amount.msats)
+    }
+
+    pub async fn calculate_ecash_reissue_fees(
+        &self,
+        federation_id: &FederationId,
+        ecash: String,
+    ) -> anyhow::Result<ReissueFees> {
+        let client = self
+            .clients
+            .read()
+            .await
+            .get(federation_id)
+            .ok_or(anyhow!("No federation exists"))?
+            .clone();
+        let mint = client.get_first_module::<MintClientModule>()?;
+        let notes = OOBNotes::from_str(&ecash)?;
+
+        // Get the mint module's fee config
+        let client_config = client.config().await;
+        let mint_config = client_config
+            .modules
+            .get(&mint.id)
+            .ok_or(anyhow!("Could not get mint config"))?
+            .cast::<MintClientConfig>()?;
+        let fee_consensus = &mint_config.fee_consensus;
+
+        // Input fees: one fee per note being spent
+        let input_fees: Amount = notes
+            .notes()
+            .iter_items()
+            .map(|(amount, _)| fee_consensus.fee(amount))
+            .fold(Amount::ZERO, |acc, fee| acc + fee);
+
+        // Compute net amount after input fees
+        let total_amount = notes.total_amount();
+        let amount_after_input_fees = total_amount.saturating_sub(input_fees);
+
+        // Output fees: estimate how many new notes will be created
+        let mut dbtx = mint.client_ctx.module_db().begin_transaction_nc().await;
+        let current_denominations = mint.get_note_counts_by_denomination(&mut dbtx).await;
+        let output_denominations = represent_amount(
+            amount_after_input_fees,
+            &current_denominations,
+            &mint_config.tbs_pks,
+            2,
+            fee_consensus,
+        );
+
+        // Calculate what the user actually receives (sum of output note values)
+        let received: Amount = output_denominations
+            .iter()
+            .map(|(amount, count)| amount * (count as u64))
+            .fold(Amount::ZERO, |acc, amt| acc + amt);
+
+        let output_fees: Amount = output_denominations
+            .iter()
+            .map(|(amount, count)| fee_consensus.fee(amount) * (count as u64))
+            .fold(Amount::ZERO, |acc, fee| acc + fee);
+
+        // Total fee is the difference between gross and what the user receives.
+        // This includes input fees, output fees, and any dust remainder from
+        // represent_amount() that was too small to create a note for.
+        let total_fees = total_amount.saturating_sub(received);
+
+        info_to_flutter(format!(
+            "Ecash reissue fees: input={} msats, output={} msats, dust={} msats, total={} msats (receive {} msats from {} msats)",
+            input_fees.msats,
+            output_fees.msats,
+            total_fees.msats.saturating_sub(input_fees.msats + output_fees.msats),
+            total_fees.msats,
+            received.msats,
+            total_amount.msats
+        ))
+        .await;
+
+        let dust_msats = total_fees
+            .msats
+            .saturating_sub(input_fees.msats + output_fees.msats);
+
+        Ok(ReissueFees {
+            total_msats: total_fees.msats,
+            input_msats: input_fees.msats,
+            output_msats: output_fees.msats,
+            dust_msats,
+        })
     }
 
     pub async fn check_ecash_spent(

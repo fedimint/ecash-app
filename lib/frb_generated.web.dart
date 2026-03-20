@@ -937,6 +937,9 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   (BigInt, BigInt) dco_decode_record_u_64_usize(dynamic raw);
 
   @protected
+  ReissueFees dco_decode_reissue_fees(dynamic raw);
+
+  @protected
   Transaction dco_decode_transaction(dynamic raw);
 
   @protected
@@ -1841,6 +1844,9 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
 
   @protected
   (BigInt, BigInt) sse_decode_record_u_64_usize(SseDeserializer deserializer);
+
+  @protected
+  ReissueFees sse_decode_reissue_fees(SseDeserializer deserializer);
 
   @protected
   Transaction sse_decode_transaction(SseDeserializer deserializer);
@@ -2923,6 +2929,9 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
     (BigInt, BigInt) self,
     SseSerializer serializer,
   );
+
+  @protected
+  void sse_encode_reissue_fees(ReissueFees self, SseSerializer serializer);
 
   @protected
   void sse_encode_transaction(Transaction self, SseSerializer serializer);

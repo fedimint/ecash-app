@@ -23,7 +23,7 @@ use flutter_rust_bridge::frb;
 use futures_util::StreamExt;
 use multimint::{
     FederationMeta, FederationSelector, LightningSendOutcome, LogLevel, Multimint,
-    MultimintCreation, MultimintEvent, PaymentPreviewWithGateways, Transaction, Utxo,
+    MultimintCreation, MultimintEvent, PaymentPreviewWithGateways, ReissueFees, Transaction, Utxo,
     WithdrawFeesResponse,
 };
 use nostr::{NWCConnectionInfo, NostrClient, PublicFederation};
@@ -457,6 +457,17 @@ pub async fn send_ecash(
 async fn parse_ecash(federation_id: &FederationId, notes: &OOBNotes) -> anyhow::Result<u64> {
     let multimint = get_multimint();
     multimint.parse_ecash(federation_id, notes).await
+}
+
+#[frb]
+pub async fn calculate_ecash_reissue_fees(
+    federation_id: &FederationId,
+    ecash: String,
+) -> anyhow::Result<ReissueFees> {
+    let multimint = get_multimint();
+    multimint
+        .calculate_ecash_reissue_fees(federation_id, ecash)
+        .await
 }
 
 #[frb]

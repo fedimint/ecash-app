@@ -27,6 +27,36 @@ class EcashRedeemPrompt extends StatefulWidget {
 
 class _EcashRedeemPromptState extends State<EcashRedeemPrompt> {
   bool _isLoading = false;
+  BigInt? _totalFeeMsats;
+  BigInt? _inputFeeMsats;
+  BigInt? _outputFeeMsats;
+  BigInt? _dustMsats;
+  bool _showFeeDetails = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadFees();
+  }
+
+  Future<void> _loadFees() async {
+    try {
+      final fees = await calculateEcashReissueFees(
+        federationId: widget.fed.federationId,
+        ecash: widget.ecash,
+      );
+      if (mounted) {
+        setState(() {
+          _totalFeeMsats = fees.totalMsats;
+          _inputFeeMsats = fees.inputMsats;
+          _outputFeeMsats = fees.outputMsats;
+          _dustMsats = fees.dustMsats;
+        });
+      }
+    } catch (e) {
+      AppLogger.instance.error("Could not calculate reissue fees: $e");
+    }
+  }
 
   Future<void> _handleRedeem() async {
     setState(() {
@@ -197,6 +227,24 @@ class _EcashRedeemPromptState extends State<EcashRedeemPrompt> {
             ],
           ),
         ),
+        if (_totalFeeMsats != null && _totalFeeMsats! > BigInt.zero) ...[
+          const SizedBox(height: 12),
+          Text(
+            'Fee: ${formatBalance(_totalFeeMsats!, true, bitcoinDisplay)}',
+            textAlign: TextAlign.center,
+            style: theme.textTheme.bodyLarge?.copyWith(
+              color: theme.colorScheme.onSurface.withOpacity(0.6),
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            'You receive: ${formatBalance(widget.amount - _totalFeeMsats!, true, bitcoinDisplay)}',
+            textAlign: TextAlign.center,
+            style: theme.textTheme.bodyLarge?.copyWith(
+              color: theme.colorScheme.onSurface.withOpacity(0.6),
+            ),
+          ),
+        ],
         const SizedBox(height: 32),
         ElevatedButton(
           onPressed: _isLoading ? null : _handleRedeem,
@@ -233,6 +281,56 @@ class _EcashRedeemPromptState extends State<EcashRedeemPrompt> {
           ),
           child: Text(context.l10n.redeemWhenOnline),
         ),
+        if (_totalFeeMsats != null && _totalFeeMsats! > BigInt.zero) ...[
+          const SizedBox(height: 20),
+          GestureDetector(
+            onTap: () => setState(() => _showFeeDetails = !_showFeeDetails),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Text(
+                  'Fee Details',
+                  style: theme.textTheme.bodyMedium?.copyWith(
+                    color: theme.colorScheme.onSurface.withOpacity(0.5),
+                  ),
+                ),
+                Icon(
+                  _showFeeDetails ? Icons.expand_less : Icons.expand_more,
+                  size: 20,
+                  color: theme.colorScheme.onSurface.withOpacity(0.5),
+                ),
+              ],
+            ),
+          ),
+          if (_showFeeDetails) ...[
+            const SizedBox(height: 8),
+            Text(
+              'Input fee: ${_inputFeeMsats!} msats',
+              textAlign: TextAlign.center,
+              style: theme.textTheme.bodyMedium?.copyWith(
+                color: theme.colorScheme.onSurface.withOpacity(0.5),
+              ),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              'Output fee: ${_outputFeeMsats!} msats',
+              textAlign: TextAlign.center,
+              style: theme.textTheme.bodyMedium?.copyWith(
+                color: theme.colorScheme.onSurface.withOpacity(0.5),
+              ),
+            ),
+            if (_dustMsats != null && _dustMsats! > BigInt.zero) ...[
+              const SizedBox(height: 4),
+              Text(
+                'Dust loss: ${_dustMsats!} msats',
+                textAlign: TextAlign.center,
+                style: theme.textTheme.bodyMedium?.copyWith(
+                  color: theme.colorScheme.onSurface.withOpacity(0.5),
+                ),
+              ),
+            ],
+          ],
+        ],
       ],
     );
   }

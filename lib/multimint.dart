@@ -103,6 +103,11 @@ abstract class Multimint implements RustOpaqueInterface {
 
   Future<BigInt> balance({required FederationId federationId});
 
+  Future<ReissueFees> calculateEcashReissueFees({
+    required FederationId federationId,
+    required String ecash,
+  });
+
   Future<WithdrawFeesResponse> calculateWithdrawFees({
     required FederationId federationId,
     required String address,
@@ -702,6 +707,37 @@ class PeerStatus {
           peerId == other.peerId &&
           name == other.name &&
           online == other.online;
+}
+
+class ReissueFees {
+  final BigInt totalMsats;
+  final BigInt inputMsats;
+  final BigInt outputMsats;
+  final BigInt dustMsats;
+
+  const ReissueFees({
+    required this.totalMsats,
+    required this.inputMsats,
+    required this.outputMsats,
+    required this.dustMsats,
+  });
+
+  @override
+  int get hashCode =>
+      totalMsats.hashCode ^
+      inputMsats.hashCode ^
+      outputMsats.hashCode ^
+      dustMsats.hashCode;
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is ReissueFees &&
+          runtimeType == other.runtimeType &&
+          totalMsats == other.totalMsats &&
+          inputMsats == other.inputMsats &&
+          outputMsats == other.outputMsats &&
+          dustMsats == other.dustMsats;
 }
 
 class Transaction {

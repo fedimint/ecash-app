@@ -26,7 +26,7 @@ class LightningAddressScreen extends StatefulWidget {
 class _LightningAddressScreenState extends State<LightningAddressScreen> {
   String _lnAddressApi = "https://ecash.love";
   String _recurringdApi = "https://recurring.ecash.love";
-  String _lnv1Api = "https://lnurl.ecash.love";
+  final String _lnv1Api = "https://lnurl.ecash.love";
   bool _loading = true;
   FederationSelector? _selectedFederation;
 
