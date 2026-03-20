@@ -21,6 +21,9 @@ String localizedTxLabel(AppLocalizations l10n, String key) {
     TransactionDetailKeys.maxTxSize => l10n.txDetailMaxTxSize,
     TransactionDetailKeys.fee => l10n.txDetailFee,
     TransactionDetailKeys.total => l10n.txDetailTotal,
+    TransactionDetailKeys.inputFees => l10n.txDetailInputFees,
+    TransactionDetailKeys.outputFees => l10n.txDetailOutputFees,
+    TransactionDetailKeys.dust => l10n.txDetailDust,
     _ => key,
   };
 }

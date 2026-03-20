@@ -436,6 +436,53 @@
   "txDetailTotal": "Total",
   "@txDetailTotal": {},
 
+  "txDetailInputFees": "Input Fees",
+  "@txDetailInputFees": {},
+
+  "txDetailOutputFees": "Output Fees",
+  "@txDetailOutputFees": {},
+
+  "txDetailDust": "Dust",
+  "@txDetailDust": {},
+
+  "redeemFee": "Fee: {amount}",
+  "@redeemFee": {
+    "placeholders": {
+      "amount": { "type": "String" }
+    }
+  },
+
+  "redeemYouReceive": "You receive: {amount}",
+  "@redeemYouReceive": {
+    "placeholders": {
+      "amount": { "type": "String" }
+    }
+  },
+
+  "redeemFeeDetails": "Fee Details",
+  "@redeemFeeDetails": {},
+
+  "redeemInputFee": "Input fee: {amount}",
+  "@redeemInputFee": {
+    "placeholders": {
+      "amount": { "type": "String" }
+    }
+  },
+
+  "redeemOutputFee": "Output fee: {amount}",
+  "@redeemOutputFee": {
+    "placeholders": {
+      "amount": { "type": "String" }
+    }
+  },
+
+  "redeemDustLoss": "Dust loss: {amount}",
+  "@redeemDustLoss": {
+    "placeholders": {
+      "amount": { "type": "String" }
+    }
+  },
+
   "somethingWentWrong": "Something Went Wrong",
   "@somethingWentWrong": {},
 

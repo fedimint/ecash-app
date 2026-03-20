@@ -27,6 +27,38 @@ class EcashRedeemPrompt extends StatefulWidget {
 
 class _EcashRedeemPromptState extends State<EcashRedeemPrompt> {
   bool _isLoading = false;
+  ReissueFees? _fees;
+  BigInt? _totalFeeMsats;
+  BigInt? _inputFeeMsats;
+  BigInt? _outputFeeMsats;
+  BigInt? _dustMsats;
+  bool _showFeeDetails = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadFees();
+  }
+
+  Future<void> _loadFees() async {
+    try {
+      final fees = await calculateEcashReissueFees(
+        federationId: widget.fed.federationId,
+        ecash: widget.ecash,
+      );
+      if (mounted) {
+        setState(() {
+          _fees = fees;
+          _totalFeeMsats = fees.totalMsats;
+          _inputFeeMsats = fees.inputMsats;
+          _outputFeeMsats = fees.outputMsats;
+          _dustMsats = fees.dustMsats;
+        });
+      }
+    } catch (e) {
+      AppLogger.instance.error("Could not calculate reissue fees: $e");
+    }
+  }
 
   Future<void> _handleRedeem() async {
     setState(() {
@@ -61,6 +93,7 @@ class _EcashRedeemPromptState extends State<EcashRedeemPrompt> {
       final operationId = await reissueEcash(
         federationId: widget.fed.federationId,
         ecash: widget.ecash,
+        fees: _fees!,
       );
 
       final result = await awaitEcashReissue(
@@ -142,6 +175,7 @@ class _EcashRedeemPromptState extends State<EcashRedeemPrompt> {
       await reissueEcash(
         federationId: widget.fed.federationId,
         ecash: widget.ecash,
+        fees: _fees!,
       );
 
       if (!mounted) return;
@@ -197,6 +231,32 @@ class _EcashRedeemPromptState extends State<EcashRedeemPrompt> {
             ],
           ),
         ),
+        if (_totalFeeMsats != null && _totalFeeMsats! > BigInt.zero) ...[
+          const SizedBox(height: 12),
+          Text(
+            context.l10n.redeemFee(
+              formatBalance(_totalFeeMsats!, true, bitcoinDisplay),
+            ),
+            textAlign: TextAlign.center,
+            style: theme.textTheme.bodyLarge?.copyWith(
+              color: theme.colorScheme.onSurface.withOpacity(0.6),
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            context.l10n.redeemYouReceive(
+              formatBalance(
+                widget.amount - _totalFeeMsats!,
+                true,
+                bitcoinDisplay,
+              ),
+            ),
+            textAlign: TextAlign.center,
+            style: theme.textTheme.bodyLarge?.copyWith(
+              color: theme.colorScheme.onSurface.withOpacity(0.6),
+            ),
+          ),
+        ],
         const SizedBox(height: 32),
         ElevatedButton(
           onPressed: _isLoading ? null : _handleRedeem,
@@ -233,6 +293,56 @@ class _EcashRedeemPromptState extends State<EcashRedeemPrompt> {
           ),
           child: Text(context.l10n.redeemWhenOnline),
         ),
+        if (_totalFeeMsats != null && _totalFeeMsats! > BigInt.zero) ...[
+          const SizedBox(height: 20),
+          GestureDetector(
+            onTap: () => setState(() => _showFeeDetails = !_showFeeDetails),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Text(
+                  context.l10n.redeemFeeDetails,
+                  style: theme.textTheme.bodyMedium?.copyWith(
+                    color: theme.colorScheme.onSurface.withOpacity(0.5),
+                  ),
+                ),
+                Icon(
+                  _showFeeDetails ? Icons.expand_less : Icons.expand_more,
+                  size: 20,
+                  color: theme.colorScheme.onSurface.withOpacity(0.5),
+                ),
+              ],
+            ),
+          ),
+          if (_showFeeDetails) ...[
+            const SizedBox(height: 8),
+            Text(
+              context.l10n.redeemInputFee('${_inputFeeMsats!} msats'),
+              textAlign: TextAlign.center,
+              style: theme.textTheme.bodyMedium?.copyWith(
+                color: theme.colorScheme.onSurface.withOpacity(0.5),
+              ),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              context.l10n.redeemOutputFee('${_outputFeeMsats!} msats'),
+              textAlign: TextAlign.center,
+              style: theme.textTheme.bodyMedium?.copyWith(
+                color: theme.colorScheme.onSurface.withOpacity(0.5),
+              ),
+            ),
+            if (_dustMsats != null && _dustMsats! > BigInt.zero) ...[
+              const SizedBox(height: 4),
+              Text(
+                context.l10n.redeemDustLoss('${_dustMsats!} msats'),
+                textAlign: TextAlign.center,
+                style: theme.textTheme.bodyMedium?.copyWith(
+                  color: theme.colorScheme.onSurface.withOpacity(0.5),
+                ),
+              ),
+            ],
+          ],
+        ],
       ],
     );
   }

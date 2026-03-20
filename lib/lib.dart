@@ -179,12 +179,22 @@ Future<(OperationId, String, BigInt)> sendEcash({
   amountMsats: amountMsats,
 );
 
+Future<ReissueFees> calculateEcashReissueFees({
+  required FederationId federationId,
+  required String ecash,
+}) => RustLib.instance.api.crateCalculateEcashReissueFees(
+  federationId: federationId,
+  ecash: ecash,
+);
+
 Future<OperationId> reissueEcash({
   required FederationId federationId,
   required String ecash,
+  required ReissueFees fees,
 }) => RustLib.instance.api.crateReissueEcash(
   federationId: federationId,
   ecash: ecash,
+  fees: fees,
 );
 
 Future<(ReissueExternalNotesState, BigInt?)> awaitEcashReissue({

@@ -125,6 +125,17 @@
   "txDetailFee": "Comisión",
   "txDetailTotal": "Total",
 
+  "txDetailInputFees": "Comisiones de entrada",
+  "txDetailOutputFees": "Comisiones de salida",
+  "txDetailDust": "Polvo",
+
+  "redeemFee": "Comisión: {amount}",
+  "redeemYouReceive": "Recibes: {amount}",
+  "redeemFeeDetails": "Detalles de comisiones",
+  "redeemInputFee": "Comisión de entrada: {amount}",
+  "redeemOutputFee": "Comisión de salida: {amount}",
+  "redeemDustLoss": "Pérdida de polvo: {amount}",
+
   "somethingWentWrong": "Algo salió mal",
   "somethingWentWrongDefault": "Algo salió mal. Por favor intenta de nuevo.",
   "close": "Cerrar",

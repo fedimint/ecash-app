@@ -103,6 +103,11 @@ abstract class Multimint implements RustOpaqueInterface {
 
   Future<BigInt> balance({required FederationId federationId});
 
+  Future<ReissueFees> calculateEcashReissueFees({
+    required FederationId federationId,
+    required String ecash,
+  });
+
   Future<WithdrawFeesResponse> calculateWithdrawFees({
     required FederationId federationId,
     required String address,
@@ -244,6 +249,7 @@ abstract class Multimint implements RustOpaqueInterface {
   Future<OperationId> reissueEcash({
     required FederationId federationId,
     required String ecash,
+    required ReissueFees fees,
   });
 
   Future<void> rejoinFromBackupInvites({
@@ -704,6 +710,37 @@ class PeerStatus {
           online == other.online;
 }
 
+class ReissueFees {
+  final BigInt totalMsats;
+  final BigInt inputMsats;
+  final BigInt outputMsats;
+  final BigInt dustMsats;
+
+  const ReissueFees({
+    required this.totalMsats,
+    required this.inputMsats,
+    required this.outputMsats,
+    required this.dustMsats,
+  });
+
+  @override
+  int get hashCode =>
+      totalMsats.hashCode ^
+      inputMsats.hashCode ^
+      outputMsats.hashCode ^
+      dustMsats.hashCode;
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is ReissueFees &&
+          runtimeType == other.runtimeType &&
+          totalMsats == other.totalMsats &&
+          inputMsats == other.inputMsats &&
+          outputMsats == other.outputMsats &&
+          dustMsats == other.dustMsats;
+}
+
 class Transaction {
   final TransactionKind kind;
   final BigInt amount;
@@ -768,7 +805,9 @@ sealed class TransactionKind with _$TransactionKind {
   }) = TransactionKind_OnchainSend;
   const factory TransactionKind.ecashReceive({
     required String oobNotes,
-    required BigInt fees,
+    BigInt? inputFees,
+    BigInt? outputFees,
+    BigInt? dust,
   }) = TransactionKind_EcashReceive;
   const factory TransactionKind.ecashSend({
     required String oobNotes,

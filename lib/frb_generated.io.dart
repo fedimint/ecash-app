@@ -616,6 +616,9 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   );
 
   @protected
+  ReissueFees dco_decode_box_autoadd_reissue_fees(dynamic raw);
+
+  @protected
   int dco_decode_box_autoadd_u_32(dynamic raw);
 
   @protected
@@ -933,6 +936,9 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
 
   @protected
   (BigInt, BigInt) dco_decode_record_u_64_usize(dynamic raw);
+
+  @protected
+  ReissueFees dco_decode_reissue_fees(dynamic raw);
 
   @protected
   Transaction dco_decode_transaction(dynamic raw);
@@ -1490,6 +1496,9 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   );
 
   @protected
+  ReissueFees sse_decode_box_autoadd_reissue_fees(SseDeserializer deserializer);
+
+  @protected
   int sse_decode_box_autoadd_u_32(SseDeserializer deserializer);
 
   @protected
@@ -1839,6 +1848,9 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
 
   @protected
   (BigInt, BigInt) sse_decode_record_u_64_usize(SseDeserializer deserializer);
+
+  @protected
+  ReissueFees sse_decode_reissue_fees(SseDeserializer deserializer);
 
   @protected
   Transaction sse_decode_transaction(SseDeserializer deserializer);
@@ -2489,6 +2501,12 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   );
 
   @protected
+  void sse_encode_box_autoadd_reissue_fees(
+    ReissueFees self,
+    SseSerializer serializer,
+  );
+
+  @protected
   void sse_encode_box_autoadd_u_32(int self, SseSerializer serializer);
 
   @protected
@@ -2921,6 +2939,9 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
     (BigInt, BigInt) self,
     SseSerializer serializer,
   );
+
+  @protected
+  void sse_encode_reissue_fees(ReissueFees self, SseSerializer serializer);
 
   @protected
   void sse_encode_transaction(Transaction self, SseSerializer serializer);
