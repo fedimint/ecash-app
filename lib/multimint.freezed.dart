@@ -2151,11 +2151,13 @@ as BigInt?,
 
 
 class TransactionKind_EcashReceive extends TransactionKind {
-  const TransactionKind_EcashReceive({required this.oobNotes, required this.fees}): super._();
+  const TransactionKind_EcashReceive({required this.oobNotes, this.inputFees, this.outputFees, this.dust}): super._();
   
 
  final  String oobNotes;
- final  BigInt fees;
+ final  BigInt? inputFees;
+ final  BigInt? outputFees;
+ final  BigInt? dust;
 
 /// Create a copy of TransactionKind
 /// with the given fields replaced by the non-null parameter values.
@@ -2167,16 +2169,16 @@ $TransactionKind_EcashReceiveCopyWith<TransactionKind_EcashReceive> get copyWith
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is TransactionKind_EcashReceive&&(identical(other.oobNotes, oobNotes) || other.oobNotes == oobNotes)&&(identical(other.fees, fees) || other.fees == fees));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is TransactionKind_EcashReceive&&(identical(other.oobNotes, oobNotes) || other.oobNotes == oobNotes)&&(identical(other.inputFees, inputFees) || other.inputFees == inputFees)&&(identical(other.outputFees, outputFees) || other.outputFees == outputFees)&&(identical(other.dust, dust) || other.dust == dust));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,oobNotes,fees);
+int get hashCode => Object.hash(runtimeType,oobNotes,inputFees,outputFees,dust);
 
 @override
 String toString() {
-  return 'TransactionKind.ecashReceive(oobNotes: $oobNotes, fees: $fees)';
+  return 'TransactionKind.ecashReceive(oobNotes: $oobNotes, inputFees: $inputFees, outputFees: $outputFees, dust: $dust)';
 }
 
 
@@ -2187,7 +2189,7 @@ abstract mixin class $TransactionKind_EcashReceiveCopyWith<$Res> implements $Tra
   factory $TransactionKind_EcashReceiveCopyWith(TransactionKind_EcashReceive value, $Res Function(TransactionKind_EcashReceive) _then) = _$TransactionKind_EcashReceiveCopyWithImpl;
 @useResult
 $Res call({
- String oobNotes, BigInt fees
+ String oobNotes, BigInt? inputFees, BigInt? outputFees, BigInt? dust
 });
 
 
@@ -2204,11 +2206,13 @@ class _$TransactionKind_EcashReceiveCopyWithImpl<$Res>
 
 /// Create a copy of TransactionKind
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') $Res call({Object? oobNotes = null,Object? fees = null,}) {
+@pragma('vm:prefer-inline') $Res call({Object? oobNotes = null,Object? inputFees = freezed,Object? outputFees = freezed,Object? dust = freezed,}) {
   return _then(TransactionKind_EcashReceive(
 oobNotes: null == oobNotes ? _self.oobNotes : oobNotes // ignore: cast_nullable_to_non_nullable
-as String,fees: null == fees ? _self.fees : fees // ignore: cast_nullable_to_non_nullable
-as BigInt,
+as String,inputFees: freezed == inputFees ? _self.inputFees : inputFees // ignore: cast_nullable_to_non_nullable
+as BigInt?,outputFees: freezed == outputFees ? _self.outputFees : outputFees // ignore: cast_nullable_to_non_nullable
+as BigInt?,dust: freezed == dust ? _self.dust : dust // ignore: cast_nullable_to_non_nullable
+as BigInt?,
   ));
 }
 

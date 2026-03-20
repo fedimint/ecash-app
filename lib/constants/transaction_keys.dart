@@ -19,4 +19,7 @@ class TransactionDetailKeys {
   static const String maxTxSize = 'Max Tx Size';
   static const String fee = 'Fee';
   static const String total = 'Total';
+  static const String inputFees = "Input Fees";
+  static const String outputFees = "Output Fees";
+  static const String dust = "Dust";
 }

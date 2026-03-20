@@ -498,6 +498,7 @@ abstract class RustLibApi extends BaseApi {
     required Multimint that,
     required FederationId federationId,
     required String ecash,
+    required ReissueFees fees,
   });
 
   Future<void> crateMultimintMultimintRejoinFromBackupInvites({
@@ -1036,6 +1037,7 @@ abstract class RustLibApi extends BaseApi {
   Future<OperationId> crateReissueEcash({
     required FederationId federationId,
     required String ecash,
+    required ReissueFees fees,
   });
 
   Future<void> crateRejoinFromBackupInvites();
@@ -4608,6 +4610,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
     required Multimint that,
     required FederationId federationId,
     required String ecash,
+    required ReissueFees fees,
   }) {
     return handler.executeNormal(
       NormalTask(
@@ -4622,6 +4625,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
             serializer,
           );
           sse_encode_String(ecash, serializer);
+          sse_encode_box_autoadd_reissue_fees(fees, serializer);
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
@@ -4635,7 +4639,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           decodeErrorData: sse_decode_AnyhowException,
         ),
         constMeta: kCrateMultimintMultimintReissueEcashConstMeta,
-        argValues: [that, federationId, ecash],
+        argValues: [that, federationId, ecash, fees],
         apiImpl: this,
       ),
     );
@@ -4644,7 +4648,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   TaskConstMeta get kCrateMultimintMultimintReissueEcashConstMeta =>
       const TaskConstMeta(
         debugName: "Multimint_reissue_ecash",
-        argNames: ["that", "federationId", "ecash"],
+        argNames: ["that", "federationId", "ecash", "fees"],
       );
 
   @override
@@ -9103,6 +9107,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   Future<OperationId> crateReissueEcash({
     required FederationId federationId,
     required String ecash,
+    required ReissueFees fees,
   }) {
     return handler.executeNormal(
       NormalTask(
@@ -9113,6 +9118,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
             serializer,
           );
           sse_encode_String(ecash, serializer);
+          sse_encode_box_autoadd_reissue_fees(fees, serializer);
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
@@ -9126,7 +9132,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           decodeErrorData: sse_decode_AnyhowException,
         ),
         constMeta: kCrateReissueEcashConstMeta,
-        argValues: [federationId, ecash],
+        argValues: [federationId, ecash, fees],
         apiImpl: this,
       ),
     );
@@ -9134,7 +9140,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
 
   TaskConstMeta get kCrateReissueEcashConstMeta => const TaskConstMeta(
     debugName: "reissue_ecash",
-    argNames: ["federationId", "ecash"],
+    argNames: ["federationId", "ecash", "fees"],
   );
 
   @override
@@ -10998,6 +11004,12 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   }
 
   @protected
+  ReissueFees dco_decode_box_autoadd_reissue_fees(dynamic raw) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    return dco_decode_reissue_fees(raw);
+  }
+
+  @protected
   int dco_decode_box_autoadd_u_32(dynamic raw) {
     // Codec=Dco (DartCObject based), see doc to use other codecs
     return raw as int;
@@ -12080,7 +12092,9 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
       case 5:
         return TransactionKind_EcashReceive(
           oobNotes: dco_decode_String(raw[1]),
-          fees: dco_decode_u_64(raw[2]),
+          inputFees: dco_decode_opt_box_autoadd_u_64(raw[2]),
+          outputFees: dco_decode_opt_box_autoadd_u_64(raw[3]),
+          dust: dco_decode_opt_box_autoadd_u_64(raw[4]),
         );
       case 6:
         return TransactionKind_EcashSend(
@@ -13171,6 +13185,14 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
     return (sse_decode_record_auto_owned_rust_opaque_flutter_rust_bridgefor_generated_rust_auto_opaque_inner_federation_id_u_64(
       deserializer,
     ));
+  }
+
+  @protected
+  ReissueFees sse_decode_box_autoadd_reissue_fees(
+    SseDeserializer deserializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    return (sse_decode_reissue_fees(deserializer));
   }
 
   @protected
@@ -14422,10 +14444,14 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
         );
       case 5:
         var var_oobNotes = sse_decode_String(deserializer);
-        var var_fees = sse_decode_u_64(deserializer);
+        var var_inputFees = sse_decode_opt_box_autoadd_u_64(deserializer);
+        var var_outputFees = sse_decode_opt_box_autoadd_u_64(deserializer);
+        var var_dust = sse_decode_opt_box_autoadd_u_64(deserializer);
         return TransactionKind_EcashReceive(
           oobNotes: var_oobNotes,
-          fees: var_fees,
+          inputFees: var_inputFees,
+          outputFees: var_outputFees,
+          dust: var_dust,
         );
       case 6:
         var var_oobNotes = sse_decode_String(deserializer);
@@ -15639,6 +15665,15 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   }
 
   @protected
+  void sse_encode_box_autoadd_reissue_fees(
+    ReissueFees self,
+    SseSerializer serializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    sse_encode_reissue_fees(self, serializer);
+  }
+
+  @protected
   void sse_encode_box_autoadd_u_32(int self, SseSerializer serializer) {
     // Codec=Sse (Serialization based), see doc to use other codecs
     sse_encode_u_32(self, serializer);
@@ -16770,11 +16805,15 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
         sse_encode_opt_box_autoadd_u_64(totalSats, serializer);
       case TransactionKind_EcashReceive(
         oobNotes: final oobNotes,
-        fees: final fees,
+        inputFees: final inputFees,
+        outputFees: final outputFees,
+        dust: final dust,
       ):
         sse_encode_i_32(5, serializer);
         sse_encode_String(oobNotes, serializer);
-        sse_encode_u_64(fees, serializer);
+        sse_encode_opt_box_autoadd_u_64(inputFees, serializer);
+        sse_encode_opt_box_autoadd_u_64(outputFees, serializer);
+        sse_encode_opt_box_autoadd_u_64(dust, serializer);
       case TransactionKind_EcashSend(
         oobNotes: final oobNotes,
         fees: final fees,
@@ -17648,10 +17687,12 @@ class MultimintImpl extends RustOpaque implements Multimint {
   Future<OperationId> reissueEcash({
     required FederationId federationId,
     required String ecash,
+    required ReissueFees fees,
   }) => RustLib.instance.api.crateMultimintMultimintReissueEcash(
     that: this,
     federationId: federationId,
     ecash: ecash,
+    fees: fees,
   );
 
   Future<void> rejoinFromBackupInvites({

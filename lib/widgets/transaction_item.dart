@@ -113,7 +113,9 @@ class TransactionItem extends StatelessWidget {
         break;
       case TransactionKind_EcashReceive(
         oobNotes: final oobNotes,
-        fees: final fees,
+        inputFees: final inputFees,
+        outputFees: final outputFees,
+        dust: final dust,
       ):
         showAppModalBottomSheet(
           context: context,
@@ -122,8 +124,18 @@ class TransactionItem extends StatelessWidget {
               tx: tx,
               details: {
                 TransactionDetailKeys.amount: formattedAmount,
-                TransactionDetailKeys.fees: formatBalance(
-                  fees,
+                TransactionDetailKeys.inputFees: formatBalance(
+                  inputFees,
+                  true,
+                  bitcoinDisplay,
+                ),
+                TransactionDetailKeys.outputFees: formatBalance(
+                  outputFees,
+                  true,
+                  bitcoinDisplay,
+                ),
+                TransactionDetailKeys.dust: formatBalance(
+                  dust,
                   true,
                   bitcoinDisplay,
                 ),

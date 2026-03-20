@@ -27,6 +27,7 @@ class EcashRedeemPrompt extends StatefulWidget {
 
 class _EcashRedeemPromptState extends State<EcashRedeemPrompt> {
   bool _isLoading = false;
+  ReissueFees? _fees;
   BigInt? _totalFeeMsats;
   BigInt? _inputFeeMsats;
   BigInt? _outputFeeMsats;
@@ -47,6 +48,7 @@ class _EcashRedeemPromptState extends State<EcashRedeemPrompt> {
       );
       if (mounted) {
         setState(() {
+          _fees = fees;
           _totalFeeMsats = fees.totalMsats;
           _inputFeeMsats = fees.inputMsats;
           _outputFeeMsats = fees.outputMsats;
@@ -91,6 +93,7 @@ class _EcashRedeemPromptState extends State<EcashRedeemPrompt> {
       final operationId = await reissueEcash(
         federationId: widget.fed.federationId,
         ecash: widget.ecash,
+        fees: _fees!,
       );
 
       final result = await awaitEcashReissue(
@@ -172,6 +175,7 @@ class _EcashRedeemPromptState extends State<EcashRedeemPrompt> {
       await reissueEcash(
         federationId: widget.fed.federationId,
         ecash: widget.ecash,
+        fees: _fees!,
       );
 
       if (!mounted) return;

@@ -237,7 +237,16 @@ class _FederationPreviewState extends State<FederationPreview> {
         return;
       }
 
-      await reissueEcash(federationId: widget.fed.federationId, ecash: ecash);
+      final fees = await calculateEcashReissueFees(
+        federationId: widget.fed.federationId,
+        ecash: ecash,
+      );
+
+      await reissueEcash(
+        federationId: widget.fed.federationId,
+        ecash: ecash,
+        fees: fees,
+      );
     } catch (e) {
       AppLogger.instance.error("Could not reissue Ecash $e");
       ToastService().show(

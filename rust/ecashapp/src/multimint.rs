@@ -189,7 +189,9 @@ pub enum TransactionKind {
     },
     EcashReceive {
         oob_notes: String,
-        fees: u64,
+        input_fees: Option<u64>,
+        output_fees: Option<u64>,
+        dust: Option<u64>,
     },
     EcashSend {
         oob_notes: String,
@@ -2737,10 +2739,24 @@ impl Multimint {
                                             .clone(),
                                     )
                                     .expect("Could not parse to Amount");
+                                    let input_fees = meta
+                                        .extra_meta
+                                        .get("input_fee")
+                                        .map(|f| f.as_u64().expect("Could not convert"));
+                                    let output_fees = meta
+                                        .extra_meta
+                                        .get("output_fee")
+                                        .map(|f| f.as_u64().expect("Could not convert"));
+                                    let dust = meta
+                                        .extra_meta
+                                        .get("dust")
+                                        .map(|f| f.as_u64().expect("Could not convert"));
                                     Some(Transaction {
                                         kind: TransactionKind::EcashReceive {
                                             oob_notes: ecash,
-                                            fees: 0,
+                                            input_fees,
+                                            output_fees,
+                                            dust,
                                         },
                                         amount: amount.msats,
                                         timestamp,
@@ -3173,6 +3189,7 @@ impl Multimint {
         &self,
         federation_id: &FederationId,
         ecash: String,
+        fees: ReissueFees,
     ) -> anyhow::Result<OperationId> {
         let client = self
             .clients
@@ -3190,6 +3207,9 @@ impl Multimint {
         let extra_meta = json!({
             "total_amount": total_amount,
             "ecash": ecash,
+            "input_fee": fees.input_msats,
+            "output_fee": fees.output_msats,
+            "dust": fees.dust_msats,
         });
         let operation_id = mint.reissue_external_notes(notes, extra_meta).await?;
         self.spawn_await_ecash_reissue(*federation_id, operation_id);

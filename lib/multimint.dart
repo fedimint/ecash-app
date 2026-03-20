@@ -249,6 +249,7 @@ abstract class Multimint implements RustOpaqueInterface {
   Future<OperationId> reissueEcash({
     required FederationId federationId,
     required String ecash,
+    required ReissueFees fees,
   });
 
   Future<void> rejoinFromBackupInvites({
@@ -804,7 +805,9 @@ sealed class TransactionKind with _$TransactionKind {
   }) = TransactionKind_OnchainSend;
   const factory TransactionKind.ecashReceive({
     required String oobNotes,
-    required BigInt fees,
+    BigInt? inputFees,
+    BigInt? outputFees,
+    BigInt? dust,
   }) = TransactionKind_EcashReceive;
   const factory TransactionKind.ecashSend({
     required String oobNotes,

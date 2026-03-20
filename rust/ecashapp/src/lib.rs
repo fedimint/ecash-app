@@ -474,9 +474,10 @@ pub async fn calculate_ecash_reissue_fees(
 pub async fn reissue_ecash(
     federation_id: &FederationId,
     ecash: String,
+    fees: ReissueFees,
 ) -> anyhow::Result<OperationId> {
     let multimint = get_multimint();
-    multimint.reissue_ecash(federation_id, ecash).await
+    multimint.reissue_ecash(federation_id, ecash, fees).await
 }
 
 #[frb]
