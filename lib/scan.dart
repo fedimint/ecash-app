@@ -107,7 +107,10 @@ class _ScanQRPageState extends State<ScanQRPage> {
         });
         AppLogger.instance.info("Trying for first time to parse as non ecash");
         final parsed = await _handleText(base64Str);
-        if (parsed) return;
+        if (parsed) {
+          _resetScannedAfterDelay();
+          return;
+        }
         setState(() {
           _scanned = false;
         });
@@ -193,9 +196,12 @@ class _ScanQRPageState extends State<ScanQRPage> {
 
         if (session.isComplete && !_scanned) {
           AppLogger.instance.info("Session complete! Reassembling…");
-          _scanned = true;
+          setState(() {
+            _scanned = true;
+          });
           final merged = session.mergeChunks();
-          _processMerged(merged);
+          await _processMerged(merged);
+          _resetScannedAfterDelay();
         }
       }
     } catch (e) {
@@ -204,7 +210,17 @@ class _ScanQRPageState extends State<ScanQRPage> {
     }
   }
 
-  void _processMerged(Uint8List merged) async {
+  void _resetScannedAfterDelay() {
+    Future.delayed(const Duration(seconds: 2), () {
+      if (mounted) {
+        setState(() {
+          _scanned = false;
+        });
+      }
+    });
+  }
+
+  Future<void> _processMerged(Uint8List merged) async {
     try {
       final lengthBytes = merged.sublist(0, 4);
       final declaredLength =
@@ -245,6 +261,8 @@ class _ScanQRPageState extends State<ScanQRPage> {
   }
 
   Future<bool> _handleText(String text) async {
+    text = text.trim();
+
     if (widget.interceptMode) {
       if (mounted) Navigator.pop(context, text);
       return true;
@@ -451,10 +469,7 @@ class _ScanQRPageState extends State<ScanQRPage> {
           break;
       }
 
-      setState(() {
-        _scanned = false;
-        _currentSession = null;
-      });
+      _currentSession = null;
 
       return true;
     } catch (e) {
@@ -467,6 +482,9 @@ class _ScanQRPageState extends State<ScanQRPage> {
           icon: Icon(Icons.error),
         );
 
+        setState(() {
+          _scanned = false;
+        });
         return true;
       }
     }
@@ -476,7 +494,9 @@ class _ScanQRPageState extends State<ScanQRPage> {
 
   void _onQRCodeScanned(String code) async {
     if (_scanned) return;
-    _scanned = true;
+    setState(() {
+      _scanned = true;
+    });
     final parsed = await _handleText(code);
     if (!parsed) {
       AppLogger.instance.warn("$code cannot be parsed");
@@ -487,6 +507,7 @@ class _ScanQRPageState extends State<ScanQRPage> {
         icon: Icon(Icons.error),
       );
     }
+    _resetScannedAfterDelay();
   }
 
   Future<void> _pasteFromClipboard() async {
