@@ -71,7 +71,7 @@ class _CreateWalletState extends State<CreateWallet> {
         isDesktop: Platform.isLinux | Platform.isMacOS,
       );
       if (mounted) {
-        Navigator.of(context).pushReplacement(
+        Navigator.of(context).pushAndRemoveUntil(
           MaterialPageRoute(
             builder:
                 (_) => PinGatedApp(
@@ -82,6 +82,7 @@ class _CreateWalletState extends State<CreateWallet> {
                   ),
                 ),
           ),
+          (route) => false,
         );
       }
     } catch (e) {
