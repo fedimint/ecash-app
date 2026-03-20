@@ -773,13 +773,13 @@ pub async fn parsed_scanned_text(
     let group_by_network: BTreeMap<bitcoin::Network, Vec<FederationSelector>> = all_federations
         .clone()
         .into_iter()
-        .fold(BTreeMap::new(), |mut acc, (selector, _flag)| {
-            acc.entry(
-                bitcoin::Network::from_str(&selector.network.clone().expect("Invalid network"))
-                    .expect("Could not convert network"),
-            )
-            .or_default()
-            .push(selector);
+        .filter_map(|(selector, flag)| {
+            let network_str = selector.network.as_ref()?;
+            let network = bitcoin::Network::from_str(network_str).ok()?;
+            Some((network, selector, flag))
+        })
+        .fold(BTreeMap::new(), |mut acc, (network, selector, _flag)| {
+            acc.entry(network).or_default().push(selector);
             acc
         });
 
