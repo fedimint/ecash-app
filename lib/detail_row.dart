@@ -8,6 +8,7 @@ class CopyableDetailRow extends StatefulWidget {
   final bool showCopyButton;
   final bool abbreviate; // NEW optional parameter
   final Widget? additionalAction;
+  final double? labelWidth;
 
   const CopyableDetailRow({
     super.key,
@@ -16,6 +17,7 @@ class CopyableDetailRow extends StatefulWidget {
     this.showCopyButton = true,
     this.abbreviate = false, // default false
     this.additionalAction,
+    this.labelWidth,
   });
 
   @override
@@ -48,21 +50,17 @@ class _CopyableDetailRowState extends State<CopyableDetailRow> {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 6),
       child: Row(
-        crossAxisAlignment: CrossAxisAlignment.center,
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          ConstrainedBox(
-            constraints: BoxConstraints(
-              minWidth: isSmallScreen ? 90 : 100,
-              maxWidth: isSmallScreen ? 120 : 130,
-            ),
+          SizedBox(
+            width: widget.labelWidth ?? (isSmallScreen ? 110 : 120),
             child: Text(
               widget.label,
               style: theme.textTheme.bodyMedium?.copyWith(
                 color: theme.colorScheme.onSurface.withOpacity(0.7),
                 fontWeight: FontWeight.w600,
               ),
-              overflow: TextOverflow.ellipsis,
-              maxLines: 1,
+              softWrap: true,
             ),
           ),
           Container(

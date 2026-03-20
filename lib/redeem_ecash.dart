@@ -234,7 +234,9 @@ class _EcashRedeemPromptState extends State<EcashRedeemPrompt> {
         if (_totalFeeMsats != null && _totalFeeMsats! > BigInt.zero) ...[
           const SizedBox(height: 12),
           Text(
-            'Fee: ${formatBalance(_totalFeeMsats!, true, bitcoinDisplay)}',
+            context.l10n.redeemFee(
+              formatBalance(_totalFeeMsats!, true, bitcoinDisplay),
+            ),
             textAlign: TextAlign.center,
             style: theme.textTheme.bodyLarge?.copyWith(
               color: theme.colorScheme.onSurface.withOpacity(0.6),
@@ -242,7 +244,13 @@ class _EcashRedeemPromptState extends State<EcashRedeemPrompt> {
           ),
           const SizedBox(height: 4),
           Text(
-            'You receive: ${formatBalance(widget.amount - _totalFeeMsats!, true, bitcoinDisplay)}',
+            context.l10n.redeemYouReceive(
+              formatBalance(
+                widget.amount - _totalFeeMsats!,
+                true,
+                bitcoinDisplay,
+              ),
+            ),
             textAlign: TextAlign.center,
             style: theme.textTheme.bodyLarge?.copyWith(
               color: theme.colorScheme.onSurface.withOpacity(0.6),
@@ -293,7 +301,7 @@ class _EcashRedeemPromptState extends State<EcashRedeemPrompt> {
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 Text(
-                  'Fee Details',
+                  context.l10n.redeemFeeDetails,
                   style: theme.textTheme.bodyMedium?.copyWith(
                     color: theme.colorScheme.onSurface.withOpacity(0.5),
                   ),
@@ -309,7 +317,7 @@ class _EcashRedeemPromptState extends State<EcashRedeemPrompt> {
           if (_showFeeDetails) ...[
             const SizedBox(height: 8),
             Text(
-              'Input fee: ${_inputFeeMsats!} msats',
+              context.l10n.redeemInputFee('${_inputFeeMsats!} msats'),
               textAlign: TextAlign.center,
               style: theme.textTheme.bodyMedium?.copyWith(
                 color: theme.colorScheme.onSurface.withOpacity(0.5),
@@ -317,7 +325,7 @@ class _EcashRedeemPromptState extends State<EcashRedeemPrompt> {
             ),
             const SizedBox(height: 4),
             Text(
-              'Output fee: ${_outputFeeMsats!} msats',
+              context.l10n.redeemOutputFee('${_outputFeeMsats!} msats'),
               textAlign: TextAlign.center,
               style: theme.textTheme.bodyMedium?.copyWith(
                 color: theme.colorScheme.onSurface.withOpacity(0.5),
@@ -326,7 +334,7 @@ class _EcashRedeemPromptState extends State<EcashRedeemPrompt> {
             if (_dustMsats != null && _dustMsats! > BigInt.zero) ...[
               const SizedBox(height: 4),
               Text(
-                'Dust loss: ${_dustMsats!} msats',
+                context.l10n.redeemDustLoss('${_dustMsats!} msats'),
                 textAlign: TextAlign.center,
                 style: theme.textTheme.bodyMedium?.copyWith(
                   color: theme.colorScheme.onSurface.withOpacity(0.5),

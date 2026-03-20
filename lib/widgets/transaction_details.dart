@@ -154,72 +154,101 @@ class _TransactionDetailsState extends State<TransactionDetails> {
               color: theme.colorScheme.primary.withOpacity(0.25),
             ),
           ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children:
-                widget.details.entries.map((entry) {
-                  final abbreviate = const {
-                    TransactionDetailKeys.ecash,
-                    TransactionDetailKeys.txid,
-                    TransactionDetailKeys.address,
-                    TransactionDetailKeys.payeePublicKey,
-                    TransactionDetailKeys.paymentHash,
-                    TransactionDetailKeys.preimage,
-                  }.contains(entry.key);
+          child: Builder(
+            builder: (context) {
+              final labelStyle = theme.textTheme.bodyMedium?.copyWith(
+                color: theme.colorScheme.onSurface.withOpacity(0.7),
+                fontWeight: FontWeight.w600,
+              );
+              // Measure the widest localized label to align all rows
+              double maxLabelWidth = 0;
+              for (final key in widget.details.keys) {
+                final label = localizedTxLabel(context.l10n, key);
+                final tp = TextPainter(
+                  text: TextSpan(text: label, style: labelStyle),
+                  maxLines: 1,
+                  textDirection: TextDirection.ltr,
+                )..layout();
+                if (tp.width > maxLabelWidth) {
+                  maxLabelWidth = tp.width;
+                }
+              }
+              // Add a small padding and cap at a reasonable max
+              final labelWidth = (maxLabelWidth + 4).clamp(80.0, 160.0);
 
-                  if (entry.key == TransactionDetailKeys.txid) {
-                    String? txid;
-                    switch (widget.tx.kind) {
-                      case TransactionKind_OnchainSend(txid: final id):
-                        txid = id;
-                        break;
-                      case TransactionKind_OnchainReceive(txid: final id):
-                        txid = id;
-                        break;
-                      default:
-                        break;
-                    }
+              return Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children:
+                    widget.details.entries.map((entry) {
+                      final abbreviate = const {
+                        TransactionDetailKeys.ecash,
+                        TransactionDetailKeys.txid,
+                        TransactionDetailKeys.address,
+                        TransactionDetailKeys.payeePublicKey,
+                        TransactionDetailKeys.paymentHash,
+                        TransactionDetailKeys.preimage,
+                      }.contains(entry.key);
 
-                    final explorerUrl =
-                        txid != null
-                            ? explorerUrlForNetwork(txid, widget.fed.network)
-                            : null;
+                      if (entry.key == TransactionDetailKeys.txid) {
+                        String? txid;
+                        switch (widget.tx.kind) {
+                          case TransactionKind_OnchainSend(txid: final id):
+                            txid = id;
+                            break;
+                          case TransactionKind_OnchainReceive(txid: final id):
+                            txid = id;
+                            break;
+                          default:
+                            break;
+                        }
 
-                    return CopyableDetailRow(
-                      label: localizedTxLabel(context.l10n, entry.key),
-                      value: entry.value,
-                      abbreviate: abbreviate,
-                      additionalAction:
-                          explorerUrl != null
-                              ? Padding(
-                                padding: const EdgeInsets.only(left: 8),
-                                child: IconButton(
-                                  tooltip: context.l10n.viewOnBlockExplorer,
-                                  iconSize: 20,
-                                  padding: EdgeInsets.zero,
-                                  visualDensity: VisualDensity.compact,
-                                  icon: Icon(
-                                    Icons.open_in_new,
-                                    color: theme.colorScheme.secondary,
-                                  ),
-                                  onPressed:
-                                      () async =>
-                                          await showExplorerConfirmation(
-                                            context,
-                                            Uri.parse(explorerUrl),
-                                          ),
-                                ),
-                              )
-                              : null,
-                    );
-                  }
+                        final explorerUrl =
+                            txid != null
+                                ? explorerUrlForNetwork(
+                                  txid,
+                                  widget.fed.network,
+                                )
+                                : null;
 
-                  return CopyableDetailRow(
-                    label: localizedTxLabel(context.l10n, entry.key),
-                    value: entry.value,
-                    abbreviate: abbreviate,
-                  );
-                }).toList(),
+                        return CopyableDetailRow(
+                          label: localizedTxLabel(context.l10n, entry.key),
+                          value: entry.value,
+                          abbreviate: abbreviate,
+                          labelWidth: labelWidth,
+                          additionalAction:
+                              explorerUrl != null
+                                  ? Padding(
+                                    padding: const EdgeInsets.only(left: 8),
+                                    child: IconButton(
+                                      tooltip: context.l10n.viewOnBlockExplorer,
+                                      iconSize: 20,
+                                      padding: EdgeInsets.zero,
+                                      visualDensity: VisualDensity.compact,
+                                      icon: Icon(
+                                        Icons.open_in_new,
+                                        color: theme.colorScheme.secondary,
+                                      ),
+                                      onPressed:
+                                          () async =>
+                                              await showExplorerConfirmation(
+                                                context,
+                                                Uri.parse(explorerUrl),
+                                              ),
+                                    ),
+                                  )
+                                  : null,
+                        );
+                      }
+
+                      return CopyableDetailRow(
+                        label: localizedTxLabel(context.l10n, entry.key),
+                        value: entry.value,
+                        abbreviate: abbreviate,
+                        labelWidth: labelWidth,
+                      );
+                    }).toList(),
+              );
+            },
           ),
         ),
         if (widget.tx.kind is TransactionKind_EcashSend) ...[
