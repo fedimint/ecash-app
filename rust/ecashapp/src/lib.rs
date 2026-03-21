@@ -197,6 +197,12 @@ pub async fn join_federation(
 }
 
 #[frb]
+pub async fn restart_connections() {
+    let multimint = get_multimint();
+    multimint.restart_connections().await;
+}
+
+#[frb]
 pub async fn backup_invite_codes() -> anyhow::Result<()> {
     let multimint = get_multimint();
     let invite_codes = multimint.get_all_invite_codes().await;

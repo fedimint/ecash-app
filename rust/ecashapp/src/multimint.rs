@@ -889,6 +889,13 @@ impl Multimint {
         Ok((client, federation_id))
     }
 
+    pub async fn restart_connections(&self) {
+        let clients = self.clients.read().await;
+        for client in clients.values() {
+            client.api().restart_all_peers();
+        }
+    }
+
     fn spawn_cache_task(&self) {
         let self_copy = self.clone();
         self.task_group

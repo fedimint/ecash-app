@@ -67,6 +67,7 @@ class _PinGatedAppState extends State<PinGatedApp>
       _backgroundedAt ??= DateTime.now();
     } else if (state == AppLifecycleState.resumed) {
       _checkLockOnResume();
+      RustLib.instance.api.crateRestartConnections();
     }
   }
 
