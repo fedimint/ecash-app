@@ -13,7 +13,10 @@ use bitcoin::key::rand::{seq::SliceRandom, thread_rng};
 use fedimint_bip39::{Bip39RootSecretStrategy, Language, Mnemonic};
 use fedimint_client::{
     db::ChronologicalOperationLogKey,
-    module::{module::recovery::RecoveryProgress, oplog::OperationLogEntry},
+    module::{
+        module::{recovery::RecoveryProgress, ClientModule as _},
+        oplog::OperationLogEntry,
+    },
     module_init::ClientModuleInitRegistry,
     secret::RootSecretStrategy,
     Client, ClientHandleArc, OperationId,
@@ -360,6 +363,7 @@ pub struct LNAddressRegisterRequest {
     pub domain: String,
     pub username: String,
     pub lnurl: String,
+    pub recipient_pk: Option<String>,
 }
 
 #[derive(Debug, Clone, Serialize)]
@@ -457,6 +461,7 @@ impl Multimint {
         multimint.run_migrations().await;
         multimint.spawn_cache_task();
         multimint.spawn_recurring_invoice_listener();
+        multimint.spawn_backfill_recipient_pk();
 
         info_to_flutter(format!("Initialized Multimint in {:?}", start.elapsed())).await;
         Ok(multimint)
@@ -1702,6 +1707,17 @@ impl Multimint {
             .clone();
         info_to_flutter("Waiting for all active state machines...").await;
         new_client.wait_for_all_active_state_machines().await?;
+
+        // Attempt to recover Lightning Address before publishing RecoveryDone,
+        // so the UI can display the recovered address when it handles the event.
+        let ln_address_api = "https://ecash.love";
+        let recurringd_api = "https://recurring.ecash.love";
+        if let Err(e) = self
+            .recover_ln_address(&federation_id, ln_address_api, recurringd_api)
+            .await
+        {
+            error_to_flutter(format!("Lightning Address recovery failed: {e}")).await;
+        }
 
         get_event_bus()
             .publish(MultimintEvent::RecoveryDone(federation_id.to_string()))
@@ -3869,7 +3885,7 @@ impl Multimint {
         let safe_recurringd_api = SafeUrl::parse(&recurringd_api)?;
         let lnv1_recurringd_api = SafeUrl::parse("https://lnurl.ecash.love")?;
 
-        let payment_code = match lnv2_gateways {
+        let (payment_code, recipient_pk) = match lnv2_gateways {
             // LNv2 is available, use that to generate an LNURL
             Ok(gws) if !gws.is_empty() => {
                 let lnv2 =
@@ -3877,7 +3893,8 @@ impl Multimint {
                 let safe_recurringd_api = SafeUrl::parse(&recurringd_api)?;
                 let payment_code = lnv2.generate_lnurl(safe_recurringd_api, None).await?;
                 info_to_flutter(format!("Registered LNv2 LNURL {:?}", payment_code)).await;
-                payment_code
+                let pk = Self::extract_recipient_pk_from_lnv2_lnurl(&payment_code)?;
+                (payment_code, Some(pk))
             }
             // Only LNv1 is available, use that to generate an LNURL
             _ => {
@@ -3900,7 +3917,8 @@ impl Multimint {
                     )
                     .await?;
                 info_to_flutter(format!("Registered LNv1 LNURL {:?}", lnurl)).await;
-                lnurl.code
+                let pk = lnurl.root_keypair.public_key().to_string();
+                (lnurl.code, Some(pk))
             }
         };
 
@@ -3909,6 +3927,7 @@ impl Multimint {
             username: username.clone(),
             domain: domain.clone(),
             lnurl: payment_code.clone(),
+            recipient_pk: recipient_pk.clone(),
         };
 
         let http_client = reqwest::Client::new();
@@ -3958,6 +3977,325 @@ impl Multimint {
         .await;
 
         Ok(())
+    }
+
+    /// Extract the recipient public key from an LNv2 LNURL string.
+    /// The LNURL encodes a URL containing a base32 payload with the LnurlRequest struct.
+    fn extract_recipient_pk_from_lnv2_lnurl(lnurl_str: &str) -> anyhow::Result<String> {
+        use fedimint_core::base32::{decode_prefixed, FEDIMINT_PREFIX};
+        use fedimint_lnv2_common::lnurl::LnurlRequest;
+
+        let lnurl = lnurl::lnurl::LnUrl::decode(lnurl_str.to_string())
+            .map_err(|e| anyhow::anyhow!("Failed to decode LNURL: {:?}", e))?;
+        let url = &lnurl.url;
+
+        // Extract the base32 payload after "/pay/"
+        let payload = url
+            .split("/pay/")
+            .nth(1)
+            .ok_or_else(|| anyhow::anyhow!("LNURL does not contain /pay/ path"))?;
+
+        let request: LnurlRequest = decode_prefixed(FEDIMINT_PREFIX, payload)?;
+        Ok(request.recipient_pk.to_string())
+    }
+
+    /// Attempt to recover a Lightning Address after wallet recovery.
+    /// Uses the deterministic recipient_pk to reverse-lookup on the lnaddr server.
+    pub async fn recover_ln_address(
+        &self,
+        federation_id: &FederationId,
+        ln_address_api: &str,
+        recurringd_api: &str,
+    ) -> anyhow::Result<()> {
+        // Check if config already exists for this federation
+        let mut dbtx = self.db.begin_transaction_nc().await;
+        let existing = dbtx
+            .get_value(&LightningAddressKey {
+                federation_id: *federation_id,
+            })
+            .await;
+        if existing.is_some() {
+            info_to_flutter("Lightning Address config already exists, skipping recovery").await;
+            return Ok(());
+        }
+
+        let client = self
+            .clients
+            .read()
+            .await
+            .get(federation_id)
+            .context("No federation exists")?
+            .clone();
+
+        let safe_ln_address_api = SafeUrl::parse(ln_address_api)?;
+        let http_client = reqwest::Client::new();
+
+        // Try LNv2 first: generate LNURL with a dummy gateway to extract recipient_pk
+        let mut recovered_pk: Option<String> = None;
+        let mut is_lnv2 = false;
+
+        if let Ok(lnv2) = client.get_first_module::<fedimint_lnv2_client::LightningClientModule>() {
+            let safe_recurringd_api = SafeUrl::parse(recurringd_api)?;
+            // Use a dummy gateway to generate LNURL just for pk extraction
+            let dummy_gateway = SafeUrl::parse("https://dummy.gateway")?;
+            if let Ok(lnurl) = lnv2
+                .generate_lnurl(safe_recurringd_api, Some(dummy_gateway))
+                .await
+            {
+                if let Ok(pk) = Self::extract_recipient_pk_from_lnv2_lnurl(&lnurl) {
+                    recovered_pk = Some(pk);
+                    is_lnv2 = true;
+                }
+            }
+        }
+
+        // Fallback to LNv1: re-register with recurringd to get the keypair
+        if recovered_pk.is_none() {
+            if let Ok(lnv1) = client.get_first_module::<LightningClientModule>() {
+                let lnv1_recurringd_api = SafeUrl::parse("https://lnurl.ecash.love")?;
+                let meta = serde_json::to_string(&json!([["text/plain", "Fedimint LNURL Pay"]]))
+                    .expect("serialization can't fail");
+                if let Ok(entry) = lnv1
+                    .register_recurring_payment_code(
+                        fedimint_ln_client::recurring::RecurringPaymentProtocol::LNURL,
+                        lnv1_recurringd_api,
+                        meta.as_str(),
+                    )
+                    .await
+                {
+                    recovered_pk = Some(entry.root_keypair.public_key().to_string());
+                }
+            }
+        }
+
+        let recipient_pk = match recovered_pk {
+            Some(pk) => pk,
+            None => {
+                info_to_flutter("Could not derive recipient_pk for Lightning Address recovery")
+                    .await;
+                return Ok(());
+            }
+        };
+
+        info_to_flutter(format!(
+            "Attempting Lightning Address recovery with recipient_pk: {}",
+            recipient_pk
+        ))
+        .await;
+
+        // Reverse lookup on lnaddr server
+        let lookup_url = safe_ln_address_api.join("lnaddress/reverse-lookup")?;
+        let lookup_result = http_client
+            .get(lookup_url.to_unsafe())
+            .query(&[("recipient_pk", &recipient_pk)])
+            .send()
+            .await
+            .context("Failed to send reverse lookup request")?;
+
+        if !lookup_result.status().is_success() {
+            info_to_flutter("No Lightning Address found for this wallet on the server").await;
+            return Ok(());
+        }
+
+        let lookup_response = lookup_result.json::<serde_json::Value>().await?;
+        let username = lookup_response
+            .get("username")
+            .and_then(|v| v.as_str())
+            .ok_or_else(|| anyhow::anyhow!("Missing username in reverse lookup response"))?
+            .to_string();
+        let domain = lookup_response
+            .get("domain")
+            .and_then(|v| v.as_str())
+            .ok_or_else(|| anyhow::anyhow!("Missing domain in reverse lookup response"))?
+            .to_string();
+        let old_lnurl = lookup_response
+            .get("lnurl")
+            .and_then(|v| v.as_str())
+            .unwrap_or("")
+            .to_string();
+
+        info_to_flutter(format!("Found Lightning Address: {}@{}", username, domain)).await;
+
+        // Reclaim: get challenge, sign it, get new auth token
+        let challenge_url = safe_ln_address_api.join("lnaddress/challenge")?;
+        let challenge_result = http_client
+            .get(challenge_url.to_unsafe())
+            .query(&[("recipient_pk", &recipient_pk)])
+            .send()
+            .await
+            .context("Failed to get challenge")?;
+
+        if !challenge_result.status().is_success() {
+            bail!("Failed to get challenge from lnaddr server");
+        }
+
+        let challenge_response = challenge_result.json::<serde_json::Value>().await?;
+        let challenge = challenge_response
+            .get("challenge")
+            .and_then(|v| v.as_str())
+            .ok_or_else(|| anyhow::anyhow!("Missing challenge in response"))?
+            .to_string();
+
+        // Sign the challenge with the appropriate private key.
+        // Derive the signing key from the mnemonic using the same derivation path
+        // that the Fedimint SDK uses internally for module secrets.
+        // StandardDoubleDerive path: global → child(0) → federation_key(fed_id) → child(0) → child(0)
+        // Then builder applies: → federation_key(fed_id)
+        // Then module secret: → derive_module_secret(instance_id)
+        use fedimint_client::module::secret::{
+            get_default_client_secret, DeriveableSecretClientExt as _,
+        };
+        let global_root_secret = Bip39RootSecretStrategy::<12>::to_root_secret(&self.mnemonic);
+        let pre_root_secret = get_default_client_secret(&global_root_secret, federation_id);
+        let fed_root_secret = pre_root_secret.federation_key(federation_id);
+
+        let signature = if is_lnv2 {
+            // LNv2 module's lnurl_keypair = module_root_secret.child_key(ChildId(1))
+            let lnv2_kind = fedimint_lnv2_client::LightningClientModule::kind();
+            let lnv2_instance_id = client
+                .get_first_instance(&lnv2_kind)
+                .context("No LNv2 module instance")?;
+            let module_secret = fed_root_secret.derive_module_secret(lnv2_instance_id);
+            let lnurl_keypair: bitcoin::secp256k1::Keypair = module_secret
+                .child_key(fedimint_derive_secret::ChildId(1))
+                .to_secp_key(&bitcoin::secp256k1::Secp256k1::new());
+            Self::sign_challenge(&challenge, &lnurl_keypair)?
+        } else {
+            // LNv1: recurring_payment_code_secret = module_root_secret.child_key(ChildId(2))
+            // Then payment code keypair = recurring_secret.child_key(ChildId(0))
+            let lnv1_kind = LightningClientModule::kind();
+            let lnv1_instance_id = client
+                .get_first_instance(&lnv1_kind)
+                .context("No LNv1 module instance")?;
+            let module_secret = fed_root_secret.derive_module_secret(lnv1_instance_id);
+            let recurring_secret = module_secret.child_key(fedimint_derive_secret::ChildId(
+                fedimint_ln_client::LightningChildKeys::RecurringPaymentCodeSecret as u64,
+            ));
+            let payment_keypair: bitcoin::secp256k1::Keypair = recurring_secret
+                .child_key(fedimint_derive_secret::ChildId(0))
+                .to_secp_key(&bitcoin::secp256k1::Secp256k1::new());
+            Self::sign_challenge(&challenge, &payment_keypair)?
+        };
+
+        // Send reclaim request
+        let reclaim_url = safe_ln_address_api.join("lnaddress/reclaim")?;
+        let reclaim_body = json!({
+            "recipient_pk": recipient_pk,
+            "challenge": challenge,
+            "signature": signature,
+        });
+        let reclaim_result = http_client
+            .post(reclaim_url.to_unsafe())
+            .json(&reclaim_body)
+            .send()
+            .await
+            .context("Failed to send reclaim request")?;
+
+        if !reclaim_result.status().is_success() {
+            let status = reclaim_result.status();
+            let body = reclaim_result.text().await.unwrap_or_default();
+            bail!("Failed to reclaim Lightning Address: {} - {}", status, body);
+        }
+
+        let reclaim_response = reclaim_result.json::<serde_json::Value>().await?;
+        let authentication_token = reclaim_response
+            .get("authentication_token")
+            .and_then(|v| v.as_str())
+            .ok_or_else(|| anyhow::anyhow!("Missing authentication_token in reclaim response"))?
+            .to_string();
+
+        // For LNv2: check if gateways changed and update LNURL on the server
+        let safe_recurringd_api = SafeUrl::parse(recurringd_api)?;
+        let final_lnurl = if is_lnv2 {
+            let lnv2 = client.get_first_module::<fedimint_lnv2_client::LightningClientModule>()?;
+            match lnv2.generate_lnurl(safe_recurringd_api.clone(), None).await {
+                Ok(new_lnurl) if new_lnurl != old_lnurl && !old_lnurl.is_empty() => {
+                    info_to_flutter("Gateways changed, updating LNURL on Lightning Address server")
+                        .await;
+                    // Remove old registration and re-register with new LNURL
+                    let remove_body = json!({
+                        "domain": domain,
+                        "username": username,
+                        "authentication_token": authentication_token,
+                    });
+                    let remove_url = safe_ln_address_api.join("lnaddress/remove")?;
+                    let _ = http_client
+                        .delete(remove_url.to_unsafe())
+                        .json(&remove_body)
+                        .send()
+                        .await;
+
+                    let register_request = LNAddressRegisterRequest {
+                        username: username.clone(),
+                        domain: domain.clone(),
+                        lnurl: new_lnurl.clone(),
+                        recipient_pk: Some(recipient_pk.clone()),
+                    };
+                    let register_url = safe_ln_address_api.join("lnaddress/register")?;
+                    let reg_result = http_client
+                        .post(register_url.to_unsafe())
+                        .json(&register_request)
+                        .send()
+                        .await
+                        .context("Failed to re-register with updated LNURL")?;
+
+                    if reg_result.status().is_success() {
+                        let reg_response = reg_result.json::<serde_json::Value>().await?;
+                        // Use the new auth token from re-registration
+                        let _new_token = reg_response
+                            .get("authentication_token")
+                            .and_then(|v| v.as_str())
+                            .unwrap_or(&authentication_token);
+                    }
+                    new_lnurl
+                }
+                Ok(new_lnurl) => new_lnurl,
+                Err(_) => old_lnurl,
+            }
+        } else {
+            old_lnurl
+        };
+
+        // Store the recovered config in the app database
+        let mut dbtx = self.db.begin_transaction().await;
+        dbtx.insert_entry(
+            &LightningAddressKey {
+                federation_id: *federation_id,
+            },
+            &LightningAddressConfig {
+                username: username.clone(),
+                domain: domain.clone(),
+                recurringd_api: safe_recurringd_api,
+                ln_address_api: safe_ln_address_api,
+                lnurl: final_lnurl,
+                authentication_token,
+            },
+        )
+        .await;
+        dbtx.commit_tx().await;
+
+        info_to_flutter(format!(
+            "Successfully recovered Lightning Address: {}@{}",
+            username, domain
+        ))
+        .await;
+
+        Ok(())
+    }
+
+    /// Sign a challenge hex string with the given keypair using ECDSA.
+    /// Returns the compact signature as a hex string.
+    fn sign_challenge(
+        challenge_hex: &str,
+        keypair: &bitcoin::secp256k1::Keypair,
+    ) -> anyhow::Result<String> {
+        use bitcoin::hashes::{sha256::Hash as Sha256Hash, Hash as _};
+        let challenge_bytes = hex::decode(challenge_hex).context("Invalid challenge hex")?;
+        let hash = Sha256Hash::hash(&challenge_bytes);
+        let msg = bitcoin::secp256k1::Message::from_digest(hash.to_byte_array());
+        let secp = bitcoin::secp256k1::Secp256k1::new();
+        let sig = secp.sign_ecdsa(&msg, &keypair.secret_key());
+        Ok(hex::encode(sig.serialize_compact()))
     }
 
     async fn lnv2_gateways(&self, federation_id: &FederationId) -> anyhow::Result<Vec<SafeUrl>> {
@@ -4118,6 +4456,88 @@ impl Multimint {
                     }
 
                     interval.tick().await;
+                }
+            });
+    }
+
+    /// Spawn a one-shot task to backfill `recipient_pk` for existing Lightning
+    /// Address registrations that were created before this feature was added.
+    fn spawn_backfill_recipient_pk(&self) {
+        let self_copy = self.clone();
+        self.task_group
+            .spawn_cancellable("backfill recipient_pk", async move {
+                // Small delay to let things settle after startup
+                tokio::time::sleep(Duration::from_secs(10)).await;
+
+                let mut dbtx = self_copy.db.begin_transaction_nc().await;
+                let lightning_configs = dbtx
+                    .find_by_prefix(&LightningAddressKeyPrefix)
+                    .await
+                    .collect::<Vec<_>>()
+                    .await;
+
+                for (key, config) in lightning_configs {
+                    let federation_id = key.federation_id;
+                    let Some(client) = self_copy.clients.read().await.get(&federation_id).cloned()
+                    else {
+                        continue;
+                    };
+
+                    // Try to extract recipient_pk for this federation
+                    let recipient_pk = if let Ok(lnv2) =
+                        client.get_first_module::<fedimint_lnv2_client::LightningClientModule>()
+                    {
+                        // Try generating LNURL to extract pk
+                        let dummy_gateway = SafeUrl::parse("https://dummy.gateway").unwrap();
+                        if let Ok(lnurl) = lnv2
+                            .generate_lnurl(config.recurringd_api.clone(), Some(dummy_gateway))
+                            .await
+                        {
+                            Self::extract_recipient_pk_from_lnv2_lnurl(&lnurl).ok()
+                        } else {
+                            None
+                        }
+                    } else if let Ok(lnv1) = client.get_first_module::<LightningClientModule>() {
+                        // Check if there are existing payment codes
+                        let codes = lnv1.list_recurring_payment_codes().await;
+                        codes
+                            .values()
+                            .find(|entry| entry.code == config.lnurl)
+                            .map(|entry| entry.root_keypair.public_key().to_string())
+                    } else {
+                        None
+                    };
+
+                    if let Some(pk) = recipient_pk {
+                        let http_client = reqwest::Client::new();
+                        let update_url = match config.ln_address_api.join("lnaddress/update-pk") {
+                            Ok(url) => url,
+                            Err(_) => continue,
+                        };
+                        let body = serde_json::json!({
+                            "domain": config.domain,
+                            "username": config.username,
+                            "authentication_token": config.authentication_token,
+                            "recipient_pk": pk,
+                        });
+                        match http_client
+                            .patch(update_url.to_unsafe())
+                            .json(&body)
+                            .send()
+                            .await
+                        {
+                            Ok(resp) if resp.status().is_success() => {
+                                info_to_flutter(format!(
+                                    "Backfilled recipient_pk for {}@{}",
+                                    config.username, config.domain
+                                ))
+                                .await;
+                            }
+                            _ => {
+                                // Silently ignore errors - might already be backfilled
+                            }
+                        }
+                    }
                 }
             });
     }
