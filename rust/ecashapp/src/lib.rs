@@ -2,6 +2,7 @@
 
 mod db;
 mod event_bus;
+mod fountain;
 mod frb_generated;
 mod multimint;
 mod nostr;
@@ -23,8 +24,8 @@ use flutter_rust_bridge::frb;
 use futures_util::StreamExt;
 use multimint::{
     FederationMeta, FederationSelector, LightningSendOutcome, LogLevel, Multimint,
-    MultimintCreation, MultimintEvent, PaymentPreviewWithGateways, ReissueFees, Transaction, Utxo,
-    WithdrawFeesResponse,
+    MultimintCreation, MultimintEvent, OOBNotesWrapper, PaymentPreviewWithGateways, ReissueFees,
+    Transaction, Utxo, WithdrawFeesResponse,
 };
 use nostr::{NWCConnectionInfo, NostrClient, PublicFederation};
 use serde::Serialize;
@@ -449,7 +450,7 @@ pub async fn transactions(
 pub async fn send_ecash(
     federation_id: &FederationId,
     amount_msats: u64,
-) -> anyhow::Result<(OperationId, String, u64)> {
+) -> anyhow::Result<OOBNotesWrapper> {
     let multimint = get_multimint();
     multimint.send_ecash(federation_id, amount_msats).await
 }

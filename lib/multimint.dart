@@ -10,10 +10,13 @@ import 'package:flutter_rust_bridge/flutter_rust_bridge_for_generated.dart';
 import 'package:freezed_annotation/freezed_annotation.dart' hide protected;
 part 'multimint.freezed.dart';
 
-// These functions are ignored because they are not marked as `pub`: `await_receive_lnv1`, `await_receive_lnv2`, `await_send_lnv1`, `await_send_lnv2`, `backup`, `build_client`, `cache_btc_price`, `cache_federation_meta`, `compute_receive_amount`, `compute_send_amount`, `extract_recipient_pk_from_lnv2_lnurl`, `finish_active_subscriptions`, `from_peg_out_fees`, `get_client_database`, `get_ecash_amount_from_meta`, `get_lnv1_amount_from_meta`, `get_lnv1_receive_tx`, `get_lnv1_send_tx`, `get_lnv2_amount_from_meta`, `get_or_build_temp_client`, `get_recurringd_federations`, `get_url`, `init_recovery_progress_cache`, `invoice_routes_back_to_federation`, `lnv1_select_gateway`, `lnv1_update_gateway_cache`, `lnv2_gateways`, `lnv2_select_gateway`, `load_clients`, `monitor_all_unused_pegin_addresses`, `pay_lnv1`, `pay_lnv2`, `receive_amount_after_fees`, `receive_lnv1`, `receive_lnv2`, `remove_existing_ln_address`, `remove_recovery_progress_cache`, `run_migrations`, `sign_challenge`, `spawn_await_ecash_reissue`, `spawn_await_ecash_send`, `spawn_await_receive`, `spawn_await_recurringd_receive`, `spawn_await_send`, `spawn_backfill_recipient_pk`, `spawn_cache_task`, `spawn_lnv2_event_listener`, `spawn_pegin_address_watcher`, `spawn_recovery_progress`, `spawn_recurring_invoice_listener`, `spend_until_exact_amount`, `update_recovery_progress_cache`, `wait_for_recovery`, `watch_pegin_address`
+// These functions are ignored because they are not marked as `pub`: `await_receive_lnv1`, `await_receive_lnv2`, `await_send_lnv1`, `await_send_lnv2`, `backup`, `build_client`, `cache_btc_price`, `cache_federation_meta`, `compute_receive_amount`, `compute_send_amount`, `extract_recipient_pk_from_lnv2_lnurl`, `finish_active_subscriptions`, `from_peg_out_fees`, `get_client_database`, `get_ecash_amount_from_meta`, `get_lnv1_amount_from_meta`, `get_lnv1_receive_tx`, `get_lnv1_send_tx`, `get_lnv2_amount_from_meta`, `get_or_build_temp_client`, `get_recurringd_federations`, `get_url`, `init_recovery_progress_cache`, `invoice_routes_back_to_federation`, `lnv1_select_gateway`, `lnv1_update_gateway_cache`, `lnv2_gateways`, `lnv2_select_gateway`, `load_clients`, `monitor_all_unused_pegin_addresses`, `pay_lnv1`, `pay_lnv2`, `receive_amount_after_fees`, `receive_lnv1`, `receive_lnv2`, `remove_existing_ln_address`, `remove_recovery_progress_cache`, `run_migrations`, `sign_challenge`, `spawn_await_ecash_reissue`, `spawn_await_ecash_send`, `spawn_await_receive`, `spawn_await_recurringd_receive`, `spawn_await_send`, `spawn_backfill_recipient_pk`, `spawn_cache_task`, `spawn_lnv2_event_listener`, `spawn_pegin_address_watcher`, `spawn_recovery_progress`, `spawn_recurring_invoice_listener`, `update_recovery_progress_cache`, `wait_for_recovery`, `watch_pegin_address`
 // These types are ignored because they are neither used by any `pub` functions nor (for structs and enums) marked `#[frb(unignore)]`: `ClientType`, `LNAddressRegisterRequest`, `LNAddressRemoveRequest`, `OnChainWithdrawalMeta`
 // These function are ignored because they are on traits that is not defined in current crate (put an empty `#[frb]` on it to unignore): `assert_receiver_is_total_eq`, `assert_receiver_is_total_eq`, `assert_receiver_is_total_eq`, `assert_receiver_is_total_eq`, `assert_receiver_is_total_eq`, `assert_receiver_is_total_eq`, `assert_receiver_is_total_eq`, `assert_receiver_is_total_eq`, `assert_receiver_is_total_eq`, `assert_receiver_is_total_eq`, `assert_receiver_is_total_eq`, `assert_receiver_is_total_eq`, `assert_receiver_is_total_eq`, `assert_receiver_is_total_eq`, `assert_receiver_is_total_eq`, `assert_receiver_is_total_eq`, `assert_receiver_is_total_eq`, `assert_receiver_is_total_eq`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `consensus_decode_partial_from_finite_reader`, `consensus_decode_partial_from_finite_reader`, `consensus_decode_partial_from_finite_reader`, `consensus_encode`, `consensus_encode`, `consensus_encode`, `eq`, `eq`, `eq`, `eq`, `eq`, `eq`, `eq`, `eq`, `eq`, `eq`, `eq`, `eq`, `eq`, `eq`, `eq`, `eq`, `eq`, `eq`, `eq`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `from`
 // These functions have error during generation (see debug logs or enable `stop_on_error: true` for more details): `subscribe_peer_status`
+
+OobNotesWrapper? parseOobNotes({required String notes}) =>
+    RustLib.instance.api.crateMultimintParseOobNotes(notes: notes);
 
 // Rust type: RustOpaqueMoi<flutter_rust_bridge::for_generated::RustAutoOpaqueInner<Amount>>
 abstract class Amount implements RustOpaqueInterface {}
@@ -289,7 +292,7 @@ abstract class Multimint implements RustOpaqueInterface {
     String? lnAddress,
   });
 
-  Future<(OperationId, String, BigInt)> sendEcash({
+  Future<OobNotesWrapper> sendEcash({
     required FederationId federationId,
     required BigInt amountMsats,
   });
@@ -330,6 +333,14 @@ abstract class Multimint implements RustOpaqueInterface {
 
 // Rust type: RustOpaqueMoi<flutter_rust_bridge::for_generated::RustAutoOpaqueInner<OOBNotes>>
 abstract class OobNotes implements RustOpaqueInterface {}
+
+// Rust type: RustOpaqueMoi<flutter_rust_bridge::for_generated::RustAutoOpaqueInner<OOBNotesWrapper>>
+abstract class OobNotesWrapper implements RustOpaqueInterface {
+  BigInt amountMsats();
+
+  @override
+  String toString();
+}
 
 // Rust type: RustOpaqueMoi<flutter_rust_bridge::for_generated::RustAutoOpaqueInner<OperationId>>
 abstract class OperationId implements RustOpaqueInterface {}

@@ -171,7 +171,7 @@ Future<List<Transaction>> transactions({
   modules: modules,
 );
 
-Future<(OperationId, String, BigInt)> sendEcash({
+Future<OobNotesWrapper> sendEcash({
   required FederationId federationId,
   required BigInt amountMsats,
 }) => RustLib.instance.api.crateSendEcash(

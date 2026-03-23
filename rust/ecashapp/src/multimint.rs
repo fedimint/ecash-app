@@ -45,8 +45,7 @@ use fedimint_lnv2_common::{gateway_api::PaymentFee, Bolt11InvoiceDescription};
 use fedimint_meta_client::{common::DEFAULT_META_KEY, MetaClientInit};
 use fedimint_mint_client::{
     api::MintFederationApi, represent_amount, MintClientInit, MintClientModule, MintOperationMeta,
-    MintOperationMetaVariant, OOBNotes, ReissueExternalNotesState, SelectNotesWithAtleastAmount,
-    SpendOOBState,
+    MintOperationMetaVariant, OOBNotes, ReissueExternalNotesState, SpendOOBState,
 };
 use fedimint_mint_common::config::MintClientConfig;
 use fedimint_wallet_client::client_db::TweakIdx;
@@ -113,6 +112,25 @@ pub struct ReissueFees {
     pub input_msats: u64,
     pub output_msats: u64,
     pub dust_msats: u64,
+}
+
+pub struct OOBNotesWrapper(pub(crate) OOBNotes);
+
+impl OOBNotesWrapper {
+    #[flutter_rust_bridge::frb(sync)]
+    pub fn amount_msats(&self) -> u64 {
+        self.0.total_amount().msats
+    }
+
+    #[flutter_rust_bridge::frb(sync)]
+    pub fn to_string(&self) -> String {
+        self.0.to_string()
+    }
+}
+
+#[flutter_rust_bridge::frb(sync)]
+pub fn parse_oob_notes(notes: &str) -> Option<OOBNotesWrapper> {
+    OOBNotes::from_str(notes).ok().map(OOBNotesWrapper)
 }
 
 #[allow(clippy::type_complexity)]
@@ -3121,36 +3139,11 @@ impl Multimint {
         }
     }
 
-    async fn spend_until_exact_amount(
-        &self,
-        client: &ClientHandleArc,
-        amount_msats: u64,
-    ) -> anyhow::Result<(OOBNotes, OperationId)> {
-        let amount = Amount::from_msats(amount_msats);
-        let mint = client.get_first_module::<MintClientModule>()?;
-        // Default timeout after one day
-        let timeout = Duration::from_secs(60 * 60 * 24);
-        loop {
-            let (operation_id, notes) = mint
-                .spend_notes_with_selector(&SelectNotesWithAtleastAmount, amount, timeout, true, ())
-                .await?;
-
-            if notes.total_amount() == amount {
-                return Ok((notes, operation_id));
-            }
-
-            // reissue the notes back to ourselves
-            let reissue_op_id = mint.reissue_external_notes(notes, operation_id).await?;
-            self.await_ecash_reissue(&client.federation_id(), reissue_op_id)
-                .await?;
-        }
-    }
-
     pub async fn send_ecash(
         &self,
         federation_id: &FederationId,
         amount_msats: u64,
-    ) -> anyhow::Result<(OperationId, String, u64)> {
+    ) -> anyhow::Result<OOBNotesWrapper> {
         let client = self
             .clients
             .read()
@@ -3158,11 +3151,11 @@ impl Multimint {
             .get(federation_id)
             .ok_or(anyhow!("Federation does not exist"))?
             .clone();
-        let (notes, operation_id) = self.spend_until_exact_amount(&client, amount_msats).await?;
-        self.spawn_await_ecash_send(*federation_id, operation_id);
-        let serialized_notes = notes.to_string();
-        info_to_flutter(format!("Ecash note size: {}", serialized_notes.len())).await;
-        Ok((operation_id, serialized_notes, notes.total_amount().msats))
+        let notes = client
+            .get_first_module::<MintClientModule>()?
+            .send_oob_notes(Amount::from_msats(amount_msats), ())
+            .await?;
+        Ok(OOBNotesWrapper(notes))
     }
 
     fn spawn_await_ecash_send(&self, federation_id: FederationId, operation_id: OperationId) {

@@ -1,10 +1,9 @@
 import 'dart:async';
 import 'constants/transaction_keys.dart';
-import 'dart:convert';
 import 'package:ecashapp/db.dart';
 import 'package:ecashapp/detail_row.dart';
 import 'package:ecashapp/providers/preferences_provider.dart';
-import 'package:ecashapp/qr_export.dart';
+import 'package:ecashapp/fountain.dart';
 import 'package:ecashapp/lib.dart';
 import 'package:ecashapp/multimint.dart';
 import 'package:ecashapp/toast.dart';
@@ -27,24 +26,15 @@ class EcashSend extends StatefulWidget {
 }
 
 class _EcashSendState extends State<EcashSend> {
-  String? _ecash;
-  List<String> _qrChunks = [];
+  OobNotesWrapper? _notes;
+  Stream<String>? _fragmentStream;
   bool _loading = true;
   bool _copied = false;
-
-  int _currentChunkIndex = 0;
-  Timer? _qrLoopTimer;
 
   @override
   void initState() {
     super.initState();
     _loadEcash();
-  }
-
-  @override
-  void dispose() {
-    _qrLoopTimer?.cancel();
-    super.dispose();
   }
 
   Future<void> _loadEcash() async {
@@ -54,21 +44,18 @@ class _EcashSendState extends State<EcashSend> {
         if (mounted) Navigator.of(context).pop();
         return;
       }
-      final ecash = await sendEcash(
+      final notes = await sendEcash(
         federationId: widget.fed.federationId,
         amountMsats: widget.amountMsats,
       );
 
-      final ecashString = ecash.$2;
-      final chunked = dataToFrames(utf8.encode(ecashString));
+      final encoder = OobNotesEncoder(notes: notes);
 
       setState(() {
-        _ecash = ecashString;
-        _qrChunks = chunked;
+        _notes = notes;
+        _fragmentStream = _createFrameStream(encoder);
         _loading = false;
       });
-
-      if (_qrChunks.length > 1) _startQrLoop();
     } catch (e) {
       AppLogger.instance.error("Could not send Ecash: $e");
       ToastService().show(
@@ -78,23 +65,22 @@ class _EcashSendState extends State<EcashSend> {
         icon: Icon(Icons.error),
       );
       setState(() {
-        _ecash = null;
+        _notes = null;
         _loading = false;
       });
     }
   }
 
-  void _startQrLoop() {
-    _qrLoopTimer = Timer.periodic(const Duration(milliseconds: 300), (_) {
-      setState(() {
-        _currentChunkIndex = (_currentChunkIndex + 1) % _qrChunks.length;
-      });
-    });
+  Stream<String> _createFrameStream(OobNotesEncoder encoder) async* {
+    while (true) {
+      yield await encoder.nextFragment();
+      await Future.delayed(const Duration(milliseconds: 300));
+    }
   }
 
   void _copyEcash() {
-    if (_ecash == null) return;
-    Clipboard.setData(ClipboardData(text: _ecash!));
+    if (_notes == null) return;
+    Clipboard.setData(ClipboardData(text: _notes!.toString()));
     setState(() => _copied = true);
     ToastService().show(
       message: context.l10n.ecashCopiedToClipboard,
@@ -130,11 +116,11 @@ class _EcashSendState extends State<EcashSend> {
       );
     }
 
-    if (_ecash == null) {
+    if (_notes == null) {
       return Center(child: Text(context.l10n.failedToLoadEcash));
     }
 
-    final abbreviatedEcash = getAbbreviatedText(_ecash!);
+    final abbreviatedEcash = getAbbreviatedText(_notes!.toString());
 
     return Padding(
       padding: const EdgeInsets.all(20),
@@ -156,10 +142,18 @@ class _EcashSendState extends State<EcashSend> {
             children: [
               AspectRatio(
                 aspectRatio: 1,
-                child: QrImageView(
-                  data: _qrChunks[_currentChunkIndex],
-                  version: QrVersions.auto,
-                  backgroundColor: Colors.white,
+                child: StreamBuilder<String>(
+                  stream: _fragmentStream,
+                  builder: (context, snapshot) {
+                    if (!snapshot.hasData) {
+                      return const Center(child: CircularProgressIndicator());
+                    }
+                    return QrImageView(
+                      data: snapshot.data!,
+                      version: QrVersions.auto,
+                      backgroundColor: Colors.white,
+                    );
+                  },
                 ),
               ),
             ],
