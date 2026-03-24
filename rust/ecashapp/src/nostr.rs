@@ -537,20 +537,23 @@ impl NostrClient {
         {
             Ok(events) => {
                 let all_events = events.to_vec();
-                let events = all_events
-                    .iter()
-                    .filter_map(|event| {
-                        if let Ok(Network::Regtest) = PublicFederation::parse_network(&event.tags) {
-                            // Skip over regtest advertisements
-                            return None;
-                        }
+                // Deduplicate by federation_id to avoid showing the same
+                // federation multiple times when multiple relays return it.
+                let mut deduped: std::collections::HashMap<FederationId, PublicFederation> =
+                    std::collections::HashMap::new();
+                for event in &all_events {
+                    if let Ok(Network::Regtest) = PublicFederation::parse_network(&event.tags) {
+                        // Skip over regtest advertisements
+                        continue;
+                    }
 
-                        PublicFederation::try_from(event.clone()).ok()
-                    })
-                    .collect::<Vec<_>>();
+                    if let Ok(pub_fed) = PublicFederation::try_from(event.clone()) {
+                        deduped.insert(pub_fed.federation_id, pub_fed);
+                    }
+                }
 
                 let mut public_federations = self.public_federations.write().await;
-                *public_federations = events;
+                *public_federations = deduped.into_values().collect();
             }
             Err(e) => {
                 error_to_flutter(format!("Failed to fetch events from nostr: {e}")).await;
