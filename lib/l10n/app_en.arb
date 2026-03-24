@@ -94,6 +94,42 @@
     }
   },
 
+  "recoveryPhaseConnecting": "Relays",
+  "@recoveryPhaseConnecting": {},
+
+  "recoveryPhaseFetching": "Backup",
+  "@recoveryPhaseFetching": {},
+
+  "recoveryPhaseDecrypting": "Decrypt",
+  "@recoveryPhaseDecrypting": {},
+
+  "recoveryPhaseRejoining": "Rejoin ({count})",
+  "@recoveryPhaseRejoining": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+
+  "searchingForBackup": "Searching for backup on relays... {seconds}s",
+  "@searchingForBackup": {
+    "placeholders": {
+      "seconds": {
+        "type": "int"
+      }
+    }
+  },
+
+  "relayStatusConnecting": "Connecting",
+  "@relayStatusConnecting": {},
+
+  "relayStatusConnected": "Connected",
+  "@relayStatusConnected": {},
+
+  "relayStatusFailed": "Failed",
+  "@relayStatusFailed": {},
+
   "joinedFederation": "Joined {federationName}",
   "@joinedFederation": {
     "placeholders": {

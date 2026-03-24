@@ -6,6 +6,7 @@ import 'package:ecashapp/discover.dart';
 import 'package:ecashapp/extensions/build_context_l10n.dart';
 import 'package:ecashapp/generated/app_localizations.dart';
 import 'package:ecashapp/models.dart';
+import 'package:ecashapp/nostr_recovery_progress.dart';
 import 'package:ecashapp/number_pad.dart';
 import 'package:ecashapp/onchain_send.dart';
 import 'package:ecashapp/pay_preview.dart';
@@ -544,32 +545,11 @@ class _MyAppState extends State<MyApp> {
       );
     } else {
       if (recoverFederations) {
-        bodyContent = Center(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              const CircularProgressIndicator(),
-              const SizedBox(height: 16),
-              Text(
-                _rejoinHost != null
-                    ? context.l10n.tryingToRejoin(_rejoinHost!, _rejoinPeer!)
-                    : context.l10n.retrievingFederationBackup,
-                style: const TextStyle(fontSize: 16),
-                textAlign: TextAlign.center,
-              ),
-              const SizedBox(height: 16),
-              if (_recoverySecondsRemaining <= 15)
-                Text(
-                  context.l10n.peerMightBeOffline(_recoverySecondsRemaining),
-                  style: const TextStyle(
-                    fontSize: 16,
-                    color: Colors.red,
-                    fontWeight: FontWeight.w600,
-                  ),
-                  textAlign: TextAlign.center,
-                ),
-            ],
-          ),
+        bodyContent = NostrRecoveryProgress(
+          events: events,
+          rejoinHost: _rejoinHost,
+          rejoinPeer: _rejoinPeer,
+          recoverySecondsRemaining: _recoverySecondsRemaining,
         );
       } else {
         bodyContent = Discover(onJoin: _onJoinPressed);
