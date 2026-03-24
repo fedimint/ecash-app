@@ -1234,10 +1234,10 @@ impl Multimint {
         let federation_id = client.federation_id();
 
         let config = client.config().await;
-        let wallet = client
+        let network = client
             .get_first_module::<fedimint_wallet_client::WalletClientModule>()
-            .expect("No wallet module present");
-        let network = wallet.get_network().to_string();
+            .ok()
+            .map(|wallet| wallet.get_network().to_string());
 
         // Load cached guardian versions so we can preserve them when a guardian is offline
         let cached_versions: BTreeMap<u16, Option<String>> = {
@@ -1282,7 +1282,7 @@ impl Multimint {
         let selector = FederationSelector {
             federation_name: config.global.federation_name().unwrap_or("").to_string(),
             federation_id,
-            network: Some(network),
+            network,
         };
 
         let err_metadata = FederationMeta {
