@@ -34,7 +34,8 @@ use fedimint_ln_client::{
 };
 use fedimint_ln_common::LightningGateway;
 use fedimint_lnv2_client::{
-    FinalReceiveOperationState, LightningOperationMeta, ReceiveOperationState, SendOperationState,
+    events::ReceivePaymentEvent, FinalReceiveOperationState, LightningOperationMeta,
+    ReceiveOperationState, SendOperationState,
 };
 use fedimint_lnv2_common::{gateway_api::PaymentFee, Bolt11InvoiceDescription};
 use fedimint_meta_client::{common::DEFAULT_META_KEY, MetaClientInit};
@@ -510,6 +511,7 @@ impl Multimint {
 
             self.clients.write().await.insert(id.id, client.clone());
 
+            self.spawn_lnv2_event_listener(client.clone(), id.id);
             self.finish_active_subscriptions(client.clone(), id.id)
                 .await;
             if client.has_pending_recoveries() {
@@ -562,6 +564,84 @@ impl Multimint {
                                 }
                             }
                         }
+                    }
+                }
+            });
+    }
+
+    fn spawn_lnv2_event_listener(&self, client: ClientHandleArc, federation_id: FederationId) {
+        let event_bus = get_event_bus();
+        let mut log_event_added_rx = client.log_event_added_rx();
+        self.task_group
+            .spawn_cancellable("lnv2 event listener", async move {
+                info_to_flutter(format!(
+                    "Spawning LNv2 event listener for federation {federation_id}"
+                ))
+                .await;
+
+                // Start cursor at the end of the existing log so we only process new events
+                let existing = client.get_event_log(None, u64::MAX).await;
+                let mut position = existing
+                    .last()
+                    .map(|e| e.id().saturating_add(1))
+                    .unwrap_or(fedimint_eventlog::EventLogId::LOG_START);
+
+                loop {
+                    // Block until new events are added to the persistent log
+                    if log_event_added_rx.changed().await.is_err() {
+                        info_to_flutter(format!(
+                            "LNv2 event listener channel closed for {federation_id}"
+                        ))
+                        .await;
+                        break;
+                    }
+
+                    // Read all new events from our cursor position
+                    let batch = client.get_event_log(Some(position), 100).await;
+
+                    for event in &batch {
+                        if let Some(receive_event) =
+                            event.to_event::<ReceivePaymentEvent>()
+                        {
+                            let amount_msats = receive_event.amount.msats;
+                            let operation_id = receive_event.operation_id;
+                            info_to_flutter(format!(
+                                "LNv2 receive event: {amount_msats} msats, op={operation_id:?} for {federation_id}"
+                            ))
+                            .await;
+
+                            // Wait for the claim to finalize before notifying
+                            if let Ok(lnv2) = client.get_first_module::<fedimint_lnv2_client::LightningClientModule>() {
+                                match lnv2.await_final_receive_operation_state(operation_id).await {
+                                    Ok(FinalReceiveOperationState::Claimed) => {
+                                        info_to_flutter(format!(
+                                            "LNv2 receive claimed: {amount_msats} msats for {federation_id}"
+                                        ))
+                                        .await;
+                                        let lightning_event =
+                                            LightningEventKind::InvoicePaid(InvoicePaidEvent {
+                                                amount_msats,
+                                            });
+                                        let multimint_event =
+                                            MultimintEvent::Lightning((federation_id, lightning_event));
+                                        event_bus.publish(multimint_event).await;
+                                    }
+                                    Ok(state) => {
+                                        info_to_flutter(format!(
+                                            "LNv2 receive ended in non-claimed state: {state:?} for {federation_id}"
+                                        ))
+                                        .await;
+                                    }
+                                    Err(e) => {
+                                        error_to_flutter(format!(
+                                            "LNv2 receive await error: {e:?} for {federation_id}"
+                                        ))
+                                        .await;
+                                    }
+                                }
+                            }
+                        }
+                        position = event.id().saturating_add(1);
                     }
                 }
             });
@@ -1383,7 +1463,12 @@ impl Multimint {
             client_config: client_config.clone(),
         };
 
-        self.clients.write().await.insert(federation_id, client);
+        self.clients
+            .write()
+            .await
+            .insert(federation_id, client.clone());
+
+        self.spawn_lnv2_event_listener(client, federation_id);
 
         let mut dbtx = self.db.begin_transaction().await;
         dbtx.insert_entry(
@@ -1745,10 +1830,29 @@ impl Multimint {
         let self_copy = self.clone();
         self.task_group
             .spawn_cancellable("await receive", async move {
+                // Check if this is an LNv1 operation. LNv2 receive notifications
+                // are handled by the event listener, so we only publish to the
+                // EventBus for LNv1 receives.
+                let is_lnv1 = {
+                    let client = self_copy
+                        .clients
+                        .read()
+                        .await
+                        .get(&federation_id)
+                        .expect("No federation exists")
+                        .clone();
+                    client
+                        .operation_log()
+                        .get_operation(operation_id)
+                        .await
+                        .map(|entry| entry.operation_module_kind() == "ln")
+                        .unwrap_or(false)
+                };
+
                 match self_copy.await_receive(&federation_id, operation_id).await {
                     Ok((final_state, amount_msats)) => {
                         info_to_flutter(format!("Receive completed: {final_state:?}")).await;
-                        if final_state == FinalReceiveOperationState::Claimed {
+                        if final_state == FinalReceiveOperationState::Claimed && is_lnv1 {
                             let lightning_event =
                                 LightningEventKind::InvoicePaid(InvoicePaidEvent { amount_msats });
                             let multimint_event =
