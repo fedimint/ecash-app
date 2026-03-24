@@ -1307,6 +1307,7 @@ dependencies = [
  "flutter_rust_bridge",
  "futures-timer",
  "futures-util",
+ "hex",
  "lightning-invoice",
  "lnurl-rs",
  "nostr-sdk",

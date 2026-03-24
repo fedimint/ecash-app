@@ -101,6 +101,7 @@ class _DashboardState extends State<Dashboard> {
           if (!mounted) return;
           setState(() => recovering = false);
           _loadBalance();
+          _loadLightningAddress();
         }
       } else if (event is MultimintEvent_Ecash) {
         final federationIdString = await federationIdToString(

@@ -115,6 +115,7 @@ class FederationSidebarState extends State<FederationSidebar> {
       fedsWithData.add((fed.$1, fed.$2, data));
     }
 
+    if (!mounted) return;
     setState(() {
       _feds = fedsWithData;
     });
@@ -127,11 +128,13 @@ class FederationSidebarState extends State<FederationSidebar> {
         federationId: fed.$1.federationId,
       );
       final updates = stream.listen((List<PeerStatus> event) async {
+        if (!mounted) return;
         setState(() {
           _peers[fedIdStr] = event;
         });
       });
 
+      if (!mounted) return;
       setState(() {
         _streams.putIfAbsent(fedIdStr, () => updates);
       });
