@@ -4206,6 +4206,7 @@ impl Multimint {
 
         // For LNv2: check if gateways changed and update LNURL on the server
         let safe_recurringd_api = SafeUrl::parse(recurringd_api)?;
+        let mut final_auth_token = authentication_token;
         let final_lnurl = if is_lnv2 {
             let lnv2 = client.get_first_module::<fedimint_lnv2_client::LightningClientModule>()?;
             match lnv2.generate_lnurl(safe_recurringd_api.clone(), None).await {
@@ -4216,7 +4217,7 @@ impl Multimint {
                     let remove_body = json!({
                         "domain": domain,
                         "username": username,
-                        "authentication_token": authentication_token,
+                        "authentication_token": final_auth_token,
                     });
                     let remove_url = safe_ln_address_api.join("lnaddress/remove")?;
                     let _ = http_client
@@ -4241,11 +4242,12 @@ impl Multimint {
 
                     if reg_result.status().is_success() {
                         let reg_response = reg_result.json::<serde_json::Value>().await?;
-                        // Use the new auth token from re-registration
-                        let _new_token = reg_response
+                        if let Some(new_token) = reg_response
                             .get("authentication_token")
                             .and_then(|v| v.as_str())
-                            .unwrap_or(&authentication_token);
+                        {
+                            final_auth_token = new_token.to_string();
+                        }
                     }
                     new_lnurl
                 }
@@ -4268,7 +4270,7 @@ impl Multimint {
                 recurringd_api: safe_recurringd_api,
                 ln_address_api: safe_ln_address_api,
                 lnurl: final_lnurl,
-                authentication_token,
+                authentication_token: final_auth_token,
             },
         )
         .await;
