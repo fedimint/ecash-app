@@ -4314,7 +4314,7 @@ impl Multimint {
         username: String,
         domain: String,
         ln_address_api: String,
-        recurringd_api: String,
+        _recurringd_api: String, // hard coded to LNv1 LNURL server
         federation_id: &FederationId,
     ) -> anyhow::Result<LNAddressStatus> {
         // First check if the current config is equivalent
@@ -4330,7 +4330,11 @@ impl Multimint {
             // Verify that if LNv2 is available and has a gateway, there is nothing to check
             Ok(gws) if !gws.is_empty() => {}
             _ => {
-                let supported_federations = self.get_recurringd_federations(recurringd_api).await?;
+                // Use the LNv1 recurringd endpoint for federation support check,
+                // matching the hardcoded URL used in register_ln_address for LNv1.
+                let lnv1_recurringd = "https://lnurl.ecash.love".to_string();
+                let supported_federations =
+                    self.get_recurringd_federations(lnv1_recurringd).await?;
                 if !supported_federations.contains(federation_id) {
                     return Ok(LNAddressStatus::UnsupportedFederation);
                 }
