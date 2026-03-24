@@ -312,6 +312,21 @@ pub enum ContactSyncEventKind {
 }
 
 #[derive(Clone, Eq, PartialEq, Serialize, Debug)]
+pub enum RelayStatusKind {
+    Connecting,
+    Connected,
+    Failed,
+}
+
+#[derive(Clone, Eq, PartialEq, Serialize, Debug)]
+pub enum NostrRecoveryPhase {
+    ConnectingToRelays,
+    FetchingBackup,
+    DecryptingInvites,
+    RejoiningFederations(u32),
+}
+
+#[derive(Clone, Eq, PartialEq, Serialize, Debug)]
 pub enum MultimintEvent {
     Deposit((FederationId, DepositEventKind)),
     Lightning((FederationId, LightningEventKind)),
@@ -320,6 +335,8 @@ pub enum MultimintEvent {
     RecoveryProgress(String, u16, u32, u32),
     Ecash((FederationId, u64)),
     NostrRecovery(String, u16, Option<FederationSelector>),
+    NostrRelayStatus(String, RelayStatusKind),
+    NostrRecoveryPhase(NostrRecoveryPhase),
     ContactSync(ContactSyncEventKind),
 }
 
@@ -4588,6 +4605,11 @@ impl Multimint {
             backup_invite_codes.len()
         ))
         .await;
+        get_event_bus()
+            .publish(MultimintEvent::NostrRecoveryPhase(
+                NostrRecoveryPhase::RejoiningFederations(backup_invite_codes.len() as u32),
+            ))
+            .await;
         for invite in backup_invite_codes {
             if let Ok(invite_code) = InviteCode::from_str(&invite) {
                 let fed_id = invite_code.federation_id();

@@ -1723,6 +1723,149 @@ as FederationSelector?,
 /// @nodoc
 
 
+class MultimintEvent_NostrRelayStatus extends MultimintEvent {
+  const MultimintEvent_NostrRelayStatus(this.field0, this.field1): super._();
+  
+
+@override final  String field0;
+ final  RelayStatusKind field1;
+
+/// Create a copy of MultimintEvent
+/// with the given fields replaced by the non-null parameter values.
+@JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+$MultimintEvent_NostrRelayStatusCopyWith<MultimintEvent_NostrRelayStatus> get copyWith => _$MultimintEvent_NostrRelayStatusCopyWithImpl<MultimintEvent_NostrRelayStatus>(this, _$identity);
+
+
+
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is MultimintEvent_NostrRelayStatus&&(identical(other.field0, field0) || other.field0 == field0)&&(identical(other.field1, field1) || other.field1 == field1));
+}
+
+
+@override
+int get hashCode => Object.hash(runtimeType,field0,field1);
+
+@override
+String toString() {
+  return 'MultimintEvent.nostrRelayStatus(field0: $field0, field1: $field1)';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class $MultimintEvent_NostrRelayStatusCopyWith<$Res> implements $MultimintEventCopyWith<$Res> {
+  factory $MultimintEvent_NostrRelayStatusCopyWith(MultimintEvent_NostrRelayStatus value, $Res Function(MultimintEvent_NostrRelayStatus) _then) = _$MultimintEvent_NostrRelayStatusCopyWithImpl;
+@useResult
+$Res call({
+ String field0, RelayStatusKind field1
+});
+
+
+
+
+}
+/// @nodoc
+class _$MultimintEvent_NostrRelayStatusCopyWithImpl<$Res>
+    implements $MultimintEvent_NostrRelayStatusCopyWith<$Res> {
+  _$MultimintEvent_NostrRelayStatusCopyWithImpl(this._self, this._then);
+
+  final MultimintEvent_NostrRelayStatus _self;
+  final $Res Function(MultimintEvent_NostrRelayStatus) _then;
+
+/// Create a copy of MultimintEvent
+/// with the given fields replaced by the non-null parameter values.
+@pragma('vm:prefer-inline') $Res call({Object? field0 = null,Object? field1 = null,}) {
+  return _then(MultimintEvent_NostrRelayStatus(
+null == field0 ? _self.field0 : field0 // ignore: cast_nullable_to_non_nullable
+as String,null == field1 ? _self.field1 : field1 // ignore: cast_nullable_to_non_nullable
+as RelayStatusKind,
+  ));
+}
+
+
+}
+
+/// @nodoc
+
+
+class MultimintEvent_NostrRecoveryPhase extends MultimintEvent {
+  const MultimintEvent_NostrRecoveryPhase(this.field0): super._();
+  
+
+@override final  NostrRecoveryPhase field0;
+
+/// Create a copy of MultimintEvent
+/// with the given fields replaced by the non-null parameter values.
+@JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+$MultimintEvent_NostrRecoveryPhaseCopyWith<MultimintEvent_NostrRecoveryPhase> get copyWith => _$MultimintEvent_NostrRecoveryPhaseCopyWithImpl<MultimintEvent_NostrRecoveryPhase>(this, _$identity);
+
+
+
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is MultimintEvent_NostrRecoveryPhase&&(identical(other.field0, field0) || other.field0 == field0));
+}
+
+
+@override
+int get hashCode => Object.hash(runtimeType,field0);
+
+@override
+String toString() {
+  return 'MultimintEvent.nostrRecoveryPhase(field0: $field0)';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class $MultimintEvent_NostrRecoveryPhaseCopyWith<$Res> implements $MultimintEventCopyWith<$Res> {
+  factory $MultimintEvent_NostrRecoveryPhaseCopyWith(MultimintEvent_NostrRecoveryPhase value, $Res Function(MultimintEvent_NostrRecoveryPhase) _then) = _$MultimintEvent_NostrRecoveryPhaseCopyWithImpl;
+@useResult
+$Res call({
+ NostrRecoveryPhase field0
+});
+
+
+$NostrRecoveryPhaseCopyWith<$Res> get field0;
+
+}
+/// @nodoc
+class _$MultimintEvent_NostrRecoveryPhaseCopyWithImpl<$Res>
+    implements $MultimintEvent_NostrRecoveryPhaseCopyWith<$Res> {
+  _$MultimintEvent_NostrRecoveryPhaseCopyWithImpl(this._self, this._then);
+
+  final MultimintEvent_NostrRecoveryPhase _self;
+  final $Res Function(MultimintEvent_NostrRecoveryPhase) _then;
+
+/// Create a copy of MultimintEvent
+/// with the given fields replaced by the non-null parameter values.
+@pragma('vm:prefer-inline') $Res call({Object? field0 = null,}) {
+  return _then(MultimintEvent_NostrRecoveryPhase(
+null == field0 ? _self.field0 : field0 // ignore: cast_nullable_to_non_nullable
+as NostrRecoveryPhase,
+  ));
+}
+
+/// Create a copy of MultimintEvent
+/// with the given fields replaced by the non-null parameter values.
+@override
+@pragma('vm:prefer-inline')
+$NostrRecoveryPhaseCopyWith<$Res> get field0 {
+  
+  return $NostrRecoveryPhaseCopyWith<$Res>(_self.field0, (value) {
+    return _then(_self.copyWith(field0: value));
+  });
+}
+}
+
+/// @nodoc
+
+
 class MultimintEvent_ContactSync extends MultimintEvent {
   const MultimintEvent_ContactSync(this.field0): super._();
   
@@ -1793,6 +1936,198 @@ $ContactSyncEventKindCopyWith<$Res> get field0 {
     return _then(_self.copyWith(field0: value));
   });
 }
+}
+
+/// @nodoc
+mixin _$NostrRecoveryPhase {
+
+
+
+
+
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is NostrRecoveryPhase);
+}
+
+
+@override
+int get hashCode => runtimeType.hashCode;
+
+@override
+String toString() {
+  return 'NostrRecoveryPhase()';
+}
+
+
+}
+
+/// @nodoc
+class $NostrRecoveryPhaseCopyWith<$Res>  {
+$NostrRecoveryPhaseCopyWith(NostrRecoveryPhase _, $Res Function(NostrRecoveryPhase) __);
+}
+
+
+/// @nodoc
+
+
+class NostrRecoveryPhase_ConnectingToRelays extends NostrRecoveryPhase {
+  const NostrRecoveryPhase_ConnectingToRelays(): super._();
+  
+
+
+
+
+
+
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is NostrRecoveryPhase_ConnectingToRelays);
+}
+
+
+@override
+int get hashCode => runtimeType.hashCode;
+
+@override
+String toString() {
+  return 'NostrRecoveryPhase.connectingToRelays()';
+}
+
+
+}
+
+
+
+
+/// @nodoc
+
+
+class NostrRecoveryPhase_FetchingBackup extends NostrRecoveryPhase {
+  const NostrRecoveryPhase_FetchingBackup(): super._();
+  
+
+
+
+
+
+
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is NostrRecoveryPhase_FetchingBackup);
+}
+
+
+@override
+int get hashCode => runtimeType.hashCode;
+
+@override
+String toString() {
+  return 'NostrRecoveryPhase.fetchingBackup()';
+}
+
+
+}
+
+
+
+
+/// @nodoc
+
+
+class NostrRecoveryPhase_DecryptingInvites extends NostrRecoveryPhase {
+  const NostrRecoveryPhase_DecryptingInvites(): super._();
+  
+
+
+
+
+
+
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is NostrRecoveryPhase_DecryptingInvites);
+}
+
+
+@override
+int get hashCode => runtimeType.hashCode;
+
+@override
+String toString() {
+  return 'NostrRecoveryPhase.decryptingInvites()';
+}
+
+
+}
+
+
+
+
+/// @nodoc
+
+
+class NostrRecoveryPhase_RejoiningFederations extends NostrRecoveryPhase {
+  const NostrRecoveryPhase_RejoiningFederations(this.field0): super._();
+  
+
+ final  int field0;
+
+/// Create a copy of NostrRecoveryPhase
+/// with the given fields replaced by the non-null parameter values.
+@JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+$NostrRecoveryPhase_RejoiningFederationsCopyWith<NostrRecoveryPhase_RejoiningFederations> get copyWith => _$NostrRecoveryPhase_RejoiningFederationsCopyWithImpl<NostrRecoveryPhase_RejoiningFederations>(this, _$identity);
+
+
+
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is NostrRecoveryPhase_RejoiningFederations&&(identical(other.field0, field0) || other.field0 == field0));
+}
+
+
+@override
+int get hashCode => Object.hash(runtimeType,field0);
+
+@override
+String toString() {
+  return 'NostrRecoveryPhase.rejoiningFederations(field0: $field0)';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class $NostrRecoveryPhase_RejoiningFederationsCopyWith<$Res> implements $NostrRecoveryPhaseCopyWith<$Res> {
+  factory $NostrRecoveryPhase_RejoiningFederationsCopyWith(NostrRecoveryPhase_RejoiningFederations value, $Res Function(NostrRecoveryPhase_RejoiningFederations) _then) = _$NostrRecoveryPhase_RejoiningFederationsCopyWithImpl;
+@useResult
+$Res call({
+ int field0
+});
+
+
+
+
+}
+/// @nodoc
+class _$NostrRecoveryPhase_RejoiningFederationsCopyWithImpl<$Res>
+    implements $NostrRecoveryPhase_RejoiningFederationsCopyWith<$Res> {
+  _$NostrRecoveryPhase_RejoiningFederationsCopyWithImpl(this._self, this._then);
+
+  final NostrRecoveryPhase_RejoiningFederations _self;
+  final $Res Function(NostrRecoveryPhase_RejoiningFederations) _then;
+
+/// Create a copy of NostrRecoveryPhase
+/// with the given fields replaced by the non-null parameter values.
+@pragma('vm:prefer-inline') $Res call({Object? field0 = null,}) {
+  return _then(NostrRecoveryPhase_RejoiningFederations(
+null == field0 ? _self.field0 : field0 // ignore: cast_nullable_to_non_nullable
+as int,
+  ));
+}
+
+
 }
 
 /// @nodoc

@@ -14,7 +14,10 @@ use crate::{
         NostrWalletConnectKey, NostrWalletConnectKeyPrefix,
     },
     error_to_flutter, federations, get_event_bus, info_to_flutter,
-    multimint::{ContactSyncEventKind, FederationSelector, LightningSendOutcome, MultimintEvent},
+    multimint::{
+        ContactSyncEventKind, FederationSelector, LightningSendOutcome, MultimintEvent,
+        NostrRecoveryPhase, RelayStatusKind,
+    },
     payment_preview_with_gateways, send,
 };
 use anyhow::bail;
@@ -156,11 +159,26 @@ impl NostrClient {
         let mut relays = Self::get_or_insert_default_relays(self.db.clone()).await;
         recover_relays.append(&mut relays);
 
+        for relay in &recover_relays {
+            get_event_bus()
+                .publish(MultimintEvent::NostrRelayStatus(
+                    relay.clone(),
+                    RelayStatusKind::Connecting,
+                ))
+                .await;
+        }
+
         for relay in recover_relays {
             match self.nostr_client.add_relay(relay.as_str()).await {
                 Ok(added) => {
                     if added {
                         info_to_flutter(format!("Successfully added relay: {relay}")).await;
+                        get_event_bus()
+                            .publish(MultimintEvent::NostrRelayStatus(
+                                relay.clone(),
+                                RelayStatusKind::Connected,
+                            ))
+                            .await;
                     }
                 }
                 Err(err) => {
@@ -170,6 +188,12 @@ impl NostrClient {
                         err.fmt_compact()
                     ))
                     .await;
+                    get_event_bus()
+                        .publish(MultimintEvent::NostrRelayStatus(
+                            relay.clone(),
+                            RelayStatusKind::Failed,
+                        ))
+                        .await;
                 }
             }
         }
@@ -564,7 +588,19 @@ impl NostrClient {
     pub async fn get_backup_invite_codes(&self) -> Vec<String> {
         let pubkey = self.keys.public_key;
         info_to_flutter(format!("Getting backup invite codes for {}", pubkey)).await;
+
+        get_event_bus()
+            .publish(MultimintEvent::NostrRecoveryPhase(
+                NostrRecoveryPhase::ConnectingToRelays,
+            ))
+            .await;
         self.nostr_client.connect().await;
+
+        get_event_bus()
+            .publish(MultimintEvent::NostrRecoveryPhase(
+                NostrRecoveryPhase::FetchingBackup,
+            ))
+            .await;
 
         let filter = nostr_sdk::Filter::new()
             .author(pubkey)
@@ -583,6 +619,11 @@ impl NostrClient {
             .await
         {
             Ok(events) => {
+                get_event_bus()
+                    .publish(MultimintEvent::NostrRecoveryPhase(
+                        NostrRecoveryPhase::DecryptingInvites,
+                    ))
+                    .await;
                 let all_events = events.to_vec();
                 for event in all_events {
                     if let Ok(decrypted) = nostr_sdk::nips::nip04::decrypt(

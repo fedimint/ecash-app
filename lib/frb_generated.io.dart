@@ -593,6 +593,9 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   MultimintCreation dco_decode_box_autoadd_multimint_creation(dynamic raw);
 
   @protected
+  NostrRecoveryPhase dco_decode_box_autoadd_nostr_recovery_phase(dynamic raw);
+
+  @protected
   NostrWalletConnectConfig dco_decode_box_autoadd_nostr_wallet_connect_config(
     dynamic raw,
   );
@@ -763,6 +766,9 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
 
   @protected
   NostrProfile dco_decode_nostr_profile(dynamic raw);
+
+  @protected
+  NostrRecoveryPhase dco_decode_nostr_recovery_phase(dynamic raw);
 
   @protected
   NostrWalletConnectConfig dco_decode_nostr_wallet_connect_config(dynamic raw);
@@ -939,6 +945,9 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
 
   @protected
   ReissueFees dco_decode_reissue_fees(dynamic raw);
+
+  @protected
+  RelayStatusKind dco_decode_relay_status_kind(dynamic raw);
 
   @protected
   Transaction dco_decode_transaction(dynamic raw);
@@ -1473,6 +1482,11 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   );
 
   @protected
+  NostrRecoveryPhase sse_decode_box_autoadd_nostr_recovery_phase(
+    SseDeserializer deserializer,
+  );
+
+  @protected
   NostrWalletConnectConfig sse_decode_box_autoadd_nostr_wallet_connect_config(
     SseDeserializer deserializer,
   );
@@ -1665,6 +1679,11 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   NostrProfile sse_decode_nostr_profile(SseDeserializer deserializer);
 
   @protected
+  NostrRecoveryPhase sse_decode_nostr_recovery_phase(
+    SseDeserializer deserializer,
+  );
+
+  @protected
   NostrWalletConnectConfig sse_decode_nostr_wallet_connect_config(
     SseDeserializer deserializer,
   );
@@ -1851,6 +1870,9 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
 
   @protected
   ReissueFees sse_decode_reissue_fees(SseDeserializer deserializer);
+
+  @protected
+  RelayStatusKind sse_decode_relay_status_kind(SseDeserializer deserializer);
 
   @protected
   Transaction sse_decode_transaction(SseDeserializer deserializer);
@@ -2474,6 +2496,12 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   );
 
   @protected
+  void sse_encode_box_autoadd_nostr_recovery_phase(
+    NostrRecoveryPhase self,
+    SseSerializer serializer,
+  );
+
+  @protected
   void sse_encode_box_autoadd_nostr_wallet_connect_config(
     NostrWalletConnectConfig self,
     SseSerializer serializer,
@@ -2718,6 +2746,12 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   void sse_encode_nostr_profile(NostrProfile self, SseSerializer serializer);
 
   @protected
+  void sse_encode_nostr_recovery_phase(
+    NostrRecoveryPhase self,
+    SseSerializer serializer,
+  );
+
+  @protected
   void sse_encode_nostr_wallet_connect_config(
     NostrWalletConnectConfig self,
     SseSerializer serializer,
@@ -2942,6 +2976,12 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
 
   @protected
   void sse_encode_reissue_fees(ReissueFees self, SseSerializer serializer);
+
+  @protected
+  void sse_encode_relay_status_kind(
+    RelayStatusKind self,
+    SseSerializer serializer,
+  );
 
   @protected
   void sse_encode_transaction(Transaction self, SseSerializer serializer);
