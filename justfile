@@ -14,11 +14,11 @@ build-android-arm:
 build-linux:
   $ROOT/scripts/build-linux.sh
 
-build-debug-apk:
-  $ROOT/docker/build-apk.sh debug
+build-debug-android *args:
+  $ROOT/docker/build-apk.sh debug {{args}}
 
-build-release-apk:
-  $ROOT/docker/build-apk.sh release
+build-release-android *args:
+  $ROOT/docker/build-apk.sh release {{args}}
 
 build-appimage:
   $ROOT/docker/build-appimage.sh
@@ -53,7 +53,7 @@ scan-apk:
   set -euo pipefail
   APK=$(ls -t build/app/outputs/flutter-apk/ecashapp-*.apk 2>/dev/null | head -1)
   if [ -z "$APK" ]; then
-    echo "No APK found. Run 'just build-debug-apk' first."
+    echo "No APK found. Run 'just build-debug-android' first."
     exit 1
   fi
   echo "Scanning: $APK"

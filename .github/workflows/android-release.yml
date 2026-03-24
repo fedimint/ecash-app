@@ -30,7 +30,7 @@ jobs:
         with:
           tag: ${{ startsWith(github.ref, 'refs/tags/') && github.ref_name || 'latest' }}
           name: ${{ startsWith(github.ref, 'refs/tags/') && github.ref_name || 'Latest Android Release' }}
-          artifacts: build/app/outputs/flutter-apk/*.apk
+          artifacts: "build/app/outputs/flutter-apk/*.apk,build/app/outputs/bundle/release/*.aab"
           allowUpdates: true
           replacesArtifacts: true
           draft: false

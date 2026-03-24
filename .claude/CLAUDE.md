@@ -32,11 +32,11 @@ All commands should be prefixed with `nix develop` or run within the nix shell:
 - `just build-linux` - Build the Rust library for Linux
 - `just build-android-x86_64` - Build for Android x86_64
 - `just build-android-arm` - Build for Android ARM
-- `just build-debug-apk` - Build debug APK using Docker
+- `just build-debug-android` - Build debug APK using Docker (pass `--aab` for App Bundle)
 - `just run` - Run the app on Linux with software rendering
 
 Docker build (reproducible):
-- `./docker/build-apk.sh debug` - Build debug APK in Docker
+- `./docker/build-apk.sh debug` - Build debug APK in Docker (add `--aab` for App Bundle)
 - `CLEAN=1 REBUILD_IMAGE=1 ./docker/build-apk.sh debug` - Clean build with image rebuild
 
 ## Architecture
@@ -167,7 +167,7 @@ No test commands are currently defined in the justfile. Manual testing is done b
 
 **IMPORTANT:** After making any code changes, always verify the Android build by running:
 ```bash
-just build-debug-apk
+just build-debug-android
 ```
 
 This ensures changes don't break the Android build, which uses a Docker-based reproducible build system.
