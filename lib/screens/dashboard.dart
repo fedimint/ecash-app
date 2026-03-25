@@ -19,6 +19,8 @@ import 'package:ecashapp/theme.dart';
 import 'package:ecashapp/models.dart';
 
 import 'package:ecashapp/widgets/dashboard_balance.dart';
+import 'package:ecashapp/widgets/empty_transactions.dart';
+import 'package:ecashapp/widgets/payment_type_sheet.dart';
 import 'package:ecashapp/widgets/transaction_item.dart';
 
 class Dashboard extends StatefulWidget {
@@ -353,6 +355,62 @@ class _DashboardState extends State<Dashboard> {
                     const Spacer(),
                   ],
                 )
+                : (!_isLoadingTransactions && _recentTransactions.isEmpty)
+                ? Column(
+                  children: [
+                    const SizedBox(height: 48),
+                    DashboardBalance(
+                      balanceMsats: balanceMsats,
+                      isLoading: isLoadingBalance,
+                      recovering: recovering,
+                      showMsats: showMsats,
+                      onToggle: () => setState(() => showMsats = !showMsats),
+                      btcPrices: _btcPrices,
+                      isLoadingPrices: _isLoadingPrices,
+                      pricesFailed: _pricesFailed,
+                      lnAddressConfig: _lnAddressConfig,
+                      onLnAddressTap:
+                          _lnAddressConfig != null
+                              ? () => showLightningAddressDialog(
+                                context,
+                                _lnAddressConfig!.username,
+                                _lnAddressConfig!.domain,
+                                _lnAddressConfig!.lnurl,
+                              )
+                              : null,
+                    ),
+                    if (widget.fed.network != null &&
+                        widget.fed.network!.toLowerCase() != 'bitcoin')
+                      Padding(
+                        padding: const EdgeInsets.only(top: 4.0),
+                        child: Text(
+                          context.l10n.testNetworkMessage,
+                          style: Theme.of(
+                            context,
+                          ).textTheme.bodySmall?.copyWith(
+                            color: Theme.of(context).colorScheme.secondary,
+                            fontStyle: FontStyle.italic,
+                          ),
+                          textAlign: TextAlign.center,
+                        ),
+                      ),
+                    Expanded(
+                      child: Center(
+                        child: EmptyTransactionsState(
+                          paymentType: _selectedPaymentType,
+                          onReceivePressed: _onReceivePressed,
+                          onActionPressed:
+                              () => showPaymentTypeSheet(
+                                context: context,
+                                paymentType: _selectedPaymentType,
+                                fed: widget.fed,
+                                onAddressesUpdated: _loadBalance,
+                              ),
+                        ),
+                      ),
+                    ),
+                  ],
+                )
                 : ListView(
                   children: [
                     const SizedBox(height: 48),
@@ -403,16 +461,6 @@ class _DashboardState extends State<Dashboard> {
                       const Padding(
                         padding: EdgeInsets.symmetric(vertical: 32),
                         child: Center(child: CircularProgressIndicator()),
-                      )
-                    else if (_recentTransactions.isEmpty)
-                      Padding(
-                        padding: const EdgeInsets.symmetric(vertical: 32),
-                        child: Center(
-                          child: Text(
-                            context.l10n.noRecentTransactions,
-                            style: const TextStyle(color: Colors.grey),
-                          ),
-                        ),
                       )
                     else ...[
                       ..._recentTransactions.map(

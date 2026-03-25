@@ -1,9 +1,7 @@
 import 'package:ecashapp/extensions/build_context_l10n.dart';
 import 'package:ecashapp/models.dart';
 import 'package:ecashapp/multimint.dart';
-import 'package:ecashapp/widgets/addresses.dart';
-import 'package:ecashapp/widgets/gateways.dart';
-import 'package:ecashapp/widgets/note_summary.dart';
+import 'package:ecashapp/widgets/payment_type_sheet.dart';
 import 'package:ecashapp/widgets/transactions_list.dart';
 import 'package:flutter/material.dart';
 
@@ -35,57 +33,11 @@ class TransactionsScreen extends StatelessWidget {
   }
 
   void _onActionPressed(BuildContext context) {
-    Widget content;
-    switch (paymentType) {
-      case PaymentType.lightning:
-        content = GatewaysList(fed: fed);
-        break;
-      case PaymentType.onchain:
-        content = OnchainAddressesList(
-          fed: fed,
-          updateAddresses: () {
-            onAddressesUpdated?.call();
-          },
-        );
-        break;
-      case PaymentType.ecash:
-        content = NoteSummary(fed: fed);
-        break;
-    }
-
-    showModalBottomSheet(
+    showPaymentTypeSheet(
       context: context,
-      backgroundColor: Theme.of(context).bottomSheetTheme.backgroundColor,
-      isScrollControlled: true,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-      ),
-      builder: (context) {
-        return SafeArea(
-          child: FractionallySizedBox(
-            heightFactor: 0.8,
-            child: Column(
-              children: [
-                Container(
-                  width: 40,
-                  height: 4,
-                  margin: const EdgeInsets.symmetric(vertical: 12),
-                  decoration: BoxDecoration(
-                    color: Colors.grey[700],
-                    borderRadius: BorderRadius.circular(2),
-                  ),
-                ),
-                Expanded(
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 16),
-                    child: content,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        );
-      },
+      paymentType: paymentType,
+      fed: fed,
+      onAddressesUpdated: onAddressesUpdated,
     );
   }
 

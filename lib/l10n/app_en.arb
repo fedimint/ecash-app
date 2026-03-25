@@ -1333,5 +1333,14 @@
   "@recentActivity": {},
 
   "noRecentTransactions": "No recent transactions",
-  "@noRecentTransactions": {}
+  "@noRecentTransactions": {},
+
+  "viewGateways": "View Gateways",
+  "@viewGateways": {},
+
+  "viewAddresses": "View Addresses",
+  "@viewAddresses": {},
+
+  "viewNotes": "View Notes",
+  "@viewNotes": {}
 }

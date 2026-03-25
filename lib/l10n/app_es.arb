@@ -380,5 +380,9 @@
   "complete": "completo",
   "viewAllTransactions": "Ver todas",
   "recentActivity": "Actividad Reciente",
-  "noRecentTransactions": "No hay transacciones recientes"
+  "noRecentTransactions": "No hay transacciones recientes",
+
+  "viewGateways": "Ver pasarelas",
+  "viewAddresses": "Ver direcciones",
+  "viewNotes": "Ver billetes"
 }
