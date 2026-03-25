@@ -394,21 +394,29 @@ class _DashboardState extends State<Dashboard> {
                           textAlign: TextAlign.center,
                         ),
                       ),
-                    Expanded(
-                      child: Center(
-                        child: EmptyTransactionsState(
-                          paymentType: _selectedPaymentType,
-                          onReceivePressed: _onReceivePressed,
-                          onActionPressed:
-                              () => showPaymentTypeSheet(
-                                context: context,
-                                paymentType: _selectedPaymentType,
-                                fed: widget.fed,
-                                onAddressesUpdated: _loadBalance,
-                              ),
-                        ),
+                    const SizedBox(height: 32),
+                    Align(
+                      alignment: Alignment.centerLeft,
+                      child: Text(
+                        context.l10n.recentActivity,
+                        style: Theme.of(
+                          context,
+                        ).textTheme.titleSmall?.copyWith(color: Colors.grey),
                       ),
                     ),
+                    const SizedBox(height: 24),
+                    EmptyTransactionsState(
+                      paymentType: _selectedPaymentType,
+                      onReceivePressed: _onReceivePressed,
+                      onActionPressed:
+                          () => showPaymentTypeSheet(
+                            context: context,
+                            paymentType: _selectedPaymentType,
+                            fed: widget.fed,
+                            onAddressesUpdated: _loadBalance,
+                          ),
+                    ),
+                    const Spacer(),
                   ],
                 )
                 : ListView(
@@ -449,7 +457,7 @@ class _DashboardState extends State<Dashboard> {
                           textAlign: TextAlign.center,
                         ),
                       ),
-                    const SizedBox(height: 48),
+                    const SizedBox(height: 32),
                     Text(
                       context.l10n.recentActivity,
                       style: Theme.of(

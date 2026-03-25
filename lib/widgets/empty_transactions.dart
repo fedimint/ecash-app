@@ -70,7 +70,7 @@ class EmptyTransactionsState extends StatelessWidget {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(_iconForType(), size: 64, color: Colors.grey[600]),
+          Icon(_iconForType(), size: 48, color: Colors.grey[600]),
           const SizedBox(height: 16),
           Text(
             _messageForType(context),
