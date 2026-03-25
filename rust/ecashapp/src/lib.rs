@@ -972,9 +972,12 @@ pub async fn get_note_summary(federation_id: &FederationId) -> anyhow::Result<Ve
 }
 
 #[frb]
-pub async fn list_gateways(federation_id: &FederationId) -> anyhow::Result<Vec<FedimintGateway>> {
+pub async fn list_gateways(
+    invite: Option<String>,
+    federation_id: Option<FederationId>,
+) -> anyhow::Result<Vec<FedimintGateway>> {
     let multimint = get_multimint();
-    multimint.list_gateways(federation_id).await
+    multimint.list_gateways(invite, federation_id).await
 }
 
 #[frb]

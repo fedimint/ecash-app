@@ -2,7 +2,7 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:ecashapp/app.dart';
-import 'package:ecashapp/fed_preview.dart';
+import 'package:ecashapp/screens/federation_info_screen.dart';
 import 'package:ecashapp/lib.dart';
 import 'package:ecashapp/models.dart';
 import 'package:ecashapp/multimint.dart';
@@ -287,26 +287,38 @@ class _ScanQRPageState extends State<ScanQRPage> {
       switch (action) {
         case ParsedText_InviteCode(:final field0):
           if (widget.paymentType == null) {
+            final overlay = OverlayEntry(
+              builder:
+                  (_) => Container(
+                    color: Colors.black54,
+                    child: const Center(child: CircularProgressIndicator()),
+                  ),
+            );
             try {
-              final fed = await showAppModalBottomSheet(
-                context: context,
-                childBuilder: () async {
-                  final meta = await getFederationMeta(inviteCode: field0);
-                  return FederationPreview(
-                    fed: meta.selector,
-                    inviteCode: field0,
-                    welcomeMessage: meta.welcome,
-                    imageUrl: meta.picture,
-                    joinable: true,
-                    guardians: meta.guardians,
-                  );
-                },
+              Overlay.of(context).insert(overlay);
+              final meta = await getFederationMeta(inviteCode: field0);
+              overlay.remove();
+              if (!context.mounted) return false;
+              final fed = await Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder:
+                      (_) => FederationInfoScreen(
+                        fed: meta.selector,
+                        inviteCode: field0,
+                        welcomeMessage: meta.welcome,
+                        imageUrl: meta.picture,
+                        guardians: meta.guardians,
+                        joinable: true,
+                        onLeaveFederation: () {},
+                      ),
+                ),
               );
-              if (fed != null) {
-                await Future.delayed(const Duration(milliseconds: 400));
+              if (fed != null && context.mounted) {
                 Navigator.pop(context, fed);
               }
             } catch (e) {
+              overlay.remove();
               AppLogger.instance.warn(
                 "Error when retrieving federation meta: $e",
               );
@@ -426,27 +438,39 @@ class _ScanQRPageState extends State<ScanQRPage> {
           break;
         case ParsedText_InviteCodeWithEcash(:final field0, :final field1):
           if (widget.paymentType == null) {
+            final overlay = OverlayEntry(
+              builder:
+                  (_) => Container(
+                    color: Colors.black54,
+                    child: const Center(child: CircularProgressIndicator()),
+                  ),
+            );
             try {
-              final fed = await showAppModalBottomSheet(
-                context: context,
-                childBuilder: () async {
-                  final meta = await getFederationMeta(inviteCode: field0);
-                  return FederationPreview(
-                    fed: meta.selector,
-                    inviteCode: field0,
-                    welcomeMessage: meta.welcome,
-                    imageUrl: meta.picture,
-                    joinable: true,
-                    guardians: meta.guardians,
-                    ecash: field1,
-                  );
-                },
+              Overlay.of(context).insert(overlay);
+              final meta = await getFederationMeta(inviteCode: field0);
+              overlay.remove();
+              if (!context.mounted) return false;
+              final fed = await Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder:
+                      (_) => FederationInfoScreen(
+                        fed: meta.selector,
+                        inviteCode: field0,
+                        welcomeMessage: meta.welcome,
+                        imageUrl: meta.picture,
+                        guardians: meta.guardians,
+                        joinable: true,
+                        ecash: field1,
+                        onLeaveFederation: () {},
+                      ),
+                ),
               );
-              if (fed != null) {
-                await Future.delayed(const Duration(milliseconds: 400));
+              if (fed != null && context.mounted) {
                 Navigator.pop(context, fed);
               }
             } catch (e) {
+              overlay.remove();
               AppLogger.instance.warn(
                 "Error when retrieving federation meta: $e",
               );

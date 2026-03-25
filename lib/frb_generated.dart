@@ -450,7 +450,8 @@ abstract class RustLibApi extends BaseApi {
 
   Future<List<FedimintGateway>> crateMultimintMultimintListGateways({
     required Multimint that,
-    required FederationId federationId,
+    String? invite,
+    FederationId? federationId,
   });
 
   Future<void> crateMultimintMultimintMonitorDepositAddress({
@@ -977,7 +978,8 @@ abstract class RustLibApi extends BaseApi {
   });
 
   Future<List<FedimintGateway>> crateListGateways({
-    required FederationId federationId,
+    String? invite,
+    FederationId? federationId,
   });
 
   Future<List<String>> crateListLnAddressDomains({
@@ -4274,7 +4276,8 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   @override
   Future<List<FedimintGateway>> crateMultimintMultimintListGateways({
     required Multimint that,
-    required FederationId federationId,
+    String? invite,
+    FederationId? federationId,
   }) {
     return handler.executeNormal(
       NormalTask(
@@ -4284,7 +4287,8 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
             that,
             serializer,
           );
-          sse_encode_Auto_Ref_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerFederationId(
+          sse_encode_opt_String(invite, serializer);
+          sse_encode_opt_box_autoadd_Auto_Owned_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerFederationId(
             federationId,
             serializer,
           );
@@ -4300,7 +4304,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           decodeErrorData: sse_decode_AnyhowException,
         ),
         constMeta: kCrateMultimintMultimintListGatewaysConstMeta,
-        argValues: [that, federationId],
+        argValues: [that, invite, federationId],
         apiImpl: this,
       ),
     );
@@ -4309,7 +4313,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   TaskConstMeta get kCrateMultimintMultimintListGatewaysConstMeta =>
       const TaskConstMeta(
         debugName: "Multimint_list_gateways",
-        argNames: ["that", "federationId"],
+        argNames: ["that", "invite", "federationId"],
       );
 
   @override
@@ -8679,13 +8683,15 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
 
   @override
   Future<List<FedimintGateway>> crateListGateways({
-    required FederationId federationId,
+    String? invite,
+    FederationId? federationId,
   }) {
     return handler.executeNormal(
       NormalTask(
         callFfi: (port_) {
           final serializer = SseSerializer(generalizedFrbRustBinding);
-          sse_encode_Auto_Ref_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerFederationId(
+          sse_encode_opt_String(invite, serializer);
+          sse_encode_opt_box_autoadd_Auto_Owned_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerFederationId(
             federationId,
             serializer,
           );
@@ -8701,7 +8707,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           decodeErrorData: sse_decode_AnyhowException,
         ),
         constMeta: kCrateListGatewaysConstMeta,
-        argValues: [federationId],
+        argValues: [invite, federationId],
         apiImpl: this,
       ),
     );
@@ -8709,7 +8715,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
 
   TaskConstMeta get kCrateListGatewaysConstMeta => const TaskConstMeta(
     debugName: "list_gateways",
-    argNames: ["federationId"],
+    argNames: ["invite", "federationId"],
   );
 
   @override
@@ -17803,9 +17809,11 @@ class MultimintImpl extends RustOpaque implements Multimint {
       );
 
   Future<List<FedimintGateway>> listGateways({
-    required FederationId federationId,
+    String? invite,
+    FederationId? federationId,
   }) => RustLib.instance.api.crateMultimintMultimintListGateways(
     that: this,
+    invite: invite,
     federationId: federationId,
   );
 

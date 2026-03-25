@@ -3742,18 +3742,30 @@ impl Multimint {
 
     pub async fn list_gateways(
         &self,
-        federation_id: &FederationId,
+        invite: Option<String>,
+        federation_id: Option<FederationId>,
     ) -> anyhow::Result<Vec<FedimintGateway>> {
-        let client = self
-            .clients
-            .read()
-            .await
-            .get(federation_id)
-            .context("No federation exists")?
-            .clone();
+        let client = match invite {
+            Some(invite) => {
+                let invite_code = InviteCode::from_str(&invite)?;
+                self.get_or_build_temp_client(invite_code).await?.0
+            }
+            None => {
+                let federation_id =
+                    federation_id.expect("Invite code and federation ID cannot both be None");
+                let clients = self.clients.read().await;
+                clients
+                    .get(&federation_id)
+                    .ok_or(anyhow!("No federation exists"))?
+                    .clone()
+            }
+        };
         let mut gateways = BTreeMap::new();
 
         if let Ok(lnv1) = client.get_first_module::<LightningClientModule>() {
+            // Ensure the gateway cache is populated (needed for temp clients
+            // that haven't run the continuous cache update)
+            let _ = lnv1.update_gateway_cache().await;
             let lnv1_gateways_list = lnv1.list_gateways().await;
             let lnv1_gateways = lnv1_gateways_list
                 .into_iter()

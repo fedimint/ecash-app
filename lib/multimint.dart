@@ -202,7 +202,8 @@ abstract class Multimint implements RustOpaqueInterface {
   Future<void> leaveFederation({required FederationId federationId});
 
   Future<List<FedimintGateway>> listGateways({
-    required FederationId federationId,
+    String? invite,
+    FederationId? federationId,
   });
 
   Future<void> monitorDepositAddress({

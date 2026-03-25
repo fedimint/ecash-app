@@ -1,9 +1,8 @@
 import 'package:ecashapp/extensions/build_context_l10n.dart';
-import 'package:ecashapp/fed_preview.dart';
+import 'package:ecashapp/screens/federation_info_screen.dart';
 import 'package:ecashapp/lib.dart';
 import 'package:ecashapp/multimint.dart';
 import 'package:ecashapp/nostr.dart';
-import 'package:ecashapp/theme.dart';
 import 'package:ecashapp/toast.dart';
 import 'package:ecashapp/utils.dart';
 import 'package:flutter/material.dart';
@@ -50,30 +49,41 @@ class _Discover extends State<Discover> with SingleTickerProviderStateMixin {
   }
 
   Future<void> _onPreviewPressed(String inviteCode) async {
+    final overlay = OverlayEntry(
+      builder:
+          (_) => Container(
+            color: Colors.black54,
+            child: const Center(child: CircularProgressIndicator()),
+          ),
+    );
     try {
       setState(() {
         _gettingMetadata = null;
         _isLoadingInvitePreview = false;
       });
 
-      final fed = await showAppModalBottomSheet(
-        context: context,
-        childBuilder: () async {
-          final meta = await getFederationMeta(inviteCode: inviteCode);
-          return FederationPreview(
-            fed: meta.selector,
-            inviteCode: inviteCode,
-            welcomeMessage: meta.welcome,
-            imageUrl: meta.picture,
-            joinable: true,
-            guardians: meta.guardians,
-          );
-        },
+      Overlay.of(context).insert(overlay);
+      final meta = await getFederationMeta(inviteCode: inviteCode);
+      overlay.remove();
+      if (!mounted) return;
+      final fed = await Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder:
+              (_) => FederationInfoScreen(
+                fed: meta.selector,
+                inviteCode: inviteCode,
+                welcomeMessage: meta.welcome,
+                imageUrl: meta.picture,
+                guardians: meta.guardians,
+                joinable: true,
+                onLeaveFederation: () {},
+              ),
+        ),
       );
 
       if (fed != null) {
         final name = fed.$1.federationName;
-        await Future.delayed(const Duration(milliseconds: 400));
         widget.onJoin(fed.$1, fed.$2);
 
         // If we're in a pushed route (showAppBar is true), pop back to main screen
@@ -90,6 +100,7 @@ class _Discover extends State<Discover> with SingleTickerProviderStateMixin {
         );
       }
     } catch (e) {
+      overlay.remove();
       AppLogger.instance.warn("Error when retrieving federation meta: $e");
       ToastService().show(
         message: context.l10n.couldNotGetFederationMetadata,

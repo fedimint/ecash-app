@@ -357,8 +357,12 @@ Future<List<(BigInt, BigInt)>> getNoteSummary({
 }) => RustLib.instance.api.crateGetNoteSummary(federationId: federationId);
 
 Future<List<FedimintGateway>> listGateways({
-  required FederationId federationId,
-}) => RustLib.instance.api.crateListGateways(federationId: federationId);
+  String? invite,
+  FederationId? federationId,
+}) => RustLib.instance.api.crateListGateways(
+  invite: invite,
+  federationId: federationId,
+);
 
 Future<bool> checkEcashSpent({
   required FederationId federationId,

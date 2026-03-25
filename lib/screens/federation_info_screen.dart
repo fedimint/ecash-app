@@ -1,7 +1,7 @@
 import 'dart:async';
 
 import 'package:ecashapp/extensions/build_context_l10n.dart';
-import 'package:ecashapp/fed_preview.dart';
+import 'package:ecashapp/widgets/federation_utxo_list.dart';
 import 'package:ecashapp/lib.dart';
 import 'package:ecashapp/multimint.dart';
 import 'package:ecashapp/toast.dart';
@@ -20,6 +20,11 @@ class FederationInfoScreen extends StatefulWidget {
   final List<Guardian>? guardians;
   final VoidCallback onLeaveFederation;
 
+  // Joinable mode fields
+  final bool joinable;
+  final String? inviteCode;
+  final String? ecash;
+
   const FederationInfoScreen({
     super.key,
     required this.fed,
@@ -27,6 +32,9 @@ class FederationInfoScreen extends StatefulWidget {
     this.imageUrl,
     this.guardians,
     required this.onLeaveFederation,
+    this.joinable = false,
+    this.inviteCode,
+    this.ecash,
   });
 
   @override
@@ -38,13 +46,14 @@ class _FederationInfoScreenState extends State<FederationInfoScreen> {
   late StreamSubscription<List<PeerStatus>> _peerUpdates;
   List<PeerStatus>? _peers;
   _InfoSection _selectedSection = _InfoSection.guardians;
+  bool _isJoining = false;
 
   @override
   void initState() {
     super.initState();
 
     Stream<List<PeerStatus>> stream = subscribePeerStatus(
-      invite: null,
+      invite: widget.joinable ? widget.inviteCode : null,
       federationId: widget.fed.federationId,
     );
     _peerUpdates = stream.listen((List<PeerStatus> event) {
@@ -63,6 +72,8 @@ class _FederationInfoScreenState extends State<FederationInfoScreen> {
     _peerUpdates.cancel();
     super.dispose();
   }
+
+  // --- Leave federation logic ---
 
   Future<void> _onLeavePressed() async {
     final screenNavigator = Navigator.of(context);
@@ -147,6 +158,112 @@ class _FederationInfoScreenState extends State<FederationInfoScreen> {
       },
     );
   }
+
+  // --- Join federation logic ---
+
+  Future<void> _onJoinPressed(bool recover) async {
+    setState(() {
+      _isJoining = true;
+    });
+
+    try {
+      final fed = await joinFederation(
+        inviteCode: widget.inviteCode!,
+        recover: recover,
+      );
+      AppLogger.instance.info('Successfully joined federation');
+
+      try {
+        backupInviteCodes();
+      } catch (e) {
+        AppLogger.instance.error("Could not backup Nostr invite codes: $e");
+      }
+
+      await _claimLnAddress(fed);
+
+      if (widget.ecash != null) {
+        _redeemEcash(widget.ecash!);
+      }
+
+      if (mounted) {
+        Navigator.of(context).pop((fed, false));
+      }
+    } catch (e) {
+      AppLogger.instance.error('Could not join federation $e');
+      if (mounted) {
+        ToastService().show(
+          message: context.l10n.couldNotJoinFederation,
+          duration: const Duration(seconds: 5),
+          onTap: () {},
+          icon: Icon(Icons.error),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isJoining = false;
+        });
+      }
+    }
+  }
+
+  Future<void> _claimLnAddress(FederationSelector fed) async {
+    String defaultLnAddress = "https://ecash.love";
+    String defaultRecurringd = "https://recurring.ecash.love";
+    try {
+      await claimRandomLnAddress(
+        federationId: fed.federationId,
+        lnAddressApi: defaultLnAddress,
+        recurringdApi: defaultRecurringd,
+      );
+    } catch (e) {
+      AppLogger.instance.error("Could not claim random LN Address: $e");
+    }
+  }
+
+  Future<void> _redeemEcash(String ecash) async {
+    try {
+      final isSpent = await checkEcashSpent(
+        federationId: widget.fed.federationId,
+        ecash: ecash,
+      );
+
+      if (isSpent) {
+        if (mounted) {
+          ToastService().show(
+            message: context.l10n.ecashAlreadyClaimed,
+            duration: const Duration(seconds: 5),
+            onTap: () {},
+            icon: Icon(Icons.error),
+          );
+        }
+        return;
+      }
+
+      final fees = await calculateEcashReissueFees(
+        federationId: widget.fed.federationId,
+        ecash: ecash,
+      );
+
+      await reissueEcash(
+        federationId: widget.fed.federationId,
+        ecash: ecash,
+        fees: fees,
+      );
+    } catch (e) {
+      AppLogger.instance.error("Could not reissue Ecash $e");
+      if (mounted) {
+        ToastService().show(
+          message: context.l10n.couldNotClaimEcash,
+          duration: const Duration(seconds: 5),
+          onTap: () {},
+          icon: Icon(Icons.error),
+        );
+      }
+    }
+  }
+
+  // --- UI building methods ---
 
   Widget _buildHealthStatusBar({
     required ThemeData theme,
@@ -349,7 +466,7 @@ class _FederationInfoScreenState extends State<FederationInfoScreen> {
                   )
                   : Text(context.l10n.disconnected),
           trailing:
-              isFederationOnline
+              !widget.joinable && isFederationOnline
                   ? Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
@@ -493,13 +610,56 @@ class _FederationInfoScreenState extends State<FederationInfoScreen> {
         return _buildGuardianList(isFederationOnline);
       case _InfoSection.utxos:
         return FederationUtxoList(
-          invite: null,
+          invite: widget.joinable ? widget.inviteCode : null,
           fed: widget.fed,
           isFederationOnline: isFederationOnline,
         );
       case _InfoSection.gateways:
-        return GatewaysList(fed: widget.fed);
+        return GatewaysList(
+          fed: widget.fed,
+          invite: widget.joinable ? widget.inviteCode : null,
+        );
     }
+  }
+
+  Widget _buildJoinButtons(ThemeData theme) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          ElevatedButton(
+            onPressed: _isJoining ? null : () => _onJoinPressed(false),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: theme.colorScheme.primary,
+              foregroundColor: Colors.black,
+              padding: const EdgeInsets.symmetric(vertical: 16),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+              textStyle: const TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            child:
+                _isJoining
+                    ? const SizedBox(
+                      height: 20,
+                      width: 20,
+                      child: CircularProgressIndicator(
+                        color: Colors.black,
+                        strokeWidth: 2,
+                      ),
+                    )
+                    : widget.ecash == null
+                    ? Text(context.l10n.joinFederation)
+                    : Text(context.l10n.joinAndRedeemEcash),
+          ),
+        ],
+      ),
+    );
   }
 
   @override
@@ -521,23 +681,38 @@ class _FederationInfoScreenState extends State<FederationInfoScreen> {
             onSelected: (value) {
               if (value == 'leave') {
                 _onLeavePressed();
+              } else if (value == 'recover') {
+                _onJoinPressed(true);
               }
             },
             itemBuilder:
                 (context) => [
-                  PopupMenuItem(
-                    value: 'leave',
-                    child: Row(
-                      children: [
-                        const Icon(Icons.logout, color: Colors.red, size: 20),
-                        const SizedBox(width: 12),
-                        Text(
-                          context.l10n.leaveFederation,
-                          style: const TextStyle(color: Colors.red),
-                        ),
-                      ],
+                  if (widget.joinable)
+                    PopupMenuItem(
+                      value: 'recover',
+                      enabled: !_isJoining,
+                      child: Row(
+                        children: [
+                          const Icon(Icons.history, size: 20),
+                          const SizedBox(width: 12),
+                          Text(context.l10n.recover),
+                        ],
+                      ),
                     ),
-                  ),
+                  if (!widget.joinable)
+                    PopupMenuItem(
+                      value: 'leave',
+                      child: Row(
+                        children: [
+                          const Icon(Icons.logout, color: Colors.red, size: 20),
+                          const SizedBox(width: 12),
+                          Text(
+                            context.l10n.leaveFederation,
+                            style: const TextStyle(color: Colors.red),
+                          ),
+                        ],
+                      ),
+                    ),
                 ],
           ),
         ],
@@ -545,7 +720,7 @@ class _FederationInfoScreenState extends State<FederationInfoScreen> {
       body: SafeArea(
         child: Column(
           children: [
-            // Federation image and welcome message
+            // Federation image, welcome message, health bar, chips
             Padding(
               padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
               child: Column(
@@ -583,6 +758,31 @@ class _FederationInfoScreenState extends State<FederationInfoScreen> {
                       textAlign: TextAlign.center,
                     ),
                   ],
+                  if (widget.fed.network != null &&
+                      widget.fed.network!.toLowerCase() != 'bitcoin') ...[
+                    const SizedBox(height: 8),
+                    Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: Colors.orange.shade100,
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Row(
+                        children: [
+                          const Icon(Icons.warning, color: Colors.orange),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: Text(
+                              context.l10n.testNetworkWarning(
+                                widget.fed.network ?? '',
+                              ),
+                              style: const TextStyle(color: Colors.orange),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
                   const SizedBox(height: 12),
                   _buildHealthStatusBar(
                     theme: theme,
@@ -603,6 +803,8 @@ class _FederationInfoScreenState extends State<FederationInfoScreen> {
                 child: _buildSelectedContent(isFederationOnline),
               ),
             ),
+            // Join buttons at bottom when joinable
+            if (widget.joinable) _buildJoinButtons(theme),
           ],
         ),
       ),
