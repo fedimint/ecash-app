@@ -18,9 +18,9 @@ import 'package:ecashapp/scan.dart';
 import 'package:ecashapp/theme.dart';
 import 'package:ecashapp/models.dart';
 
+import 'package:ecashapp/screens/my_wallet_screen.dart';
 import 'package:ecashapp/widgets/dashboard_balance.dart';
 import 'package:ecashapp/widgets/empty_transactions.dart';
-import 'package:ecashapp/widgets/payment_type_sheet.dart';
 import 'package:ecashapp/widgets/transaction_item.dart';
 
 class Dashboard extends StatefulWidget {
@@ -252,6 +252,19 @@ class _DashboardState extends State<Dashboard> {
     _loadRecentTransactions();
   }
 
+  void _openMyWallet() {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder:
+            (_) => MyWalletScreen(
+              fed: widget.fed,
+              onAddressesUpdated: _loadBalance,
+            ),
+      ),
+    );
+  }
+
   void _openAllTransactions() {
     Navigator.push(
       context,
@@ -265,7 +278,6 @@ class _DashboardState extends State<Dashboard> {
                 _loadRecentTransactions();
               },
               onWithdrawCompleted: () => _loadRecentTransactions(),
-              onAddressesUpdated: () => _loadBalance(),
             ),
       ),
     ).then((_) {
@@ -378,6 +390,7 @@ class _DashboardState extends State<Dashboard> {
                                 _lnAddressConfig!.lnurl,
                               )
                               : null,
+                      onWalletTap: _openMyWallet,
                     ),
                     if (widget.fed.network != null &&
                         widget.fed.network!.toLowerCase() != 'bitcoin')
@@ -408,13 +421,6 @@ class _DashboardState extends State<Dashboard> {
                     EmptyTransactionsState(
                       paymentType: _selectedPaymentType,
                       onReceivePressed: _onReceivePressed,
-                      onActionPressed:
-                          () => showPaymentTypeSheet(
-                            context: context,
-                            paymentType: _selectedPaymentType,
-                            fed: widget.fed,
-                            onAddressesUpdated: _loadBalance,
-                          ),
                     ),
                     const Spacer(),
                   ],
@@ -441,6 +447,7 @@ class _DashboardState extends State<Dashboard> {
                                 _lnAddressConfig!.lnurl,
                               )
                               : null,
+                      onWalletTap: _openMyWallet,
                     ),
                     if (widget.fed.network != null &&
                         widget.fed.network!.toLowerCase() != 'bitcoin')

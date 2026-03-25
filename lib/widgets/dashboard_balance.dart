@@ -16,6 +16,7 @@ class DashboardBalance extends StatelessWidget {
   final bool pricesFailed;
   final LightningAddressConfig? lnAddressConfig;
   final VoidCallback? onLnAddressTap;
+  final VoidCallback? onWalletTap;
 
   const DashboardBalance({
     super.key,
@@ -29,6 +30,7 @@ class DashboardBalance extends StatelessWidget {
     required this.pricesFailed,
     this.lnAddressConfig,
     this.onLnAddressTap,
+    this.onWalletTap,
   });
 
   @override
@@ -54,20 +56,42 @@ class DashboardBalance extends StatelessWidget {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Text(
-                formatBalance(
-                  balanceMsats,
-                  showMsats,
-                  context.select<PreferencesProvider, BitcoinDisplay>(
-                    (prefs) => prefs.bitcoinDisplay,
+              Row(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
+                  if (onWalletTap != null) const SizedBox(width: 32),
+                  Flexible(
+                    child: Text(
+                      formatBalance(
+                        balanceMsats,
+                        showMsats,
+                        context.select<PreferencesProvider, BitcoinDisplay>(
+                          (prefs) => prefs.bitcoinDisplay,
+                        ),
+                      ),
+                      style: Theme.of(context).textTheme.displayLarge?.copyWith(
+                        color: Theme.of(context).colorScheme.primary,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 48,
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
                   ),
-                ),
-                style: Theme.of(context).textTheme.displayLarge?.copyWith(
-                  color: Theme.of(context).colorScheme.primary,
-                  fontWeight: FontWeight.bold,
-                  fontSize: 48,
-                ),
-                textAlign: TextAlign.center,
+                  if (onWalletTap != null)
+                    GestureDetector(
+                      onTap: onWalletTap,
+                      behavior: HitTestBehavior.opaque,
+                      child: Padding(
+                        padding: const EdgeInsets.all(4),
+                        child: Icon(
+                          Icons.chevron_right,
+                          color: Theme.of(context).colorScheme.primary,
+                          size: 28,
+                        ),
+                      ),
+                    ),
+                ],
               ),
               if (isLoadingPrices)
                 Text(

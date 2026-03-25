@@ -1342,5 +1342,8 @@
   "@viewAddresses": {},
 
   "viewNotes": "View Notes",
-  "@viewNotes": {}
+  "@viewNotes": {},
+
+  "myWallet": "My Wallet",
+  "@myWallet": {}
 }

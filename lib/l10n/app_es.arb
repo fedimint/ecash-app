@@ -384,5 +384,6 @@
 
   "viewGateways": "Ver pasarelas",
   "viewAddresses": "Ver direcciones",
-  "viewNotes": "Ver billetes"
+  "viewNotes": "Ver billetes",
+  "myWallet": "Mi Billetera"
 }

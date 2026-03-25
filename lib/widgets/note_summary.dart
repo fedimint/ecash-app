@@ -4,7 +4,7 @@ import 'package:ecashapp/extensions/build_context_l10n.dart';
 import 'package:ecashapp/lib.dart';
 import 'package:ecashapp/multimint.dart';
 import 'package:ecashapp/providers/preferences_provider.dart';
-import 'package:ecashapp/utils.dart'; // for formatBalance
+import 'package:ecashapp/utils.dart';
 import 'package:provider/provider.dart';
 
 class NoteSummary extends StatefulWidget {
@@ -58,30 +58,58 @@ class _NoteSummaryState extends State<NoteSummary> {
           return Center(child: Text(context.l10n.noNotesAvailable));
         }
 
-        return SingleChildScrollView(
-          scrollDirection: Axis.vertical,
-          child: DataTable(
-            headingRowColor: WidgetStatePropertyAll(theme.colorScheme.surface),
-            dataRowColor: WidgetStatePropertyAll(const Color(0xFF1A1A1A)),
-            headingTextStyle: theme.textTheme.titleLarge,
-            dataTextStyle: theme.textTheme.bodyLarge,
-            columns: [
-              DataColumn(label: Text(context.l10n.denomination)),
-              DataColumn(label: Text(context.l10n.countLabel)),
-            ],
-            rows:
-                summary.map((entry) {
-                  final (denom, count) = entry;
-                  return DataRow(
-                    cells: [
-                      DataCell(
-                        Text(formatBalance(denom, true, bitcoinDisplay)),
+        return ListView.separated(
+          itemCount: summary.length,
+          separatorBuilder: (_, __) => const SizedBox(height: 8),
+          padding: const EdgeInsets.only(top: 8),
+          itemBuilder: (context, index) {
+            final (denom, count) = summary[index];
+            return Container(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+              decoration: BoxDecoration(
+                color: theme.colorScheme.surface,
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(
+                  color: theme.colorScheme.primary.withValues(alpha: 0.15),
+                ),
+              ),
+              child: Row(
+                children: [
+                  Icon(
+                    Icons.receipt_long,
+                    color: theme.colorScheme.primary,
+                    size: 20,
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Text(
+                      formatBalance(denom, true, bitcoinDisplay),
+                      style: theme.textTheme.bodyLarge?.copyWith(
+                        fontWeight: FontWeight.w600,
                       ),
-                      DataCell(Text(count.toString())),
-                    ],
-                  );
-                }).toList(),
-          ),
+                    ),
+                  ),
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 4,
+                    ),
+                    decoration: BoxDecoration(
+                      color: theme.colorScheme.primary.withValues(alpha: 0.15),
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                    child: Text(
+                      'x${count.toString()}',
+                      style: theme.textTheme.bodyMedium?.copyWith(
+                        color: theme.colorScheme.primary,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            );
+          },
         );
       },
     );
