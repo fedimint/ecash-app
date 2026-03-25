@@ -26,8 +26,14 @@ import 'package:ecashapp/widgets/transaction_item.dart';
 class Dashboard extends StatefulWidget {
   final FederationSelector fed;
   final bool recovering;
+  final VoidCallback onLeaveFederation;
 
-  const Dashboard({super.key, required this.fed, required this.recovering});
+  const Dashboard({
+    super.key,
+    required this.fed,
+    required this.recovering,
+    required this.onLeaveFederation,
+  });
 
   @override
   _DashboardState createState() => _DashboardState();
@@ -260,6 +266,7 @@ class _DashboardState extends State<Dashboard> {
             (_) => MyWalletScreen(
               fed: widget.fed,
               onAddressesUpdated: _loadBalance,
+              onLeaveFederation: widget.onLeaveFederation,
             ),
       ),
     );

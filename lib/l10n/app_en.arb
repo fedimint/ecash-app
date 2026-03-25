@@ -1345,5 +1345,53 @@
   "@viewNotes": {},
 
   "myWallet": "My Wallet",
-  "@myWallet": {}
+  "@myWallet": {},
+
+  "summary": "Summary",
+  "@summary": {},
+
+  "ecashNotesCount": "{count} ecash notes",
+  "@ecashNotesCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+
+  "acrossDenominations": "across {count} denominations",
+  "@acrossDenominations": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+
+  "depositAddressesCount": "{count} deposit addresses",
+  "@depositAddressesCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+
+  "addressesWithFunds": "{count} with received funds",
+  "@addressesWithFunds": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+
+  "lightningAddress": "Lightning Address",
+  "@lightningAddress": {},
+
+  "network": "Network",
+  "@network": {},
+
+  "federation": "Federation",
+  "@federation": {}
 }

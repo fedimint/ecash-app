@@ -540,6 +540,7 @@ class _MyAppState extends State<MyApp> {
         key: ValueKey(_selectedFederation!.federationId),
         fed: _selectedFederation!,
         recovering: _isRecovering!,
+        onLeaveFederation: _leaveFederation,
       );
     } else {
       if (recoverFederations) {

@@ -385,5 +385,13 @@
   "viewGateways": "Ver pasarelas",
   "viewAddresses": "Ver direcciones",
   "viewNotes": "Ver billetes",
-  "myWallet": "Mi Billetera"
+  "myWallet": "Mi Billetera",
+  "summary": "Resumen",
+  "ecashNotesCount": "{count} billetes ecash",
+  "acrossDenominations": "en {count} denominaciones",
+  "depositAddressesCount": "{count} direcciones de deposito",
+  "addressesWithFunds": "{count} con fondos recibidos",
+  "lightningAddress": "Direccion Lightning",
+  "network": "Red",
+  "federation": "Federacion"
 }

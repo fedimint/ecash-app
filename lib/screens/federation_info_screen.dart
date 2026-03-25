@@ -65,21 +65,25 @@ class _FederationInfoScreenState extends State<FederationInfoScreen> {
   }
 
   Future<void> _onLeavePressed() async {
+    final screenNavigator = Navigator.of(context);
+
     await showDialog(
       context: context,
       builder: (dialogContext) {
         bool isLeaving = false;
 
         return StatefulBuilder(
-          builder: (context, setState) {
+          builder: (sbContext, setState) {
             return AlertDialog(
-              title: Text(context.l10n.leaveFederation),
-              content: Text(context.l10n.leaveFederationConfirm),
+              title: Text(sbContext.l10n.leaveFederation),
+              content: Text(sbContext.l10n.leaveFederationConfirm),
               actions: [
                 TextButton(
                   onPressed:
-                      isLeaving ? null : () => Navigator.of(context).pop(),
-                  child: Text(context.l10n.cancel),
+                      isLeaving
+                          ? null
+                          : () => Navigator.of(dialogContext).pop(),
+                  child: Text(sbContext.l10n.cancel),
                 ),
                 TextButton(
                   onPressed:
@@ -103,26 +107,22 @@ class _FederationInfoScreenState extends State<FederationInfoScreen> {
                               }
                               widget.onLeaveFederation();
 
-                              if (context.mounted) {
-                                Navigator.of(
-                                  dialogContext,
-                                ).popUntil((route) => route.isFirst);
-                                Navigator.of(
-                                  context,
-                                ).popUntil((route) => route.isFirst);
+                              if (dialogContext.mounted) {
+                                Navigator.of(dialogContext).pop();
                               }
+                              screenNavigator.popUntil(
+                                (route) => route.isFirst,
+                              );
                             } catch (e) {
                               AppLogger.instance.error(
                                 "Error leaving federation: $e",
                               );
-                              if (context.mounted) {
-                                Navigator.of(
-                                  dialogContext,
-                                ).popUntil((route) => route.isFirst);
-                                Navigator.of(
-                                  context,
-                                ).popUntil((route) => route.isFirst);
+                              if (dialogContext.mounted) {
+                                Navigator.of(dialogContext).pop();
                               }
+                              screenNavigator.popUntil(
+                                (route) => route.isFirst,
+                              );
                             } finally {
                               if (mounted) {
                                 setState(() {
@@ -138,7 +138,7 @@ class _FederationInfoScreenState extends State<FederationInfoScreen> {
                             width: 20,
                             child: CircularProgressIndicator(strokeWidth: 2),
                           )
-                          : Text(context.l10n.confirm),
+                          : Text(sbContext.l10n.confirm),
                 ),
               ],
             );
