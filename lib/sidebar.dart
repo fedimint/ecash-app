@@ -2,7 +2,7 @@ import 'dart:async';
 
 import 'package:ecashapp/db.dart';
 import 'package:ecashapp/extensions/build_context_l10n.dart';
-import 'package:ecashapp/fed_preview.dart';
+import 'package:ecashapp/screens/federation_info_screen.dart';
 import 'package:ecashapp/lib.dart';
 import 'package:ecashapp/multimint.dart';
 import 'package:ecashapp/providers/preferences_provider.dart';
@@ -462,18 +462,17 @@ class FederationListItem extends StatelessWidget {
                   color: Theme.of(context).colorScheme.primary,
                   visualDensity: VisualDensity.compact,
                   onPressed: () {
-                    showAppModalBottomSheet(
-                      context: context,
-                      childBuilder: () async {
-                        return FederationPreview(
-                          fed: fed,
-                          welcomeMessage: data.welcomeMessage,
-                          imageUrl: data.federationImageUrl,
-                          joinable: false,
-                          guardians: data.guardians,
-                          onLeaveFederation: onLeaveFederation,
-                        );
-                      },
+                    Navigator.of(context).push(
+                      MaterialPageRoute(
+                        builder:
+                            (_) => FederationInfoScreen(
+                              fed: fed,
+                              welcomeMessage: data.welcomeMessage,
+                              imageUrl: data.federationImageUrl,
+                              guardians: data.guardians,
+                              onLeaveFederation: onLeaveFederation,
+                            ),
+                      ),
                     );
                   },
                 ),

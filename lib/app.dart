@@ -11,7 +11,7 @@ import 'package:ecashapp/number_pad.dart';
 import 'package:ecashapp/onchain_send.dart';
 import 'package:ecashapp/pay_preview.dart';
 import 'package:ecashapp/screens/dashboard.dart';
-import 'package:ecashapp/fed_preview.dart';
+import 'package:ecashapp/screens/federation_info_screen.dart';
 import 'package:ecashapp/lib.dart';
 import 'package:ecashapp/multimint.dart';
 import 'package:ecashapp/providers/preferences_provider.dart';
@@ -517,18 +517,17 @@ class _MyAppState extends State<MyApp> {
     );
     if (!mounted) return;
 
-    showAppModalBottomSheet(
-      context: context,
-      childBuilder: () async {
-        return FederationPreview(
-          fed: _selectedFederation!,
-          welcomeMessage: meta.welcome,
-          imageUrl: meta.picture,
-          joinable: false,
-          guardians: meta.guardians,
-          onLeaveFederation: _leaveFederation,
-        );
-      },
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder:
+            (_) => FederationInfoScreen(
+              fed: _selectedFederation!,
+              welcomeMessage: meta.welcome,
+              imageUrl: meta.picture,
+              guardians: meta.guardians,
+              onLeaveFederation: _leaveFederation,
+            ),
+      ),
     );
   }
 
