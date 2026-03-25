@@ -186,7 +186,7 @@ class _FederationInfoScreenState extends State<FederationInfoScreen> {
       }
 
       if (mounted) {
-        Navigator.of(context).pop((fed, false));
+        Navigator.of(context).pop((fed, recover));
       }
     } catch (e) {
       AppLogger.instance.error('Could not join federation $e');
