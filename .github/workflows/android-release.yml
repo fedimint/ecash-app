@@ -25,12 +25,18 @@ jobs:
           key-password: ${{ secrets.KEY_PASSWORD }}
           key-alias: ${{ secrets.KEY_ALIAS }}
 
-      - name: Upload to Release
+      - name: Upload AAB as workflow artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: app-bundle
+          path: build/app/outputs/bundle/release/*.aab
+
+      - name: Upload APK to Release
         uses: ncipollo/release-action@v1
         with:
           tag: ${{ startsWith(github.ref, 'refs/tags/') && github.ref_name || 'latest' }}
           name: ${{ startsWith(github.ref, 'refs/tags/') && github.ref_name || 'Latest Android Release' }}
-          artifacts: build/app/outputs/flutter-apk/*.apk
+          artifacts: "build/app/outputs/flutter-apk/*.apk"
           allowUpdates: true
           replacesArtifacts: true
           draft: false

@@ -1,16 +1,26 @@
 #!/usr/bin/env bash
 set -e
 
-# This script builds the Docker image and then builds the APK
-# Run from the project root: ./docker/build-apk.sh [debug|release]
+# This script builds the Docker image and then builds the APK or AAB
+# Run from the project root: ./docker/build-apk.sh [debug|release] [--aab]
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 BUILD_MODE="${1:-debug}"
+shift || true
+
+# Parse flags
+BUILD_FORMAT="apk"
+for arg in "$@"; do
+    case "$arg" in
+        --aab) BUILD_FORMAT="aab" ;;
+        *) echo "Unknown flag: $arg"; exit 1 ;;
+    esac
+done
 
 if [[ "$BUILD_MODE" != "debug" && "$BUILD_MODE" != "release" ]]; then
     echo "Error: Build mode must be 'debug' or 'release'"
-    echo "Usage: $0 [debug|release]"
+    echo "Usage: $0 [debug|release] [--aab]"
     exit 1
 fi
 
@@ -19,6 +29,7 @@ echo "Ecash App Docker Build"
 echo "==================================="
 echo "Project root: $PROJECT_ROOT"
 echo "Build mode: $BUILD_MODE"
+echo "Build format: $BUILD_FORMAT"
 echo ""
 
 # Show build configuration
@@ -74,6 +85,7 @@ docker run --rm \
     -e ANDROID_USER_HOME="/android-home" \
     -e HOME="/workspace" \
     -e FLUTTER_SUPPRESS_ANALYTICS=true \
+    -e BUILD_FORMAT="$BUILD_FORMAT" \
     $IMAGE_NAME \
     bash /workspace/docker/entrypoint.sh "$BUILD_MODE"
 

@@ -14,6 +14,6 @@ Nix drives the Flutter version. Docker and CI follow.
 2. `nix flake update nixpkgs`
 3. `nix develop` then `flutter --version` to see the new version
 4. Update `.flutter-version` to match
-5. `REBUILD_IMAGE=1 just build-debug-apk` to verify Docker builds
+5. `REBUILD_IMAGE=1 just build-debug-android` to verify Docker builds
 6. Push and verify CI passes
 7. Fix any breakage (Kotlin, SDK platforms, pubspec.lock)

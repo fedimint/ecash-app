@@ -1,7 +1,7 @@
 #!/bin/bash
 set -e
 
-# This script builds the APK inside the Docker container
+# This script builds the APK or AAB inside the Docker container
 # It mirrors the GitHub Actions workflow
 
 echo "==================================="
@@ -64,18 +64,30 @@ cp "$ANDROID_NDK_HOME/toolchains/llvm/prebuilt/linux-x86_64/sysroot/usr/lib/aarc
 
 cd /workspace
 
-# Build Flutter APK
-echo "Building Flutter APK..."
-flutter build apk --$BUILD_MODE
+BUILD_FORMAT="${BUILD_FORMAT:-apk}"
 
-# Rename APK with version and timestamp
 APP_NAME=$(grep '^name:' pubspec.yaml | sed 's/name: //')
 VERSION=$(grep '^version:' pubspec.yaml | sed 's/version: //' | cut -d'+' -f1)
 TIMESTAMP=$(date +%Y%m%d-%H%M%S)
-OLD_APK="build/app/outputs/flutter-apk/app-${BUILD_MODE}.apk"
-NEW_APK="build/app/outputs/flutter-apk/${APP_NAME}-${VERSION}-${BUILD_MODE}-${TIMESTAMP}.apk"
 
-mv "$OLD_APK" "$NEW_APK"
+if [[ "$BUILD_FORMAT" == "aab" ]]; then
+    echo "Building Flutter App Bundle..."
+    flutter build appbundle --$BUILD_MODE
 
-echo ""
-echo "Build complete: $NEW_APK"
+    OLD_AAB="build/app/outputs/bundle/${BUILD_MODE}/app-${BUILD_MODE}.aab"
+    NEW_AAB="build/app/outputs/bundle/${BUILD_MODE}/${APP_NAME}-${VERSION}-${BUILD_MODE}-${TIMESTAMP}.aab"
+    mv "$OLD_AAB" "$NEW_AAB"
+
+    echo ""
+    echo "Build complete: $NEW_AAB"
+else
+    echo "Building Flutter APK..."
+    flutter build apk --$BUILD_MODE
+
+    OLD_APK="build/app/outputs/flutter-apk/app-${BUILD_MODE}.apk"
+    NEW_APK="build/app/outputs/flutter-apk/${APP_NAME}-${VERSION}-${BUILD_MODE}-${TIMESTAMP}.apk"
+    mv "$OLD_APK" "$NEW_APK"
+
+    echo ""
+    echo "Build complete: $NEW_APK"
+fi

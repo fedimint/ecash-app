@@ -195,9 +195,20 @@ runs:
       shell: bash
       run: flutter build apk --${{ inputs.mode }}
 
+    - name: Build Flutter App Bundle
+      shell: bash
+      run: flutter build appbundle --${{ inputs.mode }}
+
     - name: Rename APK
       if: inputs.with-signing == 'true'
       shell: bash
       run: |
         mv build/app/outputs/flutter-apk/app-release.apk \
         build/app/outputs/flutter-apk/ecash-app-${{ steps.version.outputs.version_name }}+${{ steps.version.outputs.version_code }}-${{ steps.slug.outputs.sha8 }}.apk
+
+    - name: Rename AAB
+      if: inputs.with-signing == 'true'
+      shell: bash
+      run: |
+        mv build/app/outputs/bundle/release/app-release.aab \
+        build/app/outputs/bundle/release/ecash-app-${{ steps.version.outputs.version_name }}+${{ steps.version.outputs.version_code }}-${{ steps.slug.outputs.sha8 }}.aab
