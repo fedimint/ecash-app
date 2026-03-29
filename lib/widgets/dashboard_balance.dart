@@ -9,8 +9,6 @@ class DashboardBalance extends StatelessWidget {
   final BigInt? balanceMsats;
   final bool isLoading;
   final bool recovering;
-  final bool showMsats;
-  final VoidCallback onToggle;
   final Map<FiatCurrency, double> btcPrices;
   final bool isLoadingPrices;
   final bool pricesFailed;
@@ -23,8 +21,6 @@ class DashboardBalance extends StatelessWidget {
     required this.balanceMsats,
     required this.isLoading,
     required this.recovering,
-    required this.showMsats,
-    required this.onToggle,
     required this.btcPrices,
     required this.isLoadingPrices,
     required this.pricesFailed,
@@ -40,6 +36,9 @@ class DashboardBalance extends StatelessWidget {
     final fiatCurrency = context.select<PreferencesProvider, FiatCurrency>(
       (prefs) => prefs.fiatCurrency,
     );
+    final showMsats = context.select<PreferencesProvider, bool>(
+      (prefs) => prefs.showMsats,
+    );
     final fiatText = calculateFiatValue(
       btcPrices[fiatCurrency],
       sats.toInt(),
@@ -52,7 +51,7 @@ class DashboardBalance extends StatelessWidget {
     } else {
       return Center(
         child: GestureDetector(
-          onTap: onToggle,
+          onTap: onWalletTap,
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
@@ -79,16 +78,12 @@ class DashboardBalance extends StatelessWidget {
                     ),
                   ),
                   if (onWalletTap != null)
-                    GestureDetector(
-                      onTap: onWalletTap,
-                      behavior: HitTestBehavior.opaque,
-                      child: Padding(
-                        padding: const EdgeInsets.all(4),
-                        child: Icon(
-                          Icons.chevron_right,
-                          color: Theme.of(context).colorScheme.primary,
-                          size: 28,
-                        ),
+                    Padding(
+                      padding: const EdgeInsets.all(4),
+                      child: Icon(
+                        Icons.chevron_right,
+                        color: Theme.of(context).colorScheme.primary,
+                        size: 28,
                       ),
                     ),
                 ],

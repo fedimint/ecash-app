@@ -1081,6 +1081,18 @@ pub async fn set_fiat_currency(fiat_currency: FiatCurrency) {
 }
 
 #[frb]
+pub async fn get_show_msats() -> bool {
+    let multimint = get_multimint();
+    multimint.get_show_msats().await
+}
+
+#[frb]
+pub async fn set_show_msats(show_msats: bool) {
+    let multimint = get_multimint();
+    multimint.set_show_msats(show_msats).await;
+}
+
+#[frb]
 pub async fn has_pin_code() -> bool {
     let multimint = get_multimint();
     multimint.has_pin_code().await

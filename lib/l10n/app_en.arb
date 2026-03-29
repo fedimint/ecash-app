@@ -430,6 +430,12 @@
   "displaySettingsUpdated": "Display settings updated!",
   "@displaySettingsUpdated": {},
 
+  "showMillisatoshis": "Show Millisatoshis",
+  "@showMillisatoshis": {},
+
+  "showMillisatoshisDescription": "Display fractional satoshis with 3 decimal places",
+  "@showMillisatoshisDescription": {},
+
   "txDetailAmount": "Amount",
   "@txDetailAmount": {},
 
@@ -1393,5 +1399,23 @@
   "@network": {},
 
   "federation": "Federation",
-  "@federation": {}
+  "@federation": {},
+
+  "viewAll": "View all",
+  "@viewAll": {},
+
+  "guardiansCount": "{count} guardians",
+  "@guardiansCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+
+  "ecashNotes": "Ecash Notes",
+  "@ecashNotes": {},
+
+  "depositAddresses": "Deposit Addresses",
+  "@depositAddresses": {}
 }

@@ -118,6 +118,8 @@
   "japaneseYen": "Yen japonés (¥)",
   "japan": "Japón",
   "displaySettingsUpdated": "¡Configuración de pantalla actualizada!",
+  "showMillisatoshis": "Mostrar milisatoshis",
+  "showMillisatoshisDescription": "Mostrar satoshis fraccionarios con 3 decimales",
   "txDetailAmount": "Monto",
   "txDetailFees": "Comisiones",
   "txDetailTimestamp": "Marca de tiempo",
@@ -393,5 +395,9 @@
   "addressesWithFunds": "{count} con fondos recibidos",
   "lightningAddress": "Direccion Lightning",
   "network": "Red",
-  "federation": "Federacion"
+  "federation": "Federacion",
+  "viewAll": "Ver todo",
+  "guardiansCount": "{count} guardianes",
+  "ecashNotes": "Billetes Ecash",
+  "depositAddresses": "Direcciones de deposito"
 }

@@ -15,8 +15,10 @@ class DisplaySettingsScreen extends StatefulWidget {
 class _DisplaySettingsScreenState extends State<DisplaySettingsScreen> {
   late BitcoinDisplay _selectedBitcoinDisplay;
   late FiatCurrency _selectedFiatCurrency;
+  late bool _selectedShowMsats;
   late BitcoinDisplay _initialBitcoinDisplay;
   late FiatCurrency _initialFiatCurrency;
+  late bool _initialShowMsats;
 
   @override
   void initState() {
@@ -24,8 +26,10 @@ class _DisplaySettingsScreenState extends State<DisplaySettingsScreen> {
     final preferencesProvider = context.read<PreferencesProvider>();
     _selectedBitcoinDisplay = preferencesProvider.bitcoinDisplay;
     _selectedFiatCurrency = preferencesProvider.fiatCurrency;
+    _selectedShowMsats = preferencesProvider.showMsats;
     _initialBitcoinDisplay = preferencesProvider.bitcoinDisplay;
     _initialFiatCurrency = preferencesProvider.fiatCurrency;
+    _initialShowMsats = preferencesProvider.showMsats;
   }
 
   @override
@@ -198,6 +202,47 @@ class _DisplaySettingsScreenState extends State<DisplaySettingsScreen> {
                   },
                 ),
               ],
+            ),
+          ),
+
+          const SizedBox(height: 32),
+
+          // Show Millisatoshis Section
+          Card(
+            elevation: 2,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(16),
+            ),
+            child: SwitchListTile(
+              contentPadding: const EdgeInsets.symmetric(
+                horizontal: 16,
+                vertical: 8,
+              ),
+              secondary: Icon(
+                Icons.precision_manufacturing_outlined,
+                color: theme.colorScheme.primary,
+                size: 28,
+              ),
+              title: Text(
+                context.l10n.showMillisatoshis,
+                style: TextStyle(
+                  fontWeight:
+                      _selectedShowMsats ? FontWeight.w600 : FontWeight.normal,
+                  color: _selectedShowMsats ? theme.colorScheme.primary : null,
+                ),
+              ),
+              subtitle: Text(
+                context.l10n.showMillisatoshisDescription,
+                style: theme.textTheme.bodySmall?.copyWith(
+                  color: theme.colorScheme.onSurfaceVariant,
+                ),
+              ),
+              value: _selectedShowMsats,
+              activeThumbColor: theme.colorScheme.primary,
+              onChanged: (value) {
+                setState(() => _selectedShowMsats = value);
+                _saveShowMsats(value);
+              },
             ),
           ),
 
@@ -463,7 +508,8 @@ class _DisplaySettingsScreenState extends State<DisplaySettingsScreen> {
 
   bool _hasSettingsChanged() {
     return _selectedBitcoinDisplay != _initialBitcoinDisplay ||
-        _selectedFiatCurrency != _initialFiatCurrency;
+        _selectedFiatCurrency != _initialFiatCurrency ||
+        _selectedShowMsats != _initialShowMsats;
   }
 
   void _handleBackNavigation() {
@@ -486,5 +532,10 @@ class _DisplaySettingsScreenState extends State<DisplaySettingsScreen> {
   Future<void> _saveFiatCurrency(FiatCurrency currency) async {
     final preferencesProvider = context.read<PreferencesProvider>();
     await preferencesProvider.setFiatCurrency(currency);
+  }
+
+  Future<void> _saveShowMsats(bool value) async {
+    final preferencesProvider = context.read<PreferencesProvider>();
+    await preferencesProvider.setShowMsats(value);
   }
 }

@@ -48,6 +48,7 @@ pub(crate) enum DbKeyPrefix {
     SchemaVersion = 0x11,
     PinCodeHash = 0x12,
     RequirePinForSpending = 0x13,
+    ShowMsats = 0x14,
 }
 
 #[derive(Debug, Clone, Encodable, Decodable, Eq, PartialEq, Hash, Ord, PartialOrd)]
@@ -354,4 +355,13 @@ impl_db_record!(
     key = RequirePinForSpendingKey,
     value = (),
     db_prefix = DbKeyPrefix::RequirePinForSpending,
+);
+
+#[derive(Debug, Encodable, Decodable)]
+pub(crate) struct ShowMsatsKey;
+
+impl_db_record!(
+    key = ShowMsatsKey,
+    value = (),
+    db_prefix = DbKeyPrefix::ShowMsats,
 );

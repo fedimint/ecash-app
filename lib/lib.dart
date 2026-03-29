@@ -427,6 +427,11 @@ Future<FiatCurrency> getFiatCurrency() =>
 Future<void> setFiatCurrency({required FiatCurrency fiatCurrency}) =>
     RustLib.instance.api.crateSetFiatCurrency(fiatCurrency: fiatCurrency);
 
+Future<bool> getShowMsats() => RustLib.instance.api.crateGetShowMsats();
+
+Future<void> setShowMsats({required bool showMsats}) =>
+    RustLib.instance.api.crateSetShowMsats(showMsats: showMsats);
+
 Future<bool> hasPinCode() => RustLib.instance.api.crateHasPinCode();
 
 Future<void> setPinCode({required String pin}) =>

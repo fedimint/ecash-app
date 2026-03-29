@@ -4726,6 +4726,21 @@ impl Multimint {
         dbtx.commit_tx().await;
     }
 
+    pub async fn get_show_msats(&self) -> bool {
+        let mut dbtx = self.db.begin_transaction_nc().await;
+        dbtx.get_value(&crate::db::ShowMsatsKey).await.is_some()
+    }
+
+    pub async fn set_show_msats(&self, show_msats: bool) {
+        let mut dbtx = self.db.begin_transaction().await;
+        if show_msats {
+            dbtx.insert_entry(&crate::db::ShowMsatsKey, &()).await;
+        } else {
+            dbtx.remove_entry(&crate::db::ShowMsatsKey).await;
+        }
+        dbtx.commit_tx().await;
+    }
+
     pub async fn get_federation_order(&self) -> Option<Vec<FederationId>> {
         let mut dbtx = self.db.begin_transaction_nc().await;
         dbtx.get_value(&crate::db::FederationOrderKey)

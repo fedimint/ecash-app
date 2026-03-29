@@ -42,7 +42,6 @@ class Dashboard extends StatefulWidget {
 class _DashboardState extends State<Dashboard> {
   BigInt? balanceMsats;
   bool isLoadingBalance = true;
-  bool showMsats = false;
   late bool recovering;
   double _recoveryProgress = 0.0;
   PaymentType _selectedPaymentType = PaymentType.lightning;
@@ -358,8 +357,6 @@ class _DashboardState extends State<Dashboard> {
                       balanceMsats: balanceMsats,
                       isLoading: isLoadingBalance,
                       recovering: recovering,
-                      showMsats: showMsats,
-                      onToggle: () => setState(() => showMsats = !showMsats),
                       btcPrices: _btcPrices,
                       isLoadingPrices: _isLoadingPrices,
                       pricesFailed: _pricesFailed,
@@ -382,8 +379,6 @@ class _DashboardState extends State<Dashboard> {
                       balanceMsats: balanceMsats,
                       isLoading: isLoadingBalance,
                       recovering: recovering,
-                      showMsats: showMsats,
-                      onToggle: () => setState(() => showMsats = !showMsats),
                       btcPrices: _btcPrices,
                       isLoadingPrices: _isLoadingPrices,
                       pricesFailed: _pricesFailed,
@@ -439,8 +434,6 @@ class _DashboardState extends State<Dashboard> {
                       balanceMsats: balanceMsats,
                       isLoading: isLoadingBalance,
                       recovering: recovering,
-                      showMsats: showMsats,
-                      onToggle: () => setState(() => showMsats = !showMsats),
                       btcPrices: _btcPrices,
                       isLoadingPrices: _isLoadingPrices,
                       pricesFailed: _pricesFailed,
@@ -472,11 +465,37 @@ class _DashboardState extends State<Dashboard> {
                         ),
                       ),
                     const SizedBox(height: 32),
-                    Text(
-                      context.l10n.recentActivity,
-                      style: Theme.of(
-                        context,
-                      ).textTheme.titleSmall?.copyWith(color: Colors.grey),
+                    Row(
+                      children: [
+                        Text(
+                          context.l10n.recentActivity,
+                          style: Theme.of(
+                            context,
+                          ).textTheme.titleSmall?.copyWith(color: Colors.grey),
+                        ),
+                        const Spacer(),
+                        TextButton(
+                          onPressed: _openAllTransactions,
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Text(
+                                context.l10n.viewAll,
+                                style: TextStyle(
+                                  color: Theme.of(context).colorScheme.primary,
+                                  fontSize: 13,
+                                ),
+                              ),
+                              const SizedBox(width: 2),
+                              Icon(
+                                Icons.chevron_right,
+                                size: 18,
+                                color: Theme.of(context).colorScheme.primary,
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
                     ),
                     const SizedBox(height: 8),
                     if (_isLoadingTransactions)
@@ -487,18 +506,6 @@ class _DashboardState extends State<Dashboard> {
                     else ...[
                       ..._recentTransactions.map(
                         (tx) => TransactionItem(tx: tx, fed: widget.fed),
-                      ),
-                      const SizedBox(height: 8),
-                      Center(
-                        child: TextButton(
-                          onPressed: _openAllTransactions,
-                          child: Text(
-                            context.l10n.viewAllTransactions,
-                            style: TextStyle(
-                              color: Theme.of(context).colorScheme.primary,
-                            ),
-                          ),
-                        ),
                       ),
                     ],
                     const SizedBox(height: 8),

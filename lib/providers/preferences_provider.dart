@@ -6,10 +6,12 @@ import 'package:flutter/foundation.dart';
 class PreferencesProvider extends ChangeNotifier {
   BitcoinDisplay _bitcoinDisplay = BitcoinDisplay.bip177;
   FiatCurrency _fiatCurrency = FiatCurrency.usd;
+  bool _showMsats = false;
   bool _isLoading = true;
 
   BitcoinDisplay get bitcoinDisplay => _bitcoinDisplay;
   FiatCurrency get fiatCurrency => _fiatCurrency;
+  bool get showMsats => _showMsats;
   bool get isLoading => _isLoading;
 
   PreferencesProvider() {
@@ -20,6 +22,7 @@ class PreferencesProvider extends ChangeNotifier {
     try {
       _bitcoinDisplay = await rust_lib.getBitcoinDisplay();
       _fiatCurrency = await rust_lib.getFiatCurrency();
+      _showMsats = await rust_lib.getShowMsats();
       _isLoading = false;
       notifyListeners();
     } catch (e) {
@@ -46,6 +49,16 @@ class PreferencesProvider extends ChangeNotifier {
       await rust_lib.setFiatCurrency(fiatCurrency: currency);
     } catch (e) {
       AppLogger.instance.error('Failed to save fiat currency preference: $e');
+    }
+  }
+
+  Future<void> setShowMsats(bool value) async {
+    _showMsats = value;
+    notifyListeners();
+    try {
+      await rust_lib.setShowMsats(showMsats: value);
+    } catch (e) {
+      AppLogger.instance.error('Failed to save show msats preference: $e');
     }
   }
 }

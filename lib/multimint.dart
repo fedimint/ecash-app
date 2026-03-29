@@ -190,6 +190,8 @@ abstract class Multimint implements RustOpaqueInterface {
 
   Future<bool> getRequirePinForSpending();
 
+  Future<bool> getShowMsats();
+
   Future<bool> hasPinCode();
 
   Future<bool> hasSeedPhraseAck();
@@ -299,6 +301,8 @@ abstract class Multimint implements RustOpaqueInterface {
   Future<void> setPinHash({required String pin});
 
   Future<void> setRequirePinForSpending({required bool require});
+
+  Future<void> setShowMsats({required bool showMsats});
 
   Future<List<Transaction>> transactions({
     required FederationId federationId,

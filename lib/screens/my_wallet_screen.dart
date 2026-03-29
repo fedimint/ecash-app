@@ -11,8 +11,6 @@ import 'package:ecashapp/widgets/note_summary.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
-enum _WalletSection { summary, addresses, notes }
-
 class MyWalletScreen extends StatefulWidget {
   final FederationSelector fed;
   final VoidCallback? onAddressesUpdated;
@@ -30,10 +28,8 @@ class MyWalletScreen extends StatefulWidget {
 }
 
 class _MyWalletScreenState extends State<MyWalletScreen> {
-  _WalletSection _selectedSection = _WalletSection.summary;
   BigInt? _balanceMsats;
   bool _isLoadingBalance = true;
-  bool _showMsats = false;
   Map<FiatCurrency, double> _btcPrices = {};
   bool _isLoadingPrices = true;
 
@@ -41,6 +37,7 @@ class _MyWalletScreenState extends State<MyWalletScreen> {
   List<(BigInt, BigInt)>? _noteSummary;
   List<(String, BigInt, BigInt?)>? _addresses;
   LightningAddressConfig? _lnAddressConfig;
+  FederationMeta? _federationMeta;
   bool _isSummaryLoading = true;
 
   @override
@@ -75,12 +72,14 @@ class _MyWalletScreenState extends State<MyWalletScreen> {
         getNoteSummary(federationId: widget.fed.federationId),
         getAddresses(federationId: widget.fed.federationId),
         getLnAddressConfig(federationId: widget.fed.federationId),
+        getFederationMeta(federationId: widget.fed.federationId),
       ]);
       if (!mounted) return;
       setState(() {
         _noteSummary = results[0] as List<(BigInt, BigInt)>;
         _addresses = results[1] as List<(String, BigInt, BigInt?)>;
         _lnAddressConfig = results[2] as LightningAddressConfig?;
+        _federationMeta = results[3] as FederationMeta;
         _isSummaryLoading = false;
       });
     } catch (e) {
@@ -92,177 +91,83 @@ class _MyWalletScreenState extends State<MyWalletScreen> {
     }
   }
 
-  Widget _buildSectionChips(ThemeData theme) {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: [
-        _buildChip(
-          theme: theme,
-          label: context.l10n.summary,
-          icon: Icons.dashboard_outlined,
-          section: _WalletSection.summary,
-        ),
-        const SizedBox(width: 8),
-        _buildChip(
-          theme: theme,
-          label: context.l10n.addresses,
-          icon: Icons.account_balance_wallet_outlined,
-          section: _WalletSection.addresses,
-        ),
-        const SizedBox(width: 8),
-        _buildChip(
-          theme: theme,
-          label: context.l10n.notes,
-          icon: Icons.receipt_long_outlined,
-          section: _WalletSection.notes,
-        ),
-      ],
-    );
-  }
-
-  Widget _buildChip({
-    required ThemeData theme,
-    required String label,
-    required IconData icon,
-    required _WalletSection section,
+  Widget _buildSectionHeader(
+    ThemeData theme,
+    String title,
+    int count, {
+    VoidCallback? onViewAll,
   }) {
-    final isSelected = _selectedSection == section;
-    return FilterChip(
-      selected: isSelected,
-      label: Text(label),
-      avatar: Icon(
-        icon,
-        size: 18,
-        color: isSelected ? theme.colorScheme.onPrimary : Colors.grey,
+    return Padding(
+      padding: const EdgeInsets.only(top: 20, bottom: 8),
+      child: Row(
+        children: [
+          Text(
+            title,
+            style: theme.textTheme.titleMedium?.copyWith(
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+          const SizedBox(width: 8),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+            decoration: BoxDecoration(
+              color: theme.colorScheme.primary.withValues(alpha: 0.15),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Text(
+              count.toString(),
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: theme.colorScheme.primary,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ),
+          const Spacer(),
+          if (onViewAll != null)
+            TextButton(
+              onPressed: onViewAll,
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    context.l10n.viewAll,
+                    style: TextStyle(
+                      color: theme.colorScheme.primary,
+                      fontSize: 13,
+                    ),
+                  ),
+                  const SizedBox(width: 2),
+                  Icon(
+                    Icons.chevron_right,
+                    size: 18,
+                    color: theme.colorScheme.primary,
+                  ),
+                ],
+              ),
+            ),
+        ],
       ),
-      selectedColor: theme.colorScheme.primary,
-      backgroundColor: theme.colorScheme.surface,
-      labelStyle: TextStyle(
-        color: isSelected ? theme.colorScheme.onPrimary : Colors.grey,
-        fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
-      ),
-      side: BorderSide(
-        color:
-            isSelected
-                ? theme.colorScheme.primary
-                : Colors.grey.withValues(alpha: 0.3),
-      ),
-      showCheckmark: false,
-      onSelected: (_) {
-        setState(() {
-          _selectedSection = section;
-        });
-      },
     );
   }
 
-  Widget _buildSummaryContent(ThemeData theme) {
-    if (_isSummaryLoading) {
-      return const Center(child: CircularProgressIndicator());
-    }
+  Widget _buildFederationCard(ThemeData theme) {
+    final guardianCount = _federationMeta?.guardians.length ?? 0;
 
-    final totalNotes =
-        _noteSummary?.fold<int>(0, (sum, entry) => sum + entry.$2.toInt()) ?? 0;
-    final denomCount = _noteSummary?.length ?? 0;
-    final addressCount = _addresses?.length ?? 0;
-    final fundedCount = _addresses?.where((a) => a.$3 != null).length ?? 0;
-
-    return ListView(
-      padding: const EdgeInsets.only(top: 8),
-      children: [
-        // Ecash notes card
-        _buildSummaryCard(
-          theme: theme,
-          icon: Icons.receipt_long,
-          title: context.l10n.ecashNotesCount(totalNotes),
-          subtitle: context.l10n.acrossDenominations(denomCount),
-          onTap:
-              () => setState(() {
-                _selectedSection = _WalletSection.notes;
-              }),
-        ),
-        const SizedBox(height: 8),
-        // Addresses card
-        _buildSummaryCard(
-          theme: theme,
-          icon: Icons.account_balance_wallet,
-          title: context.l10n.depositAddressesCount(addressCount),
-          subtitle: context.l10n.addressesWithFunds(fundedCount),
-          onTap:
-              () => setState(() {
-                _selectedSection = _WalletSection.addresses;
-              }),
-        ),
-        // Lightning address card
-        if (_lnAddressConfig != null) ...[
-          const SizedBox(height: 8),
-          _buildSummaryCard(
-            theme: theme,
-            icon: Icons.flash_on,
-            iconColor: Colors.amber,
-            title: context.l10n.lightningAddress,
-            subtitle:
-                '${_lnAddressConfig!.username}@${_lnAddressConfig!.domain}',
-            onTap:
-                () => showLightningAddressDialog(
-                  context,
-                  _lnAddressConfig!.username,
-                  _lnAddressConfig!.domain,
-                  _lnAddressConfig!.lnurl,
+    return GestureDetector(
+      onTap: () {
+        Navigator.of(context).push(
+          MaterialPageRoute(
+            builder:
+                (_) => FederationInfoScreen(
+                  fed: widget.fed,
+                  welcomeMessage: _federationMeta?.welcome,
+                  imageUrl: _federationMeta?.picture,
+                  guardians: _federationMeta?.guardians ?? [],
+                  onLeaveFederation: widget.onLeaveFederation ?? () {},
                 ),
           ),
-        ],
-        const SizedBox(height: 8),
-        // Federation card
-        _buildSummaryCard(
-          theme: theme,
-          icon: Icons.groups_outlined,
-          title: context.l10n.federation,
-          subtitle: widget.fed.federationName,
-          onTap: () async {
-            final meta = await getFederationMeta(
-              federationId: widget.fed.federationId,
-            );
-            if (!mounted) return;
-            Navigator.of(context).push(
-              MaterialPageRoute(
-                builder:
-                    (_) => FederationInfoScreen(
-                      fed: widget.fed,
-                      welcomeMessage: meta.welcome,
-                      imageUrl: meta.picture,
-                      guardians: meta.guardians,
-                      onLeaveFederation: widget.onLeaveFederation ?? () {},
-                    ),
-              ),
-            );
-          },
-        ),
-        // Network card
-        if (widget.fed.network != null) ...[
-          const SizedBox(height: 8),
-          _buildSummaryCard(
-            theme: theme,
-            icon: Icons.lan_outlined,
-            title: context.l10n.network,
-            subtitle: widget.fed.network!,
-          ),
-        ],
-      ],
-    );
-  }
-
-  Widget _buildSummaryCard({
-    required ThemeData theme,
-    required IconData icon,
-    required String title,
-    required String subtitle,
-    Color? iconColor,
-    VoidCallback? onTap,
-    Widget? trailing,
-  }) {
-    return GestureDetector(
-      onTap: onTap,
+        );
+      },
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
         decoration: BoxDecoration(
@@ -274,53 +179,189 @@ class _MyWalletScreenState extends State<MyWalletScreen> {
         ),
         child: Row(
           children: [
-            Icon(icon, color: iconColor ?? theme.colorScheme.primary, size: 24),
+            Icon(
+              Icons.groups_outlined,
+              color: theme.colorScheme.primary,
+              size: 24,
+            ),
             const SizedBox(width: 14),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    title,
+                    widget.fed.federationName,
                     style: theme.textTheme.bodyLarge?.copyWith(
                       fontWeight: FontWeight.w600,
                     ),
                   ),
                   const SizedBox(height: 2),
-                  Text(
-                    subtitle,
-                    style: theme.textTheme.bodyMedium?.copyWith(
-                      color: Colors.grey,
-                    ),
+                  Row(
+                    children: [
+                      Text(
+                        context.l10n.guardiansCount(guardianCount),
+                        style: theme.textTheme.bodyMedium?.copyWith(
+                          color: Colors.grey,
+                        ),
+                      ),
+                      if (widget.fed.network != null) ...[
+                        Text(
+                          ' · ',
+                          style: theme.textTheme.bodyMedium?.copyWith(
+                            color: Colors.grey,
+                          ),
+                        ),
+                        Text(
+                          widget.fed.network!,
+                          style: theme.textTheme.bodyMedium?.copyWith(
+                            color: Colors.grey,
+                          ),
+                        ),
+                      ],
+                    ],
                   ),
                 ],
               ),
             ),
-            if (trailing != null) trailing,
-            if (onTap != null && trailing == null)
-              Icon(
-                Icons.chevron_right,
-                color: Colors.grey.withValues(alpha: 0.5),
-                size: 20,
-              ),
+            Icon(
+              Icons.chevron_right,
+              color: Colors.grey.withValues(alpha: 0.5),
+              size: 20,
+            ),
           ],
         ),
       ),
     );
   }
 
-  Widget _buildSelectedContent() {
-    switch (_selectedSection) {
-      case _WalletSection.summary:
-        return _buildSummaryContent(Theme.of(context));
-      case _WalletSection.addresses:
-        return OnchainAddressesList(
-          fed: widget.fed,
-          updateAddresses: widget.onAddressesUpdated ?? () {},
-        );
-      case _WalletSection.notes:
-        return NoteSummary(fed: widget.fed);
-    }
+  Widget _buildLightningAddressRow(ThemeData theme) {
+    if (_lnAddressConfig == null) return const SizedBox.shrink();
+
+    return Padding(
+      padding: const EdgeInsets.only(top: 8),
+      child: GestureDetector(
+        onTap:
+            () => showLightningAddressDialog(
+              context,
+              _lnAddressConfig!.username,
+              _lnAddressConfig!.domain,
+              _lnAddressConfig!.lnurl,
+            ),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+          decoration: BoxDecoration(
+            color: Colors.white.withValues(alpha: 0.08),
+            borderRadius: BorderRadius.circular(16),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Icon(Icons.flash_on, color: Colors.amber, size: 14),
+              const SizedBox(width: 4),
+              Text(
+                '${_lnAddressConfig!.username}@${_lnAddressConfig!.domain}',
+                style: theme.textTheme.bodySmall?.copyWith(color: Colors.grey),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildNoteRow(
+    ThemeData theme,
+    BigInt denom,
+    BigInt count,
+    BitcoinDisplay bitcoinDisplay,
+  ) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      decoration: BoxDecoration(
+        color: theme.colorScheme.surface,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: theme.colorScheme.primary.withValues(alpha: 0.15),
+        ),
+      ),
+      child: Row(
+        children: [
+          Icon(Icons.receipt_long, color: theme.colorScheme.primary, size: 20),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Text(
+              formatBalance(denom, true, bitcoinDisplay),
+              style: theme.textTheme.bodyLarge?.copyWith(
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+            decoration: BoxDecoration(
+              color: theme.colorScheme.primary.withValues(alpha: 0.15),
+              borderRadius: BorderRadius.circular(16),
+            ),
+            child: Text(
+              'x${count.toString()}',
+              style: theme.textTheme.bodyMedium?.copyWith(
+                color: theme.colorScheme.primary,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildAddressRow(ThemeData theme, String address, BigInt? amount) {
+    final abbreviated =
+        address.length > 16
+            ? '${address.substring(0, 8)}...${address.substring(address.length - 8)}'
+            : address;
+    final hasFunds = amount != null;
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      decoration: BoxDecoration(
+        color:
+            hasFunds
+                ? theme.colorScheme.primary.withValues(alpha: 0.08)
+                : theme.colorScheme.surface,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color:
+              hasFunds
+                  ? theme.colorScheme.primary.withValues(alpha: 0.3)
+                  : theme.colorScheme.primary.withValues(alpha: 0.15),
+        ),
+      ),
+      child: Row(
+        children: [
+          Icon(
+            Icons.account_balance_wallet_outlined,
+            color: hasFunds ? theme.colorScheme.primary : Colors.grey,
+            size: 20,
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Text(
+              abbreviated,
+              style: theme.textTheme.bodyMedium?.copyWith(letterSpacing: 0.5),
+            ),
+          ),
+          if (hasFunds)
+            Text(
+              '${amount.toString()} sats',
+              style: theme.textTheme.bodyMedium?.copyWith(
+                color: theme.colorScheme.primary,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+        ],
+      ),
+    );
   }
 
   @override
@@ -332,72 +373,212 @@ class _MyWalletScreenState extends State<MyWalletScreen> {
     final fiatCurrency = context.select<PreferencesProvider, FiatCurrency>(
       (prefs) => prefs.fiatCurrency,
     );
+    final showMsats = context.select<PreferencesProvider, bool>(
+      (prefs) => prefs.showMsats,
+    );
+
+    // Prepare note and address previews
+    final notePreview = _noteSummary?.take(5).toList() ?? [];
+    final totalNotes =
+        _noteSummary?.fold<int>(0, (sum, e) => sum + e.$2.toInt()) ?? 0;
+
+    // Sort addresses: funded first
+    final sortedAddresses =
+        _addresses != null
+            ? (List<(String, BigInt, BigInt?)>.from(_addresses!)..sort((a, b) {
+              if (a.$3 != null && b.$3 == null) return -1;
+              if (a.$3 == null && b.$3 != null) return 1;
+              return 0;
+            }))
+            : <(String, BigInt, BigInt?)>[];
+    final addressPreview = sortedAddresses.take(3).toList();
+    final totalAddresses = sortedAddresses.length;
 
     return Scaffold(
-      appBar: AppBar(centerTitle: true, title: Text(context.l10n.myWallet)),
-      body: SafeArea(
-        child: Column(
+      appBar: AppBar(
+        title: Column(
           children: [
-            // Balance header
-            Padding(
-              padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
-              child:
-                  _isLoadingBalance
-                      ? const SizedBox(
+            Text(context.l10n.myWallet),
+            if (widget.fed.network != null)
+              Text(
+                '${widget.fed.federationName} · ${widget.fed.network}',
+                style: theme.textTheme.bodySmall?.copyWith(color: Colors.grey),
+              )
+            else
+              Text(
+                widget.fed.federationName,
+                style: theme.textTheme.bodySmall?.copyWith(color: Colors.grey),
+              ),
+          ],
+        ),
+        centerTitle: true,
+      ),
+      body: SafeArea(
+        child:
+            _isSummaryLoading && _isLoadingBalance
+                ? const Center(child: CircularProgressIndicator())
+                : ListView(
+                  padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
+                  children: [
+                    // Balance header
+                    if (_isLoadingBalance)
+                      const SizedBox(
                         height: 48,
                         child: Center(child: CircularProgressIndicator()),
                       )
-                      : GestureDetector(
-                        onTap: () => setState(() => _showMsats = !_showMsats),
-                        child: Column(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
+                    else
+                      Column(
+                        children: [
+                          Text(
+                            formatBalance(
+                              _balanceMsats,
+                              showMsats,
+                              bitcoinDisplay,
+                            ),
+                            style: theme.textTheme.displayLarge?.copyWith(
+                              color: theme.colorScheme.primary,
+                              fontWeight: FontWeight.bold,
+                              fontSize: 36,
+                            ),
+                            textAlign: TextAlign.center,
+                          ),
+                          if (!_isLoadingPrices && _btcPrices.isNotEmpty) ...[
+                            const SizedBox(height: 2),
                             Text(
-                              formatBalance(
-                                _balanceMsats,
-                                _showMsats,
-                                bitcoinDisplay,
+                              calculateFiatValue(
+                                _btcPrices[fiatCurrency],
+                                (_balanceMsats != null
+                                        ? _balanceMsats! ~/ BigInt.from(1000)
+                                        : BigInt.zero)
+                                    .toInt(),
+                                fiatCurrency,
                               ),
-                              style: theme.textTheme.displayLarge?.copyWith(
-                                color: theme.colorScheme.primary,
-                                fontWeight: FontWeight.bold,
-                                fontSize: 36,
+                              style: const TextStyle(
+                                fontSize: 20,
+                                color: Colors.grey,
                               ),
                               textAlign: TextAlign.center,
                             ),
-                            if (!_isLoadingPrices && _btcPrices.isNotEmpty) ...[
-                              const SizedBox(height: 2),
-                              Text(
-                                calculateFiatValue(
-                                  _btcPrices[fiatCurrency],
-                                  (_balanceMsats != null
-                                          ? _balanceMsats! ~/ BigInt.from(1000)
-                                          : BigInt.zero)
-                                      .toInt(),
-                                  fiatCurrency,
-                                ),
-                                style: const TextStyle(
-                                  fontSize: 20,
-                                  color: Colors.grey,
-                                ),
-                                textAlign: TextAlign.center,
-                              ),
-                            ],
                           ],
-                        ),
+                        ],
                       ),
-            ),
-            const SizedBox(height: 12),
-            _buildSectionChips(theme),
-            const SizedBox(height: 8),
-            Expanded(
-              child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16),
-                child: _buildSelectedContent(),
-              ),
-            ),
-          ],
-        ),
+
+                    // Lightning Address
+                    Center(child: _buildLightningAddressRow(theme)),
+
+                    // Federation card
+                    _buildSectionHeader(
+                      theme,
+                      context.l10n.federation,
+                      _federationMeta?.guardians.length ?? 0,
+                    ),
+                    _buildFederationCard(theme),
+
+                    // Deposit Addresses
+                    _buildSectionHeader(
+                      theme,
+                      context.l10n.depositAddresses,
+                      totalAddresses,
+                      onViewAll:
+                          totalAddresses > 0
+                              ? () {
+                                Navigator.of(context).push(
+                                  MaterialPageRoute(
+                                    builder:
+                                        (_) => Scaffold(
+                                          appBar: AppBar(
+                                            title: Text(
+                                              context.l10n.depositAddresses,
+                                            ),
+                                          ),
+                                          body: Padding(
+                                            padding: const EdgeInsets.all(16),
+                                            child: OnchainAddressesList(
+                                              fed: widget.fed,
+                                              updateAddresses:
+                                                  widget.onAddressesUpdated ??
+                                                  () {},
+                                            ),
+                                          ),
+                                        ),
+                                  ),
+                                );
+                              }
+                              : null,
+                    ),
+                    if (addressPreview.isEmpty)
+                      Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 12),
+                        child: Text(
+                          context.l10n.noAddressesFound,
+                          style: theme.textTheme.bodyMedium?.copyWith(
+                            color: Colors.grey,
+                          ),
+                          textAlign: TextAlign.center,
+                        ),
+                      )
+                    else
+                      ...addressPreview.map((entry) {
+                        final (address, _, amount) = entry;
+                        return Padding(
+                          padding: const EdgeInsets.only(bottom: 8),
+                          child: _buildAddressRow(theme, address, amount),
+                        );
+                      }),
+
+                    // Ecash Notes
+                    _buildSectionHeader(
+                      theme,
+                      context.l10n.ecashNotes,
+                      totalNotes,
+                      onViewAll:
+                          totalNotes > 0
+                              ? () {
+                                Navigator.of(context).push(
+                                  MaterialPageRoute(
+                                    builder:
+                                        (_) => Scaffold(
+                                          appBar: AppBar(
+                                            title: Text(
+                                              context.l10n.ecashNotes,
+                                            ),
+                                          ),
+                                          body: Padding(
+                                            padding: const EdgeInsets.all(16),
+                                            child: NoteSummary(fed: widget.fed),
+                                          ),
+                                        ),
+                                  ),
+                                );
+                              }
+                              : null,
+                    ),
+                    if (notePreview.isEmpty)
+                      Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 12),
+                        child: Text(
+                          context.l10n.noNotesAvailable,
+                          style: theme.textTheme.bodyMedium?.copyWith(
+                            color: Colors.grey,
+                          ),
+                          textAlign: TextAlign.center,
+                        ),
+                      )
+                    else
+                      ...notePreview.map((entry) {
+                        final (denom, count) = entry;
+                        return Padding(
+                          padding: const EdgeInsets.only(bottom: 8),
+                          child: _buildNoteRow(
+                            theme,
+                            denom,
+                            count,
+                            bitcoinDisplay,
+                          ),
+                        );
+                      }),
+                  ],
+                ),
       ),
     );
   }
