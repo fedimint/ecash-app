@@ -185,7 +185,7 @@ class _DashboardState extends State<Dashboard> {
     );
     if (!mounted) return;
     setState(() {
-      _recentTransactions = txs.take(5).toList();
+      _recentTransactions = txs.take(20).toList();
       _isLoadingTransactions = false;
     });
   }
@@ -307,6 +307,19 @@ class _DashboardState extends State<Dashboard> {
         "$_selectedPaymentType progress: $_recoveryProgress complete: ${progress.$1} total: ${progress.$2}",
       );
     }
+  }
+
+  int _maxVisibleTransactions(BuildContext context) {
+    final screenHeight = MediaQuery.of(context).size.height;
+    // Approximate fixed heights: top padding (48) + balance widget (~120) +
+    // spacing (32) + "Recent Activity" row (~48) + spacing (8) + bottom
+    // spacing (8) + bottom nav bar (~56) + top safe area
+    final topPadding = MediaQuery.of(context).padding.top;
+    const fixedHeight = 48.0 + 120.0 + 32.0 + 48.0 + 8.0 + 8.0 + 56.0;
+    final available = screenHeight - fixedHeight - topPadding;
+    // Each TransactionItem card is ~80px (ListTile ~56 + Card margin 12 + padding)
+    const itemHeight = 80.0;
+    return (available / itemHeight).floor().clamp(3, 20);
   }
 
   @override
@@ -504,9 +517,11 @@ class _DashboardState extends State<Dashboard> {
                         child: Center(child: CircularProgressIndicator()),
                       )
                     else ...[
-                      ..._recentTransactions.map(
-                        (tx) => TransactionItem(tx: tx, fed: widget.fed),
-                      ),
+                      ..._recentTransactions
+                          .take(_maxVisibleTransactions(context))
+                          .map(
+                            (tx) => TransactionItem(tx: tx, fed: widget.fed),
+                          ),
                     ],
                     const SizedBox(height: 8),
                   ],

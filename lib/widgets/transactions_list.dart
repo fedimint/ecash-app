@@ -157,6 +157,16 @@ class _TransactionsListState extends State<TransactionsList> {
       _isLoading = false;
       _isFetchingMore = false;
     });
+
+    // If content doesn't fill the viewport, load more automatically
+    if (_hasMore) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (_scrollController.hasClients &&
+            _scrollController.position.maxScrollExtent <= 0) {
+          _loadTransactions(loadMore: true);
+        }
+      });
+    }
   }
 
   void _onScroll() {
@@ -218,8 +228,6 @@ class _TransactionsListState extends State<TransactionsList> {
 
     return ListView(
       controller: _scrollController,
-      shrinkWrap: true,
-      physics: ClampingScrollPhysics(),
       children: [
         ...pending.map((e) => PendingDepositItem(event: e)),
         ..._transactions.map((tx) => TransactionItem(tx: tx, fed: widget.fed)),
