@@ -3558,7 +3558,7 @@ impl Multimint {
         &self,
         federation_id: FederationId,
         address: String,
-    ) -> anyhow::Result<()> {
+    ) -> anyhow::Result<u64> {
         let client = self
             .clients
             .read()
@@ -3580,13 +3580,13 @@ impl Multimint {
             .send((federation_id, tweak_idx))
             .map_err(|e| anyhow::anyhow!("failed to monitor tweak index: {}", e))?;
 
-        Ok(())
+        Ok(tweak_idx.0)
     }
 
     pub async fn allocate_deposit_address(
         &self,
         federation_id: FederationId,
-    ) -> anyhow::Result<String> {
+    ) -> anyhow::Result<(String, u64)> {
         let client = self
             .clients
             .read()
@@ -3598,10 +3598,11 @@ impl Multimint {
             client.get_first_module::<fedimint_wallet_client::WalletClientModule>()?;
 
         let (_, address, _) = wallet_module.safe_allocate_deposit_address(()).await?;
-        self.monitor_deposit_address(federation_id, address.to_string())
+        let tweak_idx = self
+            .monitor_deposit_address(federation_id, address.to_string())
             .await?;
 
-        Ok(address.to_string())
+        Ok((address.to_string(), tweak_idx))
     }
 
     pub async fn get_pegin_fee(&self, federation_id: &FederationId) -> anyhow::Result<u64> {

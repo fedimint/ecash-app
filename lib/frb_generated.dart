@@ -268,7 +268,7 @@ abstract class RustLibApi extends BaseApi {
 
   Future<void> crateMultimintMultimintAckSeedPhrase({required Multimint that});
 
-  Future<String> crateMultimintMultimintAllocateDepositAddress({
+  Future<(String, BigInt)> crateMultimintMultimintAllocateDepositAddress({
     required Multimint that,
     required FederationId federationId,
   });
@@ -456,7 +456,7 @@ abstract class RustLibApi extends BaseApi {
     FederationId? federationId,
   });
 
-  Future<void> crateMultimintMultimintMonitorDepositAddress({
+  Future<BigInt> crateMultimintMultimintMonitorDepositAddress({
     required Multimint that,
     required FederationId federationId,
     required String address,
@@ -822,7 +822,7 @@ abstract class RustLibApi extends BaseApi {
 
   Future<void> crateAddRecoveryRelay({required String relay});
 
-  Future<String> crateAllocateDepositAddress({
+  Future<(String, BigInt)> crateAllocateDepositAddress({
     required FederationId federationId,
   });
 
@@ -2825,7 +2825,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
       );
 
   @override
-  Future<String> crateMultimintMultimintAllocateDepositAddress({
+  Future<(String, BigInt)> crateMultimintMultimintAllocateDepositAddress({
     required Multimint that,
     required FederationId federationId,
   }) {
@@ -2849,7 +2849,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           );
         },
         codec: SseCodec(
-          decodeSuccessData: sse_decode_String,
+          decodeSuccessData: sse_decode_record_string_u_64,
           decodeErrorData: sse_decode_AnyhowException,
         ),
         constMeta: kCrateMultimintMultimintAllocateDepositAddressConstMeta,
@@ -4362,7 +4362,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
       );
 
   @override
-  Future<void> crateMultimintMultimintMonitorDepositAddress({
+  Future<BigInt> crateMultimintMultimintMonitorDepositAddress({
     required Multimint that,
     required FederationId federationId,
     required String address,
@@ -4388,7 +4388,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           );
         },
         codec: SseCodec(
-          decodeSuccessData: sse_decode_unit,
+          decodeSuccessData: sse_decode_u_64,
           decodeErrorData: sse_decode_AnyhowException,
         ),
         constMeta: kCrateMultimintMultimintMonitorDepositAddressConstMeta,
@@ -7239,7 +7239,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
       const TaskConstMeta(debugName: "add_recovery_relay", argNames: ["relay"]);
 
   @override
-  Future<String> crateAllocateDepositAddress({
+  Future<(String, BigInt)> crateAllocateDepositAddress({
     required FederationId federationId,
   }) {
     return handler.executeNormal(
@@ -7258,7 +7258,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           );
         },
         codec: SseCodec(
-          decodeSuccessData: sse_decode_String,
+          decodeSuccessData: sse_decode_record_string_u_64,
           decodeErrorData: sse_decode_AnyhowException,
         ),
         constMeta: kCrateAllocateDepositAddressConstMeta,
@@ -12205,6 +12205,16 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   }
 
   @protected
+  (String, BigInt) dco_decode_record_string_u_64(dynamic raw) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    final arr = raw as List<dynamic>;
+    if (arr.length != 2) {
+      throw Exception('Expected 2 elements, got ${arr.length}');
+    }
+    return (dco_decode_String(arr[0]), dco_decode_u_64(arr[1]));
+  }
+
+  @protected
   (String, BigInt, bool) dco_decode_record_string_u_64_bool(dynamic raw) {
     // Codec=Dco (DartCObject based), see doc to use other codecs
     final arr = raw as List<dynamic>;
@@ -14588,6 +14598,14 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
     // Codec=Sse (Serialization based), see doc to use other codecs
     var var_field0 = sse_decode_String(deserializer);
     var var_field1 = sse_decode_String(deserializer);
+    return (var_field0, var_field1);
+  }
+
+  @protected
+  (String, BigInt) sse_decode_record_string_u_64(SseDeserializer deserializer) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    var var_field0 = sse_decode_String(deserializer);
+    var var_field1 = sse_decode_u_64(deserializer);
     return (var_field0, var_field1);
   }
 
@@ -17010,6 +17028,16 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   }
 
   @protected
+  void sse_encode_record_string_u_64(
+    (String, BigInt) self,
+    SseSerializer serializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    sse_encode_String(self.$1, serializer);
+    sse_encode_u_64(self.$2, serializer);
+  }
+
+  @protected
   void sse_encode_record_string_u_64_bool(
     (String, BigInt, bool) self,
     SseSerializer serializer,
@@ -17714,11 +17742,12 @@ class MultimintImpl extends RustOpaque implements Multimint {
   Future<void> ackSeedPhrase() =>
       RustLib.instance.api.crateMultimintMultimintAckSeedPhrase(that: this);
 
-  Future<String> allocateDepositAddress({required FederationId federationId}) =>
-      RustLib.instance.api.crateMultimintMultimintAllocateDepositAddress(
-        that: this,
-        federationId: federationId,
-      );
+  Future<(String, BigInt)> allocateDepositAddress({
+    required FederationId federationId,
+  }) => RustLib.instance.api.crateMultimintMultimintAllocateDepositAddress(
+    that: this,
+    federationId: federationId,
+  );
 
   Future<(ReissueExternalNotesState, BigInt?)> awaitEcashReissue({
     required FederationId federationId,
@@ -17958,7 +17987,7 @@ class MultimintImpl extends RustOpaque implements Multimint {
     federationId: federationId,
   );
 
-  Future<void> monitorDepositAddress({
+  Future<BigInt> monitorDepositAddress({
     required FederationId federationId,
     required String address,
   }) => RustLib.instance.api.crateMultimintMultimintMonitorDepositAddress(

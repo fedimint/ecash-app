@@ -529,7 +529,9 @@ pub async fn subscribe_deposits(sink: StreamSink<DepositEventKind>, federation_i
 }
 
 #[frb]
-pub async fn allocate_deposit_address(federation_id: FederationId) -> anyhow::Result<String> {
+pub async fn allocate_deposit_address(
+    federation_id: FederationId,
+) -> anyhow::Result<(String, u64)> {
     let multimint = get_multimint();
     multimint.allocate_deposit_address(federation_id).await
 }

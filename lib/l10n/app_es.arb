@@ -272,6 +272,7 @@
   "couldNotAddRelay": "No se pudo agregar el relé",
   "couldNotDeleteRelay": "No se pudo eliminar el relé",
   "depositInstructions": "Puede usar esta dirección para depositar fondos en la federación:",
+  "addressIndex": "Índice de dirección",
   "depositInformation": "Información de depósito",
   "peginFee": "Comisión de Peg-in",
   "unableToFetchFee": "No se pudo obtener la comisión",

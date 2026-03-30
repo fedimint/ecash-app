@@ -215,10 +215,11 @@ Stream<DepositEventKind> subscribeDeposits({
   required FederationId federationId,
 }) => RustLib.instance.api.crateSubscribeDeposits(federationId: federationId);
 
-Future<String> allocateDepositAddress({required FederationId federationId}) =>
-    RustLib.instance.api.crateAllocateDepositAddress(
-      federationId: federationId,
-    );
+Future<(String, BigInt)> allocateDepositAddress({
+  required FederationId federationId,
+}) => RustLib.instance.api.crateAllocateDepositAddress(
+  federationId: federationId,
+);
 
 Future<BigInt> getPeginFee({required FederationId federationId}) =>
     RustLib.instance.api.crateGetPeginFee(federationId: federationId);

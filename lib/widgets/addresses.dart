@@ -133,16 +133,41 @@ class _OnchainAddressesListState extends State<OnchainAddressesList> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    // Address row with abbreviation and buttons
+                    // Address row with index and buttons
                     Row(
                       children: [
+                        Text(
+                          '#${tweakIdx.toString()}',
+                          style: Theme.of(
+                            context,
+                          ).textTheme.bodyMedium?.copyWith(
+                            color: Theme.of(context).colorScheme.primary,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                        const SizedBox(width: 8),
                         Expanded(
-                          child: SelectableText(
-                            abbreviateAddress(address),
-                            style: Theme.of(
-                              context,
-                            ).textTheme.bodyLarge?.copyWith(letterSpacing: 0.8),
-                            maxLines: 1,
+                          child: LayoutBuilder(
+                            builder: (context, constraints) {
+                              final style = Theme.of(context)
+                                  .textTheme
+                                  .bodyLarge
+                                  ?.copyWith(letterSpacing: 0.8);
+                              final textPainter = TextPainter(
+                                text: TextSpan(text: address, style: style),
+                                maxLines: 1,
+                                textDirection: TextDirection.ltr,
+                              )..layout();
+                              final displayText =
+                                  textPainter.width > constraints.maxWidth
+                                      ? abbreviateAddress(address)
+                                      : address;
+                              return Text(
+                                displayText,
+                                style: style,
+                                maxLines: 1,
+                              );
+                            },
                           ),
                         ),
                         const SizedBox(width: 8),

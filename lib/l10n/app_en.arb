@@ -966,6 +966,9 @@
   "depositInstructions": "You can use this address to deposit funds to the federation:",
   "@depositInstructions": {},
 
+  "addressIndex": "Address Index",
+  "@addressIndex": {},
+
   "depositInformation": "Deposit Information",
   "@depositInformation": {},
 
