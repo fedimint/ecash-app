@@ -107,13 +107,13 @@ class DashboardBalance extends StatelessWidget {
                   textAlign: TextAlign.center,
                 ),
               if (lnAddressConfig != null) ...[
-                const SizedBox(height: 8),
+                const SizedBox(height: 10),
                 GestureDetector(
                   onTap: onLnAddressTap,
                   child: Container(
                     padding: const EdgeInsets.symmetric(
-                      horizontal: 10,
-                      vertical: 6,
+                      horizontal: 12,
+                      vertical: 8,
                     ),
                     decoration: BoxDecoration(
                       color: Colors.white.withValues(alpha: 0.08),
@@ -125,14 +125,14 @@ class DashboardBalance extends StatelessWidget {
                         const Icon(
                           Icons.flash_on,
                           color: Colors.amber,
-                          size: 14,
+                          size: 16,
                         ),
-                        const SizedBox(width: 4),
+                        const SizedBox(width: 6),
                         Text(
                           '${lnAddressConfig!.username}@${lnAddressConfig!.domain}',
                           style: Theme.of(
                             context,
-                          ).textTheme.bodySmall?.copyWith(color: Colors.grey),
+                          ).textTheme.bodyMedium?.copyWith(color: Colors.grey),
                         ),
                       ],
                     ),
