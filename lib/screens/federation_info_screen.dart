@@ -373,8 +373,10 @@ class _FederationInfoScreenState extends State<FederationInfoScreen> {
   }
 
   Widget _buildSectionChips(ThemeData theme) {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.center,
+    return Wrap(
+      alignment: WrapAlignment.center,
+      spacing: 8,
+      runSpacing: 8,
       children: [
         _buildChip(
           theme: theme,
@@ -382,14 +384,12 @@ class _FederationInfoScreenState extends State<FederationInfoScreen> {
           icon: Icons.shield_outlined,
           section: _InfoSection.guardians,
         ),
-        const SizedBox(width: 8),
         _buildChip(
           theme: theme,
           label: context.l10n.utxoTab,
           icon: Icons.account_balance_outlined,
           section: _InfoSection.utxos,
         ),
-        const SizedBox(width: 8),
         _buildChip(
           theme: theme,
           label: context.l10n.gateways,
