@@ -529,7 +529,9 @@ pub async fn subscribe_deposits(sink: StreamSink<DepositEventKind>, federation_i
 }
 
 #[frb]
-pub async fn allocate_deposit_address(federation_id: FederationId) -> anyhow::Result<String> {
+pub async fn allocate_deposit_address(
+    federation_id: FederationId,
+) -> anyhow::Result<(String, u64)> {
     let multimint = get_multimint();
     multimint.allocate_deposit_address(federation_id).await
 }
@@ -972,9 +974,12 @@ pub async fn get_note_summary(federation_id: &FederationId) -> anyhow::Result<Ve
 }
 
 #[frb]
-pub async fn list_gateways(federation_id: &FederationId) -> anyhow::Result<Vec<FedimintGateway>> {
+pub async fn list_gateways(
+    invite: Option<String>,
+    federation_id: Option<FederationId>,
+) -> anyhow::Result<Vec<FedimintGateway>> {
     let multimint = get_multimint();
-    multimint.list_gateways(federation_id).await
+    multimint.list_gateways(invite, federation_id).await
 }
 
 #[frb]
@@ -1075,6 +1080,18 @@ pub async fn get_fiat_currency() -> FiatCurrency {
 pub async fn set_fiat_currency(fiat_currency: FiatCurrency) {
     let multimint = get_multimint();
     multimint.set_fiat_currency(fiat_currency).await;
+}
+
+#[frb]
+pub async fn get_show_msats() -> bool {
+    let multimint = get_multimint();
+    multimint.get_show_msats().await
+}
+
+#[frb]
+pub async fn set_show_msats(show_msats: bool) {
+    let multimint = get_multimint();
+    multimint.set_show_msats(show_msats).await;
 }
 
 #[frb]

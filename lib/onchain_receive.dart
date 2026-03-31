@@ -22,6 +22,7 @@ class OnChainReceiveContent extends StatefulWidget {
 
 class _OnChainReceiveContentState extends State<OnChainReceiveContent> {
   String? _address;
+  BigInt? _addressIndex;
   BigInt? _peginFee;
   bool _isLoading = true;
   bool _addressCopied = false;
@@ -34,7 +35,7 @@ class _OnChainReceiveContentState extends State<OnChainReceiveContent> {
 
   Future<void> _fetchAddress() async {
     try {
-      final address = await allocateDepositAddress(
+      final (address, index) = await allocateDepositAddress(
         federationId: widget.fed.federationId,
       );
       final fee = await getPeginFee(federationId: widget.fed.federationId);
@@ -42,6 +43,7 @@ class _OnChainReceiveContentState extends State<OnChainReceiveContent> {
       if (!mounted) return;
       setState(() {
         _address = address;
+        _addressIndex = index;
         _peginFee = fee;
         _isLoading = false;
       });
@@ -128,6 +130,16 @@ class _OnChainReceiveContentState extends State<OnChainReceiveContent> {
                     textAlign: TextAlign.center,
                     style: theme.textTheme.bodyMedium,
                   ),
+                  if (_addressIndex != null) ...[
+                    const SizedBox(height: 8),
+                    Text(
+                      '${context.l10n.addressIndex}: ${_addressIndex.toString()}',
+                      textAlign: TextAlign.center,
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: theme.colorScheme.onSurface.withOpacity(0.6),
+                      ),
+                    ),
+                  ],
                   const SizedBox(height: 20),
 
                   // QR code

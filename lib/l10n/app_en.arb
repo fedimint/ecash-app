@@ -430,6 +430,12 @@
   "displaySettingsUpdated": "Display settings updated!",
   "@displaySettingsUpdated": {},
 
+  "showMillisatoshis": "Show Millisatoshis",
+  "@showMillisatoshis": {},
+
+  "showMillisatoshisDescription": "Display fractional satoshis with 3 decimal places",
+  "@showMillisatoshisDescription": {},
+
   "txDetailAmount": "Amount",
   "@txDetailAmount": {},
 
@@ -960,6 +966,9 @@
   "depositInstructions": "You can use this address to deposit funds to the federation:",
   "@depositInstructions": {},
 
+  "addressIndex": "Address Index",
+  "@addressIndex": {},
+
   "depositInformation": "Deposit Information",
   "@depositInformation": {},
 
@@ -1327,5 +1336,92 @@
   "@recoveringWallet": {},
 
   "complete": "complete",
-  "@complete": {}
+  "@complete": {},
+
+  "viewAllTransactions": "View all",
+  "@viewAllTransactions": {},
+
+  "recentActivity": "Recent Activity",
+  "@recentActivity": {},
+
+  "noRecentTransactions": "No recent transactions",
+  "@noRecentTransactions": {},
+
+  "viewGateways": "View Gateways",
+  "@viewGateways": {},
+
+  "viewAddresses": "View Addresses",
+  "@viewAddresses": {},
+
+  "viewNotes": "View Notes",
+  "@viewNotes": {},
+
+  "myWallet": "My Wallet",
+  "@myWallet": {},
+
+  "summary": "Summary",
+  "@summary": {},
+
+  "ecashNotesCount": "{count} ecash notes",
+  "@ecashNotesCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+
+  "acrossDenominations": "across {count} denominations",
+  "@acrossDenominations": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+
+  "depositAddressesCount": "{count} deposit addresses",
+  "@depositAddressesCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+
+  "addressesWithFunds": "{count} with received funds",
+  "@addressesWithFunds": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+
+  "lightningAddress": "Lightning Address",
+  "@lightningAddress": {},
+
+  "network": "Network",
+  "@network": {},
+
+  "federation": "Federation",
+  "@federation": {},
+
+  "viewAll": "View all",
+  "@viewAll": {},
+
+  "guardiansCount": "{count} guardians",
+  "@guardiansCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+
+  "ecashNotes": "Ecash Notes",
+  "@ecashNotes": {},
+
+  "depositAddresses": "Deposit Addresses",
+  "@depositAddresses": {}
 }

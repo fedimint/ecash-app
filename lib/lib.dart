@@ -215,10 +215,11 @@ Stream<DepositEventKind> subscribeDeposits({
   required FederationId federationId,
 }) => RustLib.instance.api.crateSubscribeDeposits(federationId: federationId);
 
-Future<String> allocateDepositAddress({required FederationId federationId}) =>
-    RustLib.instance.api.crateAllocateDepositAddress(
-      federationId: federationId,
-    );
+Future<(String, BigInt)> allocateDepositAddress({
+  required FederationId federationId,
+}) => RustLib.instance.api.crateAllocateDepositAddress(
+  federationId: federationId,
+);
 
 Future<BigInt> getPeginFee({required FederationId federationId}) =>
     RustLib.instance.api.crateGetPeginFee(federationId: federationId);
@@ -357,8 +358,12 @@ Future<List<(BigInt, BigInt)>> getNoteSummary({
 }) => RustLib.instance.api.crateGetNoteSummary(federationId: federationId);
 
 Future<List<FedimintGateway>> listGateways({
-  required FederationId federationId,
-}) => RustLib.instance.api.crateListGateways(federationId: federationId);
+  String? invite,
+  FederationId? federationId,
+}) => RustLib.instance.api.crateListGateways(
+  invite: invite,
+  federationId: federationId,
+);
 
 Future<bool> checkEcashSpent({
   required FederationId federationId,
@@ -422,6 +427,11 @@ Future<FiatCurrency> getFiatCurrency() =>
 
 Future<void> setFiatCurrency({required FiatCurrency fiatCurrency}) =>
     RustLib.instance.api.crateSetFiatCurrency(fiatCurrency: fiatCurrency);
+
+Future<bool> getShowMsats() => RustLib.instance.api.crateGetShowMsats();
+
+Future<void> setShowMsats({required bool showMsats}) =>
+    RustLib.instance.api.crateSetShowMsats(showMsats: showMsats);
 
 Future<bool> hasPinCode() => RustLib.instance.api.crateHasPinCode();
 

@@ -74,7 +74,9 @@ abstract class FinalReceiveOperationState implements RustOpaqueInterface {}
 abstract class Multimint implements RustOpaqueInterface {
   Future<void> ackSeedPhrase();
 
-  Future<String> allocateDepositAddress({required FederationId federationId});
+  Future<(String, BigInt)> allocateDepositAddress({
+    required FederationId federationId,
+  });
 
   Future<(ReissueExternalNotesState, BigInt?)> awaitEcashReissue({
     required FederationId federationId,
@@ -190,6 +192,8 @@ abstract class Multimint implements RustOpaqueInterface {
 
   Future<bool> getRequirePinForSpending();
 
+  Future<bool> getShowMsats();
+
   Future<bool> hasPinCode();
 
   Future<bool> hasSeedPhraseAck();
@@ -202,10 +206,11 @@ abstract class Multimint implements RustOpaqueInterface {
   Future<void> leaveFederation({required FederationId federationId});
 
   Future<List<FedimintGateway>> listGateways({
-    required FederationId federationId,
+    String? invite,
+    FederationId? federationId,
   });
 
-  Future<void> monitorDepositAddress({
+  Future<BigInt> monitorDepositAddress({
     required FederationId federationId,
     required String address,
   });
@@ -298,6 +303,8 @@ abstract class Multimint implements RustOpaqueInterface {
   Future<void> setPinHash({required String pin});
 
   Future<void> setRequirePinForSpending({required bool require});
+
+  Future<void> setShowMsats({required bool showMsats});
 
   Future<List<Transaction>> transactions({
     required FederationId federationId,

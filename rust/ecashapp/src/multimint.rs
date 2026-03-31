@@ -31,6 +31,7 @@ use fedimint_core::{
     util::SafeUrl,
     Amount,
 };
+use fedimint_eventlog::Event;
 use fedimint_ln_client::{
     InternalPayState, LightningClientInit, LightningClientModule, LightningOperationMetaPay,
     LightningOperationMetaVariant, LnPayState, LnReceiveState,
@@ -622,6 +623,11 @@ impl Multimint {
                     let batch = client.get_event_log(Some(position), 100).await;
 
                     for event in &batch {
+                        if event.kind != ReceivePaymentEvent::KIND {
+                            position = event.id().saturating_add(1);
+                            continue;
+                        }
+
                         if let Some(receive_event) =
                             event.to_event::<ReceivePaymentEvent>()
                         {
@@ -3558,7 +3564,7 @@ impl Multimint {
         &self,
         federation_id: FederationId,
         address: String,
-    ) -> anyhow::Result<()> {
+    ) -> anyhow::Result<u64> {
         let client = self
             .clients
             .read()
@@ -3580,13 +3586,13 @@ impl Multimint {
             .send((federation_id, tweak_idx))
             .map_err(|e| anyhow::anyhow!("failed to monitor tweak index: {}", e))?;
 
-        Ok(())
+        Ok(tweak_idx.0)
     }
 
     pub async fn allocate_deposit_address(
         &self,
         federation_id: FederationId,
-    ) -> anyhow::Result<String> {
+    ) -> anyhow::Result<(String, u64)> {
         let client = self
             .clients
             .read()
@@ -3598,10 +3604,11 @@ impl Multimint {
             client.get_first_module::<fedimint_wallet_client::WalletClientModule>()?;
 
         let (_, address, _) = wallet_module.safe_allocate_deposit_address(()).await?;
-        self.monitor_deposit_address(federation_id, address.to_string())
+        let tweak_idx = self
+            .monitor_deposit_address(federation_id, address.to_string())
             .await?;
 
-        Ok(address.to_string())
+        Ok((address.to_string(), tweak_idx))
     }
 
     pub async fn get_pegin_fee(&self, federation_id: &FederationId) -> anyhow::Result<u64> {
@@ -3742,18 +3749,30 @@ impl Multimint {
 
     pub async fn list_gateways(
         &self,
-        federation_id: &FederationId,
+        invite: Option<String>,
+        federation_id: Option<FederationId>,
     ) -> anyhow::Result<Vec<FedimintGateway>> {
-        let client = self
-            .clients
-            .read()
-            .await
-            .get(federation_id)
-            .context("No federation exists")?
-            .clone();
+        let client = match invite {
+            Some(invite) => {
+                let invite_code = InviteCode::from_str(&invite)?;
+                self.get_or_build_temp_client(invite_code).await?.0
+            }
+            None => {
+                let federation_id =
+                    federation_id.expect("Invite code and federation ID cannot both be None");
+                let clients = self.clients.read().await;
+                clients
+                    .get(&federation_id)
+                    .ok_or(anyhow!("No federation exists"))?
+                    .clone()
+            }
+        };
         let mut gateways = BTreeMap::new();
 
         if let Ok(lnv1) = client.get_first_module::<LightningClientModule>() {
+            // Ensure the gateway cache is populated (needed for temp clients
+            // that haven't run the continuous cache update)
+            let _ = lnv1.update_gateway_cache().await;
             let lnv1_gateways_list = lnv1.list_gateways().await;
             let lnv1_gateways = lnv1_gateways_list
                 .into_iter()
@@ -4711,6 +4730,21 @@ impl Multimint {
     pub async fn set_fiat_currency(&self, fiat_currency: FiatCurrency) {
         let mut dbtx = self.db.begin_transaction().await;
         dbtx.insert_entry(&FiatCurrencyKey, &fiat_currency).await;
+        dbtx.commit_tx().await;
+    }
+
+    pub async fn get_show_msats(&self) -> bool {
+        let mut dbtx = self.db.begin_transaction_nc().await;
+        dbtx.get_value(&crate::db::ShowMsatsKey).await.is_some()
+    }
+
+    pub async fn set_show_msats(&self, show_msats: bool) {
+        let mut dbtx = self.db.begin_transaction().await;
+        if show_msats {
+            dbtx.insert_entry(&crate::db::ShowMsatsKey, &()).await;
+        } else {
+            dbtx.remove_entry(&crate::db::ShowMsatsKey).await;
+        }
         dbtx.commit_tx().await;
     }
 

@@ -58,8 +58,30 @@ class _LightningAddressDialogState extends State<_LightningAddressDialog> {
   Widget build(BuildContext context) {
     return AlertDialog(
       backgroundColor: Theme.of(context).colorScheme.surface,
-      title: Center(
-        child: Text(widget.titles[_currentPage], textAlign: TextAlign.center),
+      title: Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(
+            _currentPage == 0 ? Icons.flash_on : Icons.link,
+            color: Colors.amber,
+            size: 22,
+          ),
+          const SizedBox(width: 8),
+          Flexible(
+            child: Text(
+              _currentPage == 0
+                  ? widget.addresses[0]
+                  : getAbbreviatedText(widget.addresses[1]),
+              style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                fontWeight: FontWeight.w600,
+                letterSpacing: 0.5,
+              ),
+              textAlign: TextAlign.center,
+              overflow: TextOverflow.ellipsis,
+            ),
+          ),
+        ],
       ),
       content: SizedBox(
         width: 320,

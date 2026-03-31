@@ -11,7 +11,7 @@ import 'package:ecashapp/number_pad.dart';
 import 'package:ecashapp/onchain_send.dart';
 import 'package:ecashapp/pay_preview.dart';
 import 'package:ecashapp/screens/dashboard.dart';
-import 'package:ecashapp/fed_preview.dart';
+import 'package:ecashapp/screens/federation_info_screen.dart';
 import 'package:ecashapp/lib.dart';
 import 'package:ecashapp/multimint.dart';
 import 'package:ecashapp/providers/preferences_provider.dart';
@@ -517,18 +517,17 @@ class _MyAppState extends State<MyApp> {
     );
     if (!mounted) return;
 
-    showAppModalBottomSheet(
-      context: context,
-      childBuilder: () async {
-        return FederationPreview(
-          fed: _selectedFederation!,
-          welcomeMessage: meta.welcome,
-          imageUrl: meta.picture,
-          joinable: false,
-          guardians: meta.guardians,
-          onLeaveFederation: _leaveFederation,
-        );
-      },
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder:
+            (_) => FederationInfoScreen(
+              fed: _selectedFederation!,
+              welcomeMessage: meta.welcome,
+              imageUrl: meta.picture,
+              guardians: meta.guardians,
+              onLeaveFederation: _leaveFederation,
+            ),
+      ),
     );
   }
 
@@ -541,7 +540,7 @@ class _MyAppState extends State<MyApp> {
         key: ValueKey(_selectedFederation!.federationId),
         fed: _selectedFederation!,
         recovering: _isRecovering!,
-        onFederationTap: _showFederationPreview,
+        onLeaveFederation: _leaveFederation,
       );
     } else {
       if (recoverFederations) {
@@ -578,30 +577,50 @@ class _MyAppState extends State<MyApp> {
                   title: ValueListenableBuilder<List<PeerStatus>>(
                     valueListenable: _peerStatus,
                     builder: (context, peerStatus, _) {
-                      if (peerStatus.isEmpty) return const SizedBox.shrink();
+                      if (_selectedFederation == null) {
+                        return const SizedBox.shrink();
+                      }
                       return GestureDetector(
                         onTap: _showFederationPreview,
-                        child: Row(
+                        child: Column(
                           mainAxisSize: MainAxisSize.min,
-                          children:
-                              peerStatus.map((peer) {
-                                return Padding(
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: 4,
-                                  ),
-                                  child: Container(
-                                    width: 8,
-                                    height: 8,
-                                    decoration: BoxDecoration(
-                                      shape: BoxShape.circle,
-                                      color:
-                                          peer.online
-                                              ? Colors.green
-                                              : Colors.red,
-                                    ),
-                                  ),
-                                );
-                              }).toList(),
+                          children: [
+                            if (peerStatus.isNotEmpty)
+                              Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children:
+                                    peerStatus.map((peer) {
+                                      return Padding(
+                                        padding: const EdgeInsets.symmetric(
+                                          horizontal: 4,
+                                        ),
+                                        child: Container(
+                                          width: 8,
+                                          height: 8,
+                                          decoration: BoxDecoration(
+                                            shape: BoxShape.circle,
+                                            color:
+                                                peer.online
+                                                    ? Colors.green
+                                                    : Colors.red,
+                                          ),
+                                        ),
+                                      );
+                                    }).toList(),
+                              ),
+                            if (peerStatus.isNotEmpty)
+                              const SizedBox(height: 4),
+                            Text(
+                              _selectedFederation!.federationName.toUpperCase(),
+                              style: Theme.of(
+                                context,
+                              ).textTheme.bodySmall?.copyWith(
+                                color: Theme.of(context).colorScheme.primary,
+                                fontWeight: FontWeight.w600,
+                              ),
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ],
                         ),
                       );
                     },

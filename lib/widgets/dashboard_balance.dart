@@ -9,22 +9,24 @@ class DashboardBalance extends StatelessWidget {
   final BigInt? balanceMsats;
   final bool isLoading;
   final bool recovering;
-  final bool showMsats;
-  final VoidCallback onToggle;
   final Map<FiatCurrency, double> btcPrices;
   final bool isLoadingPrices;
   final bool pricesFailed;
+  final LightningAddressConfig? lnAddressConfig;
+  final VoidCallback? onLnAddressTap;
+  final VoidCallback? onWalletTap;
 
   const DashboardBalance({
     super.key,
     required this.balanceMsats,
     required this.isLoading,
     required this.recovering,
-    required this.showMsats,
-    required this.onToggle,
     required this.btcPrices,
     required this.isLoadingPrices,
     required this.pricesFailed,
+    this.lnAddressConfig,
+    this.onLnAddressTap,
+    this.onWalletTap,
   });
 
   @override
@@ -33,6 +35,9 @@ class DashboardBalance extends StatelessWidget {
         balanceMsats != null ? balanceMsats! ~/ BigInt.from(1000) : BigInt.zero;
     final fiatCurrency = context.select<PreferencesProvider, FiatCurrency>(
       (prefs) => prefs.fiatCurrency,
+    );
+    final showMsats = context.select<PreferencesProvider, bool>(
+      (prefs) => prefs.showMsats,
     );
     final fiatText = calculateFiatValue(
       btcPrices[fiatCurrency],
@@ -46,23 +51,42 @@ class DashboardBalance extends StatelessWidget {
     } else {
       return Center(
         child: GestureDetector(
-          onTap: onToggle,
+          onTap: onWalletTap,
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Text(
-                formatBalance(
-                  balanceMsats,
-                  showMsats,
-                  context.select<PreferencesProvider, BitcoinDisplay>(
-                    (prefs) => prefs.bitcoinDisplay,
+              Row(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
+                  if (onWalletTap != null) const SizedBox(width: 32),
+                  Flexible(
+                    child: Text(
+                      formatBalance(
+                        balanceMsats,
+                        showMsats,
+                        context.select<PreferencesProvider, BitcoinDisplay>(
+                          (prefs) => prefs.bitcoinDisplay,
+                        ),
+                      ),
+                      style: Theme.of(context).textTheme.displayLarge?.copyWith(
+                        color: Theme.of(context).colorScheme.primary,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 48,
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
                   ),
-                ),
-                style: Theme.of(context).textTheme.displayLarge?.copyWith(
-                  color: Theme.of(context).colorScheme.primary,
-                  fontWeight: FontWeight.bold,
-                ),
-                textAlign: TextAlign.center,
+                  if (onWalletTap != null)
+                    Padding(
+                      padding: const EdgeInsets.all(4),
+                      child: Icon(
+                        Icons.chevron_right,
+                        color: Theme.of(context).colorScheme.primary,
+                        size: 28,
+                      ),
+                    ),
+                ],
               ),
               if (isLoadingPrices)
                 Text(
@@ -79,9 +103,42 @@ class DashboardBalance extends StatelessWidget {
               else if (btcPrices.isNotEmpty)
                 Text(
                   fiatText,
-                  style: const TextStyle(fontSize: 24, color: Colors.grey),
+                  style: const TextStyle(fontSize: 28, color: Colors.grey),
                   textAlign: TextAlign.center,
                 ),
+              if (lnAddressConfig != null) ...[
+                const SizedBox(height: 10),
+                GestureDetector(
+                  onTap: onLnAddressTap,
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 8,
+                    ),
+                    decoration: BoxDecoration(
+                      color: Colors.white.withValues(alpha: 0.08),
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Icon(
+                          Icons.flash_on,
+                          color: Colors.amber,
+                          size: 16,
+                        ),
+                        const SizedBox(width: 6),
+                        Text(
+                          '${lnAddressConfig!.username}@${lnAddressConfig!.domain}',
+                          style: Theme.of(
+                            context,
+                          ).textTheme.bodyMedium?.copyWith(color: Colors.grey),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
             ],
           ),
         ),

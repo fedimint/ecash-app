@@ -11,11 +11,15 @@ import 'package:ecashapp/extensions/build_context_l10n.dart';
 
 class GatewaysList extends StatelessWidget {
   final FederationSelector fed;
+  final String? invite;
 
-  const GatewaysList({super.key, required this.fed});
+  const GatewaysList({super.key, required this.fed, this.invite});
 
   Future<List<FedimintGateway>> _fetchGateways() async {
-    return await listGateways(federationId: fed.federationId);
+    return await listGateways(
+      invite: invite,
+      federationId: invite == null ? fed.federationId : null,
+    );
   }
 
   @override
