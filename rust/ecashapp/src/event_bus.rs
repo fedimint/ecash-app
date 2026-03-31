@@ -43,6 +43,12 @@ where
         let _ = self.tx.send(event);
     }
 
+    /// Clears all events from history
+    pub async fn clear_history(&self) {
+        let mut hist = self.history.write().await;
+        hist.clear();
+    }
+
     /// Returns a stream that yields all events in history, then all future events
     /// until the channel is closed
     pub fn subscribe(&self) -> Pin<Box<impl Stream<Item = T> + Send + '_>> {

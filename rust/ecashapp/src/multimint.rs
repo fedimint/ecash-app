@@ -4688,6 +4688,8 @@ impl Multimint {
                 }
             }
         }
+
+        get_event_bus().clear_history().await;
     }
 
     pub async fn get_invite_code(
