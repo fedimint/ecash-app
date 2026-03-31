@@ -569,7 +569,7 @@ class _ScanQRPageState extends State<ScanQRPage> {
           children: [
             Positioned.fill(
               child:
-                  (_permissionDenied || Platform.isLinux)
+                  (_permissionDenied || Platform.isLinux || Platform.isMacOS)
                       ? Center(
                         child: Column(
                           mainAxisAlignment: MainAxisAlignment.center,
@@ -581,13 +581,15 @@ class _ScanQRPageState extends State<ScanQRPage> {
                             ),
                             const SizedBox(height: 16),
                             Text(
-                              Platform.isLinux
-                                  ? context.l10n.cameraScanNotSupportedLinux
+                              (Platform.isLinux || Platform.isMacOS)
+                                  ? context.l10n.cameraScanNotSupportedDesktop
                                   : context.l10n.cameraPermissionRequired,
                               textAlign: TextAlign.center,
                               style: const TextStyle(color: Colors.grey),
                             ),
-                            if (_permissionDenied && !Platform.isLinux) ...[
+                            if (_permissionDenied &&
+                                !Platform.isLinux &&
+                                !Platform.isMacOS) ...[
                               const SizedBox(height: 16),
                               ElevatedButton(
                                 onPressed: () async {

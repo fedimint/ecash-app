@@ -373,6 +373,7 @@
   "incorrectPin": "PIN incorrecto",
   "continueButton": "Continuar",
   "cameraScanNotSupportedLinux": "El escaneo de cámara no es compatible en Linux.\nUsa el botón \"Pegar del portapapeles\" de abajo.",
+  "cameraScanNotSupportedDesktop": "El escaneo de cámara no es compatible en escritorio.\nUsa el botón \"Pegar del portapapeles\" de abajo.",
   "cameraPermissionRequired": "Se requiere permiso de cámara para escanear códigos QR",
   "openSettings": "Abrir configuración",
   "scanQrCodeTooltip": "Escanear código QR",
