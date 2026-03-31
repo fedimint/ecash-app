@@ -587,7 +587,9 @@ class _ScanQRPageState extends State<ScanQRPage> {
                               textAlign: TextAlign.center,
                               style: const TextStyle(color: Colors.grey),
                             ),
-                            if (_permissionDenied && !Platform.isLinux && !Platform.isMacOS) ...[
+                            if (_permissionDenied &&
+                                !Platform.isLinux &&
+                                !Platform.isMacOS) ...[
                               const SizedBox(height: 16),
                               ElevatedButton(
                                 onPressed: () async {
