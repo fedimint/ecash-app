@@ -31,6 +31,7 @@ use fedimint_core::{
     util::SafeUrl,
     Amount,
 };
+use fedimint_eventlog::Event;
 use fedimint_ln_client::{
     InternalPayState, LightningClientInit, LightningClientModule, LightningOperationMetaPay,
     LightningOperationMetaVariant, LnPayState, LnReceiveState,
@@ -622,6 +623,11 @@ impl Multimint {
                     let batch = client.get_event_log(Some(position), 100).await;
 
                     for event in &batch {
+                        if event.kind != ReceivePaymentEvent::KIND {
+                            position = event.id().saturating_add(1);
+                            continue;
+                        }
+
                         if let Some(receive_event) =
                             event.to_event::<ReceivePaymentEvent>()
                         {
