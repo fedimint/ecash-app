@@ -1311,6 +1311,9 @@
   "cameraScanNotSupportedLinux": "Camera scanning is not supported on Linux.\nUse the \"Paste from Clipboard\" button below.",
   "@cameraScanNotSupportedLinux": {},
 
+  "cameraScanNotSupportedDesktop": "Camera scanning is not supported on desktop.\nUse the \"Paste from Clipboard\" button below.",
+  "@cameraScanNotSupportedDesktop": {},
+
   "cameraPermissionRequired": "Camera permission is required to scan QR codes",
   "@cameraPermissionRequired": {},
 
