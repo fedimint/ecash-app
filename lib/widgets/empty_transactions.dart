@@ -38,10 +38,7 @@ class EmptyTransactionsState extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Animate(
-      effects: [
-        ScaleEffect(duration: 200.ms, curve: Curves.easeOutBack),
-        FadeEffect(duration: 200.ms, curve: Curves.easeIn),
-      ],
+      effects: [FadeEffect(duration: 200.ms, curve: Curves.easeIn)],
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [

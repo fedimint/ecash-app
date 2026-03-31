@@ -384,62 +384,6 @@ class _DashboardState extends State<Dashboard> {
                     const Spacer(),
                   ],
                 )
-                : (!_isLoadingTransactions && _recentTransactions.isEmpty)
-                ? Column(
-                  children: [
-                    const SizedBox(height: 48),
-                    DashboardBalance(
-                      balanceMsats: balanceMsats,
-                      isLoading: isLoadingBalance,
-                      recovering: recovering,
-                      btcPrices: _btcPrices,
-                      isLoadingPrices: _isLoadingPrices,
-                      pricesFailed: _pricesFailed,
-                      lnAddressConfig: _lnAddressConfig,
-                      onLnAddressTap:
-                          _lnAddressConfig != null
-                              ? () => showLightningAddressDialog(
-                                context,
-                                _lnAddressConfig!.username,
-                                _lnAddressConfig!.domain,
-                                _lnAddressConfig!.lnurl,
-                              )
-                              : null,
-                      onWalletTap: _openMyWallet,
-                    ),
-                    if (widget.fed.network != null &&
-                        widget.fed.network!.toLowerCase() != 'bitcoin')
-                      Padding(
-                        padding: const EdgeInsets.only(top: 4.0),
-                        child: Text(
-                          context.l10n.testNetworkMessage,
-                          style: Theme.of(
-                            context,
-                          ).textTheme.bodySmall?.copyWith(
-                            color: Theme.of(context).colorScheme.secondary,
-                            fontStyle: FontStyle.italic,
-                          ),
-                          textAlign: TextAlign.center,
-                        ),
-                      ),
-                    const SizedBox(height: 32),
-                    Align(
-                      alignment: Alignment.centerLeft,
-                      child: Text(
-                        context.l10n.recentActivity,
-                        style: Theme.of(
-                          context,
-                        ).textTheme.titleSmall?.copyWith(color: Colors.grey),
-                      ),
-                    ),
-                    const SizedBox(height: 24),
-                    EmptyTransactionsState(
-                      paymentType: _selectedPaymentType,
-                      onReceivePressed: _onReceivePressed,
-                    ),
-                    const Spacer(),
-                  ],
-                )
                 : ListView(
                   children: [
                     const SizedBox(height: 48),
@@ -516,6 +460,11 @@ class _DashboardState extends State<Dashboard> {
                         padding: EdgeInsets.symmetric(vertical: 32),
                         child: Center(child: CircularProgressIndicator()),
                       )
+                    else if (_recentTransactions.isEmpty)
+                      EmptyTransactionsState(
+                        paymentType: _selectedPaymentType,
+                        onReceivePressed: _onReceivePressed,
+                      )
                     else ...[
                       ..._recentTransactions
                           .take(_maxVisibleTransactions(context))
@@ -533,6 +482,7 @@ class _DashboardState extends State<Dashboard> {
           await _loadProgress(PaymentType.values[index]);
           setState(() {
             _selectedPaymentType = PaymentType.values[index];
+            _recentTransactions = [];
             _isLoadingTransactions = true;
           });
           _loadRecentTransactions();
