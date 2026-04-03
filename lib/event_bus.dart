@@ -7,7 +7,7 @@ import 'frb_generated.dart';
 import 'package:flutter_rust_bridge/flutter_rust_bridge_for_generated.dart';
 
 // These function are ignored because they are on traits that is not defined in current crate (put an empty `#[frb]` on it to unignore): `clone`
-// These functions are ignored (category: IgnoreBecauseOwnerTyShouldIgnore): `new`, `publish`, `subscribe`
+// These functions are ignored (category: IgnoreBecauseOwnerTyShouldIgnore): `clear_history`, `new`, `publish`, `subscribe`
 
 // Rust type: RustOpaqueMoi<flutter_rust_bridge::for_generated::RustAutoOpaqueInner<EventBus < MultimintEvent >>>
 abstract class EventBusMultimintEvent implements RustOpaqueInterface {}

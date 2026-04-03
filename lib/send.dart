@@ -10,7 +10,6 @@ import 'package:flutter/material.dart';
 class SendPayment extends StatefulWidget {
   final FederationSelector fed;
   final String? invoice;
-  final String? lnAddress;
   final BigInt amountMsats;
   final String? gateway;
   final bool? isLnv2;
@@ -23,7 +22,6 @@ class SendPayment extends StatefulWidget {
     this.gateway,
     this.isLnv2,
     this.invoice,
-    this.lnAddress,
     this.amountMsatsWithFees,
   });
 
@@ -41,24 +39,14 @@ class _SendPaymentState extends State<SendPayment> {
   }
 
   Future<OperationId> _sendPayment() async {
-    if (widget.invoice != null) {
-      final operationId = await send(
-        federationId: widget.fed.federationId,
-        invoice: widget.invoice!,
-        gateway: widget.gateway!,
-        isLnv2: widget.isLnv2!,
-        amountWithFees: widget.amountMsatsWithFees!,
-      );
-      return operationId;
-    } else {
-      // When sending via LN address, gateway is selected internally
-      final operationId = await sendLnaddress(
-        federationId: widget.fed.federationId,
-        amountMsats: widget.amountMsats,
-        address: widget.lnAddress!,
-      );
-      return operationId;
-    }
+    final operationId = await send(
+      federationId: widget.fed.federationId,
+      invoice: widget.invoice!,
+      gateway: widget.gateway!,
+      isLnv2: widget.isLnv2!,
+      amountWithFees: widget.amountMsatsWithFees!,
+    );
+    return operationId;
   }
 
   void _payInvoice() async {
