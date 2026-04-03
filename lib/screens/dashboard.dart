@@ -21,6 +21,7 @@ import 'package:ecashapp/models.dart';
 import 'package:ecashapp/screens/my_wallet_screen.dart';
 import 'package:ecashapp/widgets/dashboard_balance.dart';
 import 'package:ecashapp/widgets/empty_transactions.dart';
+import 'package:ecashapp/widgets/pending_deposit_item.dart';
 import 'package:ecashapp/widgets/transaction_item.dart';
 
 class Dashboard extends StatefulWidget {
@@ -54,6 +55,9 @@ class _DashboardState extends State<Dashboard> {
   List<Transaction> _recentTransactions = [];
   bool _isLoadingTransactions = true;
 
+  final Map<String, DepositEventKind> _depositMap = {};
+  late final StreamSubscription<DepositEventKind> _depositSubscription;
+
   late Stream<MultimintEvent> events;
   late StreamSubscription<MultimintEvent> _subscription;
 
@@ -65,6 +69,38 @@ class _DashboardState extends State<Dashboard> {
     _loadBtcPrices();
     _loadLightningAddress();
     _loadRecentTransactions();
+
+    final depositEvents =
+        subscribeDeposits(
+          federationId: widget.fed.federationId,
+        ).asBroadcastStream();
+
+    _depositSubscription = depositEvents.listen((e) {
+      String txOutpoint;
+      switch (e) {
+        case DepositEventKind_Mempool(field0: final evt):
+          txOutpoint = evt.outpoint;
+        case DepositEventKind_AwaitingConfs(field0: final evt):
+          txOutpoint = evt.outpoint;
+        case DepositEventKind_Confirmed(field0: final evt):
+          txOutpoint = evt.outpoint;
+        case DepositEventKind_Claimed(field0: final evt):
+          txOutpoint = evt.outpoint;
+      }
+      if (!mounted) return;
+      if (e is DepositEventKind_Claimed) {
+        setState(() => _depositMap.remove(txOutpoint));
+        // Delay to ensure the claimed deposit is in the operation log
+        Timer(const Duration(milliseconds: 100), () {
+          if (mounted) {
+            _loadBalance();
+            _loadRecentTransactions();
+          }
+        });
+      } else {
+        setState(() => _depositMap[txOutpoint] = e);
+      }
+    });
 
     events = subscribeMultimintEvents().asBroadcastStream();
     _subscription = events.listen((event) async {
@@ -122,8 +158,9 @@ class _DashboardState extends State<Dashboard> {
 
   @override
   void dispose() {
-    super.dispose();
+    _depositSubscription.cancel();
     _subscription.cancel();
+    super.dispose();
   }
 
   void _scheduleAction(VoidCallback action) {
@@ -309,6 +346,23 @@ class _DashboardState extends State<Dashboard> {
     }
   }
 
+  List<DepositEventKind> get _pendingDeposits {
+    if (_selectedPaymentType != PaymentType.onchain) return [];
+    final pending = _depositMap.values.toList();
+    pending.sort((a, b) {
+      final aM = a is DepositEventKind_Mempool;
+      final bM = b is DepositEventKind_Mempool;
+      if (aM && !bM) return -1;
+      if (!aM && bM) return 1;
+      final na =
+          a is DepositEventKind_AwaitingConfs ? a.field0.needed : BigInt.zero;
+      final nb =
+          b is DepositEventKind_AwaitingConfs ? b.field0.needed : BigInt.zero;
+      return nb.compareTo(na);
+    });
+    return pending;
+  }
+
   int _maxVisibleTransactions(BuildContext context) {
     final screenHeight = MediaQuery.of(context).size.height;
     // Approximate fixed heights: top padding (48) + balance widget (~120) +
@@ -455,17 +509,21 @@ class _DashboardState extends State<Dashboard> {
                       ],
                     ),
                     const SizedBox(height: 8),
-                    if (_isLoadingTransactions)
+                    if (_isLoadingTransactions && _pendingDeposits.isEmpty)
                       const Padding(
                         padding: EdgeInsets.symmetric(vertical: 32),
                         child: Center(child: CircularProgressIndicator()),
                       )
-                    else if (_recentTransactions.isEmpty)
+                    else if (_recentTransactions.isEmpty &&
+                        _pendingDeposits.isEmpty)
                       EmptyTransactionsState(
                         paymentType: _selectedPaymentType,
                         onReceivePressed: _onReceivePressed,
                       )
                     else ...[
+                      ..._pendingDeposits.map(
+                        (e) => PendingDepositItem(event: e),
+                      ),
                       ..._recentTransactions
                           .take(_maxVisibleTransactions(context))
                           .map(
