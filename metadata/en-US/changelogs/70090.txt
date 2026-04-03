@@ -1,0 +1,5 @@
+v0.7.0
+- New Dashboard UI
+- New Recovery UI
+- New My Wallet screen
+- Lightning Addresses are now recoverable
