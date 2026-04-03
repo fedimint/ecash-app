@@ -33,15 +33,15 @@ It’s built with **Flutter** for the UI and **Rust** (via [Flutter Rust Bridge]
 ## 📸 Screenshots
 
 <p align="center">
-  <img src="assets/screenshots/multimint.png" alt="Federation Selector" width="250"/>
-  <img src="assets/screenshots/claim_lnaddress.png" alt="Lightning Address" width="250"/>
+  <img src="assets/screenshots/multimint2.png" alt="Federation Selector" width="250"/>
+  <img src="assets/screenshots/dashboard.png" alt="Lightning Address" width="250"/>
   <img src="assets/screenshots/nostr_wallet_connect.png" alt="Nostr Wallet Connect" width="250"/>
-  <img src="assets/screenshots/addresses_received.png" alt="Addresses" width="250"/>
-  <img src="assets/screenshots/fed_preview_joined.png" alt="Federation Preview" width="250"/>
-  <img src="assets/screenshots/gateways2.png" alt="Gateways" width="250"/>
+  <img src="assets/screenshots/my_wallet.png" alt="Addresses" width="250"/>
+  <img src="assets/screenshots/fed_preview_joined3.png" alt="Federation Preview" width="250"/>
+  <img src="assets/screenshots/contacts.png" alt="Gateways" width="250"/>
   <img src="assets/screenshots/lightning_request.png" alt="Lightning Request" width="250"/>
   <img src="assets/screenshots/rfq.png" alt="Request for Quote" width="250"/>
-  <img src="assets/screenshots/ecash_receive2.png" alt="Ecash Receive" width="250"/>
+  <img src="assets/screenshots/transactions.png" alt="Ecash Receive" width="250"/>
 </p>
 
 ---
