@@ -53,7 +53,12 @@ export ANDROID_NDK_ROOT="$ANDROID_NDK_HOME"
 export ANDROID_NDK="$ANDROID_NDK_HOME"
 
 cd "$RUST_DIR"
-cargo ndk -t arm64-v8a -o "$JNI_LIBS_DIR" build --release --target aarch64-linux-android
+if [[ "$BUILD_MODE" == "debug" ]]; then
+    RUST_PROFILE="release-dev"
+else
+    RUST_PROFILE="release"
+fi
+cargo ndk -t arm64-v8a -o "$JNI_LIBS_DIR" build --profile "$RUST_PROFILE" --target aarch64-linux-android
 
 # Move .so files to correct location
 find "$JNI_LIBS_DIR" -type f -name '*.so' -exec mv {} "$JNI_LIBS_DIR" \;

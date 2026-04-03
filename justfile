@@ -12,7 +12,7 @@ build-android-arm:
   $ROOT/scripts/build-arm-android.sh
 
 build-linux:
-  $ROOT/scripts/build-linux.sh
+  $ROOT/scripts/build-linux.sh release-dev
 
 build-debug-android *args:
   $ROOT/docker/build-apk.sh debug {{args}}

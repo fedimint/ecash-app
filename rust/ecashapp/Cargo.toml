@@ -63,3 +63,18 @@ tikv-jemalloc-sys = { opt-level = 3 }
 librocksdb-sys = { opt-level = 3 }
 secp256k1 = { opt-level = 3}
 secp256k1-sys = { opt-level = 3}
+
+# Fast development builds that are still usable (crypto code needs optimization)
+# Use via: cargo build --profile release-dev
+[profile.release-dev]
+inherits = "release"
+opt-level = 1
+lto = false
+codegen-units = 16
+incremental = true
+
+[profile.release-dev.package]
+tikv-jemalloc-sys = { opt-level = 3 }
+librocksdb-sys = { opt-level = 3 }
+secp256k1 = { opt-level = 3 }
+secp256k1-sys = { opt-level = 3 }
