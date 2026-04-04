@@ -23,15 +23,13 @@ images:
  - ./assets/screenshots/fed_preview_joined3.png
  - ./assets/screenshots/recovering.png
  - ./assets/screenshots/multimint2.png
- - ./assets/screenshots/lightning-request.png
+ - ./assets/screenshots/lightning_request.png
  - ./assets/screenshots/nostr_wallet_connect.png
  - ./assets/screenshots/contacts.png
  - ./assets/screenshots/rfq.png
 icon: ./assets/images/ecash-app.png
-tags: fedimint e-cash ecash lightning onchain bitcoin
+tags: [fedimint, e-cash, ecash, lightning, onchain, bitcoin]
 license: MIT
 release_notes: CHANGELOG.md
-remote_metadata:
- - github
 assets:
  - ecash-app-\d+\.\d+\.\d+\+\d+-[0-9a-f]+\.apk
