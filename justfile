@@ -33,6 +33,9 @@ build-macos:
 run-macos: build-macos
   $ROOT/scripts/run-macos.sh
 
+package-macos:
+  $ROOT/scripts/package-macos.sh
+
 run: build-linux
   flutter run
 
