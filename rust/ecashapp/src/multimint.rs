@@ -1090,7 +1090,13 @@ impl Multimint {
 
                             if should_sync {
                                 let nostr_client = get_nostr_client();
-                                let nostr = nostr_client.read().await;
+                                // Clone the NostrClient and drop the RwLock guard immediately
+                                // to avoid holding the NOSTR read lock during slow network
+                                // operations in sync_contacts(). Holding the read lock would
+                                // block any pending write lock, which in turn blocks new
+                                // readers (like get_nwc_connection_info) due to Tokio's
+                                // write-preferring RwLock.
+                                let nostr = nostr_client.read().await.clone();
                                 let _ = nostr.sync_contacts().await;
                             }
                         }
