@@ -12,7 +12,6 @@ use bitcoin::hashes::{sha256, Hash};
 use bitcoin::key::rand::{seq::SliceRandom, thread_rng};
 use fedimint_bip39::{Bip39RootSecretStrategy, Language, Mnemonic};
 use fedimint_client::{
-    db::ChronologicalOperationLogKey,
     module::{
         module::{recovery::RecoveryProgress, ClientModule as _},
         oplog::OperationLogEntry,
@@ -31,22 +30,19 @@ use fedimint_core::{
     util::SafeUrl,
     Amount,
 };
-use fedimint_eventlog::Event;
 use fedimint_ln_client::{
     InternalPayState, LightningClientInit, LightningClientModule, LightningOperationMetaPay,
     LightningOperationMetaVariant, LnPayState, LnReceiveState,
 };
 use fedimint_ln_common::LightningGateway;
 use fedimint_lnv2_client::{
-    events::ReceivePaymentEvent, FinalReceiveOperationState, LightningOperationMeta,
-    ReceiveOperationState, SendOperationState,
+    FinalReceiveOperationState, LightningOperationMeta, ReceiveOperationState, SendOperationState,
 };
 use fedimint_lnv2_common::{gateway_api::PaymentFee, Bolt11InvoiceDescription};
 use fedimint_meta_client::{common::DEFAULT_META_KEY, MetaClientInit};
 use fedimint_mint_client::{
     api::MintFederationApi, represent_amount, MintClientInit, MintClientModule, MintOperationMeta,
-    MintOperationMetaVariant, OOBNotes, ReissueExternalNotesState, SelectNotesWithAtleastAmount,
-    SpendOOBState,
+    OOBNotes, ReissueExternalNotesState, SelectNotesWithAtleastAmount, SpendOOBState,
 };
 use fedimint_mint_common::config::MintClientConfig;
 use fedimint_wallet_client::client_db::TweakIdx;
@@ -67,14 +63,15 @@ use tokio::{
 };
 use tokio::{sync::RwLock, time::timeout};
 
+use crate::events::{apply_update, parse_event_log_entry, ParsedEvent, ParsedPayment};
 use crate::{
     anyhow,
     db::{
         BitcoinDisplay, BitcoinDisplayKey, BtcPrice, BtcPriceKey, BtcPrices, BtcPricesKey,
-        Connector, ContactSyncConfigKey, FederationBackupKey, FederationMetaKey,
-        FederationMetaKeyPrefix, FiatCurrency, FiatCurrencyKey, LightningAddressConfig,
-        LightningAddressKey, LightningAddressKeyPrefix, PinCodeHashKey, RequirePinForSpendingKey,
-        SchemaVersionKey,
+        Connector, ContactSyncConfigKey, EventLogEntryKey, EventLogEntryPrefix,
+        FederationBackupKey, FederationMetaKey, FederationMetaKeyPrefix, FiatCurrency,
+        FiatCurrencyKey, LightningAddressConfig, LightningAddressKey, LightningAddressKeyPrefix,
+        PinCodeHashKey, RequirePinForSpendingKey, SchemaVersionKey,
     },
     error_to_flutter, get_nostr_client, info_to_flutter, FederationConfig, FederationConfigKey,
     FederationConfigKeyPrefix, SeedPhraseAckKey,
@@ -125,7 +122,6 @@ pub struct Multimint {
     task_group: TaskGroup,
     pegin_address_monitor_tx: UnboundedSender<(FederationId, TweakIdx)>,
     recovery_progress: Arc<RwLock<BTreeMap<FederationId, BTreeMap<u16, RecoveryProgress>>>>,
-    internal_ecash_spends: Arc<RwLock<BTreeSet<OperationId>>>,
     allocated_bitcoin_addresses:
         Arc<RwLock<BTreeMap<FederationId, BTreeMap<TweakIdx, (String, Option<u64>)>>>>,
     recurringd_invoices: Arc<RwLock<BTreeSet<OperationId>>>,
@@ -466,7 +462,6 @@ impl Multimint {
             task_group: TaskGroup::new(),
             pegin_address_monitor_tx: pegin_address_monitor_tx.clone(),
             recovery_progress: Arc::new(RwLock::new(BTreeMap::new())),
-            internal_ecash_spends: Arc::new(RwLock::new(BTreeSet::new())),
             allocated_bitcoin_addresses: Arc::new(RwLock::new(BTreeMap::new())),
             recurringd_invoices: Arc::new(RwLock::new(BTreeSet::new())),
         };
@@ -534,7 +529,7 @@ impl Multimint {
 
             self.clients.write().await.insert(id.id, client.clone());
 
-            self.spawn_lnv2_event_listener(client.clone(), id.id);
+            self.spawn_event_log_listener(client.clone(), id.id);
             self.finish_active_subscriptions(client.clone(), id.id)
                 .await;
             if client.has_pending_recoveries() {
@@ -592,84 +587,91 @@ impl Multimint {
             });
     }
 
-    fn spawn_lnv2_event_listener(&self, client: ClientHandleArc, federation_id: FederationId) {
+    fn spawn_event_log_listener(&self, client: ClientHandleArc, federation_id: FederationId) {
         let event_bus = get_event_bus();
+        let db = self.db.clone();
         let mut log_event_added_rx = client.log_event_added_rx();
         self.task_group
-            .spawn_cancellable("lnv2 event listener", async move {
+            .spawn_cancellable("event log listener", async move {
                 info_to_flutter(format!(
-                    "Spawning LNv2 event listener for federation {federation_id}"
+                    "Spawning event log listener for federation {federation_id}"
                 ))
                 .await;
 
-                // Start cursor at the end of the existing log so we only process new events
-                let existing = client.get_event_log(None, u64::MAX).await;
-                let mut position = existing
+                // Resume from last persisted event in local DB
+                let entries = db
+                    .begin_transaction_nc()
+                    .await
+                    .find_by_prefix(&EventLogEntryPrefix(federation_id))
+                    .await
+                    .collect::<Vec<_>>()
+                    .await;
+
+                let mut position = entries
                     .last()
-                    .map(|e| e.id().saturating_add(1))
+                    .map(|(key, _)| key.1.saturating_add(1))
                     .unwrap_or(fedimint_eventlog::EventLogId::LOG_START);
 
                 loop {
-                    // Block until new events are added to the persistent log
-                    if log_event_added_rx.changed().await.is_err() {
-                        info_to_flutter(format!(
-                            "LNv2 event listener channel closed for {federation_id}"
-                        ))
-                        .await;
-                        break;
-                    }
+                    let changed = log_event_added_rx.changed();
 
-                    // Read all new events from our cursor position
                     let batch = client.get_event_log(Some(position), 100).await;
 
-                    for event in &batch {
-                        if event.kind != ReceivePaymentEvent::KIND {
-                            position = event.id().saturating_add(1);
+                    for persisted_entry in &batch {
+                        position = persisted_entry.id().saturating_add(1);
+
+                        // Only persist events we can parse
+                        let Some(parsed) = parse_event_log_entry(persisted_entry.as_raw()) else {
                             continue;
+                        };
+
+                        let mut dbtx = db.begin_transaction().await;
+                        dbtx.insert_entry(
+                            &EventLogEntryKey(federation_id, persisted_entry.id()),
+                            persisted_entry.as_raw(),
+                        )
+                        .await;
+                        if dbtx.commit_tx_result().await.is_err() {
+                            return;
                         }
 
-                        if let Some(receive_event) =
-                            event.to_event::<ReceivePaymentEvent>()
-                        {
-                            let amount_msats = receive_event.amount.msats;
-                            let operation_id = receive_event.operation_id;
-                            info_to_flutter(format!(
-                                "LNv2 receive event: {amount_msats} msats, op={operation_id:?} for {federation_id}"
-                            ))
-                            .await;
-
-                            // Wait for the claim to finalize before notifying
-                            if let Ok(lnv2) = client.get_first_module::<fedimint_lnv2_client::LightningClientModule>() {
-                                match lnv2.await_final_receive_operation_state(operation_id).await {
-                                    Ok(FinalReceiveOperationState::Claimed) => {
-                                        info_to_flutter(format!(
-                                            "LNv2 receive claimed: {amount_msats} msats for {federation_id}"
-                                        ))
-                                        .await;
+                        // Publish MultimintEvent for Flutter toast notifications
+                        match &parsed {
+                            ParsedEvent::Payment(payment) => {
+                                if payment.incoming && payment.success == Some(true) {
+                                    if payment.module == "lnv2" {
                                         let lightning_event =
                                             LightningEventKind::InvoicePaid(InvoicePaidEvent {
-                                                amount_msats,
+                                                amount_msats: payment.amount_msats,
                                             });
-                                        let multimint_event =
-                                            MultimintEvent::Lightning((federation_id, lightning_event));
-                                        event_bus.publish(multimint_event).await;
-                                    }
-                                    Ok(state) => {
-                                        info_to_flutter(format!(
-                                            "LNv2 receive ended in non-claimed state: {state:?} for {federation_id}"
-                                        ))
-                                        .await;
-                                    }
-                                    Err(e) => {
-                                        error_to_flutter(format!(
-                                            "LNv2 receive await error: {e:?} for {federation_id}"
-                                        ))
-                                        .await;
+                                        event_bus
+                                            .publish(MultimintEvent::Lightning((
+                                                federation_id,
+                                                lightning_event,
+                                            )))
+                                            .await;
+                                    } else if payment.module == "mint" {
+                                        event_bus
+                                            .publish(MultimintEvent::Ecash((
+                                                federation_id,
+                                                payment.amount_msats,
+                                            )))
+                                            .await;
                                     }
                                 }
                             }
+                            ParsedEvent::Update { .. } => {}
                         }
-                        position = event.id().saturating_add(1);
+                    }
+
+                    if batch.len() < 100 {
+                        if changed.await.is_err() {
+                            info_to_flutter(format!(
+                                "Event log listener channel closed for {federation_id}"
+                            ))
+                            .await;
+                            break;
+                        }
                     }
                 }
             });
@@ -1496,7 +1498,7 @@ impl Multimint {
             .await
             .insert(federation_id, client.clone());
 
-        self.spawn_lnv2_event_listener(client, federation_id);
+        self.spawn_event_log_listener(client, federation_id);
 
         let mut dbtx = self.db.begin_transaction().await;
         dbtx.insert_entry(
@@ -2668,332 +2670,327 @@ impl Multimint {
             .expect("No federation exists")
             .clone();
 
-        let mut collected = Vec::new();
-        let mut next_key = timestamp.map(|timestamp| ChronologicalOperationLogKey {
-            creation_time: UNIX_EPOCH + Duration::from_millis(timestamp),
-            operation_id: OperationId(
-                operation_id
-                    .expect("Invalid operation")
-                    .try_into()
-                    .expect("Invalid operation"),
-            ),
-        });
+        // 1. Read event log entries from local DB, filtering by module kind
+        let entries: Vec<_> = self
+            .db
+            .begin_transaction_nc()
+            .await
+            .find_by_prefix(&EventLogEntryPrefix(*federation_id))
+            .await
+            .filter(|(_key, entry)| {
+                let dominated = entry
+                    .module_kind()
+                    .map(|k| modules.iter().any(|m| k.as_str() == m))
+                    .unwrap_or(false);
+                async move { dominated }
+            })
+            .collect()
+            .await;
 
-        while collected.len() < 10 {
-            let page = client
+        // 2. Parse and fold updates into payments
+        let mut payments: Vec<ParsedPayment> = Vec::new();
+        for (_key, entry) in &entries {
+            if let Some(parsed) = parse_event_log_entry(entry) {
+                match parsed {
+                    ParsedEvent::Payment(payment) => {
+                        payments.push(payment);
+                    }
+                    ParsedEvent::Update {
+                        operation_id,
+                        success,
+                        oob,
+                    } => {
+                        apply_update(&mut payments, &operation_id, success, oob);
+                    }
+                }
+            }
+        }
+
+        // 3. Only include completed payments, reverse to get newest first
+        payments.retain(|p| p.success == Some(true));
+        payments.reverse();
+
+        // 4. Apply cursor-based pagination using timestamp + operation_id
+        let cursor_op_id = operation_id.and_then(|bytes| bytes.try_into().ok().map(OperationId));
+        let start_idx = if let Some(ts) = timestamp {
+            let ts = ts as i64;
+            payments
+                .iter()
+                .position(|p| {
+                    p.timestamp_ms < ts
+                        || (p.timestamp_ms == ts
+                            && cursor_op_id.map_or(true, |cursor| p.operation_id < cursor))
+                })
+                .unwrap_or(payments.len())
+        } else {
+            0
+        };
+
+        // 5. Convert ParsedPayment → Transaction with operation log enrichment
+        let mut collected = Vec::new();
+        for payment in payments.into_iter().skip(start_idx).take(10) {
+            let op_log_entry = client
                 .operation_log()
-                .paginate_operations_rev(50, next_key)
+                .get_operation(payment.operation_id)
                 .await;
 
-            if page.is_empty() {
-                break;
-            }
-
-            for (key, op_log_val) in &page {
-                if collected.len() >= 10 {
-                    break;
-                }
-
-                if !modules.contains(&op_log_val.operation_module_kind().to_string()) {
-                    continue;
-                }
-
-                let timestamp = key
-                    .creation_time
-                    .duration_since(UNIX_EPOCH)
-                    .expect("Cannot be before unix epoch")
-                    .as_millis() as u64;
-
-                let tx = match op_log_val.operation_module_kind() {
-                    "lnv2" => {
-                        let meta = op_log_val.meta::<LightningOperationMeta>();
-                        match meta {
-                            LightningOperationMeta::Receive(receive) => {
-                                let outcome = op_log_val.outcome::<ReceiveOperationState>();
-                                let fedimint_lnv2_common::LightningInvoice::Bolt11(bolt11) =
-                                    receive.invoice;
-                                if let Some(ReceiveOperationState::Claimed) = outcome {
-                                    let amount = from_value::<Amount>(
-                                        receive
-                                            .custom_meta
-                                            .get("amount")
-                                            .expect("Field missing lightning receive custom meta")
-                                            .clone(),
-                                    )
-                                    .expect("Could not parse to Amount")
-                                    .msats;
-                                    let amount_with_fees = from_value::<Amount>(
-                                        receive
-                                            .custom_meta
-                                            .get("amount_with_fees")
-                                            .expect("Field missing lightning receive custom meta")
-                                            .clone(),
-                                    )
-                                    .expect("Could not parse to Amount")
-                                    .msats;
-                                    Some(Transaction {
-                                        kind: TransactionKind::LightningReceive {
-                                            fees: amount_with_fees - amount,
-                                            gateway: receive.gateway.to_string(),
-                                            payee_pubkey: bolt11.get_payee_pub_key().to_string(),
-                                            payment_hash: bolt11.payment_hash().to_string(),
-                                        },
-                                        amount,
-                                        timestamp,
-                                        operation_id: key.operation_id.0.to_vec(),
-                                    })
-                                } else {
-                                    None
-                                }
-                            }
-                            LightningOperationMeta::Send(send) => {
-                                let outcome = op_log_val.outcome::<SendOperationState>();
-                                let fedimint_lnv2_common::LightningInvoice::Bolt11(bolt11) =
-                                    send.invoice;
-                                match outcome {
-                                    Some(SendOperationState::Success(preimage)) => {
-                                        let amount_with_fees = from_value::<u64>(
-                                            send.custom_meta
-                                                .get("amount_with_fees")
-                                                .expect(
-                                                    "Field missing lightning receive custom meta",
-                                                )
-                                                .clone(),
-                                        )
-                                        .expect("Could not parse to u64");
-
-                                        let ln_address = send
-                                            .custom_meta
-                                            .get("ln_address")
-                                            .and_then(|v| from_value::<String>(v.clone()).ok());
-
-                                        Some(Transaction {
-                                            kind: TransactionKind::LightningSend {
-                                                fees: amount_with_fees - send.contract.amount.msats,
-                                                gateway: send.gateway.to_string(),
-                                                payment_hash: bolt11.payment_hash().to_string(),
-                                                preimage: preimage.consensus_encode_to_hex(),
-                                                ln_address,
-                                            },
-                                            amount: send.contract.amount.msats,
-                                            timestamp,
-                                            operation_id: key.operation_id.0.to_vec(),
-                                        })
-                                    }
-                                    _ => None,
-                                }
-                            }
-                            LightningOperationMeta::LnurlReceive(receive) => {
-                                let outcome = op_log_val.outcome::<ReceiveOperationState>();
-                                match outcome {
-                                    Some(ReceiveOperationState::Claimed) => Some(Transaction {
-                                        kind: TransactionKind::LightningRecurring,
-                                        amount: receive.contract.commitment.amount.msats,
-                                        timestamp,
-                                        operation_id: key.operation_id.0.to_vec(),
-                                    }),
-                                    _ => None,
-                                }
-                            }
-                        }
-                    }
-                    "ln" => {
-                        let meta = op_log_val.meta::<fedimint_ln_client::LightningOperationMeta>();
-                        match meta.variant {
-                            LightningOperationMetaVariant::Pay(send) => Self::get_lnv1_send_tx(
-                                send,
-                                op_log_val,
-                                timestamp,
-                                key.operation_id,
-                                meta.extra_meta,
-                            ),
-                            LightningOperationMetaVariant::Receive { invoice, .. } => {
-                                Self::get_lnv1_receive_tx(
-                                    &invoice,
-                                    op_log_val,
-                                    timestamp,
-                                    key.operation_id,
-                                    meta.extra_meta,
-                                )
-                            }
-                            LightningOperationMetaVariant::RecurringPaymentReceive(recurring) => {
-                                let receive_outcome = op_log_val.outcome::<LnReceiveState>();
-                                match receive_outcome {
-                                    Some(LnReceiveState::Claimed) => {
-                                        let amount_msat = recurring
-                                            .invoice
-                                            .amount_milli_satoshis()
-                                            .expect("Amountless invoice");
-                                        Some(Transaction {
-                                            kind: TransactionKind::LightningRecurring,
-                                            amount: amount_msat,
-                                            timestamp,
-                                            operation_id: key.operation_id.0.to_vec(),
-                                        })
-                                    }
-                                    _ => None,
-                                }
-                            }
-                            _ => None,
-                        }
-                    }
-                    "mint" => {
-                        let meta = op_log_val.meta::<MintOperationMeta>();
-                        match meta.variant {
-                            MintOperationMetaVariant::SpendOOB { oob_notes, .. } => {
-                                let internal_spends = self.internal_ecash_spends.read().await;
-                                if internal_spends.contains(&key.operation_id) {
-                                    continue;
-                                }
-                                Some(Transaction {
-                                    kind: TransactionKind::EcashSend {
-                                        oob_notes: oob_notes.to_string(),
-                                        fees: 0, // currently no fees for the mint module
-                                    },
-                                    amount: oob_notes.total_amount().msats,
-                                    timestamp,
-                                    operation_id: key.operation_id.0.to_vec(),
-                                })
-                            }
-                            MintOperationMetaVariant::Reissuance { .. } => {
-                                let extra_meta = meta.extra_meta.clone();
-                                if let Ok(operation_id) =
-                                    serde_json::from_value::<OperationId>(extra_meta)
-                                {
-                                    let mut internal_spends =
-                                        self.internal_ecash_spends.write().await;
-                                    internal_spends.insert(operation_id);
-                                    continue;
-                                }
-
-                                let outcome = op_log_val.outcome::<ReissueExternalNotesState>();
-                                if let Some(ReissueExternalNotesState::Done) = outcome {
-                                    let amount = from_value::<Amount>(
-                                        meta.extra_meta
-                                            .get("total_amount")
-                                            .expect("Field missing ecash custom meta")
-                                            .clone(),
-                                    )
-                                    .expect("Could not parse to Amount");
-                                    let ecash = from_value::<String>(
-                                        meta.extra_meta
-                                            .get("ecash")
-                                            .expect("Field missing ecash custom meta")
-                                            .clone(),
-                                    )
-                                    .expect("Could not parse to Amount");
-                                    let input_fees = meta
-                                        .extra_meta
-                                        .get("input_fee")
-                                        .map(|f| f.as_u64().expect("Could not convert"));
-                                    let output_fees = meta
-                                        .extra_meta
-                                        .get("output_fee")
-                                        .map(|f| f.as_u64().expect("Could not convert"));
-                                    let dust = meta
-                                        .extra_meta
-                                        .get("dust")
-                                        .map(|f| f.as_u64().expect("Could not convert"));
-                                    Some(Transaction {
-                                        kind: TransactionKind::EcashReceive {
-                                            oob_notes: ecash,
-                                            input_fees,
-                                            output_fees,
-                                            dust,
-                                        },
-                                        amount: amount.msats,
-                                        timestamp,
-                                        operation_id: key.operation_id.0.to_vec(),
-                                    })
-                                } else {
-                                    None
-                                }
-                            }
-                        }
-                    }
-                    "wallet" => {
-                        let meta = op_log_val.meta::<WalletOperationMeta>();
-                        match meta.variant {
-                            WalletOperationMetaVariant::Deposit { address, .. } => {
-                                let outcome = op_log_val.outcome::<DepositStateV2>();
-                                if let Some(DepositStateV2::Claimed {
-                                    btc_deposited,
-                                    btc_out_point,
-                                }) = outcome
-                                {
-                                    let amount = Amount::from_sats(btc_deposited.to_sat()).msats;
-                                    let address = address.assume_checked().to_string();
-                                    let txid = btc_out_point.txid.to_string();
-
-                                    Some(Transaction {
-                                        kind: TransactionKind::OnchainReceive { address, txid },
-                                        amount,
-                                        timestamp,
-                                        operation_id: key.operation_id.0.to_vec(),
-                                    })
-                                } else {
-                                    None
-                                }
-                            }
-                            WalletOperationMetaVariant::Withdraw {
-                                amount, address, ..
-                            } => {
-                                let outcome = op_log_val.outcome::<WithdrawState>();
-                                if let Some(WithdrawState::Succeeded(txid)) = outcome {
-                                    let address = address.assume_checked().to_string();
-
-                                    let meta = op_log_val.meta::<WalletOperationMeta>();
-                                    // meta was introduced after users began testing pre-releases of the
-                                    // app and won't exist for recovered clients, so these need to be optional
-                                    let meta = serde_json::from_value::<OnChainWithdrawalMeta>(
-                                        meta.extra_meta,
-                                    )
-                                    .ok();
-
-                                    Some(Transaction {
-                                        kind: TransactionKind::OnchainSend {
-                                            address,
-                                            txid: txid.to_string(),
-                                            fee_rate_sats_per_vb: meta
-                                                .as_ref()
-                                                .map(|m| m.fee_rate_sats_per_vb),
-                                            tx_size_vb: meta.as_ref().map(|m| m.tx_size_vb),
-                                            fee_sats: meta.as_ref().map(|m| m.fee_sats),
-                                            total_sats: meta
-                                                .as_ref()
-                                                .map(|m| m.fee_sats + amount.to_sat()),
-                                        },
-                                        amount: Amount::from_sats(amount.to_sat()).msats,
-                                        timestamp,
-                                        operation_id: key.operation_id.0.to_vec(),
-                                    })
-                                } else {
-                                    None
-                                }
-                            }
-                            WalletOperationMetaVariant::RbfWithdraw { .. } => {
-                                // RbfWithdrawal isn't supported
-                                None
-                            }
-                        }
-                    }
-                    _ => None,
-                };
-
-                if let Some(tx) = tx {
-                    collected.push(tx);
-                }
-            }
-
-            // Update the pagination key to the last item in this page
-            next_key = page.last().map(|(key, _)| *key);
+            let tx = self
+                .enrich_payment_with_op_log(&payment, op_log_entry.as_ref())
+                .await;
+            collected.push(tx);
         }
 
         collected
     }
 
+    /// Convert a ParsedPayment into a Transaction, enriching with operation log metadata
+    async fn enrich_payment_with_op_log(
+        &self,
+        payment: &ParsedPayment,
+        op_log_entry: Option<&OperationLogEntry>,
+    ) -> Transaction {
+        let timestamp = payment.timestamp_ms as u64;
+        let operation_id = payment.operation_id.0.to_vec();
+
+        match (payment.module, payment.incoming) {
+            ("lnv2", true) => {
+                // Lightning receive — check op log to distinguish regular vs LNURL/recurring
+                if let Some(entry) = op_log_entry {
+                    let meta = entry.meta::<LightningOperationMeta>();
+                    match meta {
+                        LightningOperationMeta::Receive(receive) => {
+                            let fedimint_lnv2_common::LightningInvoice::Bolt11(bolt11) =
+                                receive.invoice;
+                            let amount = from_value::<Amount>(
+                                receive
+                                    .custom_meta
+                                    .get("amount")
+                                    .cloned()
+                                    .unwrap_or_default(),
+                            )
+                            .map(|a| a.msats)
+                            .unwrap_or(payment.amount_msats);
+                            let amount_with_fees = from_value::<Amount>(
+                                receive
+                                    .custom_meta
+                                    .get("amount_with_fees")
+                                    .cloned()
+                                    .unwrap_or_default(),
+                            )
+                            .map(|a| a.msats)
+                            .unwrap_or(payment.amount_msats);
+                            Transaction {
+                                kind: TransactionKind::LightningReceive {
+                                    fees: amount_with_fees.saturating_sub(amount),
+                                    gateway: receive.gateway.to_string(),
+                                    payee_pubkey: bolt11.get_payee_pub_key().to_string(),
+                                    payment_hash: bolt11.payment_hash().to_string(),
+                                },
+                                amount: payment.amount_msats,
+                                timestamp,
+                                operation_id,
+                            }
+                        }
+                        LightningOperationMeta::LnurlReceive(_) => Transaction {
+                            kind: TransactionKind::LightningRecurring,
+                            amount: payment.amount_msats,
+                            timestamp,
+                            operation_id,
+                        },
+                        _ => Transaction {
+                            kind: TransactionKind::LightningReceive {
+                                fees: payment.fee_msats.unwrap_or(0),
+                                gateway: String::new(),
+                                payee_pubkey: String::new(),
+                                payment_hash: String::new(),
+                            },
+                            amount: payment.amount_msats,
+                            timestamp,
+                            operation_id,
+                        },
+                    }
+                } else {
+                    Transaction {
+                        kind: TransactionKind::LightningReceive {
+                            fees: payment.fee_msats.unwrap_or(0),
+                            gateway: String::new(),
+                            payee_pubkey: String::new(),
+                            payment_hash: String::new(),
+                        },
+                        amount: payment.amount_msats,
+                        timestamp,
+                        operation_id,
+                    }
+                }
+            }
+            ("lnv2", false) => {
+                // Lightning send — enrich with gateway, payment_hash, ln_address from op log
+                let (fees, gateway, payment_hash, preimage, ln_address) = if let Some(entry) =
+                    op_log_entry
+                {
+                    let meta = entry.meta::<LightningOperationMeta>();
+                    if let LightningOperationMeta::Send(send) = meta {
+                        let fedimint_lnv2_common::LightningInvoice::Bolt11(bolt11) = send.invoice;
+                        let ln_address = send
+                            .custom_meta
+                            .get("ln_address")
+                            .and_then(|v| from_value::<String>(v.clone()).ok());
+                        (
+                            payment.fee_msats.unwrap_or(0),
+                            send.gateway.to_string(),
+                            bolt11.payment_hash().to_string(),
+                            payment.oob.clone().unwrap_or_default(),
+                            ln_address,
+                        )
+                    } else {
+                        (
+                            payment.fee_msats.unwrap_or(0),
+                            String::new(),
+                            String::new(),
+                            payment.oob.clone().unwrap_or_default(),
+                            None,
+                        )
+                    }
+                } else {
+                    (
+                        payment.fee_msats.unwrap_or(0),
+                        String::new(),
+                        String::new(),
+                        payment.oob.clone().unwrap_or_default(),
+                        None,
+                    )
+                };
+                Transaction {
+                    kind: TransactionKind::LightningSend {
+                        fees,
+                        gateway,
+                        payment_hash,
+                        preimage,
+                        ln_address,
+                    },
+                    amount: payment.amount_msats,
+                    timestamp,
+                    operation_id,
+                }
+            }
+            ("mint", false) => {
+                // Ecash send — oob_notes from event log
+                Transaction {
+                    kind: TransactionKind::EcashSend {
+                        oob_notes: payment.oob.clone().unwrap_or_default(),
+                        fees: 0,
+                    },
+                    amount: payment.amount_msats,
+                    timestamp,
+                    operation_id,
+                }
+            }
+            ("mint", true) => {
+                // Ecash receive — enrich with oob_notes and fee details from op log
+                let (oob_notes, input_fees, output_fees, dust) = if let Some(entry) = op_log_entry {
+                    let meta = entry.meta::<MintOperationMeta>();
+                    let ecash = meta
+                        .extra_meta
+                        .get("ecash")
+                        .and_then(|v| from_value::<String>(v.clone()).ok())
+                        .unwrap_or_default();
+                    let input_fees = meta.extra_meta.get("input_fee").and_then(|f| f.as_u64());
+                    let output_fees = meta.extra_meta.get("output_fee").and_then(|f| f.as_u64());
+                    let dust = meta.extra_meta.get("dust").and_then(|f| f.as_u64());
+                    (ecash, input_fees, output_fees, dust)
+                } else {
+                    (String::new(), None, None, None)
+                };
+                Transaction {
+                    kind: TransactionKind::EcashReceive {
+                        oob_notes,
+                        input_fees,
+                        output_fees,
+                        dust,
+                    },
+                    amount: payment.amount_msats,
+                    timestamp,
+                    operation_id,
+                }
+            }
+            ("wallet", true) => {
+                // On-chain receive — txid from event log, address from op log
+                let txid = payment.oob.clone().unwrap_or_default();
+                let address = if let Some(entry) = op_log_entry {
+                    let meta = entry.meta::<WalletOperationMeta>();
+                    if let WalletOperationMetaVariant::Deposit { address, .. } = meta.variant {
+                        address.assume_checked().to_string()
+                    } else {
+                        String::new()
+                    }
+                } else {
+                    String::new()
+                };
+                Transaction {
+                    kind: TransactionKind::OnchainReceive { address, txid },
+                    amount: payment.amount_msats,
+                    timestamp,
+                    operation_id,
+                }
+            }
+            ("wallet", false) => {
+                // On-chain send — txid from event log, address and fee details from op log
+                let txid = payment.oob.clone().unwrap_or_default();
+                let (address, fee_rate_sats_per_vb, tx_size_vb, fee_sats, total_sats) =
+                    if let Some(entry) = op_log_entry {
+                        let meta = entry.meta::<WalletOperationMeta>();
+                        if let WalletOperationMetaVariant::Withdraw {
+                            amount, address, ..
+                        } = meta.variant
+                        {
+                            let address = address.assume_checked().to_string();
+                            let extra = serde_json::from_value::<OnChainWithdrawalMeta>(
+                                entry.meta::<WalletOperationMeta>().extra_meta,
+                            )
+                            .ok();
+                            (
+                                address,
+                                extra.as_ref().map(|m| m.fee_rate_sats_per_vb),
+                                extra.as_ref().map(|m| m.tx_size_vb),
+                                extra.as_ref().map(|m| m.fee_sats),
+                                extra.as_ref().map(|m| m.fee_sats + amount.to_sat()),
+                            )
+                        } else {
+                            (String::new(), None, None, None, None)
+                        }
+                    } else {
+                        (String::new(), None, None, None, None)
+                    };
+                Transaction {
+                    kind: TransactionKind::OnchainSend {
+                        address,
+                        txid,
+                        fee_rate_sats_per_vb,
+                        tx_size_vb,
+                        fee_sats,
+                        total_sats,
+                    },
+                    amount: payment.amount_msats,
+                    timestamp,
+                    operation_id,
+                }
+            }
+            _ => {
+                // Fallback for unknown module
+                Transaction {
+                    kind: TransactionKind::LightningRecurring,
+                    amount: payment.amount_msats,
+                    timestamp,
+                    operation_id,
+                }
+            }
+        }
+    }
+
     /// LNv1 has two different operation send types: external (over the Lightning network) and internal (ecash swap)
     /// In order to check if the "send" was successful or not, we need to check both outcomes.
+    /// TODO: Will be used when LNv1 events are added in the next fedimint release
+    #[allow(dead_code)]
     fn get_lnv1_send_tx(
         meta: LightningOperationMetaPay,
         ln_outcome: &OperationLogEntry,
@@ -3067,6 +3064,8 @@ impl Multimint {
 
     /// Checks the outcome of an LNv1 receive operation and constructs the appropriate `Transaction`
     /// for the transaction log.
+    /// TODO: Will be used when LNv1 events are added in the next fedimint release
+    #[allow(dead_code)]
     fn get_lnv1_receive_tx(
         invoice: &Bolt11Invoice,
         ln_outcome: &OperationLogEntry,

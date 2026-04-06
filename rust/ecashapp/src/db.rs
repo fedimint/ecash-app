@@ -7,6 +7,7 @@ use fedimint_core::{
     impl_db_lookup, impl_db_record,
     util::SafeUrl,
 };
+use fedimint_eventlog::{EventLogEntry, EventLogId};
 use serde::{Deserialize, Serialize};
 
 use crate::multimint::FederationMeta;
@@ -49,6 +50,7 @@ pub(crate) enum DbKeyPrefix {
     PinCodeHash = 0x12,
     RequirePinForSpending = 0x13,
     ShowMsats = 0x14,
+    EventLogEntry = 0x15,
 }
 
 #[derive(Debug, Clone, Encodable, Decodable, Eq, PartialEq, Hash, Ord, PartialOrd)]
@@ -365,3 +367,17 @@ impl_db_record!(
     value = (),
     db_prefix = DbKeyPrefix::ShowMsats,
 );
+
+#[derive(Clone, Debug, Encodable, Decodable)]
+pub(crate) struct EventLogEntryKey(pub FederationId, pub EventLogId);
+
+#[derive(Clone, Debug, Encodable, Decodable)]
+pub(crate) struct EventLogEntryPrefix(pub FederationId);
+
+impl_db_record!(
+    key = EventLogEntryKey,
+    value = EventLogEntry,
+    db_prefix = DbKeyPrefix::EventLogEntry,
+);
+
+impl_db_lookup!(key = EventLogEntryKey, query_prefix = EventLogEntryPrefix);
