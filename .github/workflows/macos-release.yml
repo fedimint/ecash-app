@@ -3,11 +3,16 @@ on:
   push:
     tags:
       - 'v*'
+  pull_request:
+    branches:
+      - master
 permissions:
   contents: write
 jobs:
   build-dmg:
     runs-on: macos-latest
+    env:
+      HAS_SIGNING_CERT: ${{ secrets.MACOS_CERTIFICATE_BASE64 != '' }}
     steps:
       - uses: actions/checkout@v4
       - name: Read Flutter version
@@ -23,7 +28,7 @@ jobs:
       - name: Install create-dmg
         run: brew install create-dmg
       - name: Import signing certificate
-        if: ${{ secrets.MACOS_CERTIFICATE_BASE64 != '' }}
+        if: ${{ env.HAS_SIGNING_CERT == 'true' }}
         env:
           MACOS_CERTIFICATE_BASE64: ${{ secrets.MACOS_CERTIFICATE_BASE64 }}
           MACOS_CERTIFICATE_PASSWORD: ${{ secrets.MACOS_CERTIFICATE_PASSWORD }}
@@ -44,7 +49,7 @@ jobs:
           security list-keychain -d user -s "$KEYCHAIN_PATH"
       - name: Build DMG
         env:
-          MACOS_SIGN_IDENTITY: ${{ secrets.MACOS_CERTIFICATE_BASE64 != '' && 'Developer ID Application' || '' }}
+          MACOS_SIGN_IDENTITY: ${{ env.HAS_SIGNING_CERT == 'true' && 'Developer ID Application' || '' }}
           MACOS_NOTARIZE_APPLE_ID: ${{ secrets.MACOS_APPLE_ID }}
           MACOS_NOTARIZE_TEAM_ID: ${{ secrets.MACOS_TEAM_ID }}
           MACOS_NOTARIZE_PASSWORD: ${{ secrets.MACOS_APP_SPECIFIC_PASSWORD }}
@@ -52,7 +57,14 @@ jobs:
       - name: Clean up keychain
         if: always()
         run: security delete-keychain $RUNNER_TEMP/app-signing.keychain-db || true
+      - name: Upload artifact
+        if: ${{ !startsWith(github.ref, 'refs/tags/') }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: macos-dmg
+          path: "*.dmg"
       - name: Upload to Release
+        if: startsWith(github.ref, 'refs/tags/')
         uses: ncipollo/release-action@v1
         with:
           tag: ${{ github.ref_name }}
