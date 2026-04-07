@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:ui';
 
 import 'package:ecashapp/db.dart';
 import 'package:ecashapp/extensions/build_context_l10n.dart';
@@ -54,6 +55,10 @@ class _DashboardState extends State<Dashboard> {
 
   List<Transaction> _recentTransactions = [];
   bool _isLoadingTransactions = true;
+
+  final ScrollController _scrollController = ScrollController();
+  static const double _headerMaxExtent = 210.0;
+  static const double _headerMinExtent = 64.0;
 
   final Map<String, DepositEventKind> _depositMap = {};
   late final StreamSubscription<DepositEventKind> _depositSubscription;
@@ -160,7 +165,28 @@ class _DashboardState extends State<Dashboard> {
   void dispose() {
     _depositSubscription.cancel();
     _subscription.cancel();
+    _scrollController.dispose();
     super.dispose();
+  }
+
+  bool _handleScrollNotification(ScrollNotification notification) {
+    if (notification is ScrollEndNotification) {
+      if (!_scrollController.hasClients) return false;
+      final offset = _scrollController.offset;
+      const collapseRange = _headerMaxExtent - _headerMinExtent;
+      if (offset > 0 && offset < collapseRange) {
+        final target = offset < collapseRange / 2 ? 0.0 : collapseRange;
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (!_scrollController.hasClients) return;
+          _scrollController.animateTo(
+            target,
+            duration: const Duration(milliseconds: 200),
+            curve: Curves.easeOutCubic,
+          );
+        });
+      }
+    }
+    return false;
   }
 
   void _scheduleAction(VoidCallback action) {
@@ -363,19 +389,6 @@ class _DashboardState extends State<Dashboard> {
     return pending;
   }
 
-  int _maxVisibleTransactions(BuildContext context) {
-    final screenHeight = MediaQuery.of(context).size.height;
-    // Approximate fixed heights: top padding (48) + balance widget (~120) +
-    // spacing (32) + "Recent Activity" row (~48) + spacing (8) + bottom
-    // spacing (8) + bottom nav bar (~56) + top safe area
-    final topPadding = MediaQuery.of(context).padding.top;
-    const fixedHeight = 48.0 + 120.0 + 32.0 + 48.0 + 8.0 + 8.0 + 56.0;
-    final available = screenHeight - fixedHeight - topPadding;
-    // Each TransactionItem card is ~80px (ListTile ~56 + Card margin 12 + padding)
-    const itemHeight = 80.0;
-    return (available / itemHeight).floor().clamp(3, 20);
-  }
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -438,100 +451,131 @@ class _DashboardState extends State<Dashboard> {
                     const Spacer(),
                   ],
                 )
-                : ListView(
-                  children: [
-                    const SizedBox(height: 48),
-                    DashboardBalance(
-                      balanceMsats: balanceMsats,
-                      isLoading: isLoadingBalance,
-                      recovering: recovering,
-                      btcPrices: _btcPrices,
-                      isLoadingPrices: _isLoadingPrices,
-                      pricesFailed: _pricesFailed,
-                      lnAddressConfig: _lnAddressConfig,
-                      onLnAddressTap:
-                          _lnAddressConfig != null
-                              ? () => showLightningAddressDialog(
-                                context,
-                                _lnAddressConfig!.username,
-                                _lnAddressConfig!.domain,
-                                _lnAddressConfig!.lnurl,
-                              )
-                              : null,
-                      onWalletTap: _openMyWallet,
-                    ),
-                    if (widget.fed.network != null &&
-                        widget.fed.network!.toLowerCase() != 'bitcoin')
-                      Padding(
-                        padding: const EdgeInsets.only(top: 4.0),
-                        child: Text(
-                          context.l10n.testNetworkMessage,
-                          style: Theme.of(
-                            context,
-                          ).textTheme.bodySmall?.copyWith(
-                            color: Theme.of(context).colorScheme.secondary,
-                            fontStyle: FontStyle.italic,
-                          ),
-                          textAlign: TextAlign.center,
+                : NotificationListener<ScrollNotification>(
+                  onNotification: _handleScrollNotification,
+                  child: CustomScrollView(
+                    controller: _scrollController,
+                    slivers: [
+                      SliverPersistentHeader(
+                        pinned: true,
+                        delegate: _DashboardBalanceHeader(
+                          minExtent: _headerMinExtent,
+                          maxExtent: _headerMaxExtent,
+                          balanceMsats: balanceMsats,
+                          isLoading: isLoadingBalance,
+                          btcPrices: _btcPrices,
+                          isLoadingPrices: _isLoadingPrices,
+                          pricesFailed: _pricesFailed,
+                          lnAddressConfig: _lnAddressConfig,
+                          onLnAddressTap:
+                              _lnAddressConfig != null
+                                  ? () => showLightningAddressDialog(
+                                    context,
+                                    _lnAddressConfig!.username,
+                                    _lnAddressConfig!.domain,
+                                    _lnAddressConfig!.lnurl,
+                                  )
+                                  : null,
+                          onWalletTap: _openMyWallet,
+                          backgroundColor:
+                              Theme.of(context).scaffoldBackgroundColor,
                         ),
                       ),
-                    const SizedBox(height: 32),
-                    Row(
-                      children: [
-                        Text(
-                          context.l10n.recentActivity,
-                          style: Theme.of(
-                            context,
-                          ).textTheme.titleSmall?.copyWith(color: Colors.grey),
+                      if (widget.fed.network != null &&
+                          widget.fed.network!.toLowerCase() != 'bitcoin')
+                        SliverToBoxAdapter(
+                          child: Padding(
+                            padding: const EdgeInsets.only(top: 4.0),
+                            child: Text(
+                              context.l10n.testNetworkMessage,
+                              style: Theme.of(
+                                context,
+                              ).textTheme.bodySmall?.copyWith(
+                                color: Theme.of(context).colorScheme.secondary,
+                                fontStyle: FontStyle.italic,
+                              ),
+                              textAlign: TextAlign.center,
+                            ),
+                          ),
                         ),
-                        const Spacer(),
-                        TextButton(
-                          onPressed: _openAllTransactions,
+                      SliverToBoxAdapter(
+                        child: Padding(
+                          padding: const EdgeInsets.only(top: 8.0),
                           child: Row(
-                            mainAxisSize: MainAxisSize.min,
                             children: [
                               Text(
-                                context.l10n.viewAll,
-                                style: TextStyle(
-                                  color: Theme.of(context).colorScheme.primary,
-                                  fontSize: 13,
-                                ),
+                                context.l10n.recentActivity,
+                                style: Theme.of(context).textTheme.titleSmall
+                                    ?.copyWith(color: Colors.grey),
                               ),
-                              const SizedBox(width: 2),
-                              Icon(
-                                Icons.chevron_right,
-                                size: 18,
-                                color: Theme.of(context).colorScheme.primary,
+                              const Spacer(),
+                              TextButton(
+                                onPressed: _openAllTransactions,
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Text(
+                                      context.l10n.viewAll,
+                                      style: TextStyle(
+                                        color:
+                                            Theme.of(
+                                              context,
+                                            ).colorScheme.primary,
+                                        fontSize: 13,
+                                      ),
+                                    ),
+                                    const SizedBox(width: 2),
+                                    Icon(
+                                      Icons.chevron_right,
+                                      size: 18,
+                                      color:
+                                          Theme.of(context).colorScheme.primary,
+                                    ),
+                                  ],
+                                ),
                               ),
                             ],
                           ),
                         ),
-                      ],
-                    ),
-                    const SizedBox(height: 8),
-                    if (_isLoadingTransactions && _pendingDeposits.isEmpty)
-                      const Padding(
-                        padding: EdgeInsets.symmetric(vertical: 32),
-                        child: Center(child: CircularProgressIndicator()),
-                      )
-                    else if (_recentTransactions.isEmpty &&
-                        _pendingDeposits.isEmpty)
-                      EmptyTransactionsState(
-                        paymentType: _selectedPaymentType,
-                        onReceivePressed: _onReceivePressed,
-                      )
-                    else ...[
-                      ..._pendingDeposits.map(
-                        (e) => PendingDepositItem(event: e),
                       ),
-                      ..._recentTransactions
-                          .take(_maxVisibleTransactions(context))
-                          .map(
-                            (tx) => TransactionItem(tx: tx, fed: widget.fed),
+                      const SliverToBoxAdapter(child: SizedBox(height: 8)),
+                      if (_isLoadingTransactions && _pendingDeposits.isEmpty)
+                        const SliverToBoxAdapter(
+                          child: Padding(
+                            padding: EdgeInsets.symmetric(vertical: 32),
+                            child: Center(child: CircularProgressIndicator()),
                           ),
+                        )
+                      else if (_recentTransactions.isEmpty &&
+                          _pendingDeposits.isEmpty)
+                        SliverToBoxAdapter(
+                          child: EmptyTransactionsState(
+                            paymentType: _selectedPaymentType,
+                            onReceivePressed: _onReceivePressed,
+                          ),
+                        )
+                      else
+                        SliverList(
+                          delegate: SliverChildBuilderDelegate(
+                            (context, index) {
+                              if (index < _pendingDeposits.length) {
+                                return PendingDepositItem(
+                                  event: _pendingDeposits[index],
+                                );
+                              }
+                              final tx =
+                                  _recentTransactions[index -
+                                      _pendingDeposits.length];
+                              return TransactionItem(tx: tx, fed: widget.fed);
+                            },
+                            childCount:
+                                _pendingDeposits.length +
+                                _recentTransactions.length,
+                          ),
+                        ),
+                      const SliverToBoxAdapter(child: SizedBox(height: 8)),
                     ],
-                    const SizedBox(height: 8),
-                  ],
+                  ),
                 ),
       ),
       bottomNavigationBar: BottomNavigationBar(
@@ -563,5 +607,73 @@ class _DashboardState extends State<Dashboard> {
         ],
       ),
     );
+  }
+}
+
+class _DashboardBalanceHeader extends SliverPersistentHeaderDelegate {
+  @override
+  final double minExtent;
+  @override
+  final double maxExtent;
+  final BigInt? balanceMsats;
+  final bool isLoading;
+  final Map<FiatCurrency, double> btcPrices;
+  final bool isLoadingPrices;
+  final bool pricesFailed;
+  final LightningAddressConfig? lnAddressConfig;
+  final VoidCallback? onLnAddressTap;
+  final VoidCallback? onWalletTap;
+  final Color backgroundColor;
+
+  _DashboardBalanceHeader({
+    required this.minExtent,
+    required this.maxExtent,
+    required this.balanceMsats,
+    required this.isLoading,
+    required this.btcPrices,
+    required this.isLoadingPrices,
+    required this.pricesFailed,
+    required this.lnAddressConfig,
+    required this.onLnAddressTap,
+    required this.onWalletTap,
+    required this.backgroundColor,
+  });
+
+  @override
+  Widget build(
+    BuildContext context,
+    double shrinkOffset,
+    bool overlapsContent,
+  ) {
+    final range = maxExtent - minExtent;
+    final t = (shrinkOffset / range).clamp(0.0, 1.0);
+    return Container(
+      color: backgroundColor,
+      padding: EdgeInsets.only(top: lerpDouble(48.0, 8.0, t)!),
+      child: DashboardBalance(
+        balanceMsats: balanceMsats,
+        isLoading: isLoading,
+        recovering: false,
+        btcPrices: btcPrices,
+        isLoadingPrices: isLoadingPrices,
+        pricesFailed: pricesFailed,
+        lnAddressConfig: lnAddressConfig,
+        onLnAddressTap: onLnAddressTap,
+        onWalletTap: onWalletTap,
+        collapseProgress: t,
+      ),
+    );
+  }
+
+  @override
+  bool shouldRebuild(covariant _DashboardBalanceHeader oldDelegate) {
+    return balanceMsats != oldDelegate.balanceMsats ||
+        isLoading != oldDelegate.isLoading ||
+        btcPrices != oldDelegate.btcPrices ||
+        isLoadingPrices != oldDelegate.isLoadingPrices ||
+        pricesFailed != oldDelegate.pricesFailed ||
+        lnAddressConfig != oldDelegate.lnAddressConfig ||
+        minExtent != oldDelegate.minExtent ||
+        maxExtent != oldDelegate.maxExtent;
   }
 }
