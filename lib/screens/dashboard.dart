@@ -648,20 +648,26 @@ class _DashboardBalanceHeader extends SliverPersistentHeaderDelegate {
   ) {
     final range = maxExtent - minExtent;
     final t = (shrinkOffset / range).clamp(0.0, 1.0);
-    return Container(
-      color: backgroundColor,
-      padding: EdgeInsets.only(top: lerpDouble(48.0, 8.0, t)!),
-      child: DashboardBalance(
-        balanceMsats: balanceMsats,
-        isLoading: isLoading,
-        recovering: recovering,
-        btcPrices: btcPrices,
-        isLoadingPrices: isLoadingPrices,
-        pricesFailed: pricesFailed,
-        lnAddressConfig: lnAddressConfig,
-        onLnAddressTap: onLnAddressTap,
-        onWalletTap: onWalletTap,
-        collapseProgress: t,
+    return ClipRect(
+      child: SizedBox.expand(
+        child: ColoredBox(
+          color: backgroundColor,
+          child: Padding(
+            padding: EdgeInsets.only(top: lerpDouble(48.0, 8.0, t)!),
+            child: DashboardBalance(
+              balanceMsats: balanceMsats,
+              isLoading: isLoading,
+              recovering: recovering,
+              btcPrices: btcPrices,
+              isLoadingPrices: isLoadingPrices,
+              pricesFailed: pricesFailed,
+              lnAddressConfig: lnAddressConfig,
+              onLnAddressTap: onLnAddressTap,
+              onWalletTap: onWalletTap,
+              collapseProgress: t,
+            ),
+          ),
+        ),
       ),
     );
   }
