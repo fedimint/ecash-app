@@ -170,22 +170,20 @@ class _DashboardState extends State<Dashboard> {
   }
 
   bool _handleScrollNotification(ScrollNotification notification) {
-    if (notification is ScrollEndNotification) {
-      if (!_scrollController.hasClients) return false;
-      final offset = _scrollController.offset;
-      const collapseRange = _headerMaxExtent - _headerMinExtent;
-      if (offset > 0 && offset < collapseRange) {
-        final target = offset < collapseRange / 2 ? 0.0 : collapseRange;
-        WidgetsBinding.instance.addPostFrameCallback((_) {
-          if (!_scrollController.hasClients) return;
-          _scrollController.animateTo(
-            target,
-            duration: const Duration(milliseconds: 200),
-            curve: Curves.easeOutCubic,
-          );
-        });
-      }
-    }
+    if (notification is! ScrollEndNotification) return false;
+    if (!_scrollController.hasClients) return false;
+    const collapseRange = _headerMaxExtent - _headerMinExtent;
+    final offset = _scrollController.offset;
+    if (offset <= 0 || offset >= collapseRange) return false;
+    final target = offset < collapseRange / 2 ? 0.0 : collapseRange;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!_scrollController.hasClients) return;
+      _scrollController.animateTo(
+        target,
+        duration: const Duration(milliseconds: 200),
+        curve: Curves.easeOutCubic,
+      );
+    });
     return false;
   }
 
@@ -463,6 +461,7 @@ class _DashboardState extends State<Dashboard> {
                           maxExtent: _headerMaxExtent,
                           balanceMsats: balanceMsats,
                           isLoading: isLoadingBalance,
+                          recovering: recovering,
                           btcPrices: _btcPrices,
                           isLoadingPrices: _isLoadingPrices,
                           pricesFailed: _pricesFailed,
@@ -617,6 +616,7 @@ class _DashboardBalanceHeader extends SliverPersistentHeaderDelegate {
   final double maxExtent;
   final BigInt? balanceMsats;
   final bool isLoading;
+  final bool recovering;
   final Map<FiatCurrency, double> btcPrices;
   final bool isLoadingPrices;
   final bool pricesFailed;
@@ -630,6 +630,7 @@ class _DashboardBalanceHeader extends SliverPersistentHeaderDelegate {
     required this.maxExtent,
     required this.balanceMsats,
     required this.isLoading,
+    required this.recovering,
     required this.btcPrices,
     required this.isLoadingPrices,
     required this.pricesFailed,
@@ -653,7 +654,7 @@ class _DashboardBalanceHeader extends SliverPersistentHeaderDelegate {
       child: DashboardBalance(
         balanceMsats: balanceMsats,
         isLoading: isLoading,
-        recovering: false,
+        recovering: recovering,
         btcPrices: btcPrices,
         isLoadingPrices: isLoadingPrices,
         pricesFailed: pricesFailed,
@@ -669,6 +670,7 @@ class _DashboardBalanceHeader extends SliverPersistentHeaderDelegate {
   bool shouldRebuild(covariant _DashboardBalanceHeader oldDelegate) {
     return balanceMsats != oldDelegate.balanceMsats ||
         isLoading != oldDelegate.isLoading ||
+        recovering != oldDelegate.recovering ||
         btcPrices != oldDelegate.btcPrices ||
         isLoadingPrices != oldDelegate.isLoadingPrices ||
         pricesFailed != oldDelegate.pricesFailed ||

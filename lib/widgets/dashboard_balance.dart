@@ -100,7 +100,7 @@ class DashboardBalance extends StatelessWidget {
               ClipRect(
                 child: Align(
                   alignment: Alignment.topCenter,
-                  heightFactor: (1.0 - t).clamp(0.0, 1.0),
+                  heightFactor: 1.0 - t,
                   child: Opacity(
                     opacity: secondaryOpacity,
                     child: Column(
