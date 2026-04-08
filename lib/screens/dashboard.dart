@@ -483,17 +483,40 @@ class _DashboardState extends State<Dashboard> {
                       if (widget.fed.network != null &&
                           widget.fed.network!.toLowerCase() != 'bitcoin')
                         SliverToBoxAdapter(
-                          child: Padding(
-                            padding: const EdgeInsets.only(top: 4.0),
-                            child: Text(
-                              context.l10n.testNetworkMessage,
-                              style: Theme.of(
-                                context,
-                              ).textTheme.bodySmall?.copyWith(
-                                color: Theme.of(context).colorScheme.secondary,
-                                fontStyle: FontStyle.italic,
+                          child: AnimatedBuilder(
+                            animation: _scrollController,
+                            builder: (context, child) {
+                              const range = _headerMaxExtent - _headerMinExtent;
+                              final offset =
+                                  _scrollController.hasClients
+                                      ? _scrollController.offset
+                                      : 0.0;
+                              final t = (offset / range).clamp(0.0, 1.0);
+                              final opacity = (1.0 - t * 2.0).clamp(0.0, 1.0);
+                              return ClipRect(
+                                child: Align(
+                                  alignment: Alignment.topCenter,
+                                  heightFactor: 1.0 - t,
+                                  child: Opacity(
+                                    opacity: opacity,
+                                    child: child,
+                                  ),
+                                ),
+                              );
+                            },
+                            child: Padding(
+                              padding: const EdgeInsets.only(top: 4.0),
+                              child: Text(
+                                context.l10n.testNetworkMessage,
+                                style: Theme.of(
+                                  context,
+                                ).textTheme.bodySmall?.copyWith(
+                                  color:
+                                      Theme.of(context).colorScheme.secondary,
+                                  fontStyle: FontStyle.italic,
+                                ),
+                                textAlign: TextAlign.center,
                               ),
-                              textAlign: TextAlign.center,
                             ),
                           ),
                         ),
