@@ -2,6 +2,7 @@
 
 mod db;
 mod event_bus;
+mod events;
 mod frb_generated;
 mod multimint;
 mod nostr;
