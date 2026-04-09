@@ -1,0 +1,19 @@
+// Links the prebuilt Rust static library (libecashapp.a) into the Runner target.
+// The library must be built before `flutter build ios` runs — use `just build-ios-device`.
+//
+// Simulator builds are intentionally not supported: aws-lc-sys (transitive dep via rustls)
+// has a known bindgen bug for the aarch64-apple-ios-sim target triple. Test on a physical
+// device, or use the macOS build for local iteration.
+
+IPHONEOS_DEPLOYMENT_TARGET = 16.0
+
+RUST_TARGET[sdk=iphoneos*] = aarch64-apple-ios
+
+LIBRARY_SEARCH_PATHS = $(inherited) $(SRCROOT)/../rust/ecashapp/target/$(RUST_TARGET)/release
+
+// -force_load keeps every symbol from libecashapp.a in the final binary.
+// Without it the linker dead-strips the whole static lib because nothing in
+// Swift/ObjC references it directly — Flutter Rust Bridge looks up symbols at
+// runtime via DynamicLibrary.process().
+// -lc++ is required because fedimint-rocksdb pulls in RocksDB (C++).
+OTHER_LDFLAGS = $(inherited) -lc++ -force_load $(SRCROOT)/../rust/ecashapp/target/$(RUST_TARGET)/release/libecashapp.a

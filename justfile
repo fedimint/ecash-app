@@ -21,6 +21,12 @@ run-appimage-nixos path:
   # This is needed in NixOS, if you are on another OS you can simply open the AppImage
   appimage-run {{path}}
 
+build-ios-device:
+  $ROOT/scripts/build-rust-ios.sh device
+
+run-ios-device:
+  $ROOT/scripts/run-ios-device.sh
+
 build-macos:
   $ROOT/scripts/build-macos.sh
 
