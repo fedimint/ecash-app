@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:ecashapp/app.dart';
+import 'package:ecashapp/fountain.dart';
 import 'package:ecashapp/screens/federation_info_screen.dart';
 import 'package:ecashapp/lib.dart';
 import 'package:ecashapp/models.dart';
@@ -52,6 +53,10 @@ class _ScanQRPageState extends State<ScanQRPage> {
   final Set<String> _exploredFountains = {};
   static const int FOUNTAIN_V1_CONST = 100;
 
+  static const String _fedimintFountainPrefix = 'fedimint';
+  OobNotesDecoder _fountainDecoder = OobNotesDecoder();
+  int _fountainFragmentsReceived = 0;
+
   @override
   void initState() {
     super.initState();
@@ -100,6 +105,51 @@ class _ScanQRPageState extends State<ScanQRPage> {
   void _handleQrLoopChunk(String base64Str) async {
     if (_scanned) return;
     try {
+      // Fedimint fountain fragment path (new optimized QR format).
+      // These base32 fragments are incompatible with the legacy base64 parser,
+      // so intercept them before the rest of the pipeline runs.
+      if (base64Str.startsWith(_fedimintFountainPrefix)) {
+        // Drop any legacy-session state left from prior frames so the
+        // progress bar doesn't stick around while we reassemble a fountain.
+        if (_currentSession != null || _pendingFountains.isNotEmpty) {
+          setState(() {
+            _currentSession = null;
+            _pendingFountains.clear();
+            _exploredFountains.clear();
+          });
+        }
+
+        final wrapper = _fountainDecoder.addFragment(fragment: base64Str);
+        setState(() {
+          _fountainFragmentsReceived++;
+        });
+        if (wrapper != null) {
+          AppLogger.instance.info(
+            "Fedimint fountain decode complete — reassembled ecash notes",
+          );
+          setState(() {
+            _scanned = true;
+            _fountainFragmentsReceived = 0;
+          });
+          _fountainDecoder = OobNotesDecoder();
+          final parsed = await _handleText(wrapper.toString());
+          if (!parsed) {
+            ToastService().show(
+              message: context.l10n.cannotBeParsed,
+              duration: const Duration(seconds: 5),
+              onTap: () {},
+              icon: Icon(Icons.error),
+            );
+          }
+          _resetScannedAfterDelay();
+        }
+        return;
+      }
+
+      AppLogger.instance.info(
+        "Non-fountain QR frame (len=${base64Str.length}, head='${base64Str.substring(0, base64Str.length < 16 ? base64Str.length : 16)}')",
+      );
+
       // If there is no current session, first try to just normally parse the text
       if (_currentSession == null) {
         setState(() {
@@ -672,6 +722,37 @@ class _ScanQRPageState extends State<ScanQRPage> {
                         ],
                       );
                     },
+                  ),
+                ),
+              )
+            else if (_fountainFragmentsReceived > 0)
+              Align(
+                alignment: Alignment.topCenter,
+                child: Padding(
+                  padding: const EdgeInsets.all(32.0),
+                  child: Stack(
+                    alignment: Alignment.center,
+                    children: [
+                      SizedBox(
+                        width: 100,
+                        height: 100,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 8,
+                          backgroundColor: Colors.grey.shade800,
+                          valueColor: AlwaysStoppedAnimation<Color>(
+                            Theme.of(context).colorScheme.primary,
+                          ),
+                        ),
+                      ),
+                      Text(
+                        "$_fountainFragmentsReceived",
+                        style: const TextStyle(
+                          fontSize: 20,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.white,
+                        ),
+                      ),
+                    ],
                   ),
                 ),
               ),
