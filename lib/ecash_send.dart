@@ -1,9 +1,11 @@
 import 'dart:async';
+import 'dart:convert';
 import 'constants/transaction_keys.dart';
 import 'package:ecashapp/db.dart';
 import 'package:ecashapp/detail_row.dart';
 import 'package:ecashapp/providers/preferences_provider.dart';
 import 'package:ecashapp/fountain.dart';
+import 'package:ecashapp/qr_export.dart';
 import 'package:ecashapp/lib.dart';
 import 'package:ecashapp/multimint.dart';
 import 'package:ecashapp/toast.dart';
@@ -14,6 +16,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:qr_flutter/qr_flutter.dart';
+
+enum _QrMode { legacy, fountain }
 
 class EcashSend extends StatefulWidget {
   final FederationSelector fed;
@@ -30,6 +34,7 @@ class _EcashSendState extends State<EcashSend> {
   Stream<String>? _fragmentStream;
   bool _loading = true;
   bool _copied = false;
+  _QrMode _mode = _QrMode.legacy;
 
   @override
   void initState() {
@@ -50,10 +55,11 @@ class _EcashSendState extends State<EcashSend> {
       );
 
       final encoder = OobNotesEncoder(notes: notes);
+      final legacyFrames = dataToFrames(utf8.encode(notes.toString()));
 
       setState(() {
         _notes = notes;
-        _fragmentStream = _createFrameStream(encoder);
+        _fragmentStream = _createFrameStream(encoder, legacyFrames);
         _loading = false;
       });
     } catch (e) {
@@ -71,9 +77,18 @@ class _EcashSendState extends State<EcashSend> {
     }
   }
 
-  Stream<String> _createFrameStream(OobNotesEncoder encoder) async* {
+  Stream<String> _createFrameStream(
+    OobNotesEncoder encoder,
+    List<String> legacyFrames,
+  ) async* {
+    int legacyIndex = 0;
     while (true) {
-      yield await encoder.nextFragment();
+      if (_mode == _QrMode.legacy && legacyFrames.isNotEmpty) {
+        yield legacyFrames[legacyIndex % legacyFrames.length];
+        legacyIndex++;
+      } else {
+        yield await encoder.nextFragment();
+      }
       await Future.delayed(const Duration(milliseconds: 300));
     }
   }
@@ -157,6 +172,25 @@ class _EcashSendState extends State<EcashSend> {
                 ),
               ),
             ],
+          ),
+          const SizedBox(height: 16),
+          SegmentedButton<_QrMode>(
+            segments: [
+              ButtonSegment<_QrMode>(
+                value: _QrMode.legacy,
+                label: Text('Legacy'), // i18n-ignore
+                icon: const Icon(Icons.qr_code),
+              ),
+              ButtonSegment<_QrMode>(
+                value: _QrMode.fountain,
+                label: Text('Optimized'), // i18n-ignore
+                icon: const Icon(Icons.waves),
+              ),
+            ],
+            selected: {_mode},
+            onSelectionChanged: (selection) {
+              setState(() => _mode = selection.first);
+            },
           ),
           const SizedBox(height: 24),
           Container(
