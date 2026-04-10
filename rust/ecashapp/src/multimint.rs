@@ -4027,9 +4027,8 @@ impl Multimint {
         use fedimint_core::base32::{decode_prefixed, FEDIMINT_PREFIX};
         use fedimint_lnv2_common::lnurl::LnurlRequest;
 
-        let lnurl = lnurl::lnurl::LnUrl::decode(lnurl_str.to_string())
-            .map_err(|e| anyhow::anyhow!("Failed to decode LNURL: {:?}", e))?;
-        let url = &lnurl.url;
+        let url = fedimint_lnurl::parse_lnurl(lnurl_str)
+            .ok_or_else(|| anyhow::anyhow!("Failed to decode LNURL"))?;
 
         // Extract the base32 payload after "/pay/"
         let payload = url

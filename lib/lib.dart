@@ -95,16 +95,6 @@ Future<String> getInvoiceFromLnaddressOrLnurl({
   lnaddressOrLnurl: lnaddressOrLnurl,
 );
 
-Future<OperationId> sendLnaddress({
-  required FederationId federationId,
-  required BigInt amountMsats,
-  required String address,
-}) => RustLib.instance.api.crateSendLnaddress(
-  federationId: federationId,
-  amountMsats: amountMsats,
-  address: address,
-);
-
 Future<OperationId> send({
   required FederationId federationId,
   required String invoice,

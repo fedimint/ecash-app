@@ -3,6 +3,7 @@
 mod db;
 mod event_bus;
 mod frb_generated;
+mod lnurl;
 mod multimint;
 mod nostr;
 mod words;
@@ -21,6 +22,7 @@ use fedimint_core::config::ClientConfig;
 use fedimint_wallet_client::PegOutFees;
 use flutter_rust_bridge::frb;
 use futures_util::StreamExt;
+pub use lnurl::{lnurl_fetch_limits, lnurl_resolve, parse_lnurl, LnurlWrapper, PayResponseWrapper};
 use multimint::{
     FederationMeta, FederationSelector, LightningSendOutcome, LogLevel, Multimint,
     MultimintCreation, MultimintEvent, PaymentPreviewWithGateways, ReissueFees, Transaction, Utxo,
@@ -30,7 +32,7 @@ use nostr::{NWCConnectionInfo, NostrClient, PublicFederation};
 use serde::Serialize;
 use tokio::sync::{Mutex, OnceCell, RwLock};
 
-use anyhow::{anyhow, bail, Context};
+use anyhow::{anyhow, Context};
 use fedimint_bip39::Language;
 use fedimint_client::OperationId;
 use fedimint_core::rustls::install_crypto_provider;
@@ -274,64 +276,16 @@ pub async fn get_invoice_from_lnaddress_or_lnurl(
     amount_msats: u64,
     lnaddress_or_lnurl: String,
 ) -> anyhow::Result<String> {
-    let lnurl = match lnurl::lightning_address::LightningAddress::from_str(&lnaddress_or_lnurl) {
-        Ok(lightning_address) => lightning_address.lnurl(),
-        _ => lnurl::lnurl::LnUrl::from_str(&lnaddress_or_lnurl)?,
-    };
-
-    let async_client = lnurl::AsyncClient::from_client(reqwest::Client::new());
-    let response = async_client.make_request(&lnurl.url).await?;
-    match response {
-        lnurl::LnUrlResponse::LnUrlPayResponse(response) => {
-            let invoice = async_client
-                .get_invoice(&response, amount_msats, None, None)
-                .await?;
-
-            let bolt11 = Bolt11Invoice::from_str(invoice.invoice())?;
-            Ok(bolt11.to_string())
-        }
-        other => bail!("Unexpected response from lnurl: {other:?}"),
-    }
-}
-
-#[frb]
-pub async fn send_lnaddress(
-    federation_id: &FederationId,
-    amount_msats: u64,
-    address: String,
-) -> anyhow::Result<OperationId> {
-    let lnurl = lnurl::lightning_address::LightningAddress::from_str(&address)?.lnurl();
-    let async_client = lnurl::AsyncClient::from_client(reqwest::Client::new());
-    let response = async_client.make_request(&lnurl.url).await?;
-    match response {
-        lnurl::LnUrlResponse::LnUrlPayResponse(response) => {
-            let invoice = async_client
-                .get_invoice(&response, amount_msats, None, None)
-                .await?;
-
-            let multimint = get_multimint();
-            let bolt11 = Bolt11Invoice::from_str(invoice.invoice())?;
-            let (gateway_url, amount_with_fees, is_lnv2) = multimint
-                .select_send_gateway(
-                    federation_id,
-                    Amount::from_msats(amount_msats),
-                    bolt11.clone(),
-                )
-                .await?;
-            let gateway = SafeUrl::parse(&gateway_url)?;
-            return multimint
-                .send(
-                    federation_id,
-                    bolt11.to_string(),
-                    gateway,
-                    is_lnv2,
-                    amount_with_fees,
-                    Some(address),
-                )
-                .await;
-        }
-        other => bail!("Unexpected response from lnurl: {other:?}"),
-    }
+    let lnurl =
+        parse_lnurl(&lnaddress_or_lnurl).ok_or(anyhow!("Invalid LNURL or Lightning Address"))?;
+    let pay_response = fedimint_lnurl::request(&lnurl.0)
+        .await
+        .map_err(|e| anyhow!(e))?;
+    let amount_sats = amount_msats / 1000;
+    let invoice_response = fedimint_lnurl::get_invoice(&pay_response, amount_sats * 1000)
+        .await
+        .map_err(|e| anyhow!(e))?;
+    Ok(invoice_response.pr.to_string())
 }
 
 #[frb]
@@ -754,9 +708,7 @@ pub async fn parse_scanned_text_for_federation(
         }
     }
 
-    if lnurl::lnurl::LnUrl::from_str(&text).is_ok()
-        || lnurl::lightning_address::LightningAddress::from_str(&text).is_ok()
-    {
+    if parse_lnurl(&text).is_some() {
         return Ok((
             ParsedText::LightningAddressOrLnurl(text),
             federation.clone(),
@@ -827,9 +779,7 @@ pub async fn parsed_scanned_text(
         }
     }
 
-    if lnurl::lnurl::LnUrl::from_str(&text).is_ok()
-        || lnurl::lightning_address::LightningAddress::from_str(&text).is_ok()
-    {
+    if parse_lnurl(&text).is_some() {
         // get a test invoice so we can determine the network
         let invoice = get_invoice_from_lnaddress_or_lnurl(1, text.clone()).await?;
         let bolt11 = Bolt11Invoice::from_str(&invoice)?;
