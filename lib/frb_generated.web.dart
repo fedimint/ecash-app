@@ -10,6 +10,7 @@ import 'dart:async';
 import 'dart:convert';
 import 'db.dart';
 import 'event_bus.dart';
+import 'fountain.dart';
 import 'frb_generated.dart';
 import 'lib.dart';
 import 'multimint.dart';
@@ -79,6 +80,18 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
 
   CrossPlatformFinalizerArg get rust_arc_decrement_strong_count_OobNotesPtr =>
       wire.rust_arc_decrement_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerOOBNotes;
+
+  CrossPlatformFinalizerArg
+  get rust_arc_decrement_strong_count_OobNotesDecoderPtr =>
+      wire.rust_arc_decrement_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerOOBNotesDecoder;
+
+  CrossPlatformFinalizerArg
+  get rust_arc_decrement_strong_count_OobNotesEncoderPtr =>
+      wire.rust_arc_decrement_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerOOBNotesEncoder;
+
+  CrossPlatformFinalizerArg
+  get rust_arc_decrement_strong_count_OobNotesWrapperPtr =>
+      wire.rust_arc_decrement_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerOOBNotesWrapper;
 
   CrossPlatformFinalizerArg
   get rust_arc_decrement_strong_count_OperationIdPtr =>
@@ -198,6 +211,24 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   );
 
   @protected
+  OobNotesDecoder
+  dco_decode_Auto_Owned_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerOOBNotesDecoder(
+    dynamic raw,
+  );
+
+  @protected
+  OobNotesEncoder
+  dco_decode_Auto_Owned_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerOOBNotesEncoder(
+    dynamic raw,
+  );
+
+  @protected
+  OobNotesWrapper
+  dco_decode_Auto_Owned_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerOOBNotesWrapper(
+    dynamic raw,
+  );
+
+  @protected
   OperationId
   dco_decode_Auto_Owned_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerOperationId(
     dynamic raw,
@@ -288,6 +319,18 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   );
 
   @protected
+  OobNotesDecoder
+  dco_decode_Auto_RefMut_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerOOBNotesDecoder(
+    dynamic raw,
+  );
+
+  @protected
+  OobNotesEncoder
+  dco_decode_Auto_RefMut_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerOOBNotesEncoder(
+    dynamic raw,
+  );
+
+  @protected
   PublicFederation
   dco_decode_Auto_RefMut_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerPublicFederation(
     dynamic raw,
@@ -356,6 +399,12 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   @protected
   OobNotes
   dco_decode_Auto_Ref_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerOOBNotes(
+    dynamic raw,
+  );
+
+  @protected
+  OobNotesWrapper
+  dco_decode_Auto_Ref_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerOOBNotesWrapper(
     dynamic raw,
   );
 
@@ -462,6 +511,24 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   );
 
   @protected
+  OobNotesDecoder
+  dco_decode_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerOOBNotesDecoder(
+    dynamic raw,
+  );
+
+  @protected
+  OobNotesEncoder
+  dco_decode_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerOOBNotesEncoder(
+    dynamic raw,
+  );
+
+  @protected
+  OobNotesWrapper
+  dco_decode_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerOOBNotesWrapper(
+    dynamic raw,
+  );
+
+  @protected
   OperationId
   dco_decode_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerOperationId(
     dynamic raw,
@@ -556,6 +623,12 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   @protected
   LightningAddressConfig
   dco_decode_box_autoadd_Auto_Owned_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerLightningAddressConfig(
+    dynamic raw,
+  );
+
+  @protected
+  OobNotesWrapper
+  dco_decode_box_autoadd_Auto_Owned_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerOOBNotesWrapper(
     dynamic raw,
   );
 
@@ -800,6 +873,12 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   );
 
   @protected
+  OobNotesWrapper?
+  dco_decode_opt_box_autoadd_Auto_Owned_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerOOBNotesWrapper(
+    dynamic raw,
+  );
+
+  @protected
   Contact? dco_decode_opt_box_autoadd_contact(dynamic raw);
 
   @protected
@@ -883,12 +962,6 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   @protected
   (FinalReceiveOperationState, BigInt)
   dco_decode_record_auto_owned_rust_opaque_flutter_rust_bridgefor_generated_rust_auto_opaque_inner_final_receive_operation_state_u_64(
-    dynamic raw,
-  );
-
-  @protected
-  (OperationId, String, BigInt)
-  dco_decode_record_auto_owned_rust_opaque_flutter_rust_bridgefor_generated_rust_auto_opaque_inner_operation_id_string_u_64(
     dynamic raw,
   );
 
@@ -1072,6 +1145,24 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   );
 
   @protected
+  OobNotesDecoder
+  sse_decode_Auto_Owned_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerOOBNotesDecoder(
+    SseDeserializer deserializer,
+  );
+
+  @protected
+  OobNotesEncoder
+  sse_decode_Auto_Owned_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerOOBNotesEncoder(
+    SseDeserializer deserializer,
+  );
+
+  @protected
+  OobNotesWrapper
+  sse_decode_Auto_Owned_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerOOBNotesWrapper(
+    SseDeserializer deserializer,
+  );
+
+  @protected
   OperationId
   sse_decode_Auto_Owned_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerOperationId(
     SseDeserializer deserializer,
@@ -1162,6 +1253,18 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   );
 
   @protected
+  OobNotesDecoder
+  sse_decode_Auto_RefMut_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerOOBNotesDecoder(
+    SseDeserializer deserializer,
+  );
+
+  @protected
+  OobNotesEncoder
+  sse_decode_Auto_RefMut_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerOOBNotesEncoder(
+    SseDeserializer deserializer,
+  );
+
+  @protected
   PublicFederation
   sse_decode_Auto_RefMut_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerPublicFederation(
     SseDeserializer deserializer,
@@ -1230,6 +1333,12 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   @protected
   OobNotes
   sse_decode_Auto_Ref_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerOOBNotes(
+    SseDeserializer deserializer,
+  );
+
+  @protected
+  OobNotesWrapper
+  sse_decode_Auto_Ref_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerOOBNotesWrapper(
     SseDeserializer deserializer,
   );
 
@@ -1336,6 +1445,24 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   );
 
   @protected
+  OobNotesDecoder
+  sse_decode_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerOOBNotesDecoder(
+    SseDeserializer deserializer,
+  );
+
+  @protected
+  OobNotesEncoder
+  sse_decode_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerOOBNotesEncoder(
+    SseDeserializer deserializer,
+  );
+
+  @protected
+  OobNotesWrapper
+  sse_decode_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerOOBNotesWrapper(
+    SseDeserializer deserializer,
+  );
+
+  @protected
   OperationId
   sse_decode_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerOperationId(
     SseDeserializer deserializer,
@@ -1432,6 +1559,12 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   @protected
   LightningAddressConfig
   sse_decode_box_autoadd_Auto_Owned_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerLightningAddressConfig(
+    SseDeserializer deserializer,
+  );
+
+  @protected
+  OobNotesWrapper
+  sse_decode_box_autoadd_Auto_Owned_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerOOBNotesWrapper(
     SseDeserializer deserializer,
   );
 
@@ -1720,6 +1853,12 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   );
 
   @protected
+  OobNotesWrapper?
+  sse_decode_opt_box_autoadd_Auto_Owned_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerOOBNotesWrapper(
+    SseDeserializer deserializer,
+  );
+
+  @protected
   Contact? sse_decode_opt_box_autoadd_contact(SseDeserializer deserializer);
 
   @protected
@@ -1805,12 +1944,6 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   @protected
   (FinalReceiveOperationState, BigInt)
   sse_decode_record_auto_owned_rust_opaque_flutter_rust_bridgefor_generated_rust_auto_opaque_inner_final_receive_operation_state_u_64(
-    SseDeserializer deserializer,
-  );
-
-  @protected
-  (OperationId, String, BigInt)
-  sse_decode_record_auto_owned_rust_opaque_flutter_rust_bridgefor_generated_rust_auto_opaque_inner_operation_id_string_u_64(
     SseDeserializer deserializer,
   );
 
@@ -2018,6 +2151,27 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
 
   @protected
   void
+  sse_encode_Auto_Owned_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerOOBNotesDecoder(
+    OobNotesDecoder self,
+    SseSerializer serializer,
+  );
+
+  @protected
+  void
+  sse_encode_Auto_Owned_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerOOBNotesEncoder(
+    OobNotesEncoder self,
+    SseSerializer serializer,
+  );
+
+  @protected
+  void
+  sse_encode_Auto_Owned_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerOOBNotesWrapper(
+    OobNotesWrapper self,
+    SseSerializer serializer,
+  );
+
+  @protected
+  void
   sse_encode_Auto_Owned_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerOperationId(
     OperationId self,
     SseSerializer serializer,
@@ -2123,6 +2277,20 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
 
   @protected
   void
+  sse_encode_Auto_RefMut_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerOOBNotesDecoder(
+    OobNotesDecoder self,
+    SseSerializer serializer,
+  );
+
+  @protected
+  void
+  sse_encode_Auto_RefMut_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerOOBNotesEncoder(
+    OobNotesEncoder self,
+    SseSerializer serializer,
+  );
+
+  @protected
+  void
   sse_encode_Auto_RefMut_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerPublicFederation(
     PublicFederation self,
     SseSerializer serializer,
@@ -2202,6 +2370,13 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   void
   sse_encode_Auto_Ref_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerOOBNotes(
     OobNotes self,
+    SseSerializer serializer,
+  );
+
+  @protected
+  void
+  sse_encode_Auto_Ref_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerOOBNotesWrapper(
+    OobNotesWrapper self,
     SseSerializer serializer,
   );
 
@@ -2326,6 +2501,27 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
 
   @protected
   void
+  sse_encode_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerOOBNotesDecoder(
+    OobNotesDecoder self,
+    SseSerializer serializer,
+  );
+
+  @protected
+  void
+  sse_encode_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerOOBNotesEncoder(
+    OobNotesEncoder self,
+    SseSerializer serializer,
+  );
+
+  @protected
+  void
+  sse_encode_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerOOBNotesWrapper(
+    OobNotesWrapper self,
+    SseSerializer serializer,
+  );
+
+  @protected
+  void
   sse_encode_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerOperationId(
     OperationId self,
     SseSerializer serializer,
@@ -2440,6 +2636,13 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   void
   sse_encode_box_autoadd_Auto_Owned_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerLightningAddressConfig(
     LightningAddressConfig self,
+    SseSerializer serializer,
+  );
+
+  @protected
+  void
+  sse_encode_box_autoadd_Auto_Owned_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerOOBNotesWrapper(
+    OobNotesWrapper self,
     SseSerializer serializer,
   );
 
@@ -2796,6 +2999,13 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   );
 
   @protected
+  void
+  sse_encode_opt_box_autoadd_Auto_Owned_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerOOBNotesWrapper(
+    OobNotesWrapper? self,
+    SseSerializer serializer,
+  );
+
+  @protected
   void sse_encode_opt_box_autoadd_contact(
     Contact? self,
     SseSerializer serializer,
@@ -2899,13 +3109,6 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   void
   sse_encode_record_auto_owned_rust_opaque_flutter_rust_bridgefor_generated_rust_auto_opaque_inner_final_receive_operation_state_u_64(
     (FinalReceiveOperationState, BigInt) self,
-    SseSerializer serializer,
-  );
-
-  @protected
-  void
-  sse_encode_record_auto_owned_rust_opaque_flutter_rust_bridgefor_generated_rust_auto_opaque_inner_operation_id_string_u_64(
-    (OperationId, String, BigInt) self,
     SseSerializer serializer,
   );
 
@@ -3277,6 +3480,54 @@ class RustLibWire implements BaseWire {
       );
 
   void
+  rust_arc_increment_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerOOBNotesDecoder(
+    int ptr,
+  ) => wasmModule
+      .rust_arc_increment_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerOOBNotesDecoder(
+        ptr,
+      );
+
+  void
+  rust_arc_decrement_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerOOBNotesDecoder(
+    int ptr,
+  ) => wasmModule
+      .rust_arc_decrement_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerOOBNotesDecoder(
+        ptr,
+      );
+
+  void
+  rust_arc_increment_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerOOBNotesEncoder(
+    int ptr,
+  ) => wasmModule
+      .rust_arc_increment_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerOOBNotesEncoder(
+        ptr,
+      );
+
+  void
+  rust_arc_decrement_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerOOBNotesEncoder(
+    int ptr,
+  ) => wasmModule
+      .rust_arc_decrement_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerOOBNotesEncoder(
+        ptr,
+      );
+
+  void
+  rust_arc_increment_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerOOBNotesWrapper(
+    int ptr,
+  ) => wasmModule
+      .rust_arc_increment_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerOOBNotesWrapper(
+        ptr,
+      );
+
+  void
+  rust_arc_decrement_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerOOBNotesWrapper(
+    int ptr,
+  ) => wasmModule
+      .rust_arc_decrement_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerOOBNotesWrapper(
+        ptr,
+      );
+
+  void
   rust_arc_increment_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerOperationId(
     int ptr,
   ) => wasmModule
@@ -3558,6 +3809,36 @@ extension type RustLibWasmModule._(JSObject _) implements JSObject {
 
   external void
   rust_arc_decrement_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerOOBNotes(
+    int ptr,
+  );
+
+  external void
+  rust_arc_increment_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerOOBNotesDecoder(
+    int ptr,
+  );
+
+  external void
+  rust_arc_decrement_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerOOBNotesDecoder(
+    int ptr,
+  );
+
+  external void
+  rust_arc_increment_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerOOBNotesEncoder(
+    int ptr,
+  );
+
+  external void
+  rust_arc_decrement_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerOOBNotesEncoder(
+    int ptr,
+  );
+
+  external void
+  rust_arc_increment_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerOOBNotesWrapper(
+    int ptr,
+  );
+
+  external void
+  rust_arc_decrement_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerOOBNotesWrapper(
     int ptr,
   );
 
