@@ -27,6 +27,7 @@ fedimint-ln-common = "0.10.0"
 fedimint-meta-client = "0.10.0"
 fedimint-mint-client = "0.10.0"
 fedimint-mint-common = "0.10.0"
+fedimint-lnurl = "0.11.0-beta.1"
 fedimint-wallet-client = "0.10.0"
 fedimint-wallet-common = "0.10.0"
 hex = "0.4"
@@ -34,7 +35,6 @@ flutter_rust_bridge = "=2.9.0"
 futures-timer = "3.0.3"
 futures-util = "0.3.30"
 lightning-invoice = { version = "0.33.2", features = ["std"] } # Needs to match fedimint's lightning-invoice
-fedimint-lnurl = { git = "https://github.com/fedimint/fedimint", rev = "2ced23d15cca007e73c9fe8c358e868cb0876f6e" }
 url = "2"
 nostr-sdk = { version = "0.42.0", features = [ "nip04" ]}
 regex = "1.11.1"

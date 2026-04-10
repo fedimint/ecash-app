@@ -455,9 +455,9 @@ checksum = "55248b47b0caf0546f7988906588779981c43bb1bc9d0c44087278f80cdb44ba"
 
 [[package]]
 name = "bech32"
-version = "0.11.0"
+version = "0.11.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "d965446196e3b7decd44aa7ee49e31d630118f90ef12f97900f262eb915c951d"
+checksum = "32637268377fc7b10a8c6d51de3e7fba1ce5dd371a96e342b34e6078db558e7f"
 
 [[package]]
 name = "bindgen"
@@ -1897,8 +1897,9 @@ dependencies = [
 
 [[package]]
 name = "fedimint-lnurl"
-version = "0.11.0-alpha"
-source = "git+https://github.com/fedimint/fedimint?rev=2ced23d15cca007e73c9fe8c358e868cb0876f6e#2ced23d15cca007e73c9fe8c358e868cb0876f6e"
+version = "0.11.0-beta.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "de55b7f0359b4e367042942a77351ca6a2043be1df4eb77cd8512bafb2572443"
 dependencies = [
  "bech32",
  "lightning-invoice",
