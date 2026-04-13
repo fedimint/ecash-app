@@ -5,8 +5,11 @@
 # Ecash App – A Fedimint Wallet
 
 <p align="center">
+  <a href="https://play.google.com/store/apps/details?id=org.fedimint.app&hl=en_US">
+    <img src="https://play.google.com/intl/en_us/badges/static/images/badges/en_badge_web_generic.png" alt="Get it on Google Play" height="80" style="vertical-align: middle;"/>
+  </a>
   <a href="https://zapstore.dev/apps/naddr1qvzqqqr7pvpzq9qaypfuk22ntt29420gvhx7cjf9yncwcqrxf94e3dcfnk4tt4jcqqgx7un89enx2erfd45kuapwv9c8q4xktv6">
-    <img src="https://github.com/zapstore/zapstore/raw/master/assets/images/badge.png" alt="Get it on Zapstore" height="60"/>
+    <img src="https://github.com/zapstore/zapstore/raw/master/assets/images/badge.png" alt="Get it on Zapstore" height="60" style="vertical-align: middle;"/>
   </a>
 </p>
 
