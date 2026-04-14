@@ -59,6 +59,7 @@ class _DashboardState extends State<Dashboard> {
   final ScrollController _scrollController = ScrollController();
   static const double _headerMaxExtent = 210.0;
   static const double _headerMinExtent = 64.0;
+  bool _isUserDragScroll = false;
 
   final Map<String, DepositEventKind> _depositMap = {};
   late final StreamSubscription<DepositEventKind> _depositSubscription;
@@ -170,10 +171,18 @@ class _DashboardState extends State<Dashboard> {
   }
 
   bool _handleScrollNotification(ScrollNotification notification) {
+    if (notification is ScrollStartNotification) {
+      _isUserDragScroll = notification.dragDetails != null;
+      return false;
+    }
     if (notification is! ScrollEndNotification) return false;
+    if (!_isUserDragScroll) return false;
+    _isUserDragScroll = false;
     if (!_scrollController.hasClients) return false;
     const collapseRange = _headerMaxExtent - _headerMinExtent;
-    final offset = _scrollController.offset;
+    final position = _scrollController.position;
+    if (position.maxScrollExtent < collapseRange) return false;
+    final offset = position.pixels;
     if (offset <= 0 || offset >= collapseRange) return false;
     final target = offset < collapseRange / 2 ? 0.0 : collapseRange;
     WidgetsBinding.instance.addPostFrameCallback((_) {
