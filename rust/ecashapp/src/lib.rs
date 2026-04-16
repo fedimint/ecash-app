@@ -6,14 +6,11 @@ mod fountain;
 mod frb_generated;
 mod multimint;
 mod nostr;
+mod parse;
 mod words;
 use bitcoin::key::rand::rngs::OsRng;
 use bitcoin::key::rand::seq::SliceRandom;
 use bitcoin::key::rand::Rng;
-use bitcoin_payment_instructions::http_resolver::HTTPHrnResolver;
-use bitcoin_payment_instructions::{
-    PaymentInstructions, PaymentMethod, PossiblyResolvedPaymentMethod,
-};
 use db::SeedPhraseAckKey;
 use event_bus::EventBus;
 use fedimint_client::module::module::recovery::RecoveryProgress;
@@ -36,14 +33,12 @@ use fedimint_bip39::Language;
 use fedimint_client::OperationId;
 use fedimint_core::rustls::install_crypto_provider;
 use fedimint_core::{
-    config::FederationId, db::Database, encoding::Encodable, invite_code::InviteCode,
-    util::SafeUrl, Amount,
+    config::FederationId, db::Database, encoding::Encodable, util::SafeUrl, Amount,
 };
 use fedimint_lnv2_client::FinalReceiveOperationState;
 use fedimint_mint_client::{OOBNotes, ReissueExternalNotesState, SpendOOBState};
 use fedimint_rocksdb::RocksDb;
 use lightning_invoice::Bolt11Invoice;
-use std::collections::BTreeMap;
 use std::path::PathBuf;
 use std::{str::FromStr, sync::Arc};
 
@@ -724,222 +719,55 @@ pub enum ParsedText {
     EcashNoFederation,
 }
 
+struct MultimintParseContext;
+
+#[async_trait::async_trait]
+impl parse::ParseContext for MultimintParseContext {
+    async fn federations(&self) -> Vec<FederationSelector> {
+        federations().await.into_iter().map(|(s, _)| s).collect()
+    }
+
+    async fn balance(&self, federation_id: &FederationId) -> u64 {
+        balance(federation_id).await
+    }
+
+    async fn parse_ecash(
+        &self,
+        federation_id: &FederationId,
+        notes: &OOBNotes,
+    ) -> anyhow::Result<u64> {
+        parse_ecash(federation_id, notes).await
+    }
+
+    async fn get_invoice_network(
+        &self,
+        lnurl_or_address: &str,
+    ) -> anyhow::Result<bitcoin::Network> {
+        let invoice = get_invoice_from_lnaddress_or_lnurl(1, lnurl_or_address.to_string()).await?;
+        let bolt11 = Bolt11Invoice::from_str(&invoice)?;
+        Ok(bolt11.network().clone())
+    }
+
+    async fn log_error(&self, msg: String) {
+        error_to_flutter(msg).await;
+    }
+}
+
 #[frb]
 pub async fn parse_scanned_text_for_federation(
     text: String,
     federation: &FederationSelector,
 ) -> anyhow::Result<(ParsedText, FederationSelector)> {
-    let network =
-        bitcoin::Network::from_str(&federation.network.clone().ok_or(anyhow!("No network"))?)?;
-
-    let instructions = bitcoin_payment_instructions::PaymentInstructions::parse(
-        &text,
-        network,
-        &HTTPHrnResolver,
-        false,
-    )
-    .await;
-
-    match instructions {
-        Ok(instructions) => {
-            if let Ok((parsed_text, fed)) =
-                handle_parsed_payment_instructions(&federation, &instructions, text.clone()).await
-            {
-                return Ok((parsed_text, fed));
-            }
-
-            return Err(anyhow!("No federation found with sufficient balance"));
-        }
-        Err(e) => {
-            error_to_flutter(format!("Error parsing payment instructions: {e:?}")).await;
-        }
-    }
-
-    if lnurl::lnurl::LnUrl::from_str(&text).is_ok()
-        || lnurl::lightning_address::LightningAddress::from_str(&text).is_ok()
-    {
-        return Ok((
-            ParsedText::LightningAddressOrLnurl(text),
-            federation.clone(),
-        ));
-    }
-
-    if let Ok(notes) = OOBNotes::from_str(&text) {
-        if let Ok(amount) = parse_ecash(&federation.federation_id, &notes).await {
-            return Ok((ParsedText::Ecash(amount), federation.clone()));
-        }
-    }
-
-    Err(anyhow!("Payment method not supported"))
+    let (parsed, selected) =
+        parse::parse_text(text, &MultimintParseContext, Some(federation.clone())).await?;
+    Ok((parsed, selected.unwrap_or_else(|| federation.clone())))
 }
 
 #[frb]
 pub async fn parsed_scanned_text(
     text: String,
 ) -> anyhow::Result<(ParsedText, Option<FederationSelector>)> {
-    // First try to parse as a federation invite code
-    if InviteCode::from_str(&text).is_ok() {
-        return Ok((ParsedText::InviteCode(text), None));
-    }
-
-    // Next try to parse the text as LN or Bitcoin payment instructions
-    // We need to loop over all networks and find the first federation that has a sufficient balance
-    let all_federations = federations().await;
-    let group_by_network: BTreeMap<bitcoin::Network, Vec<FederationSelector>> = all_federations
-        .clone()
-        .into_iter()
-        .filter_map(|(selector, flag)| {
-            let network_str = selector.network.as_ref()?;
-            let network = bitcoin::Network::from_str(network_str).ok()?;
-            Some((network, selector, flag))
-        })
-        .fold(BTreeMap::new(), |mut acc, (network, selector, _flag)| {
-            acc.entry(network).or_default().push(selector);
-            acc
-        });
-
-    for (network, federations) in group_by_network.iter() {
-        let instructions = bitcoin_payment_instructions::PaymentInstructions::parse(
-            &text,
-            *network,
-            &HTTPHrnResolver,
-            false,
-        )
-        .await;
-        match instructions {
-            Ok(instructions) => {
-                // Find the first federation that has a sufficient balance
-                for fed in federations {
-                    if let Ok((parsed_text, fed)) =
-                        handle_parsed_payment_instructions(&fed, &instructions, text.clone()).await
-                    {
-                        return Ok((parsed_text, Some(fed)));
-                    }
-                }
-
-                return Err(anyhow!("No federation found with sufficient balance"));
-            }
-            Err(e) => {
-                error_to_flutter(format!(
-                    "Error when trying to parse payment instructions: {e:?}"
-                ))
-                .await;
-            }
-        }
-    }
-
-    if lnurl::lnurl::LnUrl::from_str(&text).is_ok()
-        || lnurl::lightning_address::LightningAddress::from_str(&text).is_ok()
-    {
-        // get a test invoice so we can determine the network
-        let invoice = get_invoice_from_lnaddress_or_lnurl(1, text.clone()).await?;
-        let bolt11 = Bolt11Invoice::from_str(&invoice)?;
-        let network = bolt11.network();
-        if let Some(feds) = group_by_network.get(&network) {
-            if let Some(fed) = feds.first() {
-                return Ok((ParsedText::LightningAddressOrLnurl(text), Some(fed.clone())));
-            }
-        }
-    }
-
-    // Try to find a federation that can parse the ecash
-    if let Ok(notes) = OOBNotes::from_str(&text) {
-        for (federation, _) in all_federations {
-            if let Ok(amount) = parse_ecash(&federation.federation_id, &notes).await {
-                return Ok((ParsedText::Ecash(amount), Some(federation)));
-            }
-        }
-
-        // If none of our joined federation's can parse the ecash, lets prompt the user to join
-        if let Some(invite_code) = notes.federation_invite() {
-            return Ok((
-                ParsedText::InviteCodeWithEcash(invite_code.to_string(), text),
-                None,
-            ));
-        }
-
-        return Ok((ParsedText::EcashNoFederation, None));
-    }
-
-    Err(anyhow!("Payment method not supported"))
-}
-
-async fn handle_parsed_payment_instructions(
-    fed: &FederationSelector,
-    instructions: &PaymentInstructions,
-    text: String,
-) -> anyhow::Result<(ParsedText, FederationSelector)> {
-    match &instructions {
-        // We currently only support Bitcoin addresses for configurable amounts
-        PaymentInstructions::ConfigurableAmount(configurable) => {
-            for method in configurable.methods() {
-                match method {
-                    PossiblyResolvedPaymentMethod::Resolved(resolved) => {
-                        if let PaymentMethod::OnChain(address) = resolved {
-                            return Ok((
-                                ParsedText::BitcoinAddress(address.to_string(), None),
-                                fed.clone(),
-                            ));
-                        }
-                    }
-                    PossiblyResolvedPaymentMethod::LNURLPay {
-                        min_value: _,
-                        max_value: _,
-                        callback: _,
-                    } => {
-                        return Ok((ParsedText::LightningAddressOrLnurl(text), fed.clone()));
-                    }
-                }
-            }
-        }
-        PaymentInstructions::FixedAmount(fixed) => {
-            let balance = balance(&fed.federation_id).await;
-            // Find a payment method that we support
-            let mut found_payment_method = None;
-            for method in fixed.methods() {
-                match method {
-                    PaymentMethod::LightningBolt11(invoice) => {
-                        // Verify that the federation's balance is sufficient to pay the invoice
-                        if let Some(lightning_amount) = fixed.ln_payment_amount() {
-                            if balance >= lightning_amount.milli_sats() {
-                                found_payment_method = Some((
-                                    ParsedText::LightningInvoice(invoice.to_string()),
-                                    fed.clone(),
-                                ));
-                            }
-                        }
-                    }
-                    PaymentMethod::OnChain(address) => {
-                        // Verify that the federation's balance is sufficient to pay the onchain address
-                        if let Some(onchain_amount) = fixed.onchain_payment_amount() {
-                            if balance >= onchain_amount.milli_sats() {
-                                // Prefer using Lightning if its available
-                                if found_payment_method.is_none() {
-                                    found_payment_method = Some((
-                                        ParsedText::BitcoinAddress(
-                                            address.to_string(),
-                                            Some(onchain_amount.milli_sats()),
-                                        ),
-                                        fed.clone(),
-                                    ));
-                                }
-                            }
-                        }
-                    }
-                    method => {
-                        info_to_flutter(format!("Payment method not supported: {:?}", method))
-                            .await;
-                    }
-                }
-            }
-
-            if let Some(payment_method) = found_payment_method {
-                return Ok(payment_method);
-            }
-        }
-    }
-
-    Err(anyhow!("Cannot find payment method"))
+    parse::parse_text(text, &MultimintParseContext, None).await
 }
 
 #[frb]
