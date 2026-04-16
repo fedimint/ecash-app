@@ -548,4 +548,130 @@ mod tests {
         let result = parse_text(invite, &ctx, Some(fed_sel)).await;
         assert!(result.is_err());
     }
+
+    // -- BIP321 test vectors ---------------------------------------------------
+    //
+    // Sample URIs below are derived from the example shapes shown in BIP-321
+    // (https://bips.dev/321/), adapted with real addresses and freshly-signed
+    // invoices so the underlying parser accepts them.
+
+    // Mainnet SegWit address borrowed from bitcoin-payment-instructions' own
+    // sample vectors — balanced against `0.00001 BTC` for BIP321 tests.
+    const BTC_BECH32_MAINNET: &str = "BC1QYLH3U67J673H6Y6ALV70M0PL2YZ53TZHVXGG7U";
+
+    fn bitcoin_fed_with_balance(balance_msats: u64) -> (FederationSelector, FakeParseContext) {
+        let fed_sel = fed(0x01, "fed-btc", Some("bitcoin"));
+        let mut balances = HashMap::new();
+        if balance_msats > 0 {
+            balances.insert(fed_sel.federation_id, balance_msats);
+        }
+        let ctx = FakeParseContext {
+            feds: vec![fed_sel.clone()],
+            balances,
+            ..Default::default()
+        };
+        (fed_sel, ctx)
+    }
+
+    #[tokio::test]
+    async fn bip21_with_label_only_returns_configurable_bitcoin_address() {
+        // No `amount` → parser yields a ConfigurableAmount, which maps to
+        // `BitcoinAddress(_, None)` regardless of balance.
+        let (_, ctx) = bitcoin_fed_with_balance(0);
+        let uri = format!("bitcoin:{BTC_ADDRESS_MAINNET}?label=Luke-Jr");
+
+        let (parsed, selected) = parse_text(uri, &ctx, None).await.unwrap();
+        match parsed {
+            ParsedText::BitcoinAddress(_, None) => {}
+            other => panic!("expected BitcoinAddress(None), got {other:?}"),
+        }
+        assert!(selected.is_some());
+    }
+
+    #[tokio::test]
+    async fn bip21_with_amount_label_and_message_returns_bitcoin_address_with_amount() {
+        // Full BIP21 query-string coverage: `amount`, `label`, url-encoded `message`.
+        // 50 BTC == 5 * 10^12 msats — give the fed plenty of headroom.
+        let (fed_sel, ctx) = bitcoin_fed_with_balance(10_000_000_000_000);
+        let uri = format!(
+            "bitcoin:{BTC_ADDRESS_MAINNET}?amount=50&label=Luke-Jr&message=Donation%20for%20project%20xyz"
+        );
+
+        let (parsed, selected) = parse_text(uri, &ctx, None).await.unwrap();
+        match parsed {
+            ParsedText::BitcoinAddress(_, Some(msats)) => {
+                assert_eq!(msats, 5_000_000_000_000);
+            }
+            other => panic!("expected BitcoinAddress(Some), got {other:?}"),
+        }
+        assert_eq!(selected.unwrap().federation_id, fed_sel.federation_id);
+    }
+
+    #[tokio::test]
+    async fn bip321_address_plus_lightning_prefers_lightning_when_balance_sufficient() {
+        // When both an on-chain address AND a lightning invoice are present and
+        // the federation has enough balance for both, the Lightning method wins
+        // (see the iteration order in handle_parsed_payment_instructions).
+        let (fed_sel, ctx) = bitcoin_fed_with_balance(1_000_000_000_000);
+        // 1000 sats = 0.00001 BTC = 1_000_000 msats — amounts must agree or
+        // the parser rejects the URI as inconsistent.
+        let invoice = make_test_bolt11(1_000_000);
+        let uri = format!("bitcoin:{BTC_BECH32_MAINNET}?amount=0.00001&lightning={invoice}");
+
+        let (parsed, selected) = parse_text(uri, &ctx, None).await.unwrap();
+        assert!(matches!(parsed, ParsedText::LightningInvoice(_)));
+        assert_eq!(selected.unwrap().federation_id, fed_sel.federation_id);
+    }
+
+    #[tokio::test]
+    async fn bip321_address_plus_lightning_with_zero_balance_errors() {
+        // Same URI shape as above, but with no balance — neither method is
+        // viable, so the caller gets the "no federation with balance" error.
+        let (_, ctx) = bitcoin_fed_with_balance(0);
+        let invoice = make_test_bolt11(1_000_000);
+        let uri = format!("bitcoin:{BTC_BECH32_MAINNET}?amount=0.00001&lightning={invoice}");
+
+        let result = parse_text(uri, &ctx, None).await;
+        assert!(result.is_err(), "expected error for zero balance");
+    }
+
+    #[tokio::test]
+    async fn bip321_lightning_only_uri_returns_lightning_invoice() {
+        // `bitcoin:?lightning=<inv>` — no on-chain address, lightning-only.
+        let (fed_sel, ctx) = bitcoin_fed_with_balance(1_000_000_000_000);
+        let invoice = make_test_bolt11(1_000_000);
+        let uri = format!("bitcoin:?lightning={invoice}");
+
+        let (parsed, selected) = parse_text(uri, &ctx, None).await.unwrap();
+        assert!(matches!(parsed, ParsedText::LightningInvoice(_)));
+        assert_eq!(selected.unwrap().federation_id, fed_sel.federation_id);
+    }
+
+    #[tokio::test]
+    async fn bip21_with_unknown_optional_parameters_is_accepted() {
+        // Unknown non-`req-` params must be ignored per BIP21. Parser should
+        // still return a BitcoinAddress with the specified amount.
+        let (_, ctx) = bitcoin_fed_with_balance(1_000_000_000_000);
+        let uri =
+            format!("bitcoin:{BTC_ADDRESS_MAINNET}?amount=0.00001&somethingyoudontunderstand=50");
+
+        let (parsed, _) = parse_text(uri, &ctx, None).await.unwrap();
+        match parsed {
+            ParsedText::BitcoinAddress(_, Some(msats)) => assert_eq!(msats, 1_000_000),
+            other => panic!("expected BitcoinAddress(Some), got {other:?}"),
+        }
+    }
+
+    #[tokio::test]
+    async fn bip321_with_required_unknown_parameter_errors() {
+        // `req-<name>` params indicate features the wallet MUST support. An
+        // unknown `req-` parameter should cause parsing to fail per BIP21.
+        let (_, ctx) = bitcoin_fed_with_balance(1_000_000_000_000);
+        let uri = format!(
+            "bitcoin:{BTC_ADDRESS_MAINNET}?amount=0.00001&req-somethingyoudontunderstand=50"
+        );
+
+        let result = parse_text(uri, &ctx, None).await;
+        assert!(result.is_err(), "unknown req- param must reject URI");
+    }
 }

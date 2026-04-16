@@ -745,7 +745,7 @@ impl parse::ParseContext for MultimintParseContext {
     ) -> anyhow::Result<bitcoin::Network> {
         let invoice = get_invoice_from_lnaddress_or_lnurl(1, lnurl_or_address.to_string()).await?;
         let bolt11 = Bolt11Invoice::from_str(&invoice)?;
-        Ok(bolt11.network().clone())
+        Ok(bolt11.network())
     }
 
     async fn log_error(&self, msg: String) {
