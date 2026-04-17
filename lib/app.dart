@@ -25,6 +25,7 @@ import 'package:ecashapp/widgets/federation_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:provider/provider.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 final invoicePaidToastVisible = ValueNotifier<bool>(true);
 
@@ -158,6 +159,25 @@ class _MyAppState extends State<MyApp> {
             icon: Icon(Icons.error, color: Colors.red),
           );
         }
+      } else if (event is MultimintEvent_UpdateAvailable) {
+        if (!mounted) return;
+        final ctx = _navigatorKey.currentContext;
+        final l10n = ctx?.l10n;
+        final primary =
+            ctx != null ? Theme.of(ctx).colorScheme.primary : Colors.amber;
+        ToastService().show(
+          message:
+              l10n?.updateAvailableToast(event.field0) ??
+              'Update available: v${event.field0}. Tap to update.',
+          duration: const Duration(seconds: 10),
+          onTap: () {
+            launchUrl(
+              Uri.parse('https://ecash.love'),
+              mode: LaunchMode.externalApplication,
+            );
+          },
+          icon: Icon(Icons.system_update, color: primary),
+        );
       }
     });
   }

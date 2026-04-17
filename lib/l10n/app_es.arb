@@ -73,6 +73,7 @@
   "mnemonic": "Frase semilla",
   "mnemonicSubtitle": "Ver tu frase semilla",
   "versionLabel": "Versión: {version}",
+  "updateAvailableToast": "Actualización disponible: v{version}. Toca para actualizar.",
   "enterInviteCode": "Ingresar código de invitación",
   "preview": "Vista previa",
   "noPublicFederations": "No hay federaciones públicas disponibles para unirse",
