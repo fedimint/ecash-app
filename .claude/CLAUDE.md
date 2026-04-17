@@ -30,8 +30,6 @@ All commands should be prefixed with `nix develop` or run within the nix shell:
   - Runs `flutter_rust_bridge_codegen` to generate Dart/Rust FFI bindings
   - Runs `flutter pub run build_runner build` for freezed code generation
 - `just build-linux` - Build the Rust library for Linux
-- `just build-android-x86_64` - Build for Android x86_64
-- `just build-android-arm` - Build for Android ARM
 - `just build-debug-android` - Build debug APK using Docker (pass `--aab` for App Bundle)
 - `just run` - Run the app on Linux with software rendering
 

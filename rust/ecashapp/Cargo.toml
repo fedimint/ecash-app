@@ -12,24 +12,24 @@ async-stream = "0.3.6"
 async-trait = "0.1.88"
 bitcoin = { version = "0.32.5", features = ["serde"] }
 bitcoin-payment-instructions = { version = "0.4.0", features = [ "http" ]}
-fedimint-api-client = "0.10.0"
-fedimint-bip39 = "0.10.0"
-fedimint-core = "0.10.0"
-fedimint-fountain = "0.10.0"
-fedimint-client = "0.10.0"
-fedimint-eventlog = "0.10.0"
-fedimint-connectors = "0.10.0"
-fedimint-derive-secret = "0.10.0"
-fedimint-rocksdb = "0.10.0"
-fedimint-ln-client = "0.10.0"
-fedimint-lnv2-client = "0.10.0"
-fedimint-lnv2-common = "0.10.0"
-fedimint-ln-common = "0.10.0"
-fedimint-meta-client = "0.10.0"
-fedimint-mint-client = "0.10.0"
-fedimint-mint-common = "0.10.0"
-fedimint-wallet-client = "0.10.0"
-fedimint-wallet-common = "0.10.0"
+fedimint-api-client = "0.11.0"
+fedimint-bip39 = "0.11.0"
+fedimint-core = "0.11.0"
+fedimint-fountain = "0.11.0"
+fedimint-client = "0.11.0"
+fedimint-eventlog = "0.11.0"
+fedimint-connectors = "0.11.0"
+fedimint-derive-secret = "0.11.0"
+fedimint-rocksdb = "0.11.0"
+fedimint-ln-client = "0.11.0"
+fedimint-lnv2-client = "0.11.0"
+fedimint-lnv2-common = "0.11.0"
+fedimint-ln-common = "0.11.0"
+fedimint-meta-client = "0.11.0"
+fedimint-mint-client = "0.11.0"
+fedimint-mint-common = "0.11.0"
+fedimint-wallet-client = "0.11.0"
+fedimint-wallet-common = "0.11.0"
 hex = "0.4"
 flutter_rust_bridge = "=2.9.0"
 futures-timer = "3.0.3"
@@ -47,7 +47,6 @@ serde_json = "1.0.140"
 tokio = "1.45.1"
 
 [profile.dev.package]
-tikv-jemalloc-sys = { opt-level = 3 }
 librocksdb-sys = { opt-level = 3 }
 secp256k1 = { opt-level = 3}
 secp256k1-sys = { opt-level = 3}
@@ -60,7 +59,6 @@ strip = false
 debug = "line-tables-only"
 
 [profile.release.package]
-tikv-jemalloc-sys = { opt-level = 3 }
 librocksdb-sys = { opt-level = 3 }
 secp256k1 = { opt-level = 3}
 secp256k1-sys = { opt-level = 3}
@@ -75,7 +73,6 @@ codegen-units = 16
 incremental = true
 
 [profile.release-dev.package]
-tikv-jemalloc-sys = { opt-level = 3 }
 librocksdb-sys = { opt-level = 3 }
 secp256k1 = { opt-level = 3 }
 secp256k1-sys = { opt-level = 3 }

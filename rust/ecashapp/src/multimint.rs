@@ -1130,6 +1130,7 @@ impl Multimint {
             if !client.has_pending_recoveries() {
                 let mut dbtx = self.db.begin_transaction().await;
                 let metadata: BTreeMap<String, String> = BTreeMap::new();
+                #[allow(deprecated)]
                 let backup_result = client
                     .backup_to_federation(fedimint_client::backup::Metadata::from_json_serialized(
                         metadata,
@@ -1569,6 +1570,7 @@ impl Multimint {
                 let client_preview = client_builder
                     .preview(connectors.clone(), invite_code)
                     .await?;
+                #[allow(deprecated)]
                 let backup = client_preview
                     .download_backup_from_federation(
                         fedimint_client::RootSecret::StandardDoubleDerive(
