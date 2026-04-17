@@ -21,9 +21,7 @@ use fedimint_client::{
     secret::RootSecretStrategy,
     Client, ClientHandleArc, OperationId,
 };
-use fedimint_connectors::{
-    Connectivity, ConnectorRegistry, PeerStatus as FedimintPeerStatus,
-};
+use fedimint_connectors::{Connectivity, ConnectorRegistry, PeerStatus as FedimintPeerStatus};
 use fedimint_core::{
     config::FederationId,
     db::{mem_impl::MemDatabase, Database, IDatabaseTransactionOpsCoreTyped},
@@ -1460,8 +1458,8 @@ impl Multimint {
         // because the client will go out of scope and end the stream. So instead, we just lookup the federation's online status by querying
         // the fedimintd version.
         if invite.is_some() {
-            let peer_statuses = futures_util::future::join_all(peers.iter().map(
-                |(peer_id, (name, url))| {
+            let peer_statuses =
+                futures_util::future::join_all(peers.iter().map(|(peer_id, (name, url))| {
                     let client = client.clone();
                     async move {
                         let online = client
@@ -1479,9 +1477,8 @@ impl Multimint {
                             url: url.clone(),
                         }
                     }
-                },
-            ))
-            .await;
+                }))
+                .await;
 
             return Ok(stream::once(async { peer_statuses }).boxed());
         }
@@ -1493,13 +1490,12 @@ impl Multimint {
             let peers_status: Vec<PeerStatus> = peers
                 .iter()
                 .map(|(peer_id, (name, url))| {
-                    let (online, connectivity) =
-                        match status_map.get(&(*peer_id).into()) {
-                            Some(FedimintPeerStatus::Connected(c)) => (true, (*c).into()),
-                            Some(FedimintPeerStatus::Disconnected) | None => {
-                                (false, PeerConnectivity::Unknown)
-                            }
-                        };
+                    let (online, connectivity) = match status_map.get(&(*peer_id).into()) {
+                        Some(FedimintPeerStatus::Connected(c)) => (true, (*c).into()),
+                        Some(FedimintPeerStatus::Disconnected) | None => {
+                            (false, PeerConnectivity::Unknown)
+                        }
+                    };
                     PeerStatus {
                         peer_id: *peer_id,
                         name: name.clone(),
