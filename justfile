@@ -5,12 +5,6 @@ generate:
   # Generate localization files from ARB sources
   flutter gen-l10n
 
-build-android-x86_64:
-  $ROOT/scripts/build-android.sh
-
-build-android-arm:
-  $ROOT/scripts/build-arm-android.sh
-
 build-linux:
   $ROOT/scripts/build-linux.sh release-dev
 
