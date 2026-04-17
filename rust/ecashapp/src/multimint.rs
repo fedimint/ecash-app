@@ -21,7 +21,9 @@ use fedimint_client::{
     secret::RootSecretStrategy,
     Client, ClientHandleArc, OperationId,
 };
-use fedimint_connectors::ConnectorRegistry;
+use fedimint_connectors::{
+    Connectivity, ConnectorRegistry, PeerStatus as FedimintPeerStatus,
+};
 use fedimint_core::{
     config::FederationId,
     db::{mem_impl::MemDatabase, Database, IDatabaseTransactionOpsCoreTyped},
@@ -167,11 +169,34 @@ pub struct Guardian {
     pub version: Option<String>,
 }
 
+#[derive(Debug, Serialize, Clone, Copy)]
+pub enum PeerConnectivity {
+    Direct,
+    Relay,
+    Mixed,
+    Tor,
+    Unknown,
+}
+
+impl From<Connectivity> for PeerConnectivity {
+    fn from(c: Connectivity) -> Self {
+        match c {
+            Connectivity::Direct => PeerConnectivity::Direct,
+            Connectivity::Relay => PeerConnectivity::Relay,
+            Connectivity::Mixed => PeerConnectivity::Mixed,
+            Connectivity::Tor => PeerConnectivity::Tor,
+            Connectivity::Unknown => PeerConnectivity::Unknown,
+        }
+    }
+}
+
 #[derive(Debug, Serialize, Clone)]
 pub struct PeerStatus {
     pub peer_id: u16,
     pub name: String,
     pub online: bool,
+    pub connectivity: PeerConnectivity,
+    pub url: String,
 }
 
 #[derive(Debug, Serialize, Clone)]
@@ -1417,33 +1442,46 @@ impl Multimint {
             }
         };
 
-        // Get the peer names from the federation config
+        // Get the peer names and URLs from the federation config
         let config = client.config().await;
-        let peers: BTreeMap<u16, String> = config
+        let peers: BTreeMap<u16, (String, String)> = config
             .global
             .api_endpoints
             .iter()
-            .map(|(peer_id, endpoint)| (peer_id.to_usize() as u16, endpoint.name.clone()))
+            .map(|(peer_id, endpoint)| {
+                (
+                    peer_id.to_usize() as u16,
+                    (endpoint.name.clone(), endpoint.url.to_string()),
+                )
+            })
             .collect();
 
         // If the invite code is available, that means we have not joined the federation yet. We cannot use the `connection_stream_status`
         // because the client will go out of scope and end the stream. So instead, we just lookup the federation's online status by querying
         // the fedimintd version.
         if invite.is_some() {
-            let peer_statuses =
-                futures_util::future::join_all(peers.iter().map(|(peer_id, name)| async {
-                    let online = client
-                        .api()
-                        .fedimintd_version((*peer_id).into())
-                        .await
-                        .is_ok();
-                    PeerStatus {
-                        peer_id: *peer_id,
-                        name: name.clone(),
-                        online,
+            let peer_statuses = futures_util::future::join_all(peers.iter().map(
+                |(peer_id, (name, url))| {
+                    let client = client.clone();
+                    async move {
+                        let online = client
+                            .api()
+                            .fedimintd_version((*peer_id).into())
+                            .await
+                            .is_ok();
+                        PeerStatus {
+                            peer_id: *peer_id,
+                            name: name.clone(),
+                            online,
+                            // The preview path calls fedimintd_version directly rather than
+                            // going through the pooled connection, so the hop is always direct.
+                            connectivity: PeerConnectivity::Direct,
+                            url: url.clone(),
+                        }
                     }
-                }))
-                .await;
+                },
+            ))
+            .await;
 
             return Ok(stream::once(async { peer_statuses }).boxed());
         }
@@ -1451,16 +1489,23 @@ impl Multimint {
         // Get the connection status stream from the client
         let status_stream = client.api().connection_status_stream();
 
-        // Map the BTreeMap<PeerId, bool> to FederationPeerStatus
         let mapped_stream = status_stream.map(move |status_map| {
             let peers_status: Vec<PeerStatus> = peers
                 .iter()
-                .map(|(peer_id, name)| {
-                    let online = status_map.get(&(*peer_id).into()).copied().unwrap_or(false);
+                .map(|(peer_id, (name, url))| {
+                    let (online, connectivity) =
+                        match status_map.get(&(*peer_id).into()) {
+                            Some(FedimintPeerStatus::Connected(c)) => (true, (*c).into()),
+                            Some(FedimintPeerStatus::Disconnected) | None => {
+                                (false, PeerConnectivity::Unknown)
+                            }
+                        };
                     PeerStatus {
                         peer_id: *peer_id,
                         name: name.clone(),
                         online,
+                        connectivity,
+                        url: url.clone(),
                     }
                 })
                 .collect();

@@ -448,6 +448,7 @@ class _FederationInfoScreenState extends State<FederationInfoScreen> {
         final peer = _peers![index];
         final isOnline = peer.online;
 
+        final theme = Theme.of(context);
         return ListTile(
           dense: true,
           contentPadding: EdgeInsets.zero,
@@ -459,10 +460,23 @@ class _FederationInfoScreenState extends State<FederationInfoScreen> {
           title: Text(peer.name),
           subtitle:
               isOnline
-                  ? Text(
-                    context.l10n.versionLabel(
-                      widget.guardians?[index].version ?? '',
-                    ),
+                  ? Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        context.l10n.versionLabel(
+                          widget.guardians?[index].version ?? '',
+                        ),
+                      ),
+                      Text(
+                        '${_connectivityLabel(context, peer.connectivity)} · ${_truncateUrl(peer.url)}',
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: Colors.grey,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ],
                   )
                   : Text(context.l10n.disconnected),
           trailing:
@@ -809,5 +823,36 @@ class _FederationInfoScreenState extends State<FederationInfoScreen> {
         ),
       ),
     );
+  }
+
+  String _connectivityLabel(BuildContext context, PeerConnectivity c) {
+    switch (c) {
+      case PeerConnectivity.direct:
+        return context.l10n.connectionDirect;
+      case PeerConnectivity.relay:
+        return context.l10n.connectionRelay;
+      case PeerConnectivity.mixed:
+        return context.l10n.connectionMixed;
+      case PeerConnectivity.tor:
+        return context.l10n.connectionTor;
+      case PeerConnectivity.unknown:
+        return context.l10n.connectionUnknown;
+    }
+  }
+
+  // iroh URLs embed a 64-char hex node id that blows out the subtitle line on
+  // mobile; collapse the middle for long URLs. wss/http URLs are usually short
+  // enough to show in full.
+  String _truncateUrl(String url) {
+    const maxLen = 32;
+    if (url.length <= maxLen) return url;
+    final schemeEnd = url.indexOf('://');
+    if (schemeEnd < 0) {
+      return '${url.substring(0, 6)}…${url.substring(url.length - 6)}';
+    }
+    final prefix = url.substring(0, schemeEnd + 3);
+    final rest = url.substring(schemeEnd + 3);
+    if (rest.length <= 10) return url;
+    return '$prefix${rest.substring(0, 4)}…${rest.substring(rest.length - 4)}';
   }
 }

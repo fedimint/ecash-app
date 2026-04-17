@@ -564,6 +564,21 @@
   "disconnected": "Disconnected",
   "@disconnected": {},
 
+  "connectionDirect": "Direct",
+  "@connectionDirect": {},
+
+  "connectionRelay": "Relayed",
+  "@connectionRelay": {},
+
+  "connectionMixed": "Mixed",
+  "@connectionMixed": {},
+
+  "connectionTor": "Tor",
+  "@connectionTor": {},
+
+  "connectionUnknown": "Unknown",
+  "@connectionUnknown": {},
+
   "disconnect": "Disconnect",
   "@disconnect": {},
 

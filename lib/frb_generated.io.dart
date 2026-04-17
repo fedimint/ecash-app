@@ -919,6 +919,9 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   );
 
   @protected
+  PeerConnectivity dco_decode_peer_connectivity(dynamic raw);
+
+  @protected
   PeerStatus dco_decode_peer_status(dynamic raw);
 
   @protected
@@ -1899,6 +1902,9 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   PaymentPreviewWithGateways sse_decode_payment_preview_with_gateways(
     SseDeserializer deserializer,
   );
+
+  @protected
+  PeerConnectivity sse_decode_peer_connectivity(SseDeserializer deserializer);
 
   @protected
   PeerStatus sse_decode_peer_status(SseDeserializer deserializer);
@@ -3055,6 +3061,12 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   @protected
   void sse_encode_payment_preview_with_gateways(
     PaymentPreviewWithGateways self,
+    SseSerializer serializer,
+  );
+
+  @protected
+  void sse_encode_peer_connectivity(
+    PeerConnectivity self,
     SseSerializer serializer,
   );
 
