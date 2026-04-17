@@ -277,6 +277,15 @@
     }
   },
 
+  "updateAvailableToast": "Update available: v{version}. Tap to update.",
+  "@updateAvailableToast": {
+    "placeholders": {
+      "version": {
+        "type": "String"
+      }
+    }
+  },
+
   "enterInviteCode": "Enter invite code",
   "@enterInviteCode": {},
 

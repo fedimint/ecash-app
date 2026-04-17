@@ -14532,6 +14532,10 @@ impl SseDecode for crate::multimint::MultimintEvent {
                     <crate::multimint::ContactSyncEventKind>::sse_decode(deserializer);
                 return crate::multimint::MultimintEvent::ContactSync(var_field0);
             }
+            10 => {
+                let mut var_field0 = <String>::sse_decode(deserializer);
+                return crate::multimint::MultimintEvent::UpdateAvailable(var_field0);
+            }
             _ => {
                 unimplemented!("");
             }
@@ -17020,6 +17024,9 @@ impl flutter_rust_bridge::IntoDart for crate::multimint::MultimintEvent {
             crate::multimint::MultimintEvent::ContactSync(field0) => {
                 [9.into_dart(), field0.into_into_dart().into_dart()].into_dart()
             }
+            crate::multimint::MultimintEvent::UpdateAvailable(field0) => {
+                [10.into_dart(), field0.into_into_dart().into_dart()].into_dart()
+            }
             _ => {
                 unimplemented!("");
             }
@@ -18528,6 +18535,10 @@ impl SseEncode for crate::multimint::MultimintEvent {
             crate::multimint::MultimintEvent::ContactSync(field0) => {
                 <i32>::sse_encode(9, serializer);
                 <crate::multimint::ContactSyncEventKind>::sse_encode(field0, serializer);
+            }
+            crate::multimint::MultimintEvent::UpdateAvailable(field0) => {
+                <i32>::sse_encode(10, serializer);
+                <String>::sse_encode(field0, serializer);
             }
             _ => {
                 unimplemented!("");

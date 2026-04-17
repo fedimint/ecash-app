@@ -2,7 +2,10 @@ use std::{
     collections::{BTreeMap, BTreeSet},
     fmt::{self, Display},
     str::FromStr,
-    sync::Arc,
+    sync::{
+        atomic::{AtomicBool, Ordering},
+        Arc,
+    },
     time::{Duration, UNIX_EPOCH},
 };
 
@@ -85,6 +88,19 @@ const CACHE_UPDATE_INTERVAL_SECS: u64 = 30;
 const PRICE_CACHE_UPDATE_INTERVAL_SECS: u64 = 60 * 5;
 const FEDERATION_BACKUP_CACHE_UPDATE_INTERVAL_SECS: u64 = 60 * 60 * 24;
 const CONTACT_SYNC_INTERVAL_SECS: u64 = 90;
+const VERSION_CHECK_INTERVAL_SECS: u64 = 60 * 60 * 6;
+const GITHUB_LATEST_RELEASE_URL: &str =
+    "https://api.github.com/repos/fedimint/ecash-app/releases/latest";
+
+fn is_newer_version(current: &str, latest: &str) -> bool {
+    match (
+        semver::Version::parse(current),
+        semver::Version::parse(latest),
+    ) {
+        (Ok(c), Ok(l)) => l > c,
+        _ => false,
+    }
+}
 
 #[derive(Clone, Eq, PartialEq, Serialize, Debug, Encodable, Decodable)]
 pub struct FederationSelector {
@@ -147,6 +163,7 @@ pub struct Multimint {
     allocated_bitcoin_addresses:
         Arc<RwLock<BTreeMap<FederationId, BTreeMap<TweakIdx, (String, Option<u64>)>>>>,
     recurringd_invoices: Arc<RwLock<BTreeSet<OperationId>>>,
+    update_notified: Arc<AtomicBool>,
 }
 
 #[derive(Debug, Serialize, Encodable, Decodable, Clone)]
@@ -380,6 +397,7 @@ pub enum MultimintEvent {
     NostrRelayStatus(String, RelayStatusKind),
     NostrRecoveryPhase(NostrRecoveryPhase),
     ContactSync(ContactSyncEventKind),
+    UpdateAvailable(String),
 }
 
 #[derive(Clone, Eq, PartialEq, Serialize, Debug)]
@@ -510,6 +528,7 @@ impl Multimint {
             internal_ecash_spends: Arc::new(RwLock::new(BTreeSet::new())),
             allocated_bitcoin_addresses: Arc::new(RwLock::new(BTreeMap::new())),
             recurringd_invoices: Arc::new(RwLock::new(BTreeSet::new())),
+            update_notified: Arc::new(AtomicBool::new(false)),
         };
 
         multimint.load_clients().await?;
@@ -1059,8 +1078,23 @@ impl Multimint {
                 // needs updating
                 let mut interval = tokio::time::interval(Duration::from_secs(5));
                 interval.tick().await;
+                let mut last_version_check: Option<std::time::SystemTime> = None;
                 loop {
                     let now = std::time::SystemTime::now();
+
+                    if !self_copy.update_notified.load(Ordering::Relaxed) {
+                        let version_due = match last_version_check {
+                            Some(t) => now
+                                .duration_since(t)
+                                .map(|d| d.as_secs() >= VERSION_CHECK_INTERVAL_SECS)
+                                .unwrap_or(true),
+                            None => true,
+                        };
+                        if version_due {
+                            last_version_check = Some(now);
+                            self_copy.check_for_update().await;
+                        }
+                    }
                     let threshold = now
                         .checked_sub(Duration::from_secs(CACHE_UPDATE_INTERVAL_SECS))
                         .expect("Cannot be negative");
@@ -1159,6 +1193,40 @@ impl Multimint {
                     interval.tick().await;
                 }
             });
+    }
+
+    async fn check_for_update(&self) {
+        let client = match reqwest::Client::builder()
+            .user_agent(concat!("ecash-app/", env!("CARGO_PKG_VERSION")))
+            .timeout(Duration::from_secs(10))
+            .build()
+        {
+            Ok(c) => c,
+            Err(_) => return,
+        };
+
+        let response = match client.get(GITHUB_LATEST_RELEASE_URL).send().await {
+            Ok(r) => r,
+            Err(_) => return,
+        };
+        if !response.status().is_success() {
+            return;
+        }
+        let json: serde_json::Value = match response.json().await {
+            Ok(v) => v,
+            Err(_) => return,
+        };
+        let Some(tag_name) = json.get("tag_name").and_then(|v| v.as_str()) else {
+            return;
+        };
+        let latest = tag_name.trim_start_matches('v').to_string();
+        let current = env!("CARGO_PKG_VERSION");
+        if is_newer_version(current, &latest) {
+            self.update_notified.store(true, Ordering::Relaxed);
+            get_event_bus()
+                .publish(MultimintEvent::UpdateAvailable(latest))
+                .await;
+        }
     }
 
     async fn backup(&self, federation_id: &FederationId, now: std::time::SystemTime) {

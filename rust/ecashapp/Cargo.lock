@@ -1315,6 +1315,7 @@ dependencies = [
  "nostr-sdk",
  "regex",
  "reqwest 0.12.24",
+ "semver",
  "serde",
  "serde_json",
  "tokio",

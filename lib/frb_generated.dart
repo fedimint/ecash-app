@@ -12173,6 +12173,8 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
         return MultimintEvent_ContactSync(
           dco_decode_box_autoadd_contact_sync_event_kind(raw[1]),
         );
+      case 10:
+        return MultimintEvent_UpdateAvailable(dco_decode_String(raw[1]));
       default:
         throw Exception("unreachable");
     }
@@ -14672,6 +14674,9 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           deserializer,
         );
         return MultimintEvent_ContactSync(var_field0);
+      case 10:
+        var var_field0 = sse_decode_String(deserializer);
+        return MultimintEvent_UpdateAvailable(var_field0);
       default:
         throw UnimplementedError('');
     }
@@ -17265,6 +17270,9 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
       case MultimintEvent_ContactSync(field0: final field0):
         sse_encode_i_32(9, serializer);
         sse_encode_box_autoadd_contact_sync_event_kind(field0, serializer);
+      case MultimintEvent_UpdateAvailable(field0: final field0):
+        sse_encode_i_32(10, serializer);
+        sse_encode_String(field0, serializer);
     }
   }
 
