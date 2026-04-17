@@ -457,7 +457,15 @@ class _FederationInfoScreenState extends State<FederationInfoScreen> {
             color: isOnline ? Colors.green : Colors.red,
             size: 12,
           ),
-          title: Text(peer.name),
+          title: Row(
+            children: [
+              Expanded(child: Text(peer.name, overflow: TextOverflow.ellipsis)),
+              if (isOnline) ...[
+                _connectivityBadge(theme, peer.connectivity),
+                const Expanded(child: SizedBox.shrink()),
+              ],
+            ],
+          ),
           subtitle:
               isOnline
                   ? Column(
@@ -467,14 +475,15 @@ class _FederationInfoScreenState extends State<FederationInfoScreen> {
                         context.l10n.versionLabel(
                           widget.guardians?[index].version ?? '',
                         ),
-                      ),
-                      Text(
-                        '${_connectivityLabel(context, peer.connectivity)} · ${_truncateUrl(peer.url)}',
                         style: theme.textTheme.bodySmall?.copyWith(
                           color: Colors.grey,
                         ),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
+                      ),
+                      Text(
+                        peer.url,
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: Colors.grey,
+                        ),
                       ),
                     ],
                   )
@@ -825,6 +834,31 @@ class _FederationInfoScreenState extends State<FederationInfoScreen> {
     );
   }
 
+  Widget _connectivityBadge(ThemeData theme, PeerConnectivity c) {
+    final color = switch (c) {
+      PeerConnectivity.direct => Colors.green,
+      PeerConnectivity.relay => Colors.amber,
+      PeerConnectivity.mixed => Colors.teal,
+      PeerConnectivity.tor => Colors.deepPurple,
+      PeerConnectivity.unknown => Colors.grey,
+    };
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.15),
+        borderRadius: BorderRadius.circular(999),
+        border: Border.all(color: color.withValues(alpha: 0.5), width: 1),
+      ),
+      child: Text(
+        _connectivityLabel(context, c),
+        style: theme.textTheme.labelSmall?.copyWith(
+          color: color,
+          fontWeight: FontWeight.w600,
+        ),
+      ),
+    );
+  }
+
   String _connectivityLabel(BuildContext context, PeerConnectivity c) {
     switch (c) {
       case PeerConnectivity.direct:
@@ -838,21 +872,5 @@ class _FederationInfoScreenState extends State<FederationInfoScreen> {
       case PeerConnectivity.unknown:
         return context.l10n.connectionUnknown;
     }
-  }
-
-  // iroh URLs embed a 64-char hex node id that blows out the subtitle line on
-  // mobile; collapse the middle for long URLs. wss/http URLs are usually short
-  // enough to show in full.
-  String _truncateUrl(String url) {
-    const maxLen = 32;
-    if (url.length <= maxLen) return url;
-    final schemeEnd = url.indexOf('://');
-    if (schemeEnd < 0) {
-      return '${url.substring(0, 6)}…${url.substring(url.length - 6)}';
-    }
-    final prefix = url.substring(0, schemeEnd + 3);
-    final rest = url.substring(schemeEnd + 3);
-    if (rest.length <= 10) return url;
-    return '$prefix${rest.substring(0, 4)}…${rest.substring(rest.length - 4)}';
   }
 }
