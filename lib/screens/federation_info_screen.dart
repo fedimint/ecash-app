@@ -448,6 +448,7 @@ class _FederationInfoScreenState extends State<FederationInfoScreen> {
         final peer = _peers![index];
         final isOnline = peer.online;
 
+        final theme = Theme.of(context);
         return ListTile(
           dense: true,
           contentPadding: EdgeInsets.zero,
@@ -456,13 +457,35 @@ class _FederationInfoScreenState extends State<FederationInfoScreen> {
             color: isOnline ? Colors.green : Colors.red,
             size: 12,
           ),
-          title: Text(peer.name),
+          title: Row(
+            children: [
+              Expanded(child: Text(peer.name, overflow: TextOverflow.ellipsis)),
+              if (isOnline) ...[
+                _connectivityBadge(theme, peer.connectivity),
+                const Expanded(child: SizedBox.shrink()),
+              ],
+            ],
+          ),
           subtitle:
               isOnline
-                  ? Text(
-                    context.l10n.versionLabel(
-                      widget.guardians?[index].version ?? '',
-                    ),
+                  ? Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        context.l10n.versionLabel(
+                          widget.guardians?[index].version ?? '',
+                        ),
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: Colors.grey,
+                        ),
+                      ),
+                      Text(
+                        peer.url,
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: Colors.grey,
+                        ),
+                      ),
+                    ],
                   )
                   : Text(context.l10n.disconnected),
           trailing:
@@ -809,5 +832,45 @@ class _FederationInfoScreenState extends State<FederationInfoScreen> {
         ),
       ),
     );
+  }
+
+  Widget _connectivityBadge(ThemeData theme, PeerConnectivity c) {
+    final color = switch (c) {
+      PeerConnectivity.direct => Colors.green,
+      PeerConnectivity.relay => Colors.amber,
+      PeerConnectivity.mixed => Colors.teal,
+      PeerConnectivity.tor => Colors.deepPurple,
+      PeerConnectivity.unknown => Colors.grey,
+    };
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.15),
+        borderRadius: BorderRadius.circular(999),
+        border: Border.all(color: color.withValues(alpha: 0.5), width: 1),
+      ),
+      child: Text(
+        _connectivityLabel(context, c),
+        style: theme.textTheme.labelSmall?.copyWith(
+          color: color,
+          fontWeight: FontWeight.w600,
+        ),
+      ),
+    );
+  }
+
+  String _connectivityLabel(BuildContext context, PeerConnectivity c) {
+    switch (c) {
+      case PeerConnectivity.direct:
+        return context.l10n.connectionDirect;
+      case PeerConnectivity.relay:
+        return context.l10n.connectionRelay;
+      case PeerConnectivity.mixed:
+        return context.l10n.connectionMixed;
+      case PeerConnectivity.tor:
+        return context.l10n.connectionTor;
+      case PeerConnectivity.unknown:
+        return context.l10n.connectionUnknown;
+    }
   }
 }

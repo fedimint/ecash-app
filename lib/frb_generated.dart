@@ -12339,15 +12339,23 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   }
 
   @protected
+  PeerConnectivity dco_decode_peer_connectivity(dynamic raw) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    return PeerConnectivity.values[raw as int];
+  }
+
+  @protected
   PeerStatus dco_decode_peer_status(dynamic raw) {
     // Codec=Dco (DartCObject based), see doc to use other codecs
     final arr = raw as List<dynamic>;
-    if (arr.length != 3)
-      throw Exception('unexpected arr length: expect 3 but see ${arr.length}');
+    if (arr.length != 5)
+      throw Exception('unexpected arr length: expect 5 but see ${arr.length}');
     return PeerStatus(
       peerId: dco_decode_u_16(arr[0]),
       name: dco_decode_String(arr[1]),
       online: dco_decode_bool(arr[2]),
+      connectivity: dco_decode_peer_connectivity(arr[3]),
+      url: dco_decode_String(arr[4]),
     );
   }
 
@@ -14910,12 +14918,27 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   }
 
   @protected
+  PeerConnectivity sse_decode_peer_connectivity(SseDeserializer deserializer) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    var inner = sse_decode_i_32(deserializer);
+    return PeerConnectivity.values[inner];
+  }
+
+  @protected
   PeerStatus sse_decode_peer_status(SseDeserializer deserializer) {
     // Codec=Sse (Serialization based), see doc to use other codecs
     var var_peerId = sse_decode_u_16(deserializer);
     var var_name = sse_decode_String(deserializer);
     var var_online = sse_decode_bool(deserializer);
-    return PeerStatus(peerId: var_peerId, name: var_name, online: var_online);
+    var var_connectivity = sse_decode_peer_connectivity(deserializer);
+    var var_url = sse_decode_String(deserializer);
+    return PeerStatus(
+      peerId: var_peerId,
+      name: var_name,
+      online: var_online,
+      connectivity: var_connectivity,
+      url: var_url,
+    );
   }
 
   @protected
@@ -17468,11 +17491,22 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   }
 
   @protected
+  void sse_encode_peer_connectivity(
+    PeerConnectivity self,
+    SseSerializer serializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    sse_encode_i_32(self.index, serializer);
+  }
+
+  @protected
   void sse_encode_peer_status(PeerStatus self, SseSerializer serializer) {
     // Codec=Sse (Serialization based), see doc to use other codecs
     sse_encode_u_16(self.peerId, serializer);
     sse_encode_String(self.name, serializer);
     sse_encode_bool(self.online, serializer);
+    sse_encode_peer_connectivity(self.connectivity, serializer);
+    sse_encode_String(self.url, serializer);
   }
 
   @protected

@@ -14735,16 +14735,35 @@ impl SseDecode for crate::multimint::PaymentPreviewWithGateways {
     }
 }
 
+impl SseDecode for crate::multimint::PeerConnectivity {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
+        let mut inner = <i32>::sse_decode(deserializer);
+        return match inner {
+            0 => crate::multimint::PeerConnectivity::Direct,
+            1 => crate::multimint::PeerConnectivity::Relay,
+            2 => crate::multimint::PeerConnectivity::Mixed,
+            3 => crate::multimint::PeerConnectivity::Tor,
+            4 => crate::multimint::PeerConnectivity::Unknown,
+            _ => unreachable!("Invalid variant for PeerConnectivity: {}", inner),
+        };
+    }
+}
+
 impl SseDecode for crate::multimint::PeerStatus {
     // Codec=Sse (Serialization based), see doc to use other codecs
     fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
         let mut var_peerId = <u16>::sse_decode(deserializer);
         let mut var_name = <String>::sse_decode(deserializer);
         let mut var_online = <bool>::sse_decode(deserializer);
+        let mut var_connectivity = <crate::multimint::PeerConnectivity>::sse_decode(deserializer);
+        let mut var_url = <String>::sse_decode(deserializer);
         return crate::multimint::PeerStatus {
             peer_id: var_peerId,
             name: var_name,
             online: var_online,
+            connectivity: var_connectivity,
+            url: var_url,
         };
     }
 }
@@ -17074,12 +17093,38 @@ impl flutter_rust_bridge::IntoIntoDart<crate::multimint::PaymentPreviewWithGatew
     }
 }
 // Codec=Dco (DartCObject based), see doc to use other codecs
+impl flutter_rust_bridge::IntoDart for crate::multimint::PeerConnectivity {
+    fn into_dart(self) -> flutter_rust_bridge::for_generated::DartAbi {
+        match self {
+            Self::Direct => 0.into_dart(),
+            Self::Relay => 1.into_dart(),
+            Self::Mixed => 2.into_dart(),
+            Self::Tor => 3.into_dart(),
+            Self::Unknown => 4.into_dart(),
+            _ => unreachable!(),
+        }
+    }
+}
+impl flutter_rust_bridge::for_generated::IntoDartExceptPrimitive
+    for crate::multimint::PeerConnectivity
+{
+}
+impl flutter_rust_bridge::IntoIntoDart<crate::multimint::PeerConnectivity>
+    for crate::multimint::PeerConnectivity
+{
+    fn into_into_dart(self) -> crate::multimint::PeerConnectivity {
+        self
+    }
+}
+// Codec=Dco (DartCObject based), see doc to use other codecs
 impl flutter_rust_bridge::IntoDart for crate::multimint::PeerStatus {
     fn into_dart(self) -> flutter_rust_bridge::for_generated::DartAbi {
         [
             self.peer_id.into_into_dart().into_dart(),
             self.name.into_into_dart().into_dart(),
             self.online.into_into_dart().into_dart(),
+            self.connectivity.into_into_dart().into_dart(),
+            self.url.into_into_dart().into_dart(),
         ]
         .into_dart()
     }
@@ -18638,12 +18683,33 @@ impl SseEncode for crate::multimint::PaymentPreviewWithGateways {
     }
 }
 
+impl SseEncode for crate::multimint::PeerConnectivity {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
+        <i32>::sse_encode(
+            match self {
+                crate::multimint::PeerConnectivity::Direct => 0,
+                crate::multimint::PeerConnectivity::Relay => 1,
+                crate::multimint::PeerConnectivity::Mixed => 2,
+                crate::multimint::PeerConnectivity::Tor => 3,
+                crate::multimint::PeerConnectivity::Unknown => 4,
+                _ => {
+                    unimplemented!("");
+                }
+            },
+            serializer,
+        );
+    }
+}
+
 impl SseEncode for crate::multimint::PeerStatus {
     // Codec=Sse (Serialization based), see doc to use other codecs
     fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
         <u16>::sse_encode(self.peer_id, serializer);
         <String>::sse_encode(self.name, serializer);
         <bool>::sse_encode(self.online, serializer);
+        <crate::multimint::PeerConnectivity>::sse_encode(self.connectivity, serializer);
+        <String>::sse_encode(self.url, serializer);
     }
 }
 
