@@ -23,6 +23,7 @@ class _PinGatedAppState extends State<PinGatedApp>
     with WidgetsBindingObserver, SingleTickerProviderStateMixin {
   _LockState _state = _LockState.unlocked;
   DateTime? _backgroundedAt;
+  bool _refreshOnUnlock = false;
   late final AnimationController _controller;
   late final Animation<double> _fadeAnimation;
   late final Animation<double> _scaleAnimation;
@@ -66,25 +67,32 @@ class _PinGatedAppState extends State<PinGatedApp>
         state == AppLifecycleState.hidden) {
       _backgroundedAt ??= DateTime.now();
     } else if (state == AppLifecycleState.resumed) {
-      _checkLockOnResume();
+      _handleResume();
     }
   }
 
-  Future<void> _checkLockOnResume() async {
+  Future<void> _handleResume() async {
     if (_backgroundedAt == null) return;
     final elapsed = DateTime.now().difference(_backgroundedAt!);
     _backgroundedAt = null;
-    if (elapsed.inSeconds > 30) {
-      final pinSet = await hasPinCode();
-      if (pinSet && mounted) {
-        setState(() => _state = _LockState.locked);
-      }
+    final pinSet = await hasPinCode();
+    if (pinSet && elapsed.inSeconds > 30) {
+      if (mounted) setState(() => _state = _LockState.locked);
+    }
+    if (_state == _LockState.locked) {
+      _refreshOnUnlock = true;
+    } else {
+      refreshConnections();
     }
   }
 
   void _unlock() {
     setState(() => _state = _LockState.unlocking);
     _controller.forward();
+    if (_refreshOnUnlock) {
+      _refreshOnUnlock = false;
+      refreshConnections();
+    }
   }
 
   @override

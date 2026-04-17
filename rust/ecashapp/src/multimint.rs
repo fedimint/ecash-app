@@ -981,6 +981,19 @@ impl Multimint {
         self.clients.read().await.contains_key(federation_id)
     }
 
+    /// Pre-warm guardian connections for every joined federation.
+    ///
+    /// On Android, sockets to guardians often drop while the app is
+    /// backgrounded and don't reconnect on their own. Calling this on app
+    /// resume kicks off one connection attempt per peer per federation;
+    /// already-live connections are no-ops and failures back off internally.
+    pub async fn refresh_connections(&self) {
+        let clients = self.clients.read().await;
+        for client in clients.values() {
+            client.federation_reconnect();
+        }
+    }
+
     pub async fn has_seed_phrase_ack(&self) -> bool {
         let mut dbtx = self.db.begin_transaction_nc().await;
         dbtx.get_value(&SeedPhraseAckKey).await.is_some()
