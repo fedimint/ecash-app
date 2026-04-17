@@ -217,6 +217,12 @@ pub async fn federations() -> Vec<(FederationSelector, bool)> {
 }
 
 #[frb]
+pub async fn refresh_connections() {
+    let multimint = get_multimint();
+    multimint.refresh_connections().await;
+}
+
+#[frb]
 pub async fn balance(federation_id: &FederationId) -> u64 {
     let multimint = get_multimint();
     multimint.balance(federation_id).await

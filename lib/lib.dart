@@ -64,6 +64,9 @@ Future<void> rejoinFromBackupInvites() =>
 Future<List<(FederationSelector, bool)>> federations() =>
     RustLib.instance.api.crateFederations();
 
+Future<void> refreshConnections() =>
+    RustLib.instance.api.crateRefreshConnections();
+
 Future<BigInt> balance({required FederationId federationId}) =>
     RustLib.instance.api.crateBalance(federationId: federationId);
 

@@ -253,6 +253,14 @@ abstract class Multimint implements RustOpaqueInterface {
     required String recurringdApi,
   });
 
+  /// Pre-warm guardian connections for every joined federation.
+  ///
+  /// On Android, sockets to guardians often drop while the app is
+  /// backgrounded and don't reconnect on their own. Calling this on app
+  /// resume kicks off one connection attempt per peer per federation;
+  /// already-live connections are no-ops and failures back off internally.
+  Future<void> refreshConnections();
+
   /// Register LNURL/LN Address
   Future<void> registerLnAddress({
     required FederationId federationId,
