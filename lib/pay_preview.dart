@@ -124,16 +124,17 @@ class _PaymentPreviewWidgetState extends State<PaymentPreviewWidget> {
                   subtitle: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(
-                        gw.endpoint,
-                        style: theme.textTheme.bodySmall?.copyWith(
-                          color: theme.colorScheme.onSurface.withOpacity(0.4),
-                          fontFamily: 'monospace',
-                          fontSize: 11,
+                      if (gw.lightningAlias != null)
+                        Text(
+                          gw.endpoint,
+                          style: theme.textTheme.bodySmall?.copyWith(
+                            color: theme.colorScheme.onSurface.withOpacity(0.4),
+                            fontFamily: 'monospace',
+                            fontSize: 11,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
                         ),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      ),
                       Text(
                         '${context.l10n.txDetailFee}: ${formatBalance(preview.amountWithFees - widget.previewData.amountMsats, true, bitcoinDisplay)}',
                         style: theme.textTheme.bodySmall?.copyWith(
@@ -235,6 +236,17 @@ class _PaymentPreviewWidgetState extends State<PaymentPreviewWidget> {
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                       ),
+                      if (selectedGateway.lightningAlias != null)
+                        Text(
+                          selectedGateway.endpoint,
+                          style: theme.textTheme.bodySmall?.copyWith(
+                            color: theme.colorScheme.onSurface.withOpacity(0.5),
+                            fontFamily: 'monospace',
+                            fontSize: 11,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
                     ],
                   ),
                 ),

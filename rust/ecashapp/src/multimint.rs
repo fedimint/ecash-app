@@ -2167,7 +2167,7 @@ impl Multimint {
                                 ppm_routing_fee: info.send_fee_default.parts_per_million,
                                 base_transaction_fee: info.receive_fee.base.msats,
                                 ppm_transaction_fee: info.receive_fee.parts_per_million,
-                                lightning_alias: None,
+                                lightning_alias: info.lightning_alias.clone(),
                                 lightning_node: Some(info.lightning_public_key.to_string()),
                                 is_lnv2: true,
                                 is_vettted: true, // all LNv2 gateways are vetted
@@ -3819,7 +3819,7 @@ impl Multimint {
                                 ppm_routing_fee: info.send_fee_default.parts_per_million,
                                 base_transaction_fee: info.receive_fee.base.msats,
                                 ppm_transaction_fee: info.receive_fee.parts_per_million,
-                                lightning_alias: None,
+                                lightning_alias: info.lightning_alias.clone(),
                                 lightning_node: Some(info.lightning_public_key.to_string()),
                                 is_lnv2: true,
                                 is_vettted: true, // all LNv2 gateways are vetted
