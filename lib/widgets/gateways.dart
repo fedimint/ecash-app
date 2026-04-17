@@ -73,7 +73,23 @@ class GatewaysList extends StatelessWidget {
                 title: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(g.endpoint, style: theme.textTheme.titleSmall),
+                    Text(
+                      g.lightningAlias ?? g.endpoint,
+                      style: theme.textTheme.titleSmall,
+                    ),
+                    if (g.lightningAlias != null) ...[
+                      const SizedBox(height: 2),
+                      Text(
+                        g.endpoint,
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: theme.colorScheme.onSurface.withOpacity(0.5),
+                          fontFamily: 'monospace',
+                          fontSize: 11,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ],
                     const SizedBox(height: 4),
                     Text(
                       "${formatBalance(g.baseRoutingFee, true, bitcoinDisplay)} + ${g.ppmRoutingFee} ppm",
