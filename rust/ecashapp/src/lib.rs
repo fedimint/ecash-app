@@ -749,8 +749,25 @@ impl parse::ParseContext for MultimintParseContext {
         &self,
         lnurl_or_address: &str,
     ) -> anyhow::Result<bitcoin::Network> {
-        let invoice = get_invoice_from_lnaddress_or_lnurl(1, lnurl_or_address.to_string()).await?;
-        let bolt11 = Bolt11Invoice::from_str(&invoice)?;
+        let lnurl = match lnurl::lightning_address::LightningAddress::from_str(lnurl_or_address) {
+            Ok(lightning_address) => lightning_address.lnurl(),
+            _ => lnurl::lnurl::LnUrl::from_str(lnurl_or_address)?,
+        };
+
+        let async_client = lnurl::AsyncClient::from_client(reqwest::Client::new());
+        let response = async_client.make_request(&lnurl.url).await?;
+        let pay_response = match response {
+            lnurl::LnUrlResponse::LnUrlPayResponse(r) => r,
+            other => bail!("Unexpected response from lnurl: {other:?}"),
+        };
+
+        // The smallest invoice the server will mint for us. Most LNURL-pay
+        // servers reject anything below `minSendable`, so probing at 1 msat
+        // (or any fixed constant) is unreliable.
+        let invoice = async_client
+            .get_invoice(&pay_response, pay_response.min_sendable, None, None)
+            .await?;
+        let bolt11 = Bolt11Invoice::from_str(invoice.invoice())?;
         Ok(bolt11.network())
     }
 
