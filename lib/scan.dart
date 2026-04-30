@@ -19,6 +19,7 @@ import 'package:crypto/crypto.dart';
 import 'package:ecashapp/extensions/build_context_l10n.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:nfc_manager/nfc_manager.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:qr_code_scanner_plus/qr_code_scanner_plus.dart';
 
@@ -43,6 +44,8 @@ class ScanQRPage extends StatefulWidget {
 class _ScanQRPageState extends State<ScanQRPage> {
   bool _scanned = false;
   bool _isPasting = false;
+  bool _isReadingNfc = false;
+  bool _nfcAvailable = false;
   bool _permissionDenied = false;
   _QrLoopSession? _currentSession;
 
@@ -61,6 +64,7 @@ class _ScanQRPageState extends State<ScanQRPage> {
   void initState() {
     super.initState();
     _requestCameraPermission();
+    _checkNfcAvailability();
   }
 
   Future<void> _requestCameraPermission() async {
@@ -87,9 +91,20 @@ class _ScanQRPageState extends State<ScanQRPage> {
     _qrController?.resumeCamera();
   }
 
+  Future<void> _checkNfcAvailability() async {
+    if (Platform.isLinux || Platform.isMacOS || Platform.isWindows) return;
+    final available = await NfcManager.instance.isAvailable();
+    if (mounted) {
+      setState(() => _nfcAvailable = available);
+    }
+  }
+
   @override
   void dispose() {
     _qrController?.dispose();
+    if (_isReadingNfc) {
+      NfcManager.instance.stopSession();
+    }
     super.dispose();
   }
 
@@ -613,6 +628,85 @@ class _ScanQRPageState extends State<ScanQRPage> {
     setState(() => _isPasting = false);
   }
 
+  Future<void> _readNfcTag() async {
+    setState(() => _isReadingNfc = true);
+
+    try {
+      await NfcManager.instance.startSession(
+        onDiscovered: (NfcTag tag) async {
+          try {
+            final ndef = Ndef.from(tag);
+            if (ndef == null || ndef.cachedMessage == null) {
+              ToastService().show(
+                message: context.l10n.nfcNoTextRecord,
+                duration: const Duration(seconds: 5),
+                onTap: () {},
+                icon: Icon(Icons.warning),
+              );
+              await NfcManager.instance.stopSession();
+              if (mounted) setState(() => _isReadingNfc = false);
+              return;
+            }
+
+            String? payload;
+            for (final record in ndef.cachedMessage!.records) {
+              if (record.typeNameFormat == NdefTypeNameFormat.nfcWellknown &&
+                  String.fromCharCodes(record.type) == 'T') {
+                final languageCodeLength = record.payload.first & 0x3F;
+                payload = String.fromCharCodes(
+                  record.payload.sublist(1 + languageCodeLength),
+                );
+                break;
+              }
+              if (record.typeNameFormat == NdefTypeNameFormat.nfcWellknown &&
+                  String.fromCharCodes(record.type) == 'U') {
+                payload = String.fromCharCodes(record.payload.sublist(1));
+                break;
+              }
+            }
+
+            await NfcManager.instance.stopSession();
+
+            if (payload == null || payload.isEmpty) {
+              ToastService().show(
+                message: context.l10n.nfcNoTextRecord,
+                duration: const Duration(seconds: 5),
+                onTap: () {},
+                icon: Icon(Icons.warning),
+              );
+              if (mounted) setState(() => _isReadingNfc = false);
+              return;
+            }
+
+            final parsed = await _handleText(payload);
+            if (!parsed) {
+              AppLogger.instance.warn("NFC payload cannot be parsed: $payload");
+              ToastService().show(
+                message: context.l10n.cannotBeParsed,
+                duration: const Duration(seconds: 5),
+                onTap: () {},
+                icon: Icon(Icons.error),
+              );
+            }
+          } catch (e) {
+            AppLogger.instance.warn("Error reading NFC tag: $e");
+            await NfcManager.instance.stopSession(errorMessage: e.toString());
+          }
+          if (mounted) setState(() => _isReadingNfc = false);
+        },
+      );
+    } catch (e) {
+      AppLogger.instance.warn("Failed to start NFC session: $e");
+      ToastService().show(
+        message: context.l10n.nfcNotAvailable,
+        duration: const Duration(seconds: 5),
+        onTap: () {},
+        icon: Icon(Icons.error),
+      );
+      if (mounted) setState(() => _isReadingNfc = false);
+    }
+  }
+
   double? get _progress {
     final session = _currentSession;
     if (session == null || session.totalFrames <= 1) return null;
@@ -760,24 +854,55 @@ class _ScanQRPageState extends State<ScanQRPage> {
               alignment: Alignment.bottomCenter,
               child: Padding(
                 padding: const EdgeInsets.all(24.0),
-                child: ElevatedButton.icon(
-                  onPressed: _isPasting ? null : _pasteFromClipboard,
-                  icon:
-                      _isPasting
-                          ? const SizedBox(
-                            width: 20,
-                            height: 20,
-                            child: CircularProgressIndicator(
-                              color: Colors.white,
-                              strokeWidth: 2.0,
-                            ),
-                          )
-                          : const Icon(Icons.paste),
-                  label: Text(
-                    _isPasting
-                        ? context.l10n.pasting
-                        : context.l10n.pasteFromClipboard,
-                  ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Expanded(
+                      child: ElevatedButton.icon(
+                        onPressed: _isPasting ? null : _pasteFromClipboard,
+                        icon:
+                            _isPasting
+                                ? const SizedBox(
+                                  width: 20,
+                                  height: 20,
+                                  child: CircularProgressIndicator(
+                                    color: Colors.white,
+                                    strokeWidth: 2.0,
+                                  ),
+                                )
+                                : const Icon(Icons.paste),
+                        label: Text(
+                          _isPasting
+                              ? context.l10n.pasting
+                              : context.l10n.pasteFromClipboard,
+                        ),
+                      ),
+                    ),
+                    if (_nfcAvailable) ...[
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: ElevatedButton.icon(
+                          onPressed: _isReadingNfc ? null : _readNfcTag,
+                          icon:
+                              _isReadingNfc
+                                  ? const SizedBox(
+                                    width: 20,
+                                    height: 20,
+                                    child: CircularProgressIndicator(
+                                      color: Colors.white,
+                                      strokeWidth: 2.0,
+                                    ),
+                                  )
+                                  : const Icon(Icons.nfc),
+                          label: Text(
+                            _isReadingNfc
+                                ? context.l10n.readingNfc
+                                : context.l10n.readNfc,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ],
                 ),
               ),
             ),

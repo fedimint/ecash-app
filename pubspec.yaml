@@ -33,6 +33,7 @@ dependencies:
   flutter_foreground_task: ^8.13.0
   permission_handler: ^11.3.1
   app_links: ^6.3.3
+  nfc_manager: ^3.5.0
 
 dev_dependencies:
   flutter_test:
