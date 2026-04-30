@@ -870,6 +870,18 @@
   "pasteFromClipboard": "Paste from Clipboard",
   "@pasteFromClipboard": {},
 
+  "readNfc": "Read NFC",
+  "@readNfc": {},
+
+  "readingNfc": "Reading...",
+  "@readingNfc": {},
+
+  "nfcNotAvailable": "NFC is not available on this device",
+  "@nfcNotAvailable": {},
+
+  "nfcNoTextRecord": "No readable text found on NFC tag",
+  "@nfcNoTextRecord": {},
+
   "gettingChangeFromMint": "Getting change from mint...",
   "@gettingChangeFromMint": {},
 
