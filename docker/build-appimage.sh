@@ -2,7 +2,7 @@
 set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
-IMAGE_NAME="ecash-app-builder"
+IMAGE_NAME="ecash-app-appimage-builder"
 
 # Show build configuration
 echo "Build configuration:"
@@ -20,7 +20,10 @@ echo ""
 # Build Docker image if needed
 if ! docker image inspect $IMAGE_NAME &> /dev/null || [[ "${REBUILD_IMAGE:-}" == "1" ]]; then
     echo "Building Docker image..."
-    docker build --build-arg FLUTTER_VERSION=$(cat "$PROJECT_ROOT/.flutter-version") -t $IMAGE_NAME "$SCRIPT_DIR"
+    docker build \
+        --build-arg FLUTTER_VERSION=$(cat "$PROJECT_ROOT/.flutter-version") \
+        --build-arg INSTALL_APPIMAGETOOL=true \
+        -t $IMAGE_NAME "$SCRIPT_DIR"
 fi
 
 # Create cache directories (owned by current user)

@@ -57,9 +57,22 @@ mkdir -p "$PROJECT_ROOT/.docker-cache/android"
 # Build the Docker image if it doesn't exist or if forced
 IMAGE_NAME="ecash-app-builder"
 
+# The NDK toolchain installed in the image is linux-x86_64, so the container
+# must always be linux/amd64. On amd64 hosts that's the natural default; on
+# arm64 hosts (Apple Silicon, arm64 Linux) we force amd64 emulation via
+# Rosetta/qemu. We only pass --platform when needed to avoid BuildKit's
+# FromPlatformFlagConstDisallowed warning and any unnecessary platform
+# mismatch noise on amd64 hosts.
+PLATFORM_ARGS=()
+if [[ "$(uname -m)" != "x86_64" ]]; then
+    PLATFORM_ARGS=(--platform=linux/amd64)
+    echo "Host arch $(uname -m) detected; forcing linux/amd64 emulation."
+    echo ""
+fi
+
 if ! docker image inspect $IMAGE_NAME &> /dev/null || [[ "${REBUILD_IMAGE}" == "1" ]]; then
     echo "Building Docker image..."
-    docker build --build-arg FLUTTER_VERSION=$(cat "$PROJECT_ROOT/.flutter-version") -t $IMAGE_NAME "$SCRIPT_DIR"
+    docker build "${PLATFORM_ARGS[@]}" --build-arg FLUTTER_VERSION=$(cat "$PROJECT_ROOT/.flutter-version") -t $IMAGE_NAME "$SCRIPT_DIR"
     echo ""
 else
     echo "Using existing Docker image: $IMAGE_NAME"
@@ -73,6 +86,7 @@ fi
 
 echo "Starting build in Docker container..."
 docker run --rm \
+    "${PLATFORM_ARGS[@]}" \
     --user "$(id -u):$(id -g)" \
     -v "$PROJECT_ROOT:/workspace" \
     -v "$PROJECT_ROOT/.docker-cache/gradle:/gradle-cache" \
