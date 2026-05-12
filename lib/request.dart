@@ -5,6 +5,7 @@ import 'package:ecashapp/detail_row.dart';
 import 'package:ecashapp/extensions/build_context_l10n.dart';
 import 'package:ecashapp/lib.dart';
 import 'package:ecashapp/multimint.dart';
+import 'package:ecashapp/nfc_hce.dart';
 import 'package:ecashapp/providers/preferences_provider.dart';
 import 'package:ecashapp/success.dart';
 import 'package:ecashapp/toast.dart';
@@ -42,10 +43,12 @@ class Request extends StatefulWidget {
   State<Request> createState() => _RequestState();
 }
 
-class _RequestState extends State<Request> with SingleTickerProviderStateMixin {
+class _RequestState extends State<Request>
+    with SingleTickerProviderStateMixin, WidgetsBindingObserver {
   bool _copied = false;
   late Duration _remaining;
   Timer? _timer;
+  bool _nfcBroadcasting = false;
 
   @override
   void initState() {
@@ -54,12 +57,46 @@ class _RequestState extends State<Request> with SingleTickerProviderStateMixin {
     _remaining = Duration(seconds: widget.expiry.toInt());
     _startCountdown();
     _waitForPayment();
+    WidgetsBinding.instance.addObserver(this);
+    _startNfcBroadcast();
   }
 
   @override
   void dispose() {
     _timer?.cancel();
+    WidgetsBinding.instance.removeObserver(this);
+    InvoiceNfcBroadcaster.stop();
     super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    switch (state) {
+      case AppLifecycleState.paused:
+      case AppLifecycleState.inactive:
+      case AppLifecycleState.hidden:
+        if (_nfcBroadcasting) {
+          InvoiceNfcBroadcaster.stop();
+          if (mounted) setState(() => _nfcBroadcasting = false);
+        }
+        break;
+      case AppLifecycleState.resumed:
+        if (!_nfcBroadcasting) _startNfcBroadcast();
+        break;
+      case AppLifecycleState.detached:
+        break;
+    }
+  }
+
+  Future<void> _startNfcBroadcast() async {
+    if (!await InvoiceNfcBroadcaster.isAvailable()) return;
+    if (!mounted) return;
+    try {
+      await InvoiceNfcBroadcaster.start(widget.invoice);
+      if (mounted) setState(() => _nfcBroadcasting = true);
+    } catch (e) {
+      AppLogger.instance.warn("NFC HCE start failed: $e");
+    }
   }
 
   void _startCountdown() {
@@ -151,6 +188,37 @@ class _RequestState extends State<Request> with SingleTickerProviderStateMixin {
         children: [
           Row(
             children: [
+              if (_nfcBroadcasting)
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 10,
+                    vertical: 6,
+                  ),
+                  decoration: BoxDecoration(
+                    color: theme.colorScheme.surfaceContainerHighest,
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(
+                      color: theme.colorScheme.primary.withOpacity(0.5),
+                    ),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(
+                        Icons.nfc,
+                        size: 14,
+                        color: theme.colorScheme.primary,
+                      ),
+                      const SizedBox(width: 6),
+                      Text(
+                        context.l10n.tapToSendNfc,
+                        style: theme.textTheme.labelMedium?.copyWith(
+                          color: theme.colorScheme.onSurface,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
               const Spacer(),
               Container(
                 padding: const EdgeInsets.symmetric(

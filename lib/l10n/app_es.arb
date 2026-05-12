@@ -242,6 +242,7 @@
   "clipboardIsEmpty": "El portapapeles está vacío",
   "pasting": "Pegando...",
   "pasteFromClipboard": "Pegar del portapapeles",
+  "tapToSendNfc": "Toca para enviar",
   "gettingChangeFromMint": "Obteniendo cambio del mint...",
   "failedToLoadEcash": "Error al cargar Ecash",
   "ecashWithdrawn": "Ecash retirado",
