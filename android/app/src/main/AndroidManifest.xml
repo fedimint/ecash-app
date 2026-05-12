@@ -1,10 +1,14 @@
-<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools">
     <!-- Foreground service permissions -->
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_DATA_SYNC" />
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
     <uses-permission android:name="android.permission.WAKE_LOCK" />
     <uses-permission android:name="android.permission.INTERNET"/>
+    <uses-permission android:name="android.permission.NFC" />
+    <uses-feature android:name="android.hardware.nfc" android:required="false" tools:replace="android:required" />
+    <uses-feature android:name="android.hardware.nfc.hce" android:required="false" tools:replace="android:required" />
 
     <application
         android:label="Ecash App"
@@ -42,6 +46,15 @@
                 <data android:scheme="bitcoin" />
                 <data android:scheme="lnurlp" />
             </intent-filter>
+            <!-- NFC NDEF tag dispatch for payment URI records -->
+            <intent-filter>
+                <action android:name="android.nfc.action.NDEF_DISCOVERED" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <data android:scheme="lightning" />
+                <data android:scheme="lnurl" />
+                <data android:scheme="bitcoin" />
+                <data android:scheme="lnurlp" />
+            </intent-filter>
         </activity>
         <!-- Disable Flutter's default deep link handler to use app_links -->
         <meta-data android:name="flutter_deeplinking_enabled" android:value="false" />
@@ -59,6 +72,20 @@
             android:name="com.pravera.flutter_foreground_task.service.ForegroundService"
             android:foregroundServiceType="dataSync"
             android:exported="false" />
+        <!-- NFC Host Card Emulation service for transmitting Lightning invoices. -->
+        <service
+            android:name=".EcashHceService"
+            android:exported="true"
+            android:enabled="true"
+            android:permission="android.permission.BIND_NFC_SERVICE">
+            <intent-filter>
+                <action android:name="android.nfc.cardemulation.action.HOST_APDU_SERVICE"/>
+                <category android:name="android.intent.category.DEFAULT"/>
+            </intent-filter>
+            <meta-data
+                android:name="android.nfc.cardemulation.host_apdu_service"
+                android:resource="@xml/apduservice"/>
+        </service>
     </application>
     <!-- Required to query activities that can process text, see:
          https://developer.android.com/training/package-visibility and

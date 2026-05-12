@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="nfc_hce_service_description">Ecash App NFC invoice broadcast</string>
+    <string name="nfc_hce_aid_group_description">NDEF</string>
+</resources>

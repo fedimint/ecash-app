@@ -870,6 +870,9 @@
   "pasteFromClipboard": "Paste from Clipboard",
   "@pasteFromClipboard": {},
 
+  "tapToSendNfc": "Tap to send",
+  "@tapToSendNfc": {},
+
   "gettingChangeFromMint": "Getting change from mint...",
   "@gettingChangeFromMint": {},
 
