@@ -40,6 +40,7 @@ use fedimint_mint_client::{OOBNotes, ReissueExternalNotesState, SpendOOBState};
 use fedimint_rocksdb::RocksDb;
 use lightning_invoice::Bolt11Invoice;
 use std::path::PathBuf;
+use std::time::Duration;
 use std::{str::FromStr, sync::Arc};
 
 use crate::db::{
@@ -831,7 +832,9 @@ pub async fn list_gateways(
     federation_id: Option<FederationId>,
 ) -> anyhow::Result<Vec<FedimintGateway>> {
     let multimint = get_multimint();
-    multimint.list_gateways(invite, federation_id).await
+    multimint
+        .list_gateways(invite, federation_id, Duration::from_secs(15))
+        .await
 }
 
 #[frb]
