@@ -5,6 +5,7 @@ import 'package:ecashapp/providers/preferences_provider.dart';
 import 'package:ecashapp/send.dart';
 import 'package:ecashapp/utils.dart';
 import 'package:ecashapp/utils/pin_guard.dart';
+import 'package:ecashapp/widgets/protocol_badge.dart';
 import 'package:ecashapp/extensions/build_context_l10n.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -100,25 +101,10 @@ class _PaymentPreviewWidgetState extends State<PaymentPreviewWidget> {
                           overflow: TextOverflow.ellipsis,
                         ),
                       ),
-                      if (gw.isLnv2)
-                        Container(
-                          margin: const EdgeInsets.only(left: 8),
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 6,
-                            vertical: 2,
-                          ),
-                          decoration: BoxDecoration(
-                            color: theme.colorScheme.primary.withOpacity(0.15),
-                            borderRadius: BorderRadius.circular(4),
-                          ),
-                          child: Text(
-                            'LNv2',
-                            style: theme.textTheme.labelSmall?.copyWith(
-                              color: theme.colorScheme.primary,
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                        ),
+                      Padding(
+                        padding: const EdgeInsets.only(left: 8),
+                        child: ProtocolBadge(isLnv2: gw.isLnv2),
+                      ),
                     ],
                   ),
                   subtitle: Column(
@@ -228,13 +214,21 @@ class _PaymentPreviewWidgetState extends State<PaymentPreviewWidget> {
                         ),
                       ),
                       const SizedBox(height: 2),
-                      Text(
-                        _gatewayDisplayName(selectedGateway),
-                        style: theme.textTheme.bodyMedium?.copyWith(
-                          fontWeight: FontWeight.bold,
-                        ),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
+                      Row(
+                        children: [
+                          Flexible(
+                            child: Text(
+                              _gatewayDisplayName(selectedGateway),
+                              style: theme.textTheme.bodyMedium?.copyWith(
+                                fontWeight: FontWeight.bold,
+                              ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          ProtocolBadge(isLnv2: selectedGateway.isLnv2),
+                        ],
                       ),
                       if (selectedGateway.lightningAlias != null)
                         Text(
