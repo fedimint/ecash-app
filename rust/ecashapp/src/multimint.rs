@@ -2119,11 +2119,18 @@ impl Multimint {
         Ok((invoice, operation_id))
     }
 
-    pub async fn select_receive_gateway(
+    pub async fn compute_receive_amount_with_fees(
         &self,
         federation_id: &FederationId,
+        gateway_url: SafeUrl,
+        is_lnv2: bool,
         amount: Amount,
-    ) -> anyhow::Result<(String, u64, bool)> {
+    ) -> anyhow::Result<u64> {
+        // LNv1 has no receiving fees.
+        if !is_lnv2 {
+            return Ok(amount.msats);
+        }
+
         let client = self
             .clients
             .read()
@@ -2131,26 +2138,28 @@ impl Multimint {
             .get(federation_id)
             .ok_or(anyhow!("No federation exists"))?
             .clone();
-        if let Ok((url, receive_fee, fed_base, fed_ppm)) =
-            Self::lnv2_select_gateway(&client, None).await
-        {
-            info_to_flutter("Using LNv2 for selecting receive gateway").await;
-            let amount_with_fees = compute_receive_amount(
-                amount,
-                fed_base,
-                fed_ppm,
-                receive_fee.base.msats,
-                receive_fee.parts_per_million,
-            );
-            return Ok((url.to_string(), amount_with_fees, true));
-        }
+        let lnv2 = client.get_first_module::<fedimint_lnv2_client::LightningClientModule>()?;
 
-        // LNv1 does not have fees for receiving
-        info_to_flutter("Using LNv1 for selecting receive gateway").await;
-        let gateway = Self::lnv1_select_gateway(&client)
-            .await
-            .ok_or(anyhow!("No available gateways"))?;
-        Ok((gateway.api.to_string(), amount.msats, false))
+        let routing_info = lnv2
+            .routing_info(&gateway_url)
+            .await?
+            .ok_or(anyhow!("Gateway has no routing info"))?;
+
+        let client_module_config = client.config().await.modules;
+        let config = client_module_config
+            .get(&lnv2.id)
+            .ok_or(anyhow!("Could not get LNv2 config"))?
+            .cast::<fedimint_lnv2_common::config::LightningClientConfig>()?;
+        let fed_base = config.fee_consensus.base.msats;
+        let fed_ppm = config.fee_consensus.parts_per_million;
+
+        Ok(compute_receive_amount(
+            amount,
+            fed_base,
+            fed_ppm,
+            routing_info.receive_fee.base.msats,
+            routing_info.receive_fee.parts_per_million,
+        ))
     }
 
     pub async fn select_send_gateway(

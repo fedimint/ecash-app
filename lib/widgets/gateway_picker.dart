@@ -18,7 +18,7 @@ class GatewayPicker extends StatelessWidget {
   final int? selectedIndex;
   final ValueChanged<int>? onSelected;
 
-  GatewayPicker({
+  const GatewayPicker({
     super.key,
     required this.gateways,
     this.feesMsats,

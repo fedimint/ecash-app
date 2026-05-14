@@ -17,6 +17,8 @@ import 'package:flutter/material.dart';
 import 'package:ecashapp/widgets/numpad/custom_numpad.dart';
 import 'package:ecashapp/widgets/numpad/numpad_button.dart';
 import 'package:ecashapp/widgets/federation_picker.dart';
+import 'package:ecashapp/widgets/gateway_picker.dart';
+import 'package:ecashapp/widgets/protocol_badge.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 
@@ -60,6 +62,10 @@ class _NumberPadState extends State<NumberPad> {
   String? _displayedFiatInput;
   String? _preservedSatsBeforeFiatEdit;
 
+  List<FedimintGateway>? _receiveGateways;
+  String? _selectedGatewayEndpoint;
+  bool? _selectedGatewayIsLnv2;
+
   @override
   void initState() {
     super.initState();
@@ -72,6 +78,45 @@ class _NumberPadState extends State<NumberPad> {
     _fetchBalance();
     _fetchFederationMeta();
     _fetchAllFederations();
+    if (_isGeneratingLnInvoice()) {
+      _fetchReceiveGateways();
+    }
+  }
+
+  Future<void> _fetchReceiveGateways() async {
+    try {
+      final gateways = await listGateways(
+        federationId: _selectedFed.federationId,
+      );
+      if (!mounted) return;
+      setState(() {
+        _receiveGateways = gateways;
+        _selectedGatewayEndpoint =
+            gateways.isNotEmpty ? gateways.first.endpoint : null;
+        _selectedGatewayIsLnv2 =
+            gateways.isNotEmpty ? gateways.first.isLnv2 : null;
+      });
+    } catch (e) {
+      AppLogger.instance.error('Failed to fetch receive gateways: $e');
+      if (!mounted) return;
+      setState(() {
+        _receiveGateways = const [];
+        _selectedGatewayEndpoint = null;
+        _selectedGatewayIsLnv2 = null;
+      });
+    }
+  }
+
+  FedimintGateway? get _selectedReceiveGateway {
+    final list = _receiveGateways;
+    if (list == null || list.isEmpty) return null;
+    final endpoint = _selectedGatewayEndpoint;
+    final isLnv2 = _selectedGatewayIsLnv2;
+    if (endpoint == null || isLnv2 == null) return list.first;
+    return list.firstWhere(
+      (g) => g.endpoint == endpoint && g.isLnv2 == isLnv2,
+      orElse: () => list.first,
+    );
   }
 
   Future<void> _fetchBalance() async {
@@ -134,9 +179,15 @@ class _NumberPadState extends State<NumberPad> {
         _loadingBalance = true;
         _federationMeta = null;
         _withdrawalMode = WithdrawalMode.specificAmount;
+        _receiveGateways = null;
+        _selectedGatewayEndpoint = null;
+        _selectedGatewayIsLnv2 = null;
       });
       _fetchBalance();
       _fetchFederationMeta();
+      if (_isGeneratingLnInvoice()) {
+        _fetchReceiveGateways();
+      }
     }
   }
 
@@ -269,20 +320,25 @@ class _NumberPadState extends State<NumberPad> {
     try {
       final requestedAmountMsats = amountSats * BigInt.from(1000);
 
-      // Select gateway before showing modal so we can catch errors properly
-      final gateway = await selectReceiveGateway(
+      final selected = _selectedReceiveGateway;
+      if (selected == null) {
+        throw Exception('No available gateways');
+      }
+
+      final contractAmount = await computeReceiveAmountWithFees(
         federationId: _selectedFed.federationId,
+        gatewayUrl: selected.endpoint,
+        isLnv2: selected.isLnv2,
         amountMsats: requestedAmountMsats,
       );
-      final contractAmount = gateway.$2;
 
       // Create the invoice
       final invoice = await receive(
         federationId: _selectedFed.federationId,
         amountMsatsWithFees: contractAmount,
         amountMsatsWithoutFees: requestedAmountMsats,
-        gateway: gateway.$1,
-        isLnv2: gateway.$3,
+        gateway: selected.endpoint,
+        isLnv2: selected.isLnv2,
       );
 
       invoicePaidToastVisible.value = false;
@@ -297,7 +353,7 @@ class _NumberPadState extends State<NumberPad> {
             operationId: invoice.$2,
             requestedAmountMsats: requestedAmountMsats,
             totalMsats: contractAmount,
-            gateway: gateway.$1,
+            gateway: selected.endpoint,
             pubkey: invoice.$3,
             paymentHash: invoice.$4,
             expiry: invoice.$5,
@@ -657,6 +713,142 @@ class _NumberPadState extends State<NumberPad> {
     );
   }
 
+  Widget _buildGatewayCard() {
+    if (!_isGeneratingLnInvoice()) {
+      return const SizedBox.shrink();
+    }
+
+    final theme = Theme.of(context);
+    final bitcoinDisplay = context.select<PreferencesProvider, BitcoinDisplay>(
+      (prefs) => prefs.bitcoinDisplay,
+    );
+    final gateways = _receiveGateways;
+    final selected = _selectedReceiveGateway;
+    final canTap = gateways != null && gateways.isNotEmpty;
+
+    return Center(
+      child: GestureDetector(
+        onTap: canTap ? _onGatewayCardTapped : null,
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 300),
+          curve: Curves.easeInOut,
+          constraints: const BoxConstraints(maxWidth: 400),
+          margin: const EdgeInsets.fromLTRB(16, 16, 16, 12),
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: theme.colorScheme.surface,
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(
+              color: theme.colorScheme.primary.withValues(alpha: 0.1),
+              width: 1,
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.3),
+                blurRadius: 8,
+                offset: const Offset(0, 2),
+              ),
+            ],
+          ),
+          child: Row(
+            children: [
+              Icon(
+                Icons.device_hub,
+                color: theme.colorScheme.primary,
+                size: 28,
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      context.l10n.gateway,
+                      style: const TextStyle(fontSize: 11, color: Colors.grey),
+                    ),
+                    const SizedBox(height: 4),
+                    if (gateways == null)
+                      const SizedBox(
+                        width: 16,
+                        height: 16,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          color: Colors.grey,
+                        ),
+                      )
+                    else if (selected == null)
+                      Text(
+                        context.l10n.noGatewaysAvailableShort,
+                        style: const TextStyle(
+                          fontSize: 14,
+                          color: Colors.grey,
+                        ),
+                      )
+                    else ...[
+                      Row(
+                        children: [
+                          Flexible(
+                            child: Text(
+                              selected.lightningAlias ?? selected.endpoint,
+                              style: const TextStyle(
+                                fontSize: 14,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.white,
+                              ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          ProtocolBadge(isLnv2: selected.isLnv2),
+                        ],
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        '${formatBalance(selected.baseRoutingFee, true, bitcoinDisplay)} + ${selected.ppmRoutingFee} ppm',
+                        style: const TextStyle(
+                          fontSize: 12,
+                          color: Colors.grey,
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+              if (canTap)
+                Icon(Icons.unfold_more, color: Colors.grey[500], size: 20),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Future<void> _onGatewayCardTapped() async {
+    final gateways = _receiveGateways;
+    if (gateways == null || gateways.isEmpty) return;
+
+    final currentIndex = gateways.indexWhere(
+      (g) =>
+          g.endpoint == _selectedGatewayEndpoint &&
+          g.isLnv2 == _selectedGatewayIsLnv2,
+    );
+    final pickedIndex = await showGatewayPickerSheet(
+      context,
+      gateways: gateways,
+      selectedIndex: currentIndex >= 0 ? currentIndex : 0,
+    );
+
+    if (pickedIndex != null && mounted) {
+      final picked = gateways[pickedIndex];
+      setState(() {
+        _selectedGatewayEndpoint = picked.endpoint;
+        _selectedGatewayIsLnv2 = picked.isLnv2;
+      });
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final bitcoinDisplay = context.select<PreferencesProvider, BitcoinDisplay>(
@@ -685,6 +877,7 @@ class _NumberPadState extends State<NumberPad> {
         body: Column(
           children: [
             _buildFederationCard(),
+            _buildGatewayCard(),
             Expanded(
               child: Center(
                 child: Column(

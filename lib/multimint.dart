@@ -140,6 +140,13 @@ abstract class Multimint implements RustOpaqueInterface {
     required Bolt11Invoice bolt11,
   });
 
+  Future<BigInt> computeReceiveAmountWithFees({
+    required FederationId federationId,
+    required SafeUrl gatewayUrl,
+    required bool isLnv2,
+    required Amount amount,
+  });
+
   Future<bool> containsClient({required FederationId federationId});
 
   Future<List<(FederationSelector, bool)>> federations();
@@ -273,11 +280,6 @@ abstract class Multimint implements RustOpaqueInterface {
 
   Future<void> rejoinFromBackupInvites({
     required List<String> backupInviteCodes,
-  });
-
-  Future<(String, BigInt, bool)> selectReceiveGateway({
-    required FederationId federationId,
-    required Amount amount,
   });
 
   Future<(String, BigInt, bool)> selectSendGateway({
