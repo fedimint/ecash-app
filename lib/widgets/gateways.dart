@@ -5,6 +5,7 @@ import 'package:ecashapp/providers/preferences_provider.dart';
 import 'package:ecashapp/theme.dart';
 import 'package:ecashapp/utils.dart';
 import 'package:ecashapp/widgets/gateway_details.dart';
+import 'package:ecashapp/widgets/protocol_badge.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:ecashapp/extensions/build_context_l10n.dart';
@@ -73,9 +74,19 @@ class GatewaysList extends StatelessWidget {
                 title: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
-                      g.lightningAlias ?? g.endpoint,
-                      style: theme.textTheme.titleSmall,
+                    Row(
+                      children: [
+                        Flexible(
+                          child: Text(
+                            g.lightningAlias ?? g.endpoint,
+                            style: theme.textTheme.titleSmall,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        ProtocolBadge(isLnv2: g.isLnv2),
+                      ],
                     ),
                     if (g.lightningAlias != null) ...[
                       const SizedBox(height: 2),

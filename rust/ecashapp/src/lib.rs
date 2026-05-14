@@ -40,6 +40,7 @@ use fedimint_mint_client::{OOBNotes, ReissueExternalNotesState, SpendOOBState};
 use fedimint_rocksdb::RocksDb;
 use lightning_invoice::Bolt11Invoice;
 use std::path::PathBuf;
+use std::time::Duration;
 use std::{str::FromStr, sync::Arc};
 
 use crate::db::{
@@ -260,14 +261,17 @@ pub async fn receive(
 }
 
 #[frb]
-pub async fn select_receive_gateway(
+pub async fn compute_receive_amount_with_fees(
     federation_id: &FederationId,
+    gateway_url: String,
+    is_lnv2: bool,
     amount_msats: u64,
-) -> anyhow::Result<(String, u64, bool)> {
+) -> anyhow::Result<u64> {
+    let gateway_url = SafeUrl::parse(&gateway_url)?;
     let amount = Amount::from_msats(amount_msats);
     let multimint = get_multimint();
     multimint
-        .select_receive_gateway(federation_id, amount)
+        .compute_receive_amount_with_fees(federation_id, gateway_url, is_lnv2, amount)
         .await
 }
 
@@ -831,7 +835,9 @@ pub async fn list_gateways(
     federation_id: Option<FederationId>,
 ) -> anyhow::Result<Vec<FedimintGateway>> {
     let multimint = get_multimint();
-    multimint.list_gateways(invite, federation_id).await
+    multimint
+        .list_gateways(invite, federation_id, Duration::from_secs(15))
+        .await
 }
 
 #[frb]

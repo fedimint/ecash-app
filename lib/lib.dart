@@ -84,11 +84,15 @@ Future<(String, OperationId, String, String, BigInt)> receive({
   isLnv2: isLnv2,
 );
 
-Future<(String, BigInt, bool)> selectReceiveGateway({
+Future<BigInt> computeReceiveAmountWithFees({
   required FederationId federationId,
+  required String gatewayUrl,
+  required bool isLnv2,
   required BigInt amountMsats,
-}) => RustLib.instance.api.crateSelectReceiveGateway(
+}) => RustLib.instance.api.crateComputeReceiveAmountWithFees(
   federationId: federationId,
+  gatewayUrl: gatewayUrl,
+  isLnv2: isLnv2,
   amountMsats: amountMsats,
 );
 
