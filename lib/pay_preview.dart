@@ -5,6 +5,7 @@ import 'package:ecashapp/providers/preferences_provider.dart';
 import 'package:ecashapp/send.dart';
 import 'package:ecashapp/utils.dart';
 import 'package:ecashapp/utils/pin_guard.dart';
+import 'package:ecashapp/widgets/gateway_picker.dart';
 import 'package:ecashapp/widgets/protocol_badge.dart';
 import 'package:ecashapp/extensions/build_context_l10n.dart';
 import 'package:flutter/material.dart';
@@ -43,113 +44,18 @@ class _PaymentPreviewWidgetState extends State<PaymentPreviewWidget> {
     return gw.lightningAlias ?? gw.endpoint;
   }
 
-  void _showGatewayPicker(BuildContext context) {
-    final theme = Theme.of(context);
-    final bitcoinDisplay = context.read<PreferencesProvider>().bitcoinDisplay;
-    final gateways = widget.previewData.gatewayPreviews;
-
-    showModalBottomSheet(
-      context: context,
-      backgroundColor: theme.bottomSheetTheme.backgroundColor,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
-      ),
-      builder: (context) {
-        return SafeArea(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Padding(
-                padding: const EdgeInsets.fromLTRB(20, 20, 20, 12),
-                child: Text(
-                  context.l10n.selectGateway,
-                  style: theme.textTheme.titleMedium?.copyWith(
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-              ),
-              ...List.generate(gateways.length, (index) {
-                final preview = gateways[index];
-                final gw = preview.gateway;
-                final isSelected = index == _selectedIndex;
-
-                return ListTile(
-                  contentPadding: const EdgeInsets.symmetric(
-                    horizontal: 20,
-                    vertical: 4,
-                  ),
-                  leading: Icon(
-                    Icons.device_hub,
-                    color:
-                        isSelected
-                            ? theme.colorScheme.primary
-                            : theme.colorScheme.onSurface.withOpacity(0.5),
-                  ),
-                  title: Row(
-                    children: [
-                      Expanded(
-                        child: Text(
-                          _gatewayDisplayName(gw),
-                          style: theme.textTheme.bodyMedium?.copyWith(
-                            fontFamily: 'monospace',
-                            fontWeight:
-                                isSelected
-                                    ? FontWeight.bold
-                                    : FontWeight.normal,
-                          ),
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ),
-                      Padding(
-                        padding: const EdgeInsets.only(left: 8),
-                        child: ProtocolBadge(isLnv2: gw.isLnv2),
-                      ),
-                    ],
-                  ),
-                  subtitle: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      if (gw.lightningAlias != null)
-                        Text(
-                          gw.endpoint,
-                          style: theme.textTheme.bodySmall?.copyWith(
-                            color: theme.colorScheme.onSurface.withOpacity(0.4),
-                            fontFamily: 'monospace',
-                            fontSize: 11,
-                          ),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      Text(
-                        '${context.l10n.txDetailFee}: ${formatBalance(preview.amountWithFees - widget.previewData.amountMsats, true, bitcoinDisplay)}',
-                        style: theme.textTheme.bodySmall?.copyWith(
-                          color: theme.colorScheme.onSurface.withOpacity(0.6),
-                        ),
-                      ),
-                    ],
-                  ),
-                  trailing:
-                      isSelected
-                          ? Icon(
-                            Icons.check_circle,
-                            color: theme.colorScheme.primary,
-                          )
-                          : null,
-                  onTap: () {
-                    setState(() {
-                      _selectedIndex = index;
-                    });
-                    Navigator.pop(context);
-                  },
-                );
-              }),
-              const SizedBox(height: 12),
-            ],
-          ),
-        );
-      },
+  Future<void> _showGatewayPicker(BuildContext context) async {
+    final picked = await showGatewayPickerSheetFromPreviews(
+      context,
+      previews: widget.previewData.gatewayPreviews,
+      invoiceAmountMsats: widget.previewData.amountMsats,
+      selectedIndex: _selectedIndex,
     );
+    if (picked != null && picked != _selectedIndex) {
+      setState(() {
+        _selectedIndex = picked;
+      });
+    }
   }
 
   @override
