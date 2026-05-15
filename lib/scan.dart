@@ -392,10 +392,12 @@ class _ScanQRPageState extends State<ScanQRPage> {
                     federationId: chosenFederation!.federationId,
                     bolt11: field0,
                   );
+                  final feds = await federations();
 
                   return PaymentPreviewWidget(
                     fed: chosenFederation,
                     previewData: preview,
+                    federations: feds,
                   );
                 },
               );

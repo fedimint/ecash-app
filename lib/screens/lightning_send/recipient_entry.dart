@@ -202,7 +202,12 @@ class _RecipientEntryState extends State<RecipientEntry> {
             federationId: widget.fed.federationId,
             bolt11: bolt11,
           );
-          return PaymentPreviewWidget(fed: widget.fed, previewData: preview);
+          final feds = await federations();
+          return PaymentPreviewWidget(
+            fed: widget.fed,
+            previewData: preview,
+            federations: feds,
+          );
         },
       );
     } catch (e) {

@@ -423,6 +423,7 @@ class _NumberPadState extends State<NumberPad> {
               return PaymentPreviewWidget(
                 fed: _selectedFed,
                 previewData: preview,
+                federations: _allFederations ?? await federations(),
               );
             },
           );
