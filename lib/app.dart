@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:ecashapp/contacts/contacts_screen.dart';
 import 'package:ecashapp/deep_link_handler.dart';
 import 'package:ecashapp/discover.dart';
+import 'package:ecashapp/error_helper.dart';
 import 'package:ecashapp/extensions/build_context_l10n.dart';
 import 'package:ecashapp/generated/app_localizations.dart';
 import 'package:ecashapp/models.dart';
@@ -159,6 +160,13 @@ class _MyAppState extends State<MyApp> {
             icon: Icon(Icons.error, color: Colors.red),
           );
         }
+      } else if (event is MultimintEvent_PaymentError) {
+        if (!mounted) return;
+        final ctx = _navigatorKey.currentContext;
+        if (ctx == null) return;
+        // Tuple shape: (FederationId, PaymentDirection, PaymentKind, EcashAppError)
+        final err = event.field0.$4;
+        showErrorToast(ctx, err);
       } else if (event is MultimintEvent_UpdateAvailable) {
         if (!mounted) return;
         final ctx = _navigatorKey.currentContext;

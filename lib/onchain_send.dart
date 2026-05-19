@@ -2,12 +2,12 @@ import 'dart:async';
 import 'constants/transaction_keys.dart';
 import 'package:ecashapp/db.dart';
 import 'package:ecashapp/detail_row.dart';
+import 'package:ecashapp/error_helper.dart';
 import 'package:ecashapp/lib.dart';
 import 'package:ecashapp/multimint.dart';
 import 'package:ecashapp/number_pad.dart';
 import 'package:ecashapp/providers/preferences_provider.dart';
 import 'package:ecashapp/success.dart';
-import 'package:ecashapp/toast.dart';
 import 'package:ecashapp/utils.dart';
 import 'package:ecashapp/utils/pin_guard.dart';
 import 'package:ecashapp/extensions/build_context_l10n.dart';
@@ -127,12 +127,7 @@ class _OnchainSendState extends State<OnchainSend> {
       _startQuoteTimer();
     } catch (e) {
       AppLogger.instance.error('Failed to calculate fees: $e');
-      ToastService().show(
-        message: context.l10n.failedToCalculateFees,
-        duration: const Duration(seconds: 5),
-        onTap: () {},
-        icon: Icon(Icons.error),
-      );
+      if (mounted) showErrorToast(context, e);
     } finally {
       setState(() => _loadingFees = false);
     }
@@ -216,12 +211,7 @@ class _OnchainSendState extends State<OnchainSend> {
       }
     } catch (e) {
       AppLogger.instance.error('Failed to withdraw: $e');
-      ToastService().show(
-        message: context.l10n.withdrawalFailed,
-        duration: const Duration(seconds: 5),
-        onTap: () {},
-        icon: Icon(Icons.error),
-      );
+      if (mounted) showErrorToast(context, e);
     } finally {
       if (mounted) {
         setState(() => _withdrawing = false);
