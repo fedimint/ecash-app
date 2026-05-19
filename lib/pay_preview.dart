@@ -51,7 +51,12 @@ class _PaymentPreviewWidgetState extends State<PaymentPreviewWidget> {
 
   bool get _hasMultipleGateways => _previewData.gatewayPreviews.length > 1;
 
-  bool get _hasMultipleFederations => widget.federations.length > 1;
+  List<(FederationSelector, bool)> get _compatibleFederations =>
+      widget.federations
+          .where((entry) => entry.$1.network == _previewData.network)
+          .toList();
+
+  bool get _hasMultipleFederations => _compatibleFederations.length > 1;
 
   String _gatewayDisplayName(FedimintGateway gw) {
     return gw.lightningAlias ?? gw.endpoint;
@@ -74,7 +79,7 @@ class _PaymentPreviewWidgetState extends State<PaymentPreviewWidget> {
   Future<void> _showFederationPicker(BuildContext context) async {
     final picked = await showFederationPicker(
       context: context,
-      federations: widget.federations,
+      federations: _compatibleFederations,
       title: context.l10n.selectFederationToPayFrom,
     );
     if (picked == null || !mounted) return;
