@@ -377,7 +377,11 @@ class _MyAppState extends State<MyApp> {
                 federationId: fed.federationId,
                 bolt11: field0,
               );
-              return PaymentPreviewWidget(fed: fed, previewData: preview);
+              return PaymentPreviewWidget(
+                fed: fed,
+                previewData: preview,
+                federations: _feds,
+              );
             },
           );
           _onJoinPressed(fed, false);
