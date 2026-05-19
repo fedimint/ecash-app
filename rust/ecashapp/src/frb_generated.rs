@@ -2313,7 +2313,7 @@ fn wire__crate__multimint__Multimint_await_ecash_send_impl(
             let api_operation_id = <OperationId>::sse_decode(&mut deserializer);
             deserializer.end();
             move |context| async move {
-                transform_result_sse::<_, flutter_rust_bridge::for_generated::anyhow::Error>(
+                transform_result_sse::<_, ()>(
                     (move || async move {
                         let mut api_that_guard = None;
                         let mut api_federation_id_guard = None;
@@ -2345,12 +2345,14 @@ fn wire__crate__multimint__Multimint_await_ecash_send_impl(
                         }
                         let api_that_guard = api_that_guard.unwrap();
                         let api_federation_id_guard = api_federation_id_guard.unwrap();
-                        let output_ok = crate::multimint::Multimint::await_ecash_send(
-                            &*api_that_guard,
-                            &*api_federation_id_guard,
-                            api_operation_id,
-                        )
-                        .await?;
+                        let output_ok = Result::<_, ()>::Ok(
+                            crate::multimint::Multimint::await_ecash_send(
+                                &*api_that_guard,
+                                &*api_federation_id_guard,
+                                api_operation_id,
+                            )
+                            .await,
+                        )?;
                         Ok(output_ok)
                     })()
                     .await,
@@ -2546,7 +2548,7 @@ fn wire__crate__multimint__Multimint_await_withdraw_impl(
             let api_operation_id = <OperationId>::sse_decode(&mut deserializer);
             deserializer.end();
             move |context| async move {
-                transform_result_sse::<_, flutter_rust_bridge::for_generated::anyhow::Error>(
+                transform_result_sse::<_, ()>(
                     (move || async move {
                         let mut api_that_guard = None;
                         let mut api_federation_id_guard = None;
@@ -2578,12 +2580,14 @@ fn wire__crate__multimint__Multimint_await_withdraw_impl(
                         }
                         let api_that_guard = api_that_guard.unwrap();
                         let api_federation_id_guard = api_federation_id_guard.unwrap();
-                        let output_ok = crate::multimint::Multimint::await_withdraw(
-                            &*api_that_guard,
-                            &*api_federation_id_guard,
-                            api_operation_id,
-                        )
-                        .await?;
+                        let output_ok = Result::<_, ()>::Ok(
+                            crate::multimint::Multimint::await_withdraw(
+                                &*api_that_guard,
+                                &*api_federation_id_guard,
+                                api_operation_id,
+                            )
+                            .await,
+                        )?;
                         Ok(output_ok)
                     })()
                     .await,
@@ -5317,7 +5321,7 @@ fn wire__crate__multimint__Multimint_reissue_ecash_impl(
             let api_fees = <crate::multimint::ReissueFees>::sse_decode(&mut deserializer);
             deserializer.end();
             move |context| async move {
-                transform_result_sse::<_, flutter_rust_bridge::for_generated::anyhow::Error>(
+                transform_result_sse::<_, ()>(
                     (move || async move {
                         let mut api_that_guard = None;
                         let mut api_federation_id_guard = None;
@@ -5349,13 +5353,15 @@ fn wire__crate__multimint__Multimint_reissue_ecash_impl(
                         }
                         let api_that_guard = api_that_guard.unwrap();
                         let api_federation_id_guard = api_federation_id_guard.unwrap();
-                        let output_ok = crate::multimint::Multimint::reissue_ecash(
-                            &*api_that_guard,
-                            &*api_federation_id_guard,
-                            api_ecash,
-                            api_fees,
-                        )
-                        .await?;
+                        let output_ok = Result::<_, ()>::Ok(
+                            crate::multimint::Multimint::reissue_ecash(
+                                &*api_that_guard,
+                                &*api_federation_id_guard,
+                                api_ecash,
+                                api_fees,
+                            )
+                            .await,
+                        )?;
                         Ok(output_ok)
                     })()
                     .await,
@@ -5540,7 +5546,7 @@ fn wire__crate__multimint__Multimint_send_impl(
             let api_ln_address = <Option<String>>::sse_decode(&mut deserializer);
             deserializer.end();
             move |context| async move {
-                transform_result_sse::<_, flutter_rust_bridge::for_generated::anyhow::Error>(
+                transform_result_sse::<_, ()>(
                     (move || async move {
                         let mut api_that_guard = None;
                         let mut api_federation_id_guard = None;
@@ -5572,16 +5578,18 @@ fn wire__crate__multimint__Multimint_send_impl(
                         }
                         let api_that_guard = api_that_guard.unwrap();
                         let api_federation_id_guard = api_federation_id_guard.unwrap();
-                        let output_ok = crate::multimint::Multimint::send(
-                            &*api_that_guard,
-                            &*api_federation_id_guard,
-                            api_invoice,
-                            api_gateway,
-                            api_is_lnv2,
-                            api_amount_with_fees,
-                            api_ln_address,
-                        )
-                        .await?;
+                        let output_ok = Result::<_, ()>::Ok(
+                            crate::multimint::Multimint::send(
+                                &*api_that_guard,
+                                &*api_federation_id_guard,
+                                api_invoice,
+                                api_gateway,
+                                api_is_lnv2,
+                                api_amount_with_fees,
+                                api_ln_address,
+                            )
+                            .await,
+                        )?;
                         Ok(output_ok)
                     })()
                     .await,
@@ -5621,7 +5629,7 @@ fn wire__crate__multimint__Multimint_send_ecash_impl(
             let api_amount_msats = <u64>::sse_decode(&mut deserializer);
             deserializer.end();
             move |context| async move {
-                transform_result_sse::<_, flutter_rust_bridge::for_generated::anyhow::Error>(
+                transform_result_sse::<_, ()>(
                     (move || async move {
                         let mut api_that_guard = None;
                         let mut api_federation_id_guard = None;
@@ -5653,12 +5661,14 @@ fn wire__crate__multimint__Multimint_send_ecash_impl(
                         }
                         let api_that_guard = api_that_guard.unwrap();
                         let api_federation_id_guard = api_federation_id_guard.unwrap();
-                        let output_ok = crate::multimint::Multimint::send_ecash(
-                            &*api_that_guard,
-                            &*api_federation_id_guard,
-                            api_amount_msats,
-                        )
-                        .await?;
+                        let output_ok = Result::<_, ()>::Ok(
+                            crate::multimint::Multimint::send_ecash(
+                                &*api_that_guard,
+                                &*api_federation_id_guard,
+                                api_amount_msats,
+                            )
+                            .await,
+                        )?;
                         Ok(output_ok)
                     })()
                     .await,
@@ -6272,7 +6282,7 @@ fn wire__crate__multimint__Multimint_withdraw_to_address_impl(
             let api_peg_out_fees = <PegOutFees>::sse_decode(&mut deserializer);
             deserializer.end();
             move |context| async move {
-                transform_result_sse::<_, flutter_rust_bridge::for_generated::anyhow::Error>(
+                transform_result_sse::<_, ()>(
                     (move || async move {
                         let mut api_that_guard = None;
                         let mut api_federation_id_guard = None;
@@ -6304,14 +6314,16 @@ fn wire__crate__multimint__Multimint_withdraw_to_address_impl(
                         }
                         let api_that_guard = api_that_guard.unwrap();
                         let api_federation_id_guard = api_federation_id_guard.unwrap();
-                        let output_ok = crate::multimint::Multimint::withdraw_to_address(
-                            &*api_that_guard,
-                            &*api_federation_id_guard,
-                            api_address,
-                            api_amount_sats,
-                            api_peg_out_fees,
-                        )
-                        .await?;
+                        let output_ok = Result::<_, ()>::Ok(
+                            crate::multimint::Multimint::withdraw_to_address(
+                                &*api_that_guard,
+                                &*api_federation_id_guard,
+                                api_address,
+                                api_amount_sats,
+                                api_peg_out_fees,
+                            )
+                            .await,
+                        )?;
                         Ok(output_ok)
                     })()
                     .await,
@@ -9414,7 +9426,7 @@ fn wire__crate__await_withdraw_impl(
             let api_operation_id = <OperationId>::sse_decode(&mut deserializer);
             deserializer.end();
             move |context| async move {
-                transform_result_sse::<_, flutter_rust_bridge::for_generated::anyhow::Error>(
+                transform_result_sse::<_, crate::app_error::EcashAppError>(
                     (move || async move {
                         let mut api_federation_id_guard = None;
                         let decode_indices_ =
@@ -12046,7 +12058,7 @@ fn wire__crate__reissue_ecash_impl(
             let api_fees = <crate::multimint::ReissueFees>::sse_decode(&mut deserializer);
             deserializer.end();
             move |context| async move {
-                transform_result_sse::<_, flutter_rust_bridge::for_generated::anyhow::Error>(
+                transform_result_sse::<_, crate::app_error::EcashAppError>(
                     (move || async move {
                         let mut api_federation_id_guard = None;
                         let decode_indices_ =
@@ -12221,7 +12233,7 @@ fn wire__crate__send_impl(
             let api_ln_address = <Option<String>>::sse_decode(&mut deserializer);
             deserializer.end();
             move |context| async move {
-                transform_result_sse::<_, flutter_rust_bridge::for_generated::anyhow::Error>(
+                transform_result_sse::<_, crate::app_error::EcashAppError>(
                     (move || async move {
                         let mut api_federation_id_guard = None;
                         let decode_indices_ =
@@ -12287,7 +12299,7 @@ fn wire__crate__send_ecash_impl(
             let api_amount_msats = <u64>::sse_decode(&mut deserializer);
             deserializer.end();
             move |context| async move {
-                transform_result_sse::<_, flutter_rust_bridge::for_generated::anyhow::Error>(
+                transform_result_sse::<_, crate::app_error::EcashAppError>(
                     (move || async move {
                         let mut api_federation_id_guard = None;
                         let decode_indices_ =
@@ -12347,7 +12359,7 @@ fn wire__crate__send_lnaddress_impl(
             let api_address = <String>::sse_decode(&mut deserializer);
             deserializer.end();
             move |context| async move {
-                transform_result_sse::<_, flutter_rust_bridge::for_generated::anyhow::Error>(
+                transform_result_sse::<_, crate::app_error::EcashAppError>(
                     (move || async move {
                         let mut api_federation_id_guard = None;
                         let decode_indices_ =
@@ -13073,7 +13085,7 @@ fn wire__crate__withdraw_to_address_impl(
             let api_peg_out_fees = <PegOutFees>::sse_decode(&mut deserializer);
             deserializer.end();
             move |context| async move {
-                transform_result_sse::<_, flutter_rust_bridge::for_generated::anyhow::Error>(
+                transform_result_sse::<_, crate::app_error::EcashAppError>(
                     (move || async move {
                         let mut api_federation_id_guard = None;
                         let decode_indices_ =
@@ -13160,6 +13172,18 @@ flutter_rust_bridge::frb_generated_moi_arc_impl_value!(
     flutter_rust_bridge::for_generated::RustAutoOpaqueInner<Database>
 );
 flutter_rust_bridge::frb_generated_moi_arc_impl_value!(
+    flutter_rust_bridge::for_generated::RustAutoOpaqueInner<EcashAppResult<OOBNotesWrapper>>
+);
+flutter_rust_bridge::frb_generated_moi_arc_impl_value!(
+    flutter_rust_bridge::for_generated::RustAutoOpaqueInner<EcashAppResult<OperationId>>
+);
+flutter_rust_bridge::frb_generated_moi_arc_impl_value!(
+    flutter_rust_bridge::for_generated::RustAutoOpaqueInner<EcashAppResult<SpendOOBState>>
+);
+flutter_rust_bridge::frb_generated_moi_arc_impl_value!(
+    flutter_rust_bridge::for_generated::RustAutoOpaqueInner<EcashAppResult<String>>
+);
+flutter_rust_bridge::frb_generated_moi_arc_impl_value!(
     flutter_rust_bridge::for_generated::RustAutoOpaqueInner<EventBus<MultimintEvent>>
 );
 flutter_rust_bridge::frb_generated_moi_arc_impl_value!(
@@ -13220,9 +13244,6 @@ flutter_rust_bridge::frb_generated_moi_arc_impl_value!(
     flutter_rust_bridge::for_generated::RustAutoOpaqueInner<SafeUrl>
 );
 flutter_rust_bridge::frb_generated_moi_arc_impl_value!(
-    flutter_rust_bridge::for_generated::RustAutoOpaqueInner<SpendOOBState>
-);
-flutter_rust_bridge::frb_generated_moi_arc_impl_value!(
     flutter_rust_bridge::for_generated::RustAutoOpaqueInner<WithdrawFeesResponse>
 );
 
@@ -13271,6 +13292,48 @@ impl SseDecode for Database {
     fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
         let mut inner = <RustOpaqueMoi<
             flutter_rust_bridge::for_generated::RustAutoOpaqueInner<Database>,
+        >>::sse_decode(deserializer);
+        return flutter_rust_bridge::for_generated::rust_auto_opaque_decode_owned(inner);
+    }
+}
+
+impl SseDecode for EcashAppResult<OOBNotesWrapper> {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
+        let mut inner = <RustOpaqueMoi<
+            flutter_rust_bridge::for_generated::RustAutoOpaqueInner<
+                EcashAppResult<OOBNotesWrapper>,
+            >,
+        >>::sse_decode(deserializer);
+        return flutter_rust_bridge::for_generated::rust_auto_opaque_decode_owned(inner);
+    }
+}
+
+impl SseDecode for EcashAppResult<OperationId> {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
+        let mut inner = <RustOpaqueMoi<
+            flutter_rust_bridge::for_generated::RustAutoOpaqueInner<EcashAppResult<OperationId>>,
+        >>::sse_decode(deserializer);
+        return flutter_rust_bridge::for_generated::rust_auto_opaque_decode_owned(inner);
+    }
+}
+
+impl SseDecode for EcashAppResult<SpendOOBState> {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
+        let mut inner = <RustOpaqueMoi<
+            flutter_rust_bridge::for_generated::RustAutoOpaqueInner<EcashAppResult<SpendOOBState>>,
+        >>::sse_decode(deserializer);
+        return flutter_rust_bridge::for_generated::rust_auto_opaque_decode_owned(inner);
+    }
+}
+
+impl SseDecode for EcashAppResult<String> {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
+        let mut inner = <RustOpaqueMoi<
+            flutter_rust_bridge::for_generated::RustAutoOpaqueInner<EcashAppResult<String>>,
         >>::sse_decode(deserializer);
         return flutter_rust_bridge::for_generated::rust_auto_opaque_decode_owned(inner);
     }
@@ -13466,16 +13529,6 @@ impl SseDecode for SafeUrl {
     }
 }
 
-impl SseDecode for SpendOOBState {
-    // Codec=Sse (Serialization based), see doc to use other codecs
-    fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
-        let mut inner = <RustOpaqueMoi<
-            flutter_rust_bridge::for_generated::RustAutoOpaqueInner<SpendOOBState>,
-        >>::sse_decode(deserializer);
-        return flutter_rust_bridge::for_generated::rust_auto_opaque_decode_owned(inner);
-    }
-}
-
 impl SseDecode for WithdrawFeesResponse {
     // Codec=Sse (Serialization based), see doc to use other codecs
     fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
@@ -13516,6 +13569,54 @@ impl SseDecode
 
 impl SseDecode
     for RustOpaqueMoi<flutter_rust_bridge::for_generated::RustAutoOpaqueInner<Database>>
+{
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
+        let mut inner = <usize>::sse_decode(deserializer);
+        return decode_rust_opaque_moi(inner);
+    }
+}
+
+impl SseDecode
+    for RustOpaqueMoi<
+        flutter_rust_bridge::for_generated::RustAutoOpaqueInner<EcashAppResult<OOBNotesWrapper>>,
+    >
+{
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
+        let mut inner = <usize>::sse_decode(deserializer);
+        return decode_rust_opaque_moi(inner);
+    }
+}
+
+impl SseDecode
+    for RustOpaqueMoi<
+        flutter_rust_bridge::for_generated::RustAutoOpaqueInner<EcashAppResult<OperationId>>,
+    >
+{
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
+        let mut inner = <usize>::sse_decode(deserializer);
+        return decode_rust_opaque_moi(inner);
+    }
+}
+
+impl SseDecode
+    for RustOpaqueMoi<
+        flutter_rust_bridge::for_generated::RustAutoOpaqueInner<EcashAppResult<SpendOOBState>>,
+    >
+{
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
+        let mut inner = <usize>::sse_decode(deserializer);
+        return decode_rust_opaque_moi(inner);
+    }
+}
+
+impl SseDecode
+    for RustOpaqueMoi<
+        flutter_rust_bridge::for_generated::RustAutoOpaqueInner<EcashAppResult<String>>,
+    >
 {
     // Codec=Sse (Serialization based), see doc to use other codecs
     fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
@@ -13723,16 +13824,6 @@ impl SseDecode
 }
 
 impl SseDecode for RustOpaqueMoi<flutter_rust_bridge::for_generated::RustAutoOpaqueInner<SafeUrl>> {
-    // Codec=Sse (Serialization based), see doc to use other codecs
-    fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
-        let mut inner = <usize>::sse_decode(deserializer);
-        return decode_rust_opaque_moi(inner);
-    }
-}
-
-impl SseDecode
-    for RustOpaqueMoi<flutter_rust_bridge::for_generated::RustAutoOpaqueInner<SpendOOBState>>
-{
     // Codec=Sse (Serialization based), see doc to use other codecs
     fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
         let mut inner = <usize>::sse_decode(deserializer);
@@ -13987,6 +14078,60 @@ impl SseDecode for crate::multimint::DepositEventKind {
     }
 }
 
+impl SseDecode for crate::app_error::EcashAppError {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
+        let mut tag_ = <i32>::sse_decode(deserializer);
+        match tag_ {
+            0 => {
+                return crate::app_error::EcashAppError::ExpiredInvoice;
+            }
+            1 => {
+                let mut var_neededMsats = <u64>::sse_decode(deserializer);
+                let mut var_haveMsats = <u64>::sse_decode(deserializer);
+                return crate::app_error::EcashAppError::InsufficientBalance {
+                    needed_msats: var_neededMsats,
+                    have_msats: var_haveMsats,
+                };
+            }
+            2 => {
+                return crate::app_error::EcashAppError::NoRouteFound;
+            }
+            3 => {
+                return crate::app_error::EcashAppError::GatewayOffline;
+            }
+            4 => {
+                return crate::app_error::EcashAppError::NoGatewaysAvailable;
+            }
+            5 => {
+                return crate::app_error::EcashAppError::FederationOffline;
+            }
+            6 => {
+                let mut var_field0 = <String>::sse_decode(deserializer);
+                return crate::app_error::EcashAppError::InvalidInvoice(var_field0);
+            }
+            7 => {
+                let mut var_field0 = <String>::sse_decode(deserializer);
+                return crate::app_error::EcashAppError::InvalidAddress(var_field0);
+            }
+            8 => {
+                let mut var_field0 = <String>::sse_decode(deserializer);
+                return crate::app_error::EcashAppError::PaymentRefunded(var_field0);
+            }
+            9 => {
+                return crate::app_error::EcashAppError::Timeout;
+            }
+            10 => {
+                let mut var_field0 = <String>::sse_decode(deserializer);
+                return crate::app_error::EcashAppError::Other(var_field0);
+            }
+            _ => {
+                unimplemented!("");
+            }
+        }
+    }
+}
+
 impl SseDecode for f64 {
     // Codec=Sse (Serialization based), see doc to use other codecs
     fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
@@ -14115,7 +14260,8 @@ impl SseDecode for crate::multimint::LightningSendOutcome {
                 return crate::multimint::LightningSendOutcome::Success(var_field0);
             }
             1 => {
-                return crate::multimint::LightningSendOutcome::Failure;
+                let mut var_field0 = <crate::app_error::EcashAppError>::sse_decode(deserializer);
+                return crate::multimint::LightningSendOutcome::Failure(var_field0);
             }
             _ => {
                 unimplemented!("");
@@ -14489,6 +14635,15 @@ impl SseDecode for crate::multimint::MultimintEvent {
                 let mut var_field0 = <String>::sse_decode(deserializer);
                 return crate::multimint::MultimintEvent::UpdateAvailable(var_field0);
             }
+            11 => {
+                let mut var_field0 = <(
+                    FederationId,
+                    crate::multimint::PaymentDirection,
+                    crate::multimint::PaymentKind,
+                    crate::app_error::EcashAppError,
+                )>::sse_decode(deserializer);
+                return crate::multimint::MultimintEvent::PaymentError(var_field0);
+            }
             _ => {
                 unimplemented!("");
             }
@@ -14766,6 +14921,31 @@ impl SseDecode for crate::ParsedText {
     }
 }
 
+impl SseDecode for crate::multimint::PaymentDirection {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
+        let mut inner = <i32>::sse_decode(deserializer);
+        return match inner {
+            0 => crate::multimint::PaymentDirection::Send,
+            1 => crate::multimint::PaymentDirection::Receive,
+            _ => unreachable!("Invalid variant for PaymentDirection: {}", inner),
+        };
+    }
+}
+
+impl SseDecode for crate::multimint::PaymentKind {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
+        let mut inner = <i32>::sse_decode(deserializer);
+        return match inner {
+            0 => crate::multimint::PaymentKind::Lightning,
+            1 => crate::multimint::PaymentKind::Ecash,
+            2 => crate::multimint::PaymentKind::Onchain,
+            _ => unreachable!("Invalid variant for PaymentKind: {}", inner),
+        };
+    }
+}
+
 impl SseDecode for crate::multimint::PaymentPreviewWithGateways {
     // Codec=Sse (Serialization based), see doc to use other codecs
     fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
@@ -14844,6 +15024,24 @@ impl SseDecode for (FederationId, crate::multimint::LightningEventKind) {
         let mut var_field0 = <FederationId>::sse_decode(deserializer);
         let mut var_field1 = <crate::multimint::LightningEventKind>::sse_decode(deserializer);
         return (var_field0, var_field1);
+    }
+}
+
+impl SseDecode
+    for (
+        FederationId,
+        crate::multimint::PaymentDirection,
+        crate::multimint::PaymentKind,
+        crate::app_error::EcashAppError,
+    )
+{
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
+        let mut var_field0 = <FederationId>::sse_decode(deserializer);
+        let mut var_field1 = <crate::multimint::PaymentDirection>::sse_decode(deserializer);
+        let mut var_field2 = <crate::multimint::PaymentKind>::sse_decode(deserializer);
+        let mut var_field3 = <crate::app_error::EcashAppError>::sse_decode(deserializer);
+        return (var_field0, var_field1, var_field2, var_field3);
     }
 }
 
@@ -16105,6 +16303,86 @@ impl flutter_rust_bridge::IntoIntoDart<FrbWrapper<Database>> for Database {
 }
 
 // Codec=Dco (DartCObject based), see doc to use other codecs
+impl flutter_rust_bridge::IntoDart for FrbWrapper<EcashAppResult<OOBNotesWrapper>> {
+    fn into_dart(self) -> flutter_rust_bridge::for_generated::DartAbi {
+        flutter_rust_bridge::for_generated::rust_auto_opaque_encode::<_, MoiArc<_>>(self.0)
+            .into_dart()
+    }
+}
+impl flutter_rust_bridge::for_generated::IntoDartExceptPrimitive
+    for FrbWrapper<EcashAppResult<OOBNotesWrapper>>
+{
+}
+
+impl flutter_rust_bridge::IntoIntoDart<FrbWrapper<EcashAppResult<OOBNotesWrapper>>>
+    for EcashAppResult<OOBNotesWrapper>
+{
+    fn into_into_dart(self) -> FrbWrapper<EcashAppResult<OOBNotesWrapper>> {
+        self.into()
+    }
+}
+
+// Codec=Dco (DartCObject based), see doc to use other codecs
+impl flutter_rust_bridge::IntoDart for FrbWrapper<EcashAppResult<OperationId>> {
+    fn into_dart(self) -> flutter_rust_bridge::for_generated::DartAbi {
+        flutter_rust_bridge::for_generated::rust_auto_opaque_encode::<_, MoiArc<_>>(self.0)
+            .into_dart()
+    }
+}
+impl flutter_rust_bridge::for_generated::IntoDartExceptPrimitive
+    for FrbWrapper<EcashAppResult<OperationId>>
+{
+}
+
+impl flutter_rust_bridge::IntoIntoDart<FrbWrapper<EcashAppResult<OperationId>>>
+    for EcashAppResult<OperationId>
+{
+    fn into_into_dart(self) -> FrbWrapper<EcashAppResult<OperationId>> {
+        self.into()
+    }
+}
+
+// Codec=Dco (DartCObject based), see doc to use other codecs
+impl flutter_rust_bridge::IntoDart for FrbWrapper<EcashAppResult<SpendOOBState>> {
+    fn into_dart(self) -> flutter_rust_bridge::for_generated::DartAbi {
+        flutter_rust_bridge::for_generated::rust_auto_opaque_encode::<_, MoiArc<_>>(self.0)
+            .into_dart()
+    }
+}
+impl flutter_rust_bridge::for_generated::IntoDartExceptPrimitive
+    for FrbWrapper<EcashAppResult<SpendOOBState>>
+{
+}
+
+impl flutter_rust_bridge::IntoIntoDart<FrbWrapper<EcashAppResult<SpendOOBState>>>
+    for EcashAppResult<SpendOOBState>
+{
+    fn into_into_dart(self) -> FrbWrapper<EcashAppResult<SpendOOBState>> {
+        self.into()
+    }
+}
+
+// Codec=Dco (DartCObject based), see doc to use other codecs
+impl flutter_rust_bridge::IntoDart for FrbWrapper<EcashAppResult<String>> {
+    fn into_dart(self) -> flutter_rust_bridge::for_generated::DartAbi {
+        flutter_rust_bridge::for_generated::rust_auto_opaque_encode::<_, MoiArc<_>>(self.0)
+            .into_dart()
+    }
+}
+impl flutter_rust_bridge::for_generated::IntoDartExceptPrimitive
+    for FrbWrapper<EcashAppResult<String>>
+{
+}
+
+impl flutter_rust_bridge::IntoIntoDart<FrbWrapper<EcashAppResult<String>>>
+    for EcashAppResult<String>
+{
+    fn into_into_dart(self) -> FrbWrapper<EcashAppResult<String>> {
+        self.into()
+    }
+}
+
+// Codec=Dco (DartCObject based), see doc to use other codecs
 impl flutter_rust_bridge::IntoDart for FrbWrapper<EventBus<MultimintEvent>> {
     fn into_dart(self) -> flutter_rust_bridge::for_generated::DartAbi {
         flutter_rust_bridge::for_generated::rust_auto_opaque_encode::<_, MoiArc<_>>(self.0)
@@ -16416,21 +16694,6 @@ impl flutter_rust_bridge::IntoIntoDart<FrbWrapper<SafeUrl>> for SafeUrl {
 }
 
 // Codec=Dco (DartCObject based), see doc to use other codecs
-impl flutter_rust_bridge::IntoDart for FrbWrapper<SpendOOBState> {
-    fn into_dart(self) -> flutter_rust_bridge::for_generated::DartAbi {
-        flutter_rust_bridge::for_generated::rust_auto_opaque_encode::<_, MoiArc<_>>(self.0)
-            .into_dart()
-    }
-}
-impl flutter_rust_bridge::for_generated::IntoDartExceptPrimitive for FrbWrapper<SpendOOBState> {}
-
-impl flutter_rust_bridge::IntoIntoDart<FrbWrapper<SpendOOBState>> for SpendOOBState {
-    fn into_into_dart(self) -> FrbWrapper<SpendOOBState> {
-        self.into()
-    }
-}
-
-// Codec=Dco (DartCObject based), see doc to use other codecs
 impl flutter_rust_bridge::IntoDart for FrbWrapper<WithdrawFeesResponse> {
     fn into_dart(self) -> flutter_rust_bridge::for_generated::DartAbi {
         flutter_rust_bridge::for_generated::rust_auto_opaque_encode::<_, MoiArc<_>>(self.0)
@@ -16680,6 +16943,54 @@ impl flutter_rust_bridge::IntoIntoDart<crate::multimint::DepositEventKind>
     }
 }
 // Codec=Dco (DartCObject based), see doc to use other codecs
+impl flutter_rust_bridge::IntoDart for crate::app_error::EcashAppError {
+    fn into_dart(self) -> flutter_rust_bridge::for_generated::DartAbi {
+        match self {
+            crate::app_error::EcashAppError::ExpiredInvoice => [0.into_dart()].into_dart(),
+            crate::app_error::EcashAppError::InsufficientBalance {
+                needed_msats,
+                have_msats,
+            } => [
+                1.into_dart(),
+                needed_msats.into_into_dart().into_dart(),
+                have_msats.into_into_dart().into_dart(),
+            ]
+            .into_dart(),
+            crate::app_error::EcashAppError::NoRouteFound => [2.into_dart()].into_dart(),
+            crate::app_error::EcashAppError::GatewayOffline => [3.into_dart()].into_dart(),
+            crate::app_error::EcashAppError::NoGatewaysAvailable => [4.into_dart()].into_dart(),
+            crate::app_error::EcashAppError::FederationOffline => [5.into_dart()].into_dart(),
+            crate::app_error::EcashAppError::InvalidInvoice(field0) => {
+                [6.into_dart(), field0.into_into_dart().into_dart()].into_dart()
+            }
+            crate::app_error::EcashAppError::InvalidAddress(field0) => {
+                [7.into_dart(), field0.into_into_dart().into_dart()].into_dart()
+            }
+            crate::app_error::EcashAppError::PaymentRefunded(field0) => {
+                [8.into_dart(), field0.into_into_dart().into_dart()].into_dart()
+            }
+            crate::app_error::EcashAppError::Timeout => [9.into_dart()].into_dart(),
+            crate::app_error::EcashAppError::Other(field0) => {
+                [10.into_dart(), field0.into_into_dart().into_dart()].into_dart()
+            }
+            _ => {
+                unimplemented!("");
+            }
+        }
+    }
+}
+impl flutter_rust_bridge::for_generated::IntoDartExceptPrimitive
+    for crate::app_error::EcashAppError
+{
+}
+impl flutter_rust_bridge::IntoIntoDart<crate::app_error::EcashAppError>
+    for crate::app_error::EcashAppError
+{
+    fn into_into_dart(self) -> crate::app_error::EcashAppError {
+        self
+    }
+}
+// Codec=Dco (DartCObject based), see doc to use other codecs
 impl flutter_rust_bridge::IntoDart for crate::multimint::FedimintGateway {
     fn into_dart(self) -> flutter_rust_bridge::for_generated::DartAbi {
         [
@@ -16818,7 +17129,9 @@ impl flutter_rust_bridge::IntoDart for crate::multimint::LightningSendOutcome {
             crate::multimint::LightningSendOutcome::Success(field0) => {
                 [0.into_dart(), field0.into_into_dart().into_dart()].into_dart()
             }
-            crate::multimint::LightningSendOutcome::Failure => [1.into_dart()].into_dart(),
+            crate::multimint::LightningSendOutcome::Failure(field0) => {
+                [1.into_dart(), field0.into_into_dart().into_dart()].into_dart()
+            }
             _ => {
                 unimplemented!("");
             }
@@ -16982,6 +17295,9 @@ impl flutter_rust_bridge::IntoDart for crate::multimint::MultimintEvent {
             crate::multimint::MultimintEvent::UpdateAvailable(field0) => {
                 [10.into_dart(), field0.into_into_dart().into_dart()].into_dart()
             }
+            crate::multimint::MultimintEvent::PaymentError(field0) => {
+                [11.into_dart(), field0.into_into_dart().into_dart()].into_dart()
+            }
             _ => {
                 unimplemented!("");
             }
@@ -17128,6 +17444,46 @@ impl flutter_rust_bridge::IntoDart for crate::ParsedText {
 impl flutter_rust_bridge::for_generated::IntoDartExceptPrimitive for crate::ParsedText {}
 impl flutter_rust_bridge::IntoIntoDart<crate::ParsedText> for crate::ParsedText {
     fn into_into_dart(self) -> crate::ParsedText {
+        self
+    }
+}
+// Codec=Dco (DartCObject based), see doc to use other codecs
+impl flutter_rust_bridge::IntoDart for crate::multimint::PaymentDirection {
+    fn into_dart(self) -> flutter_rust_bridge::for_generated::DartAbi {
+        match self {
+            Self::Send => 0.into_dart(),
+            Self::Receive => 1.into_dart(),
+            _ => unreachable!(),
+        }
+    }
+}
+impl flutter_rust_bridge::for_generated::IntoDartExceptPrimitive
+    for crate::multimint::PaymentDirection
+{
+}
+impl flutter_rust_bridge::IntoIntoDart<crate::multimint::PaymentDirection>
+    for crate::multimint::PaymentDirection
+{
+    fn into_into_dart(self) -> crate::multimint::PaymentDirection {
+        self
+    }
+}
+// Codec=Dco (DartCObject based), see doc to use other codecs
+impl flutter_rust_bridge::IntoDart for crate::multimint::PaymentKind {
+    fn into_dart(self) -> flutter_rust_bridge::for_generated::DartAbi {
+        match self {
+            Self::Lightning => 0.into_dart(),
+            Self::Ecash => 1.into_dart(),
+            Self::Onchain => 2.into_dart(),
+            _ => unreachable!(),
+        }
+    }
+}
+impl flutter_rust_bridge::for_generated::IntoDartExceptPrimitive for crate::multimint::PaymentKind {}
+impl flutter_rust_bridge::IntoIntoDart<crate::multimint::PaymentKind>
+    for crate::multimint::PaymentKind
+{
+    fn into_into_dart(self) -> crate::multimint::PaymentKind {
         self
     }
 }
@@ -17408,6 +17764,56 @@ impl SseEncode for Database {
     }
 }
 
+impl SseEncode for EcashAppResult<OOBNotesWrapper> {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
+        <RustOpaqueMoi<
+            flutter_rust_bridge::for_generated::RustAutoOpaqueInner<
+                EcashAppResult<OOBNotesWrapper>,
+            >,
+        >>::sse_encode(
+            flutter_rust_bridge::for_generated::rust_auto_opaque_encode::<_, MoiArc<_>>(self),
+            serializer,
+        );
+    }
+}
+
+impl SseEncode for EcashAppResult<OperationId> {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
+        <RustOpaqueMoi<
+            flutter_rust_bridge::for_generated::RustAutoOpaqueInner<EcashAppResult<OperationId>>,
+        >>::sse_encode(
+            flutter_rust_bridge::for_generated::rust_auto_opaque_encode::<_, MoiArc<_>>(self),
+            serializer,
+        );
+    }
+}
+
+impl SseEncode for EcashAppResult<SpendOOBState> {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
+        <RustOpaqueMoi<
+            flutter_rust_bridge::for_generated::RustAutoOpaqueInner<EcashAppResult<SpendOOBState>>,
+        >>::sse_encode(
+            flutter_rust_bridge::for_generated::rust_auto_opaque_encode::<_, MoiArc<_>>(self),
+            serializer,
+        );
+    }
+}
+
+impl SseEncode for EcashAppResult<String> {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
+        <RustOpaqueMoi<
+            flutter_rust_bridge::for_generated::RustAutoOpaqueInner<EcashAppResult<String>>,
+        >>::sse_encode(
+            flutter_rust_bridge::for_generated::rust_auto_opaque_encode::<_, MoiArc<_>>(self),
+            serializer,
+        );
+    }
+}
+
 impl SseEncode for EventBus<MultimintEvent> {
     // Codec=Sse (Serialization based), see doc to use other codecs
     fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
@@ -17561,13 +17967,6 @@ impl SseEncode for SafeUrl {
     }
 }
 
-impl SseEncode for SpendOOBState {
-    // Codec=Sse (Serialization based), see doc to use other codecs
-    fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
-        <RustOpaqueMoi<flutter_rust_bridge::for_generated::RustAutoOpaqueInner<SpendOOBState>>>::sse_encode(flutter_rust_bridge::for_generated::rust_auto_opaque_encode::<_, MoiArc<_>>(self), serializer);
-    }
-}
-
 impl SseEncode for WithdrawFeesResponse {
     // Codec=Sse (Serialization based), see doc to use other codecs
     fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
@@ -17613,6 +18012,58 @@ impl SseEncode
 
 impl SseEncode
     for RustOpaqueMoi<flutter_rust_bridge::for_generated::RustAutoOpaqueInner<Database>>
+{
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
+        let (ptr, size) = self.sse_encode_raw();
+        <usize>::sse_encode(ptr, serializer);
+        <i32>::sse_encode(size, serializer);
+    }
+}
+
+impl SseEncode
+    for RustOpaqueMoi<
+        flutter_rust_bridge::for_generated::RustAutoOpaqueInner<EcashAppResult<OOBNotesWrapper>>,
+    >
+{
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
+        let (ptr, size) = self.sse_encode_raw();
+        <usize>::sse_encode(ptr, serializer);
+        <i32>::sse_encode(size, serializer);
+    }
+}
+
+impl SseEncode
+    for RustOpaqueMoi<
+        flutter_rust_bridge::for_generated::RustAutoOpaqueInner<EcashAppResult<OperationId>>,
+    >
+{
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
+        let (ptr, size) = self.sse_encode_raw();
+        <usize>::sse_encode(ptr, serializer);
+        <i32>::sse_encode(size, serializer);
+    }
+}
+
+impl SseEncode
+    for RustOpaqueMoi<
+        flutter_rust_bridge::for_generated::RustAutoOpaqueInner<EcashAppResult<SpendOOBState>>,
+    >
+{
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
+        let (ptr, size) = self.sse_encode_raw();
+        <usize>::sse_encode(ptr, serializer);
+        <i32>::sse_encode(size, serializer);
+    }
+}
+
+impl SseEncode
+    for RustOpaqueMoi<
+        flutter_rust_bridge::for_generated::RustAutoOpaqueInner<EcashAppResult<String>>,
+    >
 {
     // Codec=Sse (Serialization based), see doc to use other codecs
     fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
@@ -17849,17 +18300,6 @@ impl SseEncode for RustOpaqueMoi<flutter_rust_bridge::for_generated::RustAutoOpa
 }
 
 impl SseEncode
-    for RustOpaqueMoi<flutter_rust_bridge::for_generated::RustAutoOpaqueInner<SpendOOBState>>
-{
-    // Codec=Sse (Serialization based), see doc to use other codecs
-    fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
-        let (ptr, size) = self.sse_encode_raw();
-        <usize>::sse_encode(ptr, serializer);
-        <i32>::sse_encode(size, serializer);
-    }
-}
-
-impl SseEncode
     for RustOpaqueMoi<flutter_rust_bridge::for_generated::RustAutoOpaqueInner<WithdrawFeesResponse>>
 {
     // Codec=Sse (Serialization based), see doc to use other codecs
@@ -18071,6 +18511,59 @@ impl SseEncode for crate::multimint::DepositEventKind {
     }
 }
 
+impl SseEncode for crate::app_error::EcashAppError {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
+        match self {
+            crate::app_error::EcashAppError::ExpiredInvoice => {
+                <i32>::sse_encode(0, serializer);
+            }
+            crate::app_error::EcashAppError::InsufficientBalance {
+                needed_msats,
+                have_msats,
+            } => {
+                <i32>::sse_encode(1, serializer);
+                <u64>::sse_encode(needed_msats, serializer);
+                <u64>::sse_encode(have_msats, serializer);
+            }
+            crate::app_error::EcashAppError::NoRouteFound => {
+                <i32>::sse_encode(2, serializer);
+            }
+            crate::app_error::EcashAppError::GatewayOffline => {
+                <i32>::sse_encode(3, serializer);
+            }
+            crate::app_error::EcashAppError::NoGatewaysAvailable => {
+                <i32>::sse_encode(4, serializer);
+            }
+            crate::app_error::EcashAppError::FederationOffline => {
+                <i32>::sse_encode(5, serializer);
+            }
+            crate::app_error::EcashAppError::InvalidInvoice(field0) => {
+                <i32>::sse_encode(6, serializer);
+                <String>::sse_encode(field0, serializer);
+            }
+            crate::app_error::EcashAppError::InvalidAddress(field0) => {
+                <i32>::sse_encode(7, serializer);
+                <String>::sse_encode(field0, serializer);
+            }
+            crate::app_error::EcashAppError::PaymentRefunded(field0) => {
+                <i32>::sse_encode(8, serializer);
+                <String>::sse_encode(field0, serializer);
+            }
+            crate::app_error::EcashAppError::Timeout => {
+                <i32>::sse_encode(9, serializer);
+            }
+            crate::app_error::EcashAppError::Other(field0) => {
+                <i32>::sse_encode(10, serializer);
+                <String>::sse_encode(field0, serializer);
+            }
+            _ => {
+                unimplemented!("");
+            }
+        }
+    }
+}
+
 impl SseEncode for f64 {
     // Codec=Sse (Serialization based), see doc to use other codecs
     fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
@@ -18174,8 +18667,9 @@ impl SseEncode for crate::multimint::LightningSendOutcome {
                 <i32>::sse_encode(0, serializer);
                 <String>::sse_encode(field0, serializer);
             }
-            crate::multimint::LightningSendOutcome::Failure => {
+            crate::multimint::LightningSendOutcome::Failure(field0) => {
                 <i32>::sse_encode(1, serializer);
+                <crate::app_error::EcashAppError>::sse_encode(field0, serializer);
             }
             _ => {
                 unimplemented!("");
@@ -18498,6 +18992,15 @@ impl SseEncode for crate::multimint::MultimintEvent {
                 <i32>::sse_encode(10, serializer);
                 <String>::sse_encode(field0, serializer);
             }
+            crate::multimint::MultimintEvent::PaymentError(field0) => {
+                <i32>::sse_encode(11, serializer);
+                <(
+                    FederationId,
+                    crate::multimint::PaymentDirection,
+                    crate::multimint::PaymentKind,
+                    crate::app_error::EcashAppError,
+                )>::sse_encode(field0, serializer);
+            }
             _ => {
                 unimplemented!("");
             }
@@ -18739,6 +19242,39 @@ impl SseEncode for crate::ParsedText {
     }
 }
 
+impl SseEncode for crate::multimint::PaymentDirection {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
+        <i32>::sse_encode(
+            match self {
+                crate::multimint::PaymentDirection::Send => 0,
+                crate::multimint::PaymentDirection::Receive => 1,
+                _ => {
+                    unimplemented!("");
+                }
+            },
+            serializer,
+        );
+    }
+}
+
+impl SseEncode for crate::multimint::PaymentKind {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
+        <i32>::sse_encode(
+            match self {
+                crate::multimint::PaymentKind::Lightning => 0,
+                crate::multimint::PaymentKind::Ecash => 1,
+                crate::multimint::PaymentKind::Onchain => 2,
+                _ => {
+                    unimplemented!("");
+                }
+            },
+            serializer,
+        );
+    }
+}
+
 impl SseEncode for crate::multimint::PaymentPreviewWithGateways {
     // Codec=Sse (Serialization based), see doc to use other codecs
     fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
@@ -18805,6 +19341,23 @@ impl SseEncode for (FederationId, crate::multimint::LightningEventKind) {
     fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
         <FederationId>::sse_encode(self.0, serializer);
         <crate::multimint::LightningEventKind>::sse_encode(self.1, serializer);
+    }
+}
+
+impl SseEncode
+    for (
+        FederationId,
+        crate::multimint::PaymentDirection,
+        crate::multimint::PaymentKind,
+        crate::app_error::EcashAppError,
+    )
+{
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
+        <FederationId>::sse_encode(self.0, serializer);
+        <crate::multimint::PaymentDirection>::sse_encode(self.1, serializer);
+        <crate::multimint::PaymentKind>::sse_encode(self.2, serializer);
+        <crate::app_error::EcashAppError>::sse_encode(self.3, serializer);
     }
 }
 
@@ -19215,6 +19768,78 @@ mod io {
     }
 
     #[unsafe(no_mangle)]
+    pub extern "C" fn frbgen_ecashapp_rust_arc_increment_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerEcashAppResultOOBNotesWrapper(
+        ptr: *const std::ffi::c_void,
+    ) {
+        MoiArc::<
+            flutter_rust_bridge::for_generated::RustAutoOpaqueInner<
+                EcashAppResult<OOBNotesWrapper>,
+            >,
+        >::increment_strong_count(ptr as _);
+    }
+
+    #[unsafe(no_mangle)]
+    pub extern "C" fn frbgen_ecashapp_rust_arc_decrement_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerEcashAppResultOOBNotesWrapper(
+        ptr: *const std::ffi::c_void,
+    ) {
+        MoiArc::<
+            flutter_rust_bridge::for_generated::RustAutoOpaqueInner<
+                EcashAppResult<OOBNotesWrapper>,
+            >,
+        >::decrement_strong_count(ptr as _);
+    }
+
+    #[unsafe(no_mangle)]
+    pub extern "C" fn frbgen_ecashapp_rust_arc_increment_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerEcashAppResultOperationId(
+        ptr: *const std::ffi::c_void,
+    ) {
+        MoiArc::<
+            flutter_rust_bridge::for_generated::RustAutoOpaqueInner<EcashAppResult<OperationId>>,
+        >::increment_strong_count(ptr as _);
+    }
+
+    #[unsafe(no_mangle)]
+    pub extern "C" fn frbgen_ecashapp_rust_arc_decrement_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerEcashAppResultOperationId(
+        ptr: *const std::ffi::c_void,
+    ) {
+        MoiArc::<
+            flutter_rust_bridge::for_generated::RustAutoOpaqueInner<EcashAppResult<OperationId>>,
+        >::decrement_strong_count(ptr as _);
+    }
+
+    #[unsafe(no_mangle)]
+    pub extern "C" fn frbgen_ecashapp_rust_arc_increment_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerEcashAppResultSpendOOBState(
+        ptr: *const std::ffi::c_void,
+    ) {
+        MoiArc::<
+            flutter_rust_bridge::for_generated::RustAutoOpaqueInner<EcashAppResult<SpendOOBState>>,
+        >::increment_strong_count(ptr as _);
+    }
+
+    #[unsafe(no_mangle)]
+    pub extern "C" fn frbgen_ecashapp_rust_arc_decrement_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerEcashAppResultSpendOOBState(
+        ptr: *const std::ffi::c_void,
+    ) {
+        MoiArc::<
+            flutter_rust_bridge::for_generated::RustAutoOpaqueInner<EcashAppResult<SpendOOBState>>,
+        >::decrement_strong_count(ptr as _);
+    }
+
+    #[unsafe(no_mangle)]
+    pub extern "C" fn frbgen_ecashapp_rust_arc_increment_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerEcashAppResultString(
+        ptr: *const std::ffi::c_void,
+    ) {
+        MoiArc::<flutter_rust_bridge::for_generated::RustAutoOpaqueInner<EcashAppResult < String >>>::increment_strong_count(ptr as _);
+    }
+
+    #[unsafe(no_mangle)]
+    pub extern "C" fn frbgen_ecashapp_rust_arc_decrement_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerEcashAppResultString(
+        ptr: *const std::ffi::c_void,
+    ) {
+        MoiArc::<flutter_rust_bridge::for_generated::RustAutoOpaqueInner<EcashAppResult < String >>>::decrement_strong_count(ptr as _);
+    }
+
+    #[unsafe(no_mangle)]
     pub extern "C" fn frbgen_ecashapp_rust_arc_increment_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerEventBusMultimintEvent(
         ptr: *const std::ffi::c_void,
     ) {
@@ -19495,20 +20120,6 @@ mod io {
     }
 
     #[unsafe(no_mangle)]
-    pub extern "C" fn frbgen_ecashapp_rust_arc_increment_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerSpendOOBState(
-        ptr: *const std::ffi::c_void,
-    ) {
-        MoiArc::<flutter_rust_bridge::for_generated::RustAutoOpaqueInner<SpendOOBState>>::increment_strong_count(ptr as _);
-    }
-
-    #[unsafe(no_mangle)]
-    pub extern "C" fn frbgen_ecashapp_rust_arc_decrement_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerSpendOOBState(
-        ptr: *const std::ffi::c_void,
-    ) {
-        MoiArc::<flutter_rust_bridge::for_generated::RustAutoOpaqueInner<SpendOOBState>>::decrement_strong_count(ptr as _);
-    }
-
-    #[unsafe(no_mangle)]
     pub extern "C" fn frbgen_ecashapp_rust_arc_increment_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerWithdrawFeesResponse(
         ptr: *const std::ffi::c_void,
     ) {
@@ -19606,6 +20217,78 @@ mod web {
         ptr: *const std::ffi::c_void,
     ) {
         MoiArc::<flutter_rust_bridge::for_generated::RustAutoOpaqueInner<Database>>::decrement_strong_count(ptr as _);
+    }
+
+    #[wasm_bindgen]
+    pub fn rust_arc_increment_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerEcashAppResultOOBNotesWrapper(
+        ptr: *const std::ffi::c_void,
+    ) {
+        MoiArc::<
+            flutter_rust_bridge::for_generated::RustAutoOpaqueInner<
+                EcashAppResult<OOBNotesWrapper>,
+            >,
+        >::increment_strong_count(ptr as _);
+    }
+
+    #[wasm_bindgen]
+    pub fn rust_arc_decrement_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerEcashAppResultOOBNotesWrapper(
+        ptr: *const std::ffi::c_void,
+    ) {
+        MoiArc::<
+            flutter_rust_bridge::for_generated::RustAutoOpaqueInner<
+                EcashAppResult<OOBNotesWrapper>,
+            >,
+        >::decrement_strong_count(ptr as _);
+    }
+
+    #[wasm_bindgen]
+    pub fn rust_arc_increment_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerEcashAppResultOperationId(
+        ptr: *const std::ffi::c_void,
+    ) {
+        MoiArc::<
+            flutter_rust_bridge::for_generated::RustAutoOpaqueInner<EcashAppResult<OperationId>>,
+        >::increment_strong_count(ptr as _);
+    }
+
+    #[wasm_bindgen]
+    pub fn rust_arc_decrement_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerEcashAppResultOperationId(
+        ptr: *const std::ffi::c_void,
+    ) {
+        MoiArc::<
+            flutter_rust_bridge::for_generated::RustAutoOpaqueInner<EcashAppResult<OperationId>>,
+        >::decrement_strong_count(ptr as _);
+    }
+
+    #[wasm_bindgen]
+    pub fn rust_arc_increment_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerEcashAppResultSpendOOBState(
+        ptr: *const std::ffi::c_void,
+    ) {
+        MoiArc::<
+            flutter_rust_bridge::for_generated::RustAutoOpaqueInner<EcashAppResult<SpendOOBState>>,
+        >::increment_strong_count(ptr as _);
+    }
+
+    #[wasm_bindgen]
+    pub fn rust_arc_decrement_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerEcashAppResultSpendOOBState(
+        ptr: *const std::ffi::c_void,
+    ) {
+        MoiArc::<
+            flutter_rust_bridge::for_generated::RustAutoOpaqueInner<EcashAppResult<SpendOOBState>>,
+        >::decrement_strong_count(ptr as _);
+    }
+
+    #[wasm_bindgen]
+    pub fn rust_arc_increment_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerEcashAppResultString(
+        ptr: *const std::ffi::c_void,
+    ) {
+        MoiArc::<flutter_rust_bridge::for_generated::RustAutoOpaqueInner<EcashAppResult < String >>>::increment_strong_count(ptr as _);
+    }
+
+    #[wasm_bindgen]
+    pub fn rust_arc_decrement_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerEcashAppResultString(
+        ptr: *const std::ffi::c_void,
+    ) {
+        MoiArc::<flutter_rust_bridge::for_generated::RustAutoOpaqueInner<EcashAppResult < String >>>::decrement_strong_count(ptr as _);
     }
 
     #[wasm_bindgen]
@@ -19886,20 +20569,6 @@ mod web {
         ptr: *const std::ffi::c_void,
     ) {
         MoiArc::<flutter_rust_bridge::for_generated::RustAutoOpaqueInner<SafeUrl>>::decrement_strong_count(ptr as _);
-    }
-
-    #[wasm_bindgen]
-    pub fn rust_arc_increment_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerSpendOOBState(
-        ptr: *const std::ffi::c_void,
-    ) {
-        MoiArc::<flutter_rust_bridge::for_generated::RustAutoOpaqueInner<SpendOOBState>>::increment_strong_count(ptr as _);
-    }
-
-    #[wasm_bindgen]
-    pub fn rust_arc_decrement_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerSpendOOBState(
-        ptr: *const std::ffi::c_void,
-    ) {
-        MoiArc::<flutter_rust_bridge::for_generated::RustAutoOpaqueInner<SpendOOBState>>::decrement_strong_count(ptr as _);
     }
 
     #[wasm_bindgen]

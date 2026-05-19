@@ -1,9 +1,9 @@
+import 'package:ecashapp/error_helper.dart';
 import 'package:ecashapp/extensions/build_context_l10n.dart';
 import 'package:ecashapp/failure.dart';
 import 'package:ecashapp/lib.dart';
 import 'package:ecashapp/multimint.dart';
 import 'package:ecashapp/success.dart';
-import 'package:ecashapp/toast.dart';
 import 'package:ecashapp/utils.dart';
 import 'package:flutter/material.dart';
 
@@ -90,14 +90,18 @@ class _SendPaymentState extends State<SendPayment> {
         if (mounted) {
           Navigator.of(context).popUntil((route) => route.isFirst);
         }
-      } else {
-        AppLogger.instance.error('Payment was unsuccessful');
+      } else if (finalState is LightningSendOutcome_Failure) {
+        AppLogger.instance.error('Payment was unsuccessful: ${finalState.field0}');
 
-        // Navigate to Failure screen
+        // Navigate to Failure screen with the typed error so the screen can
+        // render a specific reason.
         Navigator.push(
           context,
           MaterialPageRoute(
-            builder: (context) => Failure(amountMsats: widget.amountMsats),
+            builder: (context) => Failure(
+              amountMsats: widget.amountMsats,
+              error: finalState.field0,
+            ),
           ),
         );
 
@@ -110,12 +114,7 @@ class _SendPaymentState extends State<SendPayment> {
     } catch (e) {
       AppLogger.instance.error('Error while sending payment: $e');
       if (!mounted) return;
-      ToastService().show(
-        message: context.l10n.failedToSendPayment,
-        duration: const Duration(seconds: 5),
-        onTap: () {},
-        icon: Icon(Icons.error),
-      );
+      showErrorToast(context, e);
       Navigator.of(context).pop(); // Close modal on failure
     }
 

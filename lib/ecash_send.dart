@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'constants/transaction_keys.dart';
 import 'package:ecashapp/db.dart';
 import 'package:ecashapp/detail_row.dart';
+import 'package:ecashapp/error_helper.dart';
 import 'package:ecashapp/providers/preferences_provider.dart';
 import 'package:ecashapp/fountain.dart';
 import 'package:ecashapp/qr_export.dart';
@@ -64,12 +65,7 @@ class _EcashSendState extends State<EcashSend> {
       });
     } catch (e) {
       AppLogger.instance.error("Could not send Ecash: $e");
-      ToastService().show(
-        message: context.l10n.couldNotSendEcash,
-        duration: const Duration(seconds: 5),
-        onTap: () {},
-        icon: Icon(Icons.error),
-      );
+      if (mounted) showErrorToast(context, e);
       setState(() {
         _notes = null;
         _loading = false;

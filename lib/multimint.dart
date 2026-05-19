@@ -3,6 +3,7 @@
 
 // ignore_for_file: invalid_use_of_internal_member, unused_import, unnecessary_import
 
+import 'app_error.dart';
 import 'db.dart';
 import 'frb_generated.dart';
 import 'lib.dart';
@@ -12,7 +13,7 @@ part 'multimint.freezed.dart';
 
 // These functions are ignored because they are not marked as `pub`: `await_receive_lnv1`, `await_receive_lnv2`, `await_send_lnv1`, `await_send_lnv2`, `backup`, `build_client`, `cache_btc_price`, `cache_federation_meta`, `check_for_update`, `compute_receive_amount`, `compute_send_amount`, `extract_recipient_pk_from_lnv2_lnurl`, `finish_active_subscriptions`, `from_peg_out_fees`, `get_client_database`, `get_ecash_amount_from_meta`, `get_lnv1_amount_from_meta`, `get_lnv1_receive_tx`, `get_lnv1_send_tx`, `get_lnv2_amount_from_meta`, `get_or_build_temp_client`, `get_recurringd_federations`, `get_url`, `init_recovery_progress_cache`, `invoice_routes_back_to_federation`, `is_newer_version`, `list_gateways`, `lnv1_select_gateway`, `lnv1_update_gateway_cache`, `lnv2_gateways`, `lnv2_select_gateway`, `load_clients`, `monitor_all_unused_pegin_addresses`, `pay_lnv1`, `pay_lnv2`, `receive_amount_after_fees`, `receive_lnv1`, `receive_lnv2`, `remove_existing_ln_address`, `remove_recovery_progress_cache`, `run_migrations`, `sign_challenge`, `spawn_await_ecash_reissue`, `spawn_await_ecash_send`, `spawn_await_receive`, `spawn_await_recurringd_receive`, `spawn_await_send`, `spawn_backfill_recipient_pk`, `spawn_cache_task`, `spawn_lnv2_event_listener`, `spawn_pegin_address_watcher`, `spawn_recovery_progress`, `spawn_recurring_invoice_listener`, `update_recovery_progress_cache`, `wait_for_recovery`, `watch_pegin_address`
 // These types are ignored because they are neither used by any `pub` functions nor (for structs and enums) marked `#[frb(unignore)]`: `ClientType`, `LNAddressRegisterRequest`, `LNAddressRemoveRequest`, `OnChainWithdrawalMeta`
-// These function are ignored because they are on traits that is not defined in current crate (put an empty `#[frb]` on it to unignore): `assert_receiver_is_total_eq`, `assert_receiver_is_total_eq`, `assert_receiver_is_total_eq`, `assert_receiver_is_total_eq`, `assert_receiver_is_total_eq`, `assert_receiver_is_total_eq`, `assert_receiver_is_total_eq`, `assert_receiver_is_total_eq`, `assert_receiver_is_total_eq`, `assert_receiver_is_total_eq`, `assert_receiver_is_total_eq`, `assert_receiver_is_total_eq`, `assert_receiver_is_total_eq`, `assert_receiver_is_total_eq`, `assert_receiver_is_total_eq`, `assert_receiver_is_total_eq`, `assert_receiver_is_total_eq`, `assert_receiver_is_total_eq`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `consensus_decode_partial_from_finite_reader`, `consensus_decode_partial_from_finite_reader`, `consensus_decode_partial_from_finite_reader`, `consensus_encode`, `consensus_encode`, `consensus_encode`, `eq`, `eq`, `eq`, `eq`, `eq`, `eq`, `eq`, `eq`, `eq`, `eq`, `eq`, `eq`, `eq`, `eq`, `eq`, `eq`, `eq`, `eq`, `eq`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `from`, `from`
+// These function are ignored because they are on traits that is not defined in current crate (put an empty `#[frb]` on it to unignore): `assert_receiver_is_total_eq`, `assert_receiver_is_total_eq`, `assert_receiver_is_total_eq`, `assert_receiver_is_total_eq`, `assert_receiver_is_total_eq`, `assert_receiver_is_total_eq`, `assert_receiver_is_total_eq`, `assert_receiver_is_total_eq`, `assert_receiver_is_total_eq`, `assert_receiver_is_total_eq`, `assert_receiver_is_total_eq`, `assert_receiver_is_total_eq`, `assert_receiver_is_total_eq`, `assert_receiver_is_total_eq`, `assert_receiver_is_total_eq`, `assert_receiver_is_total_eq`, `assert_receiver_is_total_eq`, `assert_receiver_is_total_eq`, `assert_receiver_is_total_eq`, `assert_receiver_is_total_eq`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `consensus_decode_partial_from_finite_reader`, `consensus_decode_partial_from_finite_reader`, `consensus_decode_partial_from_finite_reader`, `consensus_encode`, `consensus_encode`, `consensus_encode`, `eq`, `eq`, `eq`, `eq`, `eq`, `eq`, `eq`, `eq`, `eq`, `eq`, `eq`, `eq`, `eq`, `eq`, `eq`, `eq`, `eq`, `eq`, `eq`, `eq`, `eq`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `from`, `from`
 // These functions have error during generation (see debug logs or enable `stop_on_error: true` for more details): `subscribe_peer_status`
 
 OobNotesWrapper? parseOobNotes({required String notes}) =>
@@ -23,6 +24,18 @@ abstract class Amount implements RustOpaqueInterface {}
 
 // Rust type: RustOpaqueMoi<flutter_rust_bridge::for_generated::RustAutoOpaqueInner<Bolt11Invoice>>
 abstract class Bolt11Invoice implements RustOpaqueInterface {}
+
+// Rust type: RustOpaqueMoi<flutter_rust_bridge::for_generated::RustAutoOpaqueInner<EcashAppResult < OOBNotesWrapper >>>
+abstract class EcashAppResultOobNotesWrapper implements RustOpaqueInterface {}
+
+// Rust type: RustOpaqueMoi<flutter_rust_bridge::for_generated::RustAutoOpaqueInner<EcashAppResult < OperationId >>>
+abstract class EcashAppResultOperationId implements RustOpaqueInterface {}
+
+// Rust type: RustOpaqueMoi<flutter_rust_bridge::for_generated::RustAutoOpaqueInner<EcashAppResult < SpendOOBState >>>
+abstract class EcashAppResultSpendOobState implements RustOpaqueInterface {}
+
+// Rust type: RustOpaqueMoi<flutter_rust_bridge::for_generated::RustAutoOpaqueInner<EcashAppResult < String >>>
+abstract class EcashAppResultString implements RustOpaqueInterface {}
 
 // Rust type: RustOpaqueMoi<flutter_rust_bridge::for_generated::RustAutoOpaqueInner<FederationMeta>>
 abstract class FederationMeta implements RustOpaqueInterface {
@@ -86,7 +99,7 @@ abstract class Multimint implements RustOpaqueInterface {
     required OperationId operationId,
   });
 
-  Future<SpendOobState> awaitEcashSend({
+  Future<EcashAppResultSpendOobState> awaitEcashSend({
     required FederationId federationId,
     required OperationId operationId,
   });
@@ -101,7 +114,7 @@ abstract class Multimint implements RustOpaqueInterface {
     required OperationId operationId,
   });
 
-  Future<String> awaitWithdraw({
+  Future<EcashAppResultString> awaitWithdraw({
     required FederationId federationId,
     required OperationId operationId,
   });
@@ -272,7 +285,7 @@ abstract class Multimint implements RustOpaqueInterface {
     required String domain,
   });
 
-  Future<OperationId> reissueEcash({
+  Future<EcashAppResultOperationId> reissueEcash({
     required FederationId federationId,
     required String ecash,
     required ReissueFees fees,
@@ -288,7 +301,7 @@ abstract class Multimint implements RustOpaqueInterface {
     required Bolt11Invoice bolt11,
   });
 
-  Future<OperationId> send({
+  Future<EcashAppResultOperationId> send({
     required FederationId federationId,
     required String invoice,
     required SafeUrl gateway,
@@ -297,7 +310,7 @@ abstract class Multimint implements RustOpaqueInterface {
     String? lnAddress,
   });
 
-  Future<OobNotesWrapper> sendEcash({
+  Future<EcashAppResultOobNotesWrapper> sendEcash({
     required FederationId federationId,
     required BigInt amountMsats,
   });
@@ -328,7 +341,7 @@ abstract class Multimint implements RustOpaqueInterface {
     FederationId? federationId,
   });
 
-  Future<OperationId> withdrawToAddress({
+  Future<EcashAppResultOperationId> withdrawToAddress({
     required FederationId federationId,
     required String address,
     required BigInt amountSats,
@@ -355,9 +368,6 @@ abstract class RecoveryProgress implements RustOpaqueInterface {}
 
 // Rust type: RustOpaqueMoi<flutter_rust_bridge::for_generated::RustAutoOpaqueInner<ReissueExternalNotesState>>
 abstract class ReissueExternalNotesState implements RustOpaqueInterface {}
-
-// Rust type: RustOpaqueMoi<flutter_rust_bridge::for_generated::RustAutoOpaqueInner<SpendOOBState>>
-abstract class SpendOobState implements RustOpaqueInterface {}
 
 // Rust type: RustOpaqueMoi<flutter_rust_bridge::for_generated::RustAutoOpaqueInner<WithdrawFeesResponse>>
 abstract class WithdrawFeesResponse implements RustOpaqueInterface {
@@ -618,7 +628,11 @@ sealed class LightningSendOutcome with _$LightningSendOutcome {
 
   const factory LightningSendOutcome.success(String field0) =
       LightningSendOutcome_Success;
-  const factory LightningSendOutcome.failure() = LightningSendOutcome_Failure;
+
+  /// Carries the typed reason for the failure so the Dart layer can render
+  /// a localized message on the Failure screen.
+  const factory LightningSendOutcome.failure(EcashAppError field0) =
+      LightningSendOutcome_Failure;
 }
 
 @freezed
@@ -703,6 +717,12 @@ sealed class MultimintEvent with _$MultimintEvent {
       MultimintEvent_ContactSync;
   const factory MultimintEvent.updateAvailable(String field0) =
       MultimintEvent_UpdateAvailable;
+
+  /// Structured payment-flow error. The Dart layer auto-surfaces these as
+  /// localized error toasts (see `lib/app.dart` and `lib/error_helper.dart`).
+  const factory MultimintEvent.paymentError(
+    (FederationId, PaymentDirection, PaymentKind, EcashAppError) field0,
+  ) = MultimintEvent_PaymentError;
 }
 
 @freezed
@@ -718,6 +738,10 @@ sealed class NostrRecoveryPhase with _$NostrRecoveryPhase {
   const factory NostrRecoveryPhase.rejoiningFederations(int field0) =
       NostrRecoveryPhase_RejoiningFederations;
 }
+
+enum PaymentDirection { send, receive }
+
+enum PaymentKind { lightning, ecash, onchain }
 
 class PaymentPreviewWithGateways {
   final BigInt amountMsats;
