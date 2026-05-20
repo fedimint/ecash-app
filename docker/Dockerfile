@@ -69,17 +69,17 @@ RUN yes | sdkmanager --licenses \
         "build-tools;35.0.0" \
         "cmake;3.22.1"
 
-# Install appimagetool for Linux AppImage builds (only needed by
-# build-appimage.sh; APK builds skip this to avoid the AppImage runtime
-# self-extract step, which fails under amd64 emulation on Apple Silicon).
-ARG INSTALL_APPIMAGETOOL=false
-RUN if [ "$INSTALL_APPIMAGETOOL" = "true" ]; then \
-        wget -q https://github.com/AppImage/appimagetool/releases/download/continuous/appimagetool-x86_64.AppImage -O /tmp/appimagetool.AppImage \
-        && chmod +x /tmp/appimagetool.AppImage \
-        && cd /tmp && ./appimagetool.AppImage --appimage-extract \
-        && mv /tmp/squashfs-root /opt/appimagetool \
-        && ln -s /opt/appimagetool/AppRun /usr/local/bin/appimagetool \
-        && rm /tmp/appimagetool.AppImage ; \
+# Install appimagetool for Linux AppImage builds (extract since FUSE unavailable in containers).
+# On Apple Silicon, Docker emulates amd64 via Rosetta but cannot execute AppImage binaries.
+# Pass --build-arg SKIP_APPIMAGETOOL=true to skip; Android APK builds do not need it.
+ARG SKIP_APPIMAGETOOL=false
+RUN if [ "$SKIP_APPIMAGETOOL" != "true" ]; then \
+        wget -q https://github.com/AppImage/appimagetool/releases/download/continuous/appimagetool-x86_64.AppImage -O /tmp/appimagetool.AppImage && \
+        chmod +x /tmp/appimagetool.AppImage && \
+        cd /tmp && ./appimagetool.AppImage --appimage-extract && \
+        mv /tmp/squashfs-root /opt/appimagetool && \
+        ln -s /opt/appimagetool/AppRun /usr/local/bin/appimagetool && \
+        rm /tmp/appimagetool.AppImage; \
     fi
 
 WORKDIR /workspace

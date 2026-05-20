@@ -57,36 +57,38 @@ mkdir -p "$PROJECT_ROOT/.docker-cache/android"
 # Build the Docker image if it doesn't exist or if forced
 IMAGE_NAME="ecash-app-builder"
 
-# The NDK toolchain installed in the image is linux-x86_64, so the container
-# must always be linux/amd64. On amd64 hosts that's the natural default; on
-# arm64 hosts (Apple Silicon, arm64 Linux) we force amd64 emulation via
-# Rosetta/qemu. We only pass --platform when needed to avoid BuildKit's
-# FromPlatformFlagConstDisallowed warning and any unnecessary platform
-# mismatch noise on amd64 hosts.
-PLATFORM_ARGS=()
-if [[ "$(uname -m)" != "x86_64" ]]; then
-    PLATFORM_ARGS=(--platform=linux/amd64)
-    echo "Host arch $(uname -m) detected; forcing linux/amd64 emulation."
-    echo ""
-fi
-
 if ! docker image inspect $IMAGE_NAME &> /dev/null || [[ "${REBUILD_IMAGE}" == "1" ]]; then
     echo "Building Docker image..."
-    docker build "${PLATFORM_ARGS[@]}" --build-arg FLUTTER_VERSION=$(cat "$PROJECT_ROOT/.flutter-version") -t $IMAGE_NAME "$SCRIPT_DIR"
+    # Force linux/amd64 so the Android NDK's x86_64 toolchain runs correctly.
+    # On Apple Silicon, Docker uses Rosetta to translate x86_64 binaries.
+    # On CI (x86_64 Linux) this flag is a no-op.
+    EXTRA_BUILD_ARGS=""
+    if [[ "$(uname -m)" == "arm64" ]]; then
+        # AppImage binaries cannot execute under Rosetta inside Docker containers.
+        EXTRA_BUILD_ARGS="--build-arg SKIP_APPIMAGETOOL=true"
+    fi
+    docker build --platform linux/amd64 $EXTRA_BUILD_ARGS \
+        --build-arg FLUTTER_VERSION=$(cat "$PROJECT_ROOT/.flutter-version") \
+        -t $IMAGE_NAME "$SCRIPT_DIR"
     echo ""
 else
     echo "Using existing Docker image: $IMAGE_NAME"
     echo ""
 fi
 
+# Remove Flutter build artifacts generated outside Docker — they embed host
+# paths (/Users/...) that are incompatible with Docker's /workspace mount.
+rm -rf "$PROJECT_ROOT/build/app"
+
 # Backup host's .dart_tool (docker will overwrite with container paths)
 if [ -d "$PROJECT_ROOT/.dart_tool" ]; then
+    rm -rf "$PROJECT_ROOT/.dart_tool.host"
     mv "$PROJECT_ROOT/.dart_tool" "$PROJECT_ROOT/.dart_tool.host"
 fi
 
 echo "Starting build in Docker container..."
 docker run --rm \
-    "${PLATFORM_ARGS[@]}" \
+    --platform linux/amd64 \
     --user "$(id -u):$(id -g)" \
     -v "$PROJECT_ROOT:/workspace" \
     -v "$PROJECT_ROOT/.docker-cache/gradle:/gradle-cache" \
