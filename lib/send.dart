@@ -91,17 +91,20 @@ class _SendPaymentState extends State<SendPayment> {
           Navigator.of(context).popUntil((route) => route.isFirst);
         }
       } else if (finalState is LightningSendOutcome_Failure) {
-        AppLogger.instance.error('Payment was unsuccessful: ${finalState.field0}');
+        AppLogger.instance.error(
+          'Payment was unsuccessful: ${finalState.field0}',
+        );
 
         // Navigate to Failure screen with the typed error so the screen can
         // render a specific reason.
         Navigator.push(
           context,
           MaterialPageRoute(
-            builder: (context) => Failure(
-              amountMsats: widget.amountMsats,
-              error: finalState.field0,
-            ),
+            builder:
+                (context) => Failure(
+                  amountMsats: widget.amountMsats,
+                  error: finalState.field0,
+                ),
           ),
         );
 
