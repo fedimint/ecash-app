@@ -17,10 +17,10 @@ use event_bus::EventBus;
 use fedimint_client::module::module::recovery::RecoveryProgress;
 use fedimint_core::config::ClientConfig;
 /* AUTO INJECTED BY flutter_rust_bridge. This line may not be accurate, and you can change it according to your needs. */
+use app_error::{EcashAppError, EcashAppResult};
 use fedimint_wallet_client::PegOutFees;
 use flutter_rust_bridge::frb;
 use futures_util::StreamExt;
-use app_error::{EcashAppError, EcashAppResult};
 use multimint::{
     FederationMeta, FederationSelector, LightningSendOutcome, LogLevel, Multimint,
     MultimintCreation, MultimintEvent, OOBNotesWrapper, PaymentDirection, PaymentKind,

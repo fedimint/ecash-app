@@ -71,6 +71,7 @@ use tokio::{sync::RwLock, time::timeout};
 
 use crate::{
     anyhow,
+    app_error::{classify_anyhow, EcashAppError, EcashAppResult},
     db::{
         BitcoinDisplay, BitcoinDisplayKey, BtcPrice, BtcPriceKey, BtcPrices, BtcPricesKey,
         Connector, ContactSyncConfigKey, FederationBackupKey, FederationMetaKey,
@@ -78,7 +79,6 @@ use crate::{
         LightningAddressKey, LightningAddressKeyPrefix, PinCodeHashKey, RequirePinForSpendingKey,
         SchemaVersionKey,
     },
-    app_error::{classify_anyhow, EcashAppError, EcashAppResult},
     error_to_flutter, get_nostr_client, info_to_flutter, payment_error_to_flutter,
     FederationConfig, FederationConfigKey, FederationConfigKeyPrefix, SeedPhraseAckKey,
 };
@@ -2455,7 +2455,7 @@ impl Multimint {
                 }
                 LightningSendOutcome::Failure(err) => {
                     payment_error_to_flutter(
-                                        federation_id,
+                        federation_id,
                         PaymentDirection::Send,
                         PaymentKind::Lightning,
                         err,
@@ -2625,7 +2625,7 @@ impl Multimint {
             FinalReceiveOperationState::Claimed => {}
             FinalReceiveOperationState::Expired => {
                 payment_error_to_flutter(
-                                        *federation_id,
+                    *federation_id,
                     PaymentDirection::Receive,
                     PaymentKind::Lightning,
                     EcashAppError::ExpiredInvoice,
@@ -2634,7 +2634,7 @@ impl Multimint {
             }
             FinalReceiveOperationState::Failure => {
                 payment_error_to_flutter(
-                                        *federation_id,
+                    *federation_id,
                     PaymentDirection::Receive,
                     PaymentKind::Lightning,
                     EcashAppError::other("Lightning receive failed"),
@@ -3363,12 +3363,11 @@ impl Multimint {
                             // User canceled and got the money back — also fine.
                             SpendOOBState::UserCanceledSuccess => {}
                             // Transient / never the final state in practice.
-                            SpendOOBState::Created
-                            | SpendOOBState::UserCanceledProcessing => {}
+                            SpendOOBState::Created | SpendOOBState::UserCanceledProcessing => {}
                             // User tried to cancel but notes were already spent.
                             SpendOOBState::UserCanceledFailure => {
                                 payment_error_to_flutter(
-                                        federation_id,
+                                    federation_id,
                                     PaymentDirection::Send,
                                     PaymentKind::Ecash,
                                     EcashAppError::other(
@@ -3380,7 +3379,7 @@ impl Multimint {
                             // Auto-cancel succeeded — recipient never reissued.
                             SpendOOBState::Refunded => {
                                 payment_error_to_flutter(
-                                        federation_id,
+                                    federation_id,
                                     PaymentDirection::Send,
                                     PaymentKind::Ecash,
                                     EcashAppError::PaymentRefunded(
@@ -3393,7 +3392,7 @@ impl Multimint {
                     }
                     Err(e) => {
                         payment_error_to_flutter(
-                                        federation_id,
+                            federation_id,
                             PaymentDirection::Send,
                             PaymentKind::Ecash,
                             e,
@@ -3616,7 +3615,7 @@ impl Multimint {
                             }
                             ReissueExternalNotesState::Failed(msg) => {
                                 payment_error_to_flutter(
-                                        federation_id,
+                                    federation_id,
                                     PaymentDirection::Receive,
                                     PaymentKind::Ecash,
                                     EcashAppError::other(format!("Ecash reissue failed: {msg}")),
@@ -3628,7 +3627,7 @@ impl Multimint {
                     }
                     Err(e) => {
                         payment_error_to_flutter(
-                                        federation_id,
+                            federation_id,
                             PaymentDirection::Receive,
                             PaymentKind::Ecash,
                             EcashAppError::from(e),
@@ -3788,7 +3787,7 @@ impl Multimint {
                     // Emit the structured event too so any background listener
                     // (e.g. screens that already navigated away) still sees it.
                     payment_error_to_flutter(
-                                        *federation_id,
+                        *federation_id,
                         PaymentDirection::Send,
                         PaymentKind::Onchain,
                         err.clone(),
