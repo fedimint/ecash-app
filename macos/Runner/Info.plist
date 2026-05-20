@@ -28,5 +28,18 @@
 	<string>MainMenu</string>
 	<key>NSPrincipalClass</key>
 	<string>NSApplication</string>
+	<key>CFBundleURLTypes</key>
+	<array>
+		<dict>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>lnurlw</string>
+				<string>lnurl</string>
+				<string>lnurlp</string>
+				<string>lightning</string>
+				<string>bitcoin</string>
+			</array>
+		</dict>
+	</array>
 </dict>
 </plist>

@@ -300,6 +300,117 @@ pub async fn get_invoice_from_lnaddress_or_lnurl(
     }
 }
 
+/// Parameters returned by a LNURLw (LNURL Withdraw) endpoint.
+/// Shown to the user before they confirm a Boltcard withdraw.
+#[frb]
+pub struct LnurlWithdrawParams {
+    pub callback: String,
+    pub k1: String,
+    pub min_withdrawable_msats: u64,
+    pub max_withdrawable_msats: u64,
+    pub default_description: String,
+}
+
+/// Fetch withdraw parameters from a LNURLw HTTPS endpoint (LUD-03 / LUD-17).
+/// Pure read — no side effects. Call this first so the UI can show the
+/// withdraw details and get user confirmation before any money moves.
+#[frb]
+pub async fn fetch_lnurl_withdraw(url: String) -> anyhow::Result<LnurlWithdrawParams> {
+    let resp: serde_json::Value = reqwest::Client::new()
+        .get(&url)
+        .send()
+        .await?
+        .json()
+        .await?;
+
+    // LUD-03: the server may return an error before we even get to the withdraw params.
+    if resp.get("status").and_then(|s| s.as_str()) == Some("ERROR") {
+        let reason = resp
+            .get("reason")
+            .and_then(|r| r.as_str())
+            .unwrap_or("unknown error");
+        bail!("LNURLw service error: {reason}");
+    }
+
+    let tag = resp.get("tag").and_then(|t| t.as_str()).unwrap_or("");
+    if tag != "withdrawRequest" {
+        bail!("Expected LNURLw withdraw response (tag=withdrawRequest), got: {tag:?}");
+    }
+
+    Ok(LnurlWithdrawParams {
+        callback: resp["callback"]
+            .as_str()
+            .ok_or_else(|| anyhow!("LNURLw response missing callback"))?
+            .to_string(),
+        k1: resp["k1"]
+            .as_str()
+            .ok_or_else(|| anyhow!("LNURLw response missing k1"))?
+            .to_string(),
+        min_withdrawable_msats: resp["minWithdrawable"]
+            .as_u64()
+            .ok_or_else(|| anyhow!("LNURLw response missing minWithdrawable"))?,
+        max_withdrawable_msats: resp["maxWithdrawable"]
+            .as_u64()
+            .ok_or_else(|| anyhow!("LNURLw response missing maxWithdrawable"))?,
+        default_description: resp["defaultDescription"]
+            .as_str()
+            .unwrap_or("")
+            .to_string(),
+    })
+}
+
+/// Create a Lightning invoice, send it to the LNURLw callback URL, and return
+/// the operation ID. The caller should then use `await_receive` to wait for
+/// the external service (e.g. Boltcard) to pay the invoice.
+#[frb]
+pub async fn execute_lnurl_withdraw(
+    federation_id: &FederationId,
+    callback: String,
+    k1: String,
+    amount_msats: u64,
+) -> anyhow::Result<OperationId> {
+    let amount = Amount::from_msats(amount_msats);
+    let multimint = get_multimint();
+
+    // Pick the best available gateway; gets fee-adjusted amount and LN version.
+    let (gateway_url, amount_with_fees, is_lnv2) = multimint
+        .select_receive_gateway(federation_id, amount)
+        .await?;
+
+    // Create a Lightning invoice through the federation's mint.
+    let (invoice, op_id) = multimint
+        .receive(
+            federation_id,
+            amount_with_fees,
+            amount_msats,
+            SafeUrl::parse(&gateway_url)?,
+            is_lnv2,
+        )
+        .await?;
+
+    // Hand the invoice to the Boltcard/LNURLw service via the callback URL.
+    // LUD-03: use '&' if the callback already has query params, '?' otherwise.
+    // The service will pay the invoice; we wait for that via await_receive.
+    let separator = if callback.contains('?') { '&' } else { '?' };
+    let callback_url = format!("{}{}k1={}&pr={}", callback, separator, k1, invoice);
+    let resp: serde_json::Value = reqwest::Client::new()
+        .get(&callback_url)
+        .send()
+        .await?
+        .json()
+        .await?;
+
+    if resp.get("status").and_then(|s| s.as_str()) == Some("ERROR") {
+        let reason = resp
+            .get("reason")
+            .and_then(|r| r.as_str())
+            .unwrap_or("unknown error");
+        bail!("LNURLw service rejected the request: {reason}");
+    }
+
+    Ok(op_id)
+}
+
 #[frb]
 pub async fn send_lnaddress(
     federation_id: &FederationId,

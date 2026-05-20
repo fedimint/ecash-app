@@ -1450,5 +1450,42 @@
   "@ecashNotes": {},
 
   "depositAddresses": "Deposit Addresses",
-  "@depositAddresses": {}
+  "@depositAddresses": {},
+
+  "lnurlWithdrawTitle": "Boltcard Withdraw",
+  "@lnurlWithdrawTitle": {},
+
+  "lnurlWithdrawConfirm": "Withdraw",
+  "@lnurlWithdrawConfirm": {},
+
+  "lnurlWithdrawRequesting": "Requesting withdraw…",
+  "@lnurlWithdrawRequesting": {},
+
+  "lnurlWithdrawWaiting": "Waiting for payment…",
+  "@lnurlWithdrawWaiting": {},
+
+  "lnurlWithdrawFailed": "Withdraw failed",
+  "@lnurlWithdrawFailed": {},
+
+  "lnurlWithdrawCallbackError": "Service rejected the request: {reason}",
+  "@lnurlWithdrawCallbackError": {
+    "placeholders": {
+      "reason": { "type": "String" }
+    }
+  },
+
+  "lnurlWithdrawFixedAmount": "You will receive {amount}",
+  "@lnurlWithdrawFixedAmount": {
+    "placeholders": {
+      "amount": { "type": "String" }
+    }
+  },
+
+  "lnurlWithdrawAmountRange": "Choose amount ({min} – {max})",
+  "@lnurlWithdrawAmountRange": {
+    "placeholders": {
+      "min": { "type": "String" },
+      "max": { "type": "String" }
+    }
+  }
 }

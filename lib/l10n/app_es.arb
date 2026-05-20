@@ -408,5 +408,14 @@
   "viewAll": "Ver todo",
   "guardiansCount": "{count} guardianes",
   "ecashNotes": "Billetes Ecash",
-  "depositAddresses": "Direcciones de deposito"
+  "depositAddresses": "Direcciones de deposito",
+
+  "lnurlWithdrawTitle": "Retiro con Boltcard",
+  "lnurlWithdrawConfirm": "Retirar",
+  "lnurlWithdrawRequesting": "Solicitando retiro…",
+  "lnurlWithdrawWaiting": "Esperando pago…",
+  "lnurlWithdrawFailed": "Retiro fallido",
+  "lnurlWithdrawCallbackError": "El servicio rechazó la solicitud: {reason}",
+  "lnurlWithdrawFixedAmount": "Recibirás {amount}",
+  "lnurlWithdrawAmountRange": "Elige el monto ({min} – {max})"
 }

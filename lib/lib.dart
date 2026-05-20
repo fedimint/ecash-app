@@ -104,6 +104,27 @@ Future<String> getInvoiceFromLnaddressOrLnurl({
   lnaddressOrLnurl: lnaddressOrLnurl,
 );
 
+/// Fetch withdraw parameters from a LNURLw HTTPS endpoint (LUD-03 / LUD-17).
+/// Pure read — no side effects. Call this first so the UI can show the
+/// withdraw details and get user confirmation before any money moves.
+Future<LnurlWithdrawParams> fetchLnurlWithdraw({required String url}) =>
+    RustLib.instance.api.crateFetchLnurlWithdraw(url: url);
+
+/// Create a Lightning invoice, send it to the LNURLw callback URL, and return
+/// the operation ID. The caller should then use `await_receive` to wait for
+/// the external service (e.g. Boltcard) to pay the invoice.
+Future<OperationId> executeLnurlWithdraw({
+  required FederationId federationId,
+  required String callback,
+  required String k1,
+  required BigInt amountMsats,
+}) => RustLib.instance.api.crateExecuteLnurlWithdraw(
+  federationId: federationId,
+  callback: callback,
+  k1: k1,
+  amountMsats: amountMsats,
+);
+
 Future<OperationId> sendLnaddress({
   required FederationId federationId,
   required BigInt amountMsats,
@@ -551,6 +572,43 @@ abstract class PegOutFees implements RustOpaqueInterface {}
 
 // Rust type: RustOpaqueMoi<flutter_rust_bridge::for_generated::RustAutoOpaqueInner<SafeUrl>>
 abstract class SafeUrl implements RustOpaqueInterface {}
+
+/// Parameters returned by a LNURLw (LNURL Withdraw) endpoint.
+/// Shown to the user before they confirm a Boltcard withdraw.
+class LnurlWithdrawParams {
+  final String callback;
+  final String k1;
+  final BigInt minWithdrawableMsats;
+  final BigInt maxWithdrawableMsats;
+  final String defaultDescription;
+
+  const LnurlWithdrawParams({
+    required this.callback,
+    required this.k1,
+    required this.minWithdrawableMsats,
+    required this.maxWithdrawableMsats,
+    required this.defaultDescription,
+  });
+
+  @override
+  int get hashCode =>
+      callback.hashCode ^
+      k1.hashCode ^
+      minWithdrawableMsats.hashCode ^
+      maxWithdrawableMsats.hashCode ^
+      defaultDescription.hashCode;
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is LnurlWithdrawParams &&
+          runtimeType == other.runtimeType &&
+          callback == other.callback &&
+          k1 == other.k1 &&
+          minWithdrawableMsats == other.minWithdrawableMsats &&
+          maxWithdrawableMsats == other.maxWithdrawableMsats &&
+          defaultDescription == other.defaultDescription;
+}
 
 @freezed
 sealed class ParsedText with _$ParsedText {
