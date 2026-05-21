@@ -1450,5 +1450,56 @@
   "@ecashNotes": {},
 
   "depositAddresses": "Deposit Addresses",
-  "@depositAddresses": {}
+  "@depositAddresses": {},
+
+  "errExpiredInvoice": "Invoice has expired",
+  "@errExpiredInvoice": {},
+
+  "errInsufficientBalance": "Insufficient balance: need {needed} msat, have {have}",
+  "@errInsufficientBalance": {
+    "placeholders": {
+      "needed": {
+        "type": "int"
+      },
+      "have": {
+        "type": "int"
+      }
+    }
+  },
+
+  "errNoRouteFound": "Could not find a route to the recipient",
+  "@errNoRouteFound": {},
+
+  "errGatewayOffline": "Selected Lightning gateway is offline",
+  "@errGatewayOffline": {},
+
+  "errNoGateways": "No Lightning gateways available for this federation",
+  "@errNoGateways": {},
+
+  "errFederationOffline": "Federation is offline or unreachable",
+  "@errFederationOffline": {},
+
+  "errInvalidInvoice": "Invalid invoice: {detail}",
+  "@errInvalidInvoice": {
+    "placeholders": {
+      "detail": {
+        "type": "String"
+      }
+    }
+  },
+
+  "errInvalidAddress": "Invalid address: {detail}",
+  "@errInvalidAddress": {
+    "placeholders": {
+      "detail": {
+        "type": "String"
+      }
+    }
+  },
+
+  "errPaymentRefunded": "Payment was refunded",
+  "@errPaymentRefunded": {},
+
+  "errTimeout": "Operation timed out",
+  "@errTimeout": {}
 }

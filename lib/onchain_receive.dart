@@ -1,5 +1,6 @@
 import 'package:ecashapp/db.dart';
 import 'package:ecashapp/detail_row.dart';
+import 'package:ecashapp/error_helper.dart';
 import 'package:ecashapp/extensions/build_context_l10n.dart';
 import 'package:ecashapp/lib.dart';
 import 'package:ecashapp/multimint.dart';
@@ -51,13 +52,10 @@ class _OnChainReceiveContentState extends State<OnChainReceiveContent> {
       AppLogger.instance.error(
         "Could not allocate deposit address or fetch peg-in fee: $e",
       );
-      ToastService().show(
-        message: context.l10n.couldNotGetNewAddress,
-        duration: const Duration(seconds: 5),
-        onTap: () {},
-        icon: Icon(Icons.error),
-      );
-      Navigator.of(context).pop();
+      if (mounted) {
+        showErrorToast(context, e);
+        Navigator.of(context).pop();
+      }
     }
   }
 

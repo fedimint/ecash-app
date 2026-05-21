@@ -701,22 +701,22 @@ String toString() {
 /// @nodoc
 mixin _$LightningSendOutcome {
 
-
+ Object get field0;
 
 
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is LightningSendOutcome);
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is LightningSendOutcome&&const DeepCollectionEquality().equals(other.field0, field0));
 }
 
 
 @override
-int get hashCode => runtimeType.hashCode;
+int get hashCode => Object.hash(runtimeType,const DeepCollectionEquality().hash(field0));
 
 @override
 String toString() {
-  return 'LightningSendOutcome()';
+  return 'LightningSendOutcome(field0: $field0)';
 }
 
 
@@ -735,7 +735,7 @@ class LightningSendOutcome_Success extends LightningSendOutcome {
   const LightningSendOutcome_Success(this.field0): super._();
   
 
- final  String field0;
+@override final  String field0;
 
 /// Create a copy of LightningSendOutcome
 /// with the given fields replaced by the non-null parameter values.
@@ -798,33 +798,76 @@ as String,
 
 
 class LightningSendOutcome_Failure extends LightningSendOutcome {
-  const LightningSendOutcome_Failure(): super._();
+  const LightningSendOutcome_Failure(this.field0): super._();
   
 
+@override final  EcashAppError field0;
 
-
+/// Create a copy of LightningSendOutcome
+/// with the given fields replaced by the non-null parameter values.
+@JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+$LightningSendOutcome_FailureCopyWith<LightningSendOutcome_Failure> get copyWith => _$LightningSendOutcome_FailureCopyWithImpl<LightningSendOutcome_Failure>(this, _$identity);
 
 
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is LightningSendOutcome_Failure);
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is LightningSendOutcome_Failure&&(identical(other.field0, field0) || other.field0 == field0));
 }
 
 
 @override
-int get hashCode => runtimeType.hashCode;
+int get hashCode => Object.hash(runtimeType,field0);
 
 @override
 String toString() {
-  return 'LightningSendOutcome.failure()';
+  return 'LightningSendOutcome.failure(field0: $field0)';
 }
 
 
 }
 
+/// @nodoc
+abstract mixin class $LightningSendOutcome_FailureCopyWith<$Res> implements $LightningSendOutcomeCopyWith<$Res> {
+  factory $LightningSendOutcome_FailureCopyWith(LightningSendOutcome_Failure value, $Res Function(LightningSendOutcome_Failure) _then) = _$LightningSendOutcome_FailureCopyWithImpl;
+@useResult
+$Res call({
+ EcashAppError field0
+});
 
 
+$EcashAppErrorCopyWith<$Res> get field0;
+
+}
+/// @nodoc
+class _$LightningSendOutcome_FailureCopyWithImpl<$Res>
+    implements $LightningSendOutcome_FailureCopyWith<$Res> {
+  _$LightningSendOutcome_FailureCopyWithImpl(this._self, this._then);
+
+  final LightningSendOutcome_Failure _self;
+  final $Res Function(LightningSendOutcome_Failure) _then;
+
+/// Create a copy of LightningSendOutcome
+/// with the given fields replaced by the non-null parameter values.
+@pragma('vm:prefer-inline') $Res call({Object? field0 = null,}) {
+  return _then(LightningSendOutcome_Failure(
+null == field0 ? _self.field0 : field0 // ignore: cast_nullable_to_non_nullable
+as EcashAppError,
+  ));
+}
+
+/// Create a copy of LightningSendOutcome
+/// with the given fields replaced by the non-null parameter values.
+@override
+@pragma('vm:prefer-inline')
+$EcashAppErrorCopyWith<$Res> get field0 {
+  
+  return $EcashAppErrorCopyWith<$Res>(_self.field0, (value) {
+    return _then(_self.copyWith(field0: value));
+  });
+}
+}
 
 /// @nodoc
 mixin _$LNAddressStatus {
@@ -1998,6 +2041,72 @@ class _$MultimintEvent_UpdateAvailableCopyWithImpl<$Res>
   return _then(MultimintEvent_UpdateAvailable(
 null == field0 ? _self.field0 : field0 // ignore: cast_nullable_to_non_nullable
 as String,
+  ));
+}
+
+
+}
+
+/// @nodoc
+
+
+class MultimintEvent_PaymentError extends MultimintEvent {
+  const MultimintEvent_PaymentError(this.field0): super._();
+  
+
+@override final  (FederationId, PaymentDirection, PaymentKind, EcashAppError) field0;
+
+/// Create a copy of MultimintEvent
+/// with the given fields replaced by the non-null parameter values.
+@JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+$MultimintEvent_PaymentErrorCopyWith<MultimintEvent_PaymentError> get copyWith => _$MultimintEvent_PaymentErrorCopyWithImpl<MultimintEvent_PaymentError>(this, _$identity);
+
+
+
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is MultimintEvent_PaymentError&&(identical(other.field0, field0) || other.field0 == field0));
+}
+
+
+@override
+int get hashCode => Object.hash(runtimeType,field0);
+
+@override
+String toString() {
+  return 'MultimintEvent.paymentError(field0: $field0)';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class $MultimintEvent_PaymentErrorCopyWith<$Res> implements $MultimintEventCopyWith<$Res> {
+  factory $MultimintEvent_PaymentErrorCopyWith(MultimintEvent_PaymentError value, $Res Function(MultimintEvent_PaymentError) _then) = _$MultimintEvent_PaymentErrorCopyWithImpl;
+@useResult
+$Res call({
+ (FederationId, PaymentDirection, PaymentKind, EcashAppError) field0
+});
+
+
+
+
+}
+/// @nodoc
+class _$MultimintEvent_PaymentErrorCopyWithImpl<$Res>
+    implements $MultimintEvent_PaymentErrorCopyWith<$Res> {
+  _$MultimintEvent_PaymentErrorCopyWithImpl(this._self, this._then);
+
+  final MultimintEvent_PaymentError _self;
+  final $Res Function(MultimintEvent_PaymentError) _then;
+
+/// Create a copy of MultimintEvent
+/// with the given fields replaced by the non-null parameter values.
+@pragma('vm:prefer-inline') $Res call({Object? field0 = null,}) {
+  return _then(MultimintEvent_PaymentError(
+null == field0 ? _self.field0 : field0 // ignore: cast_nullable_to_non_nullable
+as (FederationId, PaymentDirection, PaymentKind, EcashAppError),
   ));
 }
 

@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:ecashapp/db.dart';
 import 'package:ecashapp/detail_row.dart';
+import 'package:ecashapp/error_helper.dart';
 import 'package:ecashapp/extensions/build_context_l10n.dart';
 import 'package:ecashapp/lib.dart';
 import 'package:ecashapp/multimint.dart';
@@ -133,12 +134,7 @@ class _RequestState extends State<Request>
       }
     } catch (e) {
       AppLogger.instance.error("Error occurred while receiving payment: $e");
-      ToastService().show(
-        message: context.l10n.couldNotReceivePayment,
-        duration: const Duration(seconds: 5),
-        onTap: () {},
-        icon: Icon(Icons.error),
-      );
+      if (mounted) showErrorToast(context, e);
     } finally {
       if (mounted) {
         Navigator.of(context).popUntil((route) => route.isFirst);
