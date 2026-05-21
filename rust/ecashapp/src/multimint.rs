@@ -2199,6 +2199,40 @@ impl Multimint {
         Ok((gateway.api.to_string(), amount_with_fees, false))
     }
 
+    pub async fn select_receive_gateway(
+        &self,
+        federation_id: &FederationId,
+        amount: Amount,
+    ) -> anyhow::Result<(String, u64, bool)> {
+        let client = self
+            .clients
+            .read()
+            .await
+            .get(federation_id)
+            .ok_or(anyhow!("No federation exists"))?
+            .clone();
+
+        // Try LNv2 first (pass None = receive mode, uses receive_fee not send_fee).
+        if let Ok((url, receive_fee, fed_base, fed_ppm)) =
+            Self::lnv2_select_gateway(&client, None).await
+        {
+            let amount_with_fees = compute_receive_amount(
+                amount,
+                fed_base,
+                fed_ppm,
+                receive_fee.base.msats,
+                receive_fee.parts_per_million,
+            );
+            return Ok((url.to_string(), amount_with_fees, true));
+        }
+
+        // LNv1 has no receive fees.
+        let gateway = Self::lnv1_select_gateway(&client)
+            .await
+            .ok_or(anyhow!("No available gateways for receiving"))?;
+        Ok((gateway.api.to_string(), amount.msats, false))
+    }
+
     fn invoice_routes_back_to_federation(
         invoice: &Bolt11Invoice,
         gateway: LightningGateway,

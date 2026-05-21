@@ -828,6 +828,9 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   LNAddressStatus dco_decode_ln_address_status(dynamic raw);
 
   @protected
+  LnurlWithdrawParams dco_decode_lnurl_withdraw_params(dynamic raw);
+
+  @protected
   LogLevel dco_decode_log_level(dynamic raw);
 
   @protected
@@ -1803,6 +1806,11 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
 
   @protected
   LNAddressStatus sse_decode_ln_address_status(SseDeserializer deserializer);
+
+  @protected
+  LnurlWithdrawParams sse_decode_lnurl_withdraw_params(
+    SseDeserializer deserializer,
+  );
 
   @protected
   LogLevel sse_decode_log_level(SseDeserializer deserializer);
@@ -2938,6 +2946,12 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   @protected
   void sse_encode_ln_address_status(
     LNAddressStatus self,
+    SseSerializer serializer,
+  );
+
+  @protected
+  void sse_encode_lnurl_withdraw_params(
+    LnurlWithdrawParams self,
     SseSerializer serializer,
   );
 
