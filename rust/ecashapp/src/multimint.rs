@@ -2414,7 +2414,7 @@ impl Multimint {
         let operation_id = lnv2
             .send(invoice, Some(gateway), custom_meta)
             .await
-            .map_err(|e| EcashAppError::from_display(e))?;
+            .map_err(EcashAppError::from_display)?;
         Ok(operation_id)
     }
 
@@ -2437,7 +2437,7 @@ impl Multimint {
         let outgoing_lightning_payment = lnv1
             .pay_bolt11_invoice(Some(gateway), invoice, custom_meta)
             .await
-            .map_err(|e| EcashAppError::from_display(e))?;
+            .map_err(EcashAppError::from_display)?;
         Ok(outgoing_lightning_payment.payment_type.operation_id())
     }
 
@@ -3343,7 +3343,7 @@ impl Multimint {
             .map_err(|e| EcashAppError::other(format!("mint module unavailable: {e:#}")))?
             .send_oob_notes(Amount::from_msats(amount_msats), ())
             .await
-            .map_err(|e| EcashAppError::from_display(e))?;
+            .map_err(EcashAppError::from_display)?;
         Ok(OOBNotesWrapper(notes))
     }
 
@@ -3421,7 +3421,7 @@ impl Multimint {
         let mut updates = mint
             .subscribe_spend_notes(operation_id)
             .await
-            .map_err(|e| EcashAppError::from_display(e))?
+            .map_err(EcashAppError::from_display)?
             .into_stream();
         let mut final_state = SpendOOBState::UserCanceledFailure;
         while let Some(update) = updates.next().await {
@@ -3578,7 +3578,7 @@ impl Multimint {
         // Validate the notes before attempting to reissue
         let total_amount = mint
             .validate_notes(&notes)
-            .map_err(|e| EcashAppError::from_display(e))?;
+            .map_err(EcashAppError::from_display)?;
 
         let extra_meta = json!({
             "total_amount": total_amount,
@@ -3590,7 +3590,7 @@ impl Multimint {
         let operation_id = mint
             .reissue_external_notes(notes, extra_meta)
             .await
-            .map_err(|e| EcashAppError::from_display(e))?;
+            .map_err(EcashAppError::from_display)?;
         self.spawn_await_ecash_reissue(*federation_id, operation_id);
         Ok(operation_id)
     }
@@ -3744,7 +3744,7 @@ impl Multimint {
         let operation_id = wallet_module
             .withdraw(&address, amount, peg_out_fees, meta)
             .await
-            .map_err(|e| EcashAppError::from_display(e))?;
+            .map_err(EcashAppError::from_display)?;
 
         Ok(operation_id)
     }
@@ -3768,7 +3768,7 @@ impl Multimint {
         let mut updates = wallet_module
             .subscribe_withdraw_updates(operation_id)
             .await
-            .map_err(|e| EcashAppError::from_display(e))?
+            .map_err(EcashAppError::from_display)?
             .into_stream();
 
         let txid = loop {
