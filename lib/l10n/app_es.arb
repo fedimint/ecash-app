@@ -429,7 +429,10 @@
   "errNoGateways": "No hay puertas de enlace Lightning disponibles para esta federación",
   "errFederationOffline": "La federación está desconectada o inaccesible",
   "errInvalidInvoice": "Factura inválida: {detail}",
-  "errInvalidAddress": "Dirección inválida: {detail}",
+  "errInvalidEcash": "Ecash inválido: {detail}",
+  "errEcashAlreadySpent": "Este ecash ya ha sido gastado",
+  "errInvalidBitcoinAddress": "Dirección de Bitcoin inválida: {detail}",
+  "errInvalidLightningAddress": "Dirección Lightning inválida: {detail}",
   "errPaymentRefunded": "El pago fue reembolsado",
   "errTimeout": "La operación expiró"
 }

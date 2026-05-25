@@ -29,8 +29,14 @@ sealed class EcashAppError with _$EcashAppError {
       EcashAppError_FederationOffline;
   const factory EcashAppError.invalidInvoice(String field0) =
       EcashAppError_InvalidInvoice;
-  const factory EcashAppError.invalidAddress(String field0) =
-      EcashAppError_InvalidAddress;
+  const factory EcashAppError.invalidEcash(String field0) =
+      EcashAppError_InvalidEcash;
+  const factory EcashAppError.ecashAlreadySpent() =
+      EcashAppError_EcashAlreadySpent;
+  const factory EcashAppError.invalidBitcoinAddress(String field0) =
+      EcashAppError_InvalidBitcoinAddress;
+  const factory EcashAppError.invalidLightningAddress(String field0) =
+      EcashAppError_InvalidLightningAddress;
   const factory EcashAppError.paymentRefunded(String field0) =
       EcashAppError_PaymentRefunded;
   const factory EcashAppError.timeout() = EcashAppError_Timeout;

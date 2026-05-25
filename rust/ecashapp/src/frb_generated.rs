@@ -10615,7 +10615,7 @@ fn wire__crate__get_invoice_from_lnaddress_or_lnurl_impl(
             let api_lnaddress_or_lnurl = <String>::sse_decode(&mut deserializer);
             deserializer.end();
             move |context| async move {
-                transform_result_sse::<_, flutter_rust_bridge::for_generated::anyhow::Error>(
+                transform_result_sse::<_, crate::app_error::EcashAppError>(
                     (move || async move {
                         let output_ok = crate::get_invoice_from_lnaddress_or_lnurl(
                             api_amount_msats,
@@ -14112,16 +14112,27 @@ impl SseDecode for crate::app_error::EcashAppError {
             }
             7 => {
                 let mut var_field0 = <String>::sse_decode(deserializer);
-                return crate::app_error::EcashAppError::InvalidAddress(var_field0);
+                return crate::app_error::EcashAppError::InvalidEcash(var_field0);
             }
             8 => {
+                return crate::app_error::EcashAppError::EcashAlreadySpent;
+            }
+            9 => {
+                let mut var_field0 = <String>::sse_decode(deserializer);
+                return crate::app_error::EcashAppError::InvalidBitcoinAddress(var_field0);
+            }
+            10 => {
+                let mut var_field0 = <String>::sse_decode(deserializer);
+                return crate::app_error::EcashAppError::InvalidLightningAddress(var_field0);
+            }
+            11 => {
                 let mut var_field0 = <String>::sse_decode(deserializer);
                 return crate::app_error::EcashAppError::PaymentRefunded(var_field0);
             }
-            9 => {
+            12 => {
                 return crate::app_error::EcashAppError::Timeout;
             }
-            10 => {
+            13 => {
                 let mut var_field0 = <String>::sse_decode(deserializer);
                 return crate::app_error::EcashAppError::Other(var_field0);
             }
@@ -14636,12 +14647,8 @@ impl SseDecode for crate::multimint::MultimintEvent {
                 return crate::multimint::MultimintEvent::UpdateAvailable(var_field0);
             }
             11 => {
-                let mut var_field0 = <(
-                    FederationId,
-                    crate::multimint::PaymentDirection,
-                    crate::multimint::PaymentKind,
-                    crate::app_error::EcashAppError,
-                )>::sse_decode(deserializer);
+                let mut var_field0 =
+                    <(FederationId, crate::app_error::EcashAppError)>::sse_decode(deserializer);
                 return crate::multimint::MultimintEvent::PaymentError(var_field0);
             }
             _ => {
@@ -14921,31 +14928,6 @@ impl SseDecode for crate::ParsedText {
     }
 }
 
-impl SseDecode for crate::multimint::PaymentDirection {
-    // Codec=Sse (Serialization based), see doc to use other codecs
-    fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
-        let mut inner = <i32>::sse_decode(deserializer);
-        return match inner {
-            0 => crate::multimint::PaymentDirection::Send,
-            1 => crate::multimint::PaymentDirection::Receive,
-            _ => unreachable!("Invalid variant for PaymentDirection: {}", inner),
-        };
-    }
-}
-
-impl SseDecode for crate::multimint::PaymentKind {
-    // Codec=Sse (Serialization based), see doc to use other codecs
-    fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
-        let mut inner = <i32>::sse_decode(deserializer);
-        return match inner {
-            0 => crate::multimint::PaymentKind::Lightning,
-            1 => crate::multimint::PaymentKind::Ecash,
-            2 => crate::multimint::PaymentKind::Onchain,
-            _ => unreachable!("Invalid variant for PaymentKind: {}", inner),
-        };
-    }
-}
-
 impl SseDecode for crate::multimint::PaymentPreviewWithGateways {
     // Codec=Sse (Serialization based), see doc to use other codecs
     fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
@@ -15018,30 +15000,21 @@ impl SseDecode for (FederationId, crate::multimint::DepositEventKind) {
     }
 }
 
+impl SseDecode for (FederationId, crate::app_error::EcashAppError) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
+        let mut var_field0 = <FederationId>::sse_decode(deserializer);
+        let mut var_field1 = <crate::app_error::EcashAppError>::sse_decode(deserializer);
+        return (var_field0, var_field1);
+    }
+}
+
 impl SseDecode for (FederationId, crate::multimint::LightningEventKind) {
     // Codec=Sse (Serialization based), see doc to use other codecs
     fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
         let mut var_field0 = <FederationId>::sse_decode(deserializer);
         let mut var_field1 = <crate::multimint::LightningEventKind>::sse_decode(deserializer);
         return (var_field0, var_field1);
-    }
-}
-
-impl SseDecode
-    for (
-        FederationId,
-        crate::multimint::PaymentDirection,
-        crate::multimint::PaymentKind,
-        crate::app_error::EcashAppError,
-    )
-{
-    // Codec=Sse (Serialization based), see doc to use other codecs
-    fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
-        let mut var_field0 = <FederationId>::sse_decode(deserializer);
-        let mut var_field1 = <crate::multimint::PaymentDirection>::sse_decode(deserializer);
-        let mut var_field2 = <crate::multimint::PaymentKind>::sse_decode(deserializer);
-        let mut var_field3 = <crate::app_error::EcashAppError>::sse_decode(deserializer);
-        return (var_field0, var_field1, var_field2, var_field3);
     }
 }
 
@@ -16963,15 +16936,22 @@ impl flutter_rust_bridge::IntoDart for crate::app_error::EcashAppError {
             crate::app_error::EcashAppError::InvalidInvoice(field0) => {
                 [6.into_dart(), field0.into_into_dart().into_dart()].into_dart()
             }
-            crate::app_error::EcashAppError::InvalidAddress(field0) => {
+            crate::app_error::EcashAppError::InvalidEcash(field0) => {
                 [7.into_dart(), field0.into_into_dart().into_dart()].into_dart()
             }
-            crate::app_error::EcashAppError::PaymentRefunded(field0) => {
-                [8.into_dart(), field0.into_into_dart().into_dart()].into_dart()
+            crate::app_error::EcashAppError::EcashAlreadySpent => [8.into_dart()].into_dart(),
+            crate::app_error::EcashAppError::InvalidBitcoinAddress(field0) => {
+                [9.into_dart(), field0.into_into_dart().into_dart()].into_dart()
             }
-            crate::app_error::EcashAppError::Timeout => [9.into_dart()].into_dart(),
-            crate::app_error::EcashAppError::Other(field0) => {
+            crate::app_error::EcashAppError::InvalidLightningAddress(field0) => {
                 [10.into_dart(), field0.into_into_dart().into_dart()].into_dart()
+            }
+            crate::app_error::EcashAppError::PaymentRefunded(field0) => {
+                [11.into_dart(), field0.into_into_dart().into_dart()].into_dart()
+            }
+            crate::app_error::EcashAppError::Timeout => [12.into_dart()].into_dart(),
+            crate::app_error::EcashAppError::Other(field0) => {
+                [13.into_dart(), field0.into_into_dart().into_dart()].into_dart()
             }
             _ => {
                 unimplemented!("");
@@ -17444,46 +17424,6 @@ impl flutter_rust_bridge::IntoDart for crate::ParsedText {
 impl flutter_rust_bridge::for_generated::IntoDartExceptPrimitive for crate::ParsedText {}
 impl flutter_rust_bridge::IntoIntoDart<crate::ParsedText> for crate::ParsedText {
     fn into_into_dart(self) -> crate::ParsedText {
-        self
-    }
-}
-// Codec=Dco (DartCObject based), see doc to use other codecs
-impl flutter_rust_bridge::IntoDart for crate::multimint::PaymentDirection {
-    fn into_dart(self) -> flutter_rust_bridge::for_generated::DartAbi {
-        match self {
-            Self::Send => 0.into_dart(),
-            Self::Receive => 1.into_dart(),
-            _ => unreachable!(),
-        }
-    }
-}
-impl flutter_rust_bridge::for_generated::IntoDartExceptPrimitive
-    for crate::multimint::PaymentDirection
-{
-}
-impl flutter_rust_bridge::IntoIntoDart<crate::multimint::PaymentDirection>
-    for crate::multimint::PaymentDirection
-{
-    fn into_into_dart(self) -> crate::multimint::PaymentDirection {
-        self
-    }
-}
-// Codec=Dco (DartCObject based), see doc to use other codecs
-impl flutter_rust_bridge::IntoDart for crate::multimint::PaymentKind {
-    fn into_dart(self) -> flutter_rust_bridge::for_generated::DartAbi {
-        match self {
-            Self::Lightning => 0.into_dart(),
-            Self::Ecash => 1.into_dart(),
-            Self::Onchain => 2.into_dart(),
-            _ => unreachable!(),
-        }
-    }
-}
-impl flutter_rust_bridge::for_generated::IntoDartExceptPrimitive for crate::multimint::PaymentKind {}
-impl flutter_rust_bridge::IntoIntoDart<crate::multimint::PaymentKind>
-    for crate::multimint::PaymentKind
-{
-    fn into_into_dart(self) -> crate::multimint::PaymentKind {
         self
     }
 }
@@ -18542,19 +18482,30 @@ impl SseEncode for crate::app_error::EcashAppError {
                 <i32>::sse_encode(6, serializer);
                 <String>::sse_encode(field0, serializer);
             }
-            crate::app_error::EcashAppError::InvalidAddress(field0) => {
+            crate::app_error::EcashAppError::InvalidEcash(field0) => {
                 <i32>::sse_encode(7, serializer);
                 <String>::sse_encode(field0, serializer);
             }
-            crate::app_error::EcashAppError::PaymentRefunded(field0) => {
+            crate::app_error::EcashAppError::EcashAlreadySpent => {
                 <i32>::sse_encode(8, serializer);
+            }
+            crate::app_error::EcashAppError::InvalidBitcoinAddress(field0) => {
+                <i32>::sse_encode(9, serializer);
+                <String>::sse_encode(field0, serializer);
+            }
+            crate::app_error::EcashAppError::InvalidLightningAddress(field0) => {
+                <i32>::sse_encode(10, serializer);
+                <String>::sse_encode(field0, serializer);
+            }
+            crate::app_error::EcashAppError::PaymentRefunded(field0) => {
+                <i32>::sse_encode(11, serializer);
                 <String>::sse_encode(field0, serializer);
             }
             crate::app_error::EcashAppError::Timeout => {
-                <i32>::sse_encode(9, serializer);
+                <i32>::sse_encode(12, serializer);
             }
             crate::app_error::EcashAppError::Other(field0) => {
-                <i32>::sse_encode(10, serializer);
+                <i32>::sse_encode(13, serializer);
                 <String>::sse_encode(field0, serializer);
             }
             _ => {
@@ -18994,12 +18945,7 @@ impl SseEncode for crate::multimint::MultimintEvent {
             }
             crate::multimint::MultimintEvent::PaymentError(field0) => {
                 <i32>::sse_encode(11, serializer);
-                <(
-                    FederationId,
-                    crate::multimint::PaymentDirection,
-                    crate::multimint::PaymentKind,
-                    crate::app_error::EcashAppError,
-                )>::sse_encode(field0, serializer);
+                <(FederationId, crate::app_error::EcashAppError)>::sse_encode(field0, serializer);
             }
             _ => {
                 unimplemented!("");
@@ -19242,39 +19188,6 @@ impl SseEncode for crate::ParsedText {
     }
 }
 
-impl SseEncode for crate::multimint::PaymentDirection {
-    // Codec=Sse (Serialization based), see doc to use other codecs
-    fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
-        <i32>::sse_encode(
-            match self {
-                crate::multimint::PaymentDirection::Send => 0,
-                crate::multimint::PaymentDirection::Receive => 1,
-                _ => {
-                    unimplemented!("");
-                }
-            },
-            serializer,
-        );
-    }
-}
-
-impl SseEncode for crate::multimint::PaymentKind {
-    // Codec=Sse (Serialization based), see doc to use other codecs
-    fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
-        <i32>::sse_encode(
-            match self {
-                crate::multimint::PaymentKind::Lightning => 0,
-                crate::multimint::PaymentKind::Ecash => 1,
-                crate::multimint::PaymentKind::Onchain => 2,
-                _ => {
-                    unimplemented!("");
-                }
-            },
-            serializer,
-        );
-    }
-}
-
 impl SseEncode for crate::multimint::PaymentPreviewWithGateways {
     // Codec=Sse (Serialization based), see doc to use other codecs
     fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
@@ -19336,28 +19249,19 @@ impl SseEncode for (FederationId, crate::multimint::DepositEventKind) {
     }
 }
 
+impl SseEncode for (FederationId, crate::app_error::EcashAppError) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
+        <FederationId>::sse_encode(self.0, serializer);
+        <crate::app_error::EcashAppError>::sse_encode(self.1, serializer);
+    }
+}
+
 impl SseEncode for (FederationId, crate::multimint::LightningEventKind) {
     // Codec=Sse (Serialization based), see doc to use other codecs
     fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
         <FederationId>::sse_encode(self.0, serializer);
         <crate::multimint::LightningEventKind>::sse_encode(self.1, serializer);
-    }
-}
-
-impl SseEncode
-    for (
-        FederationId,
-        crate::multimint::PaymentDirection,
-        crate::multimint::PaymentKind,
-        crate::app_error::EcashAppError,
-    )
-{
-    // Codec=Sse (Serialization based), see doc to use other codecs
-    fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
-        <FederationId>::sse_encode(self.0, serializer);
-        <crate::multimint::PaymentDirection>::sse_encode(self.1, serializer);
-        <crate::multimint::PaymentKind>::sse_encode(self.2, serializer);
-        <crate::app_error::EcashAppError>::sse_encode(self.3, serializer);
     }
 }
 

@@ -23,8 +23,14 @@ pub enum EcashAppError {
     FederationOffline,
     #[error("invalid invoice: {0}")]
     InvalidInvoice(String),
-    #[error("invalid address: {0}")]
-    InvalidAddress(String),
+    #[error("invalid ecash: {0}")]
+    InvalidEcash(String),
+    #[error("ecash has already been spent")]
+    EcashAlreadySpent,
+    #[error("invalid bitcoin address: {0}")]
+    InvalidBitcoinAddress(String),
+    #[error("invalid lightning address: {0}")]
+    InvalidLightningAddress(String),
     #[error("payment was refunded: {0}")]
     PaymentRefunded(String),
     #[error("operation timed out")]

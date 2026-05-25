@@ -386,19 +386,6 @@ pub enum NostrRecoveryPhase {
     RejoiningFederations(u32),
 }
 
-#[derive(Clone, Copy, Eq, PartialEq, Serialize, Debug)]
-pub enum PaymentDirection {
-    Send,
-    Receive,
-}
-
-#[derive(Clone, Copy, Eq, PartialEq, Serialize, Debug)]
-pub enum PaymentKind {
-    Lightning,
-    Ecash,
-    Onchain,
-}
-
 #[derive(Clone, Eq, PartialEq, Serialize, Debug)]
 pub enum MultimintEvent {
     Deposit((FederationId, DepositEventKind)),
@@ -414,7 +401,7 @@ pub enum MultimintEvent {
     UpdateAvailable(String),
     /// Structured payment-flow error. The Dart layer auto-surfaces these as
     /// localized error toasts (see `lib/app.dart` and `lib/error_helper.dart`).
-    PaymentError((FederationId, PaymentDirection, PaymentKind, EcashAppError)),
+    PaymentError((FederationId, EcashAppError)),
 }
 
 #[derive(Clone, Eq, PartialEq, Serialize, Debug)]
@@ -742,24 +729,12 @@ impl Multimint {
                                         event_bus.publish(multimint_event).await;
                                     }
                                     Ok(state) => {
+                                        // A non-claimed receive (e.g. expired invoice) is
+                                        // normal user behavior, so we only log it rather than
+                                        // surfacing a toast.
                                         info_to_flutter(format!(
                                             "LNv2 receive ended in non-claimed state: {state:?} for {federation_id}"
                                         ))
-                                        .await;
-                                        let error = match state {
-                                            FinalReceiveOperationState::Expired => {
-                                                EcashAppError::ExpiredInvoice
-                                            }
-                                            _ => EcashAppError::other(format!(
-                                                "Lightning receive ended in state: {state:?}"
-                                            )),
-                                        };
-                                        payment_error_to_flutter(
-                                        federation_id,
-                                            PaymentDirection::Receive,
-                                            PaymentKind::Lightning,
-                                            error,
-                                        )
                                         .await;
                                     }
                                     Err(e) => {
@@ -2454,13 +2429,7 @@ impl Multimint {
                         .await;
                 }
                 LightningSendOutcome::Failure(err) => {
-                    payment_error_to_flutter(
-                        federation_id,
-                        PaymentDirection::Send,
-                        PaymentKind::Lightning,
-                        err,
-                    )
-                    .await;
+                    payment_error_to_flutter(federation_id, err).await;
                 }
             }
         });
@@ -2617,31 +2586,6 @@ impl Multimint {
             Ok(lnv2_final_state) => lnv2_final_state,
             Err(_) => Self::await_receive_lnv1(&client, operation_id).await?,
         };
-
-        // Surface non-Claimed receive outcomes as structured PaymentError events
-        // so the UI can show an actionable toast (currently the expired/failed
-        // states are silent on the LNv1 path and only locally tracked on LNv2).
-        match &receive_state {
-            FinalReceiveOperationState::Claimed => {}
-            FinalReceiveOperationState::Expired => {
-                payment_error_to_flutter(
-                    *federation_id,
-                    PaymentDirection::Receive,
-                    PaymentKind::Lightning,
-                    EcashAppError::ExpiredInvoice,
-                )
-                .await;
-            }
-            FinalReceiveOperationState::Failure => {
-                payment_error_to_flutter(
-                    *federation_id,
-                    PaymentDirection::Receive,
-                    PaymentKind::Lightning,
-                    EcashAppError::other("Lightning receive failed"),
-                )
-                .await;
-            }
-        }
 
         Ok((receive_state, amount))
     }
@@ -3364,24 +3308,13 @@ impl Multimint {
                             SpendOOBState::UserCanceledSuccess => {}
                             // Transient / never the final state in practice.
                             SpendOOBState::Created | SpendOOBState::UserCanceledProcessing => {}
-                            // User tried to cancel but notes were already spent.
-                            SpendOOBState::UserCanceledFailure => {
-                                payment_error_to_flutter(
-                                    federation_id,
-                                    PaymentDirection::Send,
-                                    PaymentKind::Ecash,
-                                    EcashAppError::other(
-                                        "Could not cancel — ecash already spent by recipient",
-                                    ),
-                                )
-                                .await;
-                            }
+                            // User tried to cancel but the notes were already spent by the
+                            // recipient — the spend still succeeded, so this isn't an error.
+                            SpendOOBState::UserCanceledFailure => {}
                             // Auto-cancel succeeded — recipient never reissued.
                             SpendOOBState::Refunded => {
                                 payment_error_to_flutter(
                                     federation_id,
-                                    PaymentDirection::Send,
-                                    PaymentKind::Ecash,
                                     EcashAppError::PaymentRefunded(
                                         "recipient did not redeem ecash".to_string(),
                                     ),
@@ -3391,13 +3324,7 @@ impl Multimint {
                         }
                     }
                     Err(e) => {
-                        payment_error_to_flutter(
-                            federation_id,
-                            PaymentDirection::Send,
-                            PaymentKind::Ecash,
-                            e,
-                        )
-                        .await;
+                        payment_error_to_flutter(federation_id, e).await;
                     }
                 }
             });
@@ -3573,7 +3500,7 @@ impl Multimint {
             .get_first_module::<MintClientModule>()
             .map_err(|e| EcashAppError::other(format!("mint module unavailable: {e:#}")))?;
         let notes = OOBNotes::from_str(&ecash)
-            .map_err(|e| EcashAppError::InvalidInvoice(format!("invalid ecash: {e}")))?;
+            .map_err(|e| EcashAppError::InvalidEcash(e.to_string()))?;
 
         // Validate the notes before attempting to reissue
         let total_amount = mint
@@ -3614,11 +3541,14 @@ impl Multimint {
                                 }
                             }
                             ReissueExternalNotesState::Failed(msg) => {
+                                // A reissue failure is most commonly caused by notes that have
+                                // already been spent (e.g. reissuing the same ecash twice),
+                                // which is the actionable case for the user. Keep the raw
+                                // reason in the log for diagnostics.
+                                info_to_flutter(format!("Ecash reissue failed: {msg}")).await;
                                 payment_error_to_flutter(
                                     federation_id,
-                                    PaymentDirection::Receive,
-                                    PaymentKind::Ecash,
-                                    EcashAppError::other(format!("Ecash reissue failed: {msg}")),
+                                    EcashAppError::EcashAlreadySpent,
                                 )
                                 .await;
                             }
@@ -3626,13 +3556,7 @@ impl Multimint {
                         }
                     }
                     Err(e) => {
-                        payment_error_to_flutter(
-                            federation_id,
-                            PaymentDirection::Receive,
-                            PaymentKind::Ecash,
-                            EcashAppError::from(e),
-                        )
-                        .await;
+                        payment_error_to_flutter(federation_id, EcashAppError::from(e)).await;
                     }
                 }
             });
@@ -3734,10 +3658,10 @@ impl Multimint {
             .map_err(|e| EcashAppError::other(format!("wallet module unavailable: {e:#}")))?;
 
         let address = bitcoin::address::Address::from_str(&address)
-            .map_err(|e| EcashAppError::InvalidAddress(e.to_string()))?;
+            .map_err(|e| EcashAppError::InvalidBitcoinAddress(e.to_string()))?;
         let address = address
             .require_network(wallet_module.get_network())
-            .map_err(|e| EcashAppError::InvalidAddress(e.to_string()))?;
+            .map_err(|e| EcashAppError::InvalidBitcoinAddress(e.to_string()))?;
         let amount = bitcoin::Amount::from_sat(amount_sats);
         let meta = OnChainWithdrawalMeta::from_peg_out_fees(&peg_out_fees);
 
@@ -3786,13 +3710,7 @@ impl Multimint {
                     let err = classify_anyhow(&anyhow!("on-chain withdraw failed: {e}"));
                     // Emit the structured event too so any background listener
                     // (e.g. screens that already navigated away) still sees it.
-                    payment_error_to_flutter(
-                        *federation_id,
-                        PaymentDirection::Send,
-                        PaymentKind::Onchain,
-                        err.clone(),
-                    )
-                    .await;
+                    payment_error_to_flutter(*federation_id, err.clone()).await;
                     return Err(err);
                 }
                 WithdrawState::Created => {

@@ -2054,7 +2054,7 @@ class MultimintEvent_PaymentError extends MultimintEvent {
   const MultimintEvent_PaymentError(this.field0): super._();
   
 
-@override final  (FederationId, PaymentDirection, PaymentKind, EcashAppError) field0;
+@override final  (FederationId, EcashAppError) field0;
 
 /// Create a copy of MultimintEvent
 /// with the given fields replaced by the non-null parameter values.
@@ -2086,7 +2086,7 @@ abstract mixin class $MultimintEvent_PaymentErrorCopyWith<$Res> implements $Mult
   factory $MultimintEvent_PaymentErrorCopyWith(MultimintEvent_PaymentError value, $Res Function(MultimintEvent_PaymentError) _then) = _$MultimintEvent_PaymentErrorCopyWithImpl;
 @useResult
 $Res call({
- (FederationId, PaymentDirection, PaymentKind, EcashAppError) field0
+ (FederationId, EcashAppError) field0
 });
 
 
@@ -2106,7 +2106,7 @@ class _$MultimintEvent_PaymentErrorCopyWithImpl<$Res>
 @pragma('vm:prefer-inline') $Res call({Object? field0 = null,}) {
   return _then(MultimintEvent_PaymentError(
 null == field0 ? _self.field0 : field0 // ignore: cast_nullable_to_non_nullable
-as (FederationId, PaymentDirection, PaymentKind, EcashAppError),
+as (FederationId, EcashAppError),
   ));
 }
 

@@ -8580,7 +8580,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
         },
         codec: SseCodec(
           decodeSuccessData: sse_decode_String,
-          decodeErrorData: sse_decode_AnyhowException,
+          decodeErrorData: sse_decode_ecash_app_error,
         ),
         constMeta: kCrateGetInvoiceFromLnaddressOrLnurlConstMeta,
         argValues: [amountMsats, lnaddressOrLnurl],
@@ -11753,21 +11753,21 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   }
 
   @protected
+  (FederationId, EcashAppError)
+  dco_decode_box_autoadd_record_auto_owned_rust_opaque_flutter_rust_bridgefor_generated_rust_auto_opaque_inner_federation_id_ecash_app_error(
+    dynamic raw,
+  ) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    return raw as (FederationId, EcashAppError);
+  }
+
+  @protected
   (FederationId, LightningEventKind)
   dco_decode_box_autoadd_record_auto_owned_rust_opaque_flutter_rust_bridgefor_generated_rust_auto_opaque_inner_federation_id_lightning_event_kind(
     dynamic raw,
   ) {
     // Codec=Dco (DartCObject based), see doc to use other codecs
     return raw as (FederationId, LightningEventKind);
-  }
-
-  @protected
-  (FederationId, PaymentDirection, PaymentKind, EcashAppError)
-  dco_decode_box_autoadd_record_auto_owned_rust_opaque_flutter_rust_bridgefor_generated_rust_auto_opaque_inner_federation_id_payment_direction_payment_kind_ecash_app_error(
-    dynamic raw,
-  ) {
-    // Codec=Dco (DartCObject based), see doc to use other codecs
-    return raw as (FederationId, PaymentDirection, PaymentKind, EcashAppError);
   }
 
   @protected
@@ -11941,12 +11941,18 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
       case 6:
         return EcashAppError_InvalidInvoice(dco_decode_String(raw[1]));
       case 7:
-        return EcashAppError_InvalidAddress(dco_decode_String(raw[1]));
+        return EcashAppError_InvalidEcash(dco_decode_String(raw[1]));
       case 8:
-        return EcashAppError_PaymentRefunded(dco_decode_String(raw[1]));
+        return EcashAppError_EcashAlreadySpent();
       case 9:
-        return EcashAppError_Timeout();
+        return EcashAppError_InvalidBitcoinAddress(dco_decode_String(raw[1]));
       case 10:
+        return EcashAppError_InvalidLightningAddress(dco_decode_String(raw[1]));
+      case 11:
+        return EcashAppError_PaymentRefunded(dco_decode_String(raw[1]));
+      case 12:
+        return EcashAppError_Timeout();
+      case 13:
         return EcashAppError_Other(dco_decode_String(raw[1]));
       default:
         throw Exception("unreachable");
@@ -12319,7 +12325,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
         return MultimintEvent_UpdateAvailable(dco_decode_String(raw[1]));
       case 11:
         return MultimintEvent_PaymentError(
-          dco_decode_box_autoadd_record_auto_owned_rust_opaque_flutter_rust_bridgefor_generated_rust_auto_opaque_inner_federation_id_payment_direction_payment_kind_ecash_app_error(
+          dco_decode_box_autoadd_record_auto_owned_rust_opaque_flutter_rust_bridgefor_generated_rust_auto_opaque_inner_federation_id_ecash_app_error(
             raw[1],
           ),
         );
@@ -12540,18 +12546,6 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   }
 
   @protected
-  PaymentDirection dco_decode_payment_direction(dynamic raw) {
-    // Codec=Dco (DartCObject based), see doc to use other codecs
-    return PaymentDirection.values[raw as int];
-  }
-
-  @protected
-  PaymentKind dco_decode_payment_kind(dynamic raw) {
-    // Codec=Dco (DartCObject based), see doc to use other codecs
-    return PaymentKind.values[raw as int];
-  }
-
-  @protected
   PaymentPreviewWithGateways dco_decode_payment_preview_with_gateways(
     dynamic raw,
   ) {
@@ -12629,6 +12623,24 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   }
 
   @protected
+  (FederationId, EcashAppError)
+  dco_decode_record_auto_owned_rust_opaque_flutter_rust_bridgefor_generated_rust_auto_opaque_inner_federation_id_ecash_app_error(
+    dynamic raw,
+  ) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    final arr = raw as List<dynamic>;
+    if (arr.length != 2) {
+      throw Exception('Expected 2 elements, got ${arr.length}');
+    }
+    return (
+      dco_decode_Auto_Owned_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerFederationId(
+        arr[0],
+      ),
+      dco_decode_ecash_app_error(arr[1]),
+    );
+  }
+
+  @protected
   (FederationId, LightningEventKind)
   dco_decode_record_auto_owned_rust_opaque_flutter_rust_bridgefor_generated_rust_auto_opaque_inner_federation_id_lightning_event_kind(
     dynamic raw,
@@ -12643,26 +12655,6 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
         arr[0],
       ),
       dco_decode_lightning_event_kind(arr[1]),
-    );
-  }
-
-  @protected
-  (FederationId, PaymentDirection, PaymentKind, EcashAppError)
-  dco_decode_record_auto_owned_rust_opaque_flutter_rust_bridgefor_generated_rust_auto_opaque_inner_federation_id_payment_direction_payment_kind_ecash_app_error(
-    dynamic raw,
-  ) {
-    // Codec=Dco (DartCObject based), see doc to use other codecs
-    final arr = raw as List<dynamic>;
-    if (arr.length != 4) {
-      throw Exception('Expected 4 elements, got ${arr.length}');
-    }
-    return (
-      dco_decode_Auto_Owned_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerFederationId(
-        arr[0],
-      ),
-      dco_decode_payment_direction(arr[1]),
-      dco_decode_payment_kind(arr[2]),
-      dco_decode_ecash_app_error(arr[3]),
     );
   }
 
@@ -14272,23 +14264,23 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   }
 
   @protected
+  (FederationId, EcashAppError)
+  sse_decode_box_autoadd_record_auto_owned_rust_opaque_flutter_rust_bridgefor_generated_rust_auto_opaque_inner_federation_id_ecash_app_error(
+    SseDeserializer deserializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    return (sse_decode_record_auto_owned_rust_opaque_flutter_rust_bridgefor_generated_rust_auto_opaque_inner_federation_id_ecash_app_error(
+      deserializer,
+    ));
+  }
+
+  @protected
   (FederationId, LightningEventKind)
   sse_decode_box_autoadd_record_auto_owned_rust_opaque_flutter_rust_bridgefor_generated_rust_auto_opaque_inner_federation_id_lightning_event_kind(
     SseDeserializer deserializer,
   ) {
     // Codec=Sse (Serialization based), see doc to use other codecs
     return (sse_decode_record_auto_owned_rust_opaque_flutter_rust_bridgefor_generated_rust_auto_opaque_inner_federation_id_lightning_event_kind(
-      deserializer,
-    ));
-  }
-
-  @protected
-  (FederationId, PaymentDirection, PaymentKind, EcashAppError)
-  sse_decode_box_autoadd_record_auto_owned_rust_opaque_flutter_rust_bridgefor_generated_rust_auto_opaque_inner_federation_id_payment_direction_payment_kind_ecash_app_error(
-    SseDeserializer deserializer,
-  ) {
-    // Codec=Sse (Serialization based), see doc to use other codecs
-    return (sse_decode_record_auto_owned_rust_opaque_flutter_rust_bridgefor_generated_rust_auto_opaque_inner_federation_id_payment_direction_payment_kind_ecash_app_error(
       deserializer,
     ));
   }
@@ -14485,13 +14477,21 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
         return EcashAppError_InvalidInvoice(var_field0);
       case 7:
         var var_field0 = sse_decode_String(deserializer);
-        return EcashAppError_InvalidAddress(var_field0);
+        return EcashAppError_InvalidEcash(var_field0);
       case 8:
+        return EcashAppError_EcashAlreadySpent();
+      case 9:
+        var var_field0 = sse_decode_String(deserializer);
+        return EcashAppError_InvalidBitcoinAddress(var_field0);
+      case 10:
+        var var_field0 = sse_decode_String(deserializer);
+        return EcashAppError_InvalidLightningAddress(var_field0);
+      case 11:
         var var_field0 = sse_decode_String(deserializer);
         return EcashAppError_PaymentRefunded(var_field0);
-      case 9:
+      case 12:
         return EcashAppError_Timeout();
-      case 10:
+      case 13:
         var var_field0 = sse_decode_String(deserializer);
         return EcashAppError_Other(var_field0);
       default:
@@ -14999,7 +14999,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
         return MultimintEvent_UpdateAvailable(var_field0);
       case 11:
         var var_field0 =
-            sse_decode_box_autoadd_record_auto_owned_rust_opaque_flutter_rust_bridgefor_generated_rust_auto_opaque_inner_federation_id_payment_direction_payment_kind_ecash_app_error(
+            sse_decode_box_autoadd_record_auto_owned_rust_opaque_flutter_rust_bridgefor_generated_rust_auto_opaque_inner_federation_id_ecash_app_error(
               deserializer,
             );
         return MultimintEvent_PaymentError(var_field0);
@@ -15295,20 +15295,6 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   }
 
   @protected
-  PaymentDirection sse_decode_payment_direction(SseDeserializer deserializer) {
-    // Codec=Sse (Serialization based), see doc to use other codecs
-    var inner = sse_decode_i_32(deserializer);
-    return PaymentDirection.values[inner];
-  }
-
-  @protected
-  PaymentKind sse_decode_payment_kind(SseDeserializer deserializer) {
-    // Codec=Sse (Serialization based), see doc to use other codecs
-    var inner = sse_decode_i_32(deserializer);
-    return PaymentKind.values[inner];
-  }
-
-  @protected
   PaymentPreviewWithGateways sse_decode_payment_preview_with_gateways(
     SseDeserializer deserializer,
   ) {
@@ -15387,6 +15373,20 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   }
 
   @protected
+  (FederationId, EcashAppError)
+  sse_decode_record_auto_owned_rust_opaque_flutter_rust_bridgefor_generated_rust_auto_opaque_inner_federation_id_ecash_app_error(
+    SseDeserializer deserializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    var var_field0 =
+        sse_decode_Auto_Owned_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerFederationId(
+          deserializer,
+        );
+    var var_field1 = sse_decode_ecash_app_error(deserializer);
+    return (var_field0, var_field1);
+  }
+
+  @protected
   (FederationId, LightningEventKind)
   sse_decode_record_auto_owned_rust_opaque_flutter_rust_bridgefor_generated_rust_auto_opaque_inner_federation_id_lightning_event_kind(
     SseDeserializer deserializer,
@@ -15398,22 +15398,6 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
         );
     var var_field1 = sse_decode_lightning_event_kind(deserializer);
     return (var_field0, var_field1);
-  }
-
-  @protected
-  (FederationId, PaymentDirection, PaymentKind, EcashAppError)
-  sse_decode_record_auto_owned_rust_opaque_flutter_rust_bridgefor_generated_rust_auto_opaque_inner_federation_id_payment_direction_payment_kind_ecash_app_error(
-    SseDeserializer deserializer,
-  ) {
-    // Codec=Sse (Serialization based), see doc to use other codecs
-    var var_field0 =
-        sse_decode_Auto_Owned_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerFederationId(
-          deserializer,
-        );
-    var var_field1 = sse_decode_payment_direction(deserializer);
-    var var_field2 = sse_decode_payment_kind(deserializer);
-    var var_field3 = sse_decode_ecash_app_error(deserializer);
-    return (var_field0, var_field1, var_field2, var_field3);
   }
 
   @protected
@@ -17141,12 +17125,12 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
 
   @protected
   void
-  sse_encode_box_autoadd_record_auto_owned_rust_opaque_flutter_rust_bridgefor_generated_rust_auto_opaque_inner_federation_id_lightning_event_kind(
-    (FederationId, LightningEventKind) self,
+  sse_encode_box_autoadd_record_auto_owned_rust_opaque_flutter_rust_bridgefor_generated_rust_auto_opaque_inner_federation_id_ecash_app_error(
+    (FederationId, EcashAppError) self,
     SseSerializer serializer,
   ) {
     // Codec=Sse (Serialization based), see doc to use other codecs
-    sse_encode_record_auto_owned_rust_opaque_flutter_rust_bridgefor_generated_rust_auto_opaque_inner_federation_id_lightning_event_kind(
+    sse_encode_record_auto_owned_rust_opaque_flutter_rust_bridgefor_generated_rust_auto_opaque_inner_federation_id_ecash_app_error(
       self,
       serializer,
     );
@@ -17154,12 +17138,12 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
 
   @protected
   void
-  sse_encode_box_autoadd_record_auto_owned_rust_opaque_flutter_rust_bridgefor_generated_rust_auto_opaque_inner_federation_id_payment_direction_payment_kind_ecash_app_error(
-    (FederationId, PaymentDirection, PaymentKind, EcashAppError) self,
+  sse_encode_box_autoadd_record_auto_owned_rust_opaque_flutter_rust_bridgefor_generated_rust_auto_opaque_inner_federation_id_lightning_event_kind(
+    (FederationId, LightningEventKind) self,
     SseSerializer serializer,
   ) {
     // Codec=Sse (Serialization based), see doc to use other codecs
-    sse_encode_record_auto_owned_rust_opaque_flutter_rust_bridgefor_generated_rust_auto_opaque_inner_federation_id_payment_direction_payment_kind_ecash_app_error(
+    sse_encode_record_auto_owned_rust_opaque_flutter_rust_bridgefor_generated_rust_auto_opaque_inner_federation_id_lightning_event_kind(
       self,
       serializer,
     );
@@ -17332,16 +17316,24 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
       case EcashAppError_InvalidInvoice(field0: final field0):
         sse_encode_i_32(6, serializer);
         sse_encode_String(field0, serializer);
-      case EcashAppError_InvalidAddress(field0: final field0):
+      case EcashAppError_InvalidEcash(field0: final field0):
         sse_encode_i_32(7, serializer);
         sse_encode_String(field0, serializer);
-      case EcashAppError_PaymentRefunded(field0: final field0):
+      case EcashAppError_EcashAlreadySpent():
         sse_encode_i_32(8, serializer);
+      case EcashAppError_InvalidBitcoinAddress(field0: final field0):
+        sse_encode_i_32(9, serializer);
+        sse_encode_String(field0, serializer);
+      case EcashAppError_InvalidLightningAddress(field0: final field0):
+        sse_encode_i_32(10, serializer);
+        sse_encode_String(field0, serializer);
+      case EcashAppError_PaymentRefunded(field0: final field0):
+        sse_encode_i_32(11, serializer);
         sse_encode_String(field0, serializer);
       case EcashAppError_Timeout():
-        sse_encode_i_32(9, serializer);
+        sse_encode_i_32(12, serializer);
       case EcashAppError_Other(field0: final field0):
-        sse_encode_i_32(10, serializer);
+        sse_encode_i_32(13, serializer);
         sse_encode_String(field0, serializer);
     }
   }
@@ -17784,7 +17776,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
         sse_encode_String(field0, serializer);
       case MultimintEvent_PaymentError(field0: final field0):
         sse_encode_i_32(11, serializer);
-        sse_encode_box_autoadd_record_auto_owned_rust_opaque_flutter_rust_bridgefor_generated_rust_auto_opaque_inner_federation_id_payment_direction_payment_kind_ecash_app_error(
+        sse_encode_box_autoadd_record_auto_owned_rust_opaque_flutter_rust_bridgefor_generated_rust_auto_opaque_inner_federation_id_ecash_app_error(
           field0,
           serializer,
         );
@@ -18069,21 +18061,6 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   }
 
   @protected
-  void sse_encode_payment_direction(
-    PaymentDirection self,
-    SseSerializer serializer,
-  ) {
-    // Codec=Sse (Serialization based), see doc to use other codecs
-    sse_encode_i_32(self.index, serializer);
-  }
-
-  @protected
-  void sse_encode_payment_kind(PaymentKind self, SseSerializer serializer) {
-    // Codec=Sse (Serialization based), see doc to use other codecs
-    sse_encode_i_32(self.index, serializer);
-  }
-
-  @protected
   void sse_encode_payment_preview_with_gateways(
     PaymentPreviewWithGateways self,
     SseSerializer serializer,
@@ -18149,6 +18126,20 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
 
   @protected
   void
+  sse_encode_record_auto_owned_rust_opaque_flutter_rust_bridgefor_generated_rust_auto_opaque_inner_federation_id_ecash_app_error(
+    (FederationId, EcashAppError) self,
+    SseSerializer serializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    sse_encode_Auto_Owned_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerFederationId(
+      self.$1,
+      serializer,
+    );
+    sse_encode_ecash_app_error(self.$2, serializer);
+  }
+
+  @protected
+  void
   sse_encode_record_auto_owned_rust_opaque_flutter_rust_bridgefor_generated_rust_auto_opaque_inner_federation_id_lightning_event_kind(
     (FederationId, LightningEventKind) self,
     SseSerializer serializer,
@@ -18159,22 +18150,6 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
       serializer,
     );
     sse_encode_lightning_event_kind(self.$2, serializer);
-  }
-
-  @protected
-  void
-  sse_encode_record_auto_owned_rust_opaque_flutter_rust_bridgefor_generated_rust_auto_opaque_inner_federation_id_payment_direction_payment_kind_ecash_app_error(
-    (FederationId, PaymentDirection, PaymentKind, EcashAppError) self,
-    SseSerializer serializer,
-  ) {
-    // Codec=Sse (Serialization based), see doc to use other codecs
-    sse_encode_Auto_Owned_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerFederationId(
-      self.$1,
-      serializer,
-    );
-    sse_encode_payment_direction(self.$2, serializer);
-    sse_encode_payment_kind(self.$3, serializer);
-    sse_encode_ecash_app_error(self.$4, serializer);
   }
 
   @protected

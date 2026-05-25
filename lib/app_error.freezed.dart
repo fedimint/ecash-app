@@ -339,8 +339,8 @@ as String,
 /// @nodoc
 
 
-class EcashAppError_InvalidAddress extends EcashAppError {
-  const EcashAppError_InvalidAddress(this.field0): super._();
+class EcashAppError_InvalidEcash extends EcashAppError {
+  const EcashAppError_InvalidEcash(this.field0): super._();
   
 
  final  String field0;
@@ -349,13 +349,13 @@ class EcashAppError_InvalidAddress extends EcashAppError {
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
 @pragma('vm:prefer-inline')
-$EcashAppError_InvalidAddressCopyWith<EcashAppError_InvalidAddress> get copyWith => _$EcashAppError_InvalidAddressCopyWithImpl<EcashAppError_InvalidAddress>(this, _$identity);
+$EcashAppError_InvalidEcashCopyWith<EcashAppError_InvalidEcash> get copyWith => _$EcashAppError_InvalidEcashCopyWithImpl<EcashAppError_InvalidEcash>(this, _$identity);
 
 
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is EcashAppError_InvalidAddress&&(identical(other.field0, field0) || other.field0 == field0));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is EcashAppError_InvalidEcash&&(identical(other.field0, field0) || other.field0 == field0));
 }
 
 
@@ -364,15 +364,15 @@ int get hashCode => Object.hash(runtimeType,field0);
 
 @override
 String toString() {
-  return 'EcashAppError.invalidAddress(field0: $field0)';
+  return 'EcashAppError.invalidEcash(field0: $field0)';
 }
 
 
 }
 
 /// @nodoc
-abstract mixin class $EcashAppError_InvalidAddressCopyWith<$Res> implements $EcashAppErrorCopyWith<$Res> {
-  factory $EcashAppError_InvalidAddressCopyWith(EcashAppError_InvalidAddress value, $Res Function(EcashAppError_InvalidAddress) _then) = _$EcashAppError_InvalidAddressCopyWithImpl;
+abstract mixin class $EcashAppError_InvalidEcashCopyWith<$Res> implements $EcashAppErrorCopyWith<$Res> {
+  factory $EcashAppError_InvalidEcashCopyWith(EcashAppError_InvalidEcash value, $Res Function(EcashAppError_InvalidEcash) _then) = _$EcashAppError_InvalidEcashCopyWithImpl;
 @useResult
 $Res call({
  String field0
@@ -383,17 +383,181 @@ $Res call({
 
 }
 /// @nodoc
-class _$EcashAppError_InvalidAddressCopyWithImpl<$Res>
-    implements $EcashAppError_InvalidAddressCopyWith<$Res> {
-  _$EcashAppError_InvalidAddressCopyWithImpl(this._self, this._then);
+class _$EcashAppError_InvalidEcashCopyWithImpl<$Res>
+    implements $EcashAppError_InvalidEcashCopyWith<$Res> {
+  _$EcashAppError_InvalidEcashCopyWithImpl(this._self, this._then);
 
-  final EcashAppError_InvalidAddress _self;
-  final $Res Function(EcashAppError_InvalidAddress) _then;
+  final EcashAppError_InvalidEcash _self;
+  final $Res Function(EcashAppError_InvalidEcash) _then;
 
 /// Create a copy of EcashAppError
 /// with the given fields replaced by the non-null parameter values.
 @pragma('vm:prefer-inline') $Res call({Object? field0 = null,}) {
-  return _then(EcashAppError_InvalidAddress(
+  return _then(EcashAppError_InvalidEcash(
+null == field0 ? _self.field0 : field0 // ignore: cast_nullable_to_non_nullable
+as String,
+  ));
+}
+
+
+}
+
+/// @nodoc
+
+
+class EcashAppError_EcashAlreadySpent extends EcashAppError {
+  const EcashAppError_EcashAlreadySpent(): super._();
+  
+
+
+
+
+
+
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is EcashAppError_EcashAlreadySpent);
+}
+
+
+@override
+int get hashCode => runtimeType.hashCode;
+
+@override
+String toString() {
+  return 'EcashAppError.ecashAlreadySpent()';
+}
+
+
+}
+
+
+
+
+/// @nodoc
+
+
+class EcashAppError_InvalidBitcoinAddress extends EcashAppError {
+  const EcashAppError_InvalidBitcoinAddress(this.field0): super._();
+  
+
+ final  String field0;
+
+/// Create a copy of EcashAppError
+/// with the given fields replaced by the non-null parameter values.
+@JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+$EcashAppError_InvalidBitcoinAddressCopyWith<EcashAppError_InvalidBitcoinAddress> get copyWith => _$EcashAppError_InvalidBitcoinAddressCopyWithImpl<EcashAppError_InvalidBitcoinAddress>(this, _$identity);
+
+
+
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is EcashAppError_InvalidBitcoinAddress&&(identical(other.field0, field0) || other.field0 == field0));
+}
+
+
+@override
+int get hashCode => Object.hash(runtimeType,field0);
+
+@override
+String toString() {
+  return 'EcashAppError.invalidBitcoinAddress(field0: $field0)';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class $EcashAppError_InvalidBitcoinAddressCopyWith<$Res> implements $EcashAppErrorCopyWith<$Res> {
+  factory $EcashAppError_InvalidBitcoinAddressCopyWith(EcashAppError_InvalidBitcoinAddress value, $Res Function(EcashAppError_InvalidBitcoinAddress) _then) = _$EcashAppError_InvalidBitcoinAddressCopyWithImpl;
+@useResult
+$Res call({
+ String field0
+});
+
+
+
+
+}
+/// @nodoc
+class _$EcashAppError_InvalidBitcoinAddressCopyWithImpl<$Res>
+    implements $EcashAppError_InvalidBitcoinAddressCopyWith<$Res> {
+  _$EcashAppError_InvalidBitcoinAddressCopyWithImpl(this._self, this._then);
+
+  final EcashAppError_InvalidBitcoinAddress _self;
+  final $Res Function(EcashAppError_InvalidBitcoinAddress) _then;
+
+/// Create a copy of EcashAppError
+/// with the given fields replaced by the non-null parameter values.
+@pragma('vm:prefer-inline') $Res call({Object? field0 = null,}) {
+  return _then(EcashAppError_InvalidBitcoinAddress(
+null == field0 ? _self.field0 : field0 // ignore: cast_nullable_to_non_nullable
+as String,
+  ));
+}
+
+
+}
+
+/// @nodoc
+
+
+class EcashAppError_InvalidLightningAddress extends EcashAppError {
+  const EcashAppError_InvalidLightningAddress(this.field0): super._();
+  
+
+ final  String field0;
+
+/// Create a copy of EcashAppError
+/// with the given fields replaced by the non-null parameter values.
+@JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+$EcashAppError_InvalidLightningAddressCopyWith<EcashAppError_InvalidLightningAddress> get copyWith => _$EcashAppError_InvalidLightningAddressCopyWithImpl<EcashAppError_InvalidLightningAddress>(this, _$identity);
+
+
+
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is EcashAppError_InvalidLightningAddress&&(identical(other.field0, field0) || other.field0 == field0));
+}
+
+
+@override
+int get hashCode => Object.hash(runtimeType,field0);
+
+@override
+String toString() {
+  return 'EcashAppError.invalidLightningAddress(field0: $field0)';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class $EcashAppError_InvalidLightningAddressCopyWith<$Res> implements $EcashAppErrorCopyWith<$Res> {
+  factory $EcashAppError_InvalidLightningAddressCopyWith(EcashAppError_InvalidLightningAddress value, $Res Function(EcashAppError_InvalidLightningAddress) _then) = _$EcashAppError_InvalidLightningAddressCopyWithImpl;
+@useResult
+$Res call({
+ String field0
+});
+
+
+
+
+}
+/// @nodoc
+class _$EcashAppError_InvalidLightningAddressCopyWithImpl<$Res>
+    implements $EcashAppError_InvalidLightningAddressCopyWith<$Res> {
+  _$EcashAppError_InvalidLightningAddressCopyWithImpl(this._self, this._then);
+
+  final EcashAppError_InvalidLightningAddress _self;
+  final $Res Function(EcashAppError_InvalidLightningAddress) _then;
+
+/// Create a copy of EcashAppError
+/// with the given fields replaced by the non-null parameter values.
+@pragma('vm:prefer-inline') $Res call({Object? field0 = null,}) {
+  return _then(EcashAppError_InvalidLightningAddress(
 null == field0 ? _self.field0 : field0 // ignore: cast_nullable_to_non_nullable
 as String,
   ));

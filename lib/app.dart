@@ -164,8 +164,8 @@ class _MyAppState extends State<MyApp> {
         if (!mounted) return;
         final ctx = _navigatorKey.currentContext;
         if (ctx == null) return;
-        // Tuple shape: (FederationId, PaymentDirection, PaymentKind, EcashAppError)
-        final err = event.field0.$4;
+        // Tuple shape: (FederationId, EcashAppError)
+        final err = event.field0.$2;
         showErrorToast(ctx, err);
       } else if (event is MultimintEvent_UpdateAvailable) {
         if (!mounted) return;

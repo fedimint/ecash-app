@@ -734,14 +734,14 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   );
 
   @protected
-  (FederationId, LightningEventKind)
-  dco_decode_box_autoadd_record_auto_owned_rust_opaque_flutter_rust_bridgefor_generated_rust_auto_opaque_inner_federation_id_lightning_event_kind(
+  (FederationId, EcashAppError)
+  dco_decode_box_autoadd_record_auto_owned_rust_opaque_flutter_rust_bridgefor_generated_rust_auto_opaque_inner_federation_id_ecash_app_error(
     dynamic raw,
   );
 
   @protected
-  (FederationId, PaymentDirection, PaymentKind, EcashAppError)
-  dco_decode_box_autoadd_record_auto_owned_rust_opaque_flutter_rust_bridgefor_generated_rust_auto_opaque_inner_federation_id_payment_direction_payment_kind_ecash_app_error(
+  (FederationId, LightningEventKind)
+  dco_decode_box_autoadd_record_auto_owned_rust_opaque_flutter_rust_bridgefor_generated_rust_auto_opaque_inner_federation_id_lightning_event_kind(
     dynamic raw,
   );
 
@@ -977,12 +977,6 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   ParsedText dco_decode_parsed_text(dynamic raw);
 
   @protected
-  PaymentDirection dco_decode_payment_direction(dynamic raw);
-
-  @protected
-  PaymentKind dco_decode_payment_kind(dynamic raw);
-
-  @protected
   PaymentPreviewWithGateways dco_decode_payment_preview_with_gateways(
     dynamic raw,
   );
@@ -1006,14 +1000,14 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   );
 
   @protected
-  (FederationId, LightningEventKind)
-  dco_decode_record_auto_owned_rust_opaque_flutter_rust_bridgefor_generated_rust_auto_opaque_inner_federation_id_lightning_event_kind(
+  (FederationId, EcashAppError)
+  dco_decode_record_auto_owned_rust_opaque_flutter_rust_bridgefor_generated_rust_auto_opaque_inner_federation_id_ecash_app_error(
     dynamic raw,
   );
 
   @protected
-  (FederationId, PaymentDirection, PaymentKind, EcashAppError)
-  dco_decode_record_auto_owned_rust_opaque_flutter_rust_bridgefor_generated_rust_auto_opaque_inner_federation_id_payment_direction_payment_kind_ecash_app_error(
+  (FederationId, LightningEventKind)
+  dco_decode_record_auto_owned_rust_opaque_flutter_rust_bridgefor_generated_rust_auto_opaque_inner_federation_id_lightning_event_kind(
     dynamic raw,
   );
 
@@ -1753,14 +1747,14 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   );
 
   @protected
-  (FederationId, LightningEventKind)
-  sse_decode_box_autoadd_record_auto_owned_rust_opaque_flutter_rust_bridgefor_generated_rust_auto_opaque_inner_federation_id_lightning_event_kind(
+  (FederationId, EcashAppError)
+  sse_decode_box_autoadd_record_auto_owned_rust_opaque_flutter_rust_bridgefor_generated_rust_auto_opaque_inner_federation_id_ecash_app_error(
     SseDeserializer deserializer,
   );
 
   @protected
-  (FederationId, PaymentDirection, PaymentKind, EcashAppError)
-  sse_decode_box_autoadd_record_auto_owned_rust_opaque_flutter_rust_bridgefor_generated_rust_auto_opaque_inner_federation_id_payment_direction_payment_kind_ecash_app_error(
+  (FederationId, LightningEventKind)
+  sse_decode_box_autoadd_record_auto_owned_rust_opaque_flutter_rust_bridgefor_generated_rust_auto_opaque_inner_federation_id_lightning_event_kind(
     SseDeserializer deserializer,
   );
 
@@ -2024,12 +2018,6 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   ParsedText sse_decode_parsed_text(SseDeserializer deserializer);
 
   @protected
-  PaymentDirection sse_decode_payment_direction(SseDeserializer deserializer);
-
-  @protected
-  PaymentKind sse_decode_payment_kind(SseDeserializer deserializer);
-
-  @protected
   PaymentPreviewWithGateways sse_decode_payment_preview_with_gateways(
     SseDeserializer deserializer,
   );
@@ -2053,14 +2041,14 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   );
 
   @protected
-  (FederationId, LightningEventKind)
-  sse_decode_record_auto_owned_rust_opaque_flutter_rust_bridgefor_generated_rust_auto_opaque_inner_federation_id_lightning_event_kind(
+  (FederationId, EcashAppError)
+  sse_decode_record_auto_owned_rust_opaque_flutter_rust_bridgefor_generated_rust_auto_opaque_inner_federation_id_ecash_app_error(
     SseDeserializer deserializer,
   );
 
   @protected
-  (FederationId, PaymentDirection, PaymentKind, EcashAppError)
-  sse_decode_record_auto_owned_rust_opaque_flutter_rust_bridgefor_generated_rust_auto_opaque_inner_federation_id_payment_direction_payment_kind_ecash_app_error(
+  (FederationId, LightningEventKind)
+  sse_decode_record_auto_owned_rust_opaque_flutter_rust_bridgefor_generated_rust_auto_opaque_inner_federation_id_lightning_event_kind(
     SseDeserializer deserializer,
   );
 
@@ -2916,15 +2904,15 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
 
   @protected
   void
-  sse_encode_box_autoadd_record_auto_owned_rust_opaque_flutter_rust_bridgefor_generated_rust_auto_opaque_inner_federation_id_lightning_event_kind(
-    (FederationId, LightningEventKind) self,
+  sse_encode_box_autoadd_record_auto_owned_rust_opaque_flutter_rust_bridgefor_generated_rust_auto_opaque_inner_federation_id_ecash_app_error(
+    (FederationId, EcashAppError) self,
     SseSerializer serializer,
   );
 
   @protected
   void
-  sse_encode_box_autoadd_record_auto_owned_rust_opaque_flutter_rust_bridgefor_generated_rust_auto_opaque_inner_federation_id_payment_direction_payment_kind_ecash_app_error(
-    (FederationId, PaymentDirection, PaymentKind, EcashAppError) self,
+  sse_encode_box_autoadd_record_auto_owned_rust_opaque_flutter_rust_bridgefor_generated_rust_auto_opaque_inner_federation_id_lightning_event_kind(
+    (FederationId, LightningEventKind) self,
     SseSerializer serializer,
   );
 
@@ -3254,15 +3242,6 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   void sse_encode_parsed_text(ParsedText self, SseSerializer serializer);
 
   @protected
-  void sse_encode_payment_direction(
-    PaymentDirection self,
-    SseSerializer serializer,
-  );
-
-  @protected
-  void sse_encode_payment_kind(PaymentKind self, SseSerializer serializer);
-
-  @protected
   void sse_encode_payment_preview_with_gateways(
     PaymentPreviewWithGateways self,
     SseSerializer serializer,
@@ -3293,15 +3272,15 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
 
   @protected
   void
-  sse_encode_record_auto_owned_rust_opaque_flutter_rust_bridgefor_generated_rust_auto_opaque_inner_federation_id_lightning_event_kind(
-    (FederationId, LightningEventKind) self,
+  sse_encode_record_auto_owned_rust_opaque_flutter_rust_bridgefor_generated_rust_auto_opaque_inner_federation_id_ecash_app_error(
+    (FederationId, EcashAppError) self,
     SseSerializer serializer,
   );
 
   @protected
   void
-  sse_encode_record_auto_owned_rust_opaque_flutter_rust_bridgefor_generated_rust_auto_opaque_inner_federation_id_payment_direction_payment_kind_ecash_app_error(
-    (FederationId, PaymentDirection, PaymentKind, EcashAppError) self,
+  sse_encode_record_auto_owned_rust_opaque_flutter_rust_bridgefor_generated_rust_auto_opaque_inner_federation_id_lightning_event_kind(
+    (FederationId, LightningEventKind) self,
     SseSerializer serializer,
   );
 
