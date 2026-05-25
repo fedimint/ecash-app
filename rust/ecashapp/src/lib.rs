@@ -680,7 +680,7 @@ pub async fn calculate_withdraw_fees(
     federation_id: &FederationId,
     address: String,
     amount_sats: u64,
-) -> anyhow::Result<WithdrawFeesResponse> {
+) -> Result<WithdrawFeesResponse, EcashAppError> {
     let multimint = get_multimint();
     multimint
         .calculate_withdraw_fees(federation_id, address, amount_sats)
@@ -713,7 +713,7 @@ pub async fn await_withdraw(
 pub async fn get_max_withdrawable_amount(
     federation_id: &FederationId,
     address: String,
-) -> anyhow::Result<u64> {
+) -> Result<u64, EcashAppError> {
     let multimint = get_multimint();
     multimint
         .get_max_withdrawable_amount(federation_id, address)

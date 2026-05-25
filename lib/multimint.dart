@@ -37,6 +37,13 @@ abstract class EcashAppResultSpendOobState implements RustOpaqueInterface {}
 // Rust type: RustOpaqueMoi<flutter_rust_bridge::for_generated::RustAutoOpaqueInner<EcashAppResult < String >>>
 abstract class EcashAppResultString implements RustOpaqueInterface {}
 
+// Rust type: RustOpaqueMoi<flutter_rust_bridge::for_generated::RustAutoOpaqueInner<EcashAppResult < WithdrawFeesResponse >>>
+abstract class EcashAppResultWithdrawFeesResponse
+    implements RustOpaqueInterface {}
+
+// Rust type: RustOpaqueMoi<flutter_rust_bridge::for_generated::RustAutoOpaqueInner<EcashAppResult < u64 >>>
+abstract class EcashAppResultU64 implements RustOpaqueInterface {}
+
 // Rust type: RustOpaqueMoi<flutter_rust_bridge::for_generated::RustAutoOpaqueInner<FederationMeta>>
 abstract class FederationMeta implements RustOpaqueInterface {
   List<Guardian> get guardians;
@@ -126,7 +133,7 @@ abstract class Multimint implements RustOpaqueInterface {
     required String ecash,
   });
 
-  Future<WithdrawFeesResponse> calculateWithdrawFees({
+  Future<EcashAppResultWithdrawFeesResponse> calculateWithdrawFees({
     required FederationId federationId,
     required String address,
     required BigInt amountSats,
@@ -195,7 +202,7 @@ abstract class Multimint implements RustOpaqueInterface {
     required FederationId federationId,
   });
 
-  Future<BigInt> getMaxWithdrawableAmount({
+  Future<EcashAppResultU64> getMaxWithdrawableAmount({
     required FederationId federationId,
     required String address,
   });

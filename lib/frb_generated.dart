@@ -318,7 +318,8 @@ abstract class RustLibApi extends BaseApi {
     required String ecash,
   });
 
-  Future<WithdrawFeesResponse> crateMultimintMultimintCalculateWithdrawFees({
+  Future<EcashAppResultWithdrawFeesResponse>
+  crateMultimintMultimintCalculateWithdrawFees({
     required Multimint that,
     required FederationId federationId,
     required String address,
@@ -411,7 +412,7 @@ abstract class RustLibApi extends BaseApi {
     required FederationId federationId,
   });
 
-  Future<BigInt> crateMultimintMultimintGetMaxWithdrawableAmount({
+  Future<EcashAppResultU64> crateMultimintMultimintGetMaxWithdrawableAmount({
     required Multimint that,
     required FederationId federationId,
     required String address,
@@ -1247,6 +1248,24 @@ abstract class RustLibApi extends BaseApi {
 
   CrossPlatformFinalizerArg
   get rust_arc_decrement_strong_count_EcashAppResultStringPtr;
+
+  RustArcIncrementStrongCountFnType
+  get rust_arc_increment_strong_count_EcashAppResultWithdrawFeesResponse;
+
+  RustArcDecrementStrongCountFnType
+  get rust_arc_decrement_strong_count_EcashAppResultWithdrawFeesResponse;
+
+  CrossPlatformFinalizerArg
+  get rust_arc_decrement_strong_count_EcashAppResultWithdrawFeesResponsePtr;
+
+  RustArcIncrementStrongCountFnType
+  get rust_arc_increment_strong_count_EcashAppResultU64;
+
+  RustArcDecrementStrongCountFnType
+  get rust_arc_decrement_strong_count_EcashAppResultU64;
+
+  CrossPlatformFinalizerArg
+  get rust_arc_decrement_strong_count_EcashAppResultU64Ptr;
 
   RustArcIncrementStrongCountFnType
   get rust_arc_increment_strong_count_EventBusMultimintEvent;
@@ -3270,7 +3289,8 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
       );
 
   @override
-  Future<WithdrawFeesResponse> crateMultimintMultimintCalculateWithdrawFees({
+  Future<EcashAppResultWithdrawFeesResponse>
+  crateMultimintMultimintCalculateWithdrawFees({
     required Multimint that,
     required FederationId federationId,
     required String address,
@@ -3299,8 +3319,8 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
         },
         codec: SseCodec(
           decodeSuccessData:
-              sse_decode_Auto_Owned_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerWithdrawFeesResponse,
-          decodeErrorData: sse_decode_AnyhowException,
+              sse_decode_Auto_Owned_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerEcashAppResultWithdrawFeesResponse,
+          decodeErrorData: null,
         ),
         constMeta: kCrateMultimintMultimintCalculateWithdrawFeesConstMeta,
         argValues: [that, federationId, address, amountSats],
@@ -4031,7 +4051,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
       );
 
   @override
-  Future<BigInt> crateMultimintMultimintGetMaxWithdrawableAmount({
+  Future<EcashAppResultU64> crateMultimintMultimintGetMaxWithdrawableAmount({
     required Multimint that,
     required FederationId federationId,
     required String address,
@@ -4057,8 +4077,9 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           );
         },
         codec: SseCodec(
-          decodeSuccessData: sse_decode_u_64,
-          decodeErrorData: sse_decode_AnyhowException,
+          decodeSuccessData:
+              sse_decode_Auto_Owned_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerEcashAppResultu64,
+          decodeErrorData: null,
         ),
         constMeta: kCrateMultimintMultimintGetMaxWithdrawableAmountConstMeta,
         argValues: [that, federationId, address],
@@ -7851,7 +7872,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
         codec: SseCodec(
           decodeSuccessData:
               sse_decode_Auto_Owned_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerWithdrawFeesResponse,
-          decodeErrorData: sse_decode_AnyhowException,
+          decodeErrorData: sse_decode_ecash_app_error,
         ),
         constMeta: kCrateCalculateWithdrawFeesConstMeta,
         argValues: [federationId, address, amountSats],
@@ -8654,7 +8675,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
         },
         codec: SseCodec(
           decodeSuccessData: sse_decode_u_64,
-          decodeErrorData: sse_decode_AnyhowException,
+          decodeErrorData: sse_decode_ecash_app_error,
         ),
         constMeta: kCrateGetMaxWithdrawableAmountConstMeta,
         argValues: [federationId, address],
@@ -10613,6 +10634,22 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
       wire.rust_arc_decrement_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerEcashAppResultString;
 
   RustArcIncrementStrongCountFnType
+  get rust_arc_increment_strong_count_EcashAppResultWithdrawFeesResponse =>
+      wire.rust_arc_increment_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerEcashAppResultWithdrawFeesResponse;
+
+  RustArcDecrementStrongCountFnType
+  get rust_arc_decrement_strong_count_EcashAppResultWithdrawFeesResponse =>
+      wire.rust_arc_decrement_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerEcashAppResultWithdrawFeesResponse;
+
+  RustArcIncrementStrongCountFnType
+  get rust_arc_increment_strong_count_EcashAppResultU64 =>
+      wire.rust_arc_increment_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerEcashAppResultu64;
+
+  RustArcDecrementStrongCountFnType
+  get rust_arc_decrement_strong_count_EcashAppResultU64 =>
+      wire.rust_arc_decrement_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerEcashAppResultu64;
+
+  RustArcIncrementStrongCountFnType
   get rust_arc_increment_strong_count_EventBusMultimintEvent =>
       wire.rust_arc_increment_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerEventBusMultimintEvent;
 
@@ -10862,6 +10899,26 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   ) {
     // Codec=Dco (DartCObject based), see doc to use other codecs
     return EcashAppResultStringImpl.frbInternalDcoDecode(raw as List<dynamic>);
+  }
+
+  @protected
+  EcashAppResultWithdrawFeesResponse
+  dco_decode_Auto_Owned_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerEcashAppResultWithdrawFeesResponse(
+    dynamic raw,
+  ) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    return EcashAppResultWithdrawFeesResponseImpl.frbInternalDcoDecode(
+      raw as List<dynamic>,
+    );
+  }
+
+  @protected
+  EcashAppResultU64
+  dco_decode_Auto_Owned_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerEcashAppResultu64(
+    dynamic raw,
+  ) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    return EcashAppResultU64Impl.frbInternalDcoDecode(raw as List<dynamic>);
   }
 
   @protected
@@ -11348,6 +11405,26 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   ) {
     // Codec=Dco (DartCObject based), see doc to use other codecs
     return EcashAppResultStringImpl.frbInternalDcoDecode(raw as List<dynamic>);
+  }
+
+  @protected
+  EcashAppResultWithdrawFeesResponse
+  dco_decode_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerEcashAppResultWithdrawFeesResponse(
+    dynamic raw,
+  ) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    return EcashAppResultWithdrawFeesResponseImpl.frbInternalDcoDecode(
+      raw as List<dynamic>,
+    );
+  }
+
+  @protected
+  EcashAppResultU64
+  dco_decode_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerEcashAppResultu64(
+    dynamic raw,
+  ) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    return EcashAppResultU64Impl.frbInternalDcoDecode(raw as List<dynamic>);
   }
 
   @protected
@@ -13156,6 +13233,30 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   }
 
   @protected
+  EcashAppResultWithdrawFeesResponse
+  sse_decode_Auto_Owned_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerEcashAppResultWithdrawFeesResponse(
+    SseDeserializer deserializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    return EcashAppResultWithdrawFeesResponseImpl.frbInternalSseDecode(
+      sse_decode_usize(deserializer),
+      sse_decode_i_32(deserializer),
+    );
+  }
+
+  @protected
+  EcashAppResultU64
+  sse_decode_Auto_Owned_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerEcashAppResultu64(
+    SseDeserializer deserializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    return EcashAppResultU64Impl.frbInternalSseDecode(
+      sse_decode_usize(deserializer),
+      sse_decode_i_32(deserializer),
+    );
+  }
+
+  @protected
   EventBusMultimintEvent
   sse_decode_Auto_Owned_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerEventBusMultimintEvent(
     SseDeserializer deserializer,
@@ -13774,6 +13875,30 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   ) {
     // Codec=Sse (Serialization based), see doc to use other codecs
     return EcashAppResultStringImpl.frbInternalSseDecode(
+      sse_decode_usize(deserializer),
+      sse_decode_i_32(deserializer),
+    );
+  }
+
+  @protected
+  EcashAppResultWithdrawFeesResponse
+  sse_decode_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerEcashAppResultWithdrawFeesResponse(
+    SseDeserializer deserializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    return EcashAppResultWithdrawFeesResponseImpl.frbInternalSseDecode(
+      sse_decode_usize(deserializer),
+      sse_decode_i_32(deserializer),
+    );
+  }
+
+  @protected
+  EcashAppResultU64
+  sse_decode_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerEcashAppResultu64(
+    SseDeserializer deserializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    return EcashAppResultU64Impl.frbInternalSseDecode(
       sse_decode_usize(deserializer),
       sse_decode_i_32(deserializer),
     );
@@ -15886,6 +16011,34 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
 
   @protected
   void
+  sse_encode_Auto_Owned_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerEcashAppResultWithdrawFeesResponse(
+    EcashAppResultWithdrawFeesResponse self,
+    SseSerializer serializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    sse_encode_usize(
+      (self as EcashAppResultWithdrawFeesResponseImpl).frbInternalSseEncode(
+        move: true,
+      ),
+      serializer,
+    );
+  }
+
+  @protected
+  void
+  sse_encode_Auto_Owned_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerEcashAppResultu64(
+    EcashAppResultU64 self,
+    SseSerializer serializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    sse_encode_usize(
+      (self as EcashAppResultU64Impl).frbInternalSseEncode(move: true),
+      serializer,
+    );
+  }
+
+  @protected
+  void
   sse_encode_Auto_Owned_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerEventBusMultimintEvent(
     EventBusMultimintEvent self,
     SseSerializer serializer,
@@ -16560,6 +16713,34 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
     // Codec=Sse (Serialization based), see doc to use other codecs
     sse_encode_usize(
       (self as EcashAppResultStringImpl).frbInternalSseEncode(move: null),
+      serializer,
+    );
+  }
+
+  @protected
+  void
+  sse_encode_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerEcashAppResultWithdrawFeesResponse(
+    EcashAppResultWithdrawFeesResponse self,
+    SseSerializer serializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    sse_encode_usize(
+      (self as EcashAppResultWithdrawFeesResponseImpl).frbInternalSseEncode(
+        move: null,
+      ),
+      serializer,
+    );
+  }
+
+  @protected
+  void
+  sse_encode_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerEcashAppResultu64(
+    EcashAppResultU64 self,
+    SseSerializer serializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    sse_encode_usize(
+      (self as EcashAppResultU64Impl).frbInternalSseEncode(move: null),
       serializer,
     );
   }
@@ -18718,6 +18899,64 @@ class EcashAppResultStringImpl extends RustOpaque
 }
 
 @sealed
+class EcashAppResultU64Impl extends RustOpaque implements EcashAppResultU64 {
+  // Not to be used by end users
+  EcashAppResultU64Impl.frbInternalDcoDecode(List<dynamic> wire)
+    : super.frbInternalDcoDecode(wire, _kStaticData);
+
+  // Not to be used by end users
+  EcashAppResultU64Impl.frbInternalSseDecode(
+    BigInt ptr,
+    int externalSizeOnNative,
+  ) : super.frbInternalSseDecode(ptr, externalSizeOnNative, _kStaticData);
+
+  static final _kStaticData = RustArcStaticData(
+    rustArcIncrementStrongCount:
+        RustLib.instance.api.rust_arc_increment_strong_count_EcashAppResultU64,
+    rustArcDecrementStrongCount:
+        RustLib.instance.api.rust_arc_decrement_strong_count_EcashAppResultU64,
+    rustArcDecrementStrongCountPtr:
+        RustLib
+            .instance
+            .api
+            .rust_arc_decrement_strong_count_EcashAppResultU64Ptr,
+  );
+}
+
+@sealed
+class EcashAppResultWithdrawFeesResponseImpl extends RustOpaque
+    implements EcashAppResultWithdrawFeesResponse {
+  // Not to be used by end users
+  EcashAppResultWithdrawFeesResponseImpl.frbInternalDcoDecode(
+    List<dynamic> wire,
+  ) : super.frbInternalDcoDecode(wire, _kStaticData);
+
+  // Not to be used by end users
+  EcashAppResultWithdrawFeesResponseImpl.frbInternalSseDecode(
+    BigInt ptr,
+    int externalSizeOnNative,
+  ) : super.frbInternalSseDecode(ptr, externalSizeOnNative, _kStaticData);
+
+  static final _kStaticData = RustArcStaticData(
+    rustArcIncrementStrongCount:
+        RustLib
+            .instance
+            .api
+            .rust_arc_increment_strong_count_EcashAppResultWithdrawFeesResponse,
+    rustArcDecrementStrongCount:
+        RustLib
+            .instance
+            .api
+            .rust_arc_decrement_strong_count_EcashAppResultWithdrawFeesResponse,
+    rustArcDecrementStrongCountPtr:
+        RustLib
+            .instance
+            .api
+            .rust_arc_decrement_strong_count_EcashAppResultWithdrawFeesResponsePtr,
+  );
+}
+
+@sealed
 class EventBusMultimintEventImpl extends RustOpaque
     implements EventBusMultimintEvent {
   // Not to be used by end users
@@ -19216,7 +19455,7 @@ class MultimintImpl extends RustOpaque implements Multimint {
     ecash: ecash,
   );
 
-  Future<WithdrawFeesResponse> calculateWithdrawFees({
+  Future<EcashAppResultWithdrawFeesResponse> calculateWithdrawFees({
     required FederationId federationId,
     required String address,
     required BigInt amountSats,
@@ -19339,7 +19578,7 @@ class MultimintImpl extends RustOpaque implements Multimint {
     federationId: federationId,
   );
 
-  Future<BigInt> getMaxWithdrawableAmount({
+  Future<EcashAppResultU64> getMaxWithdrawableAmount({
     required FederationId federationId,
     required String address,
   }) => RustLib.instance.api.crateMultimintMultimintGetMaxWithdrawableAmount(

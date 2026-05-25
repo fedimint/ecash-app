@@ -3614,21 +3614,28 @@ impl Multimint {
         federation_id: &FederationId,
         address: String,
         amount_sats: u64,
-    ) -> anyhow::Result<WithdrawFeesResponse> {
+    ) -> EcashAppResult<WithdrawFeesResponse> {
         let client = self
             .clients
             .read()
             .await
             .get(federation_id)
-            .context("No federation exists")?
+            .ok_or_else(|| EcashAppError::other("federation does not exist"))?
             .clone();
-        let wallet_module =
-            client.get_first_module::<fedimint_wallet_client::WalletClientModule>()?;
+        let wallet_module = client
+            .get_first_module::<fedimint_wallet_client::WalletClientModule>()
+            .map_err(|e| EcashAppError::other(format!("wallet module unavailable: {e:#}")))?;
 
-        let address = bitcoin::address::Address::from_str(&address)?;
-        let address = address.require_network(wallet_module.get_network())?;
+        let address = bitcoin::address::Address::from_str(&address)
+            .map_err(|e| EcashAppError::InvalidBitcoinAddress(e.to_string()))?;
+        let address = address
+            .require_network(wallet_module.get_network())
+            .map_err(|e| EcashAppError::InvalidBitcoinAddress(e.to_string()))?;
         let amount = bitcoin::Amount::from_sat(amount_sats);
-        let fees = wallet_module.get_withdraw_fees(&address, amount).await?;
+        let fees = wallet_module
+            .get_withdraw_fees(&address, amount)
+            .await
+            .map_err(EcashAppError::from_display)?;
         let meta = OnChainWithdrawalMeta::from_peg_out_fees(&fees);
 
         Ok(WithdrawFeesResponse {
@@ -3726,24 +3733,38 @@ impl Multimint {
         &self,
         federation_id: &FederationId,
         address: String,
-    ) -> anyhow::Result<u64> {
+    ) -> EcashAppResult<u64> {
         let client = self
             .clients
             .read()
             .await
             .get(federation_id)
-            .context("No federation exists")?
+            .ok_or_else(|| EcashAppError::other("federation does not exist"))?
             .clone();
-        let wallet_module =
-            client.get_first_module::<fedimint_wallet_client::WalletClientModule>()?;
+        let wallet_module = client
+            .get_first_module::<fedimint_wallet_client::WalletClientModule>()
+            .map_err(|e| EcashAppError::other(format!("wallet module unavailable: {e:#}")))?;
 
-        let address = bitcoin::address::Address::from_str(&address)?;
-        let address = address.require_network(wallet_module.get_network())?;
-        let balance = bitcoin::Amount::from_sat(client.get_balance_for_btc().await?.msats / 1000);
-        let fees = wallet_module.get_withdraw_fees(&address, balance).await?;
+        let address = bitcoin::address::Address::from_str(&address)
+            .map_err(|e| EcashAppError::InvalidBitcoinAddress(e.to_string()))?;
+        let address = address
+            .require_network(wallet_module.get_network())
+            .map_err(|e| EcashAppError::InvalidBitcoinAddress(e.to_string()))?;
+        let balance = bitcoin::Amount::from_sat(
+            client
+                .get_balance_for_btc()
+                .await
+                .map_err(EcashAppError::from_display)?
+                .msats
+                / 1000,
+        );
+        let fees = wallet_module
+            .get_withdraw_fees(&address, balance)
+            .await
+            .map_err(EcashAppError::from_display)?;
         let max_withdrawable = balance
             .checked_sub(fees.amount())
-            .context("Not enough funds to pay fees")?;
+            .ok_or_else(|| EcashAppError::other("Not enough funds to pay fees"))?;
 
         Ok(max_withdrawable.to_sat())
     }

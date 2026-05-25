@@ -1518,44 +1518,20 @@
   "errFederationOffline": "Federation is offline or unreachable",
   "@errFederationOffline": {},
 
-  "errInvalidInvoice": "Invalid invoice: {detail}",
-  "@errInvalidInvoice": {
-    "placeholders": {
-      "detail": {
-        "type": "String"
-      }
-    }
-  },
+  "errInvalidInvoice": "Invalid invoice",
+  "@errInvalidInvoice": {},
 
-  "errInvalidEcash": "Invalid ecash: {detail}",
-  "@errInvalidEcash": {
-    "placeholders": {
-      "detail": {
-        "type": "String"
-      }
-    }
-  },
+  "errInvalidEcash": "Invalid ecash",
+  "@errInvalidEcash": {},
 
   "errEcashAlreadySpent": "This ecash has already been spent",
   "@errEcashAlreadySpent": {},
 
-  "errInvalidBitcoinAddress": "Invalid Bitcoin address: {detail}",
-  "@errInvalidBitcoinAddress": {
-    "placeholders": {
-      "detail": {
-        "type": "String"
-      }
-    }
-  },
+  "errInvalidBitcoinAddress": "Invalid Bitcoin address",
+  "@errInvalidBitcoinAddress": {},
 
-  "errInvalidLightningAddress": "Invalid Lightning address: {detail}",
-  "@errInvalidLightningAddress": {
-    "placeholders": {
-      "detail": {
-        "type": "String"
-      }
-    }
-  },
+  "errInvalidLightningAddress": "Invalid Lightning address",
+  "@errInvalidLightningAddress": {},
 
   "errPaymentRefunded": "Payment was refunded",
   "@errPaymentRefunded": {},

@@ -30,19 +30,19 @@ String ecashAppErrorToL10n(BuildContext context, Object err) {
     return context.l10n.errFederationOffline;
   }
   if (err is EcashAppError_InvalidInvoice) {
-    return context.l10n.errInvalidInvoice(err.field0);
+    return context.l10n.errInvalidInvoice;
   }
   if (err is EcashAppError_InvalidEcash) {
-    return context.l10n.errInvalidEcash(err.field0);
+    return context.l10n.errInvalidEcash;
   }
   if (err is EcashAppError_EcashAlreadySpent) {
     return context.l10n.errEcashAlreadySpent;
   }
   if (err is EcashAppError_InvalidBitcoinAddress) {
-    return context.l10n.errInvalidBitcoinAddress(err.field0);
+    return context.l10n.errInvalidBitcoinAddress;
   }
   if (err is EcashAppError_InvalidLightningAddress) {
-    return context.l10n.errInvalidLightningAddress(err.field0);
+    return context.l10n.errInvalidLightningAddress;
   }
   if (err is EcashAppError_PaymentRefunded) {
     return context.l10n.errPaymentRefunded;
