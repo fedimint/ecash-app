@@ -1450,5 +1450,32 @@
   "@ecashNotes": {},
 
   "depositAddresses": "Deposit Addresses",
-  "@depositAddresses": {}
+  "@depositAddresses": {},
+
+  "btcMapTitle": "BTC Map",
+  "@btcMapTitle": {},
+
+  "btcMapSubtitle": "Find places that accept Bitcoin",
+  "@btcMapSubtitle": {},
+
+  "btcMapZoomInHint": "Zoom in to see places that accept Bitcoin",
+  "@btcMapZoomInHint": {},
+
+  "btcMapLoadError": "Couldn't load places. Check your connection and try again.",
+  "@btcMapLoadError": {},
+
+  "btcMapDirections": "Get directions",
+  "@btcMapDirections": {},
+
+  "btcMapUnnamedPlace": "Unnamed place",
+  "@btcMapUnnamedPlace": {},
+
+  "btcMapRetry": "Retry",
+  "@btcMapRetry": {},
+
+  "btcMapMyLocation": "My location",
+  "@btcMapMyLocation": {},
+
+  "btcMapLocationUnavailable": "Couldn't get your location",
+  "@btcMapLocationUnavailable": {}
 }

@@ -7,6 +7,7 @@ import 'package:ecashapp/multimint.dart';
 import 'package:ecashapp/nwc.dart';
 import 'package:ecashapp/relays.dart';
 import 'package:ecashapp/screens/access_control.dart';
+import 'package:ecashapp/screens/btcmap_screen.dart';
 import 'package:ecashapp/screens/display_settings.dart';
 import 'package:ecashapp/theme.dart';
 import 'package:flutter/material.dart';
@@ -72,6 +73,17 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       (context) =>
                           Discover(onJoin: widget.onJoin, showAppBar: true),
                 ),
+              );
+            },
+          ),
+          _SettingsOption(
+            icon: Icon(Icons.map, color: Theme.of(context).colorScheme.primary),
+            title: context.l10n.btcMapTitle,
+            subtitle: context.l10n.btcMapSubtitle,
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => const BtcMapScreen()),
               );
             },
           ),
