@@ -889,32 +889,33 @@ impl Multimint {
                 interval.tick().await;
                 loop {
                     let now = std::time::SystemTime::now();
-                    let threshold = now
-                        .checked_sub(Duration::from_secs(CACHE_UPDATE_INTERVAL_SECS))
-                        .expect("Cannot be negative");
 
-                    // First check if the federation meta needs updating
-                    let mut dbtx = self_copy.db.begin_transaction_nc().await;
-                    let configs = dbtx
-                        .find_by_prefix(&FederationConfigKeyPrefix)
-                        .await
-                        .collect::<Vec<_>>()
-                        .await;
-                    for (key, _) in configs.iter() {
-                        let federation_id = key.id;
+                    let federation_ids = {
+                        let mut dbtx = self_copy.db.begin_transaction_nc().await;
+                        dbtx.find_by_prefix(&FederationConfigKeyPrefix)
+                            .await
+                            .map(|(key, _)| key.id)
+                            .collect::<Vec<_>>()
+                            .await
+                    };
 
-                        let cached_meta =
-                            dbtx.get_value(&FederationMetaKey { federation_id }).await;
-                        if let Some(cached_meta) = cached_meta {
-                            let last_updated =
-                                UNIX_EPOCH + Duration::from_millis(cached_meta.last_updated);
-                            // Skip over caching this federation's meta if we cached it recently
-                            if last_updated >= threshold {
-                                continue;
-                            }
+                    for federation_id in federation_ids.iter().copied() {
+                        let should_update_meta = {
+                            let mut dbtx = self_copy.db.begin_transaction_nc().await;
+                            dbtx.get_value(&FederationMetaKey { federation_id })
+                                .await
+                                .map_or(true, |meta| Self::federation_meta_is_stale(&meta, now))
+                        };
+                        if !should_update_meta {
+                            continue;
                         }
 
-                        let client = self_copy.clients.read().await.get(&federation_id).cloned();
+                        let client = self_copy
+                            .clients
+                            .read()
+                            .await
+                            .get(&federation_id)
+                            .cloned();
                         let Some(client) = client else { continue };
 
                         if !client.has_pending_recoveries() {
@@ -927,12 +928,13 @@ impl Multimint {
                     let threshold = now
                         .checked_sub(Duration::from_secs(PRICE_CACHE_UPDATE_INTERVAL_SECS))
                         .expect("Cannot be negative");
-                    let cached_price = dbtx.get_value(&BtcPriceKey).await;
-                    if let Some(cached_price) = cached_price {
-                        if cached_price.last_updated < threshold {
-                            self_copy.cache_btc_price(now).await;
-                        }
-                    } else {
+                    let should_update_price = {
+                        let mut dbtx = self_copy.db.begin_transaction_nc().await;
+                        dbtx.get_value(&BtcPriceKey)
+                            .await
+                            .map_or(true, |cached_price| cached_price.last_updated < threshold)
+                    };
+                    if should_update_price {
                         self_copy.cache_btc_price(now).await;
                     }
 
@@ -942,24 +944,26 @@ impl Multimint {
                             FEDERATION_BACKUP_CACHE_UPDATE_INTERVAL_SECS,
                         ))
                         .expect("Cannot be negative");
-                    for (key, _) in configs {
-                        let federation_id = key.id;
-                        let backup_time =
-                            dbtx.get_value(&FederationBackupKey { federation_id }).await;
-                        if let Some(backup) = backup_time {
-                            if backup < threshold {
-                                self_copy.backup(&federation_id, now).await;
-                            }
-                        } else {
+                    for federation_id in federation_ids {
+                        let should_backup = {
+                            let mut dbtx = self_copy.db.begin_transaction_nc().await;
+                            dbtx.get_value(&FederationBackupKey { federation_id })
+                                .await
+                                .map_or(true, |backup| backup < threshold)
+                        };
+                        if should_backup {
                             self_copy.backup(&federation_id, now).await;
                         }
                     }
 
-                    // Check if contact sync is due
                     let contact_sync_threshold = now
                         .checked_sub(Duration::from_secs(CONTACT_SYNC_INTERVAL_SECS))
                         .expect("Cannot be negative");
-                    if let Some(sync_config) = dbtx.get_value(&ContactSyncConfigKey).await {
+                    let sync_config = {
+                        let mut dbtx = self_copy.db.begin_transaction_nc().await;
+                        dbtx.get_value(&ContactSyncConfigKey).await
+                    };
+                    if let Some(sync_config) = sync_config {
                         if sync_config.sync_enabled {
                             let should_sync = match sync_config.last_sync_at {
                                 Some(last_sync) => {
@@ -981,6 +985,14 @@ impl Multimint {
                     interval.tick().await;
                 }
             });
+    }
+
+    fn federation_meta_is_stale(meta: &FederationMeta, now: std::time::SystemTime) -> bool {
+        let last_updated = UNIX_EPOCH + Duration::from_millis(meta.last_updated);
+        match now.duration_since(last_updated) {
+            Ok(age) => age >= Duration::from_secs(CACHE_UPDATE_INTERVAL_SECS),
+            Err(_) => false,
+        }
     }
 
     async fn backup(&self, federation_id: &FederationId, now: std::time::SystemTime) {
@@ -1114,9 +1126,17 @@ impl Multimint {
             }
         };
 
-        let mut dbtx = self.db.begin_transaction().await;
-        if let Some(cached_meta) = dbtx.get_value(&FederationMetaKey { federation_id }).await {
-            return Ok(cached_meta);
+        let cached_meta = {
+            let mut dbtx = self.db.begin_transaction_nc().await;
+            dbtx.get_value(&FederationMetaKey { federation_id }).await
+        };
+        if let Some(cached_meta) = cached_meta {
+            let now = std::time::SystemTime::now();
+            if !Self::federation_meta_is_stale(&cached_meta, now) {
+                return Ok(cached_meta);
+            }
+
+            return Ok(self.cache_federation_meta(client, now).await);
         }
 
         // Federation either has not been cached yet, or is a new federation

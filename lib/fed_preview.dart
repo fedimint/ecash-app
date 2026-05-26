@@ -40,14 +40,18 @@ class FederationPreview extends StatefulWidget {
 
 class _FederationPreviewState extends State<FederationPreview> {
   bool isJoining = false;
+  bool _isRefreshingMetadata = false;
   bool _showAdvanced = false;
   double _animatedPercent = 0.0;
   late StreamSubscription<List<PeerStatus>> _peerUpdates;
+  Timer? _metadataRefreshTimer;
+  List<Guardian>? _guardians;
   List<PeerStatus>? _peers;
 
   @override
   void initState() {
     super.initState();
+    _guardians = widget.guardians;
 
     Stream<List<PeerStatus>> stream = subscribePeerStatus(
       invite: widget.inviteCode,
@@ -65,12 +69,62 @@ class _FederationPreviewState extends State<FederationPreview> {
         _animatedPercent = totalCount > 0 ? onlineCount / totalCount : 0.0;
       });
     });
+
+    _metadataRefreshTimer = Timer.periodic(
+      const Duration(seconds: 30),
+      (_) {
+        unawaited(_refreshMetadata());
+      },
+    );
+  }
+
+  @override
+  void didUpdateWidget(covariant FederationPreview oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.guardians != widget.guardians) {
+      _guardians = widget.guardians;
+    }
   }
 
   @override
   void dispose() {
     _peerUpdates.cancel();
+    _metadataRefreshTimer?.cancel();
     super.dispose();
+  }
+
+  Future<void> _refreshMetadata() async {
+    if (_isRefreshingMetadata) return;
+
+    _isRefreshingMetadata = true;
+    try {
+      final meta = await getFederationMeta(
+        inviteCode: widget.inviteCode,
+        federationId:
+            widget.inviteCode == null ? widget.fed.federationId : null,
+      );
+      if (!mounted) return;
+      setState(() {
+        _guardians = meta.guardians;
+      });
+    } catch (e) {
+      AppLogger.instance.error('Failed to refresh federation metadata: $e');
+    } finally {
+      _isRefreshingMetadata = false;
+    }
+  }
+
+  Guardian? _guardianForPeer(int peerId) {
+    final guardians = _guardians;
+    if (guardians == null) return null;
+
+    for (final guardian in guardians) {
+      if (guardian.peerId == peerId) {
+        return guardian;
+      }
+    }
+
+    return null;
   }
 
   Future<void> _onLeavePressed() async {
@@ -654,7 +708,7 @@ class _FederationPreviewState extends State<FederationPreview> {
                   isOnline
                       ? Text(
                         context.l10n.versionLabel(
-                          widget.guardians?[index].version ?? '',
+                          _guardianForPeer(peer.peerId)?.version ?? '',
                         ),
                       )
                       : Text(context.l10n.disconnected),
