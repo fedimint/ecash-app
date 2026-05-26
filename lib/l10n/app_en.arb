@@ -1464,9 +1464,6 @@
   "btcMapLoadError": "Couldn't load places. Check your connection and try again.",
   "@btcMapLoadError": {},
 
-  "btcMapDirections": "Get directions",
-  "@btcMapDirections": {},
-
   "btcMapUnnamedPlace": "Unnamed place",
   "@btcMapUnnamedPlace": {},
 
@@ -1477,5 +1474,20 @@
   "@btcMapMyLocation": {},
 
   "btcMapLocationUnavailable": "Couldn't get your location",
-  "@btcMapLocationUnavailable": {}
+  "@btcMapLocationUnavailable": {},
+
+  "btcMapAddress": "Address",
+  "@btcMapAddress": {},
+
+  "btcMapHours": "Hours",
+  "@btcMapHours": {},
+
+  "btcMapPhone": "Phone",
+  "@btcMapPhone": {},
+
+  "btcMapWebsite": "Website",
+  "@btcMapWebsite": {},
+
+  "btcMapOpenWebsite": "Open website",
+  "@btcMapOpenWebsite": {}
 }

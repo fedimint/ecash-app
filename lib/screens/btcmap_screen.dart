@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:convert';
 
+import 'package:ecashapp/detail_row.dart';
 import 'package:ecashapp/extensions/build_context_l10n.dart';
 import 'package:ecashapp/toast.dart';
 import 'package:flutter/material.dart';
@@ -45,13 +46,28 @@ class BtcMapPlace {
   final double lat;
   final double lon;
   final String? name;
+  final String? address;
+  final String? openingHours;
+  final String? phone;
+  final String? website;
 
   const BtcMapPlace({
     required this.id,
     required this.lat,
     required this.lon,
     this.name,
+    this.address,
+    this.openingHours,
+    this.phone,
+    this.website,
   });
+
+  /// True when there are extra details worth showing beyond the name.
+  bool get hasDetails =>
+      address != null ||
+      openingHours != null ||
+      phone != null ||
+      website != null;
 
   static BtcMapPlace? fromJson(Map<String, dynamic> json) {
     final id = json['id'];
@@ -60,11 +76,20 @@ class BtcMapPlace {
     if (id is! int || lat is! num || lon is! num) {
       return null;
     }
+    String? str(String key) {
+      final value = json[key];
+      return (value is String && value.trim().isNotEmpty) ? value.trim() : null;
+    }
+
     return BtcMapPlace(
       id: id,
       lat: lat.toDouble(),
       lon: lon.toDouble(),
-      name: json['name'] as String?,
+      name: str('name'),
+      address: str('address'),
+      openingHours: str('opening_hours'),
+      phone: str('phone'),
+      website: str('website'),
     );
   }
 }
@@ -80,7 +105,7 @@ Future<List<BtcMapPlace>> _searchPlaces({
       'lat': lat.toString(),
       'lon': lon.toString(),
       'radius_km': radiusKm.toStringAsFixed(2),
-      'fields': 'id,lat,lon,name',
+      'fields': 'id,lat,lon,name,address,opening_hours,phone,website',
     },
   );
 
@@ -276,57 +301,83 @@ class _BtcMapScreenState extends State<BtcMapScreen> {
     showModalBottomSheet<void>(
       context: context,
       backgroundColor: theme.bottomSheetTheme.backgroundColor,
+      isScrollControlled: true,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
       builder: (sheetContext) {
         return SafeArea(
-          child: Padding(
-            padding: const EdgeInsets.fromLTRB(24, 12, 24, 24),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Center(
-                  child: Container(
-                    width: 40,
-                    height: 4,
-                    margin: const EdgeInsets.only(bottom: 20),
-                    decoration: BoxDecoration(
-                      color: Colors.grey[700],
-                      borderRadius: BorderRadius.circular(2),
-                    ),
-                  ),
-                ),
-                Row(
-                  children: [
-                    const _BtcMapMarker(size: 30),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Text(
-                        name == null || name.isEmpty
-                            ? sheetContext.l10n.btcMapUnnamedPlace
-                            : name,
-                        style: theme.textTheme.titleLarge?.copyWith(
-                          fontWeight: FontWeight.bold,
-                        ),
+          child: SingleChildScrollView(
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(24, 12, 24, 24),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Center(
+                    child: Container(
+                      width: 40,
+                      height: 4,
+                      margin: const EdgeInsets.only(bottom: 20),
+                      decoration: BoxDecoration(
+                        color: Colors.grey[700],
+                        borderRadius: BorderRadius.circular(2),
                       ),
                     ),
-                  ],
-                ),
-                const SizedBox(height: 20),
-                SizedBox(
-                  width: double.infinity,
-                  child: FilledButton.icon(
-                    onPressed: () {
-                      Navigator.pop(sheetContext);
-                      _openDirections(place);
-                    },
-                    icon: const Icon(Icons.directions),
-                    label: Text(sheetContext.l10n.btcMapDirections),
                   ),
-                ),
-              ],
+                  Row(
+                    children: [
+                      const _BtcMapMarker(size: 30),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Text(
+                          name == null || name.isEmpty
+                              ? sheetContext.l10n.btcMapUnnamedPlace
+                              : name,
+                          style: theme.textTheme.titleLarge?.copyWith(
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  if (place.hasDetails) ...[
+                    const SizedBox(height: 16),
+                    if (place.address != null)
+                      CopyableDetailRow(
+                        label: sheetContext.l10n.btcMapAddress,
+                        value: place.address!,
+                      ),
+                    if (place.openingHours != null)
+                      CopyableDetailRow(
+                        label: sheetContext.l10n.btcMapHours,
+                        value: place.openingHours!,
+                        showCopyButton: false,
+                      ),
+                    if (place.phone != null)
+                      CopyableDetailRow(
+                        label: sheetContext.l10n.btcMapPhone,
+                        value: place.phone!,
+                      ),
+                    if (place.website != null)
+                      CopyableDetailRow(
+                        label: sheetContext.l10n.btcMapWebsite,
+                        value: place.website!,
+                        additionalAction: IconButton(
+                          iconSize: 20,
+                          padding: EdgeInsets.zero,
+                          visualDensity: VisualDensity.compact,
+                          tooltip: sheetContext.l10n.btcMapOpenWebsite,
+                          icon: Icon(
+                            Icons.open_in_new,
+                            color: theme.colorScheme.primary,
+                          ),
+                          onPressed: () => _openUrl(place.website!),
+                        ),
+                      ),
+                  ],
+                ],
+              ),
             ),
           ),
         );
@@ -334,18 +385,10 @@ class _BtcMapScreenState extends State<BtcMapScreen> {
     );
   }
 
-  Future<void> _openDirections(BtcMapPlace place) async {
-    final geoUri = Uri.parse(
-      'geo:${place.lat},${place.lon}?q=${place.lat},${place.lon}',
-    );
-    if (await canLaunchUrl(geoUri)) {
-      await launchUrl(geoUri, mode: LaunchMode.externalApplication);
-      return;
-    }
-    final webUri = Uri.parse(
-      'https://www.openstreetmap.org/?mlat=${place.lat}&mlon=${place.lon}#map=18/${place.lat}/${place.lon}',
-    );
-    await launchUrl(webUri, mode: LaunchMode.externalApplication);
+  Future<void> _openUrl(String url) async {
+    final uri = Uri.tryParse(url);
+    if (uri == null) return;
+    await launchUrl(uri, mode: LaunchMode.externalApplication);
   }
 
   List<Marker> _buildMarkers() {

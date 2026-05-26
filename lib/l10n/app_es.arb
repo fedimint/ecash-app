@@ -413,9 +413,13 @@
   "btcMapSubtitle": "Encuentra lugares que aceptan Bitcoin",
   "btcMapZoomInHint": "Acerca el mapa para ver lugares que aceptan Bitcoin",
   "btcMapLoadError": "No se pudieron cargar los lugares. Revisa tu conexion e intentalo de nuevo.",
-  "btcMapDirections": "Como llegar",
   "btcMapUnnamedPlace": "Lugar sin nombre",
   "btcMapRetry": "Reintentar",
   "btcMapMyLocation": "Mi ubicacion",
-  "btcMapLocationUnavailable": "No se pudo obtener tu ubicacion"
+  "btcMapLocationUnavailable": "No se pudo obtener tu ubicacion",
+  "btcMapAddress": "Direccion",
+  "btcMapHours": "Horario",
+  "btcMapPhone": "Telefono",
+  "btcMapWebsite": "Sitio web",
+  "btcMapOpenWebsite": "Abrir sitio web"
 }
