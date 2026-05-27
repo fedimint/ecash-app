@@ -3,7 +3,7 @@ import 'dart:async';
 import 'package:app_links/app_links.dart';
 import 'package:ecashapp/utils.dart';
 
-enum DeepLinkType { lightning, lnurl, bitcoin }
+enum DeepLinkType { lightning, lnurl, bitcoin, lnurlWithdraw }
 
 class DeepLinkData {
   final DeepLinkType type;
@@ -51,6 +51,20 @@ DeepLinkData? parseDeepLinkUri(Uri uri) {
 
     if (data.isNotEmpty) {
       return DeepLinkData(type: DeepLinkType.lnurl, data: data);
+    }
+  } else if (scheme == 'lnurlw') {
+    // LUD-17: lnurlw://host/path?k1=... → https://host/path?k1=...
+    // Boltcards use this raw scheme because k1 is generated fresh per NFC scan
+    // and cannot be wrapped in a static bech32 LNURL string.
+    // .onion and localhost use plain http; all other hosts use https.
+    const localHosts = {'localhost', '127.0.0.1', '10.0.2.2'};
+    final targetScheme =
+        (uri.host.endsWith('.onion') || localHosts.contains(uri.host))
+            ? 'http'
+            : 'https';
+    final httpsUrl = uri.replace(scheme: targetScheme).toString();
+    if (httpsUrl.isNotEmpty) {
+      return DeepLinkData(type: DeepLinkType.lnurlWithdraw, data: httpsUrl);
     }
   } else if (scheme == 'bitcoin') {
     // bitcoin:bc1q...?amount=0.001 -> extract address and query params

@@ -444,5 +444,14 @@
   "errInvalidBitcoinAddress": "Dirección de Bitcoin inválida",
   "errInvalidLightningAddress": "Dirección Lightning inválida",
   "errPaymentRefunded": "El pago fue reembolsado",
-  "errTimeout": "La operación expiró"
+  "errTimeout": "La operación expiró",
+
+  "lnurlWithdrawTitle": "Retiro con Boltcard",
+  "lnurlWithdrawConfirm": "Retirar",
+  "lnurlWithdrawRequesting": "Solicitando retiro…",
+  "lnurlWithdrawWaiting": "Esperando pago…",
+  "lnurlWithdrawFailed": "Retiro fallido",
+  "lnurlWithdrawCallbackError": "El servicio rechazó la solicitud: {reason}",
+  "lnurlWithdrawFixedAmount": "Recibirás {amount}",
+  "lnurlWithdrawAmountRange": "Elige el monto ({min} – {max})"
 }

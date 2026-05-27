@@ -329,6 +329,126 @@ pub async fn get_invoice_from_lnaddress_or_lnurl(
     }
 }
 
+/// Parameters returned by a LNURLw (LNURL Withdraw) endpoint.
+/// Shown to the user before they confirm a Boltcard withdraw.
+#[derive(Debug)]
+#[frb]
+pub struct LnurlWithdrawParams {
+    pub callback: String,
+    pub k1: String,
+    pub min_withdrawable_msats: u64,
+    pub max_withdrawable_msats: u64,
+    pub default_description: String,
+}
+
+/// Fetch withdraw parameters from a LNURLw HTTPS endpoint (LUD-03 / LUD-17).
+/// Pure read — no side effects. Call this first so the UI can show the
+/// withdraw details and get user confirmation before any money moves.
+#[frb]
+pub async fn fetch_lnurl_withdraw(url: String) -> anyhow::Result<LnurlWithdrawParams> {
+    let resp: serde_json::Value = reqwest::Client::new()
+        .get(&url)
+        .send()
+        .await?
+        .json()
+        .await?;
+    parse_lnurl_withdraw_response(resp)
+}
+
+fn parse_lnurl_withdraw_response(resp: serde_json::Value) -> anyhow::Result<LnurlWithdrawParams> {
+    // LUD-03: the server may return an error before we even get to the withdraw params.
+    if resp.get("status").and_then(|s| s.as_str()) == Some("ERROR") {
+        let reason = resp
+            .get("reason")
+            .and_then(|r| r.as_str())
+            .unwrap_or("unknown error");
+        bail!("LNURLw service error: {reason}");
+    }
+
+    let tag = resp.get("tag").and_then(|t| t.as_str()).unwrap_or("");
+    if tag != "withdrawRequest" {
+        bail!("Expected LNURLw withdraw response (tag=withdrawRequest), got: {tag:?}");
+    }
+
+    Ok(LnurlWithdrawParams {
+        callback: resp["callback"]
+            .as_str()
+            .ok_or_else(|| anyhow!("LNURLw response missing callback"))?
+            .to_string(),
+        k1: resp["k1"]
+            .as_str()
+            .ok_or_else(|| anyhow!("LNURLw response missing k1"))?
+            .to_string(),
+        min_withdrawable_msats: resp["minWithdrawable"]
+            .as_u64()
+            .ok_or_else(|| anyhow!("LNURLw response missing minWithdrawable"))?,
+        max_withdrawable_msats: resp["maxWithdrawable"]
+            .as_u64()
+            .ok_or_else(|| anyhow!("LNURLw response missing maxWithdrawable"))?,
+        default_description: resp["defaultDescription"]
+            .as_str()
+            .unwrap_or("")
+            .to_string(),
+    })
+}
+
+/// Create a Lightning invoice, send it to the LNURLw callback URL, and return
+/// the operation ID. The caller should then use `await_receive` to wait for
+/// the external service (e.g. Boltcard) to pay the invoice.
+#[frb]
+#[allow(clippy::too_many_arguments)]
+pub async fn execute_lnurl_withdraw(
+    federation_id: &FederationId,
+    callback: String,
+    k1: String,
+    amount_msats_without_fees: u64,
+    amount_msats_with_fees: u64,
+    federation_fee_msats: u64,
+    gateway_fee_msats: u64,
+    gateway_url: String,
+    is_lnv2: bool,
+) -> anyhow::Result<OperationId> {
+    let multimint = get_multimint();
+
+    // Create a Lightning invoice through the federation's mint.
+    let (invoice, op_id) = multimint
+        .receive(
+            federation_id,
+            amount_msats_with_fees,
+            amount_msats_without_fees,
+            federation_fee_msats,
+            gateway_fee_msats,
+            SafeUrl::parse(&gateway_url)?,
+            is_lnv2,
+        )
+        .await?;
+
+    // Hand the invoice to the Boltcard/LNURLw service via the callback URL.
+    let callback_url = build_lnurlw_callback_url(&callback, &k1, &invoice.to_string());
+    let resp: serde_json::Value = reqwest::Client::new()
+        .get(&callback_url)
+        .send()
+        .await?
+        .json()
+        .await?;
+
+    if resp.get("status").and_then(|s| s.as_str()) == Some("ERROR") {
+        let reason = resp
+            .get("reason")
+            .and_then(|r| r.as_str())
+            .unwrap_or("unknown error");
+        bail!("LNURLw service rejected the request: {reason}");
+    }
+
+    Ok(op_id)
+}
+
+/// LUD-03: append k1 and pr to the callback URL, respecting existing query params.
+fn build_lnurlw_callback_url(callback: &str, k1: &str, invoice: &str) -> String {
+    let separator = if callback.contains('?') { '&' } else { '?' };
+    format!("{}{}k1={}&pr={}", callback, separator, k1, invoice)
+}
+
 #[frb]
 pub async fn send_lnaddress(
     federation_id: &FederationId,
@@ -796,6 +916,8 @@ pub enum ParsedText {
     Ecash(u64),
     LightningAddressOrLnurl(String),
     EcashNoFederation,
+    /// An `lnurlw://` URI converted to its `http(s)://` form, ready to fetch.
+    LnurlWithdraw(String),
 }
 
 struct MultimintParseContext;
@@ -1258,4 +1380,100 @@ pub async fn paginate_search_contacts(
     nostr
         .paginate_search_contacts(&query, cursor, limit as usize)
         .await
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use serde_json::json;
+
+    // --- parse_lnurl_withdraw_response ---
+
+    #[test]
+    fn test_parse_valid_withdraw_response() {
+        let resp = json!({
+            "tag": "withdrawRequest",
+            "callback": "https://example.com/withdraw",
+            "k1": "abc123",
+            "minWithdrawable": 1000,
+            "maxWithdrawable": 100000,
+            "defaultDescription": "Test withdraw"
+        });
+        let params = parse_lnurl_withdraw_response(resp).unwrap();
+        assert_eq!(params.callback, "https://example.com/withdraw");
+        assert_eq!(params.k1, "abc123");
+        assert_eq!(params.min_withdrawable_msats, 1000);
+        assert_eq!(params.max_withdrawable_msats, 100000);
+        assert_eq!(params.default_description, "Test withdraw");
+    }
+
+    #[test]
+    fn test_parse_withdraw_response_missing_description_defaults_empty() {
+        let resp = json!({
+            "tag": "withdrawRequest",
+            "callback": "https://example.com/withdraw",
+            "k1": "abc123",
+            "minWithdrawable": 1000,
+            "maxWithdrawable": 100000
+        });
+        let params = parse_lnurl_withdraw_response(resp).unwrap();
+        assert_eq!(params.default_description, "");
+    }
+
+    #[test]
+    fn test_parse_withdraw_response_server_error() {
+        let resp = json!({
+            "status": "ERROR",
+            "reason": "card not found"
+        });
+        let err = parse_lnurl_withdraw_response(resp).unwrap_err();
+        assert!(err.to_string().contains("card not found"));
+    }
+
+    #[test]
+    fn test_parse_withdraw_response_wrong_tag() {
+        let resp = json!({
+            "tag": "payRequest",
+            "callback": "https://example.com/pay",
+            "k1": "abc123",
+            "minWithdrawable": 1000,
+            "maxWithdrawable": 100000
+        });
+        let err = parse_lnurl_withdraw_response(resp).unwrap_err();
+        assert!(err.to_string().contains("withdrawRequest"));
+    }
+
+    #[test]
+    fn test_parse_withdraw_response_missing_callback() {
+        let resp = json!({
+            "tag": "withdrawRequest",
+            "k1": "abc123",
+            "minWithdrawable": 1000,
+            "maxWithdrawable": 100000
+        });
+        let err = parse_lnurl_withdraw_response(resp).unwrap_err();
+        assert!(err.to_string().contains("missing callback"));
+    }
+
+    // --- build_lnurlw_callback_url ---
+
+    #[test]
+    fn test_callback_url_no_existing_params() {
+        let url =
+            build_lnurlw_callback_url("https://example.com/withdraw", "mykey", "lnbc1invoice");
+        assert_eq!(url, "https://example.com/withdraw?k1=mykey&pr=lnbc1invoice");
+    }
+
+    #[test]
+    fn test_callback_url_with_existing_params() {
+        let url = build_lnurlw_callback_url(
+            "https://example.com/withdraw?foo=bar",
+            "mykey",
+            "lnbc1invoice",
+        );
+        assert_eq!(
+            url,
+            "https://example.com/withdraw?foo=bar&k1=mykey&pr=lnbc1invoice"
+        );
+    }
 }

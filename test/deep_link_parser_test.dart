@@ -138,6 +138,65 @@ void main() {
       });
     });
 
+    group('lnurlw: scheme (LUD-17)', () {
+      test('normal host uses https', () {
+        final uri = Uri.parse('lnurlw://pay.example.com/withdraw?k1=abc123');
+        final result = parseDeepLinkUri(uri);
+
+        expect(result, isNotNull);
+        expect(result!.type, DeepLinkType.lnurlWithdraw);
+        expect(result.data, 'https://pay.example.com/withdraw?k1=abc123');
+      });
+
+      test('localhost uses http', () {
+        final uri = Uri.parse('lnurlw://localhost:8080/withdraw?k1=abc');
+        final result = parseDeepLinkUri(uri);
+
+        expect(result, isNotNull);
+        expect(result!.type, DeepLinkType.lnurlWithdraw);
+        expect(result.data, startsWith('http://'));
+        expect(result.data, isNot(startsWith('https://')));
+      });
+
+      test('127.0.0.1 uses http', () {
+        final uri = Uri.parse('lnurlw://127.0.0.1:9000/path?k1=abc');
+        final result = parseDeepLinkUri(uri);
+
+        expect(result, isNotNull);
+        expect(result!.type, DeepLinkType.lnurlWithdraw);
+        expect(result.data, startsWith('http://'));
+      });
+
+      test('10.0.2.2 (Android emulator host) uses http', () {
+        final uri = Uri.parse('lnurlw://10.0.2.2:9000/path?k1=abc');
+        final result = parseDeepLinkUri(uri);
+
+        expect(result, isNotNull);
+        expect(result!.type, DeepLinkType.lnurlWithdraw);
+        expect(result.data, startsWith('http://'));
+      });
+
+      test('.onion host uses http', () {
+        final uri = Uri.parse('lnurlw://abc.onion/withdraw?k1=abc');
+        final result = parseDeepLinkUri(uri);
+
+        expect(result, isNotNull);
+        expect(result!.type, DeepLinkType.lnurlWithdraw);
+        expect(result.data, startsWith('http://'));
+      });
+
+      test('preserves path and query params', () {
+        final uri = Uri.parse(
+          'lnurlw://pay.example.com/withdraw?k1=deadbeef&foo=bar',
+        );
+        final result = parseDeepLinkUri(uri);
+
+        expect(result, isNotNull);
+        expect(result!.data, contains('k1=deadbeef'));
+        expect(result.data, contains('foo=bar'));
+      });
+    });
+
     group('unsupported schemes', () {
       test('returns null for http scheme', () {
         final uri = Uri.parse('http://example.com');
