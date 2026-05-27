@@ -7,6 +7,8 @@
     <uses-permission android:name="android.permission.WAKE_LOCK" />
     <uses-permission android:name="android.permission.INTERNET"/>
     <uses-permission android:name="android.permission.NFC" />
+    <!-- Coarse (city-level) location to center the BTC Map on the user; opt-in -->
+    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
     <uses-feature android:name="android.hardware.nfc" android:required="false" tools:replace="android:required" />
     <uses-feature android:name="android.hardware.nfc.hce" android:required="false" tools:replace="android:required" />
 

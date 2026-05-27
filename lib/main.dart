@@ -13,8 +13,24 @@ import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:path_provider/path_provider.dart';
 
+/// vector_map_tiles (the map's vector tile renderer) cancels in-flight tile
+/// jobs whenever the map moves, which surfaces benign `CancellationException`
+/// ("Cancelled") errors. They are harmless but flood the logs, so we drop them.
+bool _isTileCancellation(Object error) =>
+    error.runtimeType.toString() == 'CancellationException';
+
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
+  // Filter out the benign map-tile cancellation noise; forward everything else
+  // to the default handlers unchanged.
+  final defaultOnError = FlutterError.onError;
+  FlutterError.onError = (details) {
+    if (_isTileCancellation(details.exception)) return;
+    defaultOnError?.call(details);
+  };
+  WidgetsBinding.instance.platformDispatcher.onError =
+      (error, stack) => _isTileCancellation(error);
 
   // Initialize foreground task (Android/iOS only)
   if (Platform.isAndroid || Platform.isIOS) {

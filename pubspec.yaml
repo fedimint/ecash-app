@@ -33,6 +33,10 @@ dependencies:
   flutter_foreground_task: ^8.13.0
   permission_handler: ^11.3.1
   app_links: ^6.3.3
+  flutter_map: ^7.0.2
+  latlong2: ^0.9.1
+  vector_map_tiles: ^8.0.0
+  geolocator: ^14.0.0
 
 dev_dependencies:
   flutter_test:
