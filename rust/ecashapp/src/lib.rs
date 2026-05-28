@@ -23,8 +23,8 @@ use flutter_rust_bridge::frb;
 use futures_util::StreamExt;
 use multimint::{
     FederationMeta, FederationSelector, LightningSendOutcome, LogLevel, Multimint,
-    MultimintCreation, MultimintEvent, OOBNotesWrapper,
-    PaymentPreviewWithGateways, ReissueFees, Transaction, Utxo, WithdrawFeesResponse,
+    MultimintCreation, MultimintEvent, OOBNotesWrapper, PaymentPreviewWithGateways, ReissueFees,
+    Transaction, Utxo, WithdrawFeesResponse,
 };
 use nostr::{NWCConnectionInfo, NostrClient, PublicFederation};
 use serde::Serialize;

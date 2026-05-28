@@ -3499,8 +3499,8 @@ impl Multimint {
         let mint = client
             .get_first_module::<MintClientModule>()
             .map_err(|e| EcashAppError::other(format!("mint module unavailable: {e:#}")))?;
-        let notes = OOBNotes::from_str(&ecash)
-            .map_err(|e| EcashAppError::InvalidEcash(e.to_string()))?;
+        let notes =
+            OOBNotes::from_str(&ecash).map_err(|e| EcashAppError::InvalidEcash(e.to_string()))?;
 
         // Validate the notes before attempting to reissue
         let total_amount = mint
