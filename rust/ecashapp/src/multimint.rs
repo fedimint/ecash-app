@@ -71,6 +71,7 @@ use tokio::{sync::RwLock, time::timeout};
 
 use crate::{
     anyhow,
+    app_error::{classify_anyhow, EcashAppError, EcashAppResult},
     db::{
         BitcoinDisplay, BitcoinDisplayKey, BtcPrice, BtcPriceKey, BtcPrices, BtcPricesKey,
         Connector, ContactSyncConfigKey, FederationBackupKey, FederationMetaKey,
@@ -78,8 +79,8 @@ use crate::{
         LightningAddressKey, LightningAddressKeyPrefix, PinCodeHashKey, RequirePinForSpendingKey,
         SchemaVersionKey,
     },
-    error_to_flutter, get_nostr_client, info_to_flutter, FederationConfig, FederationConfigKey,
-    FederationConfigKeyPrefix, SeedPhraseAckKey,
+    error_to_flutter, get_nostr_client, info_to_flutter, payment_error_to_flutter,
+    FederationConfig, FederationConfigKey, FederationConfigKeyPrefix, SeedPhraseAckKey,
 };
 use crate::{event_bus::EventBus, get_event_bus};
 
@@ -398,12 +399,17 @@ pub enum MultimintEvent {
     NostrRecoveryPhase(NostrRecoveryPhase),
     ContactSync(ContactSyncEventKind),
     UpdateAvailable(String),
+    /// Structured payment-flow error. The Dart layer auto-surfaces these as
+    /// localized error toasts (see `lib/app.dart` and `lib/error_helper.dart`).
+    PaymentError((FederationId, EcashAppError)),
 }
 
 #[derive(Clone, Eq, PartialEq, Serialize, Debug)]
 pub enum LightningSendOutcome {
     Success(String),
-    Failure,
+    /// Carries the typed reason for the failure so the Dart layer can render
+    /// a localized message on the Failure screen.
+    Failure(EcashAppError),
 }
 
 #[derive(Clone, Eq, PartialEq, Serialize, Debug)]
@@ -723,6 +729,9 @@ impl Multimint {
                                         event_bus.publish(multimint_event).await;
                                     }
                                     Ok(state) => {
+                                        // A non-claimed receive (e.g. expired invoice) is
+                                        // normal user behavior, so we only log it rather than
+                                        // surfacing a toast.
                                         info_to_flutter(format!(
                                             "LNv2 receive ended in non-claimed state: {state:?} for {federation_id}"
                                         ))
@@ -2326,15 +2335,19 @@ impl Multimint {
         is_lnv2: bool,
         amount_with_fees: u64,
         ln_address: Option<String>,
-    ) -> anyhow::Result<OperationId> {
+    ) -> EcashAppResult<OperationId> {
         let client = self
             .clients
             .read()
             .await
             .get(federation_id)
-            .expect("No federation exists")
+            .ok_or_else(|| EcashAppError::other("federation does not exist"))?
             .clone();
-        let invoice = Bolt11Invoice::from_str(&invoice)?;
+        let invoice = Bolt11Invoice::from_str(&invoice)
+            .map_err(|e| EcashAppError::InvalidInvoice(e.to_string()))?;
+        if invoice.is_expired() {
+            return Err(EcashAppError::ExpiredInvoice);
+        }
         let custom_meta = json!({
             "amount_with_fees": amount_with_fees,
             "gateway_url": gateway,
@@ -2369,9 +2382,14 @@ impl Multimint {
         invoice: Bolt11Invoice,
         gateway: SafeUrl,
         custom_meta: serde_json::Value,
-    ) -> anyhow::Result<OperationId> {
-        let lnv2 = client.get_first_module::<fedimint_lnv2_client::LightningClientModule>()?;
-        let operation_id = lnv2.send(invoice, Some(gateway), custom_meta).await?;
+    ) -> EcashAppResult<OperationId> {
+        let lnv2 = client
+            .get_first_module::<fedimint_lnv2_client::LightningClientModule>()
+            .map_err(|e| EcashAppError::other(format!("LNv2 module unavailable: {e:#}")))?;
+        let operation_id = lnv2
+            .send(invoice, Some(gateway), custom_meta)
+            .await
+            .map_err(EcashAppError::from_display)?;
         Ok(operation_id)
     }
 
@@ -2380,18 +2398,21 @@ impl Multimint {
         invoice: Bolt11Invoice,
         gateway_url: SafeUrl,
         custom_meta: serde_json::Value,
-    ) -> anyhow::Result<OperationId> {
-        let lnv1 = client.get_first_module::<LightningClientModule>()?;
+    ) -> EcashAppResult<OperationId> {
+        let lnv1 = client
+            .get_first_module::<LightningClientModule>()
+            .map_err(|e| EcashAppError::other(format!("LNv1 module unavailable: {e:#}")))?;
         let gateways = lnv1.list_gateways().await;
         let gateway = gateways
             .iter()
             .find(|g| g.info.api == gateway_url)
-            .ok_or(anyhow!("Could not find gateway"))?
+            .ok_or(EcashAppError::GatewayOffline)?
             .info
             .clone();
         let outgoing_lightning_payment = lnv1
             .pay_bolt11_invoice(Some(gateway), invoice, custom_meta)
-            .await?;
+            .await
+            .map_err(EcashAppError::from_display)?;
         Ok(outgoing_lightning_payment.payment_type.operation_id())
     }
 
@@ -2407,8 +2428,8 @@ impl Multimint {
                     info_to_flutter(format!("Successfuly sent payment. Preimage: {preimage}"))
                         .await;
                 }
-                LightningSendOutcome::Failure => {
-                    error_to_flutter("Could not complete Lightning payment").await;
+                LightningSendOutcome::Failure(err) => {
+                    payment_error_to_flutter(federation_id, err).await;
                 }
             }
         });
@@ -2443,19 +2464,22 @@ impl Multimint {
             .subscribe_send_operation_state_updates(operation_id)
             .await?
             .into_stream();
-        let mut final_state = LightningSendOutcome::Failure;
+        let mut final_state =
+            LightningSendOutcome::Failure(EcashAppError::other("LNv2 send: no final state"));
         while let Some(update) = updates.next().await {
             match update {
                 SendOperationState::Success(preimage) => {
                     final_state = LightningSendOutcome::Success(preimage.consensus_encode_to_hex());
                 }
                 SendOperationState::Refunded => {
-                    error_to_flutter("LNv2 payment was refunded").await;
-                    final_state = LightningSendOutcome::Failure;
+                    final_state = LightningSendOutcome::Failure(EcashAppError::PaymentRefunded(
+                        "LNv2".to_string(),
+                    ));
                 }
                 SendOperationState::Failure => {
-                    error_to_flutter("LNv2 payment unrecoverable failure").await;
-                    final_state = LightningSendOutcome::Failure;
+                    final_state = LightningSendOutcome::Failure(EcashAppError::other(
+                        "LNv2 payment unrecoverable failure",
+                    ));
                 }
                 _ => {}
             }
@@ -2485,33 +2509,27 @@ impl Multimint {
                         out_points: _,
                         error,
                     } => {
-                        final_state = Some(LightningSendOutcome::Failure);
-                        error_to_flutter(format!("LNv1 internal payment was refunded: {error:?}"))
-                            .await;
+                        final_state = Some(LightningSendOutcome::Failure(
+                            EcashAppError::PaymentRefunded(format!("{error:?}")),
+                        ));
                     }
                     InternalPayState::FundingFailed { error } => {
-                        final_state = Some(LightningSendOutcome::Failure);
-                        error_to_flutter(format!(
-                            "LNv1 internal payment funding failed: {error:?}"
-                        ))
-                        .await;
+                        final_state = Some(LightningSendOutcome::Failure(EcashAppError::other(
+                            format!("LNv1 internal payment funding failed: {error}"),
+                        )));
                     }
                     InternalPayState::RefundError {
                         error_message,
                         error,
                     } => {
-                        final_state = Some(LightningSendOutcome::Failure);
-                        error_to_flutter(format!(
-                            "LNv1 internal payment refund error: {error:?} {error_message}"
-                        ))
-                        .await;
+                        final_state = Some(LightningSendOutcome::Failure(EcashAppError::other(
+                            format!("LNv1 internal refund error: {error_message} ({error:?})"),
+                        )));
                     }
                     InternalPayState::UnexpectedError(error) => {
-                        final_state = Some(LightningSendOutcome::Failure);
-                        error_to_flutter(format!(
-                            "LNv1 internal payment unexpected error: {error:?}"
-                        ))
-                        .await;
+                        final_state = Some(LightningSendOutcome::Failure(EcashAppError::other(
+                            format!("LNv1 internal payment unexpected error: {error}"),
+                        )));
                     }
                     _ => {}
                 }
@@ -2531,18 +2549,14 @@ impl Multimint {
                         final_state = Some(LightningSendOutcome::Success(preimage));
                     }
                     LnPayState::Refunded { gateway_error } => {
-                        final_state = Some(LightningSendOutcome::Failure);
-                        error_to_flutter(format!(
-                            "LNv1 external payment was refunded: {gateway_error:?}"
-                        ))
-                        .await;
+                        final_state = Some(LightningSendOutcome::Failure(
+                            EcashAppError::PaymentRefunded(format!("{gateway_error:?}")),
+                        ));
                     }
                     LnPayState::UnexpectedError { error_message } => {
-                        final_state = Some(LightningSendOutcome::Failure);
-                        error_to_flutter(format!(
-                            "LNv1 external payment unexpected error: {error_message}"
-                        ))
-                        .await;
+                        final_state = Some(LightningSendOutcome::Failure(classify_anyhow(
+                            &anyhow!("{error_message}"),
+                        )));
                     }
                     _ => {}
                 }
@@ -2553,7 +2567,7 @@ impl Multimint {
             return external_final_state;
         }
 
-        LightningSendOutcome::Failure
+        LightningSendOutcome::Failure(EcashAppError::other("LNv1 send: no final state"))
     }
 
     pub async fn await_receive(
@@ -3260,18 +3274,20 @@ impl Multimint {
         &self,
         federation_id: &FederationId,
         amount_msats: u64,
-    ) -> anyhow::Result<OOBNotesWrapper> {
+    ) -> EcashAppResult<OOBNotesWrapper> {
         let client = self
             .clients
             .read()
             .await
             .get(federation_id)
-            .ok_or(anyhow!("Federation does not exist"))?
+            .ok_or_else(|| EcashAppError::other("federation does not exist"))?
             .clone();
         let notes = client
-            .get_first_module::<MintClientModule>()?
+            .get_first_module::<MintClientModule>()
+            .map_err(|e| EcashAppError::other(format!("mint module unavailable: {e:#}")))?
             .send_oob_notes(Amount::from_msats(amount_msats), ())
-            .await?;
+            .await
+            .map_err(EcashAppError::from_display)?;
         Ok(OOBNotesWrapper(notes))
     }
 
@@ -3285,10 +3301,30 @@ impl Multimint {
                 {
                     Ok(final_state) => {
                         info_to_flutter(format!("Ecash send completed: {final_state:?}")).await;
+                        match final_state {
+                            // Recipient reissued — spend is successful.
+                            SpendOOBState::Success => {}
+                            // User canceled and got the money back — also fine.
+                            SpendOOBState::UserCanceledSuccess => {}
+                            // Transient / never the final state in practice.
+                            SpendOOBState::Created | SpendOOBState::UserCanceledProcessing => {}
+                            // User tried to cancel but the notes were already spent by the
+                            // recipient — the spend still succeeded, so this isn't an error.
+                            SpendOOBState::UserCanceledFailure => {}
+                            // Auto-cancel succeeded — recipient never reissued.
+                            SpendOOBState::Refunded => {
+                                payment_error_to_flutter(
+                                    federation_id,
+                                    EcashAppError::PaymentRefunded(
+                                        "recipient did not redeem ecash".to_string(),
+                                    ),
+                                )
+                                .await;
+                            }
+                        }
                     }
                     Err(e) => {
-                        info_to_flutter(format!("Could not await receive {operation_id:?} {e:?}"))
-                            .await;
+                        payment_error_to_flutter(federation_id, e).await;
                     }
                 }
             });
@@ -3298,18 +3334,21 @@ impl Multimint {
         &self,
         federation_id: &FederationId,
         operation_id: OperationId,
-    ) -> anyhow::Result<SpendOOBState> {
+    ) -> EcashAppResult<SpendOOBState> {
         let client = self
             .clients
             .read()
             .await
             .get(federation_id)
-            .ok_or(anyhow!("No federation exists"))?
+            .ok_or_else(|| EcashAppError::other("federation does not exist"))?
             .clone();
-        let mint = client.get_first_module::<MintClientModule>()?;
+        let mint = client
+            .get_first_module::<MintClientModule>()
+            .map_err(|e| EcashAppError::other(format!("mint module unavailable: {e:#}")))?;
         let mut updates = mint
             .subscribe_spend_notes(operation_id)
-            .await?
+            .await
+            .map_err(EcashAppError::from_display)?
             .into_stream();
         let mut final_state = SpendOOBState::UserCanceledFailure;
         while let Some(update) = updates.next().await {
@@ -3449,19 +3488,24 @@ impl Multimint {
         federation_id: &FederationId,
         ecash: String,
         fees: ReissueFees,
-    ) -> anyhow::Result<OperationId> {
+    ) -> EcashAppResult<OperationId> {
         let client = self
             .clients
             .read()
             .await
             .get(federation_id)
-            .ok_or(anyhow!("No federation exists"))?
+            .ok_or_else(|| EcashAppError::other("federation does not exist"))?
             .clone();
-        let mint = client.get_first_module::<MintClientModule>()?;
-        let notes = OOBNotes::from_str(&ecash)?;
+        let mint = client
+            .get_first_module::<MintClientModule>()
+            .map_err(|e| EcashAppError::other(format!("mint module unavailable: {e:#}")))?;
+        let notes =
+            OOBNotes::from_str(&ecash).map_err(|e| EcashAppError::InvalidEcash(e.to_string()))?;
 
         // Validate the notes before attempting to reissue
-        let total_amount = mint.validate_notes(&notes)?;
+        let total_amount = mint
+            .validate_notes(&notes)
+            .map_err(EcashAppError::from_display)?;
 
         let extra_meta = json!({
             "total_amount": total_amount,
@@ -3470,7 +3514,10 @@ impl Multimint {
             "output_fee": fees.output_msats,
             "dust": fees.dust_msats,
         });
-        let operation_id = mint.reissue_external_notes(notes, extra_meta).await?;
+        let operation_id = mint
+            .reissue_external_notes(notes, extra_meta)
+            .await
+            .map_err(EcashAppError::from_display)?;
         self.spawn_await_ecash_reissue(*federation_id, operation_id);
         Ok(operation_id)
     }
@@ -3485,16 +3532,31 @@ impl Multimint {
                 {
                     Ok((final_state, amount)) => {
                         info_to_flutter(format!("Ecash reissue completed: {final_state:?}")).await;
-                        if final_state == ReissueExternalNotesState::Done {
-                            if let Some(amount) = amount {
-                                let ecash_event = MultimintEvent::Ecash((federation_id, amount));
-                                get_event_bus().publish(ecash_event).await;
+                        match final_state {
+                            ReissueExternalNotesState::Done => {
+                                if let Some(amount) = amount {
+                                    let ecash_event =
+                                        MultimintEvent::Ecash((federation_id, amount));
+                                    get_event_bus().publish(ecash_event).await;
+                                }
                             }
+                            ReissueExternalNotesState::Failed(msg) => {
+                                // A reissue failure is most commonly caused by notes that have
+                                // already been spent (e.g. reissuing the same ecash twice),
+                                // which is the actionable case for the user. Keep the raw
+                                // reason in the log for diagnostics.
+                                info_to_flutter(format!("Ecash reissue failed: {msg}")).await;
+                                payment_error_to_flutter(
+                                    federation_id,
+                                    EcashAppError::EcashAlreadySpent,
+                                )
+                                .await;
+                            }
+                            _ => {}
                         }
                     }
                     Err(e) => {
-                        info_to_flutter(format!("Could not await receive {operation_id:?} {e:?}"))
-                            .await;
+                        payment_error_to_flutter(federation_id, EcashAppError::from(e)).await;
                     }
                 }
             });
@@ -3552,21 +3614,28 @@ impl Multimint {
         federation_id: &FederationId,
         address: String,
         amount_sats: u64,
-    ) -> anyhow::Result<WithdrawFeesResponse> {
+    ) -> EcashAppResult<WithdrawFeesResponse> {
         let client = self
             .clients
             .read()
             .await
             .get(federation_id)
-            .context("No federation exists")?
+            .ok_or_else(|| EcashAppError::other("federation does not exist"))?
             .clone();
-        let wallet_module =
-            client.get_first_module::<fedimint_wallet_client::WalletClientModule>()?;
+        let wallet_module = client
+            .get_first_module::<fedimint_wallet_client::WalletClientModule>()
+            .map_err(|e| EcashAppError::other(format!("wallet module unavailable: {e:#}")))?;
 
-        let address = bitcoin::address::Address::from_str(&address)?;
-        let address = address.require_network(wallet_module.get_network())?;
+        let address = bitcoin::address::Address::from_str(&address)
+            .map_err(|e| EcashAppError::InvalidBitcoinAddress(e.to_string()))?;
+        let address = address
+            .require_network(wallet_module.get_network())
+            .map_err(|e| EcashAppError::InvalidBitcoinAddress(e.to_string()))?;
         let amount = bitcoin::Amount::from_sat(amount_sats);
-        let fees = wallet_module.get_withdraw_fees(&address, amount).await?;
+        let fees = wallet_module
+            .get_withdraw_fees(&address, amount)
+            .await
+            .map_err(EcashAppError::from_display)?;
         let meta = OnChainWithdrawalMeta::from_peg_out_fees(&fees);
 
         Ok(WithdrawFeesResponse {
@@ -3583,25 +3652,30 @@ impl Multimint {
         address: String,
         amount_sats: u64,
         peg_out_fees: PegOutFees,
-    ) -> anyhow::Result<OperationId> {
+    ) -> EcashAppResult<OperationId> {
         let client = self
             .clients
             .read()
             .await
             .get(federation_id)
-            .context("No federation exists")?
+            .ok_or_else(|| EcashAppError::other("federation does not exist"))?
             .clone();
-        let wallet_module =
-            client.get_first_module::<fedimint_wallet_client::WalletClientModule>()?;
+        let wallet_module = client
+            .get_first_module::<fedimint_wallet_client::WalletClientModule>()
+            .map_err(|e| EcashAppError::other(format!("wallet module unavailable: {e:#}")))?;
 
-        let address = bitcoin::address::Address::from_str(&address)?;
-        let address = address.require_network(wallet_module.get_network())?;
+        let address = bitcoin::address::Address::from_str(&address)
+            .map_err(|e| EcashAppError::InvalidBitcoinAddress(e.to_string()))?;
+        let address = address
+            .require_network(wallet_module.get_network())
+            .map_err(|e| EcashAppError::InvalidBitcoinAddress(e.to_string()))?;
         let amount = bitcoin::Amount::from_sat(amount_sats);
         let meta = OnChainWithdrawalMeta::from_peg_out_fees(&peg_out_fees);
 
         let operation_id = wallet_module
             .withdraw(&address, amount, peg_out_fees, meta)
-            .await?;
+            .await
+            .map_err(EcashAppError::from_display)?;
 
         Ok(operation_id)
     }
@@ -3610,27 +3684,28 @@ impl Multimint {
         &self,
         federation_id: &FederationId,
         operation_id: OperationId,
-    ) -> anyhow::Result<String> {
+    ) -> EcashAppResult<String> {
         let client = self
             .clients
             .read()
             .await
             .get(federation_id)
-            .context("No federation exists")?
+            .ok_or_else(|| EcashAppError::other("federation does not exist"))?
             .clone();
-        let wallet_module =
-            client.get_first_module::<fedimint_wallet_client::WalletClientModule>()?;
+        let wallet_module = client
+            .get_first_module::<fedimint_wallet_client::WalletClientModule>()
+            .map_err(|e| EcashAppError::other(format!("wallet module unavailable: {e:#}")))?;
 
         let mut updates = wallet_module
             .subscribe_withdraw_updates(operation_id)
-            .await?
+            .await
+            .map_err(EcashAppError::from_display)?
             .into_stream();
 
         let txid = loop {
-            let update = updates
-                .next()
-                .await
-                .ok_or_else(|| anyhow!("Update stream ended without outcome"))?;
+            let update = updates.next().await.ok_or_else(|| {
+                EcashAppError::other("on-chain withdraw stream ended without outcome")
+            })?;
 
             match update {
                 WithdrawState::Succeeded(txid) => {
@@ -3639,7 +3714,11 @@ impl Multimint {
                     break txid.consensus_encode_to_hex();
                 }
                 WithdrawState::Failed(e) => {
-                    bail!("Withdraw failed: {e}");
+                    let err = classify_anyhow(&anyhow!("on-chain withdraw failed: {e}"));
+                    // Emit the structured event too so any background listener
+                    // (e.g. screens that already navigated away) still sees it.
+                    payment_error_to_flutter(*federation_id, err.clone()).await;
+                    return Err(err);
                 }
                 WithdrawState::Created => {
                     continue;
@@ -3654,24 +3733,38 @@ impl Multimint {
         &self,
         federation_id: &FederationId,
         address: String,
-    ) -> anyhow::Result<u64> {
+    ) -> EcashAppResult<u64> {
         let client = self
             .clients
             .read()
             .await
             .get(federation_id)
-            .context("No federation exists")?
+            .ok_or_else(|| EcashAppError::other("federation does not exist"))?
             .clone();
-        let wallet_module =
-            client.get_first_module::<fedimint_wallet_client::WalletClientModule>()?;
+        let wallet_module = client
+            .get_first_module::<fedimint_wallet_client::WalletClientModule>()
+            .map_err(|e| EcashAppError::other(format!("wallet module unavailable: {e:#}")))?;
 
-        let address = bitcoin::address::Address::from_str(&address)?;
-        let address = address.require_network(wallet_module.get_network())?;
-        let balance = bitcoin::Amount::from_sat(client.get_balance_for_btc().await?.msats / 1000);
-        let fees = wallet_module.get_withdraw_fees(&address, balance).await?;
+        let address = bitcoin::address::Address::from_str(&address)
+            .map_err(|e| EcashAppError::InvalidBitcoinAddress(e.to_string()))?;
+        let address = address
+            .require_network(wallet_module.get_network())
+            .map_err(|e| EcashAppError::InvalidBitcoinAddress(e.to_string()))?;
+        let balance = bitcoin::Amount::from_sat(
+            client
+                .get_balance_for_btc()
+                .await
+                .map_err(EcashAppError::from_display)?
+                .msats
+                / 1000,
+        );
+        let fees = wallet_module
+            .get_withdraw_fees(&address, balance)
+            .await
+            .map_err(EcashAppError::from_display)?;
         let max_withdrawable = balance
             .checked_sub(fees.amount())
-            .context("Not enough funds to pay fees")?;
+            .ok_or_else(|| EcashAppError::other("Not enough funds to pay fees"))?;
 
         Ok(max_withdrawable.to_sat())
     }

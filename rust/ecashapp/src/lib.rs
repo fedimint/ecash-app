@@ -1,5 +1,6 @@
 #![allow(unexpected_cfgs)]
 
+mod app_error;
 mod db;
 mod event_bus;
 mod fountain;
@@ -16,6 +17,7 @@ use event_bus::EventBus;
 use fedimint_client::module::module::recovery::RecoveryProgress;
 use fedimint_core::config::ClientConfig;
 /* AUTO INJECTED BY flutter_rust_bridge. This line may not be accurate, and you can change it according to your needs. */
+use app_error::{EcashAppError, EcashAppResult};
 use fedimint_wallet_client::PegOutFees;
 use flutter_rust_bridge::frb;
 use futures_util::StreamExt;
@@ -122,6 +124,16 @@ async fn info_to_flutter<T: Into<String>>(message: T) {
 async fn error_to_flutter<T: Into<String>>(message: T) {
     get_event_bus()
         .publish(MultimintEvent::Log(LogLevel::Error, message.into()))
+        .await;
+}
+
+/// Publish a structured payment error that the Dart layer will auto-toast.
+///
+/// Use this from background spawns (await_send, await_receive, await_ecash,
+/// await_withdraw) where the error can't be returned directly to the caller.
+pub(crate) async fn payment_error_to_flutter(federation_id: FederationId, error: EcashAppError) {
+    get_event_bus()
+        .publish(MultimintEvent::PaymentError((federation_id, error)))
         .await;
 }
 
@@ -279,24 +291,36 @@ pub async fn compute_receive_amount_with_fees(
 pub async fn get_invoice_from_lnaddress_or_lnurl(
     amount_msats: u64,
     lnaddress_or_lnurl: String,
-) -> anyhow::Result<String> {
+) -> Result<String, EcashAppError> {
+    // A malformed input (neither a valid lightning address nor LNURL) is a
+    // distinct, user-actionable error. Everything past this point is a
+    // reachability/protocol failure, which we keep generic so the UI can fall
+    // back to its "could not reach" message.
     let lnurl = match lnurl::lightning_address::LightningAddress::from_str(&lnaddress_or_lnurl) {
         Ok(lightning_address) => lightning_address.lnurl(),
-        _ => lnurl::lnurl::LnUrl::from_str(&lnaddress_or_lnurl)?,
+        _ => lnurl::lnurl::LnUrl::from_str(&lnaddress_or_lnurl)
+            .map_err(|e| EcashAppError::InvalidLightningAddress(e.to_string()))?,
     };
 
     let async_client = lnurl::AsyncClient::from_client(reqwest::Client::new());
-    let response = async_client.make_request(&lnurl.url).await?;
+    let response = async_client
+        .make_request(&lnurl.url)
+        .await
+        .map_err(|e| EcashAppError::other(format!("LNURL request failed: {e}")))?;
     match response {
         lnurl::LnUrlResponse::LnUrlPayResponse(response) => {
             let invoice = async_client
                 .get_invoice(&response, amount_msats, None, None)
-                .await?;
+                .await
+                .map_err(|e| EcashAppError::other(format!("LNURL invoice fetch failed: {e}")))?;
 
-            let bolt11 = Bolt11Invoice::from_str(invoice.invoice())?;
+            let bolt11 = Bolt11Invoice::from_str(invoice.invoice())
+                .map_err(|e| EcashAppError::InvalidInvoice(e.to_string()))?;
             Ok(bolt11.to_string())
         }
-        other => bail!("Unexpected response from lnurl: {other:?}"),
+        other => Err(EcashAppError::other(format!(
+            "Unexpected response from lnurl: {other:?}"
+        ))),
     }
 }
 
@@ -305,26 +329,35 @@ pub async fn send_lnaddress(
     federation_id: &FederationId,
     amount_msats: u64,
     address: String,
-) -> anyhow::Result<OperationId> {
-    let lnurl = lnurl::lightning_address::LightningAddress::from_str(&address)?.lnurl();
+) -> Result<OperationId, EcashAppError> {
+    let lnurl = lnurl::lightning_address::LightningAddress::from_str(&address)
+        .map_err(|e| EcashAppError::InvalidLightningAddress(e.to_string()))?
+        .lnurl();
     let async_client = lnurl::AsyncClient::from_client(reqwest::Client::new());
-    let response = async_client.make_request(&lnurl.url).await?;
+    let response = async_client
+        .make_request(&lnurl.url)
+        .await
+        .map_err(|e| EcashAppError::other(format!("LNURL request failed: {e}")))?;
     match response {
         lnurl::LnUrlResponse::LnUrlPayResponse(response) => {
             let invoice = async_client
                 .get_invoice(&response, amount_msats, None, None)
-                .await?;
+                .await
+                .map_err(|e| EcashAppError::other(format!("LNURL invoice fetch failed: {e}")))?;
 
             let multimint = get_multimint();
-            let bolt11 = Bolt11Invoice::from_str(invoice.invoice())?;
+            let bolt11 = Bolt11Invoice::from_str(invoice.invoice())
+                .map_err(|e| EcashAppError::InvalidInvoice(e.to_string()))?;
             let (gateway_url, amount_with_fees, is_lnv2) = multimint
                 .select_send_gateway(
                     federation_id,
                     Amount::from_msats(amount_msats),
                     bolt11.clone(),
                 )
-                .await?;
-            let gateway = SafeUrl::parse(&gateway_url)?;
+                .await
+                .map_err(EcashAppError::from)?;
+            let gateway = SafeUrl::parse(&gateway_url)
+                .map_err(|e| EcashAppError::other(format!("invalid gateway URL: {e}")))?;
             return multimint
                 .send(
                     federation_id,
@@ -336,7 +369,9 @@ pub async fn send_lnaddress(
                 )
                 .await;
         }
-        other => bail!("Unexpected response from lnurl: {other:?}"),
+        other => Err(EcashAppError::other(format!(
+            "unexpected LNURL response: {other:?}"
+        ))),
     }
 }
 
@@ -348,9 +383,10 @@ pub async fn send(
     is_lnv2: bool,
     amount_with_fees: u64,
     ln_address: Option<String>,
-) -> anyhow::Result<OperationId> {
+) -> Result<OperationId, EcashAppError> {
     let multimint = get_multimint();
-    let gateway = SafeUrl::parse(&gateway)?;
+    let gateway = SafeUrl::parse(&gateway)
+        .map_err(|e| EcashAppError::other(format!("invalid gateway URL: {e}")))?;
     multimint
         .send(
             federation_id,
@@ -455,7 +491,7 @@ pub async fn transactions(
 pub async fn send_ecash(
     federation_id: &FederationId,
     amount_msats: u64,
-) -> anyhow::Result<OOBNotesWrapper> {
+) -> Result<OOBNotesWrapper, EcashAppError> {
     let multimint = get_multimint();
     multimint.send_ecash(federation_id, amount_msats).await
 }
@@ -481,7 +517,7 @@ pub async fn reissue_ecash(
     federation_id: &FederationId,
     ecash: String,
     fees: ReissueFees,
-) -> anyhow::Result<OperationId> {
+) -> Result<OperationId, EcashAppError> {
     let multimint = get_multimint();
     multimint.reissue_ecash(federation_id, ecash, fees).await
 }
@@ -644,7 +680,7 @@ pub async fn calculate_withdraw_fees(
     federation_id: &FederationId,
     address: String,
     amount_sats: u64,
-) -> anyhow::Result<WithdrawFeesResponse> {
+) -> Result<WithdrawFeesResponse, EcashAppError> {
     let multimint = get_multimint();
     multimint
         .calculate_withdraw_fees(federation_id, address, amount_sats)
@@ -657,7 +693,7 @@ pub async fn withdraw_to_address(
     address: String,
     amount_sats: u64,
     peg_out_fees: PegOutFees,
-) -> anyhow::Result<OperationId> {
+) -> Result<OperationId, EcashAppError> {
     let multimint = get_multimint();
     multimint
         .withdraw_to_address(federation_id, address, amount_sats, peg_out_fees)
@@ -668,7 +704,7 @@ pub async fn withdraw_to_address(
 pub async fn await_withdraw(
     federation_id: &FederationId,
     operation_id: OperationId,
-) -> anyhow::Result<String> {
+) -> Result<String, EcashAppError> {
     let multimint = get_multimint();
     multimint.await_withdraw(federation_id, operation_id).await
 }
@@ -677,7 +713,7 @@ pub async fn await_withdraw(
 pub async fn get_max_withdrawable_amount(
     federation_id: &FederationId,
     address: String,
-) -> anyhow::Result<u64> {
+) -> Result<u64, EcashAppError> {
     let multimint = get_multimint();
     multimint
         .get_max_withdrawable_amount(federation_id, address)

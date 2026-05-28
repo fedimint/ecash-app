@@ -6,6 +6,7 @@
 // Static analysis wrongly picks the IO variant, thus ignore this
 // ignore_for_file: argument_type_not_assignable
 
+import 'app_error.dart';
 import 'dart:async';
 import 'dart:convert';
 import 'db.dart';
@@ -38,6 +39,30 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
 
   CrossPlatformFinalizerArg get rust_arc_decrement_strong_count_DatabasePtr =>
       wire.rust_arc_decrement_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerDatabase;
+
+  CrossPlatformFinalizerArg
+  get rust_arc_decrement_strong_count_EcashAppResultOobNotesWrapperPtr =>
+      wire.rust_arc_decrement_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerEcashAppResultOOBNotesWrapper;
+
+  CrossPlatformFinalizerArg
+  get rust_arc_decrement_strong_count_EcashAppResultOperationIdPtr =>
+      wire.rust_arc_decrement_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerEcashAppResultOperationId;
+
+  CrossPlatformFinalizerArg
+  get rust_arc_decrement_strong_count_EcashAppResultSpendOobStatePtr =>
+      wire.rust_arc_decrement_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerEcashAppResultSpendOOBState;
+
+  CrossPlatformFinalizerArg
+  get rust_arc_decrement_strong_count_EcashAppResultStringPtr =>
+      wire.rust_arc_decrement_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerEcashAppResultString;
+
+  CrossPlatformFinalizerArg
+  get rust_arc_decrement_strong_count_EcashAppResultWithdrawFeesResponsePtr =>
+      wire.rust_arc_decrement_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerEcashAppResultWithdrawFeesResponse;
+
+  CrossPlatformFinalizerArg
+  get rust_arc_decrement_strong_count_EcashAppResultU64Ptr =>
+      wire.rust_arc_decrement_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerEcashAppResultu64;
 
   CrossPlatformFinalizerArg
   get rust_arc_decrement_strong_count_EventBusMultimintEventPtr =>
@@ -116,10 +141,6 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
       wire.rust_arc_decrement_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerSafeUrl;
 
   CrossPlatformFinalizerArg
-  get rust_arc_decrement_strong_count_SpendOobStatePtr =>
-      wire.rust_arc_decrement_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerSpendOOBState;
-
-  CrossPlatformFinalizerArg
   get rust_arc_decrement_strong_count_WithdrawFeesResponsePtr =>
       wire.rust_arc_decrement_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerWithdrawFeesResponse;
 
@@ -147,6 +168,42 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   @protected
   Database
   dco_decode_Auto_Owned_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerDatabase(
+    dynamic raw,
+  );
+
+  @protected
+  EcashAppResultOobNotesWrapper
+  dco_decode_Auto_Owned_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerEcashAppResultOOBNotesWrapper(
+    dynamic raw,
+  );
+
+  @protected
+  EcashAppResultOperationId
+  dco_decode_Auto_Owned_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerEcashAppResultOperationId(
+    dynamic raw,
+  );
+
+  @protected
+  EcashAppResultSpendOobState
+  dco_decode_Auto_Owned_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerEcashAppResultSpendOOBState(
+    dynamic raw,
+  );
+
+  @protected
+  EcashAppResultString
+  dco_decode_Auto_Owned_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerEcashAppResultString(
+    dynamic raw,
+  );
+
+  @protected
+  EcashAppResultWithdrawFeesResponse
+  dco_decode_Auto_Owned_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerEcashAppResultWithdrawFeesResponse(
+    dynamic raw,
+  );
+
+  @protected
+  EcashAppResultU64
+  dco_decode_Auto_Owned_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerEcashAppResultu64(
     dynamic raw,
   );
 
@@ -261,12 +318,6 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   @protected
   SafeUrl
   dco_decode_Auto_Owned_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerSafeUrl(
-    dynamic raw,
-  );
-
-  @protected
-  SpendOobState
-  dco_decode_Auto_Owned_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerSpendOOBState(
     dynamic raw,
   );
 
@@ -445,6 +496,42 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   );
 
   @protected
+  EcashAppResultOobNotesWrapper
+  dco_decode_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerEcashAppResultOOBNotesWrapper(
+    dynamic raw,
+  );
+
+  @protected
+  EcashAppResultOperationId
+  dco_decode_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerEcashAppResultOperationId(
+    dynamic raw,
+  );
+
+  @protected
+  EcashAppResultSpendOobState
+  dco_decode_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerEcashAppResultSpendOOBState(
+    dynamic raw,
+  );
+
+  @protected
+  EcashAppResultString
+  dco_decode_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerEcashAppResultString(
+    dynamic raw,
+  );
+
+  @protected
+  EcashAppResultWithdrawFeesResponse
+  dco_decode_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerEcashAppResultWithdrawFeesResponse(
+    dynamic raw,
+  );
+
+  @protected
+  EcashAppResultU64
+  dco_decode_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerEcashAppResultu64(
+    dynamic raw,
+  );
+
+  @protected
   EventBusMultimintEvent
   dco_decode_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerEventBusMultimintEvent(
     dynamic raw,
@@ -565,12 +652,6 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   );
 
   @protected
-  SpendOobState
-  dco_decode_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerSpendOOBState(
-    dynamic raw,
-  );
-
-  @protected
   WithdrawFeesResponse
   dco_decode_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerWithdrawFeesResponse(
     dynamic raw,
@@ -656,6 +737,9 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   );
 
   @protected
+  EcashAppError dco_decode_box_autoadd_ecash_app_error(dynamic raw);
+
+  @protected
   double dco_decode_box_autoadd_f_64(dynamic raw);
 
   @protected
@@ -678,6 +762,12 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   @protected
   (FederationId, DepositEventKind)
   dco_decode_box_autoadd_record_auto_owned_rust_opaque_flutter_rust_bridgefor_generated_rust_auto_opaque_inner_federation_id_deposit_event_kind(
+    dynamic raw,
+  );
+
+  @protected
+  (FederationId, EcashAppError)
+  dco_decode_box_autoadd_record_auto_owned_rust_opaque_flutter_rust_bridgefor_generated_rust_auto_opaque_inner_federation_id_ecash_app_error(
     dynamic raw,
   );
 
@@ -725,6 +815,9 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
 
   @protected
   DepositEventKind dco_decode_deposit_event_kind(dynamic raw);
+
+  @protected
+  EcashAppError dco_decode_ecash_app_error(dynamic raw);
 
   @protected
   double dco_decode_f_64(dynamic raw);
@@ -939,6 +1032,12 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   );
 
   @protected
+  (FederationId, EcashAppError)
+  dco_decode_record_auto_owned_rust_opaque_flutter_rust_bridgefor_generated_rust_auto_opaque_inner_federation_id_ecash_app_error(
+    dynamic raw,
+  );
+
+  @protected
   (FederationId, LightningEventKind)
   dco_decode_record_auto_owned_rust_opaque_flutter_rust_bridgefor_generated_rust_auto_opaque_inner_federation_id_lightning_event_kind(
     dynamic raw,
@@ -1088,6 +1187,42 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   );
 
   @protected
+  EcashAppResultOobNotesWrapper
+  sse_decode_Auto_Owned_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerEcashAppResultOOBNotesWrapper(
+    SseDeserializer deserializer,
+  );
+
+  @protected
+  EcashAppResultOperationId
+  sse_decode_Auto_Owned_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerEcashAppResultOperationId(
+    SseDeserializer deserializer,
+  );
+
+  @protected
+  EcashAppResultSpendOobState
+  sse_decode_Auto_Owned_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerEcashAppResultSpendOOBState(
+    SseDeserializer deserializer,
+  );
+
+  @protected
+  EcashAppResultString
+  sse_decode_Auto_Owned_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerEcashAppResultString(
+    SseDeserializer deserializer,
+  );
+
+  @protected
+  EcashAppResultWithdrawFeesResponse
+  sse_decode_Auto_Owned_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerEcashAppResultWithdrawFeesResponse(
+    SseDeserializer deserializer,
+  );
+
+  @protected
+  EcashAppResultU64
+  sse_decode_Auto_Owned_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerEcashAppResultu64(
+    SseDeserializer deserializer,
+  );
+
+  @protected
   EventBusMultimintEvent
   sse_decode_Auto_Owned_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerEventBusMultimintEvent(
     SseDeserializer deserializer,
@@ -1198,12 +1333,6 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   @protected
   SafeUrl
   sse_decode_Auto_Owned_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerSafeUrl(
-    SseDeserializer deserializer,
-  );
-
-  @protected
-  SpendOobState
-  sse_decode_Auto_Owned_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerSpendOOBState(
     SseDeserializer deserializer,
   );
 
@@ -1382,6 +1511,42 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   );
 
   @protected
+  EcashAppResultOobNotesWrapper
+  sse_decode_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerEcashAppResultOOBNotesWrapper(
+    SseDeserializer deserializer,
+  );
+
+  @protected
+  EcashAppResultOperationId
+  sse_decode_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerEcashAppResultOperationId(
+    SseDeserializer deserializer,
+  );
+
+  @protected
+  EcashAppResultSpendOobState
+  sse_decode_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerEcashAppResultSpendOOBState(
+    SseDeserializer deserializer,
+  );
+
+  @protected
+  EcashAppResultString
+  sse_decode_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerEcashAppResultString(
+    SseDeserializer deserializer,
+  );
+
+  @protected
+  EcashAppResultWithdrawFeesResponse
+  sse_decode_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerEcashAppResultWithdrawFeesResponse(
+    SseDeserializer deserializer,
+  );
+
+  @protected
+  EcashAppResultU64
+  sse_decode_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerEcashAppResultu64(
+    SseDeserializer deserializer,
+  );
+
+  @protected
   EventBusMultimintEvent
   sse_decode_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerEventBusMultimintEvent(
     SseDeserializer deserializer,
@@ -1502,12 +1667,6 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   );
 
   @protected
-  SpendOobState
-  sse_decode_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerSpendOOBState(
-    SseDeserializer deserializer,
-  );
-
-  @protected
   WithdrawFeesResponse
   sse_decode_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerWithdrawFeesResponse(
     SseDeserializer deserializer,
@@ -1605,6 +1764,11 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   );
 
   @protected
+  EcashAppError sse_decode_box_autoadd_ecash_app_error(
+    SseDeserializer deserializer,
+  );
+
+  @protected
   double sse_decode_box_autoadd_f_64(SseDeserializer deserializer);
 
   @protected
@@ -1635,6 +1799,12 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   @protected
   (FederationId, DepositEventKind)
   sse_decode_box_autoadd_record_auto_owned_rust_opaque_flutter_rust_bridgefor_generated_rust_auto_opaque_inner_federation_id_deposit_event_kind(
+    SseDeserializer deserializer,
+  );
+
+  @protected
+  (FederationId, EcashAppError)
+  sse_decode_box_autoadd_record_auto_owned_rust_opaque_flutter_rust_bridgefor_generated_rust_auto_opaque_inner_federation_id_ecash_app_error(
     SseDeserializer deserializer,
   );
 
@@ -1686,6 +1856,9 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
 
   @protected
   DepositEventKind sse_decode_deposit_event_kind(SseDeserializer deserializer);
+
+  @protected
+  EcashAppError sse_decode_ecash_app_error(SseDeserializer deserializer);
 
   @protected
   double sse_decode_f_64(SseDeserializer deserializer);
@@ -1924,6 +2097,12 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   );
 
   @protected
+  (FederationId, EcashAppError)
+  sse_decode_record_auto_owned_rust_opaque_flutter_rust_bridgefor_generated_rust_auto_opaque_inner_federation_id_ecash_app_error(
+    SseDeserializer deserializer,
+  );
+
+  @protected
   (FederationId, LightningEventKind)
   sse_decode_record_auto_owned_rust_opaque_flutter_rust_bridgefor_generated_rust_auto_opaque_inner_federation_id_lightning_event_kind(
     SseDeserializer deserializer,
@@ -2087,6 +2266,48 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
 
   @protected
   void
+  sse_encode_Auto_Owned_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerEcashAppResultOOBNotesWrapper(
+    EcashAppResultOobNotesWrapper self,
+    SseSerializer serializer,
+  );
+
+  @protected
+  void
+  sse_encode_Auto_Owned_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerEcashAppResultOperationId(
+    EcashAppResultOperationId self,
+    SseSerializer serializer,
+  );
+
+  @protected
+  void
+  sse_encode_Auto_Owned_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerEcashAppResultSpendOOBState(
+    EcashAppResultSpendOobState self,
+    SseSerializer serializer,
+  );
+
+  @protected
+  void
+  sse_encode_Auto_Owned_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerEcashAppResultString(
+    EcashAppResultString self,
+    SseSerializer serializer,
+  );
+
+  @protected
+  void
+  sse_encode_Auto_Owned_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerEcashAppResultWithdrawFeesResponse(
+    EcashAppResultWithdrawFeesResponse self,
+    SseSerializer serializer,
+  );
+
+  @protected
+  void
+  sse_encode_Auto_Owned_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerEcashAppResultu64(
+    EcashAppResultU64 self,
+    SseSerializer serializer,
+  );
+
+  @protected
+  void
   sse_encode_Auto_Owned_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerEventBusMultimintEvent(
     EventBusMultimintEvent self,
     SseSerializer serializer,
@@ -2215,13 +2436,6 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   void
   sse_encode_Auto_Owned_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerSafeUrl(
     SafeUrl self,
-    SseSerializer serializer,
-  );
-
-  @protected
-  void
-  sse_encode_Auto_Owned_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerSpendOOBState(
-    SpendOobState self,
     SseSerializer serializer,
   );
 
@@ -2430,6 +2644,48 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
 
   @protected
   void
+  sse_encode_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerEcashAppResultOOBNotesWrapper(
+    EcashAppResultOobNotesWrapper self,
+    SseSerializer serializer,
+  );
+
+  @protected
+  void
+  sse_encode_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerEcashAppResultOperationId(
+    EcashAppResultOperationId self,
+    SseSerializer serializer,
+  );
+
+  @protected
+  void
+  sse_encode_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerEcashAppResultSpendOOBState(
+    EcashAppResultSpendOobState self,
+    SseSerializer serializer,
+  );
+
+  @protected
+  void
+  sse_encode_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerEcashAppResultString(
+    EcashAppResultString self,
+    SseSerializer serializer,
+  );
+
+  @protected
+  void
+  sse_encode_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerEcashAppResultWithdrawFeesResponse(
+    EcashAppResultWithdrawFeesResponse self,
+    SseSerializer serializer,
+  );
+
+  @protected
+  void
+  sse_encode_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerEcashAppResultu64(
+    EcashAppResultU64 self,
+    SseSerializer serializer,
+  );
+
+  @protected
+  void
   sse_encode_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerEventBusMultimintEvent(
     EventBusMultimintEvent self,
     SseSerializer serializer,
@@ -2570,13 +2826,6 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
 
   @protected
   void
-  sse_encode_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerSpendOOBState(
-    SpendOobState self,
-    SseSerializer serializer,
-  );
-
-  @protected
-  void
   sse_encode_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerWithdrawFeesResponse(
     WithdrawFeesResponse self,
     SseSerializer serializer,
@@ -2692,6 +2941,12 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   );
 
   @protected
+  void sse_encode_box_autoadd_ecash_app_error(
+    EcashAppError self,
+    SseSerializer serializer,
+  );
+
+  @protected
   void sse_encode_box_autoadd_f_64(double self, SseSerializer serializer);
 
   @protected
@@ -2728,6 +2983,13 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   void
   sse_encode_box_autoadd_record_auto_owned_rust_opaque_flutter_rust_bridgefor_generated_rust_auto_opaque_inner_federation_id_deposit_event_kind(
     (FederationId, DepositEventKind) self,
+    SseSerializer serializer,
+  );
+
+  @protected
+  void
+  sse_encode_box_autoadd_record_auto_owned_rust_opaque_flutter_rust_bridgefor_generated_rust_auto_opaque_inner_federation_id_ecash_app_error(
+    (FederationId, EcashAppError) self,
     SseSerializer serializer,
   );
 
@@ -2792,6 +3054,9 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
     DepositEventKind self,
     SseSerializer serializer,
   );
+
+  @protected
+  void sse_encode_ecash_app_error(EcashAppError self, SseSerializer serializer);
 
   @protected
   void sse_encode_f_64(double self, SseSerializer serializer);
@@ -3091,6 +3356,13 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
 
   @protected
   void
+  sse_encode_record_auto_owned_rust_opaque_flutter_rust_bridgefor_generated_rust_auto_opaque_inner_federation_id_ecash_app_error(
+    (FederationId, EcashAppError) self,
+    SseSerializer serializer,
+  );
+
+  @protected
+  void
   sse_encode_record_auto_owned_rust_opaque_flutter_rust_bridgefor_generated_rust_auto_opaque_inner_federation_id_lightning_event_kind(
     (FederationId, LightningEventKind) self,
     SseSerializer serializer,
@@ -3312,6 +3584,102 @@ class RustLibWire implements BaseWire {
     int ptr,
   ) => wasmModule
       .rust_arc_decrement_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerDatabase(
+        ptr,
+      );
+
+  void
+  rust_arc_increment_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerEcashAppResultOOBNotesWrapper(
+    int ptr,
+  ) => wasmModule
+      .rust_arc_increment_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerEcashAppResultOOBNotesWrapper(
+        ptr,
+      );
+
+  void
+  rust_arc_decrement_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerEcashAppResultOOBNotesWrapper(
+    int ptr,
+  ) => wasmModule
+      .rust_arc_decrement_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerEcashAppResultOOBNotesWrapper(
+        ptr,
+      );
+
+  void
+  rust_arc_increment_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerEcashAppResultOperationId(
+    int ptr,
+  ) => wasmModule
+      .rust_arc_increment_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerEcashAppResultOperationId(
+        ptr,
+      );
+
+  void
+  rust_arc_decrement_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerEcashAppResultOperationId(
+    int ptr,
+  ) => wasmModule
+      .rust_arc_decrement_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerEcashAppResultOperationId(
+        ptr,
+      );
+
+  void
+  rust_arc_increment_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerEcashAppResultSpendOOBState(
+    int ptr,
+  ) => wasmModule
+      .rust_arc_increment_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerEcashAppResultSpendOOBState(
+        ptr,
+      );
+
+  void
+  rust_arc_decrement_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerEcashAppResultSpendOOBState(
+    int ptr,
+  ) => wasmModule
+      .rust_arc_decrement_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerEcashAppResultSpendOOBState(
+        ptr,
+      );
+
+  void
+  rust_arc_increment_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerEcashAppResultString(
+    int ptr,
+  ) => wasmModule
+      .rust_arc_increment_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerEcashAppResultString(
+        ptr,
+      );
+
+  void
+  rust_arc_decrement_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerEcashAppResultString(
+    int ptr,
+  ) => wasmModule
+      .rust_arc_decrement_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerEcashAppResultString(
+        ptr,
+      );
+
+  void
+  rust_arc_increment_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerEcashAppResultWithdrawFeesResponse(
+    int ptr,
+  ) => wasmModule
+      .rust_arc_increment_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerEcashAppResultWithdrawFeesResponse(
+        ptr,
+      );
+
+  void
+  rust_arc_decrement_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerEcashAppResultWithdrawFeesResponse(
+    int ptr,
+  ) => wasmModule
+      .rust_arc_decrement_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerEcashAppResultWithdrawFeesResponse(
+        ptr,
+      );
+
+  void
+  rust_arc_increment_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerEcashAppResultu64(
+    int ptr,
+  ) => wasmModule
+      .rust_arc_increment_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerEcashAppResultu64(
+        ptr,
+      );
+
+  void
+  rust_arc_decrement_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerEcashAppResultu64(
+    int ptr,
+  ) => wasmModule
+      .rust_arc_decrement_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerEcashAppResultu64(
         ptr,
       );
 
@@ -3636,22 +4004,6 @@ class RustLibWire implements BaseWire {
       );
 
   void
-  rust_arc_increment_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerSpendOOBState(
-    int ptr,
-  ) => wasmModule
-      .rust_arc_increment_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerSpendOOBState(
-        ptr,
-      );
-
-  void
-  rust_arc_decrement_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerSpendOOBState(
-    int ptr,
-  ) => wasmModule
-      .rust_arc_decrement_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerSpendOOBState(
-        ptr,
-      );
-
-  void
   rust_arc_increment_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerWithdrawFeesResponse(
     int ptr,
   ) => wasmModule
@@ -3711,6 +4063,66 @@ extension type RustLibWasmModule._(JSObject _) implements JSObject {
 
   external void
   rust_arc_decrement_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerDatabase(
+    int ptr,
+  );
+
+  external void
+  rust_arc_increment_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerEcashAppResultOOBNotesWrapper(
+    int ptr,
+  );
+
+  external void
+  rust_arc_decrement_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerEcashAppResultOOBNotesWrapper(
+    int ptr,
+  );
+
+  external void
+  rust_arc_increment_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerEcashAppResultOperationId(
+    int ptr,
+  );
+
+  external void
+  rust_arc_decrement_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerEcashAppResultOperationId(
+    int ptr,
+  );
+
+  external void
+  rust_arc_increment_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerEcashAppResultSpendOOBState(
+    int ptr,
+  );
+
+  external void
+  rust_arc_decrement_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerEcashAppResultSpendOOBState(
+    int ptr,
+  );
+
+  external void
+  rust_arc_increment_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerEcashAppResultString(
+    int ptr,
+  );
+
+  external void
+  rust_arc_decrement_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerEcashAppResultString(
+    int ptr,
+  );
+
+  external void
+  rust_arc_increment_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerEcashAppResultWithdrawFeesResponse(
+    int ptr,
+  );
+
+  external void
+  rust_arc_decrement_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerEcashAppResultWithdrawFeesResponse(
+    int ptr,
+  );
+
+  external void
+  rust_arc_increment_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerEcashAppResultu64(
+    int ptr,
+  );
+
+  external void
+  rust_arc_decrement_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerEcashAppResultu64(
     int ptr,
   );
 
@@ -3911,16 +4323,6 @@ extension type RustLibWasmModule._(JSObject _) implements JSObject {
 
   external void
   rust_arc_decrement_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerSafeUrl(
-    int ptr,
-  );
-
-  external void
-  rust_arc_increment_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerSpendOOBState(
-    int ptr,
-  );
-
-  external void
-  rust_arc_decrement_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerSpendOOBState(
     int ptr,
   );
 

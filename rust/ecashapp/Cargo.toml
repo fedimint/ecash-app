@@ -48,6 +48,7 @@ reqwest = { version = "0.12.18", features = [
 semver = "1.0.27"
 serde = { version = "1.0.219", features = ["derive"] }
 serde_json = "1.0.140"
+thiserror = "1.0"
 tokio = "1.45.1"
 
 [profile.dev.package]

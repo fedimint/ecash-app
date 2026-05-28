@@ -1,4 +1,6 @@
+import 'package:ecashapp/app_error.dart';
 import 'package:ecashapp/db.dart';
+import 'package:ecashapp/error_helper.dart';
 import 'package:ecashapp/extensions/build_context_l10n.dart';
 import 'package:ecashapp/providers/preferences_provider.dart';
 import 'package:ecashapp/utils.dart';
@@ -8,8 +10,9 @@ import 'package:provider/provider.dart';
 
 class Failure extends StatelessWidget {
   final BigInt amountMsats;
+  final EcashAppError? error;
 
-  const Failure({super.key, required this.amountMsats});
+  const Failure({super.key, required this.amountMsats, this.error});
 
   @override
   Widget build(BuildContext context) {
@@ -17,6 +20,7 @@ class Failure extends StatelessWidget {
       (prefs) => prefs.bitcoinDisplay,
     );
     final displayAmount = formatBalance(amountMsats, false, bitcoinDisplay);
+    final reason = error != null ? ecashAppErrorToL10n(context, error!) : null;
 
     return Scaffold(
       body: Stack(
@@ -56,6 +60,17 @@ class Failure extends StatelessWidget {
                     ),
                     textAlign: TextAlign.center,
                   ),
+                  if (reason != null) ...[
+                    const SizedBox(height: 12),
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 32),
+                      child: Text(
+                        reason,
+                        style: const TextStyle(fontSize: 16),
+                        textAlign: TextAlign.center,
+                      ),
+                    ),
+                  ],
                 ],
               ),
             ),

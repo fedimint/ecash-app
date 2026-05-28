@@ -527,8 +527,8 @@ impl NostrClient {
                         )
                         .await?;
                     }
-                    LightningSendOutcome::Failure => {
-                        info_to_flutter("NWC Payment Failure".to_string()).await;
+                    LightningSendOutcome::Failure(err) => {
+                        info_to_flutter(format!("NWC Payment Failure: {err}")).await;
                     }
                 }
             }

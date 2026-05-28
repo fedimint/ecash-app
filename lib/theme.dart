@@ -1,3 +1,4 @@
+import 'package:ecashapp/error_helper.dart';
 import 'package:ecashapp/extensions/build_context_l10n.dart';
 import 'package:flutter/material.dart';
 
@@ -103,7 +104,11 @@ Future<T?> showAppModalBottomSheet<T>({
                         );
                       } else if (snapshot.hasError) {
                         final theme = Theme.of(context);
+                        final error = snapshot.error;
                         final msg =
+                            (error != null
+                                ? localizedKnownError(context, error)
+                                : null) ??
                             errorMessage ??
                             context.l10n.somethingWentWrongDefault;
                         return Padding(

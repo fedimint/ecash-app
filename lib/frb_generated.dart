@@ -3,6 +3,7 @@
 
 // ignore_for_file: unused_import, unused_element, unnecessary_import, duplicate_ignore, invalid_use_of_internal_member, annotate_overrides, non_constant_identifier_names, curly_braces_in_flow_control_structures, prefer_const_literals_to_create_immutables, unused_field
 
+import 'app_error.dart';
 import 'dart:async';
 import 'dart:convert';
 import 'db.dart';
@@ -281,7 +282,7 @@ abstract class RustLibApi extends BaseApi {
     required OperationId operationId,
   });
 
-  Future<SpendOobState> crateMultimintMultimintAwaitEcashSend({
+  Future<EcashAppResultSpendOobState> crateMultimintMultimintAwaitEcashSend({
     required Multimint that,
     required FederationId federationId,
     required OperationId operationId,
@@ -300,7 +301,7 @@ abstract class RustLibApi extends BaseApi {
     required OperationId operationId,
   });
 
-  Future<String> crateMultimintMultimintAwaitWithdraw({
+  Future<EcashAppResultString> crateMultimintMultimintAwaitWithdraw({
     required Multimint that,
     required FederationId federationId,
     required OperationId operationId,
@@ -317,7 +318,8 @@ abstract class RustLibApi extends BaseApi {
     required String ecash,
   });
 
-  Future<WithdrawFeesResponse> crateMultimintMultimintCalculateWithdrawFees({
+  Future<EcashAppResultWithdrawFeesResponse>
+  crateMultimintMultimintCalculateWithdrawFees({
     required Multimint that,
     required FederationId federationId,
     required String address,
@@ -410,7 +412,7 @@ abstract class RustLibApi extends BaseApi {
     required FederationId federationId,
   });
 
-  Future<BigInt> crateMultimintMultimintGetMaxWithdrawableAmount({
+  Future<EcashAppResultU64> crateMultimintMultimintGetMaxWithdrawableAmount({
     required Multimint that,
     required FederationId federationId,
     required String address,
@@ -511,7 +513,7 @@ abstract class RustLibApi extends BaseApi {
     required String domain,
   });
 
-  Future<OperationId> crateMultimintMultimintReissueEcash({
+  Future<EcashAppResultOperationId> crateMultimintMultimintReissueEcash({
     required Multimint that,
     required FederationId federationId,
     required String ecash,
@@ -530,7 +532,7 @@ abstract class RustLibApi extends BaseApi {
     required Bolt11Invoice bolt11,
   });
 
-  Future<OperationId> crateMultimintMultimintSend({
+  Future<EcashAppResultOperationId> crateMultimintMultimintSend({
     required Multimint that,
     required FederationId federationId,
     required String invoice,
@@ -540,7 +542,7 @@ abstract class RustLibApi extends BaseApi {
     String? lnAddress,
   });
 
-  Future<OobNotesWrapper> crateMultimintMultimintSendEcash({
+  Future<EcashAppResultOobNotesWrapper> crateMultimintMultimintSendEcash({
     required Multimint that,
     required FederationId federationId,
     required BigInt amountMsats,
@@ -595,7 +597,7 @@ abstract class RustLibApi extends BaseApi {
     FederationId? federationId,
   });
 
-  Future<OperationId> crateMultimintMultimintWithdrawToAddress({
+  Future<EcashAppResultOperationId> crateMultimintMultimintWithdrawToAddress({
     required Multimint that,
     required FederationId federationId,
     required String address,
@@ -1212,6 +1214,60 @@ abstract class RustLibApi extends BaseApi {
   CrossPlatformFinalizerArg get rust_arc_decrement_strong_count_DatabasePtr;
 
   RustArcIncrementStrongCountFnType
+  get rust_arc_increment_strong_count_EcashAppResultOobNotesWrapper;
+
+  RustArcDecrementStrongCountFnType
+  get rust_arc_decrement_strong_count_EcashAppResultOobNotesWrapper;
+
+  CrossPlatformFinalizerArg
+  get rust_arc_decrement_strong_count_EcashAppResultOobNotesWrapperPtr;
+
+  RustArcIncrementStrongCountFnType
+  get rust_arc_increment_strong_count_EcashAppResultOperationId;
+
+  RustArcDecrementStrongCountFnType
+  get rust_arc_decrement_strong_count_EcashAppResultOperationId;
+
+  CrossPlatformFinalizerArg
+  get rust_arc_decrement_strong_count_EcashAppResultOperationIdPtr;
+
+  RustArcIncrementStrongCountFnType
+  get rust_arc_increment_strong_count_EcashAppResultSpendOobState;
+
+  RustArcDecrementStrongCountFnType
+  get rust_arc_decrement_strong_count_EcashAppResultSpendOobState;
+
+  CrossPlatformFinalizerArg
+  get rust_arc_decrement_strong_count_EcashAppResultSpendOobStatePtr;
+
+  RustArcIncrementStrongCountFnType
+  get rust_arc_increment_strong_count_EcashAppResultString;
+
+  RustArcDecrementStrongCountFnType
+  get rust_arc_decrement_strong_count_EcashAppResultString;
+
+  CrossPlatformFinalizerArg
+  get rust_arc_decrement_strong_count_EcashAppResultStringPtr;
+
+  RustArcIncrementStrongCountFnType
+  get rust_arc_increment_strong_count_EcashAppResultWithdrawFeesResponse;
+
+  RustArcDecrementStrongCountFnType
+  get rust_arc_decrement_strong_count_EcashAppResultWithdrawFeesResponse;
+
+  CrossPlatformFinalizerArg
+  get rust_arc_decrement_strong_count_EcashAppResultWithdrawFeesResponsePtr;
+
+  RustArcIncrementStrongCountFnType
+  get rust_arc_increment_strong_count_EcashAppResultU64;
+
+  RustArcDecrementStrongCountFnType
+  get rust_arc_decrement_strong_count_EcashAppResultU64;
+
+  CrossPlatformFinalizerArg
+  get rust_arc_decrement_strong_count_EcashAppResultU64Ptr;
+
+  RustArcIncrementStrongCountFnType
   get rust_arc_increment_strong_count_EventBusMultimintEvent;
 
   RustArcDecrementStrongCountFnType
@@ -1381,15 +1437,6 @@ abstract class RustLibApi extends BaseApi {
   RustArcDecrementStrongCountFnType get rust_arc_decrement_strong_count_SafeUrl;
 
   CrossPlatformFinalizerArg get rust_arc_decrement_strong_count_SafeUrlPtr;
-
-  RustArcIncrementStrongCountFnType
-  get rust_arc_increment_strong_count_SpendOobState;
-
-  RustArcDecrementStrongCountFnType
-  get rust_arc_decrement_strong_count_SpendOobState;
-
-  CrossPlatformFinalizerArg
-  get rust_arc_decrement_strong_count_SpendOobStatePtr;
 
   RustArcIncrementStrongCountFnType
   get rust_arc_increment_strong_count_WithdrawFeesResponse;
@@ -2969,7 +3016,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
       );
 
   @override
-  Future<SpendOobState> crateMultimintMultimintAwaitEcashSend({
+  Future<EcashAppResultSpendOobState> crateMultimintMultimintAwaitEcashSend({
     required Multimint that,
     required FederationId federationId,
     required OperationId operationId,
@@ -2999,8 +3046,8 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
         },
         codec: SseCodec(
           decodeSuccessData:
-              sse_decode_Auto_Owned_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerSpendOOBState,
-          decodeErrorData: sse_decode_AnyhowException,
+              sse_decode_Auto_Owned_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerEcashAppResultSpendOOBState,
+          decodeErrorData: null,
         ),
         constMeta: kCrateMultimintMultimintAwaitEcashSendConstMeta,
         argValues: [that, federationId, operationId],
@@ -3110,7 +3157,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
       );
 
   @override
-  Future<String> crateMultimintMultimintAwaitWithdraw({
+  Future<EcashAppResultString> crateMultimintMultimintAwaitWithdraw({
     required Multimint that,
     required FederationId federationId,
     required OperationId operationId,
@@ -3139,8 +3186,9 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           );
         },
         codec: SseCodec(
-          decodeSuccessData: sse_decode_String,
-          decodeErrorData: sse_decode_AnyhowException,
+          decodeSuccessData:
+              sse_decode_Auto_Owned_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerEcashAppResultString,
+          decodeErrorData: null,
         ),
         constMeta: kCrateMultimintMultimintAwaitWithdrawConstMeta,
         argValues: [that, federationId, operationId],
@@ -3241,7 +3289,8 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
       );
 
   @override
-  Future<WithdrawFeesResponse> crateMultimintMultimintCalculateWithdrawFees({
+  Future<EcashAppResultWithdrawFeesResponse>
+  crateMultimintMultimintCalculateWithdrawFees({
     required Multimint that,
     required FederationId federationId,
     required String address,
@@ -3270,8 +3319,8 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
         },
         codec: SseCodec(
           decodeSuccessData:
-              sse_decode_Auto_Owned_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerWithdrawFeesResponse,
-          decodeErrorData: sse_decode_AnyhowException,
+              sse_decode_Auto_Owned_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerEcashAppResultWithdrawFeesResponse,
+          decodeErrorData: null,
         ),
         constMeta: kCrateMultimintMultimintCalculateWithdrawFeesConstMeta,
         argValues: [that, federationId, address, amountSats],
@@ -4002,7 +4051,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
       );
 
   @override
-  Future<BigInt> crateMultimintMultimintGetMaxWithdrawableAmount({
+  Future<EcashAppResultU64> crateMultimintMultimintGetMaxWithdrawableAmount({
     required Multimint that,
     required FederationId federationId,
     required String address,
@@ -4028,8 +4077,9 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           );
         },
         codec: SseCodec(
-          decodeSuccessData: sse_decode_u_64,
-          decodeErrorData: sse_decode_AnyhowException,
+          decodeSuccessData:
+              sse_decode_Auto_Owned_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerEcashAppResultu64,
+          decodeErrorData: null,
         ),
         constMeta: kCrateMultimintMultimintGetMaxWithdrawableAmountConstMeta,
         argValues: [that, federationId, address],
@@ -4810,7 +4860,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
       );
 
   @override
-  Future<OperationId> crateMultimintMultimintReissueEcash({
+  Future<EcashAppResultOperationId> crateMultimintMultimintReissueEcash({
     required Multimint that,
     required FederationId federationId,
     required String ecash,
@@ -4839,8 +4889,8 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
         },
         codec: SseCodec(
           decodeSuccessData:
-              sse_decode_Auto_Owned_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerOperationId,
-          decodeErrorData: sse_decode_AnyhowException,
+              sse_decode_Auto_Owned_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerEcashAppResultOperationId,
+          decodeErrorData: null,
         ),
         constMeta: kCrateMultimintMultimintReissueEcashConstMeta,
         argValues: [that, federationId, ecash, fees],
@@ -4945,7 +4995,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
       );
 
   @override
-  Future<OperationId> crateMultimintMultimintSend({
+  Future<EcashAppResultOperationId> crateMultimintMultimintSend({
     required Multimint that,
     required FederationId federationId,
     required String invoice,
@@ -4983,8 +5033,8 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
         },
         codec: SseCodec(
           decodeSuccessData:
-              sse_decode_Auto_Owned_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerOperationId,
-          decodeErrorData: sse_decode_AnyhowException,
+              sse_decode_Auto_Owned_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerEcashAppResultOperationId,
+          decodeErrorData: null,
         ),
         constMeta: kCrateMultimintMultimintSendConstMeta,
         argValues: [
@@ -5016,7 +5066,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
       );
 
   @override
-  Future<OobNotesWrapper> crateMultimintMultimintSendEcash({
+  Future<EcashAppResultOobNotesWrapper> crateMultimintMultimintSendEcash({
     required Multimint that,
     required FederationId federationId,
     required BigInt amountMsats,
@@ -5043,8 +5093,8 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
         },
         codec: SseCodec(
           decodeSuccessData:
-              sse_decode_Auto_Owned_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerOOBNotesWrapper,
-          decodeErrorData: sse_decode_AnyhowException,
+              sse_decode_Auto_Owned_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerEcashAppResultOOBNotesWrapper,
+          decodeErrorData: null,
         ),
         constMeta: kCrateMultimintMultimintSendEcashConstMeta,
         argValues: [that, federationId, amountMsats],
@@ -5425,7 +5475,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
       );
 
   @override
-  Future<OperationId> crateMultimintMultimintWithdrawToAddress({
+  Future<EcashAppResultOperationId> crateMultimintMultimintWithdrawToAddress({
     required Multimint that,
     required FederationId federationId,
     required String address,
@@ -5459,8 +5509,8 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
         },
         codec: SseCodec(
           decodeSuccessData:
-              sse_decode_Auto_Owned_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerOperationId,
-          decodeErrorData: sse_decode_AnyhowException,
+              sse_decode_Auto_Owned_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerEcashAppResultOperationId,
+          decodeErrorData: null,
         ),
         constMeta: kCrateMultimintMultimintWithdrawToAddressConstMeta,
         argValues: [that, federationId, address, amountSats, pegOutFees],
@@ -7686,7 +7736,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
         },
         codec: SseCodec(
           decodeSuccessData: sse_decode_String,
-          decodeErrorData: sse_decode_AnyhowException,
+          decodeErrorData: sse_decode_ecash_app_error,
         ),
         constMeta: kCrateAwaitWithdrawConstMeta,
         argValues: [federationId, operationId],
@@ -7822,7 +7872,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
         codec: SseCodec(
           decodeSuccessData:
               sse_decode_Auto_Owned_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerWithdrawFeesResponse,
-          decodeErrorData: sse_decode_AnyhowException,
+          decodeErrorData: sse_decode_ecash_app_error,
         ),
         constMeta: kCrateCalculateWithdrawFeesConstMeta,
         argValues: [federationId, address, amountSats],
@@ -8551,7 +8601,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
         },
         codec: SseCodec(
           decodeSuccessData: sse_decode_String,
-          decodeErrorData: sse_decode_AnyhowException,
+          decodeErrorData: sse_decode_ecash_app_error,
         ),
         constMeta: kCrateGetInvoiceFromLnaddressOrLnurlConstMeta,
         argValues: [amountMsats, lnaddressOrLnurl],
@@ -8625,7 +8675,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
         },
         codec: SseCodec(
           decodeSuccessData: sse_decode_u_64,
-          decodeErrorData: sse_decode_AnyhowException,
+          decodeErrorData: sse_decode_ecash_app_error,
         ),
         constMeta: kCrateGetMaxWithdrawableAmountConstMeta,
         argValues: [federationId, address],
@@ -9658,7 +9708,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
         codec: SseCodec(
           decodeSuccessData:
               sse_decode_Auto_Owned_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerOperationId,
-          decodeErrorData: sse_decode_AnyhowException,
+          decodeErrorData: sse_decode_ecash_app_error,
         ),
         constMeta: kCrateReissueEcashConstMeta,
         argValues: [federationId, ecash, fees],
@@ -9798,7 +9848,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
         codec: SseCodec(
           decodeSuccessData:
               sse_decode_Auto_Owned_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerOperationId,
-          decodeErrorData: sse_decode_AnyhowException,
+          decodeErrorData: sse_decode_ecash_app_error,
         ),
         constMeta: kCrateSendConstMeta,
         argValues: [
@@ -9850,7 +9900,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
         codec: SseCodec(
           decodeSuccessData:
               sse_decode_Auto_Owned_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerOOBNotesWrapper,
-          decodeErrorData: sse_decode_AnyhowException,
+          decodeErrorData: sse_decode_ecash_app_error,
         ),
         constMeta: kCrateSendEcashConstMeta,
         argValues: [federationId, amountMsats],
@@ -9890,7 +9940,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
         codec: SseCodec(
           decodeSuccessData:
               sse_decode_Auto_Owned_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerOperationId,
-          decodeErrorData: sse_decode_AnyhowException,
+          decodeErrorData: sse_decode_ecash_app_error,
         ),
         constMeta: kCrateSendLnaddressConstMeta,
         argValues: [federationId, amountMsats, address],
@@ -10478,7 +10528,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
         codec: SseCodec(
           decodeSuccessData:
               sse_decode_Auto_Owned_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerOperationId,
-          decodeErrorData: sse_decode_AnyhowException,
+          decodeErrorData: sse_decode_ecash_app_error,
         ),
         constMeta: kCrateWithdrawToAddressConstMeta,
         argValues: [federationId, address, amountSats, pegOutFees],
@@ -10550,6 +10600,54 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   RustArcDecrementStrongCountFnType
   get rust_arc_decrement_strong_count_Database =>
       wire.rust_arc_decrement_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerDatabase;
+
+  RustArcIncrementStrongCountFnType
+  get rust_arc_increment_strong_count_EcashAppResultOobNotesWrapper =>
+      wire.rust_arc_increment_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerEcashAppResultOOBNotesWrapper;
+
+  RustArcDecrementStrongCountFnType
+  get rust_arc_decrement_strong_count_EcashAppResultOobNotesWrapper =>
+      wire.rust_arc_decrement_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerEcashAppResultOOBNotesWrapper;
+
+  RustArcIncrementStrongCountFnType
+  get rust_arc_increment_strong_count_EcashAppResultOperationId =>
+      wire.rust_arc_increment_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerEcashAppResultOperationId;
+
+  RustArcDecrementStrongCountFnType
+  get rust_arc_decrement_strong_count_EcashAppResultOperationId =>
+      wire.rust_arc_decrement_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerEcashAppResultOperationId;
+
+  RustArcIncrementStrongCountFnType
+  get rust_arc_increment_strong_count_EcashAppResultSpendOobState =>
+      wire.rust_arc_increment_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerEcashAppResultSpendOOBState;
+
+  RustArcDecrementStrongCountFnType
+  get rust_arc_decrement_strong_count_EcashAppResultSpendOobState =>
+      wire.rust_arc_decrement_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerEcashAppResultSpendOOBState;
+
+  RustArcIncrementStrongCountFnType
+  get rust_arc_increment_strong_count_EcashAppResultString =>
+      wire.rust_arc_increment_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerEcashAppResultString;
+
+  RustArcDecrementStrongCountFnType
+  get rust_arc_decrement_strong_count_EcashAppResultString =>
+      wire.rust_arc_decrement_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerEcashAppResultString;
+
+  RustArcIncrementStrongCountFnType
+  get rust_arc_increment_strong_count_EcashAppResultWithdrawFeesResponse =>
+      wire.rust_arc_increment_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerEcashAppResultWithdrawFeesResponse;
+
+  RustArcDecrementStrongCountFnType
+  get rust_arc_decrement_strong_count_EcashAppResultWithdrawFeesResponse =>
+      wire.rust_arc_decrement_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerEcashAppResultWithdrawFeesResponse;
+
+  RustArcIncrementStrongCountFnType
+  get rust_arc_increment_strong_count_EcashAppResultU64 =>
+      wire.rust_arc_increment_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerEcashAppResultu64;
+
+  RustArcDecrementStrongCountFnType
+  get rust_arc_decrement_strong_count_EcashAppResultU64 =>
+      wire.rust_arc_decrement_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerEcashAppResultu64;
 
   RustArcIncrementStrongCountFnType
   get rust_arc_increment_strong_count_EventBusMultimintEvent =>
@@ -10712,14 +10810,6 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
       wire.rust_arc_decrement_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerSafeUrl;
 
   RustArcIncrementStrongCountFnType
-  get rust_arc_increment_strong_count_SpendOobState =>
-      wire.rust_arc_increment_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerSpendOOBState;
-
-  RustArcDecrementStrongCountFnType
-  get rust_arc_decrement_strong_count_SpendOobState =>
-      wire.rust_arc_decrement_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerSpendOOBState;
-
-  RustArcIncrementStrongCountFnType
   get rust_arc_increment_strong_count_WithdrawFeesResponse =>
       wire.rust_arc_increment_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerWithdrawFeesResponse;
 
@@ -10767,6 +10857,68 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   ) {
     // Codec=Dco (DartCObject based), see doc to use other codecs
     return DatabaseImpl.frbInternalDcoDecode(raw as List<dynamic>);
+  }
+
+  @protected
+  EcashAppResultOobNotesWrapper
+  dco_decode_Auto_Owned_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerEcashAppResultOOBNotesWrapper(
+    dynamic raw,
+  ) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    return EcashAppResultOobNotesWrapperImpl.frbInternalDcoDecode(
+      raw as List<dynamic>,
+    );
+  }
+
+  @protected
+  EcashAppResultOperationId
+  dco_decode_Auto_Owned_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerEcashAppResultOperationId(
+    dynamic raw,
+  ) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    return EcashAppResultOperationIdImpl.frbInternalDcoDecode(
+      raw as List<dynamic>,
+    );
+  }
+
+  @protected
+  EcashAppResultSpendOobState
+  dco_decode_Auto_Owned_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerEcashAppResultSpendOOBState(
+    dynamic raw,
+  ) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    return EcashAppResultSpendOobStateImpl.frbInternalDcoDecode(
+      raw as List<dynamic>,
+    );
+  }
+
+  @protected
+  EcashAppResultString
+  dco_decode_Auto_Owned_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerEcashAppResultString(
+    dynamic raw,
+  ) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    return EcashAppResultStringImpl.frbInternalDcoDecode(raw as List<dynamic>);
+  }
+
+  @protected
+  EcashAppResultWithdrawFeesResponse
+  dco_decode_Auto_Owned_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerEcashAppResultWithdrawFeesResponse(
+    dynamic raw,
+  ) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    return EcashAppResultWithdrawFeesResponseImpl.frbInternalDcoDecode(
+      raw as List<dynamic>,
+    );
+  }
+
+  @protected
+  EcashAppResultU64
+  dco_decode_Auto_Owned_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerEcashAppResultu64(
+    dynamic raw,
+  ) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    return EcashAppResultU64Impl.frbInternalDcoDecode(raw as List<dynamic>);
   }
 
   @protected
@@ -10946,15 +11098,6 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   ) {
     // Codec=Dco (DartCObject based), see doc to use other codecs
     return SafeUrlImpl.frbInternalDcoDecode(raw as List<dynamic>);
-  }
-
-  @protected
-  SpendOobState
-  dco_decode_Auto_Owned_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerSpendOOBState(
-    dynamic raw,
-  ) {
-    // Codec=Dco (DartCObject based), see doc to use other codecs
-    return SpendOobStateImpl.frbInternalDcoDecode(raw as List<dynamic>);
   }
 
   @protected
@@ -11223,6 +11366,68 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   }
 
   @protected
+  EcashAppResultOobNotesWrapper
+  dco_decode_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerEcashAppResultOOBNotesWrapper(
+    dynamic raw,
+  ) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    return EcashAppResultOobNotesWrapperImpl.frbInternalDcoDecode(
+      raw as List<dynamic>,
+    );
+  }
+
+  @protected
+  EcashAppResultOperationId
+  dco_decode_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerEcashAppResultOperationId(
+    dynamic raw,
+  ) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    return EcashAppResultOperationIdImpl.frbInternalDcoDecode(
+      raw as List<dynamic>,
+    );
+  }
+
+  @protected
+  EcashAppResultSpendOobState
+  dco_decode_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerEcashAppResultSpendOOBState(
+    dynamic raw,
+  ) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    return EcashAppResultSpendOobStateImpl.frbInternalDcoDecode(
+      raw as List<dynamic>,
+    );
+  }
+
+  @protected
+  EcashAppResultString
+  dco_decode_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerEcashAppResultString(
+    dynamic raw,
+  ) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    return EcashAppResultStringImpl.frbInternalDcoDecode(raw as List<dynamic>);
+  }
+
+  @protected
+  EcashAppResultWithdrawFeesResponse
+  dco_decode_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerEcashAppResultWithdrawFeesResponse(
+    dynamic raw,
+  ) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    return EcashAppResultWithdrawFeesResponseImpl.frbInternalDcoDecode(
+      raw as List<dynamic>,
+    );
+  }
+
+  @protected
+  EcashAppResultU64
+  dco_decode_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerEcashAppResultu64(
+    dynamic raw,
+  ) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    return EcashAppResultU64Impl.frbInternalDcoDecode(raw as List<dynamic>);
+  }
+
+  @protected
   EventBusMultimintEvent
   dco_decode_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerEventBusMultimintEvent(
     dynamic raw,
@@ -11411,15 +11616,6 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   }
 
   @protected
-  SpendOobState
-  dco_decode_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerSpendOOBState(
-    dynamic raw,
-  ) {
-    // Codec=Dco (DartCObject based), see doc to use other codecs
-    return SpendOobStateImpl.frbInternalDcoDecode(raw as List<dynamic>);
-  }
-
-  @protected
   WithdrawFeesResponse
   dco_decode_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerWithdrawFeesResponse(
     dynamic raw,
@@ -11581,6 +11777,12 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   }
 
   @protected
+  EcashAppError dco_decode_box_autoadd_ecash_app_error(dynamic raw) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    return dco_decode_ecash_app_error(raw);
+  }
+
+  @protected
   double dco_decode_box_autoadd_f_64(dynamic raw) {
     // Codec=Dco (DartCObject based), see doc to use other codecs
     return raw as double;
@@ -11625,6 +11827,15 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   ) {
     // Codec=Dco (DartCObject based), see doc to use other codecs
     return raw as (FederationId, DepositEventKind);
+  }
+
+  @protected
+  (FederationId, EcashAppError)
+  dco_decode_box_autoadd_record_auto_owned_rust_opaque_flutter_rust_bridgefor_generated_rust_auto_opaque_inner_federation_id_ecash_app_error(
+    dynamic raw,
+  ) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    return raw as (FederationId, EcashAppError);
   }
 
   @protected
@@ -11786,6 +11997,46 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   }
 
   @protected
+  EcashAppError dco_decode_ecash_app_error(dynamic raw) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    switch (raw[0]) {
+      case 0:
+        return EcashAppError_ExpiredInvoice();
+      case 1:
+        return EcashAppError_InsufficientBalance(
+          neededMsats: dco_decode_u_64(raw[1]),
+          haveMsats: dco_decode_u_64(raw[2]),
+        );
+      case 2:
+        return EcashAppError_NoRouteFound();
+      case 3:
+        return EcashAppError_GatewayOffline();
+      case 4:
+        return EcashAppError_NoGatewaysAvailable();
+      case 5:
+        return EcashAppError_FederationOffline();
+      case 6:
+        return EcashAppError_InvalidInvoice(dco_decode_String(raw[1]));
+      case 7:
+        return EcashAppError_InvalidEcash(dco_decode_String(raw[1]));
+      case 8:
+        return EcashAppError_EcashAlreadySpent();
+      case 9:
+        return EcashAppError_InvalidBitcoinAddress(dco_decode_String(raw[1]));
+      case 10:
+        return EcashAppError_InvalidLightningAddress(dco_decode_String(raw[1]));
+      case 11:
+        return EcashAppError_PaymentRefunded(dco_decode_String(raw[1]));
+      case 12:
+        return EcashAppError_Timeout();
+      case 13:
+        return EcashAppError_Other(dco_decode_String(raw[1]));
+      default:
+        throw Exception("unreachable");
+    }
+  }
+
+  @protected
   double dco_decode_f_64(dynamic raw) {
     // Codec=Dco (DartCObject based), see doc to use other codecs
     return raw as double;
@@ -11881,7 +12132,9 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
       case 0:
         return LightningSendOutcome_Success(dco_decode_String(raw[1]));
       case 1:
-        return LightningSendOutcome_Failure();
+        return LightningSendOutcome_Failure(
+          dco_decode_box_autoadd_ecash_app_error(raw[1]),
+        );
       default:
         throw Exception("unreachable");
     }
@@ -12147,6 +12400,12 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
         );
       case 10:
         return MultimintEvent_UpdateAvailable(dco_decode_String(raw[1]));
+      case 11:
+        return MultimintEvent_PaymentError(
+          dco_decode_box_autoadd_record_auto_owned_rust_opaque_flutter_rust_bridgefor_generated_rust_auto_opaque_inner_federation_id_ecash_app_error(
+            raw[1],
+          ),
+        );
       default:
         throw Exception("unreachable");
     }
@@ -12437,6 +12696,24 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
         arr[0],
       ),
       dco_decode_deposit_event_kind(arr[1]),
+    );
+  }
+
+  @protected
+  (FederationId, EcashAppError)
+  dco_decode_record_auto_owned_rust_opaque_flutter_rust_bridgefor_generated_rust_auto_opaque_inner_federation_id_ecash_app_error(
+    dynamic raw,
+  ) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    final arr = raw as List<dynamic>;
+    if (arr.length != 2) {
+      throw Exception('Expected 2 elements, got ${arr.length}');
+    }
+    return (
+      dco_decode_Auto_Owned_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerFederationId(
+        arr[0],
+      ),
+      dco_decode_ecash_app_error(arr[1]),
     );
   }
 
@@ -12908,6 +13185,78 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   }
 
   @protected
+  EcashAppResultOobNotesWrapper
+  sse_decode_Auto_Owned_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerEcashAppResultOOBNotesWrapper(
+    SseDeserializer deserializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    return EcashAppResultOobNotesWrapperImpl.frbInternalSseDecode(
+      sse_decode_usize(deserializer),
+      sse_decode_i_32(deserializer),
+    );
+  }
+
+  @protected
+  EcashAppResultOperationId
+  sse_decode_Auto_Owned_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerEcashAppResultOperationId(
+    SseDeserializer deserializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    return EcashAppResultOperationIdImpl.frbInternalSseDecode(
+      sse_decode_usize(deserializer),
+      sse_decode_i_32(deserializer),
+    );
+  }
+
+  @protected
+  EcashAppResultSpendOobState
+  sse_decode_Auto_Owned_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerEcashAppResultSpendOOBState(
+    SseDeserializer deserializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    return EcashAppResultSpendOobStateImpl.frbInternalSseDecode(
+      sse_decode_usize(deserializer),
+      sse_decode_i_32(deserializer),
+    );
+  }
+
+  @protected
+  EcashAppResultString
+  sse_decode_Auto_Owned_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerEcashAppResultString(
+    SseDeserializer deserializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    return EcashAppResultStringImpl.frbInternalSseDecode(
+      sse_decode_usize(deserializer),
+      sse_decode_i_32(deserializer),
+    );
+  }
+
+  @protected
+  EcashAppResultWithdrawFeesResponse
+  sse_decode_Auto_Owned_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerEcashAppResultWithdrawFeesResponse(
+    SseDeserializer deserializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    return EcashAppResultWithdrawFeesResponseImpl.frbInternalSseDecode(
+      sse_decode_usize(deserializer),
+      sse_decode_i_32(deserializer),
+    );
+  }
+
+  @protected
+  EcashAppResultU64
+  sse_decode_Auto_Owned_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerEcashAppResultu64(
+    SseDeserializer deserializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    return EcashAppResultU64Impl.frbInternalSseDecode(
+      sse_decode_usize(deserializer),
+      sse_decode_i_32(deserializer),
+    );
+  }
+
+  @protected
   EventBusMultimintEvent
   sse_decode_Auto_Owned_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerEventBusMultimintEvent(
     SseDeserializer deserializer,
@@ -13130,18 +13479,6 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   ) {
     // Codec=Sse (Serialization based), see doc to use other codecs
     return SafeUrlImpl.frbInternalSseDecode(
-      sse_decode_usize(deserializer),
-      sse_decode_i_32(deserializer),
-    );
-  }
-
-  @protected
-  SpendOobState
-  sse_decode_Auto_Owned_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerSpendOOBState(
-    SseDeserializer deserializer,
-  ) {
-    // Codec=Sse (Serialization based), see doc to use other codecs
-    return SpendOobStateImpl.frbInternalSseDecode(
       sse_decode_usize(deserializer),
       sse_decode_i_32(deserializer),
     );
@@ -13496,6 +13833,78 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   }
 
   @protected
+  EcashAppResultOobNotesWrapper
+  sse_decode_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerEcashAppResultOOBNotesWrapper(
+    SseDeserializer deserializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    return EcashAppResultOobNotesWrapperImpl.frbInternalSseDecode(
+      sse_decode_usize(deserializer),
+      sse_decode_i_32(deserializer),
+    );
+  }
+
+  @protected
+  EcashAppResultOperationId
+  sse_decode_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerEcashAppResultOperationId(
+    SseDeserializer deserializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    return EcashAppResultOperationIdImpl.frbInternalSseDecode(
+      sse_decode_usize(deserializer),
+      sse_decode_i_32(deserializer),
+    );
+  }
+
+  @protected
+  EcashAppResultSpendOobState
+  sse_decode_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerEcashAppResultSpendOOBState(
+    SseDeserializer deserializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    return EcashAppResultSpendOobStateImpl.frbInternalSseDecode(
+      sse_decode_usize(deserializer),
+      sse_decode_i_32(deserializer),
+    );
+  }
+
+  @protected
+  EcashAppResultString
+  sse_decode_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerEcashAppResultString(
+    SseDeserializer deserializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    return EcashAppResultStringImpl.frbInternalSseDecode(
+      sse_decode_usize(deserializer),
+      sse_decode_i_32(deserializer),
+    );
+  }
+
+  @protected
+  EcashAppResultWithdrawFeesResponse
+  sse_decode_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerEcashAppResultWithdrawFeesResponse(
+    SseDeserializer deserializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    return EcashAppResultWithdrawFeesResponseImpl.frbInternalSseDecode(
+      sse_decode_usize(deserializer),
+      sse_decode_i_32(deserializer),
+    );
+  }
+
+  @protected
+  EcashAppResultU64
+  sse_decode_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerEcashAppResultu64(
+    SseDeserializer deserializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    return EcashAppResultU64Impl.frbInternalSseDecode(
+      sse_decode_usize(deserializer),
+      sse_decode_i_32(deserializer),
+    );
+  }
+
+  @protected
   EventBusMultimintEvent
   sse_decode_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerEventBusMultimintEvent(
     SseDeserializer deserializer,
@@ -13736,18 +14145,6 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   }
 
   @protected
-  SpendOobState
-  sse_decode_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerSpendOOBState(
-    SseDeserializer deserializer,
-  ) {
-    // Codec=Sse (Serialization based), see doc to use other codecs
-    return SpendOobStateImpl.frbInternalSseDecode(
-      sse_decode_usize(deserializer),
-      sse_decode_i_32(deserializer),
-    );
-  }
-
-  @protected
   WithdrawFeesResponse
   sse_decode_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerWithdrawFeesResponse(
     SseDeserializer deserializer,
@@ -13927,6 +14324,14 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   }
 
   @protected
+  EcashAppError sse_decode_box_autoadd_ecash_app_error(
+    SseDeserializer deserializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    return (sse_decode_ecash_app_error(deserializer));
+  }
+
+  @protected
   double sse_decode_box_autoadd_f_64(SseDeserializer deserializer) {
     // Codec=Sse (Serialization based), see doc to use other codecs
     return (sse_decode_f_64(deserializer));
@@ -13979,6 +14384,17 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   ) {
     // Codec=Sse (Serialization based), see doc to use other codecs
     return (sse_decode_record_auto_owned_rust_opaque_flutter_rust_bridgefor_generated_rust_auto_opaque_inner_federation_id_deposit_event_kind(
+      deserializer,
+    ));
+  }
+
+  @protected
+  (FederationId, EcashAppError)
+  sse_decode_box_autoadd_record_auto_owned_rust_opaque_flutter_rust_bridgefor_generated_rust_auto_opaque_inner_federation_id_ecash_app_error(
+    SseDeserializer deserializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    return (sse_decode_record_auto_owned_rust_opaque_flutter_rust_bridgefor_generated_rust_auto_opaque_inner_federation_id_ecash_app_error(
       deserializer,
     ));
   }
@@ -14159,6 +14575,56 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   }
 
   @protected
+  EcashAppError sse_decode_ecash_app_error(SseDeserializer deserializer) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+
+    var tag_ = sse_decode_i_32(deserializer);
+    switch (tag_) {
+      case 0:
+        return EcashAppError_ExpiredInvoice();
+      case 1:
+        var var_neededMsats = sse_decode_u_64(deserializer);
+        var var_haveMsats = sse_decode_u_64(deserializer);
+        return EcashAppError_InsufficientBalance(
+          neededMsats: var_neededMsats,
+          haveMsats: var_haveMsats,
+        );
+      case 2:
+        return EcashAppError_NoRouteFound();
+      case 3:
+        return EcashAppError_GatewayOffline();
+      case 4:
+        return EcashAppError_NoGatewaysAvailable();
+      case 5:
+        return EcashAppError_FederationOffline();
+      case 6:
+        var var_field0 = sse_decode_String(deserializer);
+        return EcashAppError_InvalidInvoice(var_field0);
+      case 7:
+        var var_field0 = sse_decode_String(deserializer);
+        return EcashAppError_InvalidEcash(var_field0);
+      case 8:
+        return EcashAppError_EcashAlreadySpent();
+      case 9:
+        var var_field0 = sse_decode_String(deserializer);
+        return EcashAppError_InvalidBitcoinAddress(var_field0);
+      case 10:
+        var var_field0 = sse_decode_String(deserializer);
+        return EcashAppError_InvalidLightningAddress(var_field0);
+      case 11:
+        var var_field0 = sse_decode_String(deserializer);
+        return EcashAppError_PaymentRefunded(var_field0);
+      case 12:
+        return EcashAppError_Timeout();
+      case 13:
+        var var_field0 = sse_decode_String(deserializer);
+        return EcashAppError_Other(var_field0);
+      default:
+        throw UnimplementedError('');
+    }
+  }
+
+  @protected
   double sse_decode_f_64(SseDeserializer deserializer) {
     // Codec=Sse (Serialization based), see doc to use other codecs
     return deserializer.buffer.getFloat64();
@@ -14269,7 +14735,8 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
         var var_field0 = sse_decode_String(deserializer);
         return LightningSendOutcome_Success(var_field0);
       case 1:
-        return LightningSendOutcome_Failure();
+        var var_field0 = sse_decode_box_autoadd_ecash_app_error(deserializer);
+        return LightningSendOutcome_Failure(var_field0);
       default:
         throw UnimplementedError('');
     }
@@ -14655,6 +15122,12 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
       case 10:
         var var_field0 = sse_decode_String(deserializer);
         return MultimintEvent_UpdateAvailable(var_field0);
+      case 11:
+        var var_field0 =
+            sse_decode_box_autoadd_record_auto_owned_rust_opaque_flutter_rust_bridgefor_generated_rust_auto_opaque_inner_federation_id_ecash_app_error(
+              deserializer,
+            );
+        return MultimintEvent_PaymentError(var_field0);
       default:
         throw UnimplementedError('');
     }
@@ -15021,6 +15494,20 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           deserializer,
         );
     var var_field1 = sse_decode_deposit_event_kind(deserializer);
+    return (var_field0, var_field1);
+  }
+
+  @protected
+  (FederationId, EcashAppError)
+  sse_decode_record_auto_owned_rust_opaque_flutter_rust_bridgefor_generated_rust_auto_opaque_inner_federation_id_ecash_app_error(
+    SseDeserializer deserializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    var var_field0 =
+        sse_decode_Auto_Owned_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerFederationId(
+          deserializer,
+        );
+    var var_field1 = sse_decode_ecash_app_error(deserializer);
     return (var_field0, var_field1);
   }
 
@@ -15468,6 +15955,90 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
 
   @protected
   void
+  sse_encode_Auto_Owned_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerEcashAppResultOOBNotesWrapper(
+    EcashAppResultOobNotesWrapper self,
+    SseSerializer serializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    sse_encode_usize(
+      (self as EcashAppResultOobNotesWrapperImpl).frbInternalSseEncode(
+        move: true,
+      ),
+      serializer,
+    );
+  }
+
+  @protected
+  void
+  sse_encode_Auto_Owned_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerEcashAppResultOperationId(
+    EcashAppResultOperationId self,
+    SseSerializer serializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    sse_encode_usize(
+      (self as EcashAppResultOperationIdImpl).frbInternalSseEncode(move: true),
+      serializer,
+    );
+  }
+
+  @protected
+  void
+  sse_encode_Auto_Owned_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerEcashAppResultSpendOOBState(
+    EcashAppResultSpendOobState self,
+    SseSerializer serializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    sse_encode_usize(
+      (self as EcashAppResultSpendOobStateImpl).frbInternalSseEncode(
+        move: true,
+      ),
+      serializer,
+    );
+  }
+
+  @protected
+  void
+  sse_encode_Auto_Owned_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerEcashAppResultString(
+    EcashAppResultString self,
+    SseSerializer serializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    sse_encode_usize(
+      (self as EcashAppResultStringImpl).frbInternalSseEncode(move: true),
+      serializer,
+    );
+  }
+
+  @protected
+  void
+  sse_encode_Auto_Owned_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerEcashAppResultWithdrawFeesResponse(
+    EcashAppResultWithdrawFeesResponse self,
+    SseSerializer serializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    sse_encode_usize(
+      (self as EcashAppResultWithdrawFeesResponseImpl).frbInternalSseEncode(
+        move: true,
+      ),
+      serializer,
+    );
+  }
+
+  @protected
+  void
+  sse_encode_Auto_Owned_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerEcashAppResultu64(
+    EcashAppResultU64 self,
+    SseSerializer serializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    sse_encode_usize(
+      (self as EcashAppResultU64Impl).frbInternalSseEncode(move: true),
+      serializer,
+    );
+  }
+
+  @protected
+  void
   sse_encode_Auto_Owned_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerEventBusMultimintEvent(
     EventBusMultimintEvent self,
     SseSerializer serializer,
@@ -15709,19 +16280,6 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
     // Codec=Sse (Serialization based), see doc to use other codecs
     sse_encode_usize(
       (self as SafeUrlImpl).frbInternalSseEncode(move: true),
-      serializer,
-    );
-  }
-
-  @protected
-  void
-  sse_encode_Auto_Owned_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerSpendOOBState(
-    SpendOobState self,
-    SseSerializer serializer,
-  ) {
-    // Codec=Sse (Serialization based), see doc to use other codecs
-    sse_encode_usize(
-      (self as SpendOobStateImpl).frbInternalSseEncode(move: true),
       serializer,
     );
   }
@@ -16105,6 +16663,90 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
 
   @protected
   void
+  sse_encode_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerEcashAppResultOOBNotesWrapper(
+    EcashAppResultOobNotesWrapper self,
+    SseSerializer serializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    sse_encode_usize(
+      (self as EcashAppResultOobNotesWrapperImpl).frbInternalSseEncode(
+        move: null,
+      ),
+      serializer,
+    );
+  }
+
+  @protected
+  void
+  sse_encode_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerEcashAppResultOperationId(
+    EcashAppResultOperationId self,
+    SseSerializer serializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    sse_encode_usize(
+      (self as EcashAppResultOperationIdImpl).frbInternalSseEncode(move: null),
+      serializer,
+    );
+  }
+
+  @protected
+  void
+  sse_encode_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerEcashAppResultSpendOOBState(
+    EcashAppResultSpendOobState self,
+    SseSerializer serializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    sse_encode_usize(
+      (self as EcashAppResultSpendOobStateImpl).frbInternalSseEncode(
+        move: null,
+      ),
+      serializer,
+    );
+  }
+
+  @protected
+  void
+  sse_encode_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerEcashAppResultString(
+    EcashAppResultString self,
+    SseSerializer serializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    sse_encode_usize(
+      (self as EcashAppResultStringImpl).frbInternalSseEncode(move: null),
+      serializer,
+    );
+  }
+
+  @protected
+  void
+  sse_encode_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerEcashAppResultWithdrawFeesResponse(
+    EcashAppResultWithdrawFeesResponse self,
+    SseSerializer serializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    sse_encode_usize(
+      (self as EcashAppResultWithdrawFeesResponseImpl).frbInternalSseEncode(
+        move: null,
+      ),
+      serializer,
+    );
+  }
+
+  @protected
+  void
+  sse_encode_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerEcashAppResultu64(
+    EcashAppResultU64 self,
+    SseSerializer serializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    sse_encode_usize(
+      (self as EcashAppResultU64Impl).frbInternalSseEncode(move: null),
+      serializer,
+    );
+  }
+
+  @protected
+  void
   sse_encode_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerEventBusMultimintEvent(
     EventBusMultimintEvent self,
     SseSerializer serializer,
@@ -16365,19 +17007,6 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
 
   @protected
   void
-  sse_encode_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerSpendOOBState(
-    SpendOobState self,
-    SseSerializer serializer,
-  ) {
-    // Codec=Sse (Serialization based), see doc to use other codecs
-    sse_encode_usize(
-      (self as SpendOobStateImpl).frbInternalSseEncode(move: null),
-      serializer,
-    );
-  }
-
-  @protected
-  void
   sse_encode_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerWithdrawFeesResponse(
     WithdrawFeesResponse self,
     SseSerializer serializer,
@@ -16603,6 +17232,15 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   }
 
   @protected
+  void sse_encode_box_autoadd_ecash_app_error(
+    EcashAppError self,
+    SseSerializer serializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    sse_encode_ecash_app_error(self, serializer);
+  }
+
+  @protected
   void sse_encode_box_autoadd_f_64(double self, SseSerializer serializer) {
     // Codec=Sse (Serialization based), see doc to use other codecs
     sse_encode_f_64(self, serializer);
@@ -16661,6 +17299,19 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   ) {
     // Codec=Sse (Serialization based), see doc to use other codecs
     sse_encode_record_auto_owned_rust_opaque_flutter_rust_bridgefor_generated_rust_auto_opaque_inner_federation_id_deposit_event_kind(
+      self,
+      serializer,
+    );
+  }
+
+  @protected
+  void
+  sse_encode_box_autoadd_record_auto_owned_rust_opaque_flutter_rust_bridgefor_generated_rust_auto_opaque_inner_federation_id_ecash_app_error(
+    (FederationId, EcashAppError) self,
+    SseSerializer serializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    sse_encode_record_auto_owned_rust_opaque_flutter_rust_bridgefor_generated_rust_auto_opaque_inner_federation_id_ecash_app_error(
       self,
       serializer,
     );
@@ -16820,6 +17471,55 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   }
 
   @protected
+  void sse_encode_ecash_app_error(
+    EcashAppError self,
+    SseSerializer serializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    switch (self) {
+      case EcashAppError_ExpiredInvoice():
+        sse_encode_i_32(0, serializer);
+      case EcashAppError_InsufficientBalance(
+        neededMsats: final neededMsats,
+        haveMsats: final haveMsats,
+      ):
+        sse_encode_i_32(1, serializer);
+        sse_encode_u_64(neededMsats, serializer);
+        sse_encode_u_64(haveMsats, serializer);
+      case EcashAppError_NoRouteFound():
+        sse_encode_i_32(2, serializer);
+      case EcashAppError_GatewayOffline():
+        sse_encode_i_32(3, serializer);
+      case EcashAppError_NoGatewaysAvailable():
+        sse_encode_i_32(4, serializer);
+      case EcashAppError_FederationOffline():
+        sse_encode_i_32(5, serializer);
+      case EcashAppError_InvalidInvoice(field0: final field0):
+        sse_encode_i_32(6, serializer);
+        sse_encode_String(field0, serializer);
+      case EcashAppError_InvalidEcash(field0: final field0):
+        sse_encode_i_32(7, serializer);
+        sse_encode_String(field0, serializer);
+      case EcashAppError_EcashAlreadySpent():
+        sse_encode_i_32(8, serializer);
+      case EcashAppError_InvalidBitcoinAddress(field0: final field0):
+        sse_encode_i_32(9, serializer);
+        sse_encode_String(field0, serializer);
+      case EcashAppError_InvalidLightningAddress(field0: final field0):
+        sse_encode_i_32(10, serializer);
+        sse_encode_String(field0, serializer);
+      case EcashAppError_PaymentRefunded(field0: final field0):
+        sse_encode_i_32(11, serializer);
+        sse_encode_String(field0, serializer);
+      case EcashAppError_Timeout():
+        sse_encode_i_32(12, serializer);
+      case EcashAppError_Other(field0: final field0):
+        sse_encode_i_32(13, serializer);
+        sse_encode_String(field0, serializer);
+    }
+  }
+
+  @protected
   void sse_encode_f_64(double self, SseSerializer serializer) {
     // Codec=Sse (Serialization based), see doc to use other codecs
     serializer.buffer.putFloat64(self);
@@ -16909,8 +17609,9 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
       case LightningSendOutcome_Success(field0: final field0):
         sse_encode_i_32(0, serializer);
         sse_encode_String(field0, serializer);
-      case LightningSendOutcome_Failure():
+      case LightningSendOutcome_Failure(field0: final field0):
         sse_encode_i_32(1, serializer);
+        sse_encode_box_autoadd_ecash_app_error(field0, serializer);
     }
   }
 
@@ -17254,6 +17955,12 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
       case MultimintEvent_UpdateAvailable(field0: final field0):
         sse_encode_i_32(10, serializer);
         sse_encode_String(field0, serializer);
+      case MultimintEvent_PaymentError(field0: final field0):
+        sse_encode_i_32(11, serializer);
+        sse_encode_box_autoadd_record_auto_owned_rust_opaque_flutter_rust_bridgefor_generated_rust_auto_opaque_inner_federation_id_ecash_app_error(
+          field0,
+          serializer,
+        );
     }
   }
 
@@ -17596,6 +18303,20 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
       serializer,
     );
     sse_encode_deposit_event_kind(self.$2, serializer);
+  }
+
+  @protected
+  void
+  sse_encode_record_auto_owned_rust_opaque_flutter_rust_bridgefor_generated_rust_auto_opaque_inner_federation_id_ecash_app_error(
+    (FederationId, EcashAppError) self,
+    SseSerializer serializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    sse_encode_Auto_Owned_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerFederationId(
+      self.$1,
+      serializer,
+    );
+    sse_encode_ecash_app_error(self.$2, serializer);
   }
 
   @protected
@@ -18050,6 +18771,192 @@ class DatabaseImpl extends RustOpaque implements Database {
 }
 
 @sealed
+class EcashAppResultOobNotesWrapperImpl extends RustOpaque
+    implements EcashAppResultOobNotesWrapper {
+  // Not to be used by end users
+  EcashAppResultOobNotesWrapperImpl.frbInternalDcoDecode(List<dynamic> wire)
+    : super.frbInternalDcoDecode(wire, _kStaticData);
+
+  // Not to be used by end users
+  EcashAppResultOobNotesWrapperImpl.frbInternalSseDecode(
+    BigInt ptr,
+    int externalSizeOnNative,
+  ) : super.frbInternalSseDecode(ptr, externalSizeOnNative, _kStaticData);
+
+  static final _kStaticData = RustArcStaticData(
+    rustArcIncrementStrongCount:
+        RustLib
+            .instance
+            .api
+            .rust_arc_increment_strong_count_EcashAppResultOobNotesWrapper,
+    rustArcDecrementStrongCount:
+        RustLib
+            .instance
+            .api
+            .rust_arc_decrement_strong_count_EcashAppResultOobNotesWrapper,
+    rustArcDecrementStrongCountPtr:
+        RustLib
+            .instance
+            .api
+            .rust_arc_decrement_strong_count_EcashAppResultOobNotesWrapperPtr,
+  );
+}
+
+@sealed
+class EcashAppResultOperationIdImpl extends RustOpaque
+    implements EcashAppResultOperationId {
+  // Not to be used by end users
+  EcashAppResultOperationIdImpl.frbInternalDcoDecode(List<dynamic> wire)
+    : super.frbInternalDcoDecode(wire, _kStaticData);
+
+  // Not to be used by end users
+  EcashAppResultOperationIdImpl.frbInternalSseDecode(
+    BigInt ptr,
+    int externalSizeOnNative,
+  ) : super.frbInternalSseDecode(ptr, externalSizeOnNative, _kStaticData);
+
+  static final _kStaticData = RustArcStaticData(
+    rustArcIncrementStrongCount:
+        RustLib
+            .instance
+            .api
+            .rust_arc_increment_strong_count_EcashAppResultOperationId,
+    rustArcDecrementStrongCount:
+        RustLib
+            .instance
+            .api
+            .rust_arc_decrement_strong_count_EcashAppResultOperationId,
+    rustArcDecrementStrongCountPtr:
+        RustLib
+            .instance
+            .api
+            .rust_arc_decrement_strong_count_EcashAppResultOperationIdPtr,
+  );
+}
+
+@sealed
+class EcashAppResultSpendOobStateImpl extends RustOpaque
+    implements EcashAppResultSpendOobState {
+  // Not to be used by end users
+  EcashAppResultSpendOobStateImpl.frbInternalDcoDecode(List<dynamic> wire)
+    : super.frbInternalDcoDecode(wire, _kStaticData);
+
+  // Not to be used by end users
+  EcashAppResultSpendOobStateImpl.frbInternalSseDecode(
+    BigInt ptr,
+    int externalSizeOnNative,
+  ) : super.frbInternalSseDecode(ptr, externalSizeOnNative, _kStaticData);
+
+  static final _kStaticData = RustArcStaticData(
+    rustArcIncrementStrongCount:
+        RustLib
+            .instance
+            .api
+            .rust_arc_increment_strong_count_EcashAppResultSpendOobState,
+    rustArcDecrementStrongCount:
+        RustLib
+            .instance
+            .api
+            .rust_arc_decrement_strong_count_EcashAppResultSpendOobState,
+    rustArcDecrementStrongCountPtr:
+        RustLib
+            .instance
+            .api
+            .rust_arc_decrement_strong_count_EcashAppResultSpendOobStatePtr,
+  );
+}
+
+@sealed
+class EcashAppResultStringImpl extends RustOpaque
+    implements EcashAppResultString {
+  // Not to be used by end users
+  EcashAppResultStringImpl.frbInternalDcoDecode(List<dynamic> wire)
+    : super.frbInternalDcoDecode(wire, _kStaticData);
+
+  // Not to be used by end users
+  EcashAppResultStringImpl.frbInternalSseDecode(
+    BigInt ptr,
+    int externalSizeOnNative,
+  ) : super.frbInternalSseDecode(ptr, externalSizeOnNative, _kStaticData);
+
+  static final _kStaticData = RustArcStaticData(
+    rustArcIncrementStrongCount:
+        RustLib
+            .instance
+            .api
+            .rust_arc_increment_strong_count_EcashAppResultString,
+    rustArcDecrementStrongCount:
+        RustLib
+            .instance
+            .api
+            .rust_arc_decrement_strong_count_EcashAppResultString,
+    rustArcDecrementStrongCountPtr:
+        RustLib
+            .instance
+            .api
+            .rust_arc_decrement_strong_count_EcashAppResultStringPtr,
+  );
+}
+
+@sealed
+class EcashAppResultU64Impl extends RustOpaque implements EcashAppResultU64 {
+  // Not to be used by end users
+  EcashAppResultU64Impl.frbInternalDcoDecode(List<dynamic> wire)
+    : super.frbInternalDcoDecode(wire, _kStaticData);
+
+  // Not to be used by end users
+  EcashAppResultU64Impl.frbInternalSseDecode(
+    BigInt ptr,
+    int externalSizeOnNative,
+  ) : super.frbInternalSseDecode(ptr, externalSizeOnNative, _kStaticData);
+
+  static final _kStaticData = RustArcStaticData(
+    rustArcIncrementStrongCount:
+        RustLib.instance.api.rust_arc_increment_strong_count_EcashAppResultU64,
+    rustArcDecrementStrongCount:
+        RustLib.instance.api.rust_arc_decrement_strong_count_EcashAppResultU64,
+    rustArcDecrementStrongCountPtr:
+        RustLib
+            .instance
+            .api
+            .rust_arc_decrement_strong_count_EcashAppResultU64Ptr,
+  );
+}
+
+@sealed
+class EcashAppResultWithdrawFeesResponseImpl extends RustOpaque
+    implements EcashAppResultWithdrawFeesResponse {
+  // Not to be used by end users
+  EcashAppResultWithdrawFeesResponseImpl.frbInternalDcoDecode(
+    List<dynamic> wire,
+  ) : super.frbInternalDcoDecode(wire, _kStaticData);
+
+  // Not to be used by end users
+  EcashAppResultWithdrawFeesResponseImpl.frbInternalSseDecode(
+    BigInt ptr,
+    int externalSizeOnNative,
+  ) : super.frbInternalSseDecode(ptr, externalSizeOnNative, _kStaticData);
+
+  static final _kStaticData = RustArcStaticData(
+    rustArcIncrementStrongCount:
+        RustLib
+            .instance
+            .api
+            .rust_arc_increment_strong_count_EcashAppResultWithdrawFeesResponse,
+    rustArcDecrementStrongCount:
+        RustLib
+            .instance
+            .api
+            .rust_arc_decrement_strong_count_EcashAppResultWithdrawFeesResponse,
+    rustArcDecrementStrongCountPtr:
+        RustLib
+            .instance
+            .api
+            .rust_arc_decrement_strong_count_EcashAppResultWithdrawFeesResponsePtr,
+  );
+}
+
+@sealed
 class EventBusMultimintEventImpl extends RustOpaque
     implements EventBusMultimintEvent {
   // Not to be used by end users
@@ -18498,7 +19405,7 @@ class MultimintImpl extends RustOpaque implements Multimint {
     operationId: operationId,
   );
 
-  Future<SpendOobState> awaitEcashSend({
+  Future<EcashAppResultSpendOobState> awaitEcashSend({
     required FederationId federationId,
     required OperationId operationId,
   }) => RustLib.instance.api.crateMultimintMultimintAwaitEcashSend(
@@ -18525,7 +19432,7 @@ class MultimintImpl extends RustOpaque implements Multimint {
     operationId: operationId,
   );
 
-  Future<String> awaitWithdraw({
+  Future<EcashAppResultString> awaitWithdraw({
     required FederationId federationId,
     required OperationId operationId,
   }) => RustLib.instance.api.crateMultimintMultimintAwaitWithdraw(
@@ -18548,7 +19455,7 @@ class MultimintImpl extends RustOpaque implements Multimint {
     ecash: ecash,
   );
 
-  Future<WithdrawFeesResponse> calculateWithdrawFees({
+  Future<EcashAppResultWithdrawFeesResponse> calculateWithdrawFees({
     required FederationId federationId,
     required String address,
     required BigInt amountSats,
@@ -18671,7 +19578,7 @@ class MultimintImpl extends RustOpaque implements Multimint {
     federationId: federationId,
   );
 
-  Future<BigInt> getMaxWithdrawableAmount({
+  Future<EcashAppResultU64> getMaxWithdrawableAmount({
     required FederationId federationId,
     required String address,
   }) => RustLib.instance.api.crateMultimintMultimintGetMaxWithdrawableAmount(
@@ -18812,7 +19719,7 @@ class MultimintImpl extends RustOpaque implements Multimint {
     domain: domain,
   );
 
-  Future<OperationId> reissueEcash({
+  Future<EcashAppResultOperationId> reissueEcash({
     required FederationId federationId,
     required String ecash,
     required ReissueFees fees,
@@ -18841,7 +19748,7 @@ class MultimintImpl extends RustOpaque implements Multimint {
     bolt11: bolt11,
   );
 
-  Future<OperationId> send({
+  Future<EcashAppResultOperationId> send({
     required FederationId federationId,
     required String invoice,
     required SafeUrl gateway,
@@ -18858,7 +19765,7 @@ class MultimintImpl extends RustOpaque implements Multimint {
     lnAddress: lnAddress,
   );
 
-  Future<OobNotesWrapper> sendEcash({
+  Future<EcashAppResultOobNotesWrapper> sendEcash({
     required FederationId federationId,
     required BigInt amountMsats,
   }) => RustLib.instance.api.crateMultimintMultimintSendEcash(
@@ -18922,7 +19829,7 @@ class MultimintImpl extends RustOpaque implements Multimint {
     federationId: federationId,
   );
 
-  Future<OperationId> withdrawToAddress({
+  Future<EcashAppResultOperationId> withdrawToAddress({
     required FederationId federationId,
     required String address,
     required BigInt amountSats,
@@ -19380,26 +20287,6 @@ class SafeUrlImpl extends RustOpaque implements SafeUrl {
         RustLib.instance.api.rust_arc_decrement_strong_count_SafeUrl,
     rustArcDecrementStrongCountPtr:
         RustLib.instance.api.rust_arc_decrement_strong_count_SafeUrlPtr,
-  );
-}
-
-@sealed
-class SpendOobStateImpl extends RustOpaque implements SpendOobState {
-  // Not to be used by end users
-  SpendOobStateImpl.frbInternalDcoDecode(List<dynamic> wire)
-    : super.frbInternalDcoDecode(wire, _kStaticData);
-
-  // Not to be used by end users
-  SpendOobStateImpl.frbInternalSseDecode(BigInt ptr, int externalSizeOnNative)
-    : super.frbInternalSseDecode(ptr, externalSizeOnNative, _kStaticData);
-
-  static final _kStaticData = RustArcStaticData(
-    rustArcIncrementStrongCount:
-        RustLib.instance.api.rust_arc_increment_strong_count_SpendOobState,
-    rustArcDecrementStrongCount:
-        RustLib.instance.api.rust_arc_decrement_strong_count_SpendOobState,
-    rustArcDecrementStrongCountPtr:
-        RustLib.instance.api.rust_arc_decrement_strong_count_SpendOobStatePtr,
   );
 }
 

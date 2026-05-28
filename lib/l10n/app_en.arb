@@ -1489,5 +1489,53 @@
   "@btcMapWebsite": {},
 
   "btcMapOpenWebsite": "Open website",
-  "@btcMapOpenWebsite": {}
+  "@btcMapOpenWebsite": {},
+
+  "errExpiredInvoice": "Invoice has expired",
+  "@errExpiredInvoice": {},
+
+  "errInsufficientBalance": "Insufficient balance: need {needed} msat, have {have}",
+  "@errInsufficientBalance": {
+    "placeholders": {
+      "needed": {
+        "type": "int"
+      },
+      "have": {
+        "type": "int"
+      }
+    }
+  },
+
+  "errNoRouteFound": "Could not find a route to the recipient",
+  "@errNoRouteFound": {},
+
+  "errGatewayOffline": "Selected Lightning gateway is offline",
+  "@errGatewayOffline": {},
+
+  "errNoGateways": "No Lightning gateways available for this federation",
+  "@errNoGateways": {},
+
+  "errFederationOffline": "Federation is offline or unreachable",
+  "@errFederationOffline": {},
+
+  "errInvalidInvoice": "Invalid invoice",
+  "@errInvalidInvoice": {},
+
+  "errInvalidEcash": "Invalid ecash",
+  "@errInvalidEcash": {},
+
+  "errEcashAlreadySpent": "This ecash has already been spent",
+  "@errEcashAlreadySpent": {},
+
+  "errInvalidBitcoinAddress": "Invalid Bitcoin address",
+  "@errInvalidBitcoinAddress": {},
+
+  "errInvalidLightningAddress": "Invalid Lightning address",
+  "@errInvalidLightningAddress": {},
+
+  "errPaymentRefunded": "Payment was refunded",
+  "@errPaymentRefunded": {},
+
+  "errTimeout": "Operation timed out",
+  "@errTimeout": {}
 }

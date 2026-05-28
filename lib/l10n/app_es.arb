@@ -421,5 +421,18 @@
   "btcMapHours": "Horario",
   "btcMapPhone": "Telefono",
   "btcMapWebsite": "Sitio web",
-  "btcMapOpenWebsite": "Abrir sitio web"
+  "btcMapOpenWebsite": "Abrir sitio web",
+  "errExpiredInvoice": "La factura ha expirado",
+  "errInsufficientBalance": "Saldo insuficiente: se necesitan {needed} msat, hay {have}",
+  "errNoRouteFound": "No se pudo encontrar una ruta hacia el destinatario",
+  "errGatewayOffline": "La puerta de enlace Lightning seleccionada está desconectada",
+  "errNoGateways": "No hay puertas de enlace Lightning disponibles para esta federación",
+  "errFederationOffline": "La federación está desconectada o inaccesible",
+  "errInvalidInvoice": "Factura inválida",
+  "errInvalidEcash": "Ecash inválido",
+  "errEcashAlreadySpent": "Este ecash ya ha sido gastado",
+  "errInvalidBitcoinAddress": "Dirección de Bitcoin inválida",
+  "errInvalidLightningAddress": "Dirección Lightning inválida",
+  "errPaymentRefunded": "El pago fue reembolsado",
+  "errTimeout": "La operación expiró"
 }
