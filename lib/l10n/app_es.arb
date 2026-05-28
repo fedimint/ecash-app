@@ -421,7 +421,7 @@
   "btcMapHours": "Horario",
   "btcMapPhone": "Telefono",
   "btcMapWebsite": "Sitio web",
-  "btcMapOpenWebsite": "Abrir sitio web"
+  "btcMapOpenWebsite": "Abrir sitio web",
   "errExpiredInvoice": "La factura ha expirado",
   "errInsufficientBalance": "Saldo insuficiente: se necesitan {needed} msat, hay {have}",
   "errNoRouteFound": "No se pudo encontrar una ruta hacia el destinatario",

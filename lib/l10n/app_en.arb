@@ -1489,7 +1489,7 @@
   "@btcMapWebsite": {},
 
   "btcMapOpenWebsite": "Open website",
-  "@btcMapOpenWebsite": {}
+  "@btcMapOpenWebsite": {},
 
   "errExpiredInvoice": "Invoice has expired",
   "@errExpiredInvoice": {},

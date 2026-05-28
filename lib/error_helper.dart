@@ -7,8 +7,8 @@ import 'package:flutter/material.dart';
 /// Map an [EcashAppError] (or any thrown object that pattern-matches one of
 /// its variants) to a localized, user-facing string.
 ///
-/// Unknown errors fall through to the existing generic [context.l10n.failedToSendPayment]
-/// so we never surface a stack trace to the user.
+/// Unknown errors fall through to a generic [context.l10n.somethingWentWrongDefault]
+/// so we never surface a stack trace or other technical detail to the user.
 String ecashAppErrorToL10n(BuildContext context, Object err) {
   if (err is EcashAppError_ExpiredInvoice) {
     return context.l10n.errExpiredInvoice;
@@ -48,8 +48,13 @@ String ecashAppErrorToL10n(BuildContext context, Object err) {
     return context.l10n.errPaymentRefunded;
   }
   if (err is EcashAppError_Timeout) return context.l10n.errTimeout;
-  if (err is EcashAppError_Other) return err.field0;
-  return context.l10n.failedToSendPayment;
+  if (err is EcashAppError_Other) {
+    AppLogger.instance.error(
+      "Unclassified EcashAppError::Other: ${err.field0}",
+    );
+    return context.l10n.somethingWentWrongDefault;
+  }
+  return context.l10n.somethingWentWrongDefault;
 }
 
 /// Localized message for a *recognized* [EcashAppError] variant, or `null` when
