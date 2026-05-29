@@ -3812,7 +3812,10 @@ impl Multimint {
         let wallet_module =
             client.get_first_module::<fedimint_wallet_client::WalletClientModule>()?;
 
-        let (_, address, _) = wallet_module.safe_allocate_deposit_address(()).await?;
+        let address = wallet_module
+            .safe_allocate_deposit_address(())
+            .await?
+            .address;
         let tweak_idx = self
             .monitor_deposit_address(federation_id, address.to_string())
             .await?;
