@@ -2,7 +2,12 @@ use std::{collections::BTreeMap, sync::Arc, time::Duration, str::FromStr};
 
 use fedimint_client::ClientHandleArc;
 use fedimint_core::{Amount, config::FederationId, task::TaskGroup};
+use fedimint_eventlog::{Event, EventLogId};
 use fedimint_wallet_client::{DepositStateV2, WalletClientModule, WalletOperationMeta, WalletOperationMetaVariant, api::WalletFederationApi, client_db::TweakIdx};
+use fedimint_walletv2_client::{
+    FinalReceiveOperationState, WalletClientModule as WalletV2Module,
+    events::ReceivePaymentEvent as V2ReceivePaymentEvent,
+};
 use futures_util::StreamExt;
 use tokio::sync::{RwLock, mpsc::{UnboundedReceiver, UnboundedSender}};
 
@@ -102,7 +107,8 @@ impl WalletHandler {
                         federation_id,
                         wallet_module.get_network(),
                         btc_deposited,
-                        btc_out_point,
+                        btc_out_point.txid,
+                        btc_out_point.to_string(),
                         event_bus.clone(),
                         || async {
                             Ok(wallet_module.api.fetch_consensus_block_count().await?)
@@ -236,14 +242,13 @@ impl WalletHandler {
         client: ClientHandleArc,
     ) -> anyhow::Result<Option<u64>> {
         // walletv2 has no tweak index: addresses are derived locally and the
-        // module's background scanner detects and claims deposits. Mempool and
-        // confirmation tracking is driven off the event log (wired up
-        // separately via `track_pegin_confirmation`), so there is nothing to
-        // register here yet.
-        if client
-            .get_first_module::<fedimint_walletv2_client::WalletClientModule>()
-            .is_ok()
-        {
+        // module's background scanner detects and claims confirmed deposits. The
+        // federation has no mempool visibility for walletv2, so we poll esplora
+        // ourselves to surface mempool/confirmation progress, and the event-log
+        // listener (see `spawn_v2_deposit_event_listener`) surfaces confirmed and
+        // claimed. There is no tweak index to return.
+        if client.get_first_module::<WalletV2Module>().is_ok() {
+            self.spawn_v2_deposit_poller(federation_id, address, client);
             return Ok(None);
         }
 
@@ -285,9 +290,7 @@ impl WalletHandler {
         federation_id: FederationId,
         client: ClientHandleArc,
     ) -> anyhow::Result<(String, Option<u64>)> {
-        let address = if let Ok(wallet_module) =
-            client.get_first_module::<fedimint_walletv2_client::WalletClientModule>()
-        {
+        let address = if let Ok(wallet_module) = client.get_first_module::<WalletV2Module>() {
             // walletv2 derives the next unused receive address locally; there is
             // no tweak index and the background scanner handles claiming.
             wallet_module.receive().await.to_string()
@@ -307,6 +310,176 @@ impl WalletHandler {
 
         Ok((address, tweak_idx))
     }
+
+    /// Spawns a background task that watches the chain for a deposit to a
+    /// walletv2 receive `address`, surfacing mempool and confirmation progress.
+    fn spawn_v2_deposit_poller(
+        &self,
+        federation_id: FederationId,
+        address: String,
+        client: ClientHandleArc,
+    ) {
+        let event_bus = get_event_bus();
+        self.task_group
+            .spawn_cancellable("walletv2 deposit poller", async move {
+                if let Err(e) =
+                    Self::watch_v2_pegin_address(federation_id, address.clone(), client, event_bus)
+                        .await
+                {
+                    info_to_flutter(format!("watch_v2_pegin_address({address}) failed: {e:?}"))
+                        .await;
+                }
+            });
+    }
+
+    /// Polls esplora for an incoming deposit to a walletv2 receive address and
+    /// then tracks it through consensus confirmation.
+    ///
+    /// walletv2 deposits are claimed by the module's background scanner once
+    /// confirmed, and the confirmed/claimed states are surfaced by the event-log
+    /// listener (see `spawn_v2_deposit_event_listener`); this only drives the
+    /// mempool and awaiting-confirmation states, which the federation cannot
+    /// report itself.
+    async fn watch_v2_pegin_address(
+        federation_id: FederationId,
+        address: String,
+        client: ClientHandleArc,
+        event_bus: EventBus<MultimintEvent>,
+    ) -> anyhow::Result<()> {
+        let wallet_module = client.get_first_module::<WalletV2Module>()?;
+        let network = wallet_module.get_network();
+        let api_url = mempool_api_url(network);
+        let http = reqwest::Client::new();
+
+        let (txid, value) = fedimint_core::util::retry(
+            "discover walletv2 deposit",
+            fedimint_core::util::backoff_util::background_backoff(),
+            || async { discover_deposit(&http, &api_url, &address).await },
+        )
+        .await
+        .expect("Never gives up");
+
+        track_pegin_confirmation(
+            federation_id,
+            network,
+            value,
+            txid,
+            address,
+            event_bus,
+            || async { Ok(wallet_module.block_count().await?) },
+        )
+        .await?;
+
+        Ok(())
+    }
+
+    /// Watches the walletv2 event log for receive (peg-in) operations, surfacing
+    /// `Confirmed` once the federation claims a confirmed deposit and `Claimed`
+    /// once the claim finalizes. Mirrors `spawn_lnv2_event_listener`.
+    ///
+    /// Deposits are identified by their receive address (the correlation key
+    /// also used by `watch_v2_pegin_address`), since the walletv2 event log
+    /// carries the address rather than the on-chain outpoint.
+    pub(crate) fn spawn_v2_deposit_event_listener(
+        &self,
+        client: ClientHandleArc,
+        federation_id: FederationId,
+    ) {
+        // Nothing to do for federations without a walletv2 module.
+        if client.get_first_module::<WalletV2Module>().is_err() {
+            return;
+        }
+
+        let event_bus = get_event_bus();
+        let task_group = self.task_group.clone();
+        let mut log_event_added_rx = client.log_event_added_rx();
+        self.task_group
+            .spawn_cancellable("walletv2 deposit event listener", async move {
+                // Start at the end of the log so we only react to new events.
+                let existing = client.get_event_log(None, u64::MAX).await;
+                let mut position = existing
+                    .last()
+                    .map(|e| e.id().saturating_add(1))
+                    .unwrap_or(EventLogId::LOG_START);
+
+                loop {
+                    if log_event_added_rx.changed().await.is_err() {
+                        break;
+                    }
+
+                    let batch = client.get_event_log(Some(position), 100).await;
+                    for event in &batch {
+                        position = event.id().saturating_add(1);
+
+                        // The "payment-receive" event kind is shared with lnv2,
+                        // so filter on the walletv2 module before decoding.
+                        if event.module_kind() != Some(&fedimint_walletv2_client::common::KIND)
+                            || event.kind != V2ReceivePaymentEvent::KIND
+                        {
+                            continue;
+                        }
+
+                        let Some(receive_event) = event.to_event::<V2ReceivePaymentEvent>() else {
+                            continue;
+                        };
+
+                        let address = receive_event.address.assume_checked().to_string();
+                        let amount_msats = Amount::from_sats(receive_event.value.to_sat()).msats;
+                        let operation_id = receive_event.operation_id;
+
+                        // The federation has seen the confirmed deposit and is
+                        // claiming it.
+                        event_bus
+                            .publish(MultimintEvent::Deposit((
+                                federation_id,
+                                DepositEventKind::Confirmed(ConfirmedEvent {
+                                    amount: amount_msats,
+                                    outpoint: address.clone(),
+                                }),
+                            )))
+                            .await;
+
+                        // Await the claim, then surface Claimed.
+                        let event_bus = event_bus.clone();
+                        let client = client.clone();
+                        task_group.spawn_cancellable("walletv2 await claim", async move {
+                            let Ok(wallet_module) = client.get_first_module::<WalletV2Module>()
+                            else {
+                                return;
+                            };
+                            match wallet_module
+                                .await_final_receive_operation_state(operation_id)
+                                .await
+                            {
+                                Ok(FinalReceiveOperationState::Success) => {
+                                    event_bus
+                                        .publish(MultimintEvent::Deposit((
+                                            federation_id,
+                                            DepositEventKind::Claimed(ClaimedEvent {
+                                                amount: amount_msats,
+                                                outpoint: address,
+                                            }),
+                                        )))
+                                        .await;
+                                }
+                                Ok(state) => {
+                                    info_to_flutter(format!(
+                                        "walletv2 receive ended in non-success state: {state:?}"
+                                    ))
+                                    .await;
+                                }
+                                Err(e) => {
+                                    info_to_flutter(format!(
+                                        "walletv2 await receive error: {e:?}"
+                                    ))
+                                    .await;
+                                }
+                            }
+                        });
+                    }
+                }
+            });
+    }
 }
 
 /// Resolves the esplora/mempool.space API base URL for the given network.
@@ -316,8 +489,8 @@ fn mempool_api_url(network: bitcoin::Network) -> String {
         bitcoin::Network::Signet => "https://mutinynet.com/api".to_string(),
         bitcoin::Network::Regtest => {
             // referencing devimint, uncomment for regtest
-            // "http://localhost:{FM_PORT_ESPLORA}".to_string()
-            panic!("Regtest requires manually setting the connection params")
+             "http://localhost:20440".to_string()
+            //panic!("Regtest requires manually setting the connection params")
         }
         network => {
             panic!("{network} is not a supported network")
@@ -325,18 +498,70 @@ fn mempool_api_url(network: bitcoin::Network) -> String {
     }
 }
 
+/// Queries esplora for the first transaction paying `address` and returns its
+/// txid together with the total value sent to that address. Returns an error
+/// (intended to be retried) while no such transaction exists yet.
+async fn discover_deposit(
+    http: &reqwest::Client,
+    api_url: &str,
+    address: &str,
+) -> anyhow::Result<(bitcoin::Txid, bitcoin::Amount)> {
+    let txs: serde_json::Value = http
+        .get(format!("{}/address/{}/txs", api_url, address))
+        .send()
+        .await?
+        .error_for_status()?
+        .json()
+        .await?;
+
+    let txs = txs
+        .as_array()
+        .ok_or_else(|| anyhow::anyhow!("unexpected esplora response for {address}"))?;
+
+    for tx in txs {
+        let Some(txid) = tx.get("txid").and_then(|t| t.as_str()) else {
+            continue;
+        };
+        let Some(vouts) = tx.get("vout").and_then(|v| v.as_array()) else {
+            continue;
+        };
+
+        // Sum the value of every output in this tx that pays our address.
+        let sats: u64 = vouts
+            .iter()
+            .filter(|o| o.get("scriptpubkey_address").and_then(|a| a.as_str()) == Some(address))
+            .filter_map(|o| o.get("value").and_then(|v| v.as_u64()))
+            .sum();
+
+        if sats > 0 {
+            return Ok((
+                bitcoin::Txid::from_str(txid)?,
+                bitcoin::Amount::from_sat(sats),
+            ));
+        }
+    }
+
+    Err(anyhow::anyhow!("no deposit to {address} found yet"))
+}
+
 /// Tracks a peg-in deposit from mempool detection through consensus
 /// confirmation, publishing `Mempool` and `AwaitingConfs` deposit events.
 ///
-/// This is shared by walletv1 and walletv2. The deposit's outpoint and amount
-/// are surfaced differently by each module (the v1 deposit stream vs. the v2
-/// event log), and consensus block height is fetched differently as well, so
-/// the caller supplies a `consensus_block_count` fetcher.
+/// This is shared by walletv1 and walletv2. The deposit's amount and on-chain
+/// txid are surfaced differently by each module (the v1 deposit stream vs.
+/// esplora polling for v2), and consensus block height is fetched differently
+/// as well, so the caller supplies a `consensus_block_count` fetcher.
+///
+/// `outpoint_label` is the correlation key carried on every emitted deposit
+/// event so the UI can group the states of a single deposit together. v1 uses
+/// the full `txid:vout` string; v2 uses the receive address (the walletv2 event
+/// log identifies deposits by address, not outpoint).
 pub(crate) async fn track_pegin_confirmation<F, Fut>(
     federation_id: FederationId,
     network: bitcoin::Network,
     btc_deposited: bitcoin::Amount,
-    btc_out_point: bitcoin::OutPoint,
+    txid: bitcoin::Txid,
+    outpoint_label: String,
     event_bus: EventBus<MultimintEvent>,
     consensus_block_count: F,
 ) -> anyhow::Result<()>
@@ -351,7 +576,7 @@ where
             federation_id,
             DepositEventKind::Mempool(MempoolEvent {
                 amount: amount_msats,
-                outpoint: btc_out_point.to_string(),
+                outpoint: outpoint_label.clone(),
             }),
         )))
         .await;
@@ -364,7 +589,7 @@ where
         fedimint_core::util::backoff_util::background_backoff(),
         || async {
             let resp = http
-                .get(format!("{}/tx/{}", api_url, btc_out_point.txid))
+                .get(format!("{}/tx/{}", api_url, txid))
                 .send()
                 .await?
                 .error_for_status()?
@@ -396,7 +621,7 @@ where
                 federation_id,
                 DepositEventKind::AwaitingConfs(AwaitingConfsEvent {
                     amount: amount_msats,
-                    outpoint: btc_out_point.to_string(),
+                    outpoint: outpoint_label.clone(),
                     block_height: tx_height,
                     needed,
                 }),

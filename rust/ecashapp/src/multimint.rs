@@ -607,6 +607,8 @@ impl Multimint {
             self.clients.write().await.insert(id.id, client.clone());
 
             self.spawn_lnv2_event_listener(client.clone(), id.id);
+            self.wallet_handler
+                .spawn_v2_deposit_event_listener(client.clone(), id.id);
             self.finish_active_subscriptions(client.clone(), id.id)
                 .await;
             if client.has_pending_recoveries() {
@@ -1374,6 +1376,8 @@ impl Multimint {
             .await
             .insert(federation_id, client.clone());
 
+        self.wallet_handler
+            .spawn_v2_deposit_event_listener(client.clone(), federation_id);
         self.spawn_lnv2_event_listener(client, federation_id);
 
         let mut dbtx = self.db.begin_transaction().await;
@@ -3491,6 +3495,16 @@ impl Multimint {
             .get(federation_id)
             .ok_or(anyhow!("No federation exists for peg-in fee query"))?
             .clone();
+
+        // walletv2 charges a dynamic, feerate-based receive fee that is queried
+        // from the federation rather than read from a static config value.
+        if let Ok(wallet_module) =
+            client.get_first_module::<fedimint_walletv2_client::WalletClientModule>()
+        {
+            let fee = wallet_module.receive_fee().await?;
+            return Ok(Amount::from_sats(fee.to_sat()).msats);
+        }
+
         let wallet_module =
             client.get_first_module::<fedimint_wallet_client::WalletClientModule>()?;
 
