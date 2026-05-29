@@ -176,9 +176,17 @@ impl WalletHandler {
             .spawn_cancellable("unused address monitor", async move {
                 let clients_guard = clients.read().await;
                 for (fed_id, client) in clients_guard.iter() {
-                    let wallet_module = client
-                        .get_first_module::<WalletClientModule>()
-                        .expect("No wallet module exists");
+                    // walletv2 federations have no v1 wallet module and no tweak
+                    // indices to scan; their unused deposit addresses are tracked
+                    // by the poller + event-log listener, so skip them here
+                    // instead of panicking.
+                    let Ok(wallet_module) = client.get_first_module::<WalletClientModule>() else {
+                        info_to_flutter(format!(
+                            "monitor_all_unused_pegin_addresses: skipping fed {fed_id} (no walletv1 module)"
+                        ))
+                        .await;
+                        continue;
+                    };
 
                     let operation_log = client.operation_log();
 
@@ -522,7 +530,7 @@ fn mempool_api_url(network: bitcoin::Network) -> String {
         bitcoin::Network::Signet => "https://mutinynet.com/api".to_string(),
         bitcoin::Network::Regtest => {
             // referencing devimint, uncomment for regtest
-             "http://localhost:20440".to_string()
+             "http://localhost:20744".to_string()
             //panic!("Regtest requires manually setting the connection params")
         }
         network => {
