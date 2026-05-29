@@ -530,7 +530,8 @@ impl Multimint {
             unbounded_channel::<(FederationId, TweakIdx)>();
 
         let task_group = TaskGroup::new();
-        let wallet_handler = WalletHandler::new(pegin_address_monitor_tx, task_group.clone());
+        let wallet_handler =
+            WalletHandler::new(pegin_address_monitor_tx, db.clone(), task_group.clone());
 
         let mut multimint = Self {
             db,
@@ -547,7 +548,7 @@ impl Multimint {
 
         multimint.load_clients().await?;
         wallet_handler.spawn_pegin_address_watcher(pegin_address_monitor_rx, multimint.clients.clone());
-        wallet_handler.monitor_all_unused_pegin_addresses(multimint.clients.clone());
+        wallet_handler.monitor_all_pending_deposits(multimint.clients.clone());
         multimint.run_migrations().await;
         multimint.spawn_cache_task();
         multimint.spawn_recurring_invoice_listener();

@@ -1,7 +1,7 @@
 use std::{collections::BTreeMap, sync::Arc, time::Duration, str::FromStr};
 
 use fedimint_client::ClientHandleArc;
-use fedimint_core::{Amount, config::FederationId, task::TaskGroup};
+use fedimint_core::{Amount, config::FederationId, db::{Database, IDatabaseTransactionOpsCoreTyped}, task::TaskGroup};
 use fedimint_eventlog::{Event, EventLogId};
 use fedimint_wallet_client::{DepositStateV2, WalletClientModule, WalletOperationMeta, WalletOperationMetaVariant, api::WalletFederationApi, client_db::TweakIdx};
 use fedimint_walletv2_client::{
@@ -11,7 +11,7 @@ use fedimint_walletv2_client::{
 use futures_util::StreamExt;
 use tokio::sync::{RwLock, mpsc::{UnboundedReceiver, UnboundedSender}};
 
-use crate::{event_bus::EventBus, get_event_bus, info_to_flutter, multimint::{AwaitingConfsEvent, ClaimedEvent, ConfirmedEvent, DepositEventKind, MempoolEvent, MultimintEvent}};
+use crate::{db::{WalletV2PendingDepositFederationPrefix, WalletV2PendingDepositKey}, event_bus::EventBus, get_event_bus, info_to_flutter, multimint::{AwaitingConfsEvent, ClaimedEvent, ConfirmedEvent, DepositEventKind, MempoolEvent, MultimintEvent}};
 
 
 #[derive(Clone)]
@@ -19,14 +19,23 @@ pub(crate) struct WalletHandler {
     pegin_address_monitor_tx: UnboundedSender<(FederationId, TweakIdx)>,
     allocated_bitcoin_addresses:
         Arc<RwLock<BTreeMap<FederationId, BTreeMap<TweakIdx, (String, Option<u64>)>>>>,
+    /// App-level database, used to persist in-flight walletv2 receive addresses
+    /// (see [`WalletV2PendingDepositKey`]) so the poller can be restarted on app
+    /// launch.
+    db: Database,
     task_group: TaskGroup,
 }
 
 impl WalletHandler {
-    pub(crate) fn new(monitor_tx: UnboundedSender<(FederationId, TweakIdx)>, task_group: TaskGroup) -> Self { 
+    pub(crate) fn new(
+        monitor_tx: UnboundedSender<(FederationId, TweakIdx)>,
+        db: Database,
+        task_group: TaskGroup,
+    ) -> Self {
         Self {
             pegin_address_monitor_tx: monitor_tx,
             allocated_bitcoin_addresses: Arc::new(RwLock::new(BTreeMap::new())),
+            db,
             task_group,
         }
     }
@@ -165,26 +174,33 @@ impl WalletHandler {
         Ok(())
     }
 
-    pub(crate) fn monitor_all_unused_pegin_addresses(
+    /// Re-establishes pending-deposit monitoring for every federation on
+    /// startup. Walletv1 and walletv2 are rehydrated from different sources, so
+    /// each client is dispatched by module type:
+    ///
+    /// - **walletv1**: the Fedimint client DB holds a deposit operation per
+    ///   handed-out address, so we scan tweak indices and re-subscribe to the
+    ///   v1 deposit stream for unclaimed ones.
+    /// - **walletv2**: there is no client operation to rediscover, so we
+    ///   re-spawn the esplora poller from our own persisted addresses (see
+    ///   [`Self::resume_pending_v2_deposits`]).
+    pub(crate) fn monitor_all_pending_deposits(
         &self,
         clients: Arc<RwLock<BTreeMap<FederationId, ClientHandleArc>>>,
     ) {
+        let handler = self.clone();
         let pegin_address_monitor_tx_clone = self.pegin_address_monitor_tx.clone();
         let addresses_clone = self.allocated_bitcoin_addresses.clone();
 
         self.task_group
-            .spawn_cancellable("unused address monitor", async move {
+            .spawn_cancellable("pending deposit monitor", async move {
                 let clients_guard = clients.read().await;
                 for (fed_id, client) in clients_guard.iter() {
                     // walletv2 federations have no v1 wallet module and no tweak
-                    // indices to scan; their unused deposit addresses are tracked
-                    // by the poller + event-log listener, so skip them here
-                    // instead of panicking.
+                    // indices to scan; rehydrate their pollers from our persisted
+                    // addresses instead.
                     let Ok(wallet_module) = client.get_first_module::<WalletClientModule>() else {
-                        info_to_flutter(format!(
-                            "monitor_all_unused_pegin_addresses: skipping fed {fed_id} (no walletv1 module)"
-                        ))
-                        .await;
+                        handler.resume_pending_v2_deposits(*fed_id, client).await;
                         continue;
                     };
 
@@ -260,6 +276,10 @@ impl WalletHandler {
                 "monitor_deposit_address: walletv2 detected for fed {federation_id}, spawning deposit poller for address {address}"
             ))
             .await;
+            // Persist the handed-out address so the poller can be restarted after
+            // an app restart (walletv2 has no client operation to rediscover it
+            // from). The entry is removed once the deposit is claimed.
+            self.persist_pending_v2_deposit(federation_id, &address).await;
             self.spawn_v2_deposit_poller(federation_id, address, client);
             return Ok(None);
         }
@@ -321,6 +341,112 @@ impl WalletHandler {
             .await?;
 
         Ok((address, tweak_idx))
+    }
+
+    /// Persists a handed-out walletv2 receive address so its deposit poller can
+    /// be restarted after an app restart (see [`WalletV2PendingDepositKey`]).
+    async fn persist_pending_v2_deposit(&self, federation_id: FederationId, address: &str) {
+        let mut dbtx = self.db.begin_transaction().await;
+        dbtx.insert_entry(
+            &WalletV2PendingDepositKey {
+                federation_id,
+                address: address.to_string(),
+            },
+            &(),
+        )
+        .await;
+        dbtx.commit_tx().await;
+    }
+
+    /// Removes a persisted walletv2 receive address once its deposit no longer
+    /// needs tracking (claimed, or found to be already claimed on rescan).
+    ///
+    /// Takes `&Database` rather than `&self` so it can be called from the
+    /// spawned event-listener tasks that only capture a cloned handle.
+    async fn remove_pending_v2_deposit(db: &Database, federation_id: FederationId, address: &str) {
+        let mut dbtx = db.begin_transaction().await;
+        dbtx.remove_entry(&WalletV2PendingDepositKey {
+            federation_id,
+            address: address.to_string(),
+        })
+        .await;
+        dbtx.commit_tx().await;
+    }
+
+    /// Returns the set of walletv2 receive addresses that already have a
+    /// `ReceivePaymentEvent` in the client's event log — i.e. the federation has
+    /// already recorded the confirmed deposit, so the mempool/awaiting-confs
+    /// poller has nothing left to do for them.
+    async fn v2_addresses_with_receive_event(
+        client: &ClientHandleArc,
+    ) -> std::collections::BTreeSet<String> {
+        let mut addresses = std::collections::BTreeSet::new();
+        let log = client.get_event_log(None, u64::MAX).await;
+        for event in &log {
+            if event.module_kind() != Some(&fedimint_walletv2_client::common::KIND)
+                || event.kind != V2ReceivePaymentEvent::KIND
+            {
+                continue;
+            }
+            if let Some(receive_event) = event.to_event::<V2ReceivePaymentEvent>() {
+                addresses.insert(receive_event.address.assume_checked().to_string());
+            }
+        }
+        addresses
+    }
+
+    /// Re-spawns the walletv2 deposit poller for `client`'s
+    /// persisted-but-unclaimed receive addresses. Called per federation by
+    /// [`Self::monitor_all_pending_deposits`] for the walletv2 case: walletv2
+    /// creates no client operation at address-allocation time, so there is
+    /// nothing in the Fedimint client DB to rediscover in-flight deposits from
+    /// on startup — we rely on our own [`WalletV2PendingDepositKey`] persistence
+    /// instead.
+    ///
+    /// If a persisted address was already recorded by the federation while the
+    /// app was closed (its `ReceivePaymentEvent` is already in the event log),
+    /// the poller would have nothing to do, so we drop the persisted entry and
+    /// skip it.
+    async fn resume_pending_v2_deposits(
+        &self,
+        federation_id: FederationId,
+        client: &ClientHandleArc,
+    ) {
+        if client.get_first_module::<WalletV2Module>().is_err() {
+            return;
+        }
+
+        let pending: Vec<String> = {
+            let mut dbtx = self.db.begin_transaction_nc().await;
+            dbtx.find_by_prefix(&WalletV2PendingDepositFederationPrefix { federation_id })
+                .await
+                .map(|(k, _)| k.address)
+                .collect()
+                .await
+        };
+
+        if pending.is_empty() {
+            return;
+        }
+
+        let already_seen = Self::v2_addresses_with_receive_event(client).await;
+
+        for address in pending {
+            if already_seen.contains(&address) {
+                info_to_flutter(format!(
+                    "resume_pending_v2_deposits: {address} on fed {federation_id} already recorded by federation, cleaning up"
+                ))
+                .await;
+                Self::remove_pending_v2_deposit(&self.db, federation_id, &address).await;
+                continue;
+            }
+
+            info_to_flutter(format!(
+                "resume_pending_v2_deposits: resuming deposit poller for {address} on fed {federation_id}"
+            ))
+            .await;
+            self.spawn_v2_deposit_poller(federation_id, address, client.clone());
+        }
     }
 
     /// Spawns a background task that watches the chain for a deposit to a
@@ -415,6 +541,7 @@ impl WalletHandler {
 
         let event_bus = get_event_bus();
         let task_group = self.task_group.clone();
+        let db = self.db.clone();
         let mut log_event_added_rx = client.log_event_added_rx();
         self.task_group
             .spawn_cancellable("walletv2 deposit event listener", async move {
@@ -479,6 +606,7 @@ impl WalletHandler {
                         // Await the claim, then surface Claimed.
                         let event_bus = event_bus.clone();
                         let client = client.clone();
+                        let db = db.clone();
                         task_group.spawn_cancellable("walletv2 await claim", async move {
                             let Ok(wallet_module) = client.get_first_module::<WalletV2Module>()
                             else {
@@ -493,6 +621,9 @@ impl WalletHandler {
                                         "spawn_v2_deposit_event_listener: receive op {operation_id:?} succeeded for fed {federation_id} address={address}, publishing Claimed"
                                     ))
                                     .await;
+                                    // Deposit is done; stop tracking it across restarts.
+                                    Self::remove_pending_v2_deposit(&db, federation_id, &address)
+                                        .await;
                                     event_bus
                                         .publish(MultimintEvent::Deposit((
                                             federation_id,
@@ -530,7 +661,7 @@ fn mempool_api_url(network: bitcoin::Network) -> String {
         bitcoin::Network::Signet => "https://mutinynet.com/api".to_string(),
         bitcoin::Network::Regtest => {
             // referencing devimint, uncomment for regtest
-             "http://localhost:20744".to_string()
+             "http://localhost:20782".to_string()
             //panic!("Regtest requires manually setting the connection params")
         }
         network => {
