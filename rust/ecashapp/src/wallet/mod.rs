@@ -248,6 +248,10 @@ impl WalletHandler {
         // listener (see `spawn_v2_deposit_event_listener`) surfaces confirmed and
         // claimed. There is no tweak index to return.
         if client.get_first_module::<WalletV2Module>().is_ok() {
+            info_to_flutter(format!(
+                "monitor_deposit_address: walletv2 detected for fed {federation_id}, spawning deposit poller for address {address}"
+            ))
+            .await;
             self.spawn_v2_deposit_poller(federation_id, address, client);
             return Ok(None);
         }
@@ -351,6 +355,11 @@ impl WalletHandler {
         let api_url = mempool_api_url(network);
         let http = reqwest::Client::new();
 
+        info_to_flutter(format!(
+            "watch_v2_pegin_address: polling {api_url} for deposit to {address} (network {network})"
+        ))
+        .await;
+
         let (txid, value) = fedimint_core::util::retry(
             "discover walletv2 deposit",
             fedimint_core::util::backoff_util::background_backoff(),
@@ -358,6 +367,12 @@ impl WalletHandler {
         )
         .await
         .expect("Never gives up");
+
+        info_to_flutter(format!(
+            "watch_v2_pegin_address: discovered deposit txid={txid} value={} sats to {address}, tracking confirmation",
+            value.to_sat()
+        ))
+        .await;
 
         track_pegin_confirmation(
             federation_id,
@@ -402,8 +417,17 @@ impl WalletHandler {
                     .map(|e| e.id().saturating_add(1))
                     .unwrap_or(EventLogId::LOG_START);
 
+                info_to_flutter(format!(
+                    "spawn_v2_deposit_event_listener: started for fed {federation_id}, listening from log position {position:?}"
+                ))
+                .await;
+
                 loop {
                     if log_event_added_rx.changed().await.is_err() {
+                        info_to_flutter(format!(
+                            "spawn_v2_deposit_event_listener: log_event_added_rx closed for fed {federation_id}, stopping"
+                        ))
+                        .await;
                         break;
                     }
 
@@ -426,6 +450,11 @@ impl WalletHandler {
                         let address = receive_event.address.assume_checked().to_string();
                         let amount_msats = Amount::from_sats(receive_event.value.to_sat()).msats;
                         let operation_id = receive_event.operation_id;
+
+                        info_to_flutter(format!(
+                            "spawn_v2_deposit_event_listener: ReceivePaymentEvent for fed {federation_id} address={address} amount={amount_msats} msats op={operation_id:?}, publishing Confirmed"
+                        ))
+                        .await;
 
                         // The federation has seen the confirmed deposit and is
                         // claiming it.
@@ -452,6 +481,10 @@ impl WalletHandler {
                                 .await
                             {
                                 Ok(FinalReceiveOperationState::Success) => {
+                                    info_to_flutter(format!(
+                                        "spawn_v2_deposit_event_listener: receive op {operation_id:?} succeeded for fed {federation_id} address={address}, publishing Claimed"
+                                    ))
+                                    .await;
                                     event_bus
                                         .publish(MultimintEvent::Deposit((
                                             federation_id,
@@ -571,6 +604,11 @@ where
 {
     let amount_msats = Amount::from_sats(btc_deposited.to_sat()).msats;
 
+    info_to_flutter(format!(
+        "track_pegin_confirmation: publishing Mempool event for fed {federation_id} outpoint={outpoint_label} amount={amount_msats} msats"
+    ))
+    .await;
+
     event_bus
         .publish(MultimintEvent::Deposit((
             federation_id,
@@ -606,6 +644,11 @@ where
     .await
     .expect("Never gives up");
 
+    info_to_flutter(format!(
+        "track_pegin_confirmation: tx {txid} confirmed at block height {tx_height}, polling consensus height for outpoint={outpoint_label}"
+    ))
+    .await;
+
     let every_10_secs = fedimint_core::util::backoff_util::custom_backoff(
         Duration::from_secs(10),
         Duration::from_secs(10),
@@ -615,6 +658,11 @@ where
         let consensus_height = consensus_block_count().await?.saturating_sub(1);
 
         let needed = tx_height.saturating_sub(consensus_height);
+
+        info_to_flutter(format!(
+            "track_pegin_confirmation: publishing AwaitingConfs for fed {federation_id} outpoint={outpoint_label} consensus_height={consensus_height} tx_height={tx_height} needed={needed}"
+        ))
+        .await;
 
         event_bus
             .publish(MultimintEvent::Deposit((
@@ -633,6 +681,11 @@ where
     })
     .await
     .expect("Never gives up");
+
+    info_to_flutter(format!(
+        "track_pegin_confirmation: deposit fully confirmed for fed {federation_id} outpoint={outpoint_label}"
+    ))
+    .await;
 
     Ok(())
 }
