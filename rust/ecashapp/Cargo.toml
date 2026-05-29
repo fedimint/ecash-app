@@ -33,6 +33,8 @@ fedimint-mint-client = { git = "https://github.com/fedimint/fedimint", rev = "05
 fedimint-mint-common = { git = "https://github.com/fedimint/fedimint", rev = "05a18eaf2e1bd3219eff878508a535c5d4a13a28" }
 fedimint-wallet-client = { git = "https://github.com/fedimint/fedimint", rev = "05a18eaf2e1bd3219eff878508a535c5d4a13a28" }
 fedimint-wallet-common = { git = "https://github.com/fedimint/fedimint", rev = "05a18eaf2e1bd3219eff878508a535c5d4a13a28" }
+fedimint-walletv2-client = { git = "https://github.com/fedimint/fedimint", rev = "05a18eaf2e1bd3219eff878508a535c5d4a13a28" }
+fedimint-walletv2-common = { git = "https://github.com/fedimint/fedimint", rev = "05a18eaf2e1bd3219eff878508a535c5d4a13a28" }
 hex = "0.4"
 flutter_rust_bridge = "=2.9.0"
 futures-timer = "3.0.3"

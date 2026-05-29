@@ -8,6 +8,7 @@ mod frb_generated;
 mod multimint;
 mod nostr;
 mod parse;
+mod wallet;
 mod words;
 use bitcoin::key::rand::rngs::OsRng;
 use bitcoin::key::rand::seq::SliceRandom;
