@@ -574,7 +574,7 @@ pub async fn subscribe_deposits(sink: StreamSink<DepositEventKind>, federation_i
 #[frb]
 pub async fn allocate_deposit_address(
     federation_id: FederationId,
-) -> anyhow::Result<(String, u64)> {
+) -> anyhow::Result<(String, Option<u64>)> {
     let multimint = get_multimint();
     multimint.allocate_deposit_address(federation_id).await
 }
@@ -849,7 +849,7 @@ pub async fn remove_relay(relay_uri: String) -> anyhow::Result<()> {
 }
 
 #[frb]
-pub async fn get_addresses(federation_id: &FederationId) -> Vec<(String, u64, Option<u64>)> {
+pub async fn get_addresses(federation_id: &FederationId) -> Vec<(String, Option<u64>, Option<u64>)> {
     let multimint = get_multimint();
     multimint.get_addresses(federation_id).await
 }

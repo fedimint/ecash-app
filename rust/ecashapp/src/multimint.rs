@@ -3540,7 +3540,7 @@ impl Multimint {
     pub async fn allocate_deposit_address(
         &self,
         federation_id: FederationId,
-    ) -> anyhow::Result<(String, u64)> {
+    ) -> anyhow::Result<(String, Option<u64>)> {
         let client = self
             .clients
             .read()
@@ -3554,7 +3554,7 @@ impl Multimint {
     pub async fn get_addresses(
         &self,
         federation_id: &FederationId,
-    ) -> Vec<(String, u64, Option<u64>)> {
+    ) -> Vec<(String, Option<u64>, Option<u64>)> {
         self.wallet_handler.get_addresses(federation_id).await
     }
 

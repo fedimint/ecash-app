@@ -98,86 +98,17 @@ impl WalletHandler {
                     btc_deposited,
                     btc_out_point,
                 } => {
-                    let deposit_event = MultimintEvent::Deposit((
+                    track_pegin_confirmation(
                         federation_id,
-                        DepositEventKind::Mempool(MempoolEvent {
-                            amount: Amount::from_sats(btc_deposited.to_sat()).msats,
-                            outpoint: btc_out_point.to_string(),
-                        }),
-                    ));
-
-                    event_bus.publish(deposit_event).await;
-
-                    let client = reqwest::Client::new();
-
-                    let api_url = match wallet_module.get_network() {
-                        bitcoin::Network::Bitcoin => "https://mempool.space/api".to_string(),
-                        bitcoin::Network::Signet => "https://mutinynet.com/api".to_string(),
-                        bitcoin::Network::Regtest => {
-                            // referencing devimint, uncomment for regtest
-                            // "http://localhost:{FM_PORT_ESPLORA}".to_string()
-                            panic!("Regtest requires manually setting the connection params")
-                        }
-                        network => {
-                            panic!("{network} is not a supported network")
-                        }
-                    };
-
-                    let tx_height = fedimint_core::util::retry(
-                        "get confirmed block height",
-                        fedimint_core::util::backoff_util::background_backoff(),
+                        wallet_module.get_network(),
+                        btc_deposited,
+                        btc_out_point,
+                        event_bus.clone(),
                         || async {
-                            let resp = client
-                                .get(format!("{}/tx/{}", api_url, btc_out_point.txid))
-                                .send()
-                                .await?
-                                .error_for_status()?
-                                .text()
-                                .await?;
-
-                            serde_json::from_str::<serde_json::Value>(&resp)?
-                                .get("status")
-                                .and_then(|s| s.get("block_height"))
-                                .and_then(|h| h.as_u64())
-                                .ok_or_else(|| {
-                                    anyhow::anyhow!("no confirmation height yet, still in mempool")
-                                })
+                            Ok(wallet_module.api.fetch_consensus_block_count().await?)
                         },
                     )
-                    .await
-                    .expect("Never gives up");
-
-                    let every_10_secs = fedimint_core::util::backoff_util::custom_backoff(
-                        Duration::from_secs(10),
-                        Duration::from_secs(10),
-                        None,
-                    );
-                    fedimint_core::util::retry("consensus confirmation", every_10_secs, || async {
-                        let consensus_height = wallet_module
-                            .api
-                            .fetch_consensus_block_count()
-                            .await?
-                            .saturating_sub(1);
-
-                        let needed = tx_height.saturating_sub(consensus_height);
-
-                        let deposit_event = MultimintEvent::Deposit((
-                            federation_id,
-                            DepositEventKind::AwaitingConfs(AwaitingConfsEvent {
-                                amount: Amount::from_sats(btc_deposited.to_sat()).msats,
-                                outpoint: btc_out_point.to_string(),
-                                block_height: tx_height,
-                                needed,
-                            }),
-                        ));
-
-                        event_bus.publish(deposit_event).await;
-                        anyhow::ensure!(needed == 0, "{} more confs needed", needed);
-
-                        Ok(())
-                    })
-                    .await
-                    .expect("Never gives up");
+                    .await?;
 
                     // trigger another check of pegin monitor for faster claim
                     wallet_module.recheck_pegin_address(tweak_idx).await?;
@@ -303,7 +234,19 @@ impl WalletHandler {
         federation_id: FederationId,
         address: String,
         client: ClientHandleArc,
-    ) -> anyhow::Result<u64> {
+    ) -> anyhow::Result<Option<u64>> {
+        // walletv2 has no tweak index: addresses are derived locally and the
+        // module's background scanner detects and claims deposits. Mempool and
+        // confirmation tracking is driven off the event log (wired up
+        // separately via `track_pegin_confirmation`), so there is nothing to
+        // register here yet.
+        if client
+            .get_first_module::<fedimint_walletv2_client::WalletClientModule>()
+            .is_ok()
+        {
+            return Ok(None);
+        }
+
         let wallet_module = client.get_first_module::<WalletClientModule>()?;
         let address = bitcoin::Address::from_str(&address)?;
         let tweak_idx = wallet_module
@@ -317,18 +260,18 @@ impl WalletHandler {
             .send((federation_id, tweak_idx))
             .map_err(|e| anyhow::anyhow!("failed to monitor tweak index: {}", e))?;
 
-        Ok(tweak_idx.0)
+        Ok(Some(tweak_idx.0))
     }
 
     pub(crate) async fn get_addresses(
         &self,
         federation_id: &FederationId,
-    ) -> Vec<(String, u64, Option<u64>)> {
+    ) -> Vec<(String, Option<u64>, Option<u64>)> {
         let addresses = self.allocated_bitcoin_addresses.read().await;
         if let Some(fed_addresses) = addresses.get(federation_id) {
             let mut res: Vec<_> = fed_addresses
                 .iter()
-                .map(|(k, v)| (v.0.clone(), k.0, v.1))
+                .map(|(k, v)| (v.0.clone(), Some(k.0), v.1))
                 .collect();
             res.sort_by_key(|entry| entry.1);
             res
@@ -341,18 +284,130 @@ impl WalletHandler {
         &self,
         federation_id: FederationId,
         client: ClientHandleArc,
-    ) -> anyhow::Result<(String, u64)> {
-        let wallet_module =
-            client.get_first_module::<fedimint_wallet_client::WalletClientModule>()?;
+    ) -> anyhow::Result<(String, Option<u64>)> {
+        let address = if let Ok(wallet_module) =
+            client.get_first_module::<fedimint_walletv2_client::WalletClientModule>()
+        {
+            // walletv2 derives the next unused receive address locally; there is
+            // no tweak index and the background scanner handles claiming.
+            wallet_module.receive().await.to_string()
+        } else {
+            let wallet_module =
+                client.get_first_module::<fedimint_wallet_client::WalletClientModule>()?;
+            wallet_module
+                .safe_allocate_deposit_address(())
+                .await?
+                .address
+                .to_string()
+        };
 
-        let address = wallet_module
-            .safe_allocate_deposit_address(())
-            .await?
-            .address;
         let tweak_idx = self
-            .monitor_deposit_address(federation_id, address.to_string(), client)
+            .monitor_deposit_address(federation_id, address.clone(), client)
             .await?;
 
-        Ok((address.to_string(), tweak_idx))
+        Ok((address, tweak_idx))
     }
+}
+
+/// Resolves the esplora/mempool.space API base URL for the given network.
+fn mempool_api_url(network: bitcoin::Network) -> String {
+    match network {
+        bitcoin::Network::Bitcoin => "https://mempool.space/api".to_string(),
+        bitcoin::Network::Signet => "https://mutinynet.com/api".to_string(),
+        bitcoin::Network::Regtest => {
+            // referencing devimint, uncomment for regtest
+            // "http://localhost:{FM_PORT_ESPLORA}".to_string()
+            panic!("Regtest requires manually setting the connection params")
+        }
+        network => {
+            panic!("{network} is not a supported network")
+        }
+    }
+}
+
+/// Tracks a peg-in deposit from mempool detection through consensus
+/// confirmation, publishing `Mempool` and `AwaitingConfs` deposit events.
+///
+/// This is shared by walletv1 and walletv2. The deposit's outpoint and amount
+/// are surfaced differently by each module (the v1 deposit stream vs. the v2
+/// event log), and consensus block height is fetched differently as well, so
+/// the caller supplies a `consensus_block_count` fetcher.
+pub(crate) async fn track_pegin_confirmation<F, Fut>(
+    federation_id: FederationId,
+    network: bitcoin::Network,
+    btc_deposited: bitcoin::Amount,
+    btc_out_point: bitcoin::OutPoint,
+    event_bus: EventBus<MultimintEvent>,
+    consensus_block_count: F,
+) -> anyhow::Result<()>
+where
+    F: Fn() -> Fut,
+    Fut: std::future::Future<Output = anyhow::Result<u64>>,
+{
+    let amount_msats = Amount::from_sats(btc_deposited.to_sat()).msats;
+
+    event_bus
+        .publish(MultimintEvent::Deposit((
+            federation_id,
+            DepositEventKind::Mempool(MempoolEvent {
+                amount: amount_msats,
+                outpoint: btc_out_point.to_string(),
+            }),
+        )))
+        .await;
+
+    let api_url = mempool_api_url(network);
+    let http = reqwest::Client::new();
+
+    let tx_height = fedimint_core::util::retry(
+        "get confirmed block height",
+        fedimint_core::util::backoff_util::background_backoff(),
+        || async {
+            let resp = http
+                .get(format!("{}/tx/{}", api_url, btc_out_point.txid))
+                .send()
+                .await?
+                .error_for_status()?
+                .text()
+                .await?;
+
+            serde_json::from_str::<serde_json::Value>(&resp)?
+                .get("status")
+                .and_then(|s| s.get("block_height"))
+                .and_then(|h| h.as_u64())
+                .ok_or_else(|| anyhow::anyhow!("no confirmation height yet, still in mempool"))
+        },
+    )
+    .await
+    .expect("Never gives up");
+
+    let every_10_secs = fedimint_core::util::backoff_util::custom_backoff(
+        Duration::from_secs(10),
+        Duration::from_secs(10),
+        None,
+    );
+    fedimint_core::util::retry("consensus confirmation", every_10_secs, || async {
+        let consensus_height = consensus_block_count().await?.saturating_sub(1);
+
+        let needed = tx_height.saturating_sub(consensus_height);
+
+        event_bus
+            .publish(MultimintEvent::Deposit((
+                federation_id,
+                DepositEventKind::AwaitingConfs(AwaitingConfsEvent {
+                    amount: amount_msats,
+                    outpoint: btc_out_point.to_string(),
+                    block_height: tx_height,
+                    needed,
+                }),
+            )))
+            .await;
+        anyhow::ensure!(needed == 0, "{} more confs needed", needed);
+
+        Ok(())
+    })
+    .await
+    .expect("Never gives up");
+
+    Ok(())
 }

@@ -97,7 +97,7 @@ abstract class FinalReceiveOperationState implements RustOpaqueInterface {}
 abstract class Multimint implements RustOpaqueInterface {
   Future<void> ackSeedPhrase();
 
-  Future<(String, BigInt)> allocateDepositAddress({
+  Future<(String, BigInt?)> allocateDepositAddress({
     required FederationId federationId,
   });
 
@@ -171,7 +171,7 @@ abstract class Multimint implements RustOpaqueInterface {
 
   Future<List<(FederationSelector, bool)>> federations();
 
-  Future<List<(String, BigInt, BigInt?)>> getAddresses({
+  Future<List<(String, BigInt?, BigInt?)>> getAddresses({
     required FederationId federationId,
   });
 

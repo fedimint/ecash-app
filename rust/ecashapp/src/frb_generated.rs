@@ -14449,13 +14449,15 @@ impl SseDecode for Vec<(String, bool)> {
     }
 }
 
-impl SseDecode for Vec<(String, u64, Option<u64>)> {
+impl SseDecode for Vec<(String, Option<u64>, Option<u64>)> {
     // Codec=Sse (Serialization based), see doc to use other codecs
     fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
         let mut len_ = <i32>::sse_decode(deserializer);
         let mut ans_ = vec![];
         for idx_ in 0..len_ {
-            ans_.push(<(String, u64, Option<u64>)>::sse_decode(deserializer));
+            ans_.push(<(String, Option<u64>, Option<u64>)>::sse_decode(
+                deserializer,
+            ));
         }
         return ans_;
     }
@@ -15119,20 +15121,30 @@ impl SseDecode for (String, bool) {
     }
 }
 
+impl SseDecode for (String, Option<u64>) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
+        let mut var_field0 = <String>::sse_decode(deserializer);
+        let mut var_field1 = <Option<u64>>::sse_decode(deserializer);
+        return (var_field0, var_field1);
+    }
+}
+
+impl SseDecode for (String, Option<u64>, Option<u64>) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
+        let mut var_field0 = <String>::sse_decode(deserializer);
+        let mut var_field1 = <Option<u64>>::sse_decode(deserializer);
+        let mut var_field2 = <Option<u64>>::sse_decode(deserializer);
+        return (var_field0, var_field1, var_field2);
+    }
+}
+
 impl SseDecode for (String, String) {
     // Codec=Sse (Serialization based), see doc to use other codecs
     fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
         let mut var_field0 = <String>::sse_decode(deserializer);
         let mut var_field1 = <String>::sse_decode(deserializer);
-        return (var_field0, var_field1);
-    }
-}
-
-impl SseDecode for (String, u64) {
-    // Codec=Sse (Serialization based), see doc to use other codecs
-    fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
-        let mut var_field0 = <String>::sse_decode(deserializer);
-        let mut var_field1 = <u64>::sse_decode(deserializer);
         return (var_field0, var_field1);
     }
 }
@@ -15143,16 +15155,6 @@ impl SseDecode for (String, u64, bool) {
         let mut var_field0 = <String>::sse_decode(deserializer);
         let mut var_field1 = <u64>::sse_decode(deserializer);
         let mut var_field2 = <bool>::sse_decode(deserializer);
-        return (var_field0, var_field1, var_field2);
-    }
-}
-
-impl SseDecode for (String, u64, Option<u64>) {
-    // Codec=Sse (Serialization based), see doc to use other codecs
-    fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
-        let mut var_field0 = <String>::sse_decode(deserializer);
-        let mut var_field1 = <u64>::sse_decode(deserializer);
-        let mut var_field2 = <Option<u64>>::sse_decode(deserializer);
         return (var_field0, var_field1, var_field2);
     }
 }
@@ -18842,12 +18844,12 @@ impl SseEncode for Vec<(String, bool)> {
     }
 }
 
-impl SseEncode for Vec<(String, u64, Option<u64>)> {
+impl SseEncode for Vec<(String, Option<u64>, Option<u64>)> {
     // Codec=Sse (Serialization based), see doc to use other codecs
     fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
         <i32>::sse_encode(self.len() as _, serializer);
         for item in self {
-            <(String, u64, Option<u64>)>::sse_encode(item, serializer);
+            <(String, Option<u64>, Option<u64>)>::sse_encode(item, serializer);
         }
     }
 }
@@ -19434,19 +19436,28 @@ impl SseEncode for (String, bool) {
     }
 }
 
+impl SseEncode for (String, Option<u64>) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
+        <String>::sse_encode(self.0, serializer);
+        <Option<u64>>::sse_encode(self.1, serializer);
+    }
+}
+
+impl SseEncode for (String, Option<u64>, Option<u64>) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
+        <String>::sse_encode(self.0, serializer);
+        <Option<u64>>::sse_encode(self.1, serializer);
+        <Option<u64>>::sse_encode(self.2, serializer);
+    }
+}
+
 impl SseEncode for (String, String) {
     // Codec=Sse (Serialization based), see doc to use other codecs
     fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
         <String>::sse_encode(self.0, serializer);
         <String>::sse_encode(self.1, serializer);
-    }
-}
-
-impl SseEncode for (String, u64) {
-    // Codec=Sse (Serialization based), see doc to use other codecs
-    fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
-        <String>::sse_encode(self.0, serializer);
-        <u64>::sse_encode(self.1, serializer);
     }
 }
 
@@ -19456,15 +19467,6 @@ impl SseEncode for (String, u64, bool) {
         <String>::sse_encode(self.0, serializer);
         <u64>::sse_encode(self.1, serializer);
         <bool>::sse_encode(self.2, serializer);
-    }
-}
-
-impl SseEncode for (String, u64, Option<u64>) {
-    // Codec=Sse (Serialization based), see doc to use other codecs
-    fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
-        <String>::sse_encode(self.0, serializer);
-        <u64>::sse_encode(self.1, serializer);
-        <Option<u64>>::sse_encode(self.2, serializer);
     }
 }
 

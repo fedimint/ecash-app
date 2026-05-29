@@ -225,7 +225,7 @@ Stream<DepositEventKind> subscribeDeposits({
   required FederationId federationId,
 }) => RustLib.instance.api.crateSubscribeDeposits(federationId: federationId);
 
-Future<(String, BigInt)> allocateDepositAddress({
+Future<(String, BigInt?)> allocateDepositAddress({
   required FederationId federationId,
 }) => RustLib.instance.api.crateAllocateDepositAddress(
   federationId: federationId,
@@ -351,7 +351,7 @@ Future<void> insertRelay({required String relayUri}) =>
 Future<void> removeRelay({required String relayUri}) =>
     RustLib.instance.api.crateRemoveRelay(relayUri: relayUri);
 
-Future<List<(String, BigInt, BigInt?)>> getAddresses({
+Future<List<(String, BigInt?, BigInt?)>> getAddresses({
   required FederationId federationId,
 }) => RustLib.instance.api.crateGetAddresses(federationId: federationId);
 

@@ -270,7 +270,7 @@ abstract class RustLibApi extends BaseApi {
 
   Future<void> crateMultimintMultimintAckSeedPhrase({required Multimint that});
 
-  Future<(String, BigInt)> crateMultimintMultimintAllocateDepositAddress({
+  Future<(String, BigInt?)> crateMultimintMultimintAllocateDepositAddress({
     required Multimint that,
     required FederationId federationId,
   });
@@ -368,7 +368,7 @@ abstract class RustLibApi extends BaseApi {
     required Multimint that,
   });
 
-  Future<List<(String, BigInt, BigInt?)>> crateMultimintMultimintGetAddresses({
+  Future<List<(String, BigInt?, BigInt?)>> crateMultimintMultimintGetAddresses({
     required Multimint that,
     required FederationId federationId,
   });
@@ -840,7 +840,7 @@ abstract class RustLibApi extends BaseApi {
 
   Future<void> crateAddRecoveryRelay({required String relay});
 
-  Future<(String, BigInt)> crateAllocateDepositAddress({
+  Future<(String, BigInt?)> crateAllocateDepositAddress({
     required FederationId federationId,
   });
 
@@ -928,7 +928,7 @@ abstract class RustLibApi extends BaseApi {
 
   Future<List<(FederationSelector, bool)>> crateFederations();
 
-  Future<List<(String, BigInt, BigInt?)>> crateGetAddresses({
+  Future<List<(String, BigInt?, BigInt?)>> crateGetAddresses({
     required FederationId federationId,
   });
 
@@ -2921,7 +2921,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
       );
 
   @override
-  Future<(String, BigInt)> crateMultimintMultimintAllocateDepositAddress({
+  Future<(String, BigInt?)> crateMultimintMultimintAllocateDepositAddress({
     required Multimint that,
     required FederationId federationId,
   }) {
@@ -2945,7 +2945,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           );
         },
         codec: SseCodec(
-          decodeSuccessData: sse_decode_record_string_u_64,
+          decodeSuccessData: sse_decode_record_string_opt_box_autoadd_u_64,
           decodeErrorData: sse_decode_AnyhowException,
         ),
         constMeta: kCrateMultimintMultimintAllocateDepositAddressConstMeta,
@@ -3657,7 +3657,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
       );
 
   @override
-  Future<List<(String, BigInt, BigInt?)>> crateMultimintMultimintGetAddresses({
+  Future<List<(String, BigInt?, BigInt?)>> crateMultimintMultimintGetAddresses({
     required Multimint that,
     required FederationId federationId,
   }) {
@@ -3682,7 +3682,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
         },
         codec: SseCodec(
           decodeSuccessData:
-              sse_decode_list_record_string_u_64_opt_box_autoadd_u_64,
+              sse_decode_list_record_string_opt_box_autoadd_u_64_opt_box_autoadd_u_64,
           decodeErrorData: null,
         ),
         constMeta: kCrateMultimintMultimintGetAddressesConstMeta,
@@ -7504,7 +7504,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
       const TaskConstMeta(debugName: "add_recovery_relay", argNames: ["relay"]);
 
   @override
-  Future<(String, BigInt)> crateAllocateDepositAddress({
+  Future<(String, BigInt?)> crateAllocateDepositAddress({
     required FederationId federationId,
   }) {
     return handler.executeNormal(
@@ -7523,7 +7523,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           );
         },
         codec: SseCodec(
-          decodeSuccessData: sse_decode_record_string_u_64,
+          decodeSuccessData: sse_decode_record_string_opt_box_autoadd_u_64,
           decodeErrorData: sse_decode_AnyhowException,
         ),
         constMeta: kCrateAllocateDepositAddressConstMeta,
@@ -8231,7 +8231,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
       const TaskConstMeta(debugName: "federations", argNames: []);
 
   @override
-  Future<List<(String, BigInt, BigInt?)>> crateGetAddresses({
+  Future<List<(String, BigInt?, BigInt?)>> crateGetAddresses({
     required FederationId federationId,
   }) {
     return handler.executeNormal(
@@ -8251,7 +8251,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
         },
         codec: SseCodec(
           decodeSuccessData:
-              sse_decode_list_record_string_u_64_opt_box_autoadd_u_64,
+              sse_decode_list_record_string_opt_box_autoadd_u_64_opt_box_autoadd_u_64,
           decodeErrorData: null,
         ),
         constMeta: kCrateGetAddressesConstMeta,
@@ -12212,11 +12212,13 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   }
 
   @protected
-  List<(String, BigInt, BigInt?)>
-  dco_decode_list_record_string_u_64_opt_box_autoadd_u_64(dynamic raw) {
+  List<(String, BigInt?, BigInt?)>
+  dco_decode_list_record_string_opt_box_autoadd_u_64_opt_box_autoadd_u_64(
+    dynamic raw,
+  ) {
     // Codec=Dco (DartCObject based), see doc to use other codecs
     return (raw as List<dynamic>)
-        .map(dco_decode_record_string_u_64_opt_box_autoadd_u_64)
+        .map(dco_decode_record_string_opt_box_autoadd_u_64_opt_box_autoadd_u_64)
         .toList();
   }
 
@@ -12870,6 +12872,33 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   }
 
   @protected
+  (String, BigInt?) dco_decode_record_string_opt_box_autoadd_u_64(dynamic raw) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    final arr = raw as List<dynamic>;
+    if (arr.length != 2) {
+      throw Exception('Expected 2 elements, got ${arr.length}');
+    }
+    return (dco_decode_String(arr[0]), dco_decode_opt_box_autoadd_u_64(arr[1]));
+  }
+
+  @protected
+  (String, BigInt?, BigInt?)
+  dco_decode_record_string_opt_box_autoadd_u_64_opt_box_autoadd_u_64(
+    dynamic raw,
+  ) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    final arr = raw as List<dynamic>;
+    if (arr.length != 3) {
+      throw Exception('Expected 3 elements, got ${arr.length}');
+    }
+    return (
+      dco_decode_String(arr[0]),
+      dco_decode_opt_box_autoadd_u_64(arr[1]),
+      dco_decode_opt_box_autoadd_u_64(arr[2]),
+    );
+  }
+
+  @protected
   (String, String) dco_decode_record_string_string(dynamic raw) {
     // Codec=Dco (DartCObject based), see doc to use other codecs
     final arr = raw as List<dynamic>;
@@ -12877,16 +12906,6 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
       throw Exception('Expected 2 elements, got ${arr.length}');
     }
     return (dco_decode_String(arr[0]), dco_decode_String(arr[1]));
-  }
-
-  @protected
-  (String, BigInt) dco_decode_record_string_u_64(dynamic raw) {
-    // Codec=Dco (DartCObject based), see doc to use other codecs
-    final arr = raw as List<dynamic>;
-    if (arr.length != 2) {
-      throw Exception('Expected 2 elements, got ${arr.length}');
-    }
-    return (dco_decode_String(arr[0]), dco_decode_u_64(arr[1]));
   }
 
   @protected
@@ -12900,22 +12919,6 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
       dco_decode_String(arr[0]),
       dco_decode_u_64(arr[1]),
       dco_decode_bool(arr[2]),
-    );
-  }
-
-  @protected
-  (String, BigInt, BigInt?) dco_decode_record_string_u_64_opt_box_autoadd_u_64(
-    dynamic raw,
-  ) {
-    // Codec=Dco (DartCObject based), see doc to use other codecs
-    final arr = raw as List<dynamic>;
-    if (arr.length != 3) {
-      throw Exception('Expected 3 elements, got ${arr.length}');
-    }
-    return (
-      dco_decode_String(arr[0]),
-      dco_decode_u_64(arr[1]),
-      dco_decode_opt_box_autoadd_u_64(arr[2]),
     );
   }
 
@@ -14895,17 +14898,19 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   }
 
   @protected
-  List<(String, BigInt, BigInt?)>
-  sse_decode_list_record_string_u_64_opt_box_autoadd_u_64(
+  List<(String, BigInt?, BigInt?)>
+  sse_decode_list_record_string_opt_box_autoadd_u_64_opt_box_autoadd_u_64(
     SseDeserializer deserializer,
   ) {
     // Codec=Sse (Serialization based), see doc to use other codecs
 
     var len_ = sse_decode_i_32(deserializer);
-    var ans_ = <(String, BigInt, BigInt?)>[];
+    var ans_ = <(String, BigInt?, BigInt?)>[];
     for (var idx_ = 0; idx_ < len_; ++idx_) {
       ans_.add(
-        sse_decode_record_string_u_64_opt_box_autoadd_u_64(deserializer),
+        sse_decode_record_string_opt_box_autoadd_u_64_opt_box_autoadd_u_64(
+          deserializer,
+        ),
       );
     }
     return ans_;
@@ -15621,20 +15626,34 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   }
 
   @protected
+  (String, BigInt?) sse_decode_record_string_opt_box_autoadd_u_64(
+    SseDeserializer deserializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    var var_field0 = sse_decode_String(deserializer);
+    var var_field1 = sse_decode_opt_box_autoadd_u_64(deserializer);
+    return (var_field0, var_field1);
+  }
+
+  @protected
+  (String, BigInt?, BigInt?)
+  sse_decode_record_string_opt_box_autoadd_u_64_opt_box_autoadd_u_64(
+    SseDeserializer deserializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    var var_field0 = sse_decode_String(deserializer);
+    var var_field1 = sse_decode_opt_box_autoadd_u_64(deserializer);
+    var var_field2 = sse_decode_opt_box_autoadd_u_64(deserializer);
+    return (var_field0, var_field1, var_field2);
+  }
+
+  @protected
   (String, String) sse_decode_record_string_string(
     SseDeserializer deserializer,
   ) {
     // Codec=Sse (Serialization based), see doc to use other codecs
     var var_field0 = sse_decode_String(deserializer);
     var var_field1 = sse_decode_String(deserializer);
-    return (var_field0, var_field1);
-  }
-
-  @protected
-  (String, BigInt) sse_decode_record_string_u_64(SseDeserializer deserializer) {
-    // Codec=Sse (Serialization based), see doc to use other codecs
-    var var_field0 = sse_decode_String(deserializer);
-    var var_field1 = sse_decode_u_64(deserializer);
     return (var_field0, var_field1);
   }
 
@@ -15646,17 +15665,6 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
     var var_field0 = sse_decode_String(deserializer);
     var var_field1 = sse_decode_u_64(deserializer);
     var var_field2 = sse_decode_bool(deserializer);
-    return (var_field0, var_field1, var_field2);
-  }
-
-  @protected
-  (String, BigInt, BigInt?) sse_decode_record_string_u_64_opt_box_autoadd_u_64(
-    SseDeserializer deserializer,
-  ) {
-    // Codec=Sse (Serialization based), see doc to use other codecs
-    var var_field0 = sse_decode_String(deserializer);
-    var var_field1 = sse_decode_u_64(deserializer);
-    var var_field2 = sse_decode_opt_box_autoadd_u_64(deserializer);
     return (var_field0, var_field1, var_field2);
   }
 
@@ -17740,14 +17748,17 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   }
 
   @protected
-  void sse_encode_list_record_string_u_64_opt_box_autoadd_u_64(
-    List<(String, BigInt, BigInt?)> self,
+  void sse_encode_list_record_string_opt_box_autoadd_u_64_opt_box_autoadd_u_64(
+    List<(String, BigInt?, BigInt?)> self,
     SseSerializer serializer,
   ) {
     // Codec=Sse (Serialization based), see doc to use other codecs
     sse_encode_i_32(self.length, serializer);
     for (final item in self) {
-      sse_encode_record_string_u_64_opt_box_autoadd_u_64(item, serializer);
+      sse_encode_record_string_opt_box_autoadd_u_64_opt_box_autoadd_u_64(
+        item,
+        serializer,
+      );
     }
   }
 
@@ -18430,6 +18441,27 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   }
 
   @protected
+  void sse_encode_record_string_opt_box_autoadd_u_64(
+    (String, BigInt?) self,
+    SseSerializer serializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    sse_encode_String(self.$1, serializer);
+    sse_encode_opt_box_autoadd_u_64(self.$2, serializer);
+  }
+
+  @protected
+  void sse_encode_record_string_opt_box_autoadd_u_64_opt_box_autoadd_u_64(
+    (String, BigInt?, BigInt?) self,
+    SseSerializer serializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    sse_encode_String(self.$1, serializer);
+    sse_encode_opt_box_autoadd_u_64(self.$2, serializer);
+    sse_encode_opt_box_autoadd_u_64(self.$3, serializer);
+  }
+
+  @protected
   void sse_encode_record_string_string(
     (String, String) self,
     SseSerializer serializer,
@@ -18437,16 +18469,6 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
     // Codec=Sse (Serialization based), see doc to use other codecs
     sse_encode_String(self.$1, serializer);
     sse_encode_String(self.$2, serializer);
-  }
-
-  @protected
-  void sse_encode_record_string_u_64(
-    (String, BigInt) self,
-    SseSerializer serializer,
-  ) {
-    // Codec=Sse (Serialization based), see doc to use other codecs
-    sse_encode_String(self.$1, serializer);
-    sse_encode_u_64(self.$2, serializer);
   }
 
   @protected
@@ -18458,17 +18480,6 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
     sse_encode_String(self.$1, serializer);
     sse_encode_u_64(self.$2, serializer);
     sse_encode_bool(self.$3, serializer);
-  }
-
-  @protected
-  void sse_encode_record_string_u_64_opt_box_autoadd_u_64(
-    (String, BigInt, BigInt?) self,
-    SseSerializer serializer,
-  ) {
-    // Codec=Sse (Serialization based), see doc to use other codecs
-    sse_encode_String(self.$1, serializer);
-    sse_encode_u_64(self.$2, serializer);
-    sse_encode_opt_box_autoadd_u_64(self.$3, serializer);
   }
 
   @protected
@@ -19340,7 +19351,7 @@ class MultimintImpl extends RustOpaque implements Multimint {
   Future<void> ackSeedPhrase() =>
       RustLib.instance.api.crateMultimintMultimintAckSeedPhrase(that: this);
 
-  Future<(String, BigInt)> allocateDepositAddress({
+  Future<(String, BigInt?)> allocateDepositAddress({
     required FederationId federationId,
   }) => RustLib.instance.api.crateMultimintMultimintAllocateDepositAddress(
     that: this,
@@ -19478,7 +19489,7 @@ class MultimintImpl extends RustOpaque implements Multimint {
   Future<List<(FederationSelector, bool)>> federations() =>
       RustLib.instance.api.crateMultimintMultimintFederations(that: this);
 
-  Future<List<(String, BigInt, BigInt?)>> getAddresses({
+  Future<List<(String, BigInt?, BigInt?)>> getAddresses({
     required FederationId federationId,
   }) => RustLib.instance.api.crateMultimintMultimintGetAddresses(
     that: this,

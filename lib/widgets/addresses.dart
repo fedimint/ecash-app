@@ -21,7 +21,7 @@ class OnchainAddressesList extends StatefulWidget {
 }
 
 class _OnchainAddressesListState extends State<OnchainAddressesList> {
-  late Future<List<(String, BigInt, BigInt?)>> _addressesFuture;
+  late Future<List<(String, BigInt?, BigInt?)>> _addressesFuture;
 
   @override
   void initState() {
@@ -83,7 +83,7 @@ class _OnchainAddressesListState extends State<OnchainAddressesList> {
 
   @override
   Widget build(BuildContext context) {
-    return FutureBuilder<List<(String, BigInt, BigInt?)>>(
+    return FutureBuilder<List<(String, BigInt?, BigInt?)>>(
       future: _addressesFuture,
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
@@ -136,16 +136,19 @@ class _OnchainAddressesListState extends State<OnchainAddressesList> {
                     // Address row with index and buttons
                     Row(
                       children: [
-                        Text(
-                          '#${tweakIdx.toString()}',
-                          style: Theme.of(
-                            context,
-                          ).textTheme.bodyMedium?.copyWith(
-                            color: Theme.of(context).colorScheme.primary,
-                            fontWeight: FontWeight.w600,
+                        // walletv2 addresses have no tweak index to display
+                        if (tweakIdx != null) ...[
+                          Text(
+                            '#${tweakIdx.toString()}',
+                            style: Theme.of(
+                              context,
+                            ).textTheme.bodyMedium?.copyWith(
+                              color: Theme.of(context).colorScheme.primary,
+                              fontWeight: FontWeight.w600,
+                            ),
                           ),
-                        ),
-                        const SizedBox(width: 8),
+                          const SizedBox(width: 8),
+                        ],
                         Expanded(
                           child: LayoutBuilder(
                             builder: (context, constraints) {
@@ -200,15 +203,17 @@ class _OnchainAddressesListState extends State<OnchainAddressesList> {
                           },
                         ),
 
-                        // Refresh button
-                        IconButton(
-                          tooltip: context.l10n.recheckAddress,
-                          icon: const Icon(Icons.refresh),
-                          color: Theme.of(context).colorScheme.primary,
-                          onPressed: () async {
-                            await _refreshAddress(tweakIdx, address);
-                          },
-                        ),
+                        // Refresh button (walletv1 only — walletv2 has no
+                        // per-address recheck)
+                        if (tweakIdx != null)
+                          IconButton(
+                            tooltip: context.l10n.recheckAddress,
+                            icon: const Icon(Icons.refresh),
+                            color: Theme.of(context).colorScheme.primary,
+                            onPressed: () async {
+                              await _refreshAddress(tweakIdx, address);
+                            },
+                          ),
                       ],
                     ),
 
