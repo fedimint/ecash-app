@@ -668,8 +668,26 @@ impl Multimint {
                                     self_copy.spawn_await_ecash_reissue(federation_id, op_id);
                                     self_copy.spawn_await_ecash_send(federation_id, op_id);
                                 }
-                                // Wallet operations are handled by the pegin monitor
-                                "wallet" => {}
+                                // Deposits/receives are re-driven by the pegin
+                                // monitor (v1) and the deposit event listener
+                                // (v2); in-flight on-chain sends (peg-outs) have
+                                // no other driver, so consume those to completion
+                                // here. (We gate on the op type because awaiting a
+                                // send state on a receive op would never resolve.)
+                                "wallet" => {
+                                    if let WalletOperationMetaVariant::Withdraw { .. } =
+                                        entry.meta::<WalletOperationMeta>().variant
+                                    {
+                                        self_copy.spawn_await_withdraw(federation_id, op_id);
+                                    }
+                                }
+                                "walletv2" => {
+                                    if let WalletV2OperationMeta::Send(_) =
+                                        entry.meta::<WalletV2OperationMeta>()
+                                    {
+                                        self_copy.spawn_await_withdraw(federation_id, op_id);
+                                    }
+                                }
                                 module => {
                                     info_to_flutter(format!(
                                         "Active operation needs to be driven to completion: {module}"
@@ -2174,6 +2192,28 @@ impl Multimint {
                 }
             }
         });
+    }
+
+    /// Drives an on-chain send (peg-out) operation to completion. Used on
+    /// startup to finish a withdraw that was in flight when the app last closed;
+    /// works for both walletv1 and walletv2 (see [`Self::await_withdraw`]).
+    fn spawn_await_withdraw(&self, federation_id: FederationId, operation_id: OperationId) {
+        let self_copy = self.clone();
+        self.task_group
+            .spawn_cancellable("await withdraw", async move {
+                match self_copy.await_withdraw(&federation_id, operation_id).await {
+                    Ok(txid) => {
+                        info_to_flutter(format!("On-chain send completed: {txid}")).await;
+                    }
+                    Err(e) => {
+                        // await_withdraw already surfaces genuine failures via a
+                        // toast; this only records the outcome (or a no-op error from
+                        // driving an operation that isn't a send).
+                        info_to_flutter(format!("await_withdraw({operation_id:?}) ended: {e}"))
+                            .await;
+                    }
+                }
+            });
     }
 
     pub async fn await_send(
