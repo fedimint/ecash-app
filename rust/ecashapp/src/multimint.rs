@@ -3586,12 +3586,24 @@ impl Multimint {
                     .clone()
             }
         };
-        // TODO: walletv2 exposes the federation's UTXO set via `tx_chain` on its
-        // module API; surface those here instead of returning empty. For now a
-        // walletv2-only federation reports no UTXOs rather than erroring.
-        let Ok(wallet_module) = client.get_first_module::<WalletClientModule>() else {
-            return Ok(Vec::new());
-        };
+        // walletv2 holds a single consolidated UTXO at the federation rather
+        // than a client-side UTXO set. The last entry of its transaction chain
+        // is that current UTXO (a single change output at vout 0).
+        if let Ok(wallet_module) = client.get_first_module::<WalletV2Module>() {
+            let tx_chain = wallet_module.tx_chain().await?;
+            let utxos = tx_chain
+                .last()
+                .map(|tip| Utxo {
+                    txid: tip.txid.to_string(),
+                    index: 0,
+                    amount: tip.output.to_sat() * 1000,
+                })
+                .into_iter()
+                .collect();
+            return Ok(utxos);
+        }
+
+        let wallet_module = client.get_first_module::<WalletClientModule>()?;
         let wallet_summary = wallet_module.get_wallet_summary().await?;
         let mut utxos: Vec<Utxo> = wallet_summary
             .spendable_utxos

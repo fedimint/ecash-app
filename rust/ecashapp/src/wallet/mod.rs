@@ -727,7 +727,7 @@ fn mempool_api_url(network: bitcoin::Network) -> String {
         bitcoin::Network::Signet => "https://mutinynet.com/api".to_string(),
         bitcoin::Network::Regtest => {
             // referencing devimint, uncomment for regtest
-            "http://localhost:20896".to_string()
+            "http://localhost:20934".to_string()
             //panic!("Regtest requires manually setting the connection params")
         }
         network => {
