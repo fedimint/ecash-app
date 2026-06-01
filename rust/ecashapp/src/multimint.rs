@@ -59,7 +59,7 @@ use fedimint_wallet_client::{
     WalletOperationMetaVariant,
 };
 use fedimint_walletv2_client::{
-    WalletClientInit as WalletV2Init,
+    WalletClientInit as WalletV2Init, WalletClientModule as WalletV2Module,
 };
 use futures_util::{stream, Stream, StreamExt};
 use lightning_invoice::{Bolt11Invoice, Description};
@@ -1112,6 +1112,20 @@ impl Multimint {
         Some(SafeUrl::parse(url_str).ok()?.to_string())
     }
 
+    /// Resolves the Bitcoin network for a federation from whichever wallet
+    /// module it has. walletv1 and walletv2 both expose `get_network()`, but a
+    /// federation only has one of them, so we try both. Returns `None` for a
+    /// federation with no wallet module at all.
+    fn wallet_network(client: &ClientHandleArc) -> Option<String> {
+        if let Ok(wallet) = client.get_first_module::<WalletV2Module>() {
+            return Some(wallet.get_network().to_string());
+        }
+        if let Ok(wallet) = client.get_first_module::<fedimint_wallet_client::WalletClientModule>() {
+            return Some(wallet.get_network().to_string());
+        }
+        None
+    }
+
     async fn cache_federation_meta(
         &self,
         client: ClientHandleArc,
@@ -1120,10 +1134,7 @@ impl Multimint {
         let federation_id = client.federation_id();
 
         let config = client.config().await;
-        let network = client
-            .get_first_module::<fedimint_wallet_client::WalletClientModule>()
-            .ok()
-            .map(|wallet| wallet.get_network().to_string());
+        let network = Self::wallet_network(&client);
 
         // Load cached guardian versions so we can preserve them when a guardian is offline
         let cached_versions: BTreeMap<u16, Option<String>> = {
@@ -1357,13 +1368,7 @@ impl Multimint {
             .expect("No federation name")
             .to_owned();
 
-        let network = if let Ok(wallet) =
-            client.get_first_module::<fedimint_wallet_client::WalletClientModule>()
-        {
-            Some(wallet.get_network().to_string())
-        } else {
-            None
-        };
+        let network = Self::wallet_network(&client);
 
         let federation_config = FederationConfig {
             connector: Connector::default(),
@@ -3541,7 +3546,12 @@ impl Multimint {
                     .clone()
             }
         };
-        let wallet_module = client.get_first_module::<WalletClientModule>()?;
+        // TODO: walletv2 exposes the federation's UTXO set via `tx_chain` on its
+        // module API; surface those here instead of returning empty. For now a
+        // walletv2-only federation reports no UTXOs rather than erroring.
+        let Ok(wallet_module) = client.get_first_module::<WalletClientModule>() else {
+            return Ok(Vec::new());
+        };
         let wallet_summary = wallet_module.get_wallet_summary().await?;
         let mut utxos: Vec<Utxo> = wallet_summary
             .spendable_utxos
