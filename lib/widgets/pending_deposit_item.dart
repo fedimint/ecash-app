@@ -25,10 +25,17 @@ class PendingDepositItem extends StatelessWidget {
         amount = e.amount;
         break;
       case DepositEventKind_AwaitingConfs(field0: final e):
-        msg = context.l10n.txInBlockRemainingConfs(
-          e.blockHeight.toString(),
-          e.needed.toString(),
-        );
+        // Once the tx is fully confirmed (0 confs left), the on-chain wait is
+        // over and we're waiting on the ecash claim (for walletv2 this happens
+        // in the background and isn't instant), so showing "0 confs left" would
+        // be confusing.
+        msg =
+            e.needed == BigInt.zero
+                ? context.l10n.txConfirmedClaimingEcash
+                : context.l10n.txInBlockRemainingConfs(
+                  e.blockHeight.toString(),
+                  e.needed.toString(),
+                );
         amount = e.amount;
         break;
       case DepositEventKind_Confirmed(field0: final e):

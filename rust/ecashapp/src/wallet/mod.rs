@@ -36,6 +36,7 @@ use crate::{
     payment_error_to_flutter,
 };
 
+#[allow(clippy::type_complexity)]
 #[derive(Clone)]
 pub(crate) struct WalletHandler {
     pegin_address_monitor_tx: UnboundedSender<(FederationId, TweakIdx)>,
@@ -984,8 +985,8 @@ fn mempool_api_url(network: bitcoin::Network) -> String {
         bitcoin::Network::Signet => "https://mutinynet.com/api".to_string(),
         bitcoin::Network::Regtest => {
             // referencing devimint, uncomment for regtest
-            "http://localhost:20972".to_string()
-            //panic!("Regtest requires manually setting the connection params")
+            //"http://localhost:21010".to_string()
+            panic!("Regtest requires manually setting the connection params")
         }
         network => {
             panic!("{network} is not a supported network")

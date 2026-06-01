@@ -535,7 +535,7 @@ impl Multimint {
         modules.attach(LightningClientInit::default());
         modules.attach(MintClientInit);
         modules.attach(WalletClientInit::default());
-        modules.attach(WalletV2Init::default());
+        modules.attach(WalletV2Init);
         modules.attach(fedimint_lnv2_client::LightningClientInit::default());
         modules.attach(MetaClientInit);
 
