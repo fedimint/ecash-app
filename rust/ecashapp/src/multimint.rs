@@ -52,8 +52,8 @@ use fedimint_mint_client::{
 };
 use fedimint_mint_common::config::MintClientConfig;
 use fedimint_wallet_client::client_db::TweakIdx;
-use fedimint_wallet_client::WithdrawState;
 use fedimint_wallet_client::TxOutputSummary;
+use fedimint_wallet_client::WithdrawState;
 use fedimint_wallet_client::{
     DepositStateV2, PegOutFees, WalletClientInit, WalletClientModule, WalletOperationMeta,
     WalletOperationMetaVariant,
@@ -66,22 +66,24 @@ use lightning_invoice::{Bolt11Invoice, Description};
 use reqwest::StatusCode;
 use serde::{Deserialize, Serialize};
 use serde_json::{from_value, json};
-use tokio::{
-    sync::mpsc::unbounded_channel,
-    time::Instant,
-};
+use tokio::{sync::mpsc::unbounded_channel, time::Instant};
 use tokio::{sync::RwLock, time::timeout};
 
+use crate::get_event_bus;
 use crate::{
-    FederationConfig, FederationConfigKey, FederationConfigKeyPrefix, SeedPhraseAckKey, anyhow, app_error::{EcashAppError, EcashAppResult, classify_anyhow}, db::{
+    anyhow,
+    app_error::{classify_anyhow, EcashAppError, EcashAppResult},
+    db::{
         BitcoinDisplay, BitcoinDisplayKey, BtcPrice, BtcPriceKey, BtcPrices, BtcPricesKey,
         Connector, ContactSyncConfigKey, FederationBackupKey, FederationMetaKey,
         FederationMetaKeyPrefix, FiatCurrency, FiatCurrencyKey, LightningAddressConfig,
         LightningAddressKey, LightningAddressKeyPrefix, PinCodeHashKey, RequirePinForSpendingKey,
         SchemaVersionKey,
-    }, error_to_flutter, get_nostr_client, info_to_flutter, payment_error_to_flutter, wallet::WalletHandler
+    },
+    error_to_flutter, get_nostr_client, info_to_flutter, payment_error_to_flutter,
+    wallet::WalletHandler,
+    FederationConfig, FederationConfigKey, FederationConfigKeyPrefix, SeedPhraseAckKey,
 };
-use crate::get_event_bus;
 
 const DEFAULT_EXPIRY_TIME_SECS: u32 = 86400;
 const CACHE_UPDATE_INTERVAL_SECS: u64 = 30;
@@ -547,7 +549,8 @@ impl Multimint {
         };
 
         multimint.load_clients().await?;
-        wallet_handler.spawn_pegin_address_watcher(pegin_address_monitor_rx, multimint.clients.clone());
+        wallet_handler
+            .spawn_pegin_address_watcher(pegin_address_monitor_rx, multimint.clients.clone());
         wallet_handler.monitor_all_pending_deposits(multimint.clients.clone());
         multimint.run_migrations().await;
         multimint.spawn_cache_task();
@@ -751,7 +754,7 @@ impl Multimint {
                     }
                 }
             });
-    }  
+    }
 
     pub async fn contains_client(&self, federation_id: &FederationId) -> bool {
         self.clients.read().await.contains_key(federation_id)
@@ -1120,7 +1123,8 @@ impl Multimint {
         if let Ok(wallet) = client.get_first_module::<WalletV2Module>() {
             return Some(wallet.get_network().to_string());
         }
-        if let Ok(wallet) = client.get_first_module::<fedimint_wallet_client::WalletClientModule>() {
+        if let Ok(wallet) = client.get_first_module::<fedimint_wallet_client::WalletClientModule>()
+        {
             return Some(wallet.get_network().to_string());
         }
         None
@@ -3491,7 +3495,7 @@ impl Multimint {
             .ok_or_else(|| EcashAppError::other("Not enough funds to pay fees"))?;
 
         Ok(max_withdrawable.to_sat())
-    }  
+    }
 
     pub async fn get_pegin_fee(&self, federation_id: &FederationId) -> anyhow::Result<u64> {
         let client = self
@@ -3573,14 +3577,25 @@ impl Multimint {
             .get(&federation_id)
             .expect("No federation exists")
             .clone();
-        self.wallet_handler.allocate_deposit_address(federation_id, client).await
+        self.wallet_handler
+            .allocate_deposit_address(federation_id, client)
+            .await
     }
 
     pub async fn get_addresses(
         &self,
         federation_id: &FederationId,
     ) -> Vec<(String, Option<u64>, Option<u64>)> {
-        self.wallet_handler.get_addresses(federation_id).await
+        let client = {
+            let clients = self.clients.read().await;
+            clients.get(federation_id).cloned()
+        };
+        let Some(client) = client else {
+            return Vec::new();
+        };
+        self.wallet_handler
+            .get_addresses(federation_id, &client)
+            .await
     }
 
     pub async fn get_btc_price(&self) -> Option<u64> {
@@ -3603,7 +3618,7 @@ impl Multimint {
             (FiatCurrency::Aud, prices.aud),
             (FiatCurrency::Jpy, prices.jpy),
         ])
-    } 
+    }
 
     pub async fn recheck_address(
         &self,

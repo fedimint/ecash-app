@@ -367,14 +367,18 @@ impl_db_record!(
     db_prefix = DbKeyPrefix::ShowMsats,
 );
 
-/// Tracks walletv2 receive (peg-in) addresses we have handed out and are still
-/// waiting on. Unlike walletv1, walletv2 creates no client operation at
-/// address-allocation time (the module's background scanner only records a
-/// deposit once it is already confirmed), so there is nothing in the Fedimint
-/// client DB to enumerate in-flight deposits on startup. We persist the
-/// addresses here so the startup rescan can re-spawn the esplora poller that
-/// surfaces the mempool/awaiting-confirmation UI. The entry is removed once the
-/// deposit reaches `Claimed`.
+/// Tracks every walletv2 receive (peg-in) address we have handed out, which is
+/// the source of truth for the deposit-address list shown in the UI. Unlike
+/// walletv1, walletv2 creates no client operation at address-allocation time
+/// (the module's background scanner only records a deposit once it is already
+/// confirmed), so there is nothing in the Fedimint client DB to enumerate these
+/// from.
+///
+/// The value is the deposited amount in sats once the federation has recorded
+/// the deposit, or `None` while the address is still unfunded. A `None` entry
+/// also tells the startup rescan to re-spawn the esplora poller that surfaces
+/// the mempool/awaiting-confirmation UI; entries are never deleted, so funded
+/// addresses keep showing in the list.
 ///
 /// `federation_id` is encoded first so `WalletV2PendingDepositFederationPrefix`
 /// is a valid key prefix for per-federation lookups.
@@ -391,7 +395,7 @@ pub(crate) struct WalletV2PendingDepositFederationPrefix {
 
 impl_db_record!(
     key = WalletV2PendingDepositKey,
-    value = (),
+    value = Option<u64>,
     db_prefix = DbKeyPrefix::WalletV2PendingDeposit,
 );
 

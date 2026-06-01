@@ -849,7 +849,9 @@ pub async fn remove_relay(relay_uri: String) -> anyhow::Result<()> {
 }
 
 #[frb]
-pub async fn get_addresses(federation_id: &FederationId) -> Vec<(String, Option<u64>, Option<u64>)> {
+pub async fn get_addresses(
+    federation_id: &FederationId,
+) -> Vec<(String, Option<u64>, Option<u64>)> {
     let multimint = get_multimint();
     multimint.get_addresses(federation_id).await
 }
