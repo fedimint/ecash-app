@@ -123,7 +123,7 @@ class _TransactionsListState extends State<TransactionsList> {
       case PaymentType.lightning:
         return ['ln', 'lnv2'];
       case PaymentType.onchain:
-        return ['wallet'];
+        return ['wallet', 'walletv2'];
       case PaymentType.ecash:
         return ['mint'];
     }

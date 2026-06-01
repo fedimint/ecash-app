@@ -59,7 +59,9 @@ use fedimint_wallet_client::{
     WalletOperationMetaVariant,
 };
 use fedimint_walletv2_client::{
+    FinalReceiveOperationState as WalletV2FinalReceiveOperationState,
     WalletClientInit as WalletV2Init, WalletClientModule as WalletV2Module,
+    WalletOperationMeta as WalletV2OperationMeta,
 };
 use futures_util::{stream, Stream, StreamExt};
 use lightning_invoice::{Bolt11Invoice, Description};
@@ -2858,6 +2860,40 @@ impl Multimint {
                                 // RbfWithdrawal isn't supported
                                 None
                             }
+                        }
+                    }
+                    "walletv2" => {
+                        let meta = op_log_val.meta::<WalletV2OperationMeta>();
+                        match meta {
+                            WalletV2OperationMeta::Receive(receive) => {
+                                // The operation's outcome is persisted once the
+                                // claim finalizes (driven by the deposit event
+                                // listener), so only successful deposits surface.
+                                let outcome =
+                                    op_log_val.outcome::<WalletV2FinalReceiveOperationState>();
+                                if let Some(WalletV2FinalReceiveOperationState::Success) = outcome {
+                                    let amount = Amount::from_sats(receive.value.to_sat()).msats;
+                                    let address = receive
+                                        .address
+                                        .map(|a| a.assume_checked().to_string())
+                                        .unwrap_or_default();
+                                    let txid = receive
+                                        .outpoint
+                                        .map(|o| o.txid.to_string())
+                                        .unwrap_or_default();
+
+                                    Some(Transaction {
+                                        kind: TransactionKind::OnchainReceive { address, txid },
+                                        amount,
+                                        timestamp,
+                                        operation_id: key.operation_id.0.to_vec(),
+                                    })
+                                } else {
+                                    None
+                                }
+                            }
+                            // walletv2 on-chain sends (pegouts) aren't surfaced yet.
+                            WalletV2OperationMeta::Send(_) => None,
                         }
                     }
                     _ => None,
