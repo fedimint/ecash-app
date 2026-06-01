@@ -68,7 +68,7 @@ class RustLib extends BaseEntrypoint<RustLibApi, RustLibApiImpl, RustLibWire> {
   String get codegenVersion => '2.9.0';
 
   @override
-  int get rustContentHash => -358249829;
+  int get rustContentHash => -1958699810;
 
   static const kDefaultExternalLibraryLoaderConfig =
       ExternalLibraryLoaderConfig(
@@ -596,7 +596,7 @@ abstract class RustLibApi extends BaseApi {
     required FederationId federationId,
     required String address,
     required BigInt amountSats,
-    required PegOutFees pegOutFees,
+    required WithdrawFees fees,
   });
 
   Future<void> crateNostrNostrClientBackupInviteCodes({
@@ -808,7 +808,7 @@ abstract class RustLibApi extends BaseApi {
     required WithdrawFeesResponse that,
   });
 
-  PegOutFees crateMultimintWithdrawFeesResponseAutoAccessorGetPegOutFees({
+  WithdrawFees crateMultimintWithdrawFeesResponseAutoAccessorGetFees({
     required WithdrawFeesResponse that,
   });
 
@@ -826,9 +826,9 @@ abstract class RustLibApi extends BaseApi {
     required double feeRateSatsPerVb,
   });
 
-  void crateMultimintWithdrawFeesResponseAutoAccessorSetPegOutFees({
+  void crateMultimintWithdrawFeesResponseAutoAccessorSetFees({
     required WithdrawFeesResponse that,
-    required PegOutFees pegOutFees,
+    required WithdrawFees fees,
   });
 
   void crateMultimintWithdrawFeesResponseAutoAccessorSetTxSizeVbytes({
@@ -1171,7 +1171,7 @@ abstract class RustLibApi extends BaseApi {
     required FederationId federationId,
     required String address,
     required BigInt amountSats,
-    required PegOutFees pegOutFees,
+    required WithdrawFees fees,
   });
 
   Future<List<String>> crateWordList();
@@ -1392,14 +1392,6 @@ abstract class RustLibApi extends BaseApi {
   CrossPlatformFinalizerArg get rust_arc_decrement_strong_count_OperationIdPtr;
 
   RustArcIncrementStrongCountFnType
-  get rust_arc_increment_strong_count_PegOutFees;
-
-  RustArcDecrementStrongCountFnType
-  get rust_arc_decrement_strong_count_PegOutFees;
-
-  CrossPlatformFinalizerArg get rust_arc_decrement_strong_count_PegOutFeesPtr;
-
-  RustArcIncrementStrongCountFnType
   get rust_arc_increment_strong_count_PublicFederation;
 
   RustArcDecrementStrongCountFnType
@@ -1431,6 +1423,14 @@ abstract class RustLibApi extends BaseApi {
   RustArcDecrementStrongCountFnType get rust_arc_decrement_strong_count_SafeUrl;
 
   CrossPlatformFinalizerArg get rust_arc_decrement_strong_count_SafeUrlPtr;
+
+  RustArcIncrementStrongCountFnType
+  get rust_arc_increment_strong_count_WithdrawFees;
+
+  RustArcDecrementStrongCountFnType
+  get rust_arc_decrement_strong_count_WithdrawFees;
+
+  CrossPlatformFinalizerArg get rust_arc_decrement_strong_count_WithdrawFeesPtr;
 
   RustArcIncrementStrongCountFnType
   get rust_arc_increment_strong_count_WithdrawFeesResponse;
@@ -5431,7 +5431,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
     required FederationId federationId,
     required String address,
     required BigInt amountSats,
-    required PegOutFees pegOutFees,
+    required WithdrawFees fees,
   }) {
     return handler.executeNormal(
       NormalTask(
@@ -5447,8 +5447,8 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           );
           sse_encode_String(address, serializer);
           sse_encode_u_64(amountSats, serializer);
-          sse_encode_Auto_Owned_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerPegOutFees(
-            pegOutFees,
+          sse_encode_Auto_Owned_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerWithdrawFees(
+            fees,
             serializer,
           );
           pdeCallFfi(
@@ -5464,7 +5464,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           decodeErrorData: null,
         ),
         constMeta: kCrateMultimintMultimintWithdrawToAddressConstMeta,
-        argValues: [that, federationId, address, amountSats, pegOutFees],
+        argValues: [that, federationId, address, amountSats, fees],
         apiImpl: this,
       ),
     );
@@ -5473,13 +5473,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   TaskConstMeta get kCrateMultimintMultimintWithdrawToAddressConstMeta =>
       const TaskConstMeta(
         debugName: "Multimint_withdraw_to_address",
-        argNames: [
-          "that",
-          "federationId",
-          "address",
-          "amountSats",
-          "pegOutFees",
-        ],
+        argNames: ["that", "federationId", "address", "amountSats", "fees"],
       );
 
   @override
@@ -7214,7 +7208,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
       );
 
   @override
-  PegOutFees crateMultimintWithdrawFeesResponseAutoAccessorGetPegOutFees({
+  WithdrawFees crateMultimintWithdrawFeesResponseAutoAccessorGetFees({
     required WithdrawFeesResponse that,
   }) {
     return handler.executeSync(
@@ -7233,11 +7227,11 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
         },
         codec: SseCodec(
           decodeSuccessData:
-              sse_decode_Auto_Owned_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerPegOutFees,
+              sse_decode_Auto_Owned_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerWithdrawFees,
           decodeErrorData: null,
         ),
         constMeta:
-            kCrateMultimintWithdrawFeesResponseAutoAccessorGetPegOutFeesConstMeta,
+            kCrateMultimintWithdrawFeesResponseAutoAccessorGetFeesConstMeta,
         argValues: [that],
         apiImpl: this,
       ),
@@ -7245,9 +7239,9 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   }
 
   TaskConstMeta
-  get kCrateMultimintWithdrawFeesResponseAutoAccessorGetPegOutFeesConstMeta =>
+  get kCrateMultimintWithdrawFeesResponseAutoAccessorGetFeesConstMeta =>
       const TaskConstMeta(
-        debugName: "WithdrawFeesResponse_auto_accessor_get_peg_out_fees",
+        debugName: "WithdrawFeesResponse_auto_accessor_get_fees",
         argNames: ["that"],
       );
 
@@ -7368,9 +7362,9 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
       );
 
   @override
-  void crateMultimintWithdrawFeesResponseAutoAccessorSetPegOutFees({
+  void crateMultimintWithdrawFeesResponseAutoAccessorSetFees({
     required WithdrawFeesResponse that,
-    required PegOutFees pegOutFees,
+    required WithdrawFees fees,
   }) {
     return handler.executeSync(
       SyncTask(
@@ -7380,8 +7374,8 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
             that,
             serializer,
           );
-          sse_encode_Auto_Owned_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerPegOutFees(
-            pegOutFees,
+          sse_encode_Auto_Owned_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerWithdrawFees(
+            fees,
             serializer,
           );
           return pdeCallFfi(
@@ -7395,18 +7389,18 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           decodeErrorData: null,
         ),
         constMeta:
-            kCrateMultimintWithdrawFeesResponseAutoAccessorSetPegOutFeesConstMeta,
-        argValues: [that, pegOutFees],
+            kCrateMultimintWithdrawFeesResponseAutoAccessorSetFeesConstMeta,
+        argValues: [that, fees],
         apiImpl: this,
       ),
     );
   }
 
   TaskConstMeta
-  get kCrateMultimintWithdrawFeesResponseAutoAccessorSetPegOutFeesConstMeta =>
+  get kCrateMultimintWithdrawFeesResponseAutoAccessorSetFeesConstMeta =>
       const TaskConstMeta(
-        debugName: "WithdrawFeesResponse_auto_accessor_set_peg_out_fees",
-        argNames: ["that", "pegOutFees"],
+        debugName: "WithdrawFeesResponse_auto_accessor_set_fees",
+        argNames: ["that", "fees"],
       );
 
   @override
@@ -10453,7 +10447,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
     required FederationId federationId,
     required String address,
     required BigInt amountSats,
-    required PegOutFees pegOutFees,
+    required WithdrawFees fees,
   }) {
     return handler.executeNormal(
       NormalTask(
@@ -10465,8 +10459,8 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           );
           sse_encode_String(address, serializer);
           sse_encode_u_64(amountSats, serializer);
-          sse_encode_Auto_Owned_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerPegOutFees(
-            pegOutFees,
+          sse_encode_Auto_Owned_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerWithdrawFees(
+            fees,
             serializer,
           );
           pdeCallFfi(
@@ -10482,7 +10476,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           decodeErrorData: sse_decode_ecash_app_error,
         ),
         constMeta: kCrateWithdrawToAddressConstMeta,
-        argValues: [federationId, address, amountSats, pegOutFees],
+        argValues: [federationId, address, amountSats, fees],
         apiImpl: this,
       ),
     );
@@ -10490,7 +10484,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
 
   TaskConstMeta get kCrateWithdrawToAddressConstMeta => const TaskConstMeta(
     debugName: "withdraw_to_address",
-    argNames: ["federationId", "address", "amountSats", "pegOutFees"],
+    argNames: ["federationId", "address", "amountSats", "fees"],
   );
 
   @override
@@ -10721,14 +10715,6 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
       wire.rust_arc_decrement_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerOperationId;
 
   RustArcIncrementStrongCountFnType
-  get rust_arc_increment_strong_count_PegOutFees =>
-      wire.rust_arc_increment_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerPegOutFees;
-
-  RustArcDecrementStrongCountFnType
-  get rust_arc_decrement_strong_count_PegOutFees =>
-      wire.rust_arc_decrement_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerPegOutFees;
-
-  RustArcIncrementStrongCountFnType
   get rust_arc_increment_strong_count_PublicFederation =>
       wire.rust_arc_increment_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerPublicFederation;
 
@@ -10759,6 +10745,14 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   RustArcDecrementStrongCountFnType
   get rust_arc_decrement_strong_count_SafeUrl =>
       wire.rust_arc_decrement_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerSafeUrl;
+
+  RustArcIncrementStrongCountFnType
+  get rust_arc_increment_strong_count_WithdrawFees =>
+      wire.rust_arc_increment_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerWithdrawFees;
+
+  RustArcDecrementStrongCountFnType
+  get rust_arc_decrement_strong_count_WithdrawFees =>
+      wire.rust_arc_decrement_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerWithdrawFees;
 
   RustArcIncrementStrongCountFnType
   get rust_arc_increment_strong_count_WithdrawFeesResponse =>
@@ -11005,15 +10999,6 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   }
 
   @protected
-  PegOutFees
-  dco_decode_Auto_Owned_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerPegOutFees(
-    dynamic raw,
-  ) {
-    // Codec=Dco (DartCObject based), see doc to use other codecs
-    return PegOutFeesImpl.frbInternalDcoDecode(raw as List<dynamic>);
-  }
-
-  @protected
   PublicFederation
   dco_decode_Auto_Owned_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerPublicFederation(
     dynamic raw,
@@ -11049,6 +11034,15 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   ) {
     // Codec=Dco (DartCObject based), see doc to use other codecs
     return SafeUrlImpl.frbInternalDcoDecode(raw as List<dynamic>);
+  }
+
+  @protected
+  WithdrawFees
+  dco_decode_Auto_Owned_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerWithdrawFees(
+    dynamic raw,
+  ) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    return WithdrawFeesImpl.frbInternalDcoDecode(raw as List<dynamic>);
   }
 
   @protected
@@ -11520,15 +11514,6 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   }
 
   @protected
-  PegOutFees
-  dco_decode_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerPegOutFees(
-    dynamic raw,
-  ) {
-    // Codec=Dco (DartCObject based), see doc to use other codecs
-    return PegOutFeesImpl.frbInternalDcoDecode(raw as List<dynamic>);
-  }
-
-  @protected
   PublicFederation
   dco_decode_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerPublicFederation(
     dynamic raw,
@@ -11564,6 +11549,15 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   ) {
     // Codec=Dco (DartCObject based), see doc to use other codecs
     return SafeUrlImpl.frbInternalDcoDecode(raw as List<dynamic>);
+  }
+
+  @protected
+  WithdrawFees
+  dco_decode_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerWithdrawFees(
+    dynamic raw,
+  ) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    return WithdrawFeesImpl.frbInternalDcoDecode(raw as List<dynamic>);
   }
 
   @protected
@@ -13379,18 +13373,6 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   }
 
   @protected
-  PegOutFees
-  sse_decode_Auto_Owned_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerPegOutFees(
-    SseDeserializer deserializer,
-  ) {
-    // Codec=Sse (Serialization based), see doc to use other codecs
-    return PegOutFeesImpl.frbInternalSseDecode(
-      sse_decode_usize(deserializer),
-      sse_decode_i_32(deserializer),
-    );
-  }
-
-  @protected
   PublicFederation
   sse_decode_Auto_Owned_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerPublicFederation(
     SseDeserializer deserializer,
@@ -13433,6 +13415,18 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   ) {
     // Codec=Sse (Serialization based), see doc to use other codecs
     return SafeUrlImpl.frbInternalSseDecode(
+      sse_decode_usize(deserializer),
+      sse_decode_i_32(deserializer),
+    );
+  }
+
+  @protected
+  WithdrawFees
+  sse_decode_Auto_Owned_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerWithdrawFees(
+    SseDeserializer deserializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    return WithdrawFeesImpl.frbInternalSseDecode(
       sse_decode_usize(deserializer),
       sse_decode_i_32(deserializer),
     );
@@ -14039,18 +14033,6 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   }
 
   @protected
-  PegOutFees
-  sse_decode_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerPegOutFees(
-    SseDeserializer deserializer,
-  ) {
-    // Codec=Sse (Serialization based), see doc to use other codecs
-    return PegOutFeesImpl.frbInternalSseDecode(
-      sse_decode_usize(deserializer),
-      sse_decode_i_32(deserializer),
-    );
-  }
-
-  @protected
   PublicFederation
   sse_decode_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerPublicFederation(
     SseDeserializer deserializer,
@@ -14093,6 +14075,18 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   ) {
     // Codec=Sse (Serialization based), see doc to use other codecs
     return SafeUrlImpl.frbInternalSseDecode(
+      sse_decode_usize(deserializer),
+      sse_decode_i_32(deserializer),
+    );
+  }
+
+  @protected
+  WithdrawFees
+  sse_decode_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerWithdrawFees(
+    SseDeserializer deserializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    return WithdrawFeesImpl.frbInternalSseDecode(
       sse_decode_usize(deserializer),
       sse_decode_i_32(deserializer),
     );
@@ -16180,19 +16174,6 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
 
   @protected
   void
-  sse_encode_Auto_Owned_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerPegOutFees(
-    PegOutFees self,
-    SseSerializer serializer,
-  ) {
-    // Codec=Sse (Serialization based), see doc to use other codecs
-    sse_encode_usize(
-      (self as PegOutFeesImpl).frbInternalSseEncode(move: true),
-      serializer,
-    );
-  }
-
-  @protected
-  void
   sse_encode_Auto_Owned_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerPublicFederation(
     PublicFederation self,
     SseSerializer serializer,
@@ -16239,6 +16220,19 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
     // Codec=Sse (Serialization based), see doc to use other codecs
     sse_encode_usize(
       (self as SafeUrlImpl).frbInternalSseEncode(move: true),
+      serializer,
+    );
+  }
+
+  @protected
+  void
+  sse_encode_Auto_Owned_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerWithdrawFees(
+    WithdrawFees self,
+    SseSerializer serializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    sse_encode_usize(
+      (self as WithdrawFeesImpl).frbInternalSseEncode(move: true),
       serializer,
     );
   }
@@ -16901,19 +16895,6 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
 
   @protected
   void
-  sse_encode_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerPegOutFees(
-    PegOutFees self,
-    SseSerializer serializer,
-  ) {
-    // Codec=Sse (Serialization based), see doc to use other codecs
-    sse_encode_usize(
-      (self as PegOutFeesImpl).frbInternalSseEncode(move: null),
-      serializer,
-    );
-  }
-
-  @protected
-  void
   sse_encode_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerPublicFederation(
     PublicFederation self,
     SseSerializer serializer,
@@ -16960,6 +16941,19 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
     // Codec=Sse (Serialization based), see doc to use other codecs
     sse_encode_usize(
       (self as SafeUrlImpl).frbInternalSseEncode(move: null),
+      serializer,
+    );
+  }
+
+  @protected
+  void
+  sse_encode_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerWithdrawFees(
+    WithdrawFees self,
+    SseSerializer serializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    sse_encode_usize(
+      (self as WithdrawFeesImpl).frbInternalSseEncode(move: null),
       serializer,
     );
   }
@@ -19786,13 +19780,13 @@ class MultimintImpl extends RustOpaque implements Multimint {
     required FederationId federationId,
     required String address,
     required BigInt amountSats,
-    required PegOutFees pegOutFees,
+    required WithdrawFees fees,
   }) => RustLib.instance.api.crateMultimintMultimintWithdrawToAddress(
     that: this,
     federationId: federationId,
     address: address,
     amountSats: amountSats,
-    pegOutFees: pegOutFees,
+    fees: fees,
   );
 }
 
@@ -20062,26 +20056,6 @@ class OperationIdImpl extends RustOpaque implements OperationId {
 }
 
 @sealed
-class PegOutFeesImpl extends RustOpaque implements PegOutFees {
-  // Not to be used by end users
-  PegOutFeesImpl.frbInternalDcoDecode(List<dynamic> wire)
-    : super.frbInternalDcoDecode(wire, _kStaticData);
-
-  // Not to be used by end users
-  PegOutFeesImpl.frbInternalSseDecode(BigInt ptr, int externalSizeOnNative)
-    : super.frbInternalSseDecode(ptr, externalSizeOnNative, _kStaticData);
-
-  static final _kStaticData = RustArcStaticData(
-    rustArcIncrementStrongCount:
-        RustLib.instance.api.rust_arc_increment_strong_count_PegOutFees,
-    rustArcDecrementStrongCount:
-        RustLib.instance.api.rust_arc_decrement_strong_count_PegOutFees,
-    rustArcDecrementStrongCountPtr:
-        RustLib.instance.api.rust_arc_decrement_strong_count_PegOutFeesPtr,
-  );
-}
-
-@sealed
 class PublicFederationImpl extends RustOpaque implements PublicFederation {
   // Not to be used by end users
   PublicFederationImpl.frbInternalDcoDecode(List<dynamic> wire)
@@ -20244,6 +20218,26 @@ class SafeUrlImpl extends RustOpaque implements SafeUrl {
 }
 
 @sealed
+class WithdrawFeesImpl extends RustOpaque implements WithdrawFees {
+  // Not to be used by end users
+  WithdrawFeesImpl.frbInternalDcoDecode(List<dynamic> wire)
+    : super.frbInternalDcoDecode(wire, _kStaticData);
+
+  // Not to be used by end users
+  WithdrawFeesImpl.frbInternalSseDecode(BigInt ptr, int externalSizeOnNative)
+    : super.frbInternalSseDecode(ptr, externalSizeOnNative, _kStaticData);
+
+  static final _kStaticData = RustArcStaticData(
+    rustArcIncrementStrongCount:
+        RustLib.instance.api.rust_arc_increment_strong_count_WithdrawFees,
+    rustArcDecrementStrongCount:
+        RustLib.instance.api.rust_arc_decrement_strong_count_WithdrawFees,
+    rustArcDecrementStrongCountPtr:
+        RustLib.instance.api.rust_arc_decrement_strong_count_WithdrawFeesPtr,
+  );
+}
+
+@sealed
 class WithdrawFeesResponseImpl extends RustOpaque
     implements WithdrawFeesResponse {
   // Not to be used by end users
@@ -20282,8 +20276,8 @@ class WithdrawFeesResponseImpl extends RustOpaque
         that: this,
       );
 
-  PegOutFees get pegOutFees => RustLib.instance.api
-      .crateMultimintWithdrawFeesResponseAutoAccessorGetPegOutFees(that: this);
+  WithdrawFees get fees => RustLib.instance.api
+      .crateMultimintWithdrawFeesResponseAutoAccessorGetFees(that: this);
 
   int get txSizeVbytes => RustLib.instance.api
       .crateMultimintWithdrawFeesResponseAutoAccessorGetTxSizeVbytes(
@@ -20302,10 +20296,10 @@ class WithdrawFeesResponseImpl extends RustOpaque
         feeRateSatsPerVb: feeRateSatsPerVb,
       );
 
-  set pegOutFees(PegOutFees pegOutFees) => RustLib.instance.api
-      .crateMultimintWithdrawFeesResponseAutoAccessorSetPegOutFees(
+  set fees(WithdrawFees fees) => RustLib.instance.api
+      .crateMultimintWithdrawFeesResponseAutoAccessorSetFees(
         that: this,
-        pegOutFees: pegOutFees,
+        fees: fees,
       );
 
   set txSizeVbytes(int txSizeVbytes) => RustLib.instance.api

@@ -1,20 +1,22 @@
 use std::{collections::BTreeMap, str::FromStr, sync::Arc, time::Duration};
 
-use fedimint_client::ClientHandleArc;
+use anyhow::anyhow;
+use fedimint_client::{ClientHandleArc, OperationId};
 use fedimint_core::{
     config::FederationId,
     db::{Database, IDatabaseTransactionOpsCoreTyped},
+    encoding::Encodable,
     task::TaskGroup,
     Amount,
 };
 use fedimint_eventlog::{Event, EventLogId};
 use fedimint_wallet_client::{
     api::WalletFederationApi, client_db::TweakIdx, DepositStateV2, WalletClientModule,
-    WalletOperationMeta, WalletOperationMetaVariant,
+    WalletOperationMeta, WalletOperationMetaVariant, WithdrawState,
 };
 use fedimint_walletv2_client::{
     events::ReceivePaymentEvent as V2ReceivePaymentEvent, FinalReceiveOperationState,
-    WalletClientModule as WalletV2Module,
+    FinalSendOperationState, WalletClientModule as WalletV2Module,
 };
 use futures_util::StreamExt;
 use tokio::sync::{
@@ -23,13 +25,15 @@ use tokio::sync::{
 };
 
 use crate::{
+    app_error::{classify_anyhow, EcashAppError, EcashAppResult},
     db::{WalletV2PendingDepositFederationPrefix, WalletV2PendingDepositKey},
     event_bus::EventBus,
     get_event_bus, info_to_flutter,
     multimint::{
         AwaitingConfsEvent, ClaimedEvent, ConfirmedEvent, DepositEventKind, MempoolEvent,
-        MultimintEvent,
+        MultimintEvent, OnChainWithdrawalMeta, WithdrawFees, WithdrawFeesResponse,
     },
+    payment_error_to_flutter,
 };
 
 #[derive(Clone)]
@@ -718,6 +722,259 @@ impl WalletHandler {
                 }
             });
     }
+
+    // ---- On-chain send (peg-out) ----------------------------------------
+    //
+    // walletv1 uses a two-step, tx-specific fee model (`get_withdraw_fees` →
+    // `withdraw`), while walletv2 uses a flat federation-determined fee
+    // (`send_fee` → `send`). Each function below dispatches on the wallet
+    // module present in the federation.
+
+    /// Quotes the fee to send `amount_sats` on-chain to `address`. The returned
+    /// [`WithdrawFees`] is round-tripped back into [`Self::withdraw_to_address`]
+    /// so the user pays exactly the quoted fee.
+    pub(crate) async fn calculate_withdraw_fees(
+        &self,
+        client: &ClientHandleArc,
+        address: String,
+        amount_sats: u64,
+    ) -> EcashAppResult<WithdrawFeesResponse> {
+        if let Ok(walletv2) = client.get_first_module::<WalletV2Module>() {
+            // walletv2 charges a flat send fee; the on-chain tx is always
+            // 1-in/1-out, so its vbytes are a per-federation constant taken from
+            // the wallet config.
+            let address = bitcoin::Address::from_str(&address)
+                .map_err(|e| EcashAppError::InvalidBitcoinAddress(e.to_string()))?;
+            address
+                .require_network(walletv2.get_network())
+                .map_err(|e| EcashAppError::InvalidBitcoinAddress(e.to_string()))?;
+
+            let fee_sats = walletv2
+                .send_fee()
+                .await
+                .map_err(EcashAppError::from_display)?
+                .to_sat();
+            let tx_size_vbytes = Self::walletv2_send_tx_vbytes(client).await?;
+            let fee_rate_sats_per_vb = if tx_size_vbytes > 0 {
+                fee_sats as f64 / f64::from(tx_size_vbytes)
+            } else {
+                0.0
+            };
+
+            return Ok(WithdrawFeesResponse {
+                fee_amount: fee_sats,
+                fee_rate_sats_per_vb,
+                tx_size_vbytes,
+                fees: WithdrawFees::V2 { fee_sats },
+            });
+        }
+
+        let wallet_module = client
+            .get_first_module::<WalletClientModule>()
+            .map_err(|e| EcashAppError::other(format!("wallet module unavailable: {e:#}")))?;
+        let address = bitcoin::Address::from_str(&address)
+            .map_err(|e| EcashAppError::InvalidBitcoinAddress(e.to_string()))?;
+        let address = address
+            .require_network(wallet_module.get_network())
+            .map_err(|e| EcashAppError::InvalidBitcoinAddress(e.to_string()))?;
+        let amount = bitcoin::Amount::from_sat(amount_sats);
+        let fees = wallet_module
+            .get_withdraw_fees(&address, amount)
+            .await
+            .map_err(EcashAppError::from_display)?;
+        let meta = OnChainWithdrawalMeta::from_peg_out_fees(&fees);
+
+        Ok(WithdrawFeesResponse {
+            fee_amount: meta.fee_sats,
+            fee_rate_sats_per_vb: meta.fee_rate_sats_per_vb,
+            tx_size_vbytes: meta.tx_size_vb,
+            fees: WithdrawFees::V1(fees),
+        })
+    }
+
+    /// Reads the federation's constant pegout transaction size (vbytes) from the
+    /// walletv2 client config. walletv2 peg-outs are always 1-in/1-out, so this
+    /// is a per-federation constant.
+    pub(crate) async fn walletv2_send_tx_vbytes(client: &ClientHandleArc) -> EcashAppResult<u32> {
+        let walletv2 = client
+            .get_first_module::<WalletV2Module>()
+            .map_err(|e| EcashAppError::other(format!("walletv2 module unavailable: {e:#}")))?;
+        let config = client.config().await;
+        let cfg = config
+            .modules
+            .get(&walletv2.id)
+            .ok_or_else(|| EcashAppError::other("walletv2 config missing"))?
+            .cast::<fedimint_walletv2_common::config::WalletClientConfig>()
+            .map_err(EcashAppError::from_display)?;
+        Ok(cfg.send_tx_vbytes as u32)
+    }
+
+    /// Broadcasts an on-chain send, paying the fee quoted by
+    /// [`Self::calculate_withdraw_fees`] (carried in `fees`).
+    pub(crate) async fn withdraw_to_address(
+        &self,
+        client: &ClientHandleArc,
+        address: String,
+        amount_sats: u64,
+        fees: WithdrawFees,
+    ) -> EcashAppResult<OperationId> {
+        match fees {
+            WithdrawFees::V2 { fee_sats } => {
+                let walletv2 = client.get_first_module::<WalletV2Module>().map_err(|e| {
+                    EcashAppError::other(format!("walletv2 module unavailable: {e:#}"))
+                })?;
+                // `send` takes an unchecked address and validates the network itself.
+                let address = bitcoin::Address::from_str(&address)
+                    .map_err(|e| EcashAppError::InvalidBitcoinAddress(e.to_string()))?;
+                let operation_id = walletv2
+                    .send(
+                        address,
+                        bitcoin::Amount::from_sat(amount_sats),
+                        Some(bitcoin::Amount::from_sat(fee_sats)),
+                    )
+                    .await
+                    .map_err(EcashAppError::from_display)?;
+                Ok(operation_id)
+            }
+            WithdrawFees::V1(peg_out_fees) => {
+                let wallet_module =
+                    client
+                        .get_first_module::<WalletClientModule>()
+                        .map_err(|e| {
+                            EcashAppError::other(format!("wallet module unavailable: {e:#}"))
+                        })?;
+                let address = bitcoin::Address::from_str(&address)
+                    .map_err(|e| EcashAppError::InvalidBitcoinAddress(e.to_string()))?;
+                let address = address
+                    .require_network(wallet_module.get_network())
+                    .map_err(|e| EcashAppError::InvalidBitcoinAddress(e.to_string()))?;
+                let amount = bitcoin::Amount::from_sat(amount_sats);
+                let meta = OnChainWithdrawalMeta::from_peg_out_fees(&peg_out_fees);
+
+                let operation_id = wallet_module
+                    .withdraw(&address, amount, peg_out_fees, meta)
+                    .await
+                    .map_err(EcashAppError::from_display)?;
+                Ok(operation_id)
+            }
+        }
+    }
+
+    /// Awaits the final state of an on-chain send, returning the broadcast txid.
+    pub(crate) async fn await_withdraw(
+        &self,
+        federation_id: FederationId,
+        client: &ClientHandleArc,
+        operation_id: OperationId,
+    ) -> EcashAppResult<String> {
+        if let Ok(walletv2) = client.get_first_module::<WalletV2Module>() {
+            return match walletv2
+                .await_final_send_operation_state(operation_id)
+                .await
+                .map_err(EcashAppError::from_display)?
+            {
+                FinalSendOperationState::Success(txid) => Ok(txid.consensus_encode_to_hex()),
+                other => {
+                    let err = classify_anyhow(&anyhow!("on-chain send failed: {other:?}"));
+                    payment_error_to_flutter(federation_id, err.clone()).await;
+                    Err(err)
+                }
+            };
+        }
+
+        let wallet_module = client
+            .get_first_module::<WalletClientModule>()
+            .map_err(|e| EcashAppError::other(format!("wallet module unavailable: {e:#}")))?;
+
+        let mut updates = wallet_module
+            .subscribe_withdraw_updates(operation_id)
+            .await
+            .map_err(EcashAppError::from_display)?
+            .into_stream();
+
+        let txid = loop {
+            let update = updates.next().await.ok_or_else(|| {
+                EcashAppError::other("on-chain withdraw stream ended without outcome")
+            })?;
+
+            match update {
+                WithdrawState::Succeeded(txid) => {
+                    // drive the update stream to completion so we get an outcome
+                    while updates.next().await.is_some() {}
+                    break txid.consensus_encode_to_hex();
+                }
+                WithdrawState::Failed(e) => {
+                    let err = classify_anyhow(&anyhow!("on-chain withdraw failed: {e}"));
+                    // Emit the structured event too so any background listener
+                    // (e.g. screens that already navigated away) still sees it.
+                    payment_error_to_flutter(federation_id, err.clone()).await;
+                    return Err(err);
+                }
+                WithdrawState::Created => {
+                    continue;
+                }
+            }
+        };
+
+        Ok(txid)
+    }
+
+    /// Returns the largest amount that can be sent to `address` after fees.
+    pub(crate) async fn get_max_withdrawable_amount(
+        &self,
+        client: &ClientHandleArc,
+        address: String,
+    ) -> EcashAppResult<u64> {
+        if let Ok(walletv2) = client.get_first_module::<WalletV2Module>() {
+            let address = bitcoin::Address::from_str(&address)
+                .map_err(|e| EcashAppError::InvalidBitcoinAddress(e.to_string()))?;
+            address
+                .require_network(walletv2.get_network())
+                .map_err(|e| EcashAppError::InvalidBitcoinAddress(e.to_string()))?;
+
+            let balance_sats = client
+                .get_balance_for_btc()
+                .await
+                .map_err(EcashAppError::from_display)?
+                .msats
+                / 1000;
+            let fee_sats = walletv2
+                .send_fee()
+                .await
+                .map_err(EcashAppError::from_display)?
+                .to_sat();
+            let max = balance_sats
+                .checked_sub(fee_sats)
+                .ok_or_else(|| EcashAppError::other("Not enough funds to pay fees"))?;
+            return Ok(max);
+        }
+
+        let wallet_module = client
+            .get_first_module::<WalletClientModule>()
+            .map_err(|e| EcashAppError::other(format!("wallet module unavailable: {e:#}")))?;
+        let address = bitcoin::Address::from_str(&address)
+            .map_err(|e| EcashAppError::InvalidBitcoinAddress(e.to_string()))?;
+        let address = address
+            .require_network(wallet_module.get_network())
+            .map_err(|e| EcashAppError::InvalidBitcoinAddress(e.to_string()))?;
+        let balance = bitcoin::Amount::from_sat(
+            client
+                .get_balance_for_btc()
+                .await
+                .map_err(EcashAppError::from_display)?
+                .msats
+                / 1000,
+        );
+        let fees = wallet_module
+            .get_withdraw_fees(&address, balance)
+            .await
+            .map_err(EcashAppError::from_display)?;
+        let max_withdrawable = balance
+            .checked_sub(fees.amount())
+            .ok_or_else(|| EcashAppError::other("Not enough funds to pay fees"))?;
+
+        Ok(max_withdrawable.to_sat())
+    }
 }
 
 /// Resolves the esplora/mempool.space API base URL for the given network.
@@ -727,7 +984,7 @@ fn mempool_api_url(network: bitcoin::Network) -> String {
         bitcoin::Network::Signet => "https://mutinynet.com/api".to_string(),
         bitcoin::Network::Regtest => {
             // referencing devimint, uncomment for regtest
-            "http://localhost:20934".to_string()
+            "http://localhost:20972".to_string()
             //panic!("Regtest requires manually setting the connection params")
         }
         network => {
