@@ -42,7 +42,7 @@ class _OnchainSendState extends State<OnchainSend> {
   double? _feeRateSatsPerVbyte;
   int? _txSizeVbytes;
   BigInt? _actualWithdrawalAmount;
-  PegOutFees? _pegOutFees;
+  WithdrawFees? _fees;
   bool _loadingFees = false;
   bool _withdrawing = false;
   DateTime? _quoteExpiry;
@@ -72,7 +72,7 @@ class _OnchainSendState extends State<OnchainSend> {
         _feeRateSatsPerVbyte = null;
         _txSizeVbytes = null;
         _actualWithdrawalAmount = null;
-        _pegOutFees = null;
+        _fees = null;
         _quoteExpiry = null;
       });
       _quoteTimer?.cancel();
@@ -102,7 +102,7 @@ class _OnchainSendState extends State<OnchainSend> {
           _feeAmountSats = feesResponse.feeAmount;
           _feeRateSatsPerVbyte = feesResponse.feeRateSatsPerVb;
           _txSizeVbytes = feesResponse.txSizeVbytes;
-          _pegOutFees = feesResponse.pegOutFees;
+          _fees = feesResponse.fees;
           _feeQuote = 'Fee calculated';
           _quoteExpiry = DateTime.now().add(const Duration(seconds: 60));
         });
@@ -118,7 +118,7 @@ class _OnchainSendState extends State<OnchainSend> {
           _feeAmountSats = feesResponse.feeAmount;
           _feeRateSatsPerVbyte = feesResponse.feeRateSatsPerVb;
           _txSizeVbytes = feesResponse.txSizeVbytes;
-          _pegOutFees = feesResponse.pegOutFees;
+          _fees = feesResponse.fees;
           _feeQuote = 'Fee calculated';
           _quoteExpiry = DateTime.now().add(const Duration(seconds: 60));
         });
@@ -143,7 +143,7 @@ class _OnchainSendState extends State<OnchainSend> {
           _feeRateSatsPerVbyte = null;
           _txSizeVbytes = null;
           _actualWithdrawalAmount = null;
-          _pegOutFees = null;
+          _fees = null;
           _quoteExpiry = null;
         });
         timer.cancel();
@@ -169,7 +169,7 @@ class _OnchainSendState extends State<OnchainSend> {
 
   Future<void> _withdraw() async {
     if (_addressController.text.isEmpty ||
-        _pegOutFees == null ||
+        _fees == null ||
         _actualWithdrawalAmount == null) {
       return;
     }
@@ -185,7 +185,7 @@ class _OnchainSendState extends State<OnchainSend> {
         federationId: widget.fed.federationId,
         address: _addressController.text.trim(),
         amountSats: _actualWithdrawalAmount!,
-        pegOutFees: _pegOutFees!,
+        fees: _fees!,
       );
 
       final txid = await awaitWithdraw(
@@ -234,7 +234,7 @@ class _OnchainSendState extends State<OnchainSend> {
     final canWithdraw =
         _feeQuote != null &&
         _actualWithdrawalAmount != null &&
-        _pegOutFees != null &&
+        _fees != null &&
         _quoteExpiry != null &&
         DateTime.now().isBefore(_quoteExpiry!) &&
         !_withdrawing;

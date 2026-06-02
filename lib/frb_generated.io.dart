@@ -120,9 +120,6 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   get rust_arc_decrement_strong_count_OperationIdPtr =>
       wire._rust_arc_decrement_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerOperationIdPtr;
 
-  CrossPlatformFinalizerArg get rust_arc_decrement_strong_count_PegOutFeesPtr =>
-      wire._rust_arc_decrement_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerPegOutFeesPtr;
-
   CrossPlatformFinalizerArg
   get rust_arc_decrement_strong_count_PublicFederationPtr =>
       wire._rust_arc_decrement_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerPublicFederationPtr;
@@ -137,6 +134,10 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
 
   CrossPlatformFinalizerArg get rust_arc_decrement_strong_count_SafeUrlPtr =>
       wire._rust_arc_decrement_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerSafeUrlPtr;
+
+  CrossPlatformFinalizerArg
+  get rust_arc_decrement_strong_count_WithdrawFeesPtr =>
+      wire._rust_arc_decrement_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerWithdrawFeesPtr;
 
   CrossPlatformFinalizerArg
   get rust_arc_decrement_strong_count_WithdrawFeesResponsePtr =>
@@ -290,12 +291,6 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   );
 
   @protected
-  PegOutFees
-  dco_decode_Auto_Owned_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerPegOutFees(
-    dynamic raw,
-  );
-
-  @protected
   PublicFederation
   dco_decode_Auto_Owned_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerPublicFederation(
     dynamic raw,
@@ -316,6 +311,12 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   @protected
   SafeUrl
   dco_decode_Auto_Owned_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerSafeUrl(
+    dynamic raw,
+  );
+
+  @protected
+  WithdrawFees
+  dco_decode_Auto_Owned_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerWithdrawFees(
     dynamic raw,
   );
 
@@ -620,12 +621,6 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   );
 
   @protected
-  PegOutFees
-  dco_decode_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerPegOutFees(
-    dynamic raw,
-  );
-
-  @protected
   PublicFederation
   dco_decode_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerPublicFederation(
     dynamic raw,
@@ -646,6 +641,12 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   @protected
   SafeUrl
   dco_decode_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerSafeUrl(
+    dynamic raw,
+  );
+
+  @protected
+  WithdrawFees
+  dco_decode_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerWithdrawFees(
     dynamic raw,
   );
 
@@ -903,8 +904,10 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   List<(String, bool)> dco_decode_list_record_string_bool(dynamic raw);
 
   @protected
-  List<(String, BigInt, BigInt?)>
-  dco_decode_list_record_string_u_64_opt_box_autoadd_u_64(dynamic raw);
+  List<(String, BigInt?, BigInt?)>
+  dco_decode_list_record_string_opt_box_autoadd_u_64_opt_box_autoadd_u_64(
+    dynamic raw,
+  );
 
   @protected
   List<(BigInt, BigInt)> dco_decode_list_record_u_64_usize(dynamic raw);
@@ -1102,18 +1105,19 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   (String, bool) dco_decode_record_string_bool(dynamic raw);
 
   @protected
+  (String, BigInt?) dco_decode_record_string_opt_box_autoadd_u_64(dynamic raw);
+
+  @protected
+  (String, BigInt?, BigInt?)
+  dco_decode_record_string_opt_box_autoadd_u_64_opt_box_autoadd_u_64(
+    dynamic raw,
+  );
+
+  @protected
   (String, String) dco_decode_record_string_string(dynamic raw);
 
   @protected
-  (String, BigInt) dco_decode_record_string_u_64(dynamic raw);
-
-  @protected
   (String, BigInt, bool) dco_decode_record_string_u_64_bool(dynamic raw);
-
-  @protected
-  (String, BigInt, BigInt?) dco_decode_record_string_u_64_opt_box_autoadd_u_64(
-    dynamic raw,
-  );
 
   @protected
   (int, int) dco_decode_record_u_32_u_32(dynamic raw);
@@ -1305,12 +1309,6 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   );
 
   @protected
-  PegOutFees
-  sse_decode_Auto_Owned_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerPegOutFees(
-    SseDeserializer deserializer,
-  );
-
-  @protected
   PublicFederation
   sse_decode_Auto_Owned_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerPublicFederation(
     SseDeserializer deserializer,
@@ -1331,6 +1329,12 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   @protected
   SafeUrl
   sse_decode_Auto_Owned_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerSafeUrl(
+    SseDeserializer deserializer,
+  );
+
+  @protected
+  WithdrawFees
+  sse_decode_Auto_Owned_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerWithdrawFees(
     SseDeserializer deserializer,
   );
 
@@ -1635,12 +1639,6 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   );
 
   @protected
-  PegOutFees
-  sse_decode_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerPegOutFees(
-    SseDeserializer deserializer,
-  );
-
-  @protected
   PublicFederation
   sse_decode_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerPublicFederation(
     SseDeserializer deserializer,
@@ -1661,6 +1659,12 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   @protected
   SafeUrl
   sse_decode_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerSafeUrl(
+    SseDeserializer deserializer,
+  );
+
+  @protected
+  WithdrawFees
+  sse_decode_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerWithdrawFees(
     SseDeserializer deserializer,
   );
 
@@ -1956,8 +1960,8 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   );
 
   @protected
-  List<(String, BigInt, BigInt?)>
-  sse_decode_list_record_string_u_64_opt_box_autoadd_u_64(
+  List<(String, BigInt?, BigInt?)>
+  sse_decode_list_record_string_opt_box_autoadd_u_64_opt_box_autoadd_u_64(
     SseDeserializer deserializer,
   );
 
@@ -2169,20 +2173,23 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   (String, bool) sse_decode_record_string_bool(SseDeserializer deserializer);
 
   @protected
+  (String, BigInt?) sse_decode_record_string_opt_box_autoadd_u_64(
+    SseDeserializer deserializer,
+  );
+
+  @protected
+  (String, BigInt?, BigInt?)
+  sse_decode_record_string_opt_box_autoadd_u_64_opt_box_autoadd_u_64(
+    SseDeserializer deserializer,
+  );
+
+  @protected
   (String, String) sse_decode_record_string_string(
     SseDeserializer deserializer,
   );
 
   @protected
-  (String, BigInt) sse_decode_record_string_u_64(SseDeserializer deserializer);
-
-  @protected
   (String, BigInt, bool) sse_decode_record_string_u_64_bool(
-    SseDeserializer deserializer,
-  );
-
-  @protected
-  (String, BigInt, BigInt?) sse_decode_record_string_u_64_opt_box_autoadd_u_64(
     SseDeserializer deserializer,
   );
 
@@ -2404,13 +2411,6 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
 
   @protected
   void
-  sse_encode_Auto_Owned_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerPegOutFees(
-    PegOutFees self,
-    SseSerializer serializer,
-  );
-
-  @protected
-  void
   sse_encode_Auto_Owned_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerPublicFederation(
     PublicFederation self,
     SseSerializer serializer,
@@ -2434,6 +2434,13 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   void
   sse_encode_Auto_Owned_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerSafeUrl(
     SafeUrl self,
+    SseSerializer serializer,
+  );
+
+  @protected
+  void
+  sse_encode_Auto_Owned_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerWithdrawFees(
+    WithdrawFees self,
     SseSerializer serializer,
   );
 
@@ -2789,13 +2796,6 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
 
   @protected
   void
-  sse_encode_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerPegOutFees(
-    PegOutFees self,
-    SseSerializer serializer,
-  );
-
-  @protected
-  void
   sse_encode_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerPublicFederation(
     PublicFederation self,
     SseSerializer serializer,
@@ -2819,6 +2819,13 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   void
   sse_encode_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerSafeUrl(
     SafeUrl self,
+    SseSerializer serializer,
+  );
+
+  @protected
+  void
+  sse_encode_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerWithdrawFees(
+    WithdrawFees self,
     SseSerializer serializer,
   );
 
@@ -3178,8 +3185,8 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   );
 
   @protected
-  void sse_encode_list_record_string_u_64_opt_box_autoadd_u_64(
-    List<(String, BigInt, BigInt?)> self,
+  void sse_encode_list_record_string_opt_box_autoadd_u_64_opt_box_autoadd_u_64(
+    List<(String, BigInt?, BigInt?)> self,
     SseSerializer serializer,
   );
 
@@ -3441,26 +3448,26 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   );
 
   @protected
+  void sse_encode_record_string_opt_box_autoadd_u_64(
+    (String, BigInt?) self,
+    SseSerializer serializer,
+  );
+
+  @protected
+  void sse_encode_record_string_opt_box_autoadd_u_64_opt_box_autoadd_u_64(
+    (String, BigInt?, BigInt?) self,
+    SseSerializer serializer,
+  );
+
+  @protected
   void sse_encode_record_string_string(
     (String, String) self,
     SseSerializer serializer,
   );
 
   @protected
-  void sse_encode_record_string_u_64(
-    (String, BigInt) self,
-    SseSerializer serializer,
-  );
-
-  @protected
   void sse_encode_record_string_u_64_bool(
     (String, BigInt, bool) self,
-    SseSerializer serializer,
-  );
-
-  @protected
-  void sse_encode_record_string_u_64_opt_box_autoadd_u_64(
-    (String, BigInt, BigInt?) self,
     SseSerializer serializer,
   );
 
@@ -4381,40 +4388,6 @@ class RustLibWire implements BaseWire {
           .asFunction<void Function(ffi.Pointer<ffi.Void>)>();
 
   void
-  rust_arc_increment_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerPegOutFees(
-    ffi.Pointer<ffi.Void> ptr,
-  ) {
-    return _rust_arc_increment_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerPegOutFees(
-      ptr,
-    );
-  }
-
-  late final _rust_arc_increment_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerPegOutFeesPtr =
-      _lookup<ffi.NativeFunction<ffi.Void Function(ffi.Pointer<ffi.Void>)>>(
-        'frbgen_ecashapp_rust_arc_increment_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerPegOutFees',
-      );
-  late final _rust_arc_increment_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerPegOutFees =
-      _rust_arc_increment_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerPegOutFeesPtr
-          .asFunction<void Function(ffi.Pointer<ffi.Void>)>();
-
-  void
-  rust_arc_decrement_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerPegOutFees(
-    ffi.Pointer<ffi.Void> ptr,
-  ) {
-    return _rust_arc_decrement_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerPegOutFees(
-      ptr,
-    );
-  }
-
-  late final _rust_arc_decrement_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerPegOutFeesPtr =
-      _lookup<ffi.NativeFunction<ffi.Void Function(ffi.Pointer<ffi.Void>)>>(
-        'frbgen_ecashapp_rust_arc_decrement_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerPegOutFees',
-      );
-  late final _rust_arc_decrement_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerPegOutFees =
-      _rust_arc_decrement_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerPegOutFeesPtr
-          .asFunction<void Function(ffi.Pointer<ffi.Void>)>();
-
-  void
   rust_arc_increment_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerPublicFederation(
     ffi.Pointer<ffi.Void> ptr,
   ) {
@@ -4548,6 +4521,40 @@ class RustLibWire implements BaseWire {
       );
   late final _rust_arc_decrement_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerSafeUrl =
       _rust_arc_decrement_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerSafeUrlPtr
+          .asFunction<void Function(ffi.Pointer<ffi.Void>)>();
+
+  void
+  rust_arc_increment_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerWithdrawFees(
+    ffi.Pointer<ffi.Void> ptr,
+  ) {
+    return _rust_arc_increment_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerWithdrawFees(
+      ptr,
+    );
+  }
+
+  late final _rust_arc_increment_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerWithdrawFeesPtr =
+      _lookup<ffi.NativeFunction<ffi.Void Function(ffi.Pointer<ffi.Void>)>>(
+        'frbgen_ecashapp_rust_arc_increment_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerWithdrawFees',
+      );
+  late final _rust_arc_increment_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerWithdrawFees =
+      _rust_arc_increment_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerWithdrawFeesPtr
+          .asFunction<void Function(ffi.Pointer<ffi.Void>)>();
+
+  void
+  rust_arc_decrement_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerWithdrawFees(
+    ffi.Pointer<ffi.Void> ptr,
+  ) {
+    return _rust_arc_decrement_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerWithdrawFees(
+      ptr,
+    );
+  }
+
+  late final _rust_arc_decrement_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerWithdrawFeesPtr =
+      _lookup<ffi.NativeFunction<ffi.Void Function(ffi.Pointer<ffi.Void>)>>(
+        'frbgen_ecashapp_rust_arc_decrement_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerWithdrawFees',
+      );
+  late final _rust_arc_decrement_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerWithdrawFees =
+      _rust_arc_decrement_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerWithdrawFeesPtr
           .asFunction<void Function(ffi.Pointer<ffi.Void>)>();
 
   void

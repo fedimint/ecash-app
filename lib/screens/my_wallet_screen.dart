@@ -35,7 +35,9 @@ class _MyWalletScreenState extends State<MyWalletScreen> {
 
   // Summary data
   List<(BigInt, BigInt)>? _noteSummary;
-  List<(String, BigInt, BigInt?)>? _addresses;
+  // (address, tweak index, deposited amount). The tweak index is null for
+  // walletv2, which derives addresses locally without one.
+  List<(String, BigInt?, BigInt?)>? _addresses;
   LightningAddressConfig? _lnAddressConfig;
   FederationMeta? _federationMeta;
   bool _isSummaryLoading = true;
@@ -77,7 +79,7 @@ class _MyWalletScreenState extends State<MyWalletScreen> {
       if (!mounted) return;
       setState(() {
         _noteSummary = results[0] as List<(BigInt, BigInt)>;
-        _addresses = results[1] as List<(String, BigInt, BigInt?)>;
+        _addresses = results[1] as List<(String, BigInt?, BigInt?)>;
         _lnAddressConfig = results[2] as LightningAddressConfig?;
         _federationMeta = results[3] as FederationMeta;
         _isSummaryLoading = false;
@@ -385,12 +387,12 @@ class _MyWalletScreenState extends State<MyWalletScreen> {
     // Sort addresses: funded first
     final sortedAddresses =
         _addresses != null
-            ? (List<(String, BigInt, BigInt?)>.from(_addresses!)..sort((a, b) {
+            ? (List<(String, BigInt?, BigInt?)>.from(_addresses!)..sort((a, b) {
               if (a.$3 != null && b.$3 == null) return -1;
               if (a.$3 == null && b.$3 != null) return 1;
               return 0;
             }))
-            : <(String, BigInt, BigInt?)>[];
+            : <(String, BigInt?, BigInt?)>[];
     final addressPreview = sortedAddresses.take(3).toList();
     final totalAddresses = sortedAddresses.length;
 

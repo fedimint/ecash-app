@@ -225,7 +225,7 @@ Stream<DepositEventKind> subscribeDeposits({
   required FederationId federationId,
 }) => RustLib.instance.api.crateSubscribeDeposits(federationId: federationId);
 
-Future<(String, BigInt)> allocateDepositAddress({
+Future<(String, BigInt?)> allocateDepositAddress({
   required FederationId federationId,
 }) => RustLib.instance.api.crateAllocateDepositAddress(
   federationId: federationId,
@@ -293,12 +293,12 @@ Future<OperationId> withdrawToAddress({
   required FederationId federationId,
   required String address,
   required BigInt amountSats,
-  required PegOutFees pegOutFees,
+  required WithdrawFees fees,
 }) => RustLib.instance.api.crateWithdrawToAddress(
   federationId: federationId,
   address: address,
   amountSats: amountSats,
-  pegOutFees: pegOutFees,
+  fees: fees,
 );
 
 Future<String> awaitWithdraw({
@@ -351,7 +351,7 @@ Future<void> insertRelay({required String relayUri}) =>
 Future<void> removeRelay({required String relayUri}) =>
     RustLib.instance.api.crateRemoveRelay(relayUri: relayUri);
 
-Future<List<(String, BigInt, BigInt?)>> getAddresses({
+Future<List<(String, BigInt?, BigInt?)>> getAddresses({
   required FederationId federationId,
 }) => RustLib.instance.api.crateGetAddresses(federationId: federationId);
 
@@ -546,9 +546,6 @@ abstract class Database implements RustOpaqueInterface {}
 
 // Rust type: RustOpaqueMoi<flutter_rust_bridge::for_generated::RustAutoOpaqueInner<FederationId>>
 abstract class FederationId implements RustOpaqueInterface {}
-
-// Rust type: RustOpaqueMoi<flutter_rust_bridge::for_generated::RustAutoOpaqueInner<PegOutFees>>
-abstract class PegOutFees implements RustOpaqueInterface {}
 
 // Rust type: RustOpaqueMoi<flutter_rust_bridge::for_generated::RustAutoOpaqueInner<SafeUrl>>
 abstract class SafeUrl implements RustOpaqueInterface {}

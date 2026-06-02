@@ -52,23 +52,26 @@ use fedimint_mint_client::{
 };
 use fedimint_mint_common::config::MintClientConfig;
 use fedimint_wallet_client::client_db::TweakIdx;
+use fedimint_wallet_client::TxOutputSummary;
 use fedimint_wallet_client::WithdrawState;
-use fedimint_wallet_client::{api::WalletFederationApi, TxOutputSummary};
 use fedimint_wallet_client::{
     DepositStateV2, PegOutFees, WalletClientInit, WalletClientModule, WalletOperationMeta,
     WalletOperationMetaVariant,
+};
+use fedimint_walletv2_client::{
+    FinalReceiveOperationState as WalletV2FinalReceiveOperationState,
+    FinalSendOperationState as WalletV2FinalSendOperationState, WalletClientInit as WalletV2Init,
+    WalletClientModule as WalletV2Module, WalletOperationMeta as WalletV2OperationMeta,
 };
 use futures_util::{stream, Stream, StreamExt};
 use lightning_invoice::{Bolt11Invoice, Description};
 use reqwest::StatusCode;
 use serde::{Deserialize, Serialize};
 use serde_json::{from_value, json};
-use tokio::{
-    sync::mpsc::{unbounded_channel, UnboundedReceiver, UnboundedSender},
-    time::Instant,
-};
+use tokio::{sync::mpsc::unbounded_channel, time::Instant};
 use tokio::{sync::RwLock, time::timeout};
 
+use crate::get_event_bus;
 use crate::{
     anyhow,
     app_error::{classify_anyhow, EcashAppError, EcashAppResult},
@@ -80,9 +83,9 @@ use crate::{
         SchemaVersionKey,
     },
     error_to_flutter, get_nostr_client, info_to_flutter, payment_error_to_flutter,
+    wallet::WalletHandler,
     FederationConfig, FederationConfigKey, FederationConfigKeyPrefix, SeedPhraseAckKey,
 };
-use crate::{event_bus::EventBus, get_event_bus};
 
 const DEFAULT_EXPIRY_TIME_SECS: u32 = 86400;
 const CACHE_UPDATE_INTERVAL_SECS: u64 = 30;
@@ -121,7 +124,18 @@ pub struct WithdrawFeesResponse {
     pub fee_amount: u64,
     pub fee_rate_sats_per_vb: f64,
     pub tx_size_vbytes: u32,
-    pub peg_out_fees: PegOutFees,
+    pub fees: WithdrawFees,
+}
+
+/// Fee information round-tripped from the fee quote back into the withdraw call,
+/// so the user pays exactly the quoted fee. The variant also selects which
+/// wallet module performs the on-chain send.
+#[derive(Clone, PartialEq, Serialize, Debug)]
+pub enum WithdrawFees {
+    /// walletv1 peg-out fees (feerate + tx weight computed for the specific tx).
+    V1(PegOutFees),
+    /// walletv2 flat send fee, in sats.
+    V2 { fee_sats: u64 },
 }
 
 pub struct ReissueFees {
@@ -158,13 +172,11 @@ pub struct Multimint {
     modules: ClientModuleInitRegistry,
     clients: Arc<RwLock<BTreeMap<FederationId, ClientHandleArc>>>,
     task_group: TaskGroup,
-    pegin_address_monitor_tx: UnboundedSender<(FederationId, TweakIdx)>,
     recovery_progress: Arc<RwLock<BTreeMap<FederationId, BTreeMap<u16, RecoveryProgress>>>>,
     internal_ecash_spends: Arc<RwLock<BTreeSet<OperationId>>>,
-    allocated_bitcoin_addresses:
-        Arc<RwLock<BTreeMap<FederationId, BTreeMap<TweakIdx, (String, Option<u64>)>>>>,
     recurringd_invoices: Arc<RwLock<BTreeSet<OperationId>>>,
     update_notified: Arc<AtomicBool>,
+    wallet_handler: WalletHandler,
 }
 
 #[derive(Debug, Serialize, Encodable, Decodable, Clone)]
@@ -474,14 +486,14 @@ pub struct LNAddressRemoveRequest {
 }
 
 #[derive(Serialize, Deserialize)]
-struct OnChainWithdrawalMeta {
-    fee_rate_sats_per_vb: f64,
-    tx_size_vb: u32,
-    fee_sats: u64,
+pub(crate) struct OnChainWithdrawalMeta {
+    pub(crate) fee_rate_sats_per_vb: f64,
+    pub(crate) tx_size_vb: u32,
+    pub(crate) fee_sats: u64,
 }
 
 impl OnChainWithdrawalMeta {
-    fn from_peg_out_fees(fees: &PegOutFees) -> Self {
+    pub(crate) fn from_peg_out_fees(fees: &PegOutFees) -> Self {
         Self {
             fee_rate_sats_per_vb: fees.fee_rate.sats_per_kvb as f64 / 1000.0,
             // ceil(weight / 4) using only u32
@@ -523,6 +535,7 @@ impl Multimint {
         modules.attach(LightningClientInit::default());
         modules.attach(MintClientInit);
         modules.attach(WalletClientInit::default());
+        modules.attach(WalletV2Init);
         modules.attach(fedimint_lnv2_client::LightningClientInit::default());
         modules.attach(MetaClientInit);
 
@@ -531,25 +544,27 @@ impl Multimint {
         let (pegin_address_monitor_tx, pegin_address_monitor_rx) =
             unbounded_channel::<(FederationId, TweakIdx)>();
 
+        let task_group = TaskGroup::new();
+        let wallet_handler =
+            WalletHandler::new(pegin_address_monitor_tx, db.clone(), task_group.clone());
+
         let mut multimint = Self {
             db,
             mnemonic,
             modules,
             clients: clients.clone(),
-            task_group: TaskGroup::new(),
-            pegin_address_monitor_tx: pegin_address_monitor_tx.clone(),
+            task_group,
             recovery_progress: Arc::new(RwLock::new(BTreeMap::new())),
             internal_ecash_spends: Arc::new(RwLock::new(BTreeSet::new())),
-            allocated_bitcoin_addresses: Arc::new(RwLock::new(BTreeMap::new())),
             recurringd_invoices: Arc::new(RwLock::new(BTreeSet::new())),
             update_notified: Arc::new(AtomicBool::new(false)),
+            wallet_handler: wallet_handler.clone(),
         };
 
         multimint.load_clients().await?;
-        multimint
-            .spawn_pegin_address_watcher(pegin_address_monitor_rx)
-            .await?;
-        multimint.monitor_all_unused_pegin_addresses().await?;
+        wallet_handler
+            .spawn_pegin_address_watcher(pegin_address_monitor_rx, multimint.clients.clone());
+        wallet_handler.monitor_all_pending_deposits(multimint.clients.clone());
         multimint.run_migrations().await;
         multimint.spawn_cache_task();
         multimint.spawn_recurring_invoice_listener();
@@ -609,6 +624,8 @@ impl Multimint {
             self.clients.write().await.insert(id.id, client.clone());
 
             self.spawn_lnv2_event_listener(client.clone(), id.id);
+            self.wallet_handler
+                .spawn_v2_deposit_event_listener(client.clone(), id.id);
             self.finish_active_subscriptions(client.clone(), id.id)
                 .await;
             if client.has_pending_recoveries() {
@@ -651,8 +668,26 @@ impl Multimint {
                                     self_copy.spawn_await_ecash_reissue(federation_id, op_id);
                                     self_copy.spawn_await_ecash_send(federation_id, op_id);
                                 }
-                                // Wallet operations are handled by the pegin monitor
-                                "wallet" => {}
+                                // Deposits/receives are re-driven by the pegin
+                                // monitor (v1) and the deposit event listener
+                                // (v2); in-flight on-chain sends (peg-outs) have
+                                // no other driver, so consume those to completion
+                                // here. (We gate on the op type because awaiting a
+                                // send state on a receive op would never resolve.)
+                                "wallet" => {
+                                    if let WalletOperationMetaVariant::Withdraw { .. } =
+                                        entry.meta::<WalletOperationMeta>().variant
+                                    {
+                                        self_copy.spawn_await_withdraw(federation_id, op_id);
+                                    }
+                                }
+                                "walletv2" => {
+                                    if let WalletV2OperationMeta::Send(_) =
+                                        entry.meta::<WalletV2OperationMeta>()
+                                    {
+                                        self_copy.spawn_await_withdraw(federation_id, op_id);
+                                    }
+                                }
                                 module => {
                                     info_to_flutter(format!(
                                         "Active operation needs to be driven to completion: {module}"
@@ -750,290 +785,6 @@ impl Multimint {
                     }
                 }
             });
-    }
-
-    async fn spawn_pegin_address_watcher(
-        &self,
-        mut monitor_rx: UnboundedReceiver<(FederationId, TweakIdx)>,
-    ) -> anyhow::Result<()> {
-        let event_bus_clone = get_event_bus();
-        let task_group_clone = self.task_group.clone();
-        let clients_clone = self.clients.clone();
-        let addresses_clone = self.allocated_bitcoin_addresses.clone();
-
-        self.task_group
-            .spawn_cancellable("pegin address watcher", async move {
-                while let Some((fed_id, tweak_idx)) = monitor_rx.recv().await {
-                    let event_bus = event_bus_clone.clone();
-                    // wrapping the clients in Arc<RwLock<..>> allows us to monitor using clients
-                    // created after the background task is spawned
-                    let client = clients_clone
-                        .read()
-                        .await
-                        .get(&fed_id)
-                        .expect("No federation exists")
-                        .clone();
-
-                    let addresses_clone = addresses_clone.clone();
-                    task_group_clone.spawn_cancellable("tweak index watcher", async move {
-                        if let Err(e) = Self::watch_pegin_address(
-                            fed_id,
-                            client,
-                            tweak_idx,
-                            event_bus,
-                            addresses_clone,
-                        )
-                        .await
-                        {
-                            info_to_flutter(format!(
-                                "watch_pegin_address({}) failed: {:?}",
-                                tweak_idx.0, e
-                            ))
-                            .await;
-                        }
-                    });
-                }
-            });
-
-        Ok(())
-    }
-
-    #[allow(clippy::type_complexity)]
-    async fn watch_pegin_address(
-        federation_id: FederationId,
-        client: ClientHandleArc,
-        tweak_idx: TweakIdx,
-        event_bus: EventBus<MultimintEvent>,
-        addresses: Arc<RwLock<BTreeMap<FederationId, BTreeMap<TweakIdx, (String, Option<u64>)>>>>,
-    ) -> anyhow::Result<()> {
-        let wallet_module = client.get_first_module::<WalletClientModule>()?;
-
-        let data = match wallet_module.get_pegin_tweak_idx(tweak_idx).await {
-            Ok(d) => d,
-            Err(e) if e.to_string().contains("TweakIdx not found") => return Ok(()),
-            Err(e) => return Err(e),
-        };
-
-        let mut updates = wallet_module
-            .subscribe_deposit(data.operation_id)
-            .await?
-            .into_stream();
-
-        while let Some(state) = updates.next().await {
-            match state {
-                DepositStateV2::WaitingForTransaction => {}
-                DepositStateV2::WaitingForConfirmation {
-                    btc_deposited,
-                    btc_out_point,
-                } => {
-                    let deposit_event = MultimintEvent::Deposit((
-                        federation_id,
-                        DepositEventKind::Mempool(MempoolEvent {
-                            amount: Amount::from_sats(btc_deposited.to_sat()).msats,
-                            outpoint: btc_out_point.to_string(),
-                        }),
-                    ));
-
-                    event_bus.publish(deposit_event).await;
-
-                    let client = reqwest::Client::new();
-
-                    let api_url = match wallet_module.get_network() {
-                        bitcoin::Network::Bitcoin => "https://mempool.space/api".to_string(),
-                        bitcoin::Network::Signet => "https://mutinynet.com/api".to_string(),
-                        bitcoin::Network::Regtest => {
-                            // referencing devimint, uncomment for regtest
-                            // "http://localhost:{FM_PORT_ESPLORA}".to_string()
-                            panic!("Regtest requires manually setting the connection params")
-                        }
-                        network => {
-                            panic!("{network} is not a supported network")
-                        }
-                    };
-
-                    let tx_height = fedimint_core::util::retry(
-                        "get confirmed block height",
-                        fedimint_core::util::backoff_util::background_backoff(),
-                        || async {
-                            let resp = client
-                                .get(format!("{}/tx/{}", api_url, btc_out_point.txid))
-                                .send()
-                                .await?
-                                .error_for_status()?
-                                .text()
-                                .await?;
-
-                            serde_json::from_str::<serde_json::Value>(&resp)?
-                                .get("status")
-                                .and_then(|s| s.get("block_height"))
-                                .and_then(|h| h.as_u64())
-                                .ok_or_else(|| {
-                                    anyhow::anyhow!("no confirmation height yet, still in mempool")
-                                })
-                        },
-                    )
-                    .await
-                    .expect("Never gives up");
-
-                    let every_10_secs = fedimint_core::util::backoff_util::custom_backoff(
-                        Duration::from_secs(10),
-                        Duration::from_secs(10),
-                        None,
-                    );
-                    fedimint_core::util::retry("consensus confirmation", every_10_secs, || async {
-                        let consensus_height = wallet_module
-                            .api
-                            .fetch_consensus_block_count()
-                            .await?
-                            .saturating_sub(1);
-
-                        let needed = tx_height.saturating_sub(consensus_height);
-
-                        let deposit_event = MultimintEvent::Deposit((
-                            federation_id,
-                            DepositEventKind::AwaitingConfs(AwaitingConfsEvent {
-                                amount: Amount::from_sats(btc_deposited.to_sat()).msats,
-                                outpoint: btc_out_point.to_string(),
-                                block_height: tx_height,
-                                needed,
-                            }),
-                        ));
-
-                        event_bus.publish(deposit_event).await;
-                        anyhow::ensure!(needed == 0, "{} more confs needed", needed);
-
-                        Ok(())
-                    })
-                    .await
-                    .expect("Never gives up");
-
-                    // trigger another check of pegin monitor for faster claim
-                    wallet_module.recheck_pegin_address(tweak_idx).await?;
-                }
-                DepositStateV2::Confirmed {
-                    btc_deposited,
-                    btc_out_point,
-                } => {
-                    let mut addresses = addresses.write().await;
-                    if let Some(fed_addresses) = addresses.get_mut(&federation_id) {
-                        if let Some((address, _)) = fed_addresses.remove(&tweak_idx) {
-                            fed_addresses
-                                .insert(tweak_idx, (address, Some(btc_deposited.to_sat())));
-                        }
-                    }
-
-                    let deposit_event = MultimintEvent::Deposit((
-                        federation_id,
-                        DepositEventKind::Confirmed(ConfirmedEvent {
-                            amount: Amount::from_sats(btc_deposited.to_sat()).msats,
-                            outpoint: btc_out_point.to_string(),
-                        }),
-                    ));
-
-                    event_bus.publish(deposit_event).await;
-                }
-                DepositStateV2::Claimed {
-                    btc_deposited,
-                    btc_out_point,
-                } => {
-                    let deposit_event = MultimintEvent::Deposit((
-                        federation_id,
-                        DepositEventKind::Claimed(ClaimedEvent {
-                            amount: Amount::from_sats(btc_deposited.to_sat()).msats,
-                            outpoint: btc_out_point.to_string(),
-                        }),
-                    ));
-
-                    event_bus.publish(deposit_event).await;
-                }
-                DepositStateV2::Failed(e) => {
-                    info_to_flutter(format!("deposit failed: {:?}", e)).await;
-                    break;
-                }
-            };
-        }
-
-        Ok(())
-    }
-
-    async fn monitor_all_unused_pegin_addresses(&self) -> anyhow::Result<()> {
-        let federation_ids = self
-            .federations()
-            .await
-            .into_iter()
-            .map(|(fed, _)| fed.federation_id);
-        let pegin_address_monitor_tx_clone = self.pegin_address_monitor_tx.clone();
-        let clients_clone = self.clients.clone();
-        let addresses_clone = self.allocated_bitcoin_addresses.clone();
-
-        self.task_group
-            .spawn_cancellable("unused address monitor", async move {
-                for fed_id in federation_ids {
-                    let client = clients_clone
-                        .read()
-                        .await
-                        .get(&fed_id)
-                        .expect("No federation exists")
-                        .clone();
-                    let wallet_module = client
-                        .get_first_module::<WalletClientModule>()
-                        .expect("No wallet module exists");
-
-                    let operation_log = client.operation_log();
-
-                    let mut tweak_idx = TweakIdx(0);
-                    while let Ok(data) = wallet_module.get_pegin_tweak_idx(tweak_idx).await {
-                        let operation = operation_log.get_operation(data.operation_id).await;
-                        if let Some(wallet_op) = operation {
-                            if data.claimed.is_empty() {
-                                // we found an allocated, unused address so we need to monitor
-                                if pegin_address_monitor_tx_clone
-                                    .send((fed_id, tweak_idx))
-                                    .is_err()
-                                {
-                                    info_to_flutter(format!(
-                                        "failed to monitor tweak index {:?} for fed {:?}",
-                                        tweak_idx, fed_id
-                                    ))
-                                    .await;
-                                }
-                            }
-
-                            let wallet_meta = wallet_op.meta::<WalletOperationMeta>();
-                            if let WalletOperationMetaVariant::Deposit {
-                                address,
-                                tweak_idx,
-                                expires_at: _,
-                            } = wallet_meta.variant
-                            {
-                                let mut addresses = addresses_clone.write().await;
-                                let fed_addresses =
-                                    addresses.entry(fed_id).or_insert(BTreeMap::new());
-                                if let Some(DepositStateV2::Claimed { btc_deposited, .. }) =
-                                    wallet_op.outcome()
-                                {
-                                    fed_addresses.insert(
-                                        tweak_idx.expect("Tweak cannot be None"),
-                                        (
-                                            address.assume_checked().to_string(),
-                                            Some(btc_deposited.to_sat()),
-                                        ),
-                                    );
-                                } else {
-                                    fed_addresses.insert(
-                                        tweak_idx.expect("Tweak cannot be None"),
-                                        (address.assume_checked().to_string(), None),
-                                    );
-                                }
-                            }
-                        }
-
-                        tweak_idx = tweak_idx.next();
-                    }
-                }
-            });
-
-        Ok(())
     }
 
     pub async fn contains_client(&self, federation_id: &FederationId) -> bool {
@@ -1395,6 +1146,21 @@ impl Multimint {
         Some(SafeUrl::parse(url_str).ok()?.to_string())
     }
 
+    /// Resolves the Bitcoin network for a federation from whichever wallet
+    /// module it has. walletv1 and walletv2 both expose `get_network()`, but a
+    /// federation only has one of them, so we try both. Returns `None` for a
+    /// federation with no wallet module at all.
+    fn wallet_network(client: &ClientHandleArc) -> Option<String> {
+        if let Ok(wallet) = client.get_first_module::<WalletV2Module>() {
+            return Some(wallet.get_network().to_string());
+        }
+        if let Ok(wallet) = client.get_first_module::<fedimint_wallet_client::WalletClientModule>()
+        {
+            return Some(wallet.get_network().to_string());
+        }
+        None
+    }
+
     async fn cache_federation_meta(
         &self,
         client: ClientHandleArc,
@@ -1403,10 +1169,7 @@ impl Multimint {
         let federation_id = client.federation_id();
 
         let config = client.config().await;
-        let network = client
-            .get_first_module::<fedimint_wallet_client::WalletClientModule>()
-            .ok()
-            .map(|wallet| wallet.get_network().to_string());
+        let network = Self::wallet_network(&client);
 
         // Load cached guardian versions so we can preserve them when a guardian is offline
         let cached_versions: BTreeMap<u16, Option<String>> = {
@@ -1640,13 +1403,7 @@ impl Multimint {
             .expect("No federation name")
             .to_owned();
 
-        let network = if let Ok(wallet) =
-            client.get_first_module::<fedimint_wallet_client::WalletClientModule>()
-        {
-            Some(wallet.get_network().to_string())
-        } else {
-            None
-        };
+        let network = Self::wallet_network(&client);
 
         let federation_config = FederationConfig {
             connector: Connector::default(),
@@ -1660,6 +1417,8 @@ impl Multimint {
             .await
             .insert(federation_id, client.clone());
 
+        self.wallet_handler
+            .spawn_v2_deposit_event_listener(client.clone(), federation_id);
         self.spawn_lnv2_event_listener(client, federation_id);
 
         let mut dbtx = self.db.begin_transaction().await;
@@ -2435,6 +2194,28 @@ impl Multimint {
         });
     }
 
+    /// Drives an on-chain send (peg-out) operation to completion. Used on
+    /// startup to finish a withdraw that was in flight when the app last closed;
+    /// works for both walletv1 and walletv2 (see [`Self::await_withdraw`]).
+    fn spawn_await_withdraw(&self, federation_id: FederationId, operation_id: OperationId) {
+        let self_copy = self.clone();
+        self.task_group
+            .spawn_cancellable("await withdraw", async move {
+                match self_copy.await_withdraw(&federation_id, operation_id).await {
+                    Ok(txid) => {
+                        info_to_flutter(format!("On-chain send completed: {txid}")).await;
+                    }
+                    Err(e) => {
+                        // await_withdraw already surfaces genuine failures via a
+                        // toast; this only records the outcome (or a no-op error from
+                        // driving an operation that isn't a send).
+                        info_to_flutter(format!("await_withdraw({operation_id:?}) ended: {e}"))
+                            .await;
+                    }
+                }
+            });
+    }
+
     pub async fn await_send(
         &self,
         federation_id: &FederationId,
@@ -3132,6 +2913,74 @@ impl Multimint {
                             }
                         }
                     }
+                    "walletv2" => {
+                        let meta = op_log_val.meta::<WalletV2OperationMeta>();
+                        match meta {
+                            WalletV2OperationMeta::Receive(receive) => {
+                                // The operation's outcome is persisted once the
+                                // claim finalizes (driven by the deposit event
+                                // listener), so only successful deposits surface.
+                                let outcome =
+                                    op_log_val.outcome::<WalletV2FinalReceiveOperationState>();
+                                if let Some(WalletV2FinalReceiveOperationState::Success) = outcome {
+                                    let amount = Amount::from_sats(receive.value.to_sat()).msats;
+                                    let address = receive
+                                        .address
+                                        .map(|a| a.assume_checked().to_string())
+                                        .unwrap_or_default();
+                                    let txid = receive
+                                        .outpoint
+                                        .map(|o| o.txid.to_string())
+                                        .unwrap_or_default();
+
+                                    Some(Transaction {
+                                        kind: TransactionKind::OnchainReceive { address, txid },
+                                        amount,
+                                        timestamp,
+                                        operation_id: key.operation_id.0.to_vec(),
+                                    })
+                                } else {
+                                    None
+                                }
+                            }
+                            WalletV2OperationMeta::Send(send) => {
+                                let outcome =
+                                    op_log_val.outcome::<WalletV2FinalSendOperationState>();
+                                if let Some(WalletV2FinalSendOperationState::Success(txid)) =
+                                    outcome
+                                {
+                                    let amount = Amount::from_sats(send.value.to_sat()).msats;
+                                    let address = send.address.assume_checked().to_string();
+                                    let fee_sats = send.fee.to_sat();
+
+                                    // walletv2 SendMeta stores only the flat fee, but the
+                                    // tx is always 1-in/1-out, so we recover the feerate and
+                                    // size from the per-federation config.
+                                    let tx_size_vb =
+                                        WalletHandler::walletv2_send_tx_vbytes(&client).await.ok();
+                                    let fee_rate_sats_per_vb = tx_size_vb.and_then(|vb| {
+                                        (vb > 0).then(|| fee_sats as f64 / f64::from(vb))
+                                    });
+
+                                    Some(Transaction {
+                                        kind: TransactionKind::OnchainSend {
+                                            address,
+                                            txid: txid.to_string(),
+                                            fee_rate_sats_per_vb,
+                                            tx_size_vb,
+                                            fee_sats: Some(fee_sats),
+                                            total_sats: Some(send.value.to_sat() + fee_sats),
+                                        },
+                                        amount,
+                                        timestamp,
+                                        operation_id: key.operation_id.0.to_vec(),
+                                    })
+                                } else {
+                                    None
+                                }
+                            }
+                        }
+                    }
                     _ => None,
                 };
 
@@ -3615,35 +3464,10 @@ impl Multimint {
         address: String,
         amount_sats: u64,
     ) -> EcashAppResult<WithdrawFeesResponse> {
-        let client = self
-            .clients
-            .read()
+        let client = self.get_client(federation_id).await?;
+        self.wallet_handler
+            .calculate_withdraw_fees(&client, address, amount_sats)
             .await
-            .get(federation_id)
-            .ok_or_else(|| EcashAppError::other("federation does not exist"))?
-            .clone();
-        let wallet_module = client
-            .get_first_module::<fedimint_wallet_client::WalletClientModule>()
-            .map_err(|e| EcashAppError::other(format!("wallet module unavailable: {e:#}")))?;
-
-        let address = bitcoin::address::Address::from_str(&address)
-            .map_err(|e| EcashAppError::InvalidBitcoinAddress(e.to_string()))?;
-        let address = address
-            .require_network(wallet_module.get_network())
-            .map_err(|e| EcashAppError::InvalidBitcoinAddress(e.to_string()))?;
-        let amount = bitcoin::Amount::from_sat(amount_sats);
-        let fees = wallet_module
-            .get_withdraw_fees(&address, amount)
-            .await
-            .map_err(EcashAppError::from_display)?;
-        let meta = OnChainWithdrawalMeta::from_peg_out_fees(&fees);
-
-        Ok(WithdrawFeesResponse {
-            fee_amount: meta.fee_sats,
-            fee_rate_sats_per_vb: meta.fee_rate_sats_per_vb,
-            tx_size_vbytes: meta.tx_size_vb,
-            peg_out_fees: fees,
-        })
     }
 
     pub async fn withdraw_to_address(
@@ -3651,33 +3475,12 @@ impl Multimint {
         federation_id: &FederationId,
         address: String,
         amount_sats: u64,
-        peg_out_fees: PegOutFees,
+        fees: WithdrawFees,
     ) -> EcashAppResult<OperationId> {
-        let client = self
-            .clients
-            .read()
+        let client = self.get_client(federation_id).await?;
+        self.wallet_handler
+            .withdraw_to_address(&client, address, amount_sats, fees)
             .await
-            .get(federation_id)
-            .ok_or_else(|| EcashAppError::other("federation does not exist"))?
-            .clone();
-        let wallet_module = client
-            .get_first_module::<fedimint_wallet_client::WalletClientModule>()
-            .map_err(|e| EcashAppError::other(format!("wallet module unavailable: {e:#}")))?;
-
-        let address = bitcoin::address::Address::from_str(&address)
-            .map_err(|e| EcashAppError::InvalidBitcoinAddress(e.to_string()))?;
-        let address = address
-            .require_network(wallet_module.get_network())
-            .map_err(|e| EcashAppError::InvalidBitcoinAddress(e.to_string()))?;
-        let amount = bitcoin::Amount::from_sat(amount_sats);
-        let meta = OnChainWithdrawalMeta::from_peg_out_fees(&peg_out_fees);
-
-        let operation_id = wallet_module
-            .withdraw(&address, amount, peg_out_fees, meta)
-            .await
-            .map_err(EcashAppError::from_display)?;
-
-        Ok(operation_id)
     }
 
     pub async fn await_withdraw(
@@ -3685,48 +3488,10 @@ impl Multimint {
         federation_id: &FederationId,
         operation_id: OperationId,
     ) -> EcashAppResult<String> {
-        let client = self
-            .clients
-            .read()
+        let client = self.get_client(federation_id).await?;
+        self.wallet_handler
+            .await_withdraw(*federation_id, &client, operation_id)
             .await
-            .get(federation_id)
-            .ok_or_else(|| EcashAppError::other("federation does not exist"))?
-            .clone();
-        let wallet_module = client
-            .get_first_module::<fedimint_wallet_client::WalletClientModule>()
-            .map_err(|e| EcashAppError::other(format!("wallet module unavailable: {e:#}")))?;
-
-        let mut updates = wallet_module
-            .subscribe_withdraw_updates(operation_id)
-            .await
-            .map_err(EcashAppError::from_display)?
-            .into_stream();
-
-        let txid = loop {
-            let update = updates.next().await.ok_or_else(|| {
-                EcashAppError::other("on-chain withdraw stream ended without outcome")
-            })?;
-
-            match update {
-                WithdrawState::Succeeded(txid) => {
-                    // drive the update stream to completion so we get an outcome
-                    while updates.next().await.is_some() {}
-                    break txid.consensus_encode_to_hex();
-                }
-                WithdrawState::Failed(e) => {
-                    let err = classify_anyhow(&anyhow!("on-chain withdraw failed: {e}"));
-                    // Emit the structured event too so any background listener
-                    // (e.g. screens that already navigated away) still sees it.
-                    payment_error_to_flutter(*federation_id, err.clone()).await;
-                    return Err(err);
-                }
-                WithdrawState::Created => {
-                    continue;
-                }
-            }
-        };
-
-        Ok(txid)
     }
 
     pub async fn get_max_withdrawable_amount(
@@ -3734,90 +3499,23 @@ impl Multimint {
         federation_id: &FederationId,
         address: String,
     ) -> EcashAppResult<u64> {
-        let client = self
-            .clients
+        let client = self.get_client(federation_id).await?;
+        self.wallet_handler
+            .get_max_withdrawable_amount(&client, address)
+            .await
+    }
+
+    /// Looks up the loaded client for a federation.
+    pub(crate) async fn get_client(
+        &self,
+        federation_id: &FederationId,
+    ) -> EcashAppResult<ClientHandleArc> {
+        self.clients
             .read()
             .await
             .get(federation_id)
-            .ok_or_else(|| EcashAppError::other("federation does not exist"))?
-            .clone();
-        let wallet_module = client
-            .get_first_module::<fedimint_wallet_client::WalletClientModule>()
-            .map_err(|e| EcashAppError::other(format!("wallet module unavailable: {e:#}")))?;
-
-        let address = bitcoin::address::Address::from_str(&address)
-            .map_err(|e| EcashAppError::InvalidBitcoinAddress(e.to_string()))?;
-        let address = address
-            .require_network(wallet_module.get_network())
-            .map_err(|e| EcashAppError::InvalidBitcoinAddress(e.to_string()))?;
-        let balance = bitcoin::Amount::from_sat(
-            client
-                .get_balance_for_btc()
-                .await
-                .map_err(EcashAppError::from_display)?
-                .msats
-                / 1000,
-        );
-        let fees = wallet_module
-            .get_withdraw_fees(&address, balance)
-            .await
-            .map_err(EcashAppError::from_display)?;
-        let max_withdrawable = balance
-            .checked_sub(fees.amount())
-            .ok_or_else(|| EcashAppError::other("Not enough funds to pay fees"))?;
-
-        Ok(max_withdrawable.to_sat())
-    }
-
-    pub async fn monitor_deposit_address(
-        &self,
-        federation_id: FederationId,
-        address: String,
-    ) -> anyhow::Result<u64> {
-        let client = self
-            .clients
-            .read()
-            .await
-            .get(&federation_id)
+            .ok_or_else(|| EcashAppError::other("federation does not exist"))
             .cloned()
-            .ok_or_else(|| anyhow::anyhow!("No federation exists"))?;
-
-        let wallet_module = client.get_first_module::<WalletClientModule>()?;
-        let address = bitcoin::Address::from_str(&address)?;
-        let tweak_idx = wallet_module
-            .find_tweak_idx_by_address(address.clone())
-            .await?;
-        let mut addresses = self.allocated_bitcoin_addresses.write().await;
-        let fed_addresses = addresses.entry(federation_id).or_insert(BTreeMap::new());
-        fed_addresses.insert(tweak_idx, (address.assume_checked().to_string(), None));
-
-        self.pegin_address_monitor_tx
-            .send((federation_id, tweak_idx))
-            .map_err(|e| anyhow::anyhow!("failed to monitor tweak index: {}", e))?;
-
-        Ok(tweak_idx.0)
-    }
-
-    pub async fn allocate_deposit_address(
-        &self,
-        federation_id: FederationId,
-    ) -> anyhow::Result<(String, u64)> {
-        let client = self
-            .clients
-            .read()
-            .await
-            .get(&federation_id)
-            .expect("No federation exists")
-            .clone();
-        let wallet_module =
-            client.get_first_module::<fedimint_wallet_client::WalletClientModule>()?;
-
-        let (_, address, _) = wallet_module.safe_allocate_deposit_address(()).await?;
-        let tweak_idx = self
-            .monitor_deposit_address(federation_id, address.to_string())
-            .await?;
-
-        Ok((address.to_string(), tweak_idx))
     }
 
     pub async fn get_pegin_fee(&self, federation_id: &FederationId) -> anyhow::Result<u64> {
@@ -3828,6 +3526,16 @@ impl Multimint {
             .get(federation_id)
             .ok_or(anyhow!("No federation exists for peg-in fee query"))?
             .clone();
+
+        // walletv2 charges a dynamic, feerate-based receive fee that is queried
+        // from the federation rather than read from a static config value.
+        if let Ok(wallet_module) =
+            client.get_first_module::<fedimint_walletv2_client::WalletClientModule>()
+        {
+            let fee = wallet_module.receive_fee().await?;
+            return Ok(Amount::from_sats(fee.to_sat()).msats);
+        }
+
         let wallet_module =
             client.get_first_module::<fedimint_wallet_client::WalletClientModule>()?;
 
@@ -3863,6 +3571,23 @@ impl Multimint {
                     .clone()
             }
         };
+        // walletv2 holds a single consolidated UTXO at the federation rather
+        // than a client-side UTXO set. The last entry of its transaction chain
+        // is that current UTXO (a single change output at vout 0).
+        if let Ok(wallet_module) = client.get_first_module::<WalletV2Module>() {
+            let tx_chain = wallet_module.tx_chain().await?;
+            let utxos = tx_chain
+                .last()
+                .map(|tip| Utxo {
+                    txid: tip.txid.to_string(),
+                    index: 0,
+                    amount: tip.output.to_sat() * 1000,
+                })
+                .into_iter()
+                .collect();
+            return Ok(utxos);
+        }
+
         let wallet_module = client.get_first_module::<WalletClientModule>()?;
         let wallet_summary = wallet_module.get_wallet_summary().await?;
         let mut utxos: Vec<Utxo> = wallet_summary
@@ -3872,6 +3597,38 @@ impl Multimint {
             .collect();
         utxos.sort_by_key(|u| std::cmp::Reverse(u.amount));
         Ok(utxos)
+    }
+
+    pub async fn allocate_deposit_address(
+        &self,
+        federation_id: FederationId,
+    ) -> anyhow::Result<(String, Option<u64>)> {
+        let client = self
+            .clients
+            .read()
+            .await
+            .get(&federation_id)
+            .expect("No federation exists")
+            .clone();
+        self.wallet_handler
+            .allocate_deposit_address(federation_id, client)
+            .await
+    }
+
+    pub async fn get_addresses(
+        &self,
+        federation_id: &FederationId,
+    ) -> Vec<(String, Option<u64>, Option<u64>)> {
+        let client = {
+            let clients = self.clients.read().await;
+            clients.get(federation_id).cloned()
+        };
+        let Some(client) = client else {
+            return Vec::new();
+        };
+        self.wallet_handler
+            .get_addresses(federation_id, &client)
+            .await
     }
 
     pub async fn get_btc_price(&self) -> Option<u64> {
@@ -3894,23 +3651,6 @@ impl Multimint {
             (FiatCurrency::Aud, prices.aud),
             (FiatCurrency::Jpy, prices.jpy),
         ])
-    }
-
-    pub async fn get_addresses(
-        &self,
-        federation_id: &FederationId,
-    ) -> Vec<(String, u64, Option<u64>)> {
-        let addresses = self.allocated_bitcoin_addresses.read().await;
-        if let Some(fed_addresses) = addresses.get(federation_id) {
-            let mut res: Vec<_> = fed_addresses
-                .iter()
-                .map(|(k, v)| (v.0.clone(), k.0, v.1))
-                .collect();
-            res.sort_by_key(|entry| entry.1);
-            res
-        } else {
-            Vec::new()
-        }
     }
 
     pub async fn recheck_address(

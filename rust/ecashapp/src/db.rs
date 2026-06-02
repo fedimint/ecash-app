@@ -49,6 +49,7 @@ pub(crate) enum DbKeyPrefix {
     PinCodeHash = 0x12,
     RequirePinForSpending = 0x13,
     ShowMsats = 0x14,
+    WalletV2PendingDeposit = 0x15,
 }
 
 #[derive(Debug, Clone, Encodable, Decodable, Eq, PartialEq, Hash, Ord, PartialOrd)]
@@ -364,4 +365,41 @@ impl_db_record!(
     key = ShowMsatsKey,
     value = (),
     db_prefix = DbKeyPrefix::ShowMsats,
+);
+
+/// Tracks every walletv2 receive (peg-in) address we have handed out, which is
+/// the source of truth for the deposit-address list shown in the UI. Unlike
+/// walletv1, walletv2 creates no client operation at address-allocation time
+/// (the module's background scanner only records a deposit once it is already
+/// confirmed), so there is nothing in the Fedimint client DB to enumerate these
+/// from.
+///
+/// The value is the deposited amount in sats once the federation has recorded
+/// the deposit, or `None` while the address is still unfunded. A `None` entry
+/// also tells the startup rescan to re-spawn the esplora poller that surfaces
+/// the mempool/awaiting-confirmation UI; entries are never deleted, so funded
+/// addresses keep showing in the list.
+///
+/// `federation_id` is encoded first so `WalletV2PendingDepositFederationPrefix`
+/// is a valid key prefix for per-federation lookups.
+#[derive(Debug, Clone, Encodable, Decodable, Eq, PartialEq, Hash, Ord, PartialOrd)]
+pub(crate) struct WalletV2PendingDepositKey {
+    pub(crate) federation_id: FederationId,
+    pub(crate) address: String,
+}
+
+#[derive(Debug, Encodable, Decodable)]
+pub(crate) struct WalletV2PendingDepositFederationPrefix {
+    pub(crate) federation_id: FederationId,
+}
+
+impl_db_record!(
+    key = WalletV2PendingDepositKey,
+    value = Option<u64>,
+    db_prefix = DbKeyPrefix::WalletV2PendingDeposit,
+);
+
+impl_db_lookup!(
+    key = WalletV2PendingDepositKey,
+    query_prefix = WalletV2PendingDepositFederationPrefix,
 );

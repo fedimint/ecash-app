@@ -8,6 +8,7 @@ mod frb_generated;
 mod multimint;
 mod nostr;
 mod parse;
+mod wallet;
 mod words;
 use bitcoin::key::rand::rngs::OsRng;
 use bitcoin::key::rand::seq::SliceRandom;
@@ -18,13 +19,12 @@ use fedimint_client::module::module::recovery::RecoveryProgress;
 use fedimint_core::config::ClientConfig;
 /* AUTO INJECTED BY flutter_rust_bridge. This line may not be accurate, and you can change it according to your needs. */
 use app_error::{EcashAppError, EcashAppResult};
-use fedimint_wallet_client::PegOutFees;
 use flutter_rust_bridge::frb;
 use futures_util::StreamExt;
 use multimint::{
     FederationMeta, FederationSelector, LightningSendOutcome, LogLevel, Multimint,
     MultimintCreation, MultimintEvent, OOBNotesWrapper, PaymentPreviewWithGateways, ReissueFees,
-    Transaction, Utxo, WithdrawFeesResponse,
+    Transaction, Utxo, WithdrawFees, WithdrawFeesResponse,
 };
 use nostr::{NWCConnectionInfo, NostrClient, PublicFederation};
 use serde::Serialize;
@@ -573,7 +573,7 @@ pub async fn subscribe_deposits(sink: StreamSink<DepositEventKind>, federation_i
 #[frb]
 pub async fn allocate_deposit_address(
     federation_id: FederationId,
-) -> anyhow::Result<(String, u64)> {
+) -> anyhow::Result<(String, Option<u64>)> {
     let multimint = get_multimint();
     multimint.allocate_deposit_address(federation_id).await
 }
@@ -692,11 +692,11 @@ pub async fn withdraw_to_address(
     federation_id: &FederationId,
     address: String,
     amount_sats: u64,
-    peg_out_fees: PegOutFees,
+    fees: WithdrawFees,
 ) -> Result<OperationId, EcashAppError> {
     let multimint = get_multimint();
     multimint
-        .withdraw_to_address(federation_id, address, amount_sats, peg_out_fees)
+        .withdraw_to_address(federation_id, address, amount_sats, fees)
         .await
 }
 
@@ -848,7 +848,9 @@ pub async fn remove_relay(relay_uri: String) -> anyhow::Result<()> {
 }
 
 #[frb]
-pub async fn get_addresses(federation_id: &FederationId) -> Vec<(String, u64, Option<u64>)> {
+pub async fn get_addresses(
+    federation_id: &FederationId,
+) -> Vec<(String, Option<u64>, Option<u64>)> {
     let multimint = get_multimint();
     multimint.get_addresses(federation_id).await
 }
