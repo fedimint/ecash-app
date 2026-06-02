@@ -998,35 +998,40 @@ impl Multimint {
     }
 
     async fn backup(&self, federation_id: &FederationId, now: std::time::SystemTime) {
-        if let Some(client) = self.clients.read().await.get(federation_id) {
-            if !client.has_pending_recoveries() {
-                let mut dbtx = self.db.begin_transaction().await;
-                let metadata: BTreeMap<String, String> = BTreeMap::new();
-                #[allow(deprecated)]
-                let backup_result = client
-                    .backup_to_federation(fedimint_client::backup::Metadata::from_json_serialized(
-                        metadata,
-                    ))
-                    .await;
-                match backup_result {
-                    Ok(()) => {
-                        dbtx.insert_entry(
-                            &FederationBackupKey {
-                                federation_id: *federation_id,
-                            },
-                            &now,
-                        )
-                        .await;
-                        dbtx.commit_tx().await;
-                        info_to_flutter(format!("Successfully backed up {federation_id}")).await;
-                    }
-                    Err(e) => {
-                        error_to_flutter(format!(
-                            "Could not create backup for {federation_id}: {e}"
-                        ))
-                        .await;
-                    }
-                }
+        // Clone the client out and drop the clients lock BEFORE the network
+        // backup upload. Holding `clients.read()` across `backup_to_federation()`
+        // (a guardian round-trip that retries against offline peers) would block
+        // `join_federation`'s `clients.write()`, and tokio's write-preferring
+        // RwLock would then stall every other reader too.
+        let client = self.clients.read().await.get(federation_id).cloned();
+        let Some(client) = client else { return };
+
+        if client.has_pending_recoveries() {
+            return;
+        }
+
+        let mut dbtx = self.db.begin_transaction().await;
+        let metadata: BTreeMap<String, String> = BTreeMap::new();
+        #[allow(deprecated)]
+        let backup_result = client
+            .backup_to_federation(fedimint_client::backup::Metadata::from_json_serialized(
+                metadata,
+            ))
+            .await;
+        match backup_result {
+            Ok(()) => {
+                dbtx.insert_entry(
+                    &FederationBackupKey {
+                        federation_id: *federation_id,
+                    },
+                    &now,
+                )
+                .await;
+                dbtx.commit_tx().await;
+                info_to_flutter(format!("Successfully backed up {federation_id}")).await;
+            }
+            Err(e) => {
+                error_to_flutter(format!("Could not create backup for {federation_id}: {e}")).await;
             }
         }
     }
@@ -4278,10 +4283,14 @@ impl Multimint {
     }
 
     async fn lnv2_gateways(&self, federation_id: &FederationId) -> anyhow::Result<Vec<SafeUrl>> {
-        let guard = self.clients.read().await;
-        let client = guard
+        // Clone out and drop the clients lock before the gateway network call.
+        let client = self
+            .clients
+            .read()
+            .await
             .get(federation_id)
-            .ok_or(anyhow!("No federation exists"))?;
+            .ok_or(anyhow!("No federation exists"))?
+            .clone();
         let lnv2 = client.get_first_module::<fedimint_lnv2_client::LightningClientModule>()?;
         let lnv2_gateways = lnv2.list_gateways(None).await?;
         Ok(lnv2_gateways)
@@ -4532,11 +4541,16 @@ impl Multimint {
             .await
             .collect::<Vec<_>>()
             .await;
-        let clients = self.clients.read().await;
+        // Snapshot the clients (cheap Arc clones) and drop the lock before the
+        // per-peer network calls below, so we don't hold `clients.read()` across
+        // `invite_code().await` and block joins.
+        let clients: BTreeMap<FederationId, ClientHandleArc> = {
+            let guard = self.clients.read().await;
+            guard.iter().map(|(k, v)| (*k, v.clone())).collect()
+        };
         let mut all_invite_codes = Vec::new();
         for (key, config) in configs {
-            let client = clients.get(&key.id);
-            if let Some(client) = client {
+            if let Some(client) = clients.get(&key.id) {
                 let peers = config
                     .client_config
                     .global
@@ -4638,10 +4652,14 @@ impl Multimint {
         federation_id: &FederationId,
         peer: u16,
     ) -> anyhow::Result<String> {
-        let clients = self.clients.read().await;
-        let client = clients
+        // Clone out and drop the clients lock before the invite_code network call.
+        let client = self
+            .clients
+            .read()
+            .await
             .get(federation_id)
-            .ok_or(anyhow!("Federation does not exist"))?;
+            .ok_or(anyhow!("Federation does not exist"))?
+            .clone();
         Ok(client
             .invite_code(peer.into())
             .await
