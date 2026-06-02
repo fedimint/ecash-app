@@ -34,17 +34,25 @@ runs:
       shell: bash
       run: echo "sha8=$(echo ${GITHUB_SHA} | cut -c1-8)" >> $GITHUB_OUTPUT
     
-    # Clean runner disk to free space
-    - name: Free disk space & clean builds
+    # Reclaim ~25-30GB from the runner (removes preinstalled .NET, GHC,
+    # large apt packages, Docker images) before the build needs the space.
+    - name: Free disk space
+      uses: jlumbroso/free-disk-space@main
+      with:
+        tool-cache: false
+        android: false
+        large-packages: true
+        docker-images: true
+        swap-storage: true
+
+    # Clean stale local build artifacts
+    - name: Clean builds
       shell: bash
       run: |
         echo "Cleaning up old caches and build artifacts..."
         flutter clean || true
         rm -rf android/.gradle android/build build
         rm -rf ~/.pub-cache/*
-        rm -rf /usr/local/lib/android/sdk/system-images
-        rm -rf /usr/local/lib/android/sdk/platforms
-        rm -rf /usr/local/lib/android/sdk/build-tools
         df -h
 
     # Cache Rust dependencies
@@ -201,6 +209,9 @@ runs:
       run: flutter build apk --${{ inputs.mode }}
 
     - name: Build Flutter App Bundle
+      # The AAB is only consumed by the signed release workflow. Skipping it on
+      # debug PR checks halves the native packaging work and disk usage.
+      if: inputs.with-signing == 'true'
       shell: bash
       run: flutter build appbundle --${{ inputs.mode }}
 
