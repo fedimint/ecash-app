@@ -243,7 +243,7 @@ class _DashboardState extends State<Dashboard> {
       case PaymentType.onchain:
         return ['wallet', 'walletv2'];
       case PaymentType.ecash:
-        return ['mint'];
+        return ['mint', 'mintv2'];
     }
   }
 

@@ -7,8 +7,10 @@ use bitcoin_payment_instructions::http_resolver::HTTPHrnResolver;
 use bitcoin_payment_instructions::{
     ParseError, PaymentInstructions, PaymentMethod, PossiblyResolvedPaymentMethod,
 };
+use fedimint_core::base32::{decode_prefixed, FEDIMINT_PREFIX};
 use fedimint_core::{config::FederationId, invite_code::InviteCode};
 use fedimint_mint_client::OOBNotes;
+use fedimint_mintv2_client::ECash;
 
 use crate::multimint::FederationSelector;
 use crate::ParsedText;
@@ -85,8 +87,10 @@ pub async fn parse_text<C: ParseContext + ?Sized>(
                 return Err(anyhow!("No federation found with sufficient balance"));
             }
             Err(e) => {
+                // Not a bitcoin payment instruction (e.g. ecash); fall through to
+                // the LNURL/ecash parsing below.
                 ctx.log_error(format!(
-                    "Error when trying to parse payment instructions: {e:?}"
+                    "Not a payment instruction ({e:?}); trying to parse as ecash"
                 ))
                 .await;
             }
@@ -104,6 +108,27 @@ pub async fn parse_text<C: ParseContext + ?Sized>(
         if let Some(feds) = group_by_network.get(&network) {
             if let Some(fed) = feds.first() {
                 return Ok((ParsedText::LightningAddressOrLnurl(text), Some(fed.clone())));
+            }
+        }
+    }
+
+    // mintv2 ecash first: it carries the full federation id (`mint()`) and the
+    // amount, so we resolve it directly. Decoding is permissive (a v1 string can
+    // decode into an `ECash` with `mint() == None`), so we only act when `mint()`
+    // is set, otherwise fall through to v1.
+    if let Ok(ecash) = decode_prefixed::<ECash>(FEDIMINT_PREFIX, &text) {
+        if let Some(mint_fed_id) = ecash.mint() {
+            if let Some(fed) = candidate_feds
+                .iter()
+                .find(|f| f.federation_id == mint_fed_id)
+            {
+                return Ok((ParsedText::Ecash(ecash.amount().msats), Some(fed.clone())));
+            }
+            // Recognized mintv2 ecash but not joined to its federation. Unlike v1
+            // OOBNotes, v2 ecash carries no invite code, so we can't offer to
+            // join — surface the same outcome v1 uses for codeless ecash.
+            if selected.is_none() {
+                return Ok((ParsedText::EcashNoFederation, None));
             }
         }
     }

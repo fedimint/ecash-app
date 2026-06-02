@@ -1516,6 +1516,8 @@ dependencies = [
  "fedimint-meta-client",
  "fedimint-mint-client",
  "fedimint-mint-common",
+ "fedimint-mintv2-client",
+ "fedimint-mintv2-common",
  "fedimint-rocksdb",
  "fedimint-wallet-client",
  "fedimint-wallet-common",
@@ -2298,6 +2300,58 @@ dependencies = [
 
 [[package]]
 name = "fedimint-mint-common"
+version = "0.12.0-alpha"
+source = "git+https://github.com/fedimint/fedimint?rev=b4d50f5dc8edb56da674c1192d5b5ef1ba360e18#b4d50f5dc8edb56da674c1192d5b5ef1ba360e18"
+dependencies = [
+ "anyhow",
+ "bitcoin_hashes",
+ "fedimint-core",
+ "fedimint-tbs",
+ "serde",
+ "thiserror 2.0.18",
+ "tracing",
+]
+
+[[package]]
+name = "fedimint-mintv2-client"
+version = "0.12.0-alpha"
+source = "git+https://github.com/fedimint/fedimint?rev=b4d50f5dc8edb56da674c1192d5b5ef1ba360e18#b4d50f5dc8edb56da674c1192d5b5ef1ba360e18"
+dependencies = [
+ "anyhow",
+ "aquamarine",
+ "async-channel",
+ "async-stream",
+ "async-trait",
+ "bitcoin_hashes",
+ "bls12_381",
+ "erased-serde",
+ "fedimint-api-client",
+ "fedimint-client",
+ "fedimint-client-module",
+ "fedimint-core",
+ "fedimint-derive-secret",
+ "fedimint-eventlog",
+ "fedimint-logging",
+ "fedimint-mintv2-common",
+ "fedimint-tbs",
+ "fedimint-threshold-crypto",
+ "futures",
+ "hex",
+ "itertools 0.14.0",
+ "rand 0.8.5",
+ "serde",
+ "serde_json",
+ "serdect",
+ "strum 0.27.2",
+ "strum_macros 0.27.2",
+ "thiserror 2.0.18",
+ "tokio",
+ "tokio-stream",
+ "tracing",
+]
+
+[[package]]
+name = "fedimint-mintv2-common"
 version = "0.12.0-alpha"
 source = "git+https://github.com/fedimint/fedimint?rev=b4d50f5dc8edb56da674c1192d5b5ef1ba360e18#b4d50f5dc8edb56da674c1192d5b5ef1ba360e18"
 dependencies = [
