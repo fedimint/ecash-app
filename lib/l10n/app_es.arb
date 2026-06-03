@@ -122,6 +122,8 @@
   "showMillisatoshis": "Mostrar milisatoshis",
   "showMillisatoshisDescription": "Mostrar satoshis fraccionarios con 3 decimales",
   "txDetailAmount": "Monto",
+  "txDetailTotalAmount": "Monto Total",
+  "txDetailReceivedAmount": "Monto Recibido",
   "txDetailFees": "Comisiones",
   "txDetailTimestamp": "Marca de tiempo",
   "txDetailTxid": "ID de transacción",

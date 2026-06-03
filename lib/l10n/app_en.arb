@@ -448,6 +448,12 @@
   "txDetailAmount": "Amount",
   "@txDetailAmount": {},
 
+  "txDetailTotalAmount": "Total Amount",
+  "@txDetailTotalAmount": {},
+
+  "txDetailReceivedAmount": "Received Amount",
+  "@txDetailReceivedAmount": {},
+
   "txDetailFees": "Fees",
   "@txDetailFees": {},
 
