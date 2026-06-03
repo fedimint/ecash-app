@@ -48,17 +48,13 @@ use fedimint_lnv2_client::{
 use fedimint_lnv2_common::{gateway_api::PaymentFee, Bolt11InvoiceDescription};
 use fedimint_meta_client::{common::DEFAULT_META_KEY, MetaClientInit};
 use fedimint_mint_client::{
-    api::MintFederationApi, represent_amount, MintClientInit, MintClientModule, MintOperationMeta,
+    api::MintFederationApi, MintClientInit, MintClientModule, MintOperationMeta,
     MintOperationMetaVariant, OOBNotes, ReissueExternalNotesState, SpendOOBState,
 };
-use fedimint_mint_common::config::MintClientConfig;
 use fedimint_mintv2_client::{
     ECash, FinalReceiveOperationState as MintV2FinalReceiveOperationState,
     MintClientInit as MintV2Init, MintClientModule as MintV2Module,
     MintOperationMeta as MintV2OperationMeta,
-};
-use fedimint_mintv2_common::config::{
-    client_denominations, MintClientConfig as MintV2ClientConfig,
 };
 use fedimint_wallet_client::client_db::TweakIdx;
 use fedimint_wallet_client::TxOutputSummary;
@@ -3297,127 +3293,29 @@ impl Multimint {
             .ok_or(anyhow!("No federation exists"))?
             .clone();
 
-        // mintv2 reissues the incoming notes, so the user pays a fee per input
-        // note AND a fee per newly minted output note, plus any sub-denomination
-        // dust. We mirror mintv2-client's (private) `represent_amount_with_fees`
-        // greedy selection to estimate the outputs.
+        // Both mint modules quote the exact fee by dry-running their real change
+        // generation against the wallet's current note inventory (which includes
+        // consolidation/rebalancing), rather than estimating the note
+        // representation.
         if let Ok(mintv2) = client.get_first_module::<MintV2Module>() {
             let ecash_obj = decode_prefixed::<ECash>(FEDIMINT_PREFIX, &ecash)?;
-            let client_config = client.config().await;
-            let mint_config = client_config
-                .modules
-                .get(&mintv2.id)
-                .ok_or(anyhow!("Could not get mintv2 config"))?
-                .cast::<MintV2ClientConfig>()?;
-            let fee_consensus = &mint_config.fee_consensus;
-
-            let total_amount = ecash_obj.amount();
-
-            // Input fee: one fee per incoming note.
-            let input_fees: Amount = ecash_obj
-                .notes()
-                .iter()
-                .map(|note| fee_consensus.fee(note.amount()))
-                .fold(Amount::ZERO, |acc, fee| acc + fee);
-
-            // Greedily reissue the net amount into client denominations, each
-            // output note costing `denom + fee(denom)`. The leftover is dust.
-            let mut remaining = total_amount.saturating_sub(input_fees);
-            let mut received = Amount::ZERO;
-            let mut output_fees = Amount::ZERO;
-            for denomination in client_denominations().rev() {
-                let denom_amount = denomination.amount();
-                let cost = denom_amount + fee_consensus.fee(denom_amount);
-                let n_add = remaining / cost;
-                received += denom_amount * n_add;
-                output_fees += fee_consensus.fee(denom_amount) * n_add;
-                remaining -= cost * n_add;
-            }
-
-            // Total fee is everything the user does not receive.
-            let total_fees = total_amount.saturating_sub(received);
-            let dust_msats = total_fees
-                .msats
-                .saturating_sub(input_fees.msats + output_fees.msats);
-
+            let quote = mintv2.receive_fee_quote(&ecash_obj).await?;
             return Ok(ReissueFees {
-                total_msats: total_fees.msats,
-                input_msats: input_fees.msats,
-                output_msats: output_fees.msats,
-                dust_msats,
+                total_msats: quote.total.msats,
+                input_msats: quote.input.msats,
+                output_msats: quote.output.msats,
+                dust_msats: quote.dust.msats,
             });
         }
 
         let mint = client.get_first_module::<MintClientModule>()?;
         let notes = OOBNotes::from_str(&ecash)?;
-
-        // Get the mint module's fee config
-        let client_config = client.config().await;
-        let mint_config = client_config
-            .modules
-            .get(&mint.id)
-            .ok_or(anyhow!("Could not get mint config"))?
-            .cast::<MintClientConfig>()?;
-        let fee_consensus = &mint_config.fee_consensus;
-
-        // Input fees: one fee per note being spent
-        let input_fees: Amount = notes
-            .notes()
-            .iter_items()
-            .map(|(amount, _)| fee_consensus.fee(amount))
-            .fold(Amount::ZERO, |acc, fee| acc + fee);
-
-        // Compute net amount after input fees
-        let total_amount = notes.total_amount();
-        let amount_after_input_fees = total_amount.saturating_sub(input_fees);
-
-        // Output fees: estimate how many new notes will be created
-        let mut dbtx = mint.client_ctx.module_db().begin_transaction_nc().await;
-        let current_denominations = mint.get_note_counts_by_denomination(&mut dbtx).await;
-        let output_denominations = represent_amount(
-            amount_after_input_fees,
-            &current_denominations,
-            &mint_config.tbs_pks,
-            2,
-            fee_consensus,
-        );
-
-        // Calculate what the user actually receives (sum of output note values)
-        let received: Amount = output_denominations
-            .iter()
-            .map(|(amount, count)| amount * (count as u64))
-            .fold(Amount::ZERO, |acc, amt| acc + amt);
-
-        let output_fees: Amount = output_denominations
-            .iter()
-            .map(|(amount, count)| fee_consensus.fee(amount) * (count as u64))
-            .fold(Amount::ZERO, |acc, fee| acc + fee);
-
-        // Total fee is the difference between gross and what the user receives.
-        // This includes input fees, output fees, and any dust remainder from
-        // represent_amount() that was too small to create a note for.
-        let total_fees = total_amount.saturating_sub(received);
-
-        info_to_flutter(format!(
-            "Ecash reissue fees: input={} msats, output={} msats, dust={} msats, total={} msats (receive {} msats from {} msats)",
-            input_fees.msats,
-            output_fees.msats,
-            total_fees.msats.saturating_sub(input_fees.msats + output_fees.msats),
-            total_fees.msats,
-            received.msats,
-            total_amount.msats
-        ))
-        .await;
-
-        let dust_msats = total_fees
-            .msats
-            .saturating_sub(input_fees.msats + output_fees.msats);
-
+        let quote = mint.reissue_fee_quote(&notes).await?;
         Ok(ReissueFees {
-            total_msats: total_fees.msats,
-            input_msats: input_fees.msats,
-            output_msats: output_fees.msats,
-            dust_msats,
+            total_msats: quote.total.msats,
+            input_msats: quote.input.msats,
+            output_msats: quote.output.msats,
+            dust_msats: quote.dust.msats,
         })
     }
 

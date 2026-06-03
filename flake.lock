@@ -224,16 +224,16 @@
         "wild": "wild"
       },
       "locked": {
-        "lastModified": 1780331970,
-        "narHash": "sha256-sE9kaQNg9D50af7kaUxjC5YlUhdv7J8MiAUXxXq1k40=",
-        "owner": "fedimint",
+        "lastModified": 1780498246,
+        "narHash": "sha256-vBB9kYY+gr3vuYeeu+ZuF+DC6TPjS8PvewPYWLZtYkg=",
+        "owner": "m1sterc001guy",
         "repo": "fedimint",
-        "rev": "b4d50f5dc8edb56da674c1192d5b5ef1ba360e18",
+        "rev": "348d82abf3abed49924e52d0a2dd1761643e8de6",
         "type": "github"
       },
       "original": {
-        "owner": "fedimint",
-        "ref": "b4d50f5dc8edb56da674c1192d5b5ef1ba360e18",
+        "owner": "m1sterc001guy",
+        "ref": "348d82abf3abed49924e52d0a2dd1761643e8de6",
         "repo": "fedimint",
         "type": "github"
       }
@@ -578,11 +578,11 @@
     },
     "nixpkgs_4": {
       "locked": {
-        "lastModified": 1777673416,
-        "narHash": "sha256-5c2POKPOjU40Kh0MirOdScBLG0bu9TAuPYAtPRNZMBs=",
+        "lastModified": 1779796641,
+        "narHash": "sha256-ZsIrKmhp4vbBXoXXmR/tBXA/UCsAQiJL9vsgZEduhVY=",
         "owner": "nixos",
         "repo": "nixpkgs",
-        "rev": "26ef669cffa904b6f6832ab57b77892a37c1a671",
+        "rev": "25f538306313eae3927264466c70d7001dcea1df",
         "type": "github"
       },
       "original": {
