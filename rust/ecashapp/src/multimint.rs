@@ -26,7 +26,7 @@ use fedimint_client::{
 };
 use fedimint_connectors::{Connectivity, ConnectorRegistry, PeerStatus as FedimintPeerStatus};
 use fedimint_core::{
-    base32::{decode_prefixed, FEDIMINT_PREFIX},
+    base32::{decode_prefixed, encode_prefixed, FEDIMINT_PREFIX},
     config::FederationId,
     db::{mem_impl::MemDatabase, Database, IDatabaseTransactionOpsCoreTyped},
     encoding::{Decodable, Encodable},
@@ -150,23 +150,59 @@ pub struct ReissueFees {
     pub dust_msats: u64,
 }
 
-pub struct OOBNotesWrapper(pub(crate) OOBNotes);
+/// Ecash produced by a send, in whichever encoding the federation's mint module
+/// uses: walletv1 `OOBNotes` or mintv2 `ECash` (base32). [`OOBNotesWrapper`]
+/// hides the difference behind `amount_msats()`/`to_string()`.
+pub(crate) enum WrappedEcash {
+    V1(OOBNotes),
+    V2(ECash),
+}
+
+pub struct OOBNotesWrapper(pub(crate) WrappedEcash);
 
 impl OOBNotesWrapper {
     #[flutter_rust_bridge::frb(sync)]
     pub fn amount_msats(&self) -> u64 {
-        self.0.total_amount().msats
+        match &self.0 {
+            WrappedEcash::V1(notes) => notes.total_amount().msats,
+            WrappedEcash::V2(ecash) => ecash.amount().msats,
+        }
     }
 
     #[flutter_rust_bridge::frb(sync)]
     pub fn to_string(&self) -> String {
-        self.0.to_string()
+        match &self.0 {
+            WrappedEcash::V1(notes) => notes.to_string(),
+            WrappedEcash::V2(ecash) => encode_prefixed(FEDIMINT_PREFIX, ecash),
+        }
     }
 }
 
 #[flutter_rust_bridge::frb(sync)]
 pub fn parse_oob_notes(notes: &str) -> Option<OOBNotesWrapper> {
-    OOBNotes::from_str(notes).ok().map(OOBNotesWrapper)
+    // mintv2 ecash first: its decoder is permissive (a v1 string can decode to
+    // an `ECash` with `mint() == None`), so only accept it when it carries a
+    // federation id, otherwise fall back to walletv1 OOB notes.
+    if let Ok(ecash) = decode_prefixed::<ECash>(FEDIMINT_PREFIX, notes) {
+        if ecash.mint().is_some() {
+            return Some(OOBNotesWrapper(WrappedEcash::V2(ecash)));
+        }
+    }
+    OOBNotes::from_str(notes)
+        .ok()
+        .map(|notes| OOBNotesWrapper(WrappedEcash::V1(notes)))
+}
+
+/// Returns true if `ecash` is mintv2 `ECash` (rather than walletv1 `OOBNotes`).
+/// Used by the UI to gate features that only exist for walletv1, e.g. the
+/// claim-status check, which mintv2 has no endpoint for yet.
+#[flutter_rust_bridge::frb(sync)]
+pub fn is_mintv2_ecash(ecash: &str) -> bool {
+    // The decoder is permissive, so a valid v2 ecash is one that carries a
+    // federation id; v1 strings either fail to decode or have `mint() == None`.
+    decode_prefixed::<ECash>(FEDIMINT_PREFIX, ecash)
+        .map(|e| e.mint().is_some())
+        .unwrap_or(false)
 }
 
 #[allow(clippy::type_complexity)]
@@ -2903,9 +2939,30 @@ impl Multimint {
                                     None
                                 }
                             }
-                            // Sends and internal reissues are surfaced with the
-                            // send milestone.
-                            _ => None,
+                            MintV2OperationMeta::Send { ecash, .. } => {
+                                // The amount isn't stored in the meta; recover it
+                                // from the ecash string.
+                                let amount = decode_prefixed::<ECash>(FEDIMINT_PREFIX, &ecash)
+                                    .map(|e| e.amount().msats)
+                                    .unwrap_or(0);
+                                Some(Transaction {
+                                    kind: TransactionKind::EcashSend {
+                                        oob_notes: ecash,
+                                        // TODO: account for the send fee. The send
+                                        // itself is free, but reaching the right
+                                        // denominations may have required a reissue
+                                        // (the filtered-out op below) that did cost
+                                        // a fee, which we don't attribute here yet.
+                                        fees: 0,
+                                    },
+                                    amount,
+                                    timestamp,
+                                    operation_id: key.operation_id.0.to_vec(),
+                                })
+                            }
+                            // Internal reissues (minting the right denominations
+                            // so a send can be made) are not user-facing.
+                            MintV2OperationMeta::Reissue { .. } => None,
                         }
                     }
                     "wallet" => {
@@ -3192,13 +3249,24 @@ impl Multimint {
             .get(federation_id)
             .ok_or_else(|| EcashAppError::other("federation does not exist"))?
             .clone();
+        // mintv2: `send` produces the `ECash`, performing any internal reissue
+        // (to mint the right denominations) inline before returning. There's no
+        // SpendOOB/refund state to await as in walletv1.
+        if let Ok(mintv2) = client.get_first_module::<MintV2Module>() {
+            let ecash = mintv2
+                .send(Amount::from_msats(amount_msats), serde_json::Value::Null)
+                .await
+                .map_err(EcashAppError::from_display)?;
+            return Ok(OOBNotesWrapper(WrappedEcash::V2(ecash)));
+        }
+
         let notes = client
             .get_first_module::<MintClientModule>()
             .map_err(|e| EcashAppError::other(format!("mint module unavailable: {e:#}")))?
             .send_oob_notes(Amount::from_msats(amount_msats), ())
             .await
             .map_err(EcashAppError::from_display)?;
-        Ok(OOBNotesWrapper(notes))
+        Ok(OOBNotesWrapper(WrappedEcash::V1(notes)))
     }
 
     fn spawn_await_ecash_send(&self, federation_id: FederationId, operation_id: OperationId) {

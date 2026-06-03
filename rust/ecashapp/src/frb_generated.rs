@@ -43,7 +43,7 @@ flutter_rust_bridge::frb_generated_boilerplate!(
     default_rust_auto_opaque = RustAutoOpaqueMoi,
 );
 pub(crate) const FLUTTER_RUST_BRIDGE_CODEGEN_VERSION: &str = "2.9.0";
-pub(crate) const FLUTTER_RUST_BRIDGE_CODEGEN_CONTENT_HASH: i32 = -1958699810;
+pub(crate) const FLUTTER_RUST_BRIDGE_CODEGEN_CONTENT_HASH: i32 = -112584777;
 
 // Section: executor
 
@@ -11168,6 +11168,36 @@ fn wire__crate__insert_relay_impl(
         },
     )
 }
+fn wire__crate__multimint__is_mintv2_ecash_impl(
+    ptr_: flutter_rust_bridge::for_generated::PlatformGeneralizedUint8ListPtr,
+    rust_vec_len_: i32,
+    data_len_: i32,
+) -> flutter_rust_bridge::for_generated::WireSyncRust2DartSse {
+    FLUTTER_RUST_BRIDGE_HANDLER.wrap_sync::<flutter_rust_bridge::for_generated::SseCodec, _>(
+        flutter_rust_bridge::for_generated::TaskInfo {
+            debug_name: "is_mintv2_ecash",
+            port: None,
+            mode: flutter_rust_bridge::for_generated::FfiCallMode::Sync,
+        },
+        move || {
+            let message = unsafe {
+                flutter_rust_bridge::for_generated::Dart2RustMessageSse::from_wire(
+                    ptr_,
+                    rust_vec_len_,
+                    data_len_,
+                )
+            };
+            let mut deserializer =
+                flutter_rust_bridge::for_generated::SseDeserializer::new(message);
+            let api_ecash = <String>::sse_decode(&mut deserializer);
+            deserializer.end();
+            transform_result_sse::<_, ()>((move || {
+                let output_ok = Result::<_, ()>::Ok(crate::multimint::is_mintv2_ecash(&api_ecash))?;
+                Ok(output_ok)
+            })())
+        },
+    )
+}
 fn wire__crate__join_federation_impl(
     port_: flutter_rust_bridge::for_generated::MessagePort,
     ptr_: flutter_rust_bridge::for_generated::PlatformGeneralizedUint8ListPtr,
@@ -15810,49 +15840,49 @@ fn pde_ffi_dispatcher_primary_impl(
         199 => wire__crate__has_pin_code_impl(port, ptr, rust_vec_len, data_len),
         200 => wire__crate__has_seed_phrase_ack_impl(port, ptr, rust_vec_len, data_len),
         201 => wire__crate__insert_relay_impl(port, ptr, rust_vec_len, data_len),
-        202 => wire__crate__join_federation_impl(port, ptr, rust_vec_len, data_len),
-        203 => wire__crate__leave_federation_impl(port, ptr, rust_vec_len, data_len),
-        204 => wire__crate__list_federations_from_nostr_impl(port, ptr, rust_vec_len, data_len),
-        205 => wire__crate__list_gateways_impl(port, ptr, rust_vec_len, data_len),
-        206 => wire__crate__list_ln_address_domains_impl(port, ptr, rust_vec_len, data_len),
-        207 => wire__crate__listen_for_nwc_blocking_impl(port, ptr, rust_vec_len, data_len),
-        208 => wire__crate__load_multimint_impl(port, ptr, rust_vec_len, data_len),
-        209 => wire__crate__paginate_contacts_impl(port, ptr, rust_vec_len, data_len),
-        210 => wire__crate__paginate_search_contacts_impl(port, ptr, rust_vec_len, data_len),
-        212 => {
+        203 => wire__crate__join_federation_impl(port, ptr, rust_vec_len, data_len),
+        204 => wire__crate__leave_federation_impl(port, ptr, rust_vec_len, data_len),
+        205 => wire__crate__list_federations_from_nostr_impl(port, ptr, rust_vec_len, data_len),
+        206 => wire__crate__list_gateways_impl(port, ptr, rust_vec_len, data_len),
+        207 => wire__crate__list_ln_address_domains_impl(port, ptr, rust_vec_len, data_len),
+        208 => wire__crate__listen_for_nwc_blocking_impl(port, ptr, rust_vec_len, data_len),
+        209 => wire__crate__load_multimint_impl(port, ptr, rust_vec_len, data_len),
+        210 => wire__crate__paginate_contacts_impl(port, ptr, rust_vec_len, data_len),
+        211 => wire__crate__paginate_search_contacts_impl(port, ptr, rust_vec_len, data_len),
+        213 => {
             wire__crate__parse_scanned_text_for_federation_impl(port, ptr, rust_vec_len, data_len)
         }
-        213 => wire__crate__parsed_scanned_text_impl(port, ptr, rust_vec_len, data_len),
-        214 => wire__crate__payment_preview_with_gateways_impl(port, ptr, rust_vec_len, data_len),
-        215 => wire__crate__receive_impl(port, ptr, rust_vec_len, data_len),
-        216 => wire__crate__recheck_address_impl(port, ptr, rust_vec_len, data_len),
-        217 => wire__crate__refresh_connections_impl(port, ptr, rust_vec_len, data_len),
-        218 => wire__crate__register_ln_address_impl(port, ptr, rust_vec_len, data_len),
-        219 => wire__crate__reissue_ecash_impl(port, ptr, rust_vec_len, data_len),
-        220 => wire__crate__rejoin_from_backup_invites_impl(port, ptr, rust_vec_len, data_len),
-        221 => wire__crate__remove_nwc_connection_info_impl(port, ptr, rust_vec_len, data_len),
-        222 => wire__crate__remove_relay_impl(port, ptr, rust_vec_len, data_len),
-        223 => wire__crate__send_impl(port, ptr, rust_vec_len, data_len),
-        224 => wire__crate__send_ecash_impl(port, ptr, rust_vec_len, data_len),
-        225 => wire__crate__send_lnaddress_impl(port, ptr, rust_vec_len, data_len),
-        226 => wire__crate__set_bitcoin_display_impl(port, ptr, rust_vec_len, data_len),
-        227 => wire__crate__set_federation_order_impl(port, ptr, rust_vec_len, data_len),
-        228 => wire__crate__set_fiat_currency_impl(port, ptr, rust_vec_len, data_len),
-        229 => wire__crate__set_nwc_connection_info_impl(port, ptr, rust_vec_len, data_len),
-        230 => wire__crate__set_pin_code_impl(port, ptr, rust_vec_len, data_len),
-        231 => wire__crate__set_require_pin_for_spending_impl(port, ptr, rust_vec_len, data_len),
-        232 => wire__crate__set_show_msats_impl(port, ptr, rust_vec_len, data_len),
-        233 => wire__crate__subscribe_deposits_impl(port, ptr, rust_vec_len, data_len),
-        234 => wire__crate__subscribe_multimint_events_impl(port, ptr, rust_vec_len, data_len),
-        235 => wire__crate__subscribe_peer_status_impl(port, ptr, rust_vec_len, data_len),
-        236 => wire__crate__subscribe_recovery_progress_impl(port, ptr, rust_vec_len, data_len),
-        237 => wire__crate__sync_contacts_impl(port, ptr, rust_vec_len, data_len),
-        238 => wire__crate__transactions_impl(port, ptr, rust_vec_len, data_len),
-        239 => wire__crate__verify_nip05_impl(port, ptr, rust_vec_len, data_len),
-        240 => wire__crate__verify_pin_impl(port, ptr, rust_vec_len, data_len),
-        241 => wire__crate__wallet_summary_impl(port, ptr, rust_vec_len, data_len),
-        242 => wire__crate__withdraw_to_address_impl(port, ptr, rust_vec_len, data_len),
-        243 => wire__crate__word_list_impl(port, ptr, rust_vec_len, data_len),
+        214 => wire__crate__parsed_scanned_text_impl(port, ptr, rust_vec_len, data_len),
+        215 => wire__crate__payment_preview_with_gateways_impl(port, ptr, rust_vec_len, data_len),
+        216 => wire__crate__receive_impl(port, ptr, rust_vec_len, data_len),
+        217 => wire__crate__recheck_address_impl(port, ptr, rust_vec_len, data_len),
+        218 => wire__crate__refresh_connections_impl(port, ptr, rust_vec_len, data_len),
+        219 => wire__crate__register_ln_address_impl(port, ptr, rust_vec_len, data_len),
+        220 => wire__crate__reissue_ecash_impl(port, ptr, rust_vec_len, data_len),
+        221 => wire__crate__rejoin_from_backup_invites_impl(port, ptr, rust_vec_len, data_len),
+        222 => wire__crate__remove_nwc_connection_info_impl(port, ptr, rust_vec_len, data_len),
+        223 => wire__crate__remove_relay_impl(port, ptr, rust_vec_len, data_len),
+        224 => wire__crate__send_impl(port, ptr, rust_vec_len, data_len),
+        225 => wire__crate__send_ecash_impl(port, ptr, rust_vec_len, data_len),
+        226 => wire__crate__send_lnaddress_impl(port, ptr, rust_vec_len, data_len),
+        227 => wire__crate__set_bitcoin_display_impl(port, ptr, rust_vec_len, data_len),
+        228 => wire__crate__set_federation_order_impl(port, ptr, rust_vec_len, data_len),
+        229 => wire__crate__set_fiat_currency_impl(port, ptr, rust_vec_len, data_len),
+        230 => wire__crate__set_nwc_connection_info_impl(port, ptr, rust_vec_len, data_len),
+        231 => wire__crate__set_pin_code_impl(port, ptr, rust_vec_len, data_len),
+        232 => wire__crate__set_require_pin_for_spending_impl(port, ptr, rust_vec_len, data_len),
+        233 => wire__crate__set_show_msats_impl(port, ptr, rust_vec_len, data_len),
+        234 => wire__crate__subscribe_deposits_impl(port, ptr, rust_vec_len, data_len),
+        235 => wire__crate__subscribe_multimint_events_impl(port, ptr, rust_vec_len, data_len),
+        236 => wire__crate__subscribe_peer_status_impl(port, ptr, rust_vec_len, data_len),
+        237 => wire__crate__subscribe_recovery_progress_impl(port, ptr, rust_vec_len, data_len),
+        238 => wire__crate__sync_contacts_impl(port, ptr, rust_vec_len, data_len),
+        239 => wire__crate__transactions_impl(port, ptr, rust_vec_len, data_len),
+        240 => wire__crate__verify_nip05_impl(port, ptr, rust_vec_len, data_len),
+        241 => wire__crate__verify_pin_impl(port, ptr, rust_vec_len, data_len),
+        242 => wire__crate__wallet_summary_impl(port, ptr, rust_vec_len, data_len),
+        243 => wire__crate__withdraw_to_address_impl(port, ptr, rust_vec_len, data_len),
+        244 => wire__crate__word_list_impl(port, ptr, rust_vec_len, data_len),
         _ => unreachable!(),
     }
 }
@@ -16198,7 +16228,8 @@ fn pde_ffi_dispatcher_sync_impl(
             rust_vec_len,
             data_len,
         ),
-        211 => wire__crate__multimint__parse_oob_notes_impl(ptr, rust_vec_len, data_len),
+        202 => wire__crate__multimint__is_mintv2_ecash_impl(ptr, rust_vec_len, data_len),
+        212 => wire__crate__multimint__parse_oob_notes_impl(ptr, rust_vec_len, data_len),
         _ => unreachable!(),
     }
 }
