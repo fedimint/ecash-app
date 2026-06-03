@@ -251,36 +251,42 @@ class _TransactionDetailsState extends State<TransactionDetails> {
             },
           ),
         ),
-        if (widget.tx.kind is TransactionKind_EcashSend) ...[
+        if (widget.tx.kind case TransactionKind_EcashSend(
+          oobNotes: final oobNotes,
+        )) ...[
           const SizedBox(height: 24),
           Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              ElevatedButton(
-                onPressed: _checking ? null : _checkClaimStatus,
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: theme.colorScheme.primary,
-                  foregroundColor: Colors.black,
-                  padding: const EdgeInsets.symmetric(vertical: 16),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
+              // mintv2 has no claim-status endpoint yet, so only offer the
+              // check for walletv1 ecash.
+              if (!isMintv2Ecash(ecash: oobNotes)) ...[
+                ElevatedButton(
+                  onPressed: _checking ? null : _checkClaimStatus,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: theme.colorScheme.primary,
+                    foregroundColor: Colors.black,
+                    padding: const EdgeInsets.symmetric(vertical: 16),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
                   ),
-                ),
-                child:
-                    _checking
-                        ? const SizedBox(
-                          width: 20,
-                          height: 20,
-                          child: CircularProgressIndicator(
-                            strokeWidth: 2,
-                            valueColor: AlwaysStoppedAnimation<Color>(
-                              Colors.black,
+                  child:
+                      _checking
+                          ? const SizedBox(
+                            width: 20,
+                            height: 20,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              valueColor: AlwaysStoppedAnimation<Color>(
+                                Colors.black,
+                              ),
                             ),
-                          ),
-                        )
-                        : Text(context.l10n.checkClaimStatus),
-              ),
-              const SizedBox(height: 16),
+                          )
+                          : Text(context.l10n.checkClaimStatus),
+                ),
+                const SizedBox(height: 16),
+              ],
               OutlinedButton(
                 onPressed: _redeemEcash,
                 style: OutlinedButton.styleFrom(

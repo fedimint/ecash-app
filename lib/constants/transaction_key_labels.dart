@@ -7,6 +7,8 @@ import 'package:ecashapp/generated/app_localizations.dart';
 String localizedTxLabel(AppLocalizations l10n, String key) {
   return switch (key) {
     TransactionDetailKeys.amount => l10n.txDetailAmount,
+    TransactionDetailKeys.totalAmount => l10n.txDetailTotalAmount,
+    TransactionDetailKeys.receivedAmount => l10n.txDetailReceivedAmount,
     TransactionDetailKeys.fees => l10n.txDetailFees,
     TransactionDetailKeys.ecash => l10n.ecash,
     TransactionDetailKeys.timestamp => l10n.txDetailTimestamp,

@@ -117,13 +117,28 @@ class TransactionItem extends StatelessWidget {
         outputFees: final outputFees,
         dust: final dust,
       ):
+        final totalFees =
+            (inputFees ?? BigInt.zero) +
+            (outputFees ?? BigInt.zero) +
+            (dust ?? BigInt.zero);
+        final receivedAmount = formatBalance(
+          tx.amount - totalFees,
+          true,
+          bitcoinDisplay,
+        );
+        // Show the total at full (msat) precision, matching the fees and the
+        // received amount, so Total − (input + output + dust) = Received lines
+        // up exactly. The default `formattedAmount` truncates to whole sats,
+        // which hides the send-side rounding surplus and breaks the arithmetic.
+        final totalAmount = formatBalance(tx.amount, true, bitcoinDisplay);
         showAppModalBottomSheet(
           context: context,
           childBuilder: () async {
             return TransactionDetails(
               tx: tx,
               details: {
-                TransactionDetailKeys.amount: formattedAmount,
+                TransactionDetailKeys.totalAmount: totalAmount,
+                TransactionDetailKeys.receivedAmount: receivedAmount,
                 TransactionDetailKeys.inputFees: formatBalance(
                   inputFees,
                   true,

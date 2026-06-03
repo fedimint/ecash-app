@@ -5,6 +5,8 @@ class TransactionDetailKeys {
   TransactionDetailKeys._();
 
   static const String amount = 'Amount';
+  static const String totalAmount = 'Total Amount';
+  static const String receivedAmount = 'Received Amount';
   static const String fees = 'Fees';
   static const String ecash = 'Ecash';
   static const String timestamp = 'Timestamp';

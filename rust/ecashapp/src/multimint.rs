@@ -26,6 +26,7 @@ use fedimint_client::{
 };
 use fedimint_connectors::{Connectivity, ConnectorRegistry, PeerStatus as FedimintPeerStatus};
 use fedimint_core::{
+    base32::{decode_prefixed, encode_prefixed, FEDIMINT_PREFIX},
     config::FederationId,
     db::{mem_impl::MemDatabase, Database, IDatabaseTransactionOpsCoreTyped},
     encoding::{Decodable, Encodable},
@@ -47,10 +48,14 @@ use fedimint_lnv2_client::{
 use fedimint_lnv2_common::{gateway_api::PaymentFee, Bolt11InvoiceDescription};
 use fedimint_meta_client::{common::DEFAULT_META_KEY, MetaClientInit};
 use fedimint_mint_client::{
-    api::MintFederationApi, represent_amount, MintClientInit, MintClientModule, MintOperationMeta,
+    api::MintFederationApi, MintClientInit, MintClientModule, MintOperationMeta,
     MintOperationMetaVariant, OOBNotes, ReissueExternalNotesState, SpendOOBState,
 };
-use fedimint_mint_common::config::MintClientConfig;
+use fedimint_mintv2_client::{
+    ECash, FinalReceiveOperationState as MintV2FinalReceiveOperationState,
+    MintClientInit as MintV2Init, MintClientModule as MintV2Module,
+    MintOperationMeta as MintV2OperationMeta,
+};
 use fedimint_wallet_client::client_db::TweakIdx;
 use fedimint_wallet_client::TxOutputSummary;
 use fedimint_wallet_client::WithdrawState;
@@ -145,23 +150,59 @@ pub struct ReissueFees {
     pub dust_msats: u64,
 }
 
-pub struct OOBNotesWrapper(pub(crate) OOBNotes);
+/// Ecash produced by a send, in whichever encoding the federation's mint module
+/// uses: walletv1 `OOBNotes` or mintv2 `ECash` (base32). [`OOBNotesWrapper`]
+/// hides the difference behind `amount_msats()`/`to_string()`.
+pub(crate) enum WrappedEcash {
+    V1(OOBNotes),
+    V2(ECash),
+}
+
+pub struct OOBNotesWrapper(pub(crate) WrappedEcash);
 
 impl OOBNotesWrapper {
     #[flutter_rust_bridge::frb(sync)]
     pub fn amount_msats(&self) -> u64 {
-        self.0.total_amount().msats
+        match &self.0 {
+            WrappedEcash::V1(notes) => notes.total_amount().msats,
+            WrappedEcash::V2(ecash) => ecash.amount().msats,
+        }
     }
 
     #[flutter_rust_bridge::frb(sync)]
     pub fn to_string(&self) -> String {
-        self.0.to_string()
+        match &self.0 {
+            WrappedEcash::V1(notes) => notes.to_string(),
+            WrappedEcash::V2(ecash) => encode_prefixed(FEDIMINT_PREFIX, ecash),
+        }
     }
 }
 
 #[flutter_rust_bridge::frb(sync)]
 pub fn parse_oob_notes(notes: &str) -> Option<OOBNotesWrapper> {
-    OOBNotes::from_str(notes).ok().map(OOBNotesWrapper)
+    // mintv2 ecash first: its decoder is permissive (a v1 string can decode to
+    // an `ECash` with `mint() == None`), so only accept it when it carries a
+    // federation id, otherwise fall back to walletv1 OOB notes.
+    if let Ok(ecash) = decode_prefixed::<ECash>(FEDIMINT_PREFIX, notes) {
+        if ecash.mint().is_some() {
+            return Some(OOBNotesWrapper(WrappedEcash::V2(ecash)));
+        }
+    }
+    OOBNotes::from_str(notes)
+        .ok()
+        .map(|notes| OOBNotesWrapper(WrappedEcash::V1(notes)))
+}
+
+/// Returns true if `ecash` is mintv2 `ECash` (rather than walletv1 `OOBNotes`).
+/// Used by the UI to gate features that only exist for walletv1, e.g. the
+/// claim-status check, which mintv2 has no endpoint for yet.
+#[flutter_rust_bridge::frb(sync)]
+pub fn is_mintv2_ecash(ecash: &str) -> bool {
+    // The decoder is permissive, so a valid v2 ecash is one that carries a
+    // federation id; v1 strings either fail to decode or have `mint() == None`.
+    decode_prefixed::<ECash>(FEDIMINT_PREFIX, ecash)
+        .map(|e| e.mint().is_some())
+        .unwrap_or(false)
 }
 
 #[allow(clippy::type_complexity)]
@@ -534,6 +575,7 @@ impl Multimint {
         let mut modules = ClientModuleInitRegistry::new();
         modules.attach(LightningClientInit::default());
         modules.attach(MintClientInit);
+        modules.attach(MintV2Init);
         modules.attach(WalletClientInit::default());
         modules.attach(WalletV2Init);
         modules.attach(fedimint_lnv2_client::LightningClientInit::default());
@@ -732,7 +774,11 @@ impl Multimint {
                     let batch = client.get_event_log(Some(position), 100).await;
 
                     for event in &batch {
-                        if event.kind != ReceivePaymentEvent::KIND {
+                        // The "payment-receive" event kind is shared with mintv2,
+                        // so filter on the lnv2 module before decoding/awaiting.
+                        if event.module_kind() != Some(&fedimint_lnv2_common::KIND)
+                            || event.kind != ReceivePaymentEvent::KIND
+                        {
                             position = event.id().saturating_add(1);
                             continue;
                         }
@@ -2852,6 +2898,73 @@ impl Multimint {
                             }
                         }
                     }
+                    "mintv2" => {
+                        match op_log_val.meta::<MintV2OperationMeta>() {
+                            MintV2OperationMeta::Receive {
+                                ecash, custom_meta, ..
+                            } => {
+                                let outcome =
+                                    op_log_val.outcome::<MintV2FinalReceiveOperationState>();
+                                if let Some(MintV2FinalReceiveOperationState::Success) = outcome {
+                                    // The fee breakdown and amount were stashed in
+                                    // custom_meta at receive time (see
+                                    // reissue_ecash); fall back to decoding the
+                                    // ecash string for the amount.
+                                    let amount = custom_meta
+                                        .get("total_amount")
+                                        .and_then(|v| v.as_u64())
+                                        .or_else(|| {
+                                            decode_prefixed::<ECash>(FEDIMINT_PREFIX, &ecash)
+                                                .ok()
+                                                .map(|e| e.amount().msats)
+                                        })
+                                        .unwrap_or(0);
+                                    let input_fees =
+                                        custom_meta.get("input_fee").and_then(|v| v.as_u64());
+                                    let output_fees =
+                                        custom_meta.get("output_fee").and_then(|v| v.as_u64());
+                                    let dust = custom_meta.get("dust").and_then(|v| v.as_u64());
+                                    Some(Transaction {
+                                        kind: TransactionKind::EcashReceive {
+                                            oob_notes: ecash,
+                                            input_fees,
+                                            output_fees,
+                                            dust,
+                                        },
+                                        amount,
+                                        timestamp,
+                                        operation_id: key.operation_id.0.to_vec(),
+                                    })
+                                } else {
+                                    None
+                                }
+                            }
+                            MintV2OperationMeta::Send { ecash, .. } => {
+                                // The amount isn't stored in the meta; recover it
+                                // from the ecash string.
+                                let amount = decode_prefixed::<ECash>(FEDIMINT_PREFIX, &ecash)
+                                    .map(|e| e.amount().msats)
+                                    .unwrap_or(0);
+                                Some(Transaction {
+                                    kind: TransactionKind::EcashSend {
+                                        oob_notes: ecash,
+                                        // TODO: account for the send fee. The send
+                                        // itself is free, but reaching the right
+                                        // denominations may have required a reissue
+                                        // (the filtered-out op below) that did cost
+                                        // a fee, which we don't attribute here yet.
+                                        fees: 0,
+                                    },
+                                    amount,
+                                    timestamp,
+                                    operation_id: key.operation_id.0.to_vec(),
+                                })
+                            }
+                            // Internal reissues (minting the right denominations
+                            // so a send can be made) are not user-facing.
+                            MintV2OperationMeta::Reissue { .. } => None,
+                        }
+                    }
                     "wallet" => {
                         let meta = op_log_val.meta::<WalletOperationMeta>();
                         match meta.variant {
@@ -3136,13 +3249,24 @@ impl Multimint {
             .get(federation_id)
             .ok_or_else(|| EcashAppError::other("federation does not exist"))?
             .clone();
+        // mintv2: `send` produces the `ECash`, performing any internal reissue
+        // (to mint the right denominations) inline before returning. There's no
+        // SpendOOB/refund state to await as in walletv1.
+        if let Ok(mintv2) = client.get_first_module::<MintV2Module>() {
+            let ecash = mintv2
+                .send(Amount::from_msats(amount_msats), serde_json::Value::Null)
+                .await
+                .map_err(EcashAppError::from_display)?;
+            return Ok(OOBNotesWrapper(WrappedEcash::V2(ecash)));
+        }
+
         let notes = client
             .get_first_module::<MintClientModule>()
             .map_err(|e| EcashAppError::other(format!("mint module unavailable: {e:#}")))?
             .send_oob_notes(Amount::from_msats(amount_msats), ())
             .await
             .map_err(EcashAppError::from_display)?;
-        Ok(OOBNotesWrapper(notes))
+        Ok(OOBNotesWrapper(WrappedEcash::V1(notes)))
     }
 
     fn spawn_await_ecash_send(&self, federation_id: FederationId, operation_id: OperationId) {
@@ -3236,76 +3360,30 @@ impl Multimint {
             .get(federation_id)
             .ok_or(anyhow!("No federation exists"))?
             .clone();
+
+        // Both mint modules quote the exact fee by dry-running their real change
+        // generation against the wallet's current note inventory (which includes
+        // consolidation/rebalancing), rather than estimating the note
+        // representation.
+        if let Ok(mintv2) = client.get_first_module::<MintV2Module>() {
+            let ecash_obj = decode_prefixed::<ECash>(FEDIMINT_PREFIX, &ecash)?;
+            let quote = mintv2.receive_fee_quote(&ecash_obj).await?;
+            return Ok(ReissueFees {
+                total_msats: quote.total.msats,
+                input_msats: quote.input.msats,
+                output_msats: quote.output.msats,
+                dust_msats: quote.dust.msats,
+            });
+        }
+
         let mint = client.get_first_module::<MintClientModule>()?;
         let notes = OOBNotes::from_str(&ecash)?;
-
-        // Get the mint module's fee config
-        let client_config = client.config().await;
-        let mint_config = client_config
-            .modules
-            .get(&mint.id)
-            .ok_or(anyhow!("Could not get mint config"))?
-            .cast::<MintClientConfig>()?;
-        let fee_consensus = &mint_config.fee_consensus;
-
-        // Input fees: one fee per note being spent
-        let input_fees: Amount = notes
-            .notes()
-            .iter_items()
-            .map(|(amount, _)| fee_consensus.fee(amount))
-            .fold(Amount::ZERO, |acc, fee| acc + fee);
-
-        // Compute net amount after input fees
-        let total_amount = notes.total_amount();
-        let amount_after_input_fees = total_amount.saturating_sub(input_fees);
-
-        // Output fees: estimate how many new notes will be created
-        let mut dbtx = mint.client_ctx.module_db().begin_transaction_nc().await;
-        let current_denominations = mint.get_note_counts_by_denomination(&mut dbtx).await;
-        let output_denominations = represent_amount(
-            amount_after_input_fees,
-            &current_denominations,
-            &mint_config.tbs_pks,
-            2,
-            fee_consensus,
-        );
-
-        // Calculate what the user actually receives (sum of output note values)
-        let received: Amount = output_denominations
-            .iter()
-            .map(|(amount, count)| amount * (count as u64))
-            .fold(Amount::ZERO, |acc, amt| acc + amt);
-
-        let output_fees: Amount = output_denominations
-            .iter()
-            .map(|(amount, count)| fee_consensus.fee(amount) * (count as u64))
-            .fold(Amount::ZERO, |acc, fee| acc + fee);
-
-        // Total fee is the difference between gross and what the user receives.
-        // This includes input fees, output fees, and any dust remainder from
-        // represent_amount() that was too small to create a note for.
-        let total_fees = total_amount.saturating_sub(received);
-
-        info_to_flutter(format!(
-            "Ecash reissue fees: input={} msats, output={} msats, dust={} msats, total={} msats (receive {} msats from {} msats)",
-            input_fees.msats,
-            output_fees.msats,
-            total_fees.msats.saturating_sub(input_fees.msats + output_fees.msats),
-            total_fees.msats,
-            received.msats,
-            total_amount.msats
-        ))
-        .await;
-
-        let dust_msats = total_fees
-            .msats
-            .saturating_sub(input_fees.msats + output_fees.msats);
-
+        let quote = mint.reissue_fee_quote(&notes).await?;
         Ok(ReissueFees {
-            total_msats: total_fees.msats,
-            input_msats: input_fees.msats,
-            output_msats: output_fees.msats,
-            dust_msats,
+            total_msats: quote.total.msats,
+            input_msats: quote.input.msats,
+            output_msats: quote.output.msats,
+            dust_msats: quote.dust.msats,
         })
     }
 
@@ -3321,6 +3399,14 @@ impl Multimint {
             .get(federation_id)
             .ok_or(anyhow!("No federation exists"))?
             .clone();
+
+        // mintv2 exposes no note-level spent query; its idempotent `receive`
+        // surfaces already-spent notes as a `Rejected` final state instead, so
+        // we report "not spent" here and let the receive handle it.
+        if client.get_first_module::<MintV2Module>().is_ok() {
+            return Ok(false);
+        }
+
         let mint = client.get_first_module::<MintClientModule>()?;
         let oob_notes = OOBNotes::from_str(&ecash)?;
         // We assume that if any note has been spent, all of the notes have been spent
@@ -3350,6 +3436,29 @@ impl Multimint {
             .get(federation_id)
             .ok_or_else(|| EcashAppError::other("federation does not exist"))?
             .clone();
+
+        // mintv2 uses a different ecash encoding (base32 `ECash`) and a simpler,
+        // idempotent `receive` that reissues the notes in the background.
+        if let Ok(mintv2) = client.get_first_module::<MintV2Module>() {
+            let ecash_obj = decode_prefixed::<ECash>(FEDIMINT_PREFIX, &ecash)
+                .map_err(|e| EcashAppError::InvalidEcash(e.to_string()))?;
+            let amount_msats = ecash_obj.amount().msats;
+            // Persist the fee breakdown in the operation's custom meta so the
+            // transaction log can show it later (mirrors walletv1's extra_meta).
+            let custom_meta = json!({
+                "total_amount": amount_msats,
+                "input_fee": fees.input_msats,
+                "output_fee": fees.output_msats,
+                "dust": fees.dust_msats,
+            });
+            let operation_id = mintv2
+                .receive(ecash_obj, custom_meta)
+                .await
+                .map_err(EcashAppError::from_display)?;
+            self.spawn_await_mintv2_receive(*federation_id, operation_id, amount_msats);
+            return Ok(operation_id);
+        }
+
         let mint = client
             .get_first_module::<MintClientModule>()
             .map_err(|e| EcashAppError::other(format!("mint module unavailable: {e:#}")))?;
@@ -3428,6 +3537,30 @@ impl Multimint {
             .get(federation_id)
             .ok_or(anyhow!("No federation exists"))?
             .clone();
+
+        // mintv2 has a simpler Success/Rejected outcome; map it onto the v1
+        // reissue state the redeem UI already understands.
+        if let Ok(mintv2) = client.get_first_module::<MintV2Module>() {
+            let final_state = match mintv2
+                .await_final_receive_operation_state(operation_id)
+                .await
+            {
+                Ok(MintV2FinalReceiveOperationState::Success) => ReissueExternalNotesState::Done,
+                Ok(MintV2FinalReceiveOperationState::Rejected) => {
+                    ReissueExternalNotesState::Failed("ecash already spent".to_string())
+                }
+                Err(e) => ReissueExternalNotesState::Failed(e.to_string()),
+            };
+            let amount = if matches!(final_state, ReissueExternalNotesState::Done) {
+                Self::get_mintv2_receive_amount(
+                    client.operation_log().get_operation(operation_id).await,
+                )
+            } else {
+                None
+            };
+            return Ok((final_state, amount));
+        }
+
         let mint = client.get_first_module::<MintClientModule>()?;
         let mut updates = mint
             .subscribe_reissue_external_notes(operation_id)
@@ -3461,6 +3594,72 @@ impl Multimint {
         }
 
         Some(meta.amount.msats)
+    }
+
+    /// Recovers a mintv2 receive amount (msats) from its operation meta — from
+    /// the `total_amount` we stash in custom_meta, falling back to decoding the
+    /// stored ecash string.
+    fn get_mintv2_receive_amount(op_log_val: Option<OperationLogEntry>) -> Option<u64> {
+        let op_log_val = op_log_val?;
+        match op_log_val.meta::<MintV2OperationMeta>() {
+            MintV2OperationMeta::Receive {
+                ecash, custom_meta, ..
+            } => custom_meta
+                .get("total_amount")
+                .and_then(|v| v.as_u64())
+                .or_else(|| {
+                    decode_prefixed::<ECash>(FEDIMINT_PREFIX, &ecash)
+                        .ok()
+                        .map(|e| e.amount().msats)
+                }),
+            _ => None,
+        }
+    }
+
+    /// Drives a mintv2 receive (reissuance) to completion. On success publishes
+    /// the ecash balance event; on rejection (already-spent notes) surfaces the
+    /// structured error. `amount_msats` is captured from the decoded ecash since
+    /// the mintv2 receive meta does not carry the amount directly.
+    fn spawn_await_mintv2_receive(
+        &self,
+        federation_id: FederationId,
+        operation_id: OperationId,
+        amount_msats: u64,
+    ) {
+        let self_copy = self.clone();
+        self.task_group
+            .spawn_cancellable("await mintv2 receive", async move {
+                let client = match self_copy.get_client(&federation_id).await {
+                    Ok(client) => client,
+                    Err(e) => {
+                        info_to_flutter(format!("await mintv2 receive: {e}")).await;
+                        return;
+                    }
+                };
+                let Ok(mintv2) = client.get_first_module::<MintV2Module>() else {
+                    return;
+                };
+                match mintv2
+                    .await_final_receive_operation_state(operation_id)
+                    .await
+                {
+                    Ok(MintV2FinalReceiveOperationState::Success) => {
+                        get_event_bus()
+                            .publish(MultimintEvent::Ecash((federation_id, amount_msats)))
+                            .await;
+                        info_to_flutter(format!("mintv2 receive completed: {amount_msats} msats"))
+                            .await;
+                    }
+                    Ok(MintV2FinalReceiveOperationState::Rejected) => {
+                        payment_error_to_flutter(federation_id, EcashAppError::EcashAlreadySpent)
+                            .await;
+                    }
+                    Err(e) => {
+                        payment_error_to_flutter(federation_id, EcashAppError::from_display(e))
+                            .await;
+                    }
+                }
+            });
     }
 
     pub async fn calculate_withdraw_fees(
@@ -3690,6 +3889,15 @@ impl Multimint {
             .get(federation_id)
             .context("No federation exists")?
             .clone();
+
+        if let Ok(mintv2) = client.get_first_module::<MintV2Module>() {
+            let counts = mintv2.get_count_by_denomination().await;
+            let notes = counts
+                .iter()
+                .map(|(denom, count)| (denom.amount().msats, *count as usize))
+                .collect::<Vec<_>>();
+            return Ok(notes);
+        }
 
         let mint = client.get_first_module::<MintClientModule>()?;
         let mut dbtx = mint.client_ctx.module_db().begin_transaction_nc().await;
