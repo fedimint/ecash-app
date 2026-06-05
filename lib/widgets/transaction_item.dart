@@ -70,7 +70,8 @@ class TransactionItem extends StatelessWidget {
         );
         break;
       case TransactionKind_LightningSend(
-        fees: final fees,
+        federationFees: final federationFees,
+        gatewayFees: final gatewayFees,
         gateway: final gateway,
         paymentHash: final paymentHash,
         preimage: final preimage,
@@ -85,11 +86,18 @@ class TransactionItem extends StatelessWidget {
                 if (lnAddress != null)
                   TransactionDetailKeys.lnAddress: lnAddress,
                 TransactionDetailKeys.amount: formattedAmount,
-                TransactionDetailKeys.fees: formatBalance(
-                  fees,
-                  true,
-                  bitcoinDisplay,
-                ),
+                if (federationFees > BigInt.zero)
+                  TransactionDetailKeys.federationFee: formatBalance(
+                    federationFees,
+                    true,
+                    bitcoinDisplay,
+                  ),
+                if (gatewayFees > BigInt.zero)
+                  TransactionDetailKeys.gatewayFee: formatBalance(
+                    gatewayFees,
+                    true,
+                    bitcoinDisplay,
+                  ),
                 TransactionDetailKeys.gateway: gateway,
                 TransactionDetailKeys.paymentHash: paymentHash,
                 TransactionDetailKeys.preimage: preimage,

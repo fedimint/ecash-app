@@ -521,7 +521,7 @@ abstract class RustLibApi extends BaseApi {
     required List<String> backupInviteCodes,
   });
 
-  Future<(String, BigInt, bool)> crateMultimintMultimintSelectSendGateway({
+  Future<SendGatewaySelection> crateMultimintMultimintSelectSendGateway({
     required Multimint that,
     required FederationId federationId,
     required Amount amount,
@@ -535,6 +535,8 @@ abstract class RustLibApi extends BaseApi {
     required SafeUrl gateway,
     required bool isLnv2,
     required BigInt amountWithFees,
+    required BigInt federationFeeMsats,
+    required BigInt gatewayFeeMsats,
     String? lnAddress,
   });
 
@@ -1107,6 +1109,8 @@ abstract class RustLibApi extends BaseApi {
     required String gateway,
     required bool isLnv2,
     required BigInt amountWithFees,
+    required BigInt federationFeeMsats,
+    required BigInt gatewayFeeMsats,
     String? lnAddress,
   });
 
@@ -4909,7 +4913,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
       );
 
   @override
-  Future<(String, BigInt, bool)> crateMultimintMultimintSelectSendGateway({
+  Future<SendGatewaySelection> crateMultimintMultimintSelectSendGateway({
     required Multimint that,
     required FederationId federationId,
     required Amount amount,
@@ -4943,7 +4947,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           );
         },
         codec: SseCodec(
-          decodeSuccessData: sse_decode_record_string_u_64_bool,
+          decodeSuccessData: sse_decode_send_gateway_selection,
           decodeErrorData: sse_decode_AnyhowException,
         ),
         constMeta: kCrateMultimintMultimintSelectSendGatewayConstMeta,
@@ -4967,6 +4971,8 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
     required SafeUrl gateway,
     required bool isLnv2,
     required BigInt amountWithFees,
+    required BigInt federationFeeMsats,
+    required BigInt gatewayFeeMsats,
     String? lnAddress,
   }) {
     return handler.executeNormal(
@@ -4988,6 +4994,8 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           );
           sse_encode_bool(isLnv2, serializer);
           sse_encode_u_64(amountWithFees, serializer);
+          sse_encode_u_64(federationFeeMsats, serializer);
+          sse_encode_u_64(gatewayFeeMsats, serializer);
           sse_encode_opt_String(lnAddress, serializer);
           pdeCallFfi(
             generalizedFrbRustBinding,
@@ -5009,6 +5017,8 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           gateway,
           isLnv2,
           amountWithFees,
+          federationFeeMsats,
+          gatewayFeeMsats,
           lnAddress,
         ],
         apiImpl: this,
@@ -5026,6 +5036,8 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           "gateway",
           "isLnv2",
           "amountWithFees",
+          "federationFeeMsats",
+          "gatewayFeeMsats",
           "lnAddress",
         ],
       );
@@ -9817,6 +9829,8 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
     required String gateway,
     required bool isLnv2,
     required BigInt amountWithFees,
+    required BigInt federationFeeMsats,
+    required BigInt gatewayFeeMsats,
     String? lnAddress,
   }) {
     return handler.executeNormal(
@@ -9831,6 +9845,8 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           sse_encode_String(gateway, serializer);
           sse_encode_bool(isLnv2, serializer);
           sse_encode_u_64(amountWithFees, serializer);
+          sse_encode_u_64(federationFeeMsats, serializer);
+          sse_encode_u_64(gatewayFeeMsats, serializer);
           sse_encode_opt_String(lnAddress, serializer);
           pdeCallFfi(
             generalizedFrbRustBinding,
@@ -9851,6 +9867,8 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           gateway,
           isLnv2,
           amountWithFees,
+          federationFeeMsats,
+          gatewayFeeMsats,
           lnAddress,
         ],
         apiImpl: this,
@@ -9866,6 +9884,8 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
       "gateway",
       "isLnv2",
       "amountWithFees",
+      "federationFeeMsats",
+      "gatewayFeeMsats",
       "lnAddress",
     ],
   );
@@ -12068,11 +12088,13 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   GatewayPaymentPreview dco_decode_gateway_payment_preview(dynamic raw) {
     // Codec=Dco (DartCObject based), see doc to use other codecs
     final arr = raw as List<dynamic>;
-    if (arr.length != 2)
-      throw Exception('unexpected arr length: expect 2 but see ${arr.length}');
+    if (arr.length != 4)
+      throw Exception('unexpected arr length: expect 4 but see ${arr.length}');
     return GatewayPaymentPreview(
       gateway: dco_decode_fedimint_gateway(arr[0]),
       amountWithFees: dco_decode_u_64(arr[1]),
+      gatewayFee: dco_decode_u_64(arr[2]),
+      federationFee: dco_decode_u_64(arr[3]),
     );
   }
 
@@ -12965,20 +12987,6 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   }
 
   @protected
-  (String, BigInt, bool) dco_decode_record_string_u_64_bool(dynamic raw) {
-    // Codec=Dco (DartCObject based), see doc to use other codecs
-    final arr = raw as List<dynamic>;
-    if (arr.length != 3) {
-      throw Exception('Expected 3 elements, got ${arr.length}');
-    }
-    return (
-      dco_decode_String(arr[0]),
-      dco_decode_u_64(arr[1]),
-      dco_decode_bool(arr[2]),
-    );
-  }
-
-  @protected
   (int, int) dco_decode_record_u_32_u_32(dynamic raw) {
     // Codec=Dco (DartCObject based), see doc to use other codecs
     final arr = raw as List<dynamic>;
@@ -13019,6 +13027,21 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   }
 
   @protected
+  SendGatewaySelection dco_decode_send_gateway_selection(dynamic raw) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    final arr = raw as List<dynamic>;
+    if (arr.length != 5)
+      throw Exception('unexpected arr length: expect 5 but see ${arr.length}');
+    return SendGatewaySelection(
+      gatewayUrl: dco_decode_String(arr[0]),
+      amountWithFees: dco_decode_u_64(arr[1]),
+      gatewayFee: dco_decode_u_64(arr[2]),
+      federationFee: dco_decode_u_64(arr[3]),
+      isLnv2: dco_decode_bool(arr[4]),
+    );
+  }
+
+  @protected
   Transaction dco_decode_transaction(dynamic raw) {
     // Codec=Dco (DartCObject based), see doc to use other codecs
     final arr = raw as List<dynamic>;
@@ -13047,11 +13070,12 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
         );
       case 1:
         return TransactionKind_LightningSend(
-          fees: dco_decode_u_64(raw[1]),
-          gateway: dco_decode_String(raw[2]),
-          paymentHash: dco_decode_String(raw[3]),
-          preimage: dco_decode_String(raw[4]),
-          lnAddress: dco_decode_opt_String(raw[5]),
+          federationFees: dco_decode_u_64(raw[1]),
+          gatewayFees: dco_decode_u_64(raw[2]),
+          gateway: dco_decode_String(raw[3]),
+          paymentHash: dco_decode_String(raw[4]),
+          preimage: dco_decode_String(raw[5]),
+          lnAddress: dco_decode_opt_String(raw[6]),
         );
       case 2:
         return TransactionKind_LightningRecurring();
@@ -14687,9 +14711,13 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
     // Codec=Sse (Serialization based), see doc to use other codecs
     var var_gateway = sse_decode_fedimint_gateway(deserializer);
     var var_amountWithFees = sse_decode_u_64(deserializer);
+    var var_gatewayFee = sse_decode_u_64(deserializer);
+    var var_federationFee = sse_decode_u_64(deserializer);
     return GatewayPaymentPreview(
       gateway: var_gateway,
       amountWithFees: var_amountWithFees,
+      gatewayFee: var_gatewayFee,
+      federationFee: var_federationFee,
     );
   }
 
@@ -15729,17 +15757,6 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   }
 
   @protected
-  (String, BigInt, bool) sse_decode_record_string_u_64_bool(
-    SseDeserializer deserializer,
-  ) {
-    // Codec=Sse (Serialization based), see doc to use other codecs
-    var var_field0 = sse_decode_String(deserializer);
-    var var_field1 = sse_decode_u_64(deserializer);
-    var var_field2 = sse_decode_bool(deserializer);
-    return (var_field0, var_field1, var_field2);
-  }
-
-  @protected
   (int, int) sse_decode_record_u_32_u_32(SseDeserializer deserializer) {
     // Codec=Sse (Serialization based), see doc to use other codecs
     var var_field0 = sse_decode_u_32(deserializer);
@@ -15775,6 +15792,25 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
     // Codec=Sse (Serialization based), see doc to use other codecs
     var inner = sse_decode_i_32(deserializer);
     return RelayStatusKind.values[inner];
+  }
+
+  @protected
+  SendGatewaySelection sse_decode_send_gateway_selection(
+    SseDeserializer deserializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    var var_gatewayUrl = sse_decode_String(deserializer);
+    var var_amountWithFees = sse_decode_u_64(deserializer);
+    var var_gatewayFee = sse_decode_u_64(deserializer);
+    var var_federationFee = sse_decode_u_64(deserializer);
+    var var_isLnv2 = sse_decode_bool(deserializer);
+    return SendGatewaySelection(
+      gatewayUrl: var_gatewayUrl,
+      amountWithFees: var_amountWithFees,
+      gatewayFee: var_gatewayFee,
+      federationFee: var_federationFee,
+      isLnv2: var_isLnv2,
+    );
   }
 
   @protected
@@ -15814,13 +15850,15 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           paymentHash: var_paymentHash,
         );
       case 1:
-        var var_fees = sse_decode_u_64(deserializer);
+        var var_federationFees = sse_decode_u_64(deserializer);
+        var var_gatewayFees = sse_decode_u_64(deserializer);
         var var_gateway = sse_decode_String(deserializer);
         var var_paymentHash = sse_decode_String(deserializer);
         var var_preimage = sse_decode_String(deserializer);
         var var_lnAddress = sse_decode_opt_String(deserializer);
         return TransactionKind_LightningSend(
-          fees: var_fees,
+          federationFees: var_federationFees,
+          gatewayFees: var_gatewayFees,
           gateway: var_gateway,
           paymentHash: var_paymentHash,
           preimage: var_preimage,
@@ -17593,6 +17631,8 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
     // Codec=Sse (Serialization based), see doc to use other codecs
     sse_encode_fedimint_gateway(self.gateway, serializer);
     sse_encode_u_64(self.amountWithFees, serializer);
+    sse_encode_u_64(self.gatewayFee, serializer);
+    sse_encode_u_64(self.federationFee, serializer);
   }
 
   @protected
@@ -18555,17 +18595,6 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   }
 
   @protected
-  void sse_encode_record_string_u_64_bool(
-    (String, BigInt, bool) self,
-    SseSerializer serializer,
-  ) {
-    // Codec=Sse (Serialization based), see doc to use other codecs
-    sse_encode_String(self.$1, serializer);
-    sse_encode_u_64(self.$2, serializer);
-    sse_encode_bool(self.$3, serializer);
-  }
-
-  @protected
   void sse_encode_record_u_32_u_32((int, int) self, SseSerializer serializer) {
     // Codec=Sse (Serialization based), see doc to use other codecs
     sse_encode_u_32(self.$1, serializer);
@@ -18601,6 +18630,19 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   }
 
   @protected
+  void sse_encode_send_gateway_selection(
+    SendGatewaySelection self,
+    SseSerializer serializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    sse_encode_String(self.gatewayUrl, serializer);
+    sse_encode_u_64(self.amountWithFees, serializer);
+    sse_encode_u_64(self.gatewayFee, serializer);
+    sse_encode_u_64(self.federationFee, serializer);
+    sse_encode_bool(self.isLnv2, serializer);
+  }
+
+  @protected
   void sse_encode_transaction(Transaction self, SseSerializer serializer) {
     // Codec=Sse (Serialization based), see doc to use other codecs
     sse_encode_transaction_kind(self.kind, serializer);
@@ -18632,14 +18674,16 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
         sse_encode_String(payeePubkey, serializer);
         sse_encode_String(paymentHash, serializer);
       case TransactionKind_LightningSend(
-        fees: final fees,
+        federationFees: final federationFees,
+        gatewayFees: final gatewayFees,
         gateway: final gateway,
         paymentHash: final paymentHash,
         preimage: final preimage,
         lnAddress: final lnAddress,
       ):
         sse_encode_i_32(1, serializer);
-        sse_encode_u_64(fees, serializer);
+        sse_encode_u_64(federationFees, serializer);
+        sse_encode_u_64(gatewayFees, serializer);
         sse_encode_String(gateway, serializer);
         sse_encode_String(paymentHash, serializer);
         sse_encode_String(preimage, serializer);
@@ -19781,7 +19825,7 @@ class MultimintImpl extends RustOpaque implements Multimint {
     backupInviteCodes: backupInviteCodes,
   );
 
-  Future<(String, BigInt, bool)> selectSendGateway({
+  Future<SendGatewaySelection> selectSendGateway({
     required FederationId federationId,
     required Amount amount,
     required Bolt11Invoice bolt11,
@@ -19798,6 +19842,8 @@ class MultimintImpl extends RustOpaque implements Multimint {
     required SafeUrl gateway,
     required bool isLnv2,
     required BigInt amountWithFees,
+    required BigInt federationFeeMsats,
+    required BigInt gatewayFeeMsats,
     String? lnAddress,
   }) => RustLib.instance.api.crateMultimintMultimintSend(
     that: this,
@@ -19806,6 +19852,8 @@ class MultimintImpl extends RustOpaque implements Multimint {
     gateway: gateway,
     isLnv2: isLnv2,
     amountWithFees: amountWithFees,
+    federationFeeMsats: federationFeeMsats,
+    gatewayFeeMsats: gatewayFeeMsats,
     lnAddress: lnAddress,
   );
 

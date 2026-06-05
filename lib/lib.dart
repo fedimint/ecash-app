@@ -125,6 +125,8 @@ Future<OperationId> send({
   required String gateway,
   required bool isLnv2,
   required BigInt amountWithFees,
+  required BigInt federationFeeMsats,
+  required BigInt gatewayFeeMsats,
   String? lnAddress,
 }) => RustLib.instance.api.crateSend(
   federationId: federationId,
@@ -132,6 +134,8 @@ Future<OperationId> send({
   gateway: gateway,
   isLnv2: isLnv2,
   amountWithFees: amountWithFees,
+  federationFeeMsats: federationFeeMsats,
+  gatewayFeeMsats: gatewayFeeMsats,
   lnAddress: lnAddress,
 );
 

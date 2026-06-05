@@ -352,7 +352,7 @@ pub async fn send_lnaddress(
             let multimint = get_multimint();
             let bolt11 = Bolt11Invoice::from_str(invoice.invoice())
                 .map_err(|e| EcashAppError::InvalidInvoice(e.to_string()))?;
-            let (gateway_url, amount_with_fees, is_lnv2) = multimint
+            let selection = multimint
                 .select_send_gateway(
                     federation_id,
                     Amount::from_msats(amount_msats),
@@ -360,15 +360,17 @@ pub async fn send_lnaddress(
                 )
                 .await
                 .map_err(EcashAppError::from)?;
-            let gateway = SafeUrl::parse(&gateway_url)
+            let gateway = SafeUrl::parse(&selection.gateway_url)
                 .map_err(|e| EcashAppError::other(format!("invalid gateway URL: {e}")))?;
             return multimint
                 .send(
                     federation_id,
                     bolt11.to_string(),
                     gateway,
-                    is_lnv2,
-                    amount_with_fees,
+                    selection.is_lnv2,
+                    selection.amount_with_fees,
+                    selection.federation_fee,
+                    selection.gateway_fee,
                     Some(address),
                 )
                 .await;
@@ -386,6 +388,8 @@ pub async fn send(
     gateway: String,
     is_lnv2: bool,
     amount_with_fees: u64,
+    federation_fee_msats: u64,
+    gateway_fee_msats: u64,
     ln_address: Option<String>,
 ) -> Result<OperationId, EcashAppError> {
     let multimint = get_multimint();
@@ -398,6 +402,8 @@ pub async fn send(
             gateway,
             is_lnv2,
             amount_with_fees,
+            federation_fee_msats,
+            gateway_fee_msats,
             ln_address,
         )
         .await

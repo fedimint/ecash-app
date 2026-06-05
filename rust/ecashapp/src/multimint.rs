@@ -308,7 +308,11 @@ pub enum TransactionKind {
         payment_hash: String,
     },
     LightningSend {
-        fees: u64,
+        /// On-federation fee: lightning output fee + mint funding/change fees +
+        /// dust, quoted at send time via `send_fee_quote`.
+        federation_fees: u64,
+        /// Gateway off-chain routing fee.
+        gateway_fees: u64,
         gateway: String,
         payment_hash: String,
         preimage: String,
@@ -513,6 +517,21 @@ pub struct FedimintGateway {
 pub struct GatewayPaymentPreview {
     pub gateway: FedimintGateway,
     pub amount_with_fees: u64,
+    /// Gateway off-chain routing fee (baked into the outgoing contract).
+    pub gateway_fee: u64,
+    /// On-federation fee: lightning output fee + mint funding/change fees +
+    /// dust, quoted via the lightning module's `send_fee_quote`.
+    pub federation_fee: u64,
+}
+
+/// Gateway chosen for a Lightning send (used by the LN-address path, which has
+/// no on-screen gateway picker), with the same fee breakdown as a preview.
+pub struct SendGatewaySelection {
+    pub gateway_url: String,
+    pub amount_with_fees: u64,
+    pub gateway_fee: u64,
+    pub federation_fee: u64,
+    pub is_lnv2: bool,
 }
 
 #[derive(Clone, Serialize, Debug)]
@@ -2049,7 +2068,7 @@ impl Multimint {
         federation_id: &FederationId,
         amount: Amount,
         bolt11: Bolt11Invoice,
-    ) -> anyhow::Result<(String, u64, bool)> {
+    ) -> anyhow::Result<SendGatewaySelection> {
         let client = self
             .clients
             .read()
@@ -2057,18 +2076,25 @@ impl Multimint {
             .get(federation_id)
             .ok_or(anyhow!("No federation exists"))?
             .clone();
-        if let Ok((url, send_fee, fed_base, fed_ppm)) =
+        if let Ok((url, send_fee, _fed_base, _fed_ppm)) =
             Self::lnv2_select_gateway(&client, Some(bolt11.clone())).await
         {
-            let amount_with_fees = compute_send_amount(amount, fed_base, fed_ppm, send_fee);
-            return Ok((url.to_string(), amount_with_fees, true));
+            let (gateway_fee, federation_fee, amount_with_fees) =
+                Self::compute_send_fees(&client, amount, send_fee, true).await;
+            return Ok(SendGatewaySelection {
+                gateway_url: url.to_string(),
+                amount_with_fees,
+                gateway_fee,
+                federation_fee,
+                is_lnv2: true,
+            });
         }
 
         // LNv1 only has Lightning routing fees
         let gateway = Self::lnv1_select_gateway(&client)
             .await
             .ok_or(anyhow!("No available gateways"))?;
-        let fees = if Self::invoice_routes_back_to_federation(&bolt11, gateway.clone()) {
+        let send_fee = if Self::invoice_routes_back_to_federation(&bolt11, gateway.clone()) {
             // There are no fees on internal swaps
             PaymentFee {
                 base: Amount::ZERO,
@@ -2077,8 +2103,62 @@ impl Multimint {
         } else {
             gateway.fees.into()
         };
-        let amount_with_fees = compute_send_amount(amount, 0, 0, fees);
-        Ok((gateway.api.to_string(), amount_with_fees, false))
+        let (gateway_fee, federation_fee, amount_with_fees) =
+            Self::compute_send_fees(&client, amount, send_fee, false).await;
+        Ok(SendGatewaySelection {
+            gateway_url: gateway.api.to_string(),
+            amount_with_fees,
+            gateway_fee,
+            federation_fee,
+            is_lnv2: false,
+        })
+    }
+
+    /// Computes the send fee breakdown for an `amount` paid through a gateway
+    /// whose off-chain routing fee is `send_fee`. Returns `(gateway_fee,
+    /// federation_fee, amount_with_fees)` in msats.
+    ///
+    /// `gateway_fee` is the routing fee the gateway bakes into the outgoing
+    /// contract; `federation_fee` is the on-federation transaction fee (lightning
+    /// output fee + mint fees on the funding notes and change + dust), quoted via
+    /// the lightning module's `send_fee_quote` against the current note
+    /// inventory. `amount_with_fees` is the total the sender pays.
+    async fn compute_send_fees(
+        client: &ClientHandleArc,
+        amount: Amount,
+        send_fee: PaymentFee,
+        is_lnv2: bool,
+    ) -> (u64, u64, u64) {
+        let contract_amount = send_fee.add_to(amount.msats);
+        let gateway_fee = contract_amount.msats.saturating_sub(amount.msats);
+        let federation_fee = Self::send_federation_fee(client, is_lnv2, contract_amount).await;
+        let amount_with_fees = contract_amount.msats.saturating_add(federation_fee);
+        (gateway_fee, federation_fee, amount_with_fees)
+    }
+
+    /// Quotes the on-federation fee for funding an outgoing contract worth
+    /// `contract_amount`. The quote is display-only (fedimint funds the real send
+    /// itself), so a failure degrades to 0 rather than blocking the payment.
+    async fn send_federation_fee(
+        client: &ClientHandleArc,
+        is_lnv2: bool,
+        contract_amount: Amount,
+    ) -> u64 {
+        if is_lnv2 {
+            if let Ok(lnv2) =
+                client.get_first_module::<fedimint_lnv2_client::LightningClientModule>()
+            {
+                if let Ok(quote) = lnv2.send_fee_quote(contract_amount).await {
+                    return quote.total.msats;
+                }
+            }
+        }
+        if let Ok(ln) = client.get_first_module::<LightningClientModule>() {
+            if let Ok(quote) = ln.send_fee_quote(contract_amount).await {
+                return quote.total.msats;
+            }
+        }
+        0
     }
 
     fn invoice_routes_back_to_federation(
@@ -2103,32 +2183,13 @@ impl Multimint {
             .list_gateways(None, Some(*federation_id), Duration::from_secs(5))
             .await?;
 
-        // LNv2 federation-level fee consensus is constant per federation, so
-        // fetch it once rather than per-gateway.
-        let (fed_base, fed_ppm) = {
-            let client = self
-                .clients
-                .read()
-                .await
-                .get(federation_id)
-                .ok_or(anyhow!("No federation exists"))?
-                .clone();
-            if let Ok(lnv2) =
-                client.get_first_module::<fedimint_lnv2_client::LightningClientModule>()
-            {
-                let client_module_config = client.config().await.modules;
-                let config = client_module_config
-                    .get(&lnv2.id)
-                    .ok_or(anyhow!("Could not get LNv2 config"))?
-                    .cast::<fedimint_lnv2_common::config::LightningClientConfig>()?;
-                (
-                    config.fee_consensus.base.msats,
-                    config.fee_consensus.parts_per_million,
-                )
-            } else {
-                (0, 0)
-            }
-        };
+        let client = self
+            .clients
+            .read()
+            .await
+            .get(federation_id)
+            .ok_or(anyhow!("No federation exists"))?
+            .clone();
 
         let last_route_hint_hop = bolt11
             .route_hints()
@@ -2137,56 +2198,52 @@ impl Multimint {
             .map(|hop| (hop.src_node_id.to_string(), hop.short_channel_id));
         let payee_pubkey = bolt11.get_payee_pub_key().to_string();
 
-        let mut previews: Vec<GatewayPaymentPreview> = gateways
-            .into_iter()
-            .map(|gw| {
-                let (fed_base_used, fed_ppm_used, send_fee) = if gw.is_lnv2 {
-                    let is_loopback = gw.lightning_node.as_deref() == Some(payee_pubkey.as_str());
-                    let (send_base, send_ppm) = if is_loopback {
-                        (
-                            gw.min_base_routing_fee.unwrap_or(gw.base_routing_fee),
-                            gw.min_ppm_routing_fee.unwrap_or(gw.ppm_routing_fee),
-                        )
-                    } else {
-                        (gw.base_routing_fee, gw.ppm_routing_fee)
-                    };
+        // The federation fee is quoted per gateway (the contract amount, and thus
+        // the mint funding fee, depends on the gateway's routing fee), so this is
+        // an async loop rather than a map.
+        let mut previews: Vec<GatewayPaymentPreview> = Vec::with_capacity(gateways.len());
+        for gw in gateways {
+            let send_fee = if gw.is_lnv2 {
+                let is_loopback = gw.lightning_node.as_deref() == Some(payee_pubkey.as_str());
+                let (send_base, send_ppm) = if is_loopback {
                     (
-                        fed_base,
-                        fed_ppm,
-                        PaymentFee {
-                            base: Amount::from_msats(send_base),
-                            parts_per_million: send_ppm,
-                        },
+                        gw.min_base_routing_fee.unwrap_or(gw.base_routing_fee),
+                        gw.min_ppm_routing_fee.unwrap_or(gw.ppm_routing_fee),
                     )
                 } else {
-                    let routes_back = match (last_route_hint_hop.as_ref(), gw.federation_index) {
-                        (Some((src, scid)), Some(fi)) => {
-                            gw.lightning_node.as_deref() == Some(src.as_str()) && *scid == fi
-                        }
-                        _ => false,
-                    };
-                    let (send_base, send_ppm) = if routes_back {
-                        (0, 0)
-                    } else {
-                        (gw.base_routing_fee, gw.ppm_routing_fee)
-                    };
-                    (
-                        0,
-                        0,
-                        PaymentFee {
-                            base: Amount::from_msats(send_base),
-                            parts_per_million: send_ppm,
-                        },
-                    )
+                    (gw.base_routing_fee, gw.ppm_routing_fee)
                 };
-                let amount_with_fees =
-                    compute_send_amount(amount, fed_base_used, fed_ppm_used, send_fee);
-                GatewayPaymentPreview {
-                    gateway: gw,
-                    amount_with_fees,
+                PaymentFee {
+                    base: Amount::from_msats(send_base),
+                    parts_per_million: send_ppm,
                 }
-            })
-            .collect();
+            } else {
+                let routes_back = match (last_route_hint_hop.as_ref(), gw.federation_index) {
+                    (Some((src, scid)), Some(fi)) => {
+                        gw.lightning_node.as_deref() == Some(src.as_str()) && *scid == fi
+                    }
+                    _ => false,
+                };
+                let (send_base, send_ppm) = if routes_back {
+                    (0, 0)
+                } else {
+                    (gw.base_routing_fee, gw.ppm_routing_fee)
+                };
+                PaymentFee {
+                    base: Amount::from_msats(send_base),
+                    parts_per_million: send_ppm,
+                }
+            };
+
+            let (gateway_fee, federation_fee, amount_with_fees) =
+                Self::compute_send_fees(&client, amount, send_fee, gw.is_lnv2).await;
+            previews.push(GatewayPaymentPreview {
+                gateway: gw,
+                amount_with_fees,
+                gateway_fee,
+                federation_fee,
+            });
+        }
 
         // Sort: LNv2 first, then if its vetted, then by lowest fees
         previews.sort_by(|a, b| {
@@ -2207,6 +2264,8 @@ impl Multimint {
         gateway: SafeUrl,
         is_lnv2: bool,
         amount_with_fees: u64,
+        federation_fee_msats: u64,
+        gateway_fee_msats: u64,
         ln_address: Option<String>,
     ) -> EcashAppResult<OperationId> {
         let client = self
@@ -2223,6 +2282,8 @@ impl Multimint {
         }
         let custom_meta = json!({
             "amount_with_fees": amount_with_fees,
+            "federation_fees": federation_fee_msats,
+            "gateway_fees": gateway_fee_msats,
             "gateway_url": gateway,
             "ln_address": ln_address,
         });
@@ -2832,9 +2893,22 @@ impl Multimint {
                                             .get("ln_address")
                                             .and_then(|v| from_value::<String>(v.clone()).ok());
 
+                                        // Per-source fees stored at send time; older
+                                        // transactions predate them, so fall back to
+                                        // attributing the whole fee to the gateway.
+                                        let combined =
+                                            amount_with_fees - send.contract.amount.msats;
+                                        let federation_fees =
+                                            read_meta_u64(&send.custom_meta, "federation_fees")
+                                                .unwrap_or(0);
+                                        let gateway_fees =
+                                            read_meta_u64(&send.custom_meta, "gateway_fees")
+                                                .unwrap_or(combined);
+
                                         Some(Transaction {
                                             kind: TransactionKind::LightningSend {
-                                                fees: amount_with_fees - send.contract.amount.msats,
+                                                federation_fees,
+                                                gateway_fees,
                                                 gateway: send.gateway.to_string(),
                                                 payment_hash: bolt11.payment_hash().to_string(),
                                                 preimage: preimage.consensus_encode_to_hex(),
@@ -3225,6 +3299,12 @@ impl Multimint {
             .get("ln_address")
             .and_then(|v| from_value::<String>(v.clone()).ok());
 
+        // Per-source fees stored at send time; older transactions predate them,
+        // so fall back to attributing the whole fee to the gateway.
+        let combined = amount_with_fees - amount;
+        let federation_fees = read_meta_u64(&custom_meta, "federation_fees").unwrap_or(0);
+        let gateway_fees = read_meta_u64(&custom_meta, "gateway_fees").unwrap_or(combined);
+
         let operation_id = operation_id.0.to_vec();
 
         // First check if the send was an internal payment
@@ -3233,7 +3313,8 @@ impl Multimint {
             match internal_outcome {
                 Some(InternalPayState::Preimage(preimage)) => Some(Transaction {
                     kind: TransactionKind::LightningSend {
-                        fees: amount_with_fees - amount,
+                        federation_fees,
+                        gateway_fees,
                         gateway,
                         payment_hash: meta.invoice.payment_hash().to_string(),
                         preimage: preimage.0.consensus_encode_to_hex(),
@@ -3250,7 +3331,8 @@ impl Multimint {
             match external_outcome {
                 Some(LnPayState::Success { preimage }) => Some(Transaction {
                     kind: TransactionKind::LightningSend {
-                        fees: amount_with_fees - amount,
+                        federation_fees,
+                        gateway_fees,
                         gateway,
                         payment_hash: meta.invoice.payment_hash().to_string(),
                         preimage,
@@ -5089,6 +5171,14 @@ fn read_meta_msats(custom_meta: &serde_json::Value, key: &str) -> Option<u64> {
         .map(|a| a.msats)
 }
 
+/// Reads a key from a lightning send's `custom_meta` as a raw msats `u64`.
+/// Returns `None` if the key is absent (e.g. transactions created before it).
+fn read_meta_u64(custom_meta: &serde_json::Value, key: &str) -> Option<u64> {
+    custom_meta
+        .get(key)
+        .and_then(|v| from_value::<u64>(v.clone()).ok())
+}
+
 /// Returns `(gross, fee)` where `fee` is the quote taken at the returned `gross`
 /// — i.e. the fee the federation actually charges for that amount, not the fee
 /// at `requested`. The two differ when the (step-valued) fee moves between
@@ -5136,24 +5226,11 @@ fn gross_invoice_for_contract(contract: u64, receive_fee: &PaymentFee) -> u64 {
     invoice
 }
 
-/// Given the `requested_amount`, compute the total that the user will pay including gateway and federation (transaction) fees.
-fn compute_send_amount(
-    requested_amount: Amount,
-    fed_base: u64,
-    fed_ppm: u64,
-    send_fee: PaymentFee,
-) -> u64 {
-    let contract_amount = send_fee.add_to(requested_amount.msats);
-    let fed_fee =
-        fed_base + (((fed_ppm as f64) / 1_000_000.0) * contract_amount.msats as f64) as u64;
-    contract_amount.msats + fed_fee
-}
-
 #[cfg(test)]
 mod tests {
     use fedimint_lnv2_common::gateway_api::PaymentFee;
 
-    use crate::multimint::{compute_send_amount, gross_invoice_for_contract};
+    use crate::multimint::gross_invoice_for_contract;
 
     #[test]
     fn verify_gross_invoice_for_contract() {
@@ -5175,19 +5252,5 @@ mod tests {
             parts_per_million: 0,
         };
         assert_eq!(gross_invoice_for_contract(contract, &zero), contract);
-    }
-
-    #[test]
-    fn verify_lnv2_send_amount() {
-        let send_amount = compute_send_amount(
-            fedimint_core::Amount::from_sats(1_000),
-            1_000,
-            100,
-            PaymentFee {
-                base: fedimint_core::Amount::from_sats(50),
-                parts_per_million: 5_000,
-            },
-        );
-        assert_eq!(send_amount, 1_056_105);
     }
 }
