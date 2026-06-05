@@ -22,6 +22,7 @@ use fedimint_client::{
     },
     module_init::ClientModuleInitRegistry,
     secret::RootSecretStrategy,
+    transaction::FeeQuote,
     Client, ClientHandleArc, OperationId,
 };
 use fedimint_connectors::{Connectivity, ConnectorRegistry, PeerStatus as FedimintPeerStatus};
@@ -3364,21 +3365,18 @@ impl Multimint {
         // Both mint modules quote the exact fee by dry-running their real change
         // generation against the wallet's current note inventory (which includes
         // consolidation/rebalancing), rather than estimating the note
-        // representation.
-        if let Ok(mintv2) = client.get_first_module::<MintV2Module>() {
+        // representation. They return the same module-agnostic
+        // `fedimint_client::transaction::FeeQuote`, so the breakdown maps onto
+        // `ReissueFees` the same way regardless of which mint module quoted it.
+        let quote: FeeQuote = if let Ok(mintv2) = client.get_first_module::<MintV2Module>() {
             let ecash_obj = decode_prefixed::<ECash>(FEDIMINT_PREFIX, &ecash)?;
-            let quote = mintv2.receive_fee_quote(&ecash_obj).await?;
-            return Ok(ReissueFees {
-                total_msats: quote.total.msats,
-                input_msats: quote.input.msats,
-                output_msats: quote.output.msats,
-                dust_msats: quote.dust.msats,
-            });
-        }
+            mintv2.receive_fee_quote(&ecash_obj).await?
+        } else {
+            let mint = client.get_first_module::<MintClientModule>()?;
+            let notes = OOBNotes::from_str(&ecash)?;
+            mint.reissue_fee_quote(&notes).await?
+        };
 
-        let mint = client.get_first_module::<MintClientModule>()?;
-        let notes = OOBNotes::from_str(&ecash)?;
-        let quote = mint.reissue_fee_quote(&notes).await?;
         Ok(ReissueFees {
             total_msats: quote.total.msats,
             input_msats: quote.input.msats,
