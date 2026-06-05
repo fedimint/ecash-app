@@ -26,7 +26,8 @@ class TransactionItem extends StatelessWidget {
     final icon = Icon(iconData, color: Theme.of(context).colorScheme.primary);
     switch (tx.kind) {
       case TransactionKind_LightningReceive(
-        fees: final fees,
+        federationFees: final federationFees,
+        gatewayFees: final gatewayFees,
         invoiceAmount: final invoiceAmount,
         gateway: final gateway,
         payeePubkey: final payeePubkey,
@@ -45,11 +46,18 @@ class TransactionItem extends StatelessWidget {
                   true,
                   bitcoinDisplay,
                 ),
-                TransactionDetailKeys.fees: formatBalance(
-                  fees,
-                  true,
-                  bitcoinDisplay,
-                ),
+                if (federationFees > BigInt.zero)
+                  TransactionDetailKeys.federationFee: formatBalance(
+                    federationFees,
+                    true,
+                    bitcoinDisplay,
+                  ),
+                if (gatewayFees > BigInt.zero)
+                  TransactionDetailKeys.gatewayFee: formatBalance(
+                    gatewayFees,
+                    true,
+                    bitcoinDisplay,
+                  ),
                 TransactionDetailKeys.gateway: gateway,
                 TransactionDetailKeys.payeePublicKey: payeePubkey,
                 TransactionDetailKeys.paymentHash: paymentHash,

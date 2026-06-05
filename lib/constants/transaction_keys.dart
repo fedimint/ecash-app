@@ -8,6 +8,8 @@ class TransactionDetailKeys {
   static const String totalAmount = 'Total Amount';
   static const String receivedAmount = 'Received Amount';
   static const String fees = 'Fees';
+  static const String federationFee = 'Federation Fee';
+  static const String gatewayFee = 'Gateway Fee';
   static const String ecash = 'Ecash';
   static const String timestamp = 'Timestamp';
   static const String txid = 'Txid';

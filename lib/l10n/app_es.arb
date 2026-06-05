@@ -125,6 +125,8 @@
   "txDetailTotalAmount": "Monto Total",
   "txDetailReceivedAmount": "Monto Recibido",
   "txDetailFees": "Comisiones",
+  "txDetailFederationFee": "Comisión de Federación",
+  "txDetailGatewayFee": "Comisión de Pasarela",
   "txDetailTimestamp": "Marca de tiempo",
   "txDetailTxid": "ID de transacción",
   "txDetailAddress": "Dirección",

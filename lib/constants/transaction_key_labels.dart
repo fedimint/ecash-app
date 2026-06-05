@@ -10,6 +10,8 @@ String localizedTxLabel(AppLocalizations l10n, String key) {
     TransactionDetailKeys.totalAmount => l10n.txDetailTotalAmount,
     TransactionDetailKeys.receivedAmount => l10n.txDetailReceivedAmount,
     TransactionDetailKeys.fees => l10n.txDetailFees,
+    TransactionDetailKeys.federationFee => l10n.txDetailFederationFee,
+    TransactionDetailKeys.gatewayFee => l10n.txDetailGatewayFee,
     TransactionDetailKeys.ecash => l10n.ecash,
     TransactionDetailKeys.timestamp => l10n.txDetailTimestamp,
     TransactionDetailKeys.txid => l10n.txDetailTxid,

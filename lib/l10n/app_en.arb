@@ -456,6 +456,10 @@
 
   "txDetailFees": "Fees",
   "@txDetailFees": {},
+  "txDetailFederationFee": "Federation Fee",
+  "@txDetailFederationFee": {},
+  "txDetailGatewayFee": "Gateway Fee",
+  "@txDetailGatewayFee": {},
 
   "txDetailTimestamp": "Timestamp",
   "@txDetailTimestamp": {},

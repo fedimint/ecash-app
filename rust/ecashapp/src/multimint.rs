@@ -152,13 +152,16 @@ pub struct ReissueFees {
 }
 
 /// Result of pricing a Lightning receive. `invoice_msats` is the invoice's face
-/// value (what the payer pays); `fee_msats` is the total fee actually charged at
-/// that amount (gateway + on-federation), so `invoice_msats - fee_msats` is what
-/// the receiver is credited. `fee_msats` is quoted at `invoice_msats`, not at the
-/// requested amount, so it matches what the federation really deducts.
+/// value (what the payer pays). The fee is broken out into its two sources:
+/// `federation_fee_msats` (on-federation: lightning input fee + mint output fees
+/// + dust) and `gateway_fee_msats` (the gateway's off-chain routing fee, always
+/// 0 for LNv1). The receiver is credited `invoice_msats - federation_fee_msats -
+/// gateway_fee_msats`. Both are quoted at `invoice_msats`, not the requested
+/// amount, so they match what is really deducted.
 pub struct ReceiveAmount {
     pub invoice_msats: u64,
-    pub fee_msats: u64,
+    pub federation_fee_msats: u64,
+    pub gateway_fee_msats: u64,
 }
 
 /// Ecash produced by a send, in whichever encoding the federation's mint module
@@ -290,12 +293,15 @@ pub struct Transaction {
 #[derive(Debug, Serialize, Clone)]
 pub enum TransactionKind {
     LightningReceive {
-        /// The realized fee (gateway + on-federation), as quoted at the invoice
-        /// amount when the invoice was created.
-        fees: u64,
+        /// On-federation fee (lightning input fee + mint output fees + dust), as
+        /// quoted at the invoice amount when the invoice was created.
+        federation_fees: u64,
+        /// Gateway off-chain routing fee; always 0 for LNv1.
+        gateway_fees: u64,
         /// The invoice's face value (what the payer pays). `invoice_amount -
-        /// fees` is what was credited; the transaction's `amount` is the
-        /// requested amount shown in the history list.
+        /// federation_fees - gateway_fees` is what was credited; the
+        /// transaction's `amount` is the requested amount shown in the history
+        /// list.
         invoice_amount: u64,
         gateway: String,
         payee_pubkey: String,
@@ -1817,13 +1823,15 @@ impl Multimint {
         federation_id: &FederationId,
         amount_msats_with_fees: u64,
         amount_msats_without_fees: u64,
-        fee_msats: u64,
+        federation_fee_msats: u64,
+        gateway_fee_msats: u64,
         gateway: SafeUrl,
         is_lnv2: bool,
     ) -> anyhow::Result<(Bolt11Invoice, OperationId)> {
         let amount_with_fees = Amount::from_msats(amount_msats_with_fees);
         let amount_without_fees = Amount::from_msats(amount_msats_without_fees);
-        let fee = Amount::from_msats(fee_msats);
+        let federation_fee = Amount::from_msats(federation_fee_msats);
+        let gateway_fee = Amount::from_msats(gateway_fee_msats);
         info_to_flutter(format!("Amount with fees: {amount_with_fees:?}")).await;
         info_to_flutter(format!("Amount without fees: {amount_without_fees:?}")).await;
         let client = self
@@ -1839,7 +1847,8 @@ impl Multimint {
                 &client,
                 amount_with_fees,
                 amount_without_fees,
-                fee,
+                federation_fee,
+                gateway_fee,
                 gateway.clone(),
             )
             .await
@@ -1851,9 +1860,15 @@ impl Multimint {
         }
 
         info_to_flutter("Using LNv1 for the actual invoice").await;
-        let (invoice, operation_id) =
-            Self::receive_lnv1(&client, amount_with_fees, amount_without_fees, fee, gateway)
-                .await?;
+        let (invoice, operation_id) = Self::receive_lnv1(
+            &client,
+            amount_with_fees,
+            amount_without_fees,
+            federation_fee,
+            gateway_fee,
+            gateway,
+        )
+        .await?;
 
         // Spawn new task that awaits the payment in case the user clicks away
         self.spawn_await_receive(*federation_id, operation_id);
@@ -1907,14 +1922,16 @@ impl Multimint {
         client: &ClientHandleArc,
         amount_with_fees: Amount,
         amount_without_fees: Amount,
-        fee: Amount,
+        federation_fee: Amount,
+        gateway_fee: Amount,
         gateway: SafeUrl,
     ) -> anyhow::Result<(Bolt11Invoice, OperationId)> {
         let lnv2 = client.get_first_module::<fedimint_lnv2_client::LightningClientModule>()?;
         let custom_meta = json!({
             "amount": amount_without_fees,
             "amount_with_fees": amount_with_fees,
-            "fees": fee,
+            "federation_fees": federation_fee,
+            "gateway_fees": gateway_fee,
             "gateway_url": gateway,
         });
         let (invoice, operation_id) = lnv2
@@ -1933,14 +1950,16 @@ impl Multimint {
         client: &ClientHandleArc,
         amount_with_fees: Amount,
         amount_without_fees: Amount,
-        fee: Amount,
+        federation_fee: Amount,
+        gateway_fee: Amount,
         gateway_url: SafeUrl,
     ) -> anyhow::Result<(Bolt11Invoice, OperationId)> {
         let lnv1 = client.get_first_module::<LightningClientModule>()?;
         let custom_meta = json!({
             "amount": amount_without_fees,
             "amount_with_fees": amount_with_fees,
-            "fees": fee,
+            "federation_fees": federation_fee,
+            "gateway_fees": gateway_fee,
             "gateway_url": gateway_url,
         });
         let gateways = lnv1.list_gateways().await;
@@ -1997,30 +2016,31 @@ impl Multimint {
             // on-federation receive fee, credits at least `requested`. `fed_fee` is
             // that fee quoted at the solved contract amount, so `credited` is what
             // the receiver actually nets from the federation.
-            let (contract, fed_fee) =
+            let (contract, federation_fee_msats) =
                 solve_gross_for_net(requested, |gross| lnv2.receive_fee_quote(gross)).await?;
-            let credited = contract.saturating_sub(fed_fee);
 
             // Gateway layer: invert the off-chain routing fee so the gateway funds
-            // the contract with at least `contract` msats. The total fee is the
-            // gateway's cut plus the federation fee, i.e. `invoice - credited`.
+            // the contract with at least `contract` msats. The gateway's cut is the
+            // difference between the invoice and the contract it funds.
             let invoice_msats = gross_invoice_for_contract(contract, &routing_info.receive_fee);
             return Ok(ReceiveAmount {
                 invoice_msats,
-                fee_msats: invoice_msats.saturating_sub(credited),
+                federation_fee_msats,
+                gateway_fee_msats: invoice_msats.saturating_sub(contract),
             });
         }
 
         // LNv1 has no gateway or lightning routing fee, but claiming the incoming
         // contract still mints ecash, so the mint output fees (quoted the same way)
         // must be covered. There is no gateway layer, so the invoice equals the
-        // solved gross amount and the fee is the federation fee quoted at it.
+        // solved gross amount and the only fee is the federation fee quoted at it.
         let ln = client.get_first_module::<LightningClientModule>()?;
-        let (invoice_msats, fee_msats) =
+        let (invoice_msats, federation_fee_msats) =
             solve_gross_for_net(requested, |gross| ln.receive_fee_quote(gross)).await?;
         Ok(ReceiveAmount {
             invoice_msats,
-            fee_msats,
+            federation_fee_msats,
+            gateway_fee_msats: 0,
         })
     }
 
@@ -2761,18 +2781,23 @@ impl Multimint {
                                     )
                                     .expect("Could not parse to Amount")
                                     .msats;
-                                    // Realized fee stored at invoice creation;
-                                    // older transactions predate it, so fall back
-                                    // to the invoice-minus-requested estimate.
-                                    let fees = receive
-                                        .custom_meta
-                                        .get("fees")
-                                        .and_then(|v| from_value::<Amount>(v.clone()).ok())
-                                        .map(|a| a.msats)
-                                        .unwrap_or(amount_with_fees - amount);
+                                    // Per-source fees stored at invoice creation.
+                                    // Fall back through the earlier combined `fees`
+                                    // key, then the invoice-minus-requested
+                                    // estimate, for transactions that predate them.
+                                    let federation_fees =
+                                        read_meta_msats(&receive.custom_meta, "federation_fees")
+                                            .or_else(|| {
+                                                read_meta_msats(&receive.custom_meta, "fees")
+                                            })
+                                            .unwrap_or(amount_with_fees - amount);
+                                    let gateway_fees =
+                                        read_meta_msats(&receive.custom_meta, "gateway_fees")
+                                            .unwrap_or(0);
                                     Some(Transaction {
                                         kind: TransactionKind::LightningReceive {
-                                            fees,
+                                            federation_fees,
+                                            gateway_fees,
                                             invoice_amount: amount_with_fees,
                                             gateway: receive.gateway.to_string(),
                                             payee_pubkey: bolt11.get_payee_pub_key().to_string(),
@@ -3274,17 +3299,18 @@ impl Multimint {
         )
         .expect("Could not parse SafeUrl")
         .to_string();
-        // Realized fee stored at invoice creation; older transactions predate it,
-        // so fall back to the invoice-minus-requested estimate.
-        let fees = custom_meta
-            .get("fees")
-            .and_then(|v| from_value::<Amount>(v.clone()).ok())
-            .map(|a| a.msats)
+        // Per-source fees stored at invoice creation. Fall back through the
+        // earlier combined `fees` key, then the invoice-minus-requested estimate,
+        // for transactions that predate them.
+        let federation_fees = read_meta_msats(&custom_meta, "federation_fees")
+            .or_else(|| read_meta_msats(&custom_meta, "fees"))
             .unwrap_or(amount_with_fees - amount);
+        let gateway_fees = read_meta_msats(&custom_meta, "gateway_fees").unwrap_or(0);
         match receive_outcome {
             Some(LnReceiveState::Claimed) => Some(Transaction {
                 kind: TransactionKind::LightningReceive {
-                    fees,
+                    federation_fees,
+                    gateway_fees,
                     invoice_amount: amount_with_fees,
                     gateway,
                     payee_pubkey: invoice.get_payee_pub_key().to_string(),
@@ -5053,6 +5079,16 @@ impl Multimint {
 /// more change notes), this iterates to a fixed point. The fee is monotonic
 /// non-decreasing in `gross`, so the sequence increases until it stabilizes; the
 /// `next <= gross` break guarantees `gross - fee(gross) >= requested`.
+/// Reads a key from a lightning receive's `custom_meta` as msats, treating the
+/// stored value as a serialized [`Amount`]. Returns `None` if the key is absent
+/// or unparseable (e.g. transactions created before the key existed).
+fn read_meta_msats(custom_meta: &serde_json::Value, key: &str) -> Option<u64> {
+    custom_meta
+        .get(key)
+        .and_then(|v| from_value::<Amount>(v.clone()).ok())
+        .map(|a| a.msats)
+}
+
 /// Returns `(gross, fee)` where `fee` is the quote taken at the returned `gross`
 /// — i.e. the fee the federation actually charges for that amount, not the fee
 /// at `requested`. The two differ when the (step-valued) fee moves between

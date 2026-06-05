@@ -246,7 +246,8 @@ pub async fn receive(
     federation_id: &FederationId,
     amount_msats_with_fees: u64,
     amount_msats_without_fees: u64,
-    fee_msats: u64,
+    federation_fee_msats: u64,
+    gateway_fee_msats: u64,
     gateway: String,
     is_lnv2: bool,
 ) -> anyhow::Result<(String, OperationId, String, String, u64)> {
@@ -257,7 +258,8 @@ pub async fn receive(
             federation_id,
             amount_msats_with_fees,
             amount_msats_without_fees,
-            fee_msats,
+            federation_fee_msats,
+            gateway_fee_msats,
             gateway,
             is_lnv2,
         )

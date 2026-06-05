@@ -477,7 +477,8 @@ abstract class RustLibApi extends BaseApi {
     required FederationId federationId,
     required BigInt amountMsatsWithFees,
     required BigInt amountMsatsWithoutFees,
-    required BigInt feeMsats,
+    required BigInt federationFeeMsats,
+    required BigInt gatewayFeeMsats,
     required SafeUrl gateway,
     required bool isLnv2,
   });
@@ -1065,7 +1066,8 @@ abstract class RustLibApi extends BaseApi {
     required FederationId federationId,
     required BigInt amountMsatsWithFees,
     required BigInt amountMsatsWithoutFees,
-    required BigInt feeMsats,
+    required BigInt federationFeeMsats,
+    required BigInt gatewayFeeMsats,
     required String gateway,
     required bool isLnv2,
   });
@@ -4566,7 +4568,8 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
     required FederationId federationId,
     required BigInt amountMsatsWithFees,
     required BigInt amountMsatsWithoutFees,
-    required BigInt feeMsats,
+    required BigInt federationFeeMsats,
+    required BigInt gatewayFeeMsats,
     required SafeUrl gateway,
     required bool isLnv2,
   }) {
@@ -4584,7 +4587,8 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           );
           sse_encode_u_64(amountMsatsWithFees, serializer);
           sse_encode_u_64(amountMsatsWithoutFees, serializer);
-          sse_encode_u_64(feeMsats, serializer);
+          sse_encode_u_64(federationFeeMsats, serializer);
+          sse_encode_u_64(gatewayFeeMsats, serializer);
           sse_encode_Auto_Owned_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerSafeUrl(
             gateway,
             serializer,
@@ -4608,7 +4612,8 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           federationId,
           amountMsatsWithFees,
           amountMsatsWithoutFees,
-          feeMsats,
+          federationFeeMsats,
+          gatewayFeeMsats,
           gateway,
           isLnv2,
         ],
@@ -4625,7 +4630,8 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           "federationId",
           "amountMsatsWithFees",
           "amountMsatsWithoutFees",
-          "feeMsats",
+          "federationFeeMsats",
+          "gatewayFeeMsats",
           "gateway",
           "isLnv2",
         ],
@@ -9492,7 +9498,8 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
     required FederationId federationId,
     required BigInt amountMsatsWithFees,
     required BigInt amountMsatsWithoutFees,
-    required BigInt feeMsats,
+    required BigInt federationFeeMsats,
+    required BigInt gatewayFeeMsats,
     required String gateway,
     required bool isLnv2,
   }) {
@@ -9506,7 +9513,8 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           );
           sse_encode_u_64(amountMsatsWithFees, serializer);
           sse_encode_u_64(amountMsatsWithoutFees, serializer);
-          sse_encode_u_64(feeMsats, serializer);
+          sse_encode_u_64(federationFeeMsats, serializer);
+          sse_encode_u_64(gatewayFeeMsats, serializer);
           sse_encode_String(gateway, serializer);
           sse_encode_bool(isLnv2, serializer);
           pdeCallFfi(
@@ -9526,7 +9534,8 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           federationId,
           amountMsatsWithFees,
           amountMsatsWithoutFees,
-          feeMsats,
+          federationFeeMsats,
+          gatewayFeeMsats,
           gateway,
           isLnv2,
         ],
@@ -9541,7 +9550,8 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
       "federationId",
       "amountMsatsWithFees",
       "amountMsatsWithoutFees",
-      "feeMsats",
+      "federationFeeMsats",
+      "gatewayFeeMsats",
       "gateway",
       "isLnv2",
     ],
@@ -12651,11 +12661,12 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   ReceiveAmount dco_decode_receive_amount(dynamic raw) {
     // Codec=Dco (DartCObject based), see doc to use other codecs
     final arr = raw as List<dynamic>;
-    if (arr.length != 2)
-      throw Exception('unexpected arr length: expect 2 but see ${arr.length}');
+    if (arr.length != 3)
+      throw Exception('unexpected arr length: expect 3 but see ${arr.length}');
     return ReceiveAmount(
       invoiceMsats: dco_decode_u_64(arr[0]),
-      feeMsats: dco_decode_u_64(arr[1]),
+      federationFeeMsats: dco_decode_u_64(arr[1]),
+      gatewayFeeMsats: dco_decode_u_64(arr[2]),
     );
   }
 
@@ -13027,11 +13038,12 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
     switch (raw[0]) {
       case 0:
         return TransactionKind_LightningReceive(
-          fees: dco_decode_u_64(raw[1]),
-          invoiceAmount: dco_decode_u_64(raw[2]),
-          gateway: dco_decode_String(raw[3]),
-          payeePubkey: dco_decode_String(raw[4]),
-          paymentHash: dco_decode_String(raw[5]),
+          federationFees: dco_decode_u_64(raw[1]),
+          gatewayFees: dco_decode_u_64(raw[2]),
+          invoiceAmount: dco_decode_u_64(raw[3]),
+          gateway: dco_decode_String(raw[4]),
+          payeePubkey: dco_decode_String(raw[5]),
+          paymentHash: dco_decode_String(raw[6]),
         );
       case 1:
         return TransactionKind_LightningSend(
@@ -15472,10 +15484,12 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   ReceiveAmount sse_decode_receive_amount(SseDeserializer deserializer) {
     // Codec=Sse (Serialization based), see doc to use other codecs
     var var_invoiceMsats = sse_decode_u_64(deserializer);
-    var var_feeMsats = sse_decode_u_64(deserializer);
+    var var_federationFeeMsats = sse_decode_u_64(deserializer);
+    var var_gatewayFeeMsats = sse_decode_u_64(deserializer);
     return ReceiveAmount(
       invoiceMsats: var_invoiceMsats,
-      feeMsats: var_feeMsats,
+      federationFeeMsats: var_federationFeeMsats,
+      gatewayFeeMsats: var_gatewayFeeMsats,
     );
   }
 
@@ -15785,13 +15799,15 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
     var tag_ = sse_decode_i_32(deserializer);
     switch (tag_) {
       case 0:
-        var var_fees = sse_decode_u_64(deserializer);
+        var var_federationFees = sse_decode_u_64(deserializer);
+        var var_gatewayFees = sse_decode_u_64(deserializer);
         var var_invoiceAmount = sse_decode_u_64(deserializer);
         var var_gateway = sse_decode_String(deserializer);
         var var_payeePubkey = sse_decode_String(deserializer);
         var var_paymentHash = sse_decode_String(deserializer);
         return TransactionKind_LightningReceive(
-          fees: var_fees,
+          federationFees: var_federationFees,
+          gatewayFees: var_gatewayFees,
           invoiceAmount: var_invoiceAmount,
           gateway: var_gateway,
           payeePubkey: var_payeePubkey,
@@ -18299,7 +18315,8 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   void sse_encode_receive_amount(ReceiveAmount self, SseSerializer serializer) {
     // Codec=Sse (Serialization based), see doc to use other codecs
     sse_encode_u_64(self.invoiceMsats, serializer);
-    sse_encode_u_64(self.feeMsats, serializer);
+    sse_encode_u_64(self.federationFeeMsats, serializer);
+    sse_encode_u_64(self.gatewayFeeMsats, serializer);
   }
 
   @protected
@@ -18600,14 +18617,16 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
     // Codec=Sse (Serialization based), see doc to use other codecs
     switch (self) {
       case TransactionKind_LightningReceive(
-        fees: final fees,
+        federationFees: final federationFees,
+        gatewayFees: final gatewayFees,
         invoiceAmount: final invoiceAmount,
         gateway: final gateway,
         payeePubkey: final payeePubkey,
         paymentHash: final paymentHash,
       ):
         sse_encode_i_32(0, serializer);
-        sse_encode_u_64(fees, serializer);
+        sse_encode_u_64(federationFees, serializer);
+        sse_encode_u_64(gatewayFees, serializer);
         sse_encode_u_64(invoiceAmount, serializer);
         sse_encode_String(gateway, serializer);
         sse_encode_String(payeePubkey, serializer);
@@ -19682,7 +19701,8 @@ class MultimintImpl extends RustOpaque implements Multimint {
     required FederationId federationId,
     required BigInt amountMsatsWithFees,
     required BigInt amountMsatsWithoutFees,
-    required BigInt feeMsats,
+    required BigInt federationFeeMsats,
+    required BigInt gatewayFeeMsats,
     required SafeUrl gateway,
     required bool isLnv2,
   }) => RustLib.instance.api.crateMultimintMultimintReceive(
@@ -19690,7 +19710,8 @@ class MultimintImpl extends RustOpaque implements Multimint {
     federationId: federationId,
     amountMsatsWithFees: amountMsatsWithFees,
     amountMsatsWithoutFees: amountMsatsWithoutFees,
-    feeMsats: feeMsats,
+    federationFeeMsats: federationFeeMsats,
+    gatewayFeeMsats: gatewayFeeMsats,
     gateway: gateway,
     isLnv2: isLnv2,
   );

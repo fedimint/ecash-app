@@ -75,14 +75,16 @@ Future<(String, OperationId, String, String, BigInt)> receive({
   required FederationId federationId,
   required BigInt amountMsatsWithFees,
   required BigInt amountMsatsWithoutFees,
-  required BigInt feeMsats,
+  required BigInt federationFeeMsats,
+  required BigInt gatewayFeeMsats,
   required String gateway,
   required bool isLnv2,
 }) => RustLib.instance.api.crateReceive(
   federationId: federationId,
   amountMsatsWithFees: amountMsatsWithFees,
   amountMsatsWithoutFees: amountMsatsWithoutFees,
-  feeMsats: feeMsats,
+  federationFeeMsats: federationFeeMsats,
+  gatewayFeeMsats: gatewayFeeMsats,
   gateway: gateway,
   isLnv2: isLnv2,
 );

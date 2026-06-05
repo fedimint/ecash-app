@@ -11,7 +11,7 @@ import 'package:flutter_rust_bridge/flutter_rust_bridge_for_generated.dart';
 import 'package:freezed_annotation/freezed_annotation.dart' hide protected;
 part 'multimint.freezed.dart';
 
-// These functions are ignored because they are not marked as `pub`: `await_receive_lnv1`, `await_receive_lnv2`, `await_send_lnv1`, `await_send_lnv2`, `backup`, `build_client`, `cache_btc_price`, `cache_federation_meta`, `check_for_update`, `compute_send_amount`, `extract_recipient_pk_from_lnv2_lnurl`, `finish_active_subscriptions`, `from_peg_out_fees`, `get_client_database`, `get_client`, `get_ecash_amount_from_meta`, `get_lnv1_amount_from_meta`, `get_lnv1_receive_tx`, `get_lnv1_send_tx`, `get_lnv2_amount_from_meta`, `get_mintv2_receive_amount`, `get_or_build_temp_client`, `get_recurringd_federations`, `get_url`, `gross_invoice_for_contract`, `init_recovery_progress_cache`, `invoice_routes_back_to_federation`, `is_newer_version`, `list_gateways`, `lnv1_select_gateway`, `lnv1_update_gateway_cache`, `lnv2_gateways`, `lnv2_select_gateway`, `load_clients`, `pay_lnv1`, `pay_lnv2`, `receive_lnv1`, `receive_lnv2`, `remove_existing_ln_address`, `remove_recovery_progress_cache`, `run_migrations`, `sign_challenge`, `solve_gross_for_net`, `spawn_await_ecash_reissue`, `spawn_await_ecash_send`, `spawn_await_mintv2_receive`, `spawn_await_receive`, `spawn_await_recurringd_receive`, `spawn_await_send`, `spawn_await_withdraw`, `spawn_backfill_recipient_pk`, `spawn_cache_task`, `spawn_lnv2_event_listener`, `spawn_recovery_progress`, `spawn_recurring_invoice_listener`, `update_recovery_progress_cache`, `wait_for_recovery`, `wallet_network`
+// These functions are ignored because they are not marked as `pub`: `await_receive_lnv1`, `await_receive_lnv2`, `await_send_lnv1`, `await_send_lnv2`, `backup`, `build_client`, `cache_btc_price`, `cache_federation_meta`, `check_for_update`, `compute_send_amount`, `extract_recipient_pk_from_lnv2_lnurl`, `finish_active_subscriptions`, `from_peg_out_fees`, `get_client_database`, `get_client`, `get_ecash_amount_from_meta`, `get_lnv1_amount_from_meta`, `get_lnv1_receive_tx`, `get_lnv1_send_tx`, `get_lnv2_amount_from_meta`, `get_mintv2_receive_amount`, `get_or_build_temp_client`, `get_recurringd_federations`, `get_url`, `gross_invoice_for_contract`, `init_recovery_progress_cache`, `invoice_routes_back_to_federation`, `is_newer_version`, `list_gateways`, `lnv1_select_gateway`, `lnv1_update_gateway_cache`, `lnv2_gateways`, `lnv2_select_gateway`, `load_clients`, `pay_lnv1`, `pay_lnv2`, `read_meta_msats`, `receive_lnv1`, `receive_lnv2`, `remove_existing_ln_address`, `remove_recovery_progress_cache`, `run_migrations`, `sign_challenge`, `solve_gross_for_net`, `spawn_await_ecash_reissue`, `spawn_await_ecash_send`, `spawn_await_mintv2_receive`, `spawn_await_receive`, `spawn_await_recurringd_receive`, `spawn_await_send`, `spawn_await_withdraw`, `spawn_backfill_recipient_pk`, `spawn_cache_task`, `spawn_lnv2_event_listener`, `spawn_recovery_progress`, `spawn_recurring_invoice_listener`, `update_recovery_progress_cache`, `wait_for_recovery`, `wallet_network`
 // These types are ignored because they are neither used by any `pub` functions nor (for structs and enums) marked `#[frb(unignore)]`: `ClientType`, `LNAddressRegisterRequest`, `LNAddressRemoveRequest`, `OnChainWithdrawalMeta`, `WrappedEcash`
 // These function are ignored because they are on traits that is not defined in current crate (put an empty `#[frb]` on it to unignore): `assert_receiver_is_total_eq`, `assert_receiver_is_total_eq`, `assert_receiver_is_total_eq`, `assert_receiver_is_total_eq`, `assert_receiver_is_total_eq`, `assert_receiver_is_total_eq`, `assert_receiver_is_total_eq`, `assert_receiver_is_total_eq`, `assert_receiver_is_total_eq`, `assert_receiver_is_total_eq`, `assert_receiver_is_total_eq`, `assert_receiver_is_total_eq`, `assert_receiver_is_total_eq`, `assert_receiver_is_total_eq`, `assert_receiver_is_total_eq`, `assert_receiver_is_total_eq`, `assert_receiver_is_total_eq`, `assert_receiver_is_total_eq`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `consensus_decode_partial_from_finite_reader`, `consensus_decode_partial_from_finite_reader`, `consensus_decode_partial_from_finite_reader`, `consensus_encode`, `consensus_encode`, `consensus_encode`, `eq`, `eq`, `eq`, `eq`, `eq`, `eq`, `eq`, `eq`, `eq`, `eq`, `eq`, `eq`, `eq`, `eq`, `eq`, `eq`, `eq`, `eq`, `eq`, `eq`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `from`, `from`
 // These functions have error during generation (see debug logs or enable `stop_on_error: true` for more details): `subscribe_peer_status`
@@ -259,7 +259,8 @@ abstract class Multimint implements RustOpaqueInterface {
     required FederationId federationId,
     required BigInt amountMsatsWithFees,
     required BigInt amountMsatsWithoutFees,
-    required BigInt feeMsats,
+    required BigInt federationFeeMsats,
+    required BigInt gatewayFeeMsats,
     required SafeUrl gateway,
     required bool isLnv2,
   });
@@ -828,18 +829,28 @@ class PeerStatus {
 }
 
 /// Result of pricing a Lightning receive. `invoice_msats` is the invoice's face
-/// value (what the payer pays); `fee_msats` is the total fee actually charged at
-/// that amount (gateway + on-federation), so `invoice_msats - fee_msats` is what
-/// the receiver is credited. `fee_msats` is quoted at `invoice_msats`, not at the
-/// requested amount, so it matches what the federation really deducts.
+/// value (what the payer pays). The fee is broken out into its two sources:
+/// `federation_fee_msats` (on-federation: lightning input fee + mint output fees
+/// + dust) and `gateway_fee_msats` (the gateway's off-chain routing fee, always
+/// 0 for LNv1). The receiver is credited `invoice_msats - federation_fee_msats -
+/// gateway_fee_msats`. Both are quoted at `invoice_msats`, not the requested
+/// amount, so they match what is really deducted.
 class ReceiveAmount {
   final BigInt invoiceMsats;
-  final BigInt feeMsats;
+  final BigInt federationFeeMsats;
+  final BigInt gatewayFeeMsats;
 
-  const ReceiveAmount({required this.invoiceMsats, required this.feeMsats});
+  const ReceiveAmount({
+    required this.invoiceMsats,
+    required this.federationFeeMsats,
+    required this.gatewayFeeMsats,
+  });
 
   @override
-  int get hashCode => invoiceMsats.hashCode ^ feeMsats.hashCode;
+  int get hashCode =>
+      invoiceMsats.hashCode ^
+      federationFeeMsats.hashCode ^
+      gatewayFeeMsats.hashCode;
 
   @override
   bool operator ==(Object other) =>
@@ -847,7 +858,8 @@ class ReceiveAmount {
       other is ReceiveAmount &&
           runtimeType == other.runtimeType &&
           invoiceMsats == other.invoiceMsats &&
-          feeMsats == other.feeMsats;
+          federationFeeMsats == other.federationFeeMsats &&
+          gatewayFeeMsats == other.gatewayFeeMsats;
 }
 
 class ReissueFees {
@@ -919,13 +931,17 @@ sealed class TransactionKind with _$TransactionKind {
   const TransactionKind._();
 
   const factory TransactionKind.lightningReceive({
-    /// The realized fee (gateway + on-federation), as quoted at the invoice
-    /// amount when the invoice was created.
-    required BigInt fees,
+    /// On-federation fee (lightning input fee + mint output fees + dust), as
+    /// quoted at the invoice amount when the invoice was created.
+    required BigInt federationFees,
+
+    /// Gateway off-chain routing fee; always 0 for LNv1.
+    required BigInt gatewayFees,
 
     /// The invoice's face value (what the payer pays). `invoice_amount -
-    /// fees` is what was credited; the transaction's `amount` is the
-    /// requested amount shown in the history list.
+    /// federation_fees - gateway_fees` is what was credited; the
+    /// transaction's `amount` is the requested amount shown in the history
+    /// list.
     required BigInt invoiceAmount,
     required String gateway,
     required String payeePubkey,
