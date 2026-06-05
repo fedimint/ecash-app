@@ -224,16 +224,16 @@
         "wild": "wild"
       },
       "locked": {
-        "lastModified": 1780689891,
-        "narHash": "sha256-dz051U3bHHlwFKNajW14cdQ5NBv/HUNxqqy+Rq0dna4=",
+        "lastModified": 1780695820,
+        "narHash": "sha256-8KgyRj6Z8WT5uoTewpA8A9kKG0vAlSDOzh8sxRx/rKM=",
         "owner": "m1sterc001guy",
         "repo": "fedimint",
-        "rev": "7e724c625ce3915c6ce694290172617b08bcfb93",
+        "rev": "466718ac3ca4eb31d2d121c2c3f32b8774614b1b",
         "type": "github"
       },
       "original": {
         "owner": "m1sterc001guy",
-        "ref": "7e724c625ce3915c6ce694290172617b08bcfb93",
+        "ref": "466718ac3ca4eb31d2d121c2c3f32b8774614b1b",
         "repo": "fedimint",
         "type": "github"
       }

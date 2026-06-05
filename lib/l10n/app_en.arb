@@ -460,6 +460,8 @@
   "@txDetailFederationFee": {},
   "txDetailGatewayFee": "Gateway Fee",
   "@txDetailGatewayFee": {},
+  "txDetailBitcoinNetworkFee": "Bitcoin Network Fee",
+  "@txDetailBitcoinNetworkFee": {},
 
   "txDetailTimestamp": "Timestamp",
   "@txDetailTimestamp": {},

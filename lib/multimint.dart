@@ -358,6 +358,7 @@ abstract class Multimint implements RustOpaqueInterface {
     required String address,
     required BigInt amountSats,
     required WithdrawFees fees,
+    required BigInt federationFeeMsats,
   });
 }
 
@@ -386,6 +387,8 @@ abstract class WithdrawFees implements RustOpaqueInterface {}
 
 // Rust type: RustOpaqueMoi<flutter_rust_bridge::for_generated::RustAutoOpaqueInner<WithdrawFeesResponse>>
 abstract class WithdrawFeesResponse implements RustOpaqueInterface {
+  BigInt get federationFeeMsats;
+
   BigInt get feeAmount;
 
   double get feeRateSatsPerVb;
@@ -393,6 +396,8 @@ abstract class WithdrawFeesResponse implements RustOpaqueInterface {
   WithdrawFees get fees;
 
   int get txSizeVbytes;
+
+  set federationFeeMsats(BigInt federationFeeMsats);
 
   set feeAmount(BigInt feeAmount);
 
@@ -1024,8 +1029,14 @@ sealed class TransactionKind with _$TransactionKind {
     required String txid,
     double? feeRateSatsPerVb,
     int? txSizeVb,
+
+    /// On-chain Bitcoin miner fee, in sats.
     BigInt? feeSats,
     BigInt? totalSats,
+
+    /// On-federation fee (wallet output fee + mint funding/change fees +
+    /// dust), in msats, quoted at send time via `send_fee_quote`.
+    BigInt? federationFeeMsats,
   }) = TransactionKind_OnchainSend;
   const factory TransactionKind.ecashReceive({
     required String oobNotes,

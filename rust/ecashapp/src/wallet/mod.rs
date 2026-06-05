@@ -762,10 +762,19 @@ impl WalletHandler {
                 0.0
             };
 
+            // Federation fee for funding the on-chain output (withdrawal amount
+            // plus the miner fee) from ecash. Display-only, so degrade to 0.
+            let federation_fee_msats = walletv2
+                .send_fee_quote(bitcoin::Amount::from_sat(amount_sats + fee_sats))
+                .await
+                .map(|q| q.total.msats)
+                .unwrap_or(0);
+
             return Ok(WithdrawFeesResponse {
                 fee_amount: fee_sats,
                 fee_rate_sats_per_vb,
                 tx_size_vbytes,
+                federation_fee_msats,
                 fees: WithdrawFees::V2 { fee_sats },
             });
         }
@@ -785,10 +794,19 @@ impl WalletHandler {
             .map_err(EcashAppError::from_display)?;
         let meta = OnChainWithdrawalMeta::from_peg_out_fees(&fees);
 
+        // Federation fee for funding the on-chain output (withdrawal amount plus
+        // the miner fee) from ecash. Display-only, so degrade to 0.
+        let federation_fee_msats = wallet_module
+            .send_fee_quote(bitcoin::Amount::from_sat(amount_sats + meta.fee_sats))
+            .await
+            .map(|q| q.total.msats)
+            .unwrap_or(0);
+
         Ok(WithdrawFeesResponse {
             fee_amount: meta.fee_sats,
             fee_rate_sats_per_vb: meta.fee_rate_sats_per_vb,
             tx_size_vbytes: meta.tx_size_vb,
+            federation_fee_msats,
             fees: WithdrawFees::V1(fees),
         })
     }
@@ -818,6 +836,7 @@ impl WalletHandler {
         address: String,
         amount_sats: u64,
         fees: WithdrawFees,
+        federation_fee_msats: u64,
     ) -> EcashAppResult<OperationId> {
         match fees {
             WithdrawFees::V2 { fee_sats } => {
@@ -827,11 +846,15 @@ impl WalletHandler {
                 // `send` takes an unchecked address and validates the network itself.
                 let address = bitcoin::Address::from_str(&address)
                     .map_err(|e| EcashAppError::InvalidBitcoinAddress(e.to_string()))?;
+                // walletv2's send op stores its own typed meta, so the federation
+                // fee rides along in its custom_meta for the tx log to read back.
+                let custom_meta = serde_json::json!({ "federation_fees": federation_fee_msats });
                 let operation_id = walletv2
                     .send(
                         address,
                         bitcoin::Amount::from_sat(amount_sats),
                         Some(bitcoin::Amount::from_sat(fee_sats)),
+                        custom_meta,
                     )
                     .await
                     .map_err(EcashAppError::from_display)?;
@@ -850,7 +873,10 @@ impl WalletHandler {
                     .require_network(wallet_module.get_network())
                     .map_err(|e| EcashAppError::InvalidBitcoinAddress(e.to_string()))?;
                 let amount = bitcoin::Amount::from_sat(amount_sats);
-                let meta = OnChainWithdrawalMeta::from_peg_out_fees(&peg_out_fees);
+                let meta = OnChainWithdrawalMeta {
+                    federation_fee_msats,
+                    ..OnChainWithdrawalMeta::from_peg_out_fees(&peg_out_fees)
+                };
 
                 let operation_id = wallet_module
                     .withdraw(&address, amount, peg_out_fees, meta)

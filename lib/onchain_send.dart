@@ -39,6 +39,7 @@ class _OnchainSendState extends State<OnchainSend> {
   late TextEditingController _addressController;
   String? _feeQuote;
   BigInt? _feeAmountSats;
+  BigInt? _federationFeeMsats;
   double? _feeRateSatsPerVbyte;
   int? _txSizeVbytes;
   BigInt? _actualWithdrawalAmount;
@@ -69,6 +70,7 @@ class _OnchainSendState extends State<OnchainSend> {
       setState(() {
         _feeQuote = null;
         _feeAmountSats = null;
+        _federationFeeMsats = null;
         _feeRateSatsPerVbyte = null;
         _txSizeVbytes = null;
         _actualWithdrawalAmount = null;
@@ -100,6 +102,7 @@ class _OnchainSendState extends State<OnchainSend> {
         setState(() {
           _actualWithdrawalAmount = maxAmount;
           _feeAmountSats = feesResponse.feeAmount;
+          _federationFeeMsats = feesResponse.federationFeeMsats;
           _feeRateSatsPerVbyte = feesResponse.feeRateSatsPerVb;
           _txSizeVbytes = feesResponse.txSizeVbytes;
           _fees = feesResponse.fees;
@@ -116,6 +119,7 @@ class _OnchainSendState extends State<OnchainSend> {
         setState(() {
           _actualWithdrawalAmount = widget.amountSats;
           _feeAmountSats = feesResponse.feeAmount;
+          _federationFeeMsats = feesResponse.federationFeeMsats;
           _feeRateSatsPerVbyte = feesResponse.feeRateSatsPerVb;
           _txSizeVbytes = feesResponse.txSizeVbytes;
           _fees = feesResponse.fees;
@@ -186,6 +190,7 @@ class _OnchainSendState extends State<OnchainSend> {
         address: _addressController.text.trim(),
         amountSats: _actualWithdrawalAmount!,
         fees: _fees!,
+        federationFeeMsats: _federationFeeMsats ?? BigInt.zero,
       );
 
       final txid = await awaitWithdraw(
@@ -231,6 +236,10 @@ class _OnchainSendState extends State<OnchainSend> {
     final bitcoinDisplay = context.select<PreferencesProvider, BitcoinDisplay>(
       (prefs) => prefs.bitcoinDisplay,
     );
+    // Honor the app-level "show msats" setting for all amounts in the quote.
+    final showMsats = context.select<PreferencesProvider, bool>(
+      (prefs) => prefs.showMsats,
+    );
     final canWithdraw =
         _feeQuote != null &&
         _actualWithdrawalAmount != null &&
@@ -257,7 +266,7 @@ class _OnchainSendState extends State<OnchainSend> {
               Text(
                 formatBalance(
                   widget.amountSats * BigInt.from(1000),
-                  false,
+                  showMsats,
                   bitcoinDisplay,
                 ),
                 style: Theme.of(context).textTheme.headlineSmall,
@@ -343,7 +352,7 @@ class _OnchainSendState extends State<OnchainSend> {
                         label: TransactionDetailKeys.amount,
                         value: formatBalance(
                           _actualWithdrawalAmount! * BigInt.from(1000),
-                          false,
+                          showMsats,
                           bitcoinDisplay,
                         ),
                       ),
@@ -356,19 +365,30 @@ class _OnchainSendState extends State<OnchainSend> {
                         value: '${_txSizeVbytes ?? 0} vB',
                       ),
                       CopyableDetailRow(
-                        label: TransactionDetailKeys.fee,
+                        label: context.l10n.txDetailBitcoinNetworkFee,
                         value: formatBalance(
                           _feeAmountSats! * BigInt.from(1000),
-                          false,
+                          showMsats,
                           bitcoinDisplay,
                         ),
                       ),
+                      if (_federationFeeMsats != null &&
+                          _federationFeeMsats! > BigInt.zero)
+                        CopyableDetailRow(
+                          label: context.l10n.txDetailFederationFee,
+                          value: formatBalance(
+                            _federationFeeMsats!,
+                            showMsats,
+                            bitcoinDisplay,
+                          ),
+                        ),
                       CopyableDetailRow(
                         label: TransactionDetailKeys.total,
                         value: formatBalance(
                           (_actualWithdrawalAmount! + _feeAmountSats!) *
-                              BigInt.from(1000),
-                          false,
+                                  BigInt.from(1000) +
+                              (_federationFeeMsats ?? BigInt.zero),
+                          showMsats,
                           bitcoinDisplay,
                         ),
                       ),

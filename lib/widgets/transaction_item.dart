@@ -18,11 +18,17 @@ class TransactionItem extends StatelessWidget {
 
   void _onTap(
     BuildContext context,
-    String formattedAmount,
     String formattedDate,
     IconData iconData,
   ) async {
-    final bitcoinDisplay = context.read<PreferencesProvider>().bitcoinDisplay;
+    final prefs = context.read<PreferencesProvider>();
+    final bitcoinDisplay = prefs.bitcoinDisplay;
+    // Transaction details honor the app-level "show msats" setting for all
+    // amounts, rather than hardcoding the precision per row.
+    final showMsats = prefs.showMsats;
+    String fmt(BigInt? msats) =>
+        formatBalance(msats, showMsats, bitcoinDisplay);
+    final formattedAmount = fmt(tx.amount);
     final icon = Icon(iconData, color: Theme.of(context).colorScheme.primary);
     switch (tx.kind) {
       case TransactionKind_LightningReceive(
@@ -41,23 +47,11 @@ class TransactionItem extends StatelessWidget {
               details: {
                 // Show the invoice's face value (what the payer paid), matching
                 // the request screen; the list headline keeps the received amount.
-                TransactionDetailKeys.amount: formatBalance(
-                  invoiceAmount,
-                  true,
-                  bitcoinDisplay,
-                ),
+                TransactionDetailKeys.amount: fmt(invoiceAmount),
                 if (federationFees > BigInt.zero)
-                  TransactionDetailKeys.federationFee: formatBalance(
-                    federationFees,
-                    true,
-                    bitcoinDisplay,
-                  ),
+                  TransactionDetailKeys.federationFee: fmt(federationFees),
                 if (gatewayFees > BigInt.zero)
-                  TransactionDetailKeys.gatewayFee: formatBalance(
-                    gatewayFees,
-                    true,
-                    bitcoinDisplay,
-                  ),
+                  TransactionDetailKeys.gatewayFee: fmt(gatewayFees),
                 TransactionDetailKeys.gateway: gateway,
                 TransactionDetailKeys.payeePublicKey: payeePubkey,
                 TransactionDetailKeys.paymentHash: paymentHash,
@@ -87,17 +81,9 @@ class TransactionItem extends StatelessWidget {
                   TransactionDetailKeys.lnAddress: lnAddress,
                 TransactionDetailKeys.amount: formattedAmount,
                 if (federationFees > BigInt.zero)
-                  TransactionDetailKeys.federationFee: formatBalance(
-                    federationFees,
-                    true,
-                    bitcoinDisplay,
-                  ),
+                  TransactionDetailKeys.federationFee: fmt(federationFees),
                 if (gatewayFees > BigInt.zero)
-                  TransactionDetailKeys.gatewayFee: formatBalance(
-                    gatewayFees,
-                    true,
-                    bitcoinDisplay,
-                  ),
+                  TransactionDetailKeys.gatewayFee: fmt(gatewayFees),
                 TransactionDetailKeys.gateway: gateway,
                 TransactionDetailKeys.paymentHash: paymentHash,
                 TransactionDetailKeys.preimage: preimage,
@@ -120,11 +106,7 @@ class TransactionItem extends StatelessWidget {
               tx: tx,
               details: {
                 TransactionDetailKeys.amount: formattedAmount,
-                TransactionDetailKeys.fees: formatBalance(
-                  fees,
-                  true,
-                  bitcoinDisplay,
-                ),
+                TransactionDetailKeys.fees: fmt(fees),
                 TransactionDetailKeys.ecash: oobNotes,
                 TransactionDetailKeys.timestamp: formattedDate,
               },
@@ -144,16 +126,8 @@ class TransactionItem extends StatelessWidget {
             (inputFees ?? BigInt.zero) +
             (outputFees ?? BigInt.zero) +
             (dust ?? BigInt.zero);
-        final receivedAmount = formatBalance(
-          tx.amount - totalFees,
-          true,
-          bitcoinDisplay,
-        );
-        // Show the total at full (msat) precision, matching the fees and the
-        // received amount, so Total − (input + output + dust) = Received lines
-        // up exactly. The default `formattedAmount` truncates to whole sats,
-        // which hides the send-side rounding surplus and breaks the arithmetic.
-        final totalAmount = formatBalance(tx.amount, true, bitcoinDisplay);
+        final receivedAmount = fmt(tx.amount - totalFees);
+        final totalAmount = fmt(tx.amount);
         showAppModalBottomSheet(
           context: context,
           childBuilder: () async {
@@ -162,21 +136,9 @@ class TransactionItem extends StatelessWidget {
               details: {
                 TransactionDetailKeys.totalAmount: totalAmount,
                 TransactionDetailKeys.receivedAmount: receivedAmount,
-                TransactionDetailKeys.inputFees: formatBalance(
-                  inputFees,
-                  true,
-                  bitcoinDisplay,
-                ),
-                TransactionDetailKeys.outputFees: formatBalance(
-                  outputFees,
-                  true,
-                  bitcoinDisplay,
-                ),
-                TransactionDetailKeys.dust: formatBalance(
-                  dust,
-                  true,
-                  bitcoinDisplay,
-                ),
+                TransactionDetailKeys.inputFees: fmt(inputFees),
+                TransactionDetailKeys.outputFees: fmt(outputFees),
+                TransactionDetailKeys.dust: fmt(dust),
                 TransactionDetailKeys.ecash: oobNotes,
                 TransactionDetailKeys.timestamp: formattedDate,
               },
@@ -232,6 +194,7 @@ class TransactionItem extends StatelessWidget {
         txSizeVb: final txSizeVb,
         feeSats: final feeSats,
         totalSats: final totalSats,
+        federationFeeMsats: final federationFeeMsats,
       ):
         Map<String, String> details = {
           TransactionDetailKeys.amount: formattedAmount,
@@ -257,18 +220,22 @@ class TransactionItem extends StatelessWidget {
           details[TransactionDetailKeys.maxTxSize] = '$txSizeVb vB';
         }
         if (feeSats != null) {
-          details[TransactionDetailKeys.fee] = formatBalance(
+          details[TransactionDetailKeys.bitcoinNetworkFee] = fmt(
             feeSats * BigInt.from(1000),
-            false,
-            bitcoinDisplay,
+          );
+        }
+        if (federationFeeMsats != null && federationFeeMsats > BigInt.zero) {
+          details[TransactionDetailKeys.federationFee] = fmt(
+            federationFeeMsats,
           );
         }
         if (totalSats != null) {
-          details[TransactionDetailKeys.total] = formatBalance(
-            totalSats * BigInt.from(1000),
-            false,
-            bitcoinDisplay,
-          );
+          // All-in cost: on-chain total (amount + miner fee) plus the
+          // federation fee deducted from the ecash balance.
+          final totalMsats =
+              totalSats * BigInt.from(1000) +
+              (federationFeeMsats ?? BigInt.zero);
+          details[TransactionDetailKeys.total] = fmt(totalMsats);
         }
 
         showAppModalBottomSheet(
@@ -328,8 +295,7 @@ class TransactionItem extends StatelessWidget {
       margin: const EdgeInsets.symmetric(vertical: 6),
       color: Theme.of(context).colorScheme.surface,
       child: ListTile(
-        onTap:
-            () => _onTap(context, formattedAmount, formattedDate, moduleIcon),
+        onTap: () => _onTap(context, formattedDate, moduleIcon),
         leading: CircleAvatar(
           backgroundColor:
               isIncoming

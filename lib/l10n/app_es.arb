@@ -127,6 +127,7 @@
   "txDetailFees": "Comisiones",
   "txDetailFederationFee": "Comisión de Federación",
   "txDetailGatewayFee": "Comisión de Pasarela",
+  "txDetailBitcoinNetworkFee": "Comisión de Red Bitcoin",
   "txDetailTimestamp": "Marca de tiempo",
   "txDetailTxid": "ID de transacción",
   "txDetailAddress": "Dirección",

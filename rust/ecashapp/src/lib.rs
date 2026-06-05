@@ -703,10 +703,17 @@ pub async fn withdraw_to_address(
     address: String,
     amount_sats: u64,
     fees: WithdrawFees,
+    federation_fee_msats: u64,
 ) -> Result<OperationId, EcashAppError> {
     let multimint = get_multimint();
     multimint
-        .withdraw_to_address(federation_id, address, amount_sats, fees)
+        .withdraw_to_address(
+            federation_id,
+            address,
+            amount_sats,
+            fees,
+            federation_fee_msats,
+        )
         .await
 }
 

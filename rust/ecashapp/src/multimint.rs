@@ -127,9 +127,13 @@ impl Display for FederationSelector {
 
 #[derive(Clone, PartialEq, Serialize, Debug)]
 pub struct WithdrawFeesResponse {
+    /// On-chain Bitcoin miner fee, in sats.
     pub fee_amount: u64,
     pub fee_rate_sats_per_vb: f64,
     pub tx_size_vbytes: u32,
+    /// On-federation fee (wallet peg-out output fee + mint funding/change fees +
+    /// dust), in msats, quoted via the wallet module's `send_fee_quote`.
+    pub federation_fee_msats: u64,
     pub fees: WithdrawFees,
 }
 
@@ -328,8 +332,12 @@ pub enum TransactionKind {
         txid: String,
         fee_rate_sats_per_vb: Option<f64>,
         tx_size_vb: Option<u32>,
+        /// On-chain Bitcoin miner fee, in sats.
         fee_sats: Option<u64>,
         total_sats: Option<u64>,
+        /// On-federation fee (wallet output fee + mint funding/change fees +
+        /// dust), in msats, quoted at send time via `send_fee_quote`.
+        federation_fee_msats: Option<u64>,
     },
     EcashReceive {
         oob_notes: String,
@@ -573,15 +581,23 @@ pub(crate) struct OnChainWithdrawalMeta {
     pub(crate) fee_rate_sats_per_vb: f64,
     pub(crate) tx_size_vb: u32,
     pub(crate) fee_sats: u64,
+    /// On-federation fee (msats) quoted at send time; 0 when only the bitcoin
+    /// fee is being summarized.
+    #[serde(default)]
+    pub(crate) federation_fee_msats: u64,
 }
 
 impl OnChainWithdrawalMeta {
+    /// Summarizes the bitcoin (miner) fee from `PegOutFees`. The federation fee
+    /// is layered on separately when the meta is stored (see
+    /// `WalletHandler::withdraw_to_address`); here it defaults to 0.
     pub(crate) fn from_peg_out_fees(fees: &PegOutFees) -> Self {
         Self {
             fee_rate_sats_per_vb: fees.fee_rate.sats_per_kvb as f64 / 1000.0,
             // ceil(weight / 4) using only u32
             tx_size_vb: fees.total_weight.div_ceil(4) as u32,
             fee_sats: fees.amount().to_sat(),
+            federation_fee_msats: 0,
         }
     }
 }
@@ -3168,6 +3184,9 @@ impl Multimint {
                                             total_sats: meta
                                                 .as_ref()
                                                 .map(|m| m.fee_sats + amount.to_sat()),
+                                            federation_fee_msats: meta
+                                                .as_ref()
+                                                .map(|m| m.federation_fee_msats),
                                         },
                                         amount: Amount::from_sats(amount.to_sat()).msats,
                                         timestamp,
@@ -3231,6 +3250,10 @@ impl Multimint {
                                     let fee_rate_sats_per_vb = tx_size_vb.and_then(|vb| {
                                         (vb > 0).then(|| fee_sats as f64 / f64::from(vb))
                                     });
+                                    // Federation fee stored in custom_meta at send
+                                    // time (older sends predate it).
+                                    let federation_fee_msats =
+                                        read_meta_u64(&send.custom_meta, "federation_fees");
 
                                     Some(Transaction {
                                         kind: TransactionKind::OnchainSend {
@@ -3240,6 +3263,7 @@ impl Multimint {
                                             tx_size_vb,
                                             fee_sats: Some(fee_sats),
                                             total_sats: Some(send.value.to_sat() + fee_sats),
+                                            federation_fee_msats,
                                         },
                                         amount,
                                         timestamp,
@@ -3846,10 +3870,11 @@ impl Multimint {
         address: String,
         amount_sats: u64,
         fees: WithdrawFees,
+        federation_fee_msats: u64,
     ) -> EcashAppResult<OperationId> {
         let client = self.get_client(federation_id).await?;
         self.wallet_handler
-            .withdraw_to_address(&client, address, amount_sats, fees)
+            .withdraw_to_address(&client, address, amount_sats, fees, federation_fee_msats)
             .await
     }
 

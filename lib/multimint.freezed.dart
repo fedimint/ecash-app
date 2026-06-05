@@ -2601,15 +2601,19 @@ as String,
 
 
 class TransactionKind_OnchainSend extends TransactionKind {
-  const TransactionKind_OnchainSend({required this.address, required this.txid, this.feeRateSatsPerVb, this.txSizeVb, this.feeSats, this.totalSats}): super._();
+  const TransactionKind_OnchainSend({required this.address, required this.txid, this.feeRateSatsPerVb, this.txSizeVb, this.feeSats, this.totalSats, this.federationFeeMsats}): super._();
   
 
  final  String address;
  final  String txid;
  final  double? feeRateSatsPerVb;
  final  int? txSizeVb;
+/// On-chain Bitcoin miner fee, in sats.
  final  BigInt? feeSats;
  final  BigInt? totalSats;
+/// On-federation fee (wallet output fee + mint funding/change fees +
+/// dust), in msats, quoted at send time via `send_fee_quote`.
+ final  BigInt? federationFeeMsats;
 
 /// Create a copy of TransactionKind
 /// with the given fields replaced by the non-null parameter values.
@@ -2621,16 +2625,16 @@ $TransactionKind_OnchainSendCopyWith<TransactionKind_OnchainSend> get copyWith =
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is TransactionKind_OnchainSend&&(identical(other.address, address) || other.address == address)&&(identical(other.txid, txid) || other.txid == txid)&&(identical(other.feeRateSatsPerVb, feeRateSatsPerVb) || other.feeRateSatsPerVb == feeRateSatsPerVb)&&(identical(other.txSizeVb, txSizeVb) || other.txSizeVb == txSizeVb)&&(identical(other.feeSats, feeSats) || other.feeSats == feeSats)&&(identical(other.totalSats, totalSats) || other.totalSats == totalSats));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is TransactionKind_OnchainSend&&(identical(other.address, address) || other.address == address)&&(identical(other.txid, txid) || other.txid == txid)&&(identical(other.feeRateSatsPerVb, feeRateSatsPerVb) || other.feeRateSatsPerVb == feeRateSatsPerVb)&&(identical(other.txSizeVb, txSizeVb) || other.txSizeVb == txSizeVb)&&(identical(other.feeSats, feeSats) || other.feeSats == feeSats)&&(identical(other.totalSats, totalSats) || other.totalSats == totalSats)&&(identical(other.federationFeeMsats, federationFeeMsats) || other.federationFeeMsats == federationFeeMsats));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,address,txid,feeRateSatsPerVb,txSizeVb,feeSats,totalSats);
+int get hashCode => Object.hash(runtimeType,address,txid,feeRateSatsPerVb,txSizeVb,feeSats,totalSats,federationFeeMsats);
 
 @override
 String toString() {
-  return 'TransactionKind.onchainSend(address: $address, txid: $txid, feeRateSatsPerVb: $feeRateSatsPerVb, txSizeVb: $txSizeVb, feeSats: $feeSats, totalSats: $totalSats)';
+  return 'TransactionKind.onchainSend(address: $address, txid: $txid, feeRateSatsPerVb: $feeRateSatsPerVb, txSizeVb: $txSizeVb, feeSats: $feeSats, totalSats: $totalSats, federationFeeMsats: $federationFeeMsats)';
 }
 
 
@@ -2641,7 +2645,7 @@ abstract mixin class $TransactionKind_OnchainSendCopyWith<$Res> implements $Tran
   factory $TransactionKind_OnchainSendCopyWith(TransactionKind_OnchainSend value, $Res Function(TransactionKind_OnchainSend) _then) = _$TransactionKind_OnchainSendCopyWithImpl;
 @useResult
 $Res call({
- String address, String txid, double? feeRateSatsPerVb, int? txSizeVb, BigInt? feeSats, BigInt? totalSats
+ String address, String txid, double? feeRateSatsPerVb, int? txSizeVb, BigInt? feeSats, BigInt? totalSats, BigInt? federationFeeMsats
 });
 
 
@@ -2658,7 +2662,7 @@ class _$TransactionKind_OnchainSendCopyWithImpl<$Res>
 
 /// Create a copy of TransactionKind
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') $Res call({Object? address = null,Object? txid = null,Object? feeRateSatsPerVb = freezed,Object? txSizeVb = freezed,Object? feeSats = freezed,Object? totalSats = freezed,}) {
+@pragma('vm:prefer-inline') $Res call({Object? address = null,Object? txid = null,Object? feeRateSatsPerVb = freezed,Object? txSizeVb = freezed,Object? feeSats = freezed,Object? totalSats = freezed,Object? federationFeeMsats = freezed,}) {
   return _then(TransactionKind_OnchainSend(
 address: null == address ? _self.address : address // ignore: cast_nullable_to_non_nullable
 as String,txid: null == txid ? _self.txid : txid // ignore: cast_nullable_to_non_nullable
@@ -2666,6 +2670,7 @@ as String,feeRateSatsPerVb: freezed == feeRateSatsPerVb ? _self.feeRateSatsPerVb
 as double?,txSizeVb: freezed == txSizeVb ? _self.txSizeVb : txSizeVb // ignore: cast_nullable_to_non_nullable
 as int?,feeSats: freezed == feeSats ? _self.feeSats : feeSats // ignore: cast_nullable_to_non_nullable
 as BigInt?,totalSats: freezed == totalSats ? _self.totalSats : totalSats // ignore: cast_nullable_to_non_nullable
+as BigInt?,federationFeeMsats: freezed == federationFeeMsats ? _self.federationFeeMsats : federationFeeMsats // ignore: cast_nullable_to_non_nullable
 as BigInt?,
   ));
 }
