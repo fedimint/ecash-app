@@ -151,6 +151,16 @@ pub struct ReissueFees {
     pub dust_msats: u64,
 }
 
+/// Result of pricing a Lightning receive. `invoice_msats` is the invoice's face
+/// value (what the payer pays); `fee_msats` is the total fee actually charged at
+/// that amount (gateway + on-federation), so `invoice_msats - fee_msats` is what
+/// the receiver is credited. `fee_msats` is quoted at `invoice_msats`, not at the
+/// requested amount, so it matches what the federation really deducts.
+pub struct ReceiveAmount {
+    pub invoice_msats: u64,
+    pub fee_msats: u64,
+}
+
 /// Ecash produced by a send, in whichever encoding the federation's mint module
 /// uses: walletv1 `OOBNotes` or mintv2 `ECash` (base32). [`OOBNotesWrapper`]
 /// hides the difference behind `amount_msats()`/`to_string()`.
@@ -280,7 +290,13 @@ pub struct Transaction {
 #[derive(Debug, Serialize, Clone)]
 pub enum TransactionKind {
     LightningReceive {
+        /// The realized fee (gateway + on-federation), as quoted at the invoice
+        /// amount when the invoice was created.
         fees: u64,
+        /// The invoice's face value (what the payer pays). `invoice_amount -
+        /// fees` is what was credited; the transaction's `amount` is the
+        /// requested amount shown in the history list.
+        invoice_amount: u64,
         gateway: String,
         payee_pubkey: String,
         payment_hash: String,
@@ -1801,11 +1817,13 @@ impl Multimint {
         federation_id: &FederationId,
         amount_msats_with_fees: u64,
         amount_msats_without_fees: u64,
+        fee_msats: u64,
         gateway: SafeUrl,
         is_lnv2: bool,
     ) -> anyhow::Result<(Bolt11Invoice, OperationId)> {
         let amount_with_fees = Amount::from_msats(amount_msats_with_fees);
         let amount_without_fees = Amount::from_msats(amount_msats_without_fees);
+        let fee = Amount::from_msats(fee_msats);
         info_to_flutter(format!("Amount with fees: {amount_with_fees:?}")).await;
         info_to_flutter(format!("Amount without fees: {amount_without_fees:?}")).await;
         let client = self
@@ -1821,6 +1839,7 @@ impl Multimint {
                 &client,
                 amount_with_fees,
                 amount_without_fees,
+                fee,
                 gateway.clone(),
             )
             .await
@@ -1833,7 +1852,8 @@ impl Multimint {
 
         info_to_flutter("Using LNv1 for the actual invoice").await;
         let (invoice, operation_id) =
-            Self::receive_lnv1(&client, amount_with_fees, amount_without_fees, gateway).await?;
+            Self::receive_lnv1(&client, amount_with_fees, amount_without_fees, fee, gateway)
+                .await?;
 
         // Spawn new task that awaits the payment in case the user clicks away
         self.spawn_await_receive(*federation_id, operation_id);
@@ -1887,12 +1907,14 @@ impl Multimint {
         client: &ClientHandleArc,
         amount_with_fees: Amount,
         amount_without_fees: Amount,
+        fee: Amount,
         gateway: SafeUrl,
     ) -> anyhow::Result<(Bolt11Invoice, OperationId)> {
         let lnv2 = client.get_first_module::<fedimint_lnv2_client::LightningClientModule>()?;
         let custom_meta = json!({
             "amount": amount_without_fees,
             "amount_with_fees": amount_with_fees,
+            "fees": fee,
             "gateway_url": gateway,
         });
         let (invoice, operation_id) = lnv2
@@ -1911,12 +1933,14 @@ impl Multimint {
         client: &ClientHandleArc,
         amount_with_fees: Amount,
         amount_without_fees: Amount,
+        fee: Amount,
         gateway_url: SafeUrl,
     ) -> anyhow::Result<(Bolt11Invoice, OperationId)> {
         let lnv1 = client.get_first_module::<LightningClientModule>()?;
         let custom_meta = json!({
             "amount": amount_without_fees,
             "amount_with_fees": amount_with_fees,
+            "fees": fee,
             "gateway_url": gateway_url,
         });
         let gateways = lnv1.list_gateways().await;
@@ -1945,12 +1969,7 @@ impl Multimint {
         gateway_url: SafeUrl,
         is_lnv2: bool,
         amount: Amount,
-    ) -> anyhow::Result<u64> {
-        // LNv1 has no receiving fees.
-        if !is_lnv2 {
-            return Ok(amount.msats);
-        }
-
+    ) -> anyhow::Result<ReceiveAmount> {
         let client = self
             .clients
             .read()
@@ -1958,28 +1977,51 @@ impl Multimint {
             .get(federation_id)
             .ok_or(anyhow!("No federation exists"))?
             .clone();
-        let lnv2 = client.get_first_module::<fedimint_lnv2_client::LightningClientModule>()?;
+        let requested = amount.msats;
 
-        let routing_info = lnv2
-            .routing_info(&gateway_url)
-            .await?
-            .ok_or(anyhow!("Gateway has no routing info"))?;
+        // LNv2 has two fee layers. The gateway's off-chain routing fee is taken on
+        // the invoice amount, and the gateway forwards the remainder into the
+        // on-federation incoming contract. Claiming that contract is a federation
+        // transaction whose fee — the lightning input fee, the mint output fees,
+        // and any sub-denomination dust — is quoted by a dry-run via
+        // `receive_fee_quote`. We invert both layers so the sender covers
+        // everything and exactly `requested` is credited.
+        if is_lnv2 {
+            let lnv2 = client.get_first_module::<fedimint_lnv2_client::LightningClientModule>()?;
+            let routing_info = lnv2
+                .routing_info(&gateway_url)
+                .await?
+                .ok_or(anyhow!("Gateway has no routing info"))?;
 
-        let client_module_config = client.config().await.modules;
-        let config = client_module_config
-            .get(&lnv2.id)
-            .ok_or(anyhow!("Could not get LNv2 config"))?
-            .cast::<fedimint_lnv2_common::config::LightningClientConfig>()?;
-        let fed_base = config.fee_consensus.base.msats;
-        let fed_ppm = config.fee_consensus.parts_per_million;
+            // Federation layer: smallest contract amount that, after the
+            // on-federation receive fee, credits at least `requested`. `fed_fee` is
+            // that fee quoted at the solved contract amount, so `credited` is what
+            // the receiver actually nets from the federation.
+            let (contract, fed_fee) =
+                solve_gross_for_net(requested, |gross| lnv2.receive_fee_quote(gross)).await?;
+            let credited = contract.saturating_sub(fed_fee);
 
-        Ok(compute_receive_amount(
-            amount,
-            fed_base,
-            fed_ppm,
-            routing_info.receive_fee.base.msats,
-            routing_info.receive_fee.parts_per_million,
-        ))
+            // Gateway layer: invert the off-chain routing fee so the gateway funds
+            // the contract with at least `contract` msats. The total fee is the
+            // gateway's cut plus the federation fee, i.e. `invoice - credited`.
+            let invoice_msats = gross_invoice_for_contract(contract, &routing_info.receive_fee);
+            return Ok(ReceiveAmount {
+                invoice_msats,
+                fee_msats: invoice_msats.saturating_sub(credited),
+            });
+        }
+
+        // LNv1 has no gateway or lightning routing fee, but claiming the incoming
+        // contract still mints ecash, so the mint output fees (quoted the same way)
+        // must be covered. There is no gateway layer, so the invoice equals the
+        // solved gross amount and the fee is the federation fee quoted at it.
+        let ln = client.get_first_module::<LightningClientModule>()?;
+        let (invoice_msats, fee_msats) =
+            solve_gross_for_net(requested, |gross| ln.receive_fee_quote(gross)).await?;
+        Ok(ReceiveAmount {
+            invoice_msats,
+            fee_msats,
+        })
     }
 
     pub async fn select_send_gateway(
@@ -2719,9 +2761,19 @@ impl Multimint {
                                     )
                                     .expect("Could not parse to Amount")
                                     .msats;
+                                    // Realized fee stored at invoice creation;
+                                    // older transactions predate it, so fall back
+                                    // to the invoice-minus-requested estimate.
+                                    let fees = receive
+                                        .custom_meta
+                                        .get("fees")
+                                        .and_then(|v| from_value::<Amount>(v.clone()).ok())
+                                        .map(|a| a.msats)
+                                        .unwrap_or(amount_with_fees - amount);
                                     Some(Transaction {
                                         kind: TransactionKind::LightningReceive {
-                                            fees: amount_with_fees - amount,
+                                            fees,
+                                            invoice_amount: amount_with_fees,
                                             gateway: receive.gateway.to_string(),
                                             payee_pubkey: bolt11.get_payee_pub_key().to_string(),
                                             payment_hash: bolt11.payment_hash().to_string(),
@@ -3222,10 +3274,18 @@ impl Multimint {
         )
         .expect("Could not parse SafeUrl")
         .to_string();
+        // Realized fee stored at invoice creation; older transactions predate it,
+        // so fall back to the invoice-minus-requested estimate.
+        let fees = custom_meta
+            .get("fees")
+            .and_then(|v| from_value::<Amount>(v.clone()).ok())
+            .map(|a| a.msats)
+            .unwrap_or(amount_with_fees - amount);
         match receive_outcome {
             Some(LnReceiveState::Claimed) => Some(Transaction {
                 kind: TransactionKind::LightningReceive {
-                    fees: amount_with_fees - amount,
+                    fees,
+                    invoice_amount: amount_with_fees,
                     gateway,
                     payee_pubkey: invoice.get_payee_pub_key().to_string(),
                     payment_hash: invoice.payment_hash().to_string(),
@@ -4983,53 +5043,61 @@ impl Multimint {
 
 /// Using the given federation (transaction) and gateway fees, compute the value `X` such that `X - total_fee == requested_amount`.
 /// This is non-trivial because the federation and gateway fees both contain a ppm fee, making each fee calculation dependent on each other.
-fn compute_receive_amount(
-    requested_amount: Amount,
-    fed_base: u64,
-    fed_ppm: u64,
-    gw_base: u64,
-    gw_ppm: u64,
-) -> u64 {
-    let requested_f = requested_amount.msats as f64;
-    let fed_base_f = fed_base as f64;
-    let fed_ppm_f = fed_ppm as f64;
-    let gw_base_f = gw_base as f64;
-    let gw_ppm_f = gw_ppm as f64;
-    let x_after_gateway = (requested_f + fed_base_f) / (1.0 - fed_ppm_f / 1_000_000.0);
-    let x_f = (x_after_gateway + gw_base_f) / (1.0 - gw_ppm_f / 1_000_000.0);
-    let x_ceil = receive_amount_after_fees(x_f.ceil() as u64, gw_base, gw_ppm, fed_base, fed_ppm);
-
-    if x_ceil == requested_amount.msats {
-        x_f.ceil() as u64
-    } else {
-        // The above logic is not exactly correct due to rounding, so it could be off by a few msats
-        // Until the above math is fixed, just iterate from the overestimate down until we find a value
-        // that, after fees, matches the `requested_amount`
-        let max = x_f.ceil() as u64;
-        let requested = requested_amount.msats;
-        for i in (requested..=max).rev() {
-            let receive = receive_amount_after_fees(i, gw_base, gw_ppm, fed_base, fed_ppm);
-            if receive == requested {
-                return i;
-            }
+/// Smallest gross amount to submit as a lightning receive so that, after the
+/// on-federation receive fee, at least `requested` msats are credited.
+///
+/// `quote` is a module's `receive_fee_quote` (lnv1 or lnv2): a point-in-time
+/// dry-run returning the federation-transaction fee (lightning input fee + mint
+/// output fees + dust) for receiving `gross` msats, computed against the current
+/// note inventory. Because that fee depends on `gross` (more value can require
+/// more change notes), this iterates to a fixed point. The fee is monotonic
+/// non-decreasing in `gross`, so the sequence increases until it stabilizes; the
+/// `next <= gross` break guarantees `gross - fee(gross) >= requested`.
+/// Returns `(gross, fee)` where `fee` is the quote taken at the returned `gross`
+/// — i.e. the fee the federation actually charges for that amount, not the fee
+/// at `requested`. The two differ when the (step-valued) fee moves between
+/// iterations; `fee` is the realized one, so callers can display it truthfully.
+async fn solve_gross_for_net<F, Fut>(requested: u64, quote: F) -> anyhow::Result<(u64, u64)>
+where
+    F: Fn(Amount) -> Fut,
+    Fut: std::future::Future<Output = anyhow::Result<FeeQuote>>,
+{
+    let mut gross = requested;
+    let mut fee = 0;
+    // 64 is a safety cap; convergence is normally reached in one or two steps
+    // since the fee is tiny relative to the amount.
+    for _ in 0..64 {
+        fee = quote(Amount::from_msats(gross)).await?.total.msats;
+        let next = requested.saturating_add(fee);
+        if next <= gross {
+            // `fee` is the quote at the current (returned) `gross`.
+            break;
         }
-        max
+        gross = next;
     }
+    Ok((gross, fee))
 }
 
-/// Using the given federation (transaction) and gateway fees, compute amount that will be leftover from `x` after fees
-/// have been subtracted.
-fn receive_amount_after_fees(
-    x: u64,
-    gw_base: u64,
-    gw_ppm: u64,
-    fed_base: u64,
-    fed_ppm: u64,
-) -> u64 {
-    let gw_fee = gw_base + ((gw_ppm as f64 / 1_000_000.0) * x as f64) as u64;
-    let after_gateway = x - gw_fee;
-    let fed_fee = fed_base + ((fed_ppm as f64 / 1_000_000.0) * after_gateway as f64) as u64;
-    after_gateway - fed_fee
+/// Smallest invoice amount whose value, after the gateway's off-chain receive
+/// fee is deducted, funds the on-federation contract with at least `contract`
+/// msats. This inverts [`PaymentFee::subtract_from`], correcting the closed-form
+/// estimate for integer-division rounding.
+fn gross_invoice_for_contract(contract: u64, receive_fee: &PaymentFee) -> u64 {
+    let ppm = receive_fee.parts_per_million as f64;
+    let base = receive_fee.base.msats;
+    // invoice - (base + ppm * invoice / 1e6) = contract
+    //   => invoice = (contract + base) / (1 - ppm / 1e6)
+    let estimate = ((contract + base) as f64 / (1.0 - ppm / 1_000_000.0)).ceil() as u64;
+    let mut invoice = estimate.max(contract);
+    // Walk up until the post-fee contract reaches `contract` ...
+    while receive_fee.subtract_from(invoice).msats < contract {
+        invoice += 1;
+    }
+    // ... then back down to the smallest invoice that still satisfies it.
+    while invoice > contract && receive_fee.subtract_from(invoice - 1).msats >= contract {
+        invoice -= 1;
+    }
+    invoice
 }
 
 /// Given the `requested_amount`, compute the total that the user will pay including gateway and federation (transaction) fees.
@@ -5049,35 +5117,28 @@ fn compute_send_amount(
 mod tests {
     use fedimint_lnv2_common::gateway_api::PaymentFee;
 
-    use crate::multimint::{
-        compute_receive_amount, compute_send_amount, receive_amount_after_fees,
-    };
+    use crate::multimint::{compute_send_amount, gross_invoice_for_contract};
 
     #[test]
-    fn verify_lnv2_receive_amount() {
-        let invoice_amount = compute_receive_amount(
-            fedimint_core::Amount::from_sats(1_000),
-            1_000,
-            100,
-            50_000,
-            5_000,
-        );
-        assert_eq!(invoice_amount, 1_056_381);
+    fn verify_gross_invoice_for_contract() {
+        let fee = PaymentFee {
+            base: fedimint_core::Amount::from_msats(1_000),
+            parts_per_million: 5_000,
+        };
 
-        let leftover = receive_amount_after_fees(1_056_381, 50_000, 5_000, 1_000, 100);
-        assert_eq!(leftover, 1_000_000);
+        // The invoice must fund the contract with at least its amount, ...
+        let contract = 1_000_000;
+        let invoice = gross_invoice_for_contract(contract, &fee);
+        assert!(fee.subtract_from(invoice).msats >= contract);
+        // ... and be the smallest such invoice (one msat less falls short).
+        assert!(fee.subtract_from(invoice - 1).msats < contract);
 
-        let invoice_amount = compute_receive_amount(
-            fedimint_core::Amount::from_sats(54_561),
-            1_000,
-            100,
-            5_555,
-            1_234,
-        );
-        assert_eq!(invoice_amount, 54_640_437);
-
-        let leftover = receive_amount_after_fees(54_640_437, 5_555, 1_234, 1_000, 100);
-        assert_eq!(leftover, 54_561_000);
+        // A zero-fee gateway (e.g. loopback) leaves the contract unchanged.
+        let zero = PaymentFee {
+            base: fedimint_core::Amount::ZERO,
+            parts_per_million: 0,
+        };
+        assert_eq!(gross_invoice_for_contract(contract, &zero), contract);
     }
 
     #[test]

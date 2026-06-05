@@ -23,8 +23,8 @@ use flutter_rust_bridge::frb;
 use futures_util::StreamExt;
 use multimint::{
     FederationMeta, FederationSelector, LightningSendOutcome, LogLevel, Multimint,
-    MultimintCreation, MultimintEvent, OOBNotesWrapper, PaymentPreviewWithGateways, ReissueFees,
-    Transaction, Utxo, WithdrawFees, WithdrawFeesResponse,
+    MultimintCreation, MultimintEvent, OOBNotesWrapper, PaymentPreviewWithGateways, ReceiveAmount,
+    ReissueFees, Transaction, Utxo, WithdrawFees, WithdrawFeesResponse,
 };
 use nostr::{NWCConnectionInfo, NostrClient, PublicFederation};
 use serde::Serialize;
@@ -246,6 +246,7 @@ pub async fn receive(
     federation_id: &FederationId,
     amount_msats_with_fees: u64,
     amount_msats_without_fees: u64,
+    fee_msats: u64,
     gateway: String,
     is_lnv2: bool,
 ) -> anyhow::Result<(String, OperationId, String, String, u64)> {
@@ -256,6 +257,7 @@ pub async fn receive(
             federation_id,
             amount_msats_with_fees,
             amount_msats_without_fees,
+            fee_msats,
             gateway,
             is_lnv2,
         )
@@ -278,7 +280,7 @@ pub async fn compute_receive_amount_with_fees(
     gateway_url: String,
     is_lnv2: bool,
     amount_msats: u64,
-) -> anyhow::Result<u64> {
+) -> anyhow::Result<ReceiveAmount> {
     let gateway_url = SafeUrl::parse(&gateway_url)?;
     let amount = Amount::from_msats(amount_msats);
     let multimint = get_multimint();

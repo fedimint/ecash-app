@@ -2339,10 +2339,16 @@ $TransactionKindCopyWith(TransactionKind _, $Res Function(TransactionKind) __);
 
 
 class TransactionKind_LightningReceive extends TransactionKind {
-  const TransactionKind_LightningReceive({required this.fees, required this.gateway, required this.payeePubkey, required this.paymentHash}): super._();
+  const TransactionKind_LightningReceive({required this.fees, required this.invoiceAmount, required this.gateway, required this.payeePubkey, required this.paymentHash}): super._();
   
 
+/// The realized fee (gateway + on-federation), as quoted at the invoice
+/// amount when the invoice was created.
  final  BigInt fees;
+/// The invoice's face value (what the payer pays). `invoice_amount -
+/// fees` is what was credited; the transaction's `amount` is the
+/// requested amount shown in the history list.
+ final  BigInt invoiceAmount;
  final  String gateway;
  final  String payeePubkey;
  final  String paymentHash;
@@ -2357,16 +2363,16 @@ $TransactionKind_LightningReceiveCopyWith<TransactionKind_LightningReceive> get 
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is TransactionKind_LightningReceive&&(identical(other.fees, fees) || other.fees == fees)&&(identical(other.gateway, gateway) || other.gateway == gateway)&&(identical(other.payeePubkey, payeePubkey) || other.payeePubkey == payeePubkey)&&(identical(other.paymentHash, paymentHash) || other.paymentHash == paymentHash));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is TransactionKind_LightningReceive&&(identical(other.fees, fees) || other.fees == fees)&&(identical(other.invoiceAmount, invoiceAmount) || other.invoiceAmount == invoiceAmount)&&(identical(other.gateway, gateway) || other.gateway == gateway)&&(identical(other.payeePubkey, payeePubkey) || other.payeePubkey == payeePubkey)&&(identical(other.paymentHash, paymentHash) || other.paymentHash == paymentHash));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,fees,gateway,payeePubkey,paymentHash);
+int get hashCode => Object.hash(runtimeType,fees,invoiceAmount,gateway,payeePubkey,paymentHash);
 
 @override
 String toString() {
-  return 'TransactionKind.lightningReceive(fees: $fees, gateway: $gateway, payeePubkey: $payeePubkey, paymentHash: $paymentHash)';
+  return 'TransactionKind.lightningReceive(fees: $fees, invoiceAmount: $invoiceAmount, gateway: $gateway, payeePubkey: $payeePubkey, paymentHash: $paymentHash)';
 }
 
 
@@ -2377,7 +2383,7 @@ abstract mixin class $TransactionKind_LightningReceiveCopyWith<$Res> implements 
   factory $TransactionKind_LightningReceiveCopyWith(TransactionKind_LightningReceive value, $Res Function(TransactionKind_LightningReceive) _then) = _$TransactionKind_LightningReceiveCopyWithImpl;
 @useResult
 $Res call({
- BigInt fees, String gateway, String payeePubkey, String paymentHash
+ BigInt fees, BigInt invoiceAmount, String gateway, String payeePubkey, String paymentHash
 });
 
 
@@ -2394,9 +2400,10 @@ class _$TransactionKind_LightningReceiveCopyWithImpl<$Res>
 
 /// Create a copy of TransactionKind
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') $Res call({Object? fees = null,Object? gateway = null,Object? payeePubkey = null,Object? paymentHash = null,}) {
+@pragma('vm:prefer-inline') $Res call({Object? fees = null,Object? invoiceAmount = null,Object? gateway = null,Object? payeePubkey = null,Object? paymentHash = null,}) {
   return _then(TransactionKind_LightningReceive(
 fees: null == fees ? _self.fees : fees // ignore: cast_nullable_to_non_nullable
+as BigInt,invoiceAmount: null == invoiceAmount ? _self.invoiceAmount : invoiceAmount // ignore: cast_nullable_to_non_nullable
 as BigInt,gateway: null == gateway ? _self.gateway : gateway // ignore: cast_nullable_to_non_nullable
 as String,payeePubkey: null == payeePubkey ? _self.payeePubkey : payeePubkey // ignore: cast_nullable_to_non_nullable
 as String,paymentHash: null == paymentHash ? _self.paymentHash : paymentHash // ignore: cast_nullable_to_non_nullable

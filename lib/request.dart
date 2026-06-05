@@ -22,6 +22,7 @@ class Request extends StatefulWidget {
   final FederationSelector fed;
   final BigInt requestedAmountMsats;
   final BigInt totalMsats;
+  final BigInt feeMsats;
   final String gateway;
   final String pubkey;
   final String paymentHash;
@@ -34,6 +35,7 @@ class Request extends StatefulWidget {
     required this.fed,
     required this.requestedAmountMsats,
     required this.totalMsats,
+    required this.feeMsats,
     required this.gateway,
     required this.pubkey,
     required this.paymentHash,
@@ -175,7 +177,7 @@ class _RequestState extends State<Request>
       (prefs) => prefs.bitcoinDisplay,
     );
     final abbreviatedInvoice = getAbbreviatedText(widget.invoice);
-    final fees = widget.totalMsats - widget.requestedAmountMsats;
+    final fees = widget.feeMsats;
 
     return Padding(
       padding: const EdgeInsets.all(20),
@@ -350,11 +352,7 @@ class _RequestState extends State<Request>
               children: [
                 CopyableDetailRow(
                   label: context.l10n.txDetailAmount,
-                  value: formatBalance(
-                    widget.requestedAmountMsats,
-                    true,
-                    bitcoinDisplay,
-                  ),
+                  value: formatBalance(widget.totalMsats, true, bitcoinDisplay),
                 ),
                 CopyableDetailRow(
                   label: context.l10n.txDetailFees,

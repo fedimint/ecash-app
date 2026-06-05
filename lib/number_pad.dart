@@ -325,7 +325,7 @@ class _NumberPadState extends State<NumberPad> {
         throw Exception('No available gateways');
       }
 
-      final contractAmount = await computeReceiveAmountWithFees(
+      final receiveAmount = await computeReceiveAmountWithFees(
         federationId: _selectedFed.federationId,
         gatewayUrl: selected.endpoint,
         isLnv2: selected.isLnv2,
@@ -335,8 +335,9 @@ class _NumberPadState extends State<NumberPad> {
       // Create the invoice
       final invoice = await receive(
         federationId: _selectedFed.federationId,
-        amountMsatsWithFees: contractAmount,
+        amountMsatsWithFees: receiveAmount.invoiceMsats,
         amountMsatsWithoutFees: requestedAmountMsats,
+        feeMsats: receiveAmount.feeMsats,
         gateway: selected.endpoint,
         isLnv2: selected.isLnv2,
       );
@@ -352,7 +353,8 @@ class _NumberPadState extends State<NumberPad> {
             fed: _selectedFed,
             operationId: invoice.$2,
             requestedAmountMsats: requestedAmountMsats,
-            totalMsats: contractAmount,
+            totalMsats: receiveAmount.invoiceMsats,
+            feeMsats: receiveAmount.feeMsats,
             gateway: selected.endpoint,
             pubkey: invoice.$3,
             paymentHash: invoice.$4,

@@ -27,6 +27,7 @@ class TransactionItem extends StatelessWidget {
     switch (tx.kind) {
       case TransactionKind_LightningReceive(
         fees: final fees,
+        invoiceAmount: final invoiceAmount,
         gateway: final gateway,
         payeePubkey: final payeePubkey,
         paymentHash: final paymentHash,
@@ -37,7 +38,13 @@ class TransactionItem extends StatelessWidget {
             return TransactionDetails(
               tx: tx,
               details: {
-                TransactionDetailKeys.amount: formattedAmount,
+                // Show the invoice's face value (what the payer paid), matching
+                // the request screen; the list headline keeps the received amount.
+                TransactionDetailKeys.amount: formatBalance(
+                  invoiceAmount,
+                  true,
+                  bitcoinDisplay,
+                ),
                 TransactionDetailKeys.fees: formatBalance(
                   fees,
                   true,

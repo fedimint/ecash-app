@@ -351,7 +351,7 @@ abstract class RustLibApi extends BaseApi {
     required Bolt11Invoice bolt11,
   });
 
-  Future<BigInt> crateMultimintMultimintComputeReceiveAmountWithFees({
+  Future<ReceiveAmount> crateMultimintMultimintComputeReceiveAmountWithFees({
     required Multimint that,
     required FederationId federationId,
     required SafeUrl gatewayUrl,
@@ -477,6 +477,7 @@ abstract class RustLibApi extends BaseApi {
     required FederationId federationId,
     required BigInt amountMsatsWithFees,
     required BigInt amountMsatsWithoutFees,
+    required BigInt feeMsats,
     required SafeUrl gateway,
     required bool isLnv2,
   });
@@ -902,7 +903,7 @@ abstract class RustLibApi extends BaseApi {
 
   Future<void> crateClearPinCode({required String pin});
 
-  Future<BigInt> crateComputeReceiveAmountWithFees({
+  Future<ReceiveAmount> crateComputeReceiveAmountWithFees({
     required FederationId federationId,
     required String gatewayUrl,
     required bool isLnv2,
@@ -1064,6 +1065,7 @@ abstract class RustLibApi extends BaseApi {
     required FederationId federationId,
     required BigInt amountMsatsWithFees,
     required BigInt amountMsatsWithoutFees,
+    required BigInt feeMsats,
     required String gateway,
     required bool isLnv2,
   });
@@ -3526,7 +3528,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
       );
 
   @override
-  Future<BigInt> crateMultimintMultimintComputeReceiveAmountWithFees({
+  Future<ReceiveAmount> crateMultimintMultimintComputeReceiveAmountWithFees({
     required Multimint that,
     required FederationId federationId,
     required SafeUrl gatewayUrl,
@@ -3562,7 +3564,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           );
         },
         codec: SseCodec(
-          decodeSuccessData: sse_decode_u_64,
+          decodeSuccessData: sse_decode_receive_amount,
           decodeErrorData: sse_decode_AnyhowException,
         ),
         constMeta:
@@ -4564,6 +4566,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
     required FederationId federationId,
     required BigInt amountMsatsWithFees,
     required BigInt amountMsatsWithoutFees,
+    required BigInt feeMsats,
     required SafeUrl gateway,
     required bool isLnv2,
   }) {
@@ -4581,6 +4584,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           );
           sse_encode_u_64(amountMsatsWithFees, serializer);
           sse_encode_u_64(amountMsatsWithoutFees, serializer);
+          sse_encode_u_64(feeMsats, serializer);
           sse_encode_Auto_Owned_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerSafeUrl(
             gateway,
             serializer,
@@ -4604,6 +4608,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           federationId,
           amountMsatsWithFees,
           amountMsatsWithoutFees,
+          feeMsats,
           gateway,
           isLnv2,
         ],
@@ -4620,6 +4625,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           "federationId",
           "amountMsatsWithFees",
           "amountMsatsWithoutFees",
+          "feeMsats",
           "gateway",
           "isLnv2",
         ],
@@ -8024,7 +8030,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
       const TaskConstMeta(debugName: "clear_pin_code", argNames: ["pin"]);
 
   @override
-  Future<BigInt> crateComputeReceiveAmountWithFees({
+  Future<ReceiveAmount> crateComputeReceiveAmountWithFees({
     required FederationId federationId,
     required String gatewayUrl,
     required bool isLnv2,
@@ -8049,7 +8055,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           );
         },
         codec: SseCodec(
-          decodeSuccessData: sse_decode_u_64,
+          decodeSuccessData: sse_decode_receive_amount,
           decodeErrorData: sse_decode_AnyhowException,
         ),
         constMeta: kCrateComputeReceiveAmountWithFeesConstMeta,
@@ -9486,6 +9492,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
     required FederationId federationId,
     required BigInt amountMsatsWithFees,
     required BigInt amountMsatsWithoutFees,
+    required BigInt feeMsats,
     required String gateway,
     required bool isLnv2,
   }) {
@@ -9499,6 +9506,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           );
           sse_encode_u_64(amountMsatsWithFees, serializer);
           sse_encode_u_64(amountMsatsWithoutFees, serializer);
+          sse_encode_u_64(feeMsats, serializer);
           sse_encode_String(gateway, serializer);
           sse_encode_bool(isLnv2, serializer);
           pdeCallFfi(
@@ -9518,6 +9526,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           federationId,
           amountMsatsWithFees,
           amountMsatsWithoutFees,
+          feeMsats,
           gateway,
           isLnv2,
         ],
@@ -9532,6 +9541,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
       "federationId",
       "amountMsatsWithFees",
       "amountMsatsWithoutFees",
+      "feeMsats",
       "gateway",
       "isLnv2",
     ],
@@ -12638,6 +12648,18 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   }
 
   @protected
+  ReceiveAmount dco_decode_receive_amount(dynamic raw) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    final arr = raw as List<dynamic>;
+    if (arr.length != 2)
+      throw Exception('unexpected arr length: expect 2 but see ${arr.length}');
+    return ReceiveAmount(
+      invoiceMsats: dco_decode_u_64(arr[0]),
+      feeMsats: dco_decode_u_64(arr[1]),
+    );
+  }
+
+  @protected
   (Bolt11Invoice, OperationId)
   dco_decode_record_auto_owned_rust_opaque_flutter_rust_bridgefor_generated_rust_auto_opaque_inner_bolt_11_invoice_auto_owned_rust_opaque_flutter_rust_bridgefor_generated_rust_auto_opaque_inner_operation_id(
     dynamic raw,
@@ -13006,9 +13028,10 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
       case 0:
         return TransactionKind_LightningReceive(
           fees: dco_decode_u_64(raw[1]),
-          gateway: dco_decode_String(raw[2]),
-          payeePubkey: dco_decode_String(raw[3]),
-          paymentHash: dco_decode_String(raw[4]),
+          invoiceAmount: dco_decode_u_64(raw[2]),
+          gateway: dco_decode_String(raw[3]),
+          payeePubkey: dco_decode_String(raw[4]),
+          paymentHash: dco_decode_String(raw[5]),
         );
       case 1:
         return TransactionKind_LightningSend(
@@ -15446,6 +15469,17 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   }
 
   @protected
+  ReceiveAmount sse_decode_receive_amount(SseDeserializer deserializer) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    var var_invoiceMsats = sse_decode_u_64(deserializer);
+    var var_feeMsats = sse_decode_u_64(deserializer);
+    return ReceiveAmount(
+      invoiceMsats: var_invoiceMsats,
+      feeMsats: var_feeMsats,
+    );
+  }
+
+  @protected
   (Bolt11Invoice, OperationId)
   sse_decode_record_auto_owned_rust_opaque_flutter_rust_bridgefor_generated_rust_auto_opaque_inner_bolt_11_invoice_auto_owned_rust_opaque_flutter_rust_bridgefor_generated_rust_auto_opaque_inner_operation_id(
     SseDeserializer deserializer,
@@ -15752,11 +15786,13 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
     switch (tag_) {
       case 0:
         var var_fees = sse_decode_u_64(deserializer);
+        var var_invoiceAmount = sse_decode_u_64(deserializer);
         var var_gateway = sse_decode_String(deserializer);
         var var_payeePubkey = sse_decode_String(deserializer);
         var var_paymentHash = sse_decode_String(deserializer);
         return TransactionKind_LightningReceive(
           fees: var_fees,
+          invoiceAmount: var_invoiceAmount,
           gateway: var_gateway,
           payeePubkey: var_payeePubkey,
           paymentHash: var_paymentHash,
@@ -18260,6 +18296,13 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   }
 
   @protected
+  void sse_encode_receive_amount(ReceiveAmount self, SseSerializer serializer) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    sse_encode_u_64(self.invoiceMsats, serializer);
+    sse_encode_u_64(self.feeMsats, serializer);
+  }
+
+  @protected
   void
   sse_encode_record_auto_owned_rust_opaque_flutter_rust_bridgefor_generated_rust_auto_opaque_inner_bolt_11_invoice_auto_owned_rust_opaque_flutter_rust_bridgefor_generated_rust_auto_opaque_inner_operation_id(
     (Bolt11Invoice, OperationId) self,
@@ -18558,12 +18601,14 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
     switch (self) {
       case TransactionKind_LightningReceive(
         fees: final fees,
+        invoiceAmount: final invoiceAmount,
         gateway: final gateway,
         payeePubkey: final payeePubkey,
         paymentHash: final paymentHash,
       ):
         sse_encode_i_32(0, serializer);
         sse_encode_u_64(fees, serializer);
+        sse_encode_u_64(invoiceAmount, serializer);
         sse_encode_String(gateway, serializer);
         sse_encode_String(payeePubkey, serializer);
         sse_encode_String(paymentHash, serializer);
@@ -19489,7 +19534,7 @@ class MultimintImpl extends RustOpaque implements Multimint {
     bolt11: bolt11,
   );
 
-  Future<BigInt> computeReceiveAmountWithFees({
+  Future<ReceiveAmount> computeReceiveAmountWithFees({
     required FederationId federationId,
     required SafeUrl gatewayUrl,
     required bool isLnv2,
@@ -19637,6 +19682,7 @@ class MultimintImpl extends RustOpaque implements Multimint {
     required FederationId federationId,
     required BigInt amountMsatsWithFees,
     required BigInt amountMsatsWithoutFees,
+    required BigInt feeMsats,
     required SafeUrl gateway,
     required bool isLnv2,
   }) => RustLib.instance.api.crateMultimintMultimintReceive(
@@ -19644,6 +19690,7 @@ class MultimintImpl extends RustOpaque implements Multimint {
     federationId: federationId,
     amountMsatsWithFees: amountMsatsWithFees,
     amountMsatsWithoutFees: amountMsatsWithoutFees,
+    feeMsats: feeMsats,
     gateway: gateway,
     isLnv2: isLnv2,
   );

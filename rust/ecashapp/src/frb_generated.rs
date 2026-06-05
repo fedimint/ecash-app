@@ -4881,6 +4881,7 @@ fn wire__crate__multimint__Multimint_receive_impl(
             >>::sse_decode(&mut deserializer);
             let api_amount_msats_with_fees = <u64>::sse_decode(&mut deserializer);
             let api_amount_msats_without_fees = <u64>::sse_decode(&mut deserializer);
+            let api_fee_msats = <u64>::sse_decode(&mut deserializer);
             let api_gateway = <SafeUrl>::sse_decode(&mut deserializer);
             let api_is_lnv2 = <bool>::sse_decode(&mut deserializer);
             deserializer.end();
@@ -4922,6 +4923,7 @@ fn wire__crate__multimint__Multimint_receive_impl(
                             &*api_federation_id_guard,
                             api_amount_msats_with_fees,
                             api_amount_msats_without_fees,
+                            api_fee_msats,
                             api_gateway,
                             api_is_lnv2,
                         )
@@ -11795,6 +11797,7 @@ fn wire__crate__receive_impl(
             >>::sse_decode(&mut deserializer);
             let api_amount_msats_with_fees = <u64>::sse_decode(&mut deserializer);
             let api_amount_msats_without_fees = <u64>::sse_decode(&mut deserializer);
+            let api_fee_msats = <u64>::sse_decode(&mut deserializer);
             let api_gateway = <String>::sse_decode(&mut deserializer);
             let api_is_lnv2 = <bool>::sse_decode(&mut deserializer);
             deserializer.end();
@@ -11824,6 +11827,7 @@ fn wire__crate__receive_impl(
                             &*api_federation_id_guard,
                             api_amount_msats_with_fees,
                             api_amount_msats_without_fees,
+                            api_fee_msats,
                             api_gateway,
                             api_is_lnv2,
                         )
@@ -15008,6 +15012,18 @@ impl SseDecode for crate::multimint::PeerStatus {
     }
 }
 
+impl SseDecode for crate::multimint::ReceiveAmount {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
+        let mut var_invoiceMsats = <u64>::sse_decode(deserializer);
+        let mut var_feeMsats = <u64>::sse_decode(deserializer);
+        return crate::multimint::ReceiveAmount {
+            invoice_msats: var_invoiceMsats,
+            fee_msats: var_feeMsats,
+        };
+    }
+}
+
 impl SseDecode for (Bolt11Invoice, OperationId) {
     // Codec=Sse (Serialization based), see doc to use other codecs
     fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
@@ -15259,11 +15275,13 @@ impl SseDecode for crate::multimint::TransactionKind {
         match tag_ {
             0 => {
                 let mut var_fees = <u64>::sse_decode(deserializer);
+                let mut var_invoiceAmount = <u64>::sse_decode(deserializer);
                 let mut var_gateway = <String>::sse_decode(deserializer);
                 let mut var_payeePubkey = <String>::sse_decode(deserializer);
                 let mut var_paymentHash = <String>::sse_decode(deserializer);
                 return crate::multimint::TransactionKind::LightningReceive {
                     fees: var_fees,
+                    invoice_amount: var_invoiceAmount,
                     gateway: var_gateway,
                     payee_pubkey: var_payeePubkey,
                     payment_hash: var_paymentHash,
@@ -17557,6 +17575,27 @@ impl flutter_rust_bridge::IntoIntoDart<crate::multimint::PeerStatus>
     }
 }
 // Codec=Dco (DartCObject based), see doc to use other codecs
+impl flutter_rust_bridge::IntoDart for crate::multimint::ReceiveAmount {
+    fn into_dart(self) -> flutter_rust_bridge::for_generated::DartAbi {
+        [
+            self.invoice_msats.into_into_dart().into_dart(),
+            self.fee_msats.into_into_dart().into_dart(),
+        ]
+        .into_dart()
+    }
+}
+impl flutter_rust_bridge::for_generated::IntoDartExceptPrimitive
+    for crate::multimint::ReceiveAmount
+{
+}
+impl flutter_rust_bridge::IntoIntoDart<crate::multimint::ReceiveAmount>
+    for crate::multimint::ReceiveAmount
+{
+    fn into_into_dart(self) -> crate::multimint::ReceiveAmount {
+        self
+    }
+}
+// Codec=Dco (DartCObject based), see doc to use other codecs
 impl flutter_rust_bridge::IntoDart for crate::multimint::ReissueFees {
     fn into_dart(self) -> flutter_rust_bridge::for_generated::DartAbi {
         [
@@ -17624,12 +17663,14 @@ impl flutter_rust_bridge::IntoDart for crate::multimint::TransactionKind {
         match self {
             crate::multimint::TransactionKind::LightningReceive {
                 fees,
+                invoice_amount,
                 gateway,
                 payee_pubkey,
                 payment_hash,
             } => [
                 0.into_dart(),
                 fees.into_into_dart().into_dart(),
+                invoice_amount.into_into_dart().into_dart(),
                 gateway.into_into_dart().into_dart(),
                 payee_pubkey.into_into_dart().into_dart(),
                 payment_hash.into_into_dart().into_dart(),
@@ -19339,6 +19380,14 @@ impl SseEncode for crate::multimint::PeerStatus {
     }
 }
 
+impl SseEncode for crate::multimint::ReceiveAmount {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
+        <u64>::sse_encode(self.invoice_msats, serializer);
+        <u64>::sse_encode(self.fee_msats, serializer);
+    }
+}
+
 impl SseEncode for (Bolt11Invoice, OperationId) {
     // Codec=Sse (Serialization based), see doc to use other codecs
     fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
@@ -19560,12 +19609,14 @@ impl SseEncode for crate::multimint::TransactionKind {
         match self {
             crate::multimint::TransactionKind::LightningReceive {
                 fees,
+                invoice_amount,
                 gateway,
                 payee_pubkey,
                 payment_hash,
             } => {
                 <i32>::sse_encode(0, serializer);
                 <u64>::sse_encode(fees, serializer);
+                <u64>::sse_encode(invoice_amount, serializer);
                 <String>::sse_encode(gateway, serializer);
                 <String>::sse_encode(payee_pubkey, serializer);
                 <String>::sse_encode(payment_hash, serializer);
