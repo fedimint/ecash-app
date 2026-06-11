@@ -46,6 +46,7 @@ APP_PATH="build/macos/Build/Products/Release/ecashapp.app"
 if [ -n "$MACOS_SIGN_IDENTITY" ]; then
   echo "Signing app with: $MACOS_SIGN_IDENTITY"
   codesign --deep --force --options runtime \
+    --entitlements macos/Runner/Release.entitlements \
     --sign "$MACOS_SIGN_IDENTITY" "$APP_PATH"
 fi
 
