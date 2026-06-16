@@ -28,7 +28,7 @@ use fedimint_client::{
 use fedimint_connectors::{Connectivity, ConnectorRegistry, PeerStatus as FedimintPeerStatus};
 use fedimint_core::{
     base32::{decode_prefixed, encode_prefixed, FEDIMINT_PREFIX},
-    config::FederationId,
+    config::{FederationId, META_FEDERATION_NAME_KEY},
     db::{mem_impl::MemDatabase, Database, IDatabaseTransactionOpsCoreTyped},
     encoding::{Decodable, Encodable},
     invite_code::InviteCode,
@@ -1321,63 +1321,83 @@ impl Multimint {
             });
         }
 
+        // Fetch the federation's meta-module consensus value (when the module
+        // exists and a value has been set). Guardians can change fields like the
+        // federation name here, so we prefer it over the static config below.
+        let meta_json = match client.get_first_module::<fedimint_meta_client::MetaClientModule>() {
+            Ok(meta) => match meta.get_consensus_value(DEFAULT_META_KEY).await {
+                Ok(Some(value)) => value.value.to_json().ok(),
+                _ => None,
+            },
+            Err(_) => None,
+        };
+
+        // Prefer the federation name set in the meta module so guardian-driven
+        // name changes are reflected, falling back to the name baked into the
+        // config when the meta module is absent or has no name set.
+        let federation_name = meta_json
+            .as_ref()
+            .and_then(|meta| meta.get(META_FEDERATION_NAME_KEY))
+            .and_then(serde_json::Value::as_str)
+            .filter(|name| !name.is_empty())
+            .map(ToString::to_string)
+            .unwrap_or_else(|| config.global.federation_name().unwrap_or("").to_string());
+
         let selector = FederationSelector {
-            federation_name: config.global.federation_name().unwrap_or("").to_string(),
+            federation_name: federation_name.clone(),
             federation_id,
             network,
         };
 
-        let err_metadata = FederationMeta {
-            picture: None,
-            welcome: None,
-            guardians: guardians.clone(),
-            selector: selector.clone(),
-            last_updated: now
-                .duration_since(UNIX_EPOCH)
-                .expect("Cannot be before epoch")
-                .as_millis() as u64,
-            recurringd_api: None,
-            lnaddress_api: None,
-        };
+        let last_updated = now
+            .duration_since(UNIX_EPOCH)
+            .expect("Cannot be before epoch")
+            .as_millis() as u64;
 
-        let meta = client.get_first_module::<fedimint_meta_client::MetaClientModule>();
-        let federation_meta = if let Ok(meta) = meta {
-            if let Ok(consensus) = meta.get_consensus_value(DEFAULT_META_KEY).await {
-                match consensus {
-                    Some(value) => {
-                        let meta = value.value.to_json().expect("Could not get meta JSON");
-                        let welcome = if let Some(welcome) = meta.get("welcome_message") {
-                            welcome.as_str().map(|s| s.to_string())
-                        } else {
-                            None
-                        };
-                        let picture = Self::get_url("fedi:federation_icon_url", &meta);
-                        let recurringd_api = Self::get_url("recurringd_api", &meta);
-                        let lnaddress_api = Self::get_url("lnaddress_api", &meta);
+        let federation_meta = match meta_json {
+            Some(meta) => {
+                let welcome = meta
+                    .get("welcome_message")
+                    .and_then(serde_json::Value::as_str)
+                    .map(ToString::to_string);
+                let picture = Self::get_url("fedi:federation_icon_url", &meta);
+                let recurringd_api = Self::get_url("recurringd_api", &meta);
+                let lnaddress_api = Self::get_url("lnaddress_api", &meta);
 
-                        FederationMeta {
-                            picture,
-                            welcome,
-                            guardians,
-                            selector,
-                            last_updated: now
-                                .duration_since(UNIX_EPOCH)
-                                .expect("Cannot be before epoch")
-                                .as_millis() as u64,
-                            recurringd_api,
-                            lnaddress_api,
-                        }
-                    }
-                    None => err_metadata,
+                FederationMeta {
+                    picture,
+                    welcome,
+                    guardians,
+                    selector,
+                    last_updated,
+                    recurringd_api,
+                    lnaddress_api,
                 }
-            } else {
-                err_metadata
             }
-        } else {
-            err_metadata
+            None => FederationMeta {
+                picture: None,
+                welcome: None,
+                guardians,
+                selector,
+                last_updated,
+                recurringd_api: None,
+                lnaddress_api: None,
+            },
         };
 
         let mut dbtx = self.db.begin_transaction().await;
+        // Keep the persisted config name in sync so the federation list (which
+        // reads FederationConfig) reflects guardian-driven name changes too.
+        if let Some(mut fed_config) = dbtx
+            .get_value(&FederationConfigKey { id: federation_id })
+            .await
+        {
+            if fed_config.federation_name != federation_name {
+                fed_config.federation_name = federation_name;
+                dbtx.insert_entry(&FederationConfigKey { id: federation_id }, &fed_config)
+                    .await;
+            }
+        }
         dbtx.insert_entry(&FederationMetaKey { federation_id }, &federation_meta)
             .await;
         dbtx.commit_tx().await;
