@@ -52,6 +52,9 @@ class TransactionItem extends StatelessWidget {
                   TransactionDetailKeys.federationFee: fmt(federationFees),
                 if (gatewayFees > BigInt.zero)
                   TransactionDetailKeys.gatewayFee: fmt(gatewayFees),
+                TransactionDetailKeys.receivedAmount: fmt(
+                  invoiceAmount - federationFees - gatewayFees,
+                ),
                 TransactionDetailKeys.gateway: gateway,
                 TransactionDetailKeys.payeePublicKey: payeePubkey,
                 TransactionDetailKeys.paymentHash: paymentHash,

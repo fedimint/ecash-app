@@ -374,6 +374,16 @@ class _RequestState extends State<Request>
                     ),
                   ),
                 CopyableDetailRow(
+                  label: context.l10n.txDetailReceivedAmount,
+                  value: formatBalance(
+                    widget.totalMsats -
+                        widget.federationFeeMsats -
+                        widget.gatewayFeeMsats,
+                    true,
+                    bitcoinDisplay,
+                  ),
+                ),
+                CopyableDetailRow(
                   label: context.l10n.txDetailGateway,
                   value: widget.gateway,
                 ),
