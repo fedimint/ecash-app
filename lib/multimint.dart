@@ -11,7 +11,7 @@ import 'package:flutter_rust_bridge/flutter_rust_bridge_for_generated.dart';
 import 'package:freezed_annotation/freezed_annotation.dart' hide protected;
 part 'multimint.freezed.dart';
 
-// These functions are ignored because they are not marked as `pub`: `await_receive_lnv1`, `await_receive_lnv2`, `await_send_lnv1`, `await_send_lnv2`, `backup`, `build_client`, `cache_btc_price`, `cache_federation_meta`, `check_for_update`, `compute_receive_amount`, `compute_send_amount`, `extract_recipient_pk_from_lnv2_lnurl`, `finish_active_subscriptions`, `from_peg_out_fees`, `get_client_database`, `get_client`, `get_ecash_amount_from_meta`, `get_lnv1_amount_from_meta`, `get_lnv1_receive_tx`, `get_lnv1_send_tx`, `get_lnv2_amount_from_meta`, `get_mintv2_receive_amount`, `get_or_build_temp_client`, `get_recurringd_federations`, `get_url`, `init_recovery_progress_cache`, `invoice_routes_back_to_federation`, `is_newer_version`, `list_gateways`, `lnv1_select_gateway`, `lnv1_update_gateway_cache`, `lnv2_gateways`, `lnv2_select_gateway`, `load_clients`, `pay_lnv1`, `pay_lnv2`, `receive_amount_after_fees`, `receive_lnv1`, `receive_lnv2`, `remove_existing_ln_address`, `remove_recovery_progress_cache`, `run_migrations`, `sign_challenge`, `spawn_await_ecash_reissue`, `spawn_await_ecash_send`, `spawn_await_mintv2_receive`, `spawn_await_receive`, `spawn_await_recurringd_receive`, `spawn_await_send`, `spawn_await_withdraw`, `spawn_backfill_recipient_pk`, `spawn_cache_task`, `spawn_lnv2_event_listener`, `spawn_recovery_progress`, `spawn_recurring_invoice_listener`, `update_recovery_progress_cache`, `wait_for_recovery`, `wallet_network`
+// These functions are ignored because they are not marked as `pub`: `await_receive_lnv1`, `await_receive_lnv2`, `await_send_lnv1`, `await_send_lnv2`, `backup`, `build_client`, `cache_btc_price`, `cache_federation_meta`, `check_for_update`, `compute_send_fees`, `extract_recipient_pk_from_lnv2_lnurl`, `finish_active_subscriptions`, `from_peg_out_fees`, `get_client_database`, `get_client`, `get_ecash_amount_from_meta`, `get_lnv1_amount_from_meta`, `get_lnv1_receive_tx`, `get_lnv1_send_tx`, `get_lnv2_amount_from_meta`, `get_mintv2_receive_amount`, `get_or_build_temp_client`, `get_recurringd_federations`, `get_url`, `gross_invoice_for_contract`, `init_recovery_progress_cache`, `invoice_routes_back_to_federation`, `is_newer_version`, `list_gateways`, `lnv1_select_gateway`, `lnv1_update_gateway_cache`, `lnv2_gateways`, `lnv2_select_gateway`, `load_clients`, `pay_lnv1`, `pay_lnv2`, `read_meta_msats`, `read_meta_u64`, `receive_lnv1`, `receive_lnv2`, `remove_existing_ln_address`, `remove_recovery_progress_cache`, `run_migrations`, `send_federation_fee`, `sign_challenge`, `solve_gross_for_net`, `spawn_await_ecash_reissue`, `spawn_await_ecash_send`, `spawn_await_mintv2_receive`, `spawn_await_receive`, `spawn_await_recurringd_receive`, `spawn_await_send`, `spawn_await_withdraw`, `spawn_backfill_recipient_pk`, `spawn_cache_task`, `spawn_lnv2_event_listener`, `spawn_recovery_progress`, `spawn_recurring_invoice_listener`, `update_recovery_progress_cache`, `wait_for_recovery`, `wallet_network`
 // These types are ignored because they are neither used by any `pub` functions nor (for structs and enums) marked `#[frb(unignore)]`: `ClientType`, `LNAddressRegisterRequest`, `LNAddressRemoveRequest`, `OnChainWithdrawalMeta`, `WrappedEcash`
 // These function are ignored because they are on traits that is not defined in current crate (put an empty `#[frb]` on it to unignore): `assert_receiver_is_total_eq`, `assert_receiver_is_total_eq`, `assert_receiver_is_total_eq`, `assert_receiver_is_total_eq`, `assert_receiver_is_total_eq`, `assert_receiver_is_total_eq`, `assert_receiver_is_total_eq`, `assert_receiver_is_total_eq`, `assert_receiver_is_total_eq`, `assert_receiver_is_total_eq`, `assert_receiver_is_total_eq`, `assert_receiver_is_total_eq`, `assert_receiver_is_total_eq`, `assert_receiver_is_total_eq`, `assert_receiver_is_total_eq`, `assert_receiver_is_total_eq`, `assert_receiver_is_total_eq`, `assert_receiver_is_total_eq`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `consensus_decode_partial_from_finite_reader`, `consensus_decode_partial_from_finite_reader`, `consensus_decode_partial_from_finite_reader`, `consensus_encode`, `consensus_encode`, `consensus_encode`, `eq`, `eq`, `eq`, `eq`, `eq`, `eq`, `eq`, `eq`, `eq`, `eq`, `eq`, `eq`, `eq`, `eq`, `eq`, `eq`, `eq`, `eq`, `eq`, `eq`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `from`, `from`
 // These functions have error during generation (see debug logs or enable `stop_on_error: true` for more details): `subscribe_peer_status`
@@ -166,7 +166,7 @@ abstract class Multimint implements RustOpaqueInterface {
     required Bolt11Invoice bolt11,
   });
 
-  Future<BigInt> computeReceiveAmountWithFees({
+  Future<ReceiveAmount> computeReceiveAmountWithFees({
     required FederationId federationId,
     required SafeUrl gatewayUrl,
     required bool isLnv2,
@@ -259,6 +259,8 @@ abstract class Multimint implements RustOpaqueInterface {
     required FederationId federationId,
     required BigInt amountMsatsWithFees,
     required BigInt amountMsatsWithoutFees,
+    required BigInt federationFeeMsats,
+    required BigInt gatewayFeeMsats,
     required SafeUrl gateway,
     required bool isLnv2,
   });
@@ -303,7 +305,7 @@ abstract class Multimint implements RustOpaqueInterface {
     required List<String> backupInviteCodes,
   });
 
-  Future<(String, BigInt, bool)> selectSendGateway({
+  Future<SendGatewaySelection> selectSendGateway({
     required FederationId federationId,
     required Amount amount,
     required Bolt11Invoice bolt11,
@@ -315,6 +317,8 @@ abstract class Multimint implements RustOpaqueInterface {
     required SafeUrl gateway,
     required bool isLnv2,
     required BigInt amountWithFees,
+    required BigInt federationFeeMsats,
+    required BigInt gatewayFeeMsats,
     String? lnAddress,
   });
 
@@ -354,6 +358,7 @@ abstract class Multimint implements RustOpaqueInterface {
     required String address,
     required BigInt amountSats,
     required WithdrawFees fees,
+    required BigInt federationFeeMsats,
   });
 }
 
@@ -382,6 +387,8 @@ abstract class WithdrawFees implements RustOpaqueInterface {}
 
 // Rust type: RustOpaqueMoi<flutter_rust_bridge::for_generated::RustAutoOpaqueInner<WithdrawFeesResponse>>
 abstract class WithdrawFeesResponse implements RustOpaqueInterface {
+  BigInt get federationFeeMsats;
+
   BigInt get feeAmount;
 
   double get feeRateSatsPerVb;
@@ -389,6 +396,8 @@ abstract class WithdrawFeesResponse implements RustOpaqueInterface {
   WithdrawFees get fees;
 
   int get txSizeVbytes;
+
+  set federationFeeMsats(BigInt federationFeeMsats);
 
   set feeAmount(BigInt feeAmount);
 
@@ -570,13 +579,26 @@ class GatewayPaymentPreview {
   final FedimintGateway gateway;
   final BigInt amountWithFees;
 
+  /// Gateway off-chain routing fee (baked into the outgoing contract).
+  final BigInt gatewayFee;
+
+  /// On-federation fee: lightning output fee + mint funding/change fees +
+  /// dust, quoted via the lightning module's `send_fee_quote`.
+  final BigInt federationFee;
+
   const GatewayPaymentPreview({
     required this.gateway,
     required this.amountWithFees,
+    required this.gatewayFee,
+    required this.federationFee,
   });
 
   @override
-  int get hashCode => gateway.hashCode ^ amountWithFees.hashCode;
+  int get hashCode =>
+      gateway.hashCode ^
+      amountWithFees.hashCode ^
+      gatewayFee.hashCode ^
+      federationFee.hashCode;
 
   @override
   bool operator ==(Object other) =>
@@ -584,7 +606,9 @@ class GatewayPaymentPreview {
       other is GatewayPaymentPreview &&
           runtimeType == other.runtimeType &&
           gateway == other.gateway &&
-          amountWithFees == other.amountWithFees;
+          amountWithFees == other.amountWithFees &&
+          gatewayFee == other.gatewayFee &&
+          federationFee == other.federationFee;
 }
 
 class Guardian {
@@ -826,6 +850,40 @@ class PeerStatus {
           url == other.url;
 }
 
+/// Result of pricing a Lightning receive. `invoice_msats` is the invoice's face
+/// value (what the payer pays). The fee is broken out into its two sources:
+/// `federation_fee_msats` (on-federation: lightning input fee + mint output fees
+/// + dust) and `gateway_fee_msats` (the gateway's off-chain routing fee, always
+/// 0 for LNv1). The receiver is credited `invoice_msats - federation_fee_msats -
+/// gateway_fee_msats`. Both are quoted at `invoice_msats`, not the requested
+/// amount, so they match what is really deducted.
+class ReceiveAmount {
+  final BigInt invoiceMsats;
+  final BigInt federationFeeMsats;
+  final BigInt gatewayFeeMsats;
+
+  const ReceiveAmount({
+    required this.invoiceMsats,
+    required this.federationFeeMsats,
+    required this.gatewayFeeMsats,
+  });
+
+  @override
+  int get hashCode =>
+      invoiceMsats.hashCode ^
+      federationFeeMsats.hashCode ^
+      gatewayFeeMsats.hashCode;
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is ReceiveAmount &&
+          runtimeType == other.runtimeType &&
+          invoiceMsats == other.invoiceMsats &&
+          federationFeeMsats == other.federationFeeMsats &&
+          gatewayFeeMsats == other.gatewayFeeMsats;
+}
+
 class ReissueFees {
   final BigInt totalMsats;
   final BigInt inputMsats;
@@ -858,6 +916,43 @@ class ReissueFees {
 }
 
 enum RelayStatusKind { connecting, connected, failed }
+
+/// Gateway chosen for a Lightning send (used by the LN-address path, which has
+/// no on-screen gateway picker), with the same fee breakdown as a preview.
+class SendGatewaySelection {
+  final String gatewayUrl;
+  final BigInt amountWithFees;
+  final BigInt gatewayFee;
+  final BigInt federationFee;
+  final bool isLnv2;
+
+  const SendGatewaySelection({
+    required this.gatewayUrl,
+    required this.amountWithFees,
+    required this.gatewayFee,
+    required this.federationFee,
+    required this.isLnv2,
+  });
+
+  @override
+  int get hashCode =>
+      gatewayUrl.hashCode ^
+      amountWithFees.hashCode ^
+      gatewayFee.hashCode ^
+      federationFee.hashCode ^
+      isLnv2.hashCode;
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is SendGatewaySelection &&
+          runtimeType == other.runtimeType &&
+          gatewayUrl == other.gatewayUrl &&
+          amountWithFees == other.amountWithFees &&
+          gatewayFee == other.gatewayFee &&
+          federationFee == other.federationFee &&
+          isLnv2 == other.isLnv2;
+}
 
 class Transaction {
   final TransactionKind kind;
@@ -895,13 +990,29 @@ sealed class TransactionKind with _$TransactionKind {
   const TransactionKind._();
 
   const factory TransactionKind.lightningReceive({
-    required BigInt fees,
+    /// On-federation fee (lightning input fee + mint output fees + dust), as
+    /// quoted at the invoice amount when the invoice was created.
+    required BigInt federationFees,
+
+    /// Gateway off-chain routing fee; always 0 for LNv1.
+    required BigInt gatewayFees,
+
+    /// The invoice's face value (what the payer pays). `invoice_amount -
+    /// federation_fees - gateway_fees` is what was credited; the
+    /// transaction's `amount` is the requested amount shown in the history
+    /// list.
+    required BigInt invoiceAmount,
     required String gateway,
     required String payeePubkey,
     required String paymentHash,
   }) = TransactionKind_LightningReceive;
   const factory TransactionKind.lightningSend({
-    required BigInt fees,
+    /// On-federation fee: lightning output fee + mint funding/change fees +
+    /// dust, quoted at send time via `send_fee_quote`.
+    required BigInt federationFees,
+
+    /// Gateway off-chain routing fee.
+    required BigInt gatewayFees,
     required String gateway,
     required String paymentHash,
     required String preimage,
@@ -918,8 +1029,14 @@ sealed class TransactionKind with _$TransactionKind {
     required String txid,
     double? feeRateSatsPerVb,
     int? txSizeVb,
+
+    /// On-chain Bitcoin miner fee, in sats.
     BigInt? feeSats,
     BigInt? totalSats,
+
+    /// On-federation fee (wallet output fee + mint funding/change fees +
+    /// dust), in msats, quoted at send time via `send_fee_quote`.
+    BigInt? federationFeeMsats,
   }) = TransactionKind_OnchainSend;
   const factory TransactionKind.ecashReceive({
     required String oobNotes,

@@ -125,7 +125,8 @@ class _PaymentPreviewWidgetState extends State<PaymentPreviewWidget> {
     );
     final amount = _previewData.amountMsats;
     final amountWithFees = _selectedPreview.amountWithFees;
-    final fees = amountWithFees - amount;
+    final federationFee = _selectedPreview.federationFee;
+    final gatewayFee = _selectedPreview.gatewayFee;
     final selectedGateway = _selectedPreview.gateway;
 
     return Column(
@@ -307,10 +308,16 @@ class _PaymentPreviewWidgetState extends State<PaymentPreviewWidget> {
                 label: context.l10n.txDetailAmount,
                 value: formatBalance(amount, true, bitcoinDisplay),
               ),
-              CopyableDetailRow(
-                label: context.l10n.txDetailFees,
-                value: formatBalance(fees, true, bitcoinDisplay),
-              ),
+              if (federationFee > BigInt.zero)
+                CopyableDetailRow(
+                  label: context.l10n.txDetailFederationFee,
+                  value: formatBalance(federationFee, true, bitcoinDisplay),
+                ),
+              if (gatewayFee > BigInt.zero)
+                CopyableDetailRow(
+                  label: context.l10n.txDetailGatewayFee,
+                  value: formatBalance(gatewayFee, true, bitcoinDisplay),
+                ),
               CopyableDetailRow(
                 label: context.l10n.txDetailTotal,
                 value: formatBalance(amountWithFees, true, bitcoinDisplay),
@@ -354,6 +361,8 @@ class _PaymentPreviewWidgetState extends State<PaymentPreviewWidget> {
                                 gateway: _selectedPreview.gateway.endpoint,
                                 isLnv2: _selectedPreview.gateway.isLnv2,
                                 amountMsatsWithFees: amountWithFees,
+                                federationFeeMsats: federationFee,
+                                gatewayFeeMsats: gatewayFee,
                               ),
                         ),
                       );

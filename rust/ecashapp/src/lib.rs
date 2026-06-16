@@ -23,8 +23,8 @@ use flutter_rust_bridge::frb;
 use futures_util::StreamExt;
 use multimint::{
     FederationMeta, FederationSelector, LightningSendOutcome, LogLevel, Multimint,
-    MultimintCreation, MultimintEvent, OOBNotesWrapper, PaymentPreviewWithGateways, ReissueFees,
-    Transaction, Utxo, WithdrawFees, WithdrawFeesResponse,
+    MultimintCreation, MultimintEvent, OOBNotesWrapper, PaymentPreviewWithGateways, ReceiveAmount,
+    ReissueFees, Transaction, Utxo, WithdrawFees, WithdrawFeesResponse,
 };
 use nostr::{NWCConnectionInfo, NostrClient, PublicFederation};
 use serde::Serialize;
@@ -246,6 +246,8 @@ pub async fn receive(
     federation_id: &FederationId,
     amount_msats_with_fees: u64,
     amount_msats_without_fees: u64,
+    federation_fee_msats: u64,
+    gateway_fee_msats: u64,
     gateway: String,
     is_lnv2: bool,
 ) -> anyhow::Result<(String, OperationId, String, String, u64)> {
@@ -256,6 +258,8 @@ pub async fn receive(
             federation_id,
             amount_msats_with_fees,
             amount_msats_without_fees,
+            federation_fee_msats,
+            gateway_fee_msats,
             gateway,
             is_lnv2,
         )
@@ -278,7 +282,7 @@ pub async fn compute_receive_amount_with_fees(
     gateway_url: String,
     is_lnv2: bool,
     amount_msats: u64,
-) -> anyhow::Result<u64> {
+) -> anyhow::Result<ReceiveAmount> {
     let gateway_url = SafeUrl::parse(&gateway_url)?;
     let amount = Amount::from_msats(amount_msats);
     let multimint = get_multimint();
@@ -348,7 +352,7 @@ pub async fn send_lnaddress(
             let multimint = get_multimint();
             let bolt11 = Bolt11Invoice::from_str(invoice.invoice())
                 .map_err(|e| EcashAppError::InvalidInvoice(e.to_string()))?;
-            let (gateway_url, amount_with_fees, is_lnv2) = multimint
+            let selection = multimint
                 .select_send_gateway(
                     federation_id,
                     Amount::from_msats(amount_msats),
@@ -356,15 +360,17 @@ pub async fn send_lnaddress(
                 )
                 .await
                 .map_err(EcashAppError::from)?;
-            let gateway = SafeUrl::parse(&gateway_url)
+            let gateway = SafeUrl::parse(&selection.gateway_url)
                 .map_err(|e| EcashAppError::other(format!("invalid gateway URL: {e}")))?;
             return multimint
                 .send(
                     federation_id,
                     bolt11.to_string(),
                     gateway,
-                    is_lnv2,
-                    amount_with_fees,
+                    selection.is_lnv2,
+                    selection.amount_with_fees,
+                    selection.federation_fee,
+                    selection.gateway_fee,
                     Some(address),
                 )
                 .await;
@@ -376,12 +382,15 @@ pub async fn send_lnaddress(
 }
 
 #[frb]
+#[allow(clippy::too_many_arguments)]
 pub async fn send(
     federation_id: &FederationId,
     invoice: String,
     gateway: String,
     is_lnv2: bool,
     amount_with_fees: u64,
+    federation_fee_msats: u64,
+    gateway_fee_msats: u64,
     ln_address: Option<String>,
 ) -> Result<OperationId, EcashAppError> {
     let multimint = get_multimint();
@@ -394,6 +403,8 @@ pub async fn send(
             gateway,
             is_lnv2,
             amount_with_fees,
+            federation_fee_msats,
+            gateway_fee_msats,
             ln_address,
         )
         .await
@@ -693,10 +704,17 @@ pub async fn withdraw_to_address(
     address: String,
     amount_sats: u64,
     fees: WithdrawFees,
+    federation_fee_msats: u64,
 ) -> Result<OperationId, EcashAppError> {
     let multimint = get_multimint();
     multimint
-        .withdraw_to_address(federation_id, address, amount_sats, fees)
+        .withdraw_to_address(
+            federation_id,
+            address,
+            amount_sats,
+            fees,
+            federation_fee_msats,
+        )
         .await
 }
 

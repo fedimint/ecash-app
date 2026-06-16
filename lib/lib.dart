@@ -75,17 +75,21 @@ Future<(String, OperationId, String, String, BigInt)> receive({
   required FederationId federationId,
   required BigInt amountMsatsWithFees,
   required BigInt amountMsatsWithoutFees,
+  required BigInt federationFeeMsats,
+  required BigInt gatewayFeeMsats,
   required String gateway,
   required bool isLnv2,
 }) => RustLib.instance.api.crateReceive(
   federationId: federationId,
   amountMsatsWithFees: amountMsatsWithFees,
   amountMsatsWithoutFees: amountMsatsWithoutFees,
+  federationFeeMsats: federationFeeMsats,
+  gatewayFeeMsats: gatewayFeeMsats,
   gateway: gateway,
   isLnv2: isLnv2,
 );
 
-Future<BigInt> computeReceiveAmountWithFees({
+Future<ReceiveAmount> computeReceiveAmountWithFees({
   required FederationId federationId,
   required String gatewayUrl,
   required bool isLnv2,
@@ -121,6 +125,8 @@ Future<OperationId> send({
   required String gateway,
   required bool isLnv2,
   required BigInt amountWithFees,
+  required BigInt federationFeeMsats,
+  required BigInt gatewayFeeMsats,
   String? lnAddress,
 }) => RustLib.instance.api.crateSend(
   federationId: federationId,
@@ -128,6 +134,8 @@ Future<OperationId> send({
   gateway: gateway,
   isLnv2: isLnv2,
   amountWithFees: amountWithFees,
+  federationFeeMsats: federationFeeMsats,
+  gatewayFeeMsats: gatewayFeeMsats,
   lnAddress: lnAddress,
 );
 
@@ -294,11 +302,13 @@ Future<OperationId> withdrawToAddress({
   required String address,
   required BigInt amountSats,
   required WithdrawFees fees,
+  required BigInt federationFeeMsats,
 }) => RustLib.instance.api.crateWithdrawToAddress(
   federationId: federationId,
   address: address,
   amountSats: amountSats,
   fees: fees,
+  federationFeeMsats: federationFeeMsats,
 );
 
 Future<String> awaitWithdraw({

@@ -22,6 +22,8 @@ class Request extends StatefulWidget {
   final FederationSelector fed;
   final BigInt requestedAmountMsats;
   final BigInt totalMsats;
+  final BigInt federationFeeMsats;
+  final BigInt gatewayFeeMsats;
   final String gateway;
   final String pubkey;
   final String paymentHash;
@@ -34,6 +36,8 @@ class Request extends StatefulWidget {
     required this.fed,
     required this.requestedAmountMsats,
     required this.totalMsats,
+    required this.federationFeeMsats,
+    required this.gatewayFeeMsats,
     required this.gateway,
     required this.pubkey,
     required this.paymentHash,
@@ -175,7 +179,6 @@ class _RequestState extends State<Request>
       (prefs) => prefs.bitcoinDisplay,
     );
     final abbreviatedInvoice = getAbbreviatedText(widget.invoice);
-    final fees = widget.totalMsats - widget.requestedAmountMsats;
 
     return Padding(
       padding: const EdgeInsets.all(20),
@@ -350,15 +353,35 @@ class _RequestState extends State<Request>
               children: [
                 CopyableDetailRow(
                   label: context.l10n.txDetailAmount,
+                  value: formatBalance(widget.totalMsats, true, bitcoinDisplay),
+                ),
+                if (widget.federationFeeMsats > BigInt.zero)
+                  CopyableDetailRow(
+                    label: context.l10n.txDetailFederationFee,
+                    value: formatBalance(
+                      widget.federationFeeMsats,
+                      true,
+                      bitcoinDisplay,
+                    ),
+                  ),
+                if (widget.gatewayFeeMsats > BigInt.zero)
+                  CopyableDetailRow(
+                    label: context.l10n.txDetailGatewayFee,
+                    value: formatBalance(
+                      widget.gatewayFeeMsats,
+                      true,
+                      bitcoinDisplay,
+                    ),
+                  ),
+                CopyableDetailRow(
+                  label: context.l10n.txDetailReceivedAmount,
                   value: formatBalance(
-                    widget.requestedAmountMsats,
+                    widget.totalMsats -
+                        widget.federationFeeMsats -
+                        widget.gatewayFeeMsats,
                     true,
                     bitcoinDisplay,
                   ),
-                ),
-                CopyableDetailRow(
-                  label: context.l10n.txDetailFees,
-                  value: formatBalance(fees, true, bitcoinDisplay),
                 ),
                 CopyableDetailRow(
                   label: context.l10n.txDetailGateway,

@@ -511,6 +511,8 @@ impl NostrClient {
                     gateway.endpoint.clone(),
                     gateway.is_lnv2,
                     preview.amount_with_fees,
+                    preview.federation_fee,
+                    preview.gateway_fee,
                     None,
                 )
                 .await?;

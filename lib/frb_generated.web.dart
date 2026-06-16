@@ -1023,6 +1023,9 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   PeerStatus dco_decode_peer_status(dynamic raw);
 
   @protected
+  ReceiveAmount dco_decode_receive_amount(dynamic raw);
+
+  @protected
   (Bolt11Invoice, OperationId)
   dco_decode_record_auto_owned_rust_opaque_flutter_rust_bridgefor_generated_rust_auto_opaque_inner_bolt_11_invoice_auto_owned_rust_opaque_flutter_rust_bridgefor_generated_rust_auto_opaque_inner_operation_id(
     dynamic raw,
@@ -1119,9 +1122,6 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   (String, String) dco_decode_record_string_string(dynamic raw);
 
   @protected
-  (String, BigInt, bool) dco_decode_record_string_u_64_bool(dynamic raw);
-
-  @protected
   (int, int) dco_decode_record_u_32_u_32(dynamic raw);
 
   @protected
@@ -1132,6 +1132,9 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
 
   @protected
   RelayStatusKind dco_decode_relay_status_kind(dynamic raw);
+
+  @protected
+  SendGatewaySelection dco_decode_send_gateway_selection(dynamic raw);
 
   @protected
   Transaction dco_decode_transaction(dynamic raw);
@@ -2089,6 +2092,9 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   PeerStatus sse_decode_peer_status(SseDeserializer deserializer);
 
   @protected
+  ReceiveAmount sse_decode_receive_amount(SseDeserializer deserializer);
+
+  @protected
   (Bolt11Invoice, OperationId)
   sse_decode_record_auto_owned_rust_opaque_flutter_rust_bridgefor_generated_rust_auto_opaque_inner_bolt_11_invoice_auto_owned_rust_opaque_flutter_rust_bridgefor_generated_rust_auto_opaque_inner_operation_id(
     SseDeserializer deserializer,
@@ -2191,11 +2197,6 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   );
 
   @protected
-  (String, BigInt, bool) sse_decode_record_string_u_64_bool(
-    SseDeserializer deserializer,
-  );
-
-  @protected
   (int, int) sse_decode_record_u_32_u_32(SseDeserializer deserializer);
 
   @protected
@@ -2206,6 +2207,11 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
 
   @protected
   RelayStatusKind sse_decode_relay_status_kind(SseDeserializer deserializer);
+
+  @protected
+  SendGatewaySelection sse_decode_send_gateway_selection(
+    SseDeserializer deserializer,
+  );
 
   @protected
   Transaction sse_decode_transaction(SseDeserializer deserializer);
@@ -3348,6 +3354,9 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   void sse_encode_peer_status(PeerStatus self, SseSerializer serializer);
 
   @protected
+  void sse_encode_receive_amount(ReceiveAmount self, SseSerializer serializer);
+
+  @protected
   void
   sse_encode_record_auto_owned_rust_opaque_flutter_rust_bridgefor_generated_rust_auto_opaque_inner_bolt_11_invoice_auto_owned_rust_opaque_flutter_rust_bridgefor_generated_rust_auto_opaque_inner_operation_id(
     (Bolt11Invoice, OperationId) self,
@@ -3468,12 +3477,6 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   );
 
   @protected
-  void sse_encode_record_string_u_64_bool(
-    (String, BigInt, bool) self,
-    SseSerializer serializer,
-  );
-
-  @protected
   void sse_encode_record_u_32_u_32((int, int) self, SseSerializer serializer);
 
   @protected
@@ -3488,6 +3491,12 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   @protected
   void sse_encode_relay_status_kind(
     RelayStatusKind self,
+    SseSerializer serializer,
+  );
+
+  @protected
+  void sse_encode_send_gateway_selection(
+    SendGatewaySelection self,
     SseSerializer serializer,
   );
 
