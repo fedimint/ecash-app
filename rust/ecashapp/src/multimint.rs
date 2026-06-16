@@ -157,11 +157,12 @@ pub struct ReissueFees {
 
 /// Result of pricing a Lightning receive. `invoice_msats` is the invoice's face
 /// value (what the payer pays). The fee is broken out into its two sources:
-/// `federation_fee_msats` (on-federation: lightning input fee + mint output fees
-/// + dust) and `gateway_fee_msats` (the gateway's off-chain routing fee, always
-/// 0 for LNv1). The receiver is credited `invoice_msats - federation_fee_msats -
-/// gateway_fee_msats`. Both are quoted at `invoice_msats`, not the requested
-/// amount, so they match what is really deducted.
+/// `federation_fee_msats` (on-federation: lightning input fee plus mint output
+/// fees plus dust) and `gateway_fee_msats` (the gateway's off-chain routing fee,
+/// always 0 for LNv1). The receiver is credited
+/// `invoice_msats - federation_fee_msats - gateway_fee_msats`. Both are quoted at
+/// `invoice_msats`, not the requested amount, so they match what is really
+/// deducted.
 pub struct ReceiveAmount {
     pub invoice_msats: u64,
     pub federation_fee_msats: u64,
@@ -1853,6 +1854,7 @@ impl Multimint {
             .msats
     }
 
+    #[allow(clippy::too_many_arguments)]
     pub async fn receive(
         &self,
         federation_id: &FederationId,
@@ -2273,6 +2275,7 @@ impl Multimint {
         Ok(previews)
     }
 
+    #[allow(clippy::too_many_arguments)]
     pub async fn send(
         &self,
         federation_id: &FederationId,

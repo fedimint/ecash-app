@@ -382,6 +382,7 @@ pub async fn send_lnaddress(
 }
 
 #[frb]
+#[allow(clippy::too_many_arguments)]
 pub async fn send(
     federation_id: &FederationId,
     invoice: String,
