@@ -139,6 +139,26 @@ abstract class Multimint implements RustOpaqueInterface {
     required String ecash,
   });
 
+  /// Quotes a [`Self::send_ecash`] of `amount_msats` without spending
+  /// anything, returning both the *actual* amount the send will spend and the
+  /// federation fee on top.
+  ///
+  /// Both mint modules round the requested amount up to a representable
+  /// denomination before producing notes (mintv1 to the smallest economical
+  /// denomination via `FeeConsensus::round_up`, mintv2 to a multiple of the
+  /// smallest client denomination), so the actual amount can exceed what the
+  /// user typed. We mirror that rounding here so the review screen shows the
+  /// amount that will really be spent, then quote the fee at that amount.
+  ///
+  /// The fee comes from the same `send_fee_quote` both modules expose: zero
+  /// when the wallet already holds exact-change notes (the send just hands
+  /// them out), otherwise the cost of the self-reissue the send performs. The
+  /// quote is point-in-time over the current note inventory and display-only.
+  Future<EcashSendFees> calculateEcashSendFees({
+    required FederationId federationId,
+    required BigInt amountMsats,
+  });
+
   Future<EcashAppResultWithdrawFeesResponse> calculateWithdrawFees({
     required FederationId federationId,
     required String address,
@@ -513,6 +533,29 @@ sealed class DepositEventKind with _$DepositEventKind {
       DepositEventKind_Confirmed;
   const factory DepositEventKind.claimed(ClaimedEvent field0) =
       DepositEventKind_Claimed;
+}
+
+/// Quote for an ecash send. `amount_msats` is the *actual* amount the send will
+/// spend on the ecash: the requested amount rounded up to a representable
+/// denomination, which both mint modules do before producing notes, so it can
+/// exceed what the user typed. `fee_msats` is the federation fee charged on top.
+/// The total debited from the wallet is `amount_msats + fee_msats`.
+class EcashSendFees {
+  final BigInt amountMsats;
+  final BigInt feeMsats;
+
+  const EcashSendFees({required this.amountMsats, required this.feeMsats});
+
+  @override
+  int get hashCode => amountMsats.hashCode ^ feeMsats.hashCode;
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is EcashSendFees &&
+          runtimeType == other.runtimeType &&
+          amountMsats == other.amountMsats &&
+          feeMsats == other.feeMsats;
 }
 
 class FedimintGateway {

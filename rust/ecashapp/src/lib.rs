@@ -22,7 +22,7 @@ use app_error::{EcashAppError, EcashAppResult};
 use flutter_rust_bridge::frb;
 use futures_util::StreamExt;
 use multimint::{
-    FederationMeta, FederationSelector, LightningSendOutcome, LogLevel, Multimint,
+    EcashSendFees, FederationMeta, FederationSelector, LightningSendOutcome, LogLevel, Multimint,
     MultimintCreation, MultimintEvent, OOBNotesWrapper, PaymentPreviewWithGateways, ReceiveAmount,
     ReissueFees, Transaction, Utxo, WithdrawFees, WithdrawFeesResponse,
 };
@@ -521,6 +521,17 @@ pub async fn calculate_ecash_reissue_fees(
     let multimint = get_multimint();
     multimint
         .calculate_ecash_reissue_fees(federation_id, ecash)
+        .await
+}
+
+#[frb]
+pub async fn calculate_ecash_send_fees(
+    federation_id: &FederationId,
+    amount_msats: u64,
+) -> anyhow::Result<EcashSendFees> {
+    let multimint = get_multimint();
+    multimint
+        .calculate_ecash_send_fees(federation_id, amount_msats)
         .await
 }
 

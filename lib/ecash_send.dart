@@ -33,23 +33,55 @@ class EcashSend extends StatefulWidget {
 class _EcashSendState extends State<EcashSend> {
   OobNotesWrapper? _notes;
   Stream<String>? _fragmentStream;
-  bool _loading = true;
+  // Quoting the (display-only) send fee, before anything is spent.
+  bool _quoting = true;
+  // The quote: the actual amount that will be spent (the requested amount
+  // rounded up to a representable denomination) plus the federation fee. Null
+  // if the quote was unavailable (it's display-only, so that doesn't block the
+  // send).
+  EcashSendFees? _fees;
+  // Generating the ecash — this is the step that actually spends.
+  bool _generating = false;
   bool _copied = false;
   _QrMode _mode = _QrMode.legacy;
 
   @override
   void initState() {
     super.initState();
-    _loadEcash();
+    _loadQuote();
   }
 
-  Future<void> _loadEcash() async {
+  /// Quotes the send fee without spending, so the user can review the cost
+  /// before committing. The quote is display-only: if it fails we still let the
+  /// user proceed, just without a fee figure.
+  Future<void> _loadQuote() async {
     try {
-      final authorized = await checkSpendingPin(context);
-      if (!authorized) {
-        if (mounted) Navigator.of(context).pop();
-        return;
-      }
+      final fees = await calculateEcashSendFees(
+        federationId: widget.fed.federationId,
+        amountMsats: widget.amountMsats,
+      );
+      if (!mounted) return;
+      setState(() {
+        _fees = fees;
+        _quoting = false;
+      });
+    } catch (e) {
+      AppLogger.instance.warn("Could not quote Ecash send fee: $e");
+      if (!mounted) return;
+      setState(() {
+        _fees = null;
+        _quoting = false;
+      });
+    }
+  }
+
+  /// Actually performs the send: this is where the ecash is taken from the
+  /// wallet. Only invoked once the user confirms on the review screen.
+  Future<void> _generateEcash() async {
+    final authorized = await checkSpendingPin(context);
+    if (!authorized) return;
+    setState(() => _generating = true);
+    try {
       final notes = await sendEcash(
         federationId: widget.fed.federationId,
         amountMsats: widget.amountMsats,
@@ -58,18 +90,17 @@ class _EcashSendState extends State<EcashSend> {
       final encoder = OobNotesEncoder(notes: notes);
       final legacyFrames = dataToFrames(utf8.encode(notes.toString()));
 
+      if (!mounted) return;
       setState(() {
         _notes = notes;
         _fragmentStream = _createFrameStream(encoder, legacyFrames);
-        _loading = false;
+        _generating = false;
       });
     } catch (e) {
       AppLogger.instance.error("Could not send Ecash: $e");
       if (mounted) showErrorToast(context, e);
-      setState(() {
-        _notes = null;
-        _loading = false;
-      });
+      if (!mounted) return;
+      setState(() => _generating = false);
     }
   }
 
@@ -104,31 +135,128 @@ class _EcashSendState extends State<EcashSend> {
     });
   }
 
+  Widget _buildLoading(String message) {
+    return Center(
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          const CircularProgressIndicator(),
+          const SizedBox(height: 16),
+          Text(message, style: const TextStyle(color: Colors.white70)),
+        ],
+      ),
+    );
+  }
+
+  /// Review screen shown before spending: the amount, the quoted federation
+  /// fee (when available) and the resulting total, with a button that performs
+  /// the actual send.
+  Widget _buildReview(
+    ThemeData theme,
+    BitcoinDisplay bitcoinDisplay,
+    bool showMsats,
+  ) {
+    final fees = _fees;
+    // The amount the send will actually spend: the requested amount rounded up
+    // to a representable denomination. Falls back to the requested amount if the
+    // quote was unavailable.
+    final amount = fees?.amountMsats ?? widget.amountMsats;
+    final feeMsats = fees?.feeMsats;
+    final total = fees == null ? null : fees.amountMsats + fees.feeMsats;
+
+    return Padding(
+      padding: const EdgeInsets.all(20),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          const Icon(Icons.currency_bitcoin, size: 48),
+          const SizedBox(height: 12),
+          Text(
+            context.l10n.reviewEcashSend,
+            style: theme.textTheme.headlineSmall?.copyWith(
+              color: theme.colorScheme.primary,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          const SizedBox(height: 24),
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: theme.colorScheme.surfaceContainer,
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(
+                color: theme.colorScheme.primary.withOpacity(0.25),
+              ),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                CopyableDetailRow(
+                  label: TransactionDetailKeys.amount,
+                  value: formatBalance(amount, showMsats, bitcoinDisplay),
+                ),
+                if (feeMsats != null)
+                  CopyableDetailRow(
+                    label: TransactionDetailKeys.federationFee,
+                    value: formatBalance(feeMsats, showMsats, bitcoinDisplay),
+                  ),
+                if (total != null)
+                  CopyableDetailRow(
+                    label: TransactionDetailKeys.total,
+                    value: formatBalance(total, showMsats, bitcoinDisplay),
+                  ),
+                CopyableDetailRow(
+                  label: context.l10n.federationLabel,
+                  value: widget.fed.federationName,
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 24),
+          SizedBox(
+            width: double.infinity,
+            child: ElevatedButton.icon(
+              icon: const Icon(Icons.send, color: Colors.black),
+              label: Text(context.l10n.confirmAndSendEcash),
+              onPressed: _generateEcash,
+              style: ElevatedButton.styleFrom(
+                backgroundColor: theme.colorScheme.primary,
+                foregroundColor: Colors.black,
+                padding: const EdgeInsets.symmetric(vertical: 16),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final bitcoinDisplay = context.select<PreferencesProvider, BitcoinDisplay>(
       (prefs) => prefs.bitcoinDisplay,
     );
+    final showMsats = context.select<PreferencesProvider, bool>(
+      (prefs) => prefs.showMsats,
+    );
 
-    if (_loading) {
-      return Center(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const CircularProgressIndicator(),
-            const SizedBox(height: 16),
-            Text(
-              context.l10n.gettingChangeFromMint,
-              style: const TextStyle(color: Colors.white70),
-            ),
-          ],
-        ),
-      );
+    if (_quoting) {
+      return _buildLoading(context.l10n.calculatingFees);
     }
 
+    if (_generating) {
+      return _buildLoading(context.l10n.gettingChangeFromMint);
+    }
+
+    // Not spent yet: show the review screen with the quoted fee. The send only
+    // happens when the user confirms.
     if (_notes == null) {
-      return Center(child: Text(context.l10n.failedToLoadEcash));
+      return _buildReview(theme, bitcoinDisplay, showMsats);
     }
 
     final abbreviatedEcash = getAbbreviatedText(_notes!.toString());
@@ -250,9 +378,12 @@ class _EcashSendState extends State<EcashSend> {
               children: [
                 CopyableDetailRow(
                   label: TransactionDetailKeys.amount,
+                  // The actual amount of the generated ecash (the requested
+                  // amount rounded up to representable denominations), not the
+                  // raw requested value.
                   value: formatBalance(
-                    widget.amountMsats,
-                    false,
+                    _notes!.amountMsats(),
+                    showMsats,
                     bitcoinDisplay,
                   ),
                 ),
@@ -272,7 +403,11 @@ class _EcashSendState extends State<EcashSend> {
                   Navigator.of(context).popUntil((route) => route.isFirst);
                   ToastService().show(
                     message: context.l10n.amountSpent(
-                      formatBalance(widget.amountMsats, false, bitcoinDisplay),
+                      formatBalance(
+                        _notes!.amountMsats(),
+                        showMsats,
+                        bitcoinDisplay,
+                      ),
                     ),
                     duration: const Duration(seconds: 5),
                     onTap: () {},

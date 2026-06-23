@@ -819,6 +819,9 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   EcashAppError dco_decode_ecash_app_error(dynamic raw);
 
   @protected
+  EcashSendFees dco_decode_ecash_send_fees(dynamic raw);
+
+  @protected
   double dco_decode_f_64(dynamic raw);
 
   @protected
@@ -1864,6 +1867,9 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
 
   @protected
   EcashAppError sse_decode_ecash_app_error(SseDeserializer deserializer);
+
+  @protected
+  EcashSendFees sse_decode_ecash_send_fees(SseDeserializer deserializer);
 
   @protected
   double sse_decode_f_64(SseDeserializer deserializer);
@@ -3068,6 +3074,9 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
 
   @protected
   void sse_encode_ecash_app_error(EcashAppError self, SseSerializer serializer);
+
+  @protected
+  void sse_encode_ecash_send_fees(EcashSendFees self, SseSerializer serializer);
 
   @protected
   void sse_encode_f_64(double self, SseSerializer serializer);

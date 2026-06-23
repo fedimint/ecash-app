@@ -155,6 +155,16 @@ pub struct ReissueFees {
     pub dust_msats: u64,
 }
 
+/// Quote for an ecash send. `amount_msats` is the *actual* amount the send will
+/// spend on the ecash: the requested amount rounded up to a representable
+/// denomination, which both mint modules do before producing notes, so it can
+/// exceed what the user typed. `fee_msats` is the federation fee charged on top.
+/// The total debited from the wallet is `amount_msats + fee_msats`.
+pub struct EcashSendFees {
+    pub amount_msats: u64,
+    pub fee_msats: u64,
+}
+
 /// Result of pricing a Lightning receive. `invoice_msats` is the invoice's face
 /// value (what the payer pays). The fee is broken out into its two sources:
 /// `federation_fee_msats` (on-federation: lightning input fee plus mint output
@@ -3522,7 +3532,11 @@ impl Multimint {
         // federation can do so directly from the received ecash.
         if let Ok(mintv2) = client.get_first_module::<MintV2Module>() {
             let (_operation_id, ecash) = mintv2
-                .send(Amount::from_msats(amount_msats), serde_json::Value::Null, true)
+                .send(
+                    Amount::from_msats(amount_msats),
+                    serde_json::Value::Null,
+                    true,
+                )
                 .await
                 .map_err(EcashAppError::from_display)?;
             return Ok(OOBNotesWrapper(WrappedEcash::V2(ecash)));
@@ -3614,6 +3628,64 @@ impl Multimint {
         }
         let total_amount = notes.total_amount();
         Ok(total_amount.msats)
+    }
+
+    /// Quotes a [`Self::send_ecash`] of `amount_msats` without spending
+    /// anything, returning both the *actual* amount the send will spend and the
+    /// federation fee on top.
+    ///
+    /// Both mint modules round the requested amount up to a representable
+    /// denomination before producing notes (mintv1 to the smallest economical
+    /// denomination via `FeeConsensus::round_up`, mintv2 to a multiple of the
+    /// smallest client denomination), so the actual amount can exceed what the
+    /// user typed. We mirror that rounding here so the review screen shows the
+    /// amount that will really be spent, then quote the fee at that amount.
+    ///
+    /// The fee comes from the same `send_fee_quote` both modules expose: zero
+    /// when the wallet already holds exact-change notes (the send just hands
+    /// them out), otherwise the cost of the self-reissue the send performs. The
+    /// quote is point-in-time over the current note inventory and display-only.
+    pub async fn calculate_ecash_send_fees(
+        &self,
+        federation_id: &FederationId,
+        amount_msats: u64,
+    ) -> anyhow::Result<EcashSendFees> {
+        let client = self
+            .clients
+            .read()
+            .await
+            .get(federation_id)
+            .ok_or(anyhow!("No federation exists"))?
+            .clone();
+
+        let requested = Amount::from_msats(amount_msats);
+
+        if let Ok(mintv2) = client.get_first_module::<MintV2Module>() {
+            let min_denomination = fedimint_mintv2_common::config::client_denominations()
+                .next()
+                .ok_or(anyhow!("mintv2 has no client denominations"))?
+                .amount();
+            let actual =
+                Amount::from_msats(requested.msats.next_multiple_of(min_denomination.msats));
+            let quote = mintv2.send_fee_quote(actual).await?;
+            return Ok(EcashSendFees {
+                amount_msats: actual.msats,
+                fee_msats: quote.total().get_bitcoin().msats,
+            });
+        }
+
+        let mint = client.get_first_module::<MintClientModule>()?;
+        let module_configs = client.config().await.modules;
+        let mint_config = module_configs
+            .get(&mint.id)
+            .ok_or(anyhow!("Could not get mint config"))?
+            .cast::<fedimint_mint_common::config::MintClientConfig>()?;
+        let actual = mint_config.fee_consensus.round_up(requested);
+        let quote = mint.send_fee_quote(actual).await?;
+        Ok(EcashSendFees {
+            amount_msats: actual.msats,
+            fee_msats: quote.total().get_bitcoin().msats,
+        })
     }
 
     pub async fn calculate_ecash_reissue_fees(
