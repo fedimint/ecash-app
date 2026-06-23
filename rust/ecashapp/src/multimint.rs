@@ -2039,12 +2039,22 @@ impl Multimint {
         Ok((invoice, operation_id))
     }
 
+    /// Computes the invoice amount and fee breakdown for a receive.
+    ///
+    /// When `include_fees` is true the fees are added on top of `amount`, so the
+    /// sender covers them and exactly `amount` is credited to the receiver. When
+    /// it is false the invoice equals `amount` exactly — the sender pays only what
+    /// was requested and the receiver absorbs the fees, netting `amount` minus the
+    /// fees. In both cases the returned `invoice_msats` is the invoice face value
+    /// and the receiver nets `invoice_msats - federation_fee_msats -
+    /// gateway_fee_msats`.
     pub async fn compute_receive_amount_with_fees(
         &self,
         federation_id: &FederationId,
         gateway_url: SafeUrl,
         is_lnv2: bool,
         amount: Amount,
+        include_fees: bool,
     ) -> anyhow::Result<ReceiveAmount> {
         let client = self
             .clients
@@ -2060,8 +2070,7 @@ impl Multimint {
         // on-federation incoming contract. Claiming that contract is a federation
         // transaction whose fee — the lightning input fee, the mint output fees,
         // and any sub-denomination dust — is quoted by a dry-run via
-        // `receive_fee_quote`. We invert both layers so the sender covers
-        // everything and exactly `requested` is credited.
+        // `receive_fee_quote`.
         if is_lnv2 {
             let lnv2 = client.get_first_module::<fedimint_lnv2_client::LightningClientModule>()?;
             let routing_info = lnv2
@@ -2069,33 +2078,71 @@ impl Multimint {
                 .await?
                 .ok_or(anyhow!("Gateway has no routing info"))?;
 
-            // Federation layer: smallest contract amount that, after the
-            // on-federation receive fee, credits at least `requested`. `fed_fee` is
-            // that fee quoted at the solved contract amount, so `credited` is what
-            // the receiver actually nets from the federation.
-            let (contract, federation_fee_msats) =
-                solve_gross_for_net(requested, |gross| lnv2.receive_fee_quote(gross)).await?;
+            if include_fees {
+                // Invert both layers so the sender covers everything and exactly
+                // `requested` is credited.
+                //
+                // Federation layer: smallest contract amount that, after the
+                // on-federation receive fee, credits at least `requested`.
+                // `federation_fee_msats` is that fee quoted at the solved contract
+                // amount, so the receiver nets `requested` from the federation.
+                let (contract, federation_fee_msats) =
+                    solve_gross_for_net(requested, |gross| lnv2.receive_fee_quote(gross)).await?;
 
-            // Gateway layer: invert the off-chain routing fee so the gateway funds
-            // the contract with at least `contract` msats. The gateway's cut is the
-            // difference between the invoice and the contract it funds.
-            let invoice_msats = gross_invoice_for_contract(contract, &routing_info.receive_fee);
+                // Gateway layer: invert the off-chain routing fee so the gateway
+                // funds the contract with at least `contract` msats. The gateway's
+                // cut is the difference between the invoice and the contract it funds.
+                let invoice_msats = gross_invoice_for_contract(contract, &routing_info.receive_fee);
+                return Ok(ReceiveAmount {
+                    invoice_msats,
+                    federation_fee_msats,
+                    gateway_fee_msats: invoice_msats.saturating_sub(contract),
+                });
+            }
+
+            // Exact invoice: the face value is `requested`. The gateway takes its
+            // off-chain routing fee from the invoice and forwards the remainder
+            // into the contract; claiming that contract costs the federation fee
+            // quoted at the contract amount. Both fees come out of `requested`.
+            let contract = routing_info.receive_fee.subtract_from(requested).msats;
+            let gateway_fee_msats = requested.saturating_sub(contract);
+            let federation_fee_msats = lnv2
+                .receive_fee_quote(Amount::from_msats(contract))
+                .await?
+                .total
+                .msats;
             return Ok(ReceiveAmount {
-                invoice_msats,
+                invoice_msats: requested,
                 federation_fee_msats,
-                gateway_fee_msats: invoice_msats.saturating_sub(contract),
+                gateway_fee_msats,
             });
         }
 
         // LNv1 has no gateway or lightning routing fee, but claiming the incoming
         // contract still mints ecash, so the mint output fees (quoted the same way)
-        // must be covered. There is no gateway layer, so the invoice equals the
-        // solved gross amount and the only fee is the federation fee quoted at it.
+        // must be covered. There is no gateway layer.
         let ln = client.get_first_module::<LightningClientModule>()?;
-        let (invoice_msats, federation_fee_msats) =
-            solve_gross_for_net(requested, |gross| ln.receive_fee_quote(gross)).await?;
+        if include_fees {
+            // The invoice equals the solved gross amount and the only fee is the
+            // federation fee quoted at it, so the receiver nets `requested`.
+            let (invoice_msats, federation_fee_msats) =
+                solve_gross_for_net(requested, |gross| ln.receive_fee_quote(gross)).await?;
+            return Ok(ReceiveAmount {
+                invoice_msats,
+                federation_fee_msats,
+                gateway_fee_msats: 0,
+            });
+        }
+
+        // Exact invoice: the face value is `requested` and the federation fee for
+        // claiming the contract — quoted at that amount — is absorbed by the receiver.
+        let federation_fee_msats = ln
+            .receive_fee_quote(Amount::from_msats(requested))
+            .await?
+            .total
+            .msats;
         Ok(ReceiveAmount {
-            invoice_msats,
+            invoice_msats: requested,
             federation_fee_msats,
             gateway_fee_msats: 0,
         })

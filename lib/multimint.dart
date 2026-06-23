@@ -166,11 +166,21 @@ abstract class Multimint implements RustOpaqueInterface {
     required Bolt11Invoice bolt11,
   });
 
+  /// Computes the invoice amount and fee breakdown for a receive.
+  ///
+  /// When `include_fees` is true the fees are added on top of `amount`, so the
+  /// sender covers them and exactly `amount` is credited to the receiver. When
+  /// it is false the invoice equals `amount` exactly — the sender pays only what
+  /// was requested and the receiver absorbs the fees, netting `amount` minus the
+  /// fees. In both cases the returned `invoice_msats` is the invoice face value
+  /// and the receiver nets `invoice_msats - federation_fee_msats -
+  /// gateway_fee_msats`.
   Future<ReceiveAmount> computeReceiveAmountWithFees({
     required FederationId federationId,
     required SafeUrl gatewayUrl,
     required bool isLnv2,
     required Amount amount,
+    required bool includeFees,
   });
 
   Future<bool> containsClient({required FederationId federationId});
@@ -852,11 +862,12 @@ class PeerStatus {
 
 /// Result of pricing a Lightning receive. `invoice_msats` is the invoice's face
 /// value (what the payer pays). The fee is broken out into its two sources:
-/// `federation_fee_msats` (on-federation: lightning input fee + mint output fees
-/// + dust) and `gateway_fee_msats` (the gateway's off-chain routing fee, always
-/// 0 for LNv1). The receiver is credited `invoice_msats - federation_fee_msats -
-/// gateway_fee_msats`. Both are quoted at `invoice_msats`, not the requested
-/// amount, so they match what is really deducted.
+/// `federation_fee_msats` (on-federation: lightning input fee plus mint output
+/// fees plus dust) and `gateway_fee_msats` (the gateway's off-chain routing fee,
+/// always 0 for LNv1). The receiver is credited
+/// `invoice_msats - federation_fee_msats - gateway_fee_msats`. Both are quoted at
+/// `invoice_msats`, not the requested amount, so they match what is really
+/// deducted.
 class ReceiveAmount {
   final BigInt invoiceMsats;
   final BigInt federationFeeMsats;

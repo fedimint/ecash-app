@@ -445,6 +445,12 @@
   "showMillisatoshisDescription": "Display fractional satoshis with 3 decimal places",
   "@showMillisatoshisDescription": {},
 
+  "addFeesToInvoice": "Add fees to invoice",
+  "@addFeesToInvoice": {},
+
+  "addFeesToInvoiceDescription": "When on, the sender pays the fees and you receive the full amount. When off, the invoice is for the exact amount and the fees are taken from what you receive.",
+  "@addFeesToInvoiceDescription": {},
+
   "txDetailAmount": "Amount",
   "@txDetailAmount": {},
 

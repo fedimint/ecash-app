@@ -3171,6 +3171,7 @@ fn wire__crate__multimint__Multimint_compute_receive_amount_with_fees_impl(
             let api_gateway_url = <SafeUrl>::sse_decode(&mut deserializer);
             let api_is_lnv2 = <bool>::sse_decode(&mut deserializer);
             let api_amount = <Amount>::sse_decode(&mut deserializer);
+            let api_include_fees = <bool>::sse_decode(&mut deserializer);
             deserializer.end();
             move |context| async move {
                 transform_result_sse::<_, flutter_rust_bridge::for_generated::anyhow::Error>(
@@ -3212,6 +3213,7 @@ fn wire__crate__multimint__Multimint_compute_receive_amount_with_fees_impl(
                                 api_gateway_url,
                                 api_is_lnv2,
                                 api_amount,
+                                api_include_fees,
                             )
                             .await?;
                         Ok(output_ok)
@@ -10017,6 +10019,7 @@ fn wire__crate__compute_receive_amount_with_fees_impl(
             let api_gateway_url = <String>::sse_decode(&mut deserializer);
             let api_is_lnv2 = <bool>::sse_decode(&mut deserializer);
             let api_amount_msats = <u64>::sse_decode(&mut deserializer);
+            let api_include_fees = <bool>::sse_decode(&mut deserializer);
             deserializer.end();
             move |context| async move {
                 transform_result_sse::<_, flutter_rust_bridge::for_generated::anyhow::Error>(
@@ -10045,6 +10048,7 @@ fn wire__crate__compute_receive_amount_with_fees_impl(
                             api_gateway_url,
                             api_is_lnv2,
                             api_amount_msats,
+                            api_include_fees,
                         )
                         .await?;
                         Ok(output_ok)

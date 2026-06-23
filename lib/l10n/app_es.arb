@@ -121,6 +121,8 @@
   "displaySettingsUpdated": "¡Configuración de pantalla actualizada!",
   "showMillisatoshis": "Mostrar milisatoshis",
   "showMillisatoshisDescription": "Mostrar satoshis fraccionarios con 3 decimales",
+  "addFeesToInvoice": "Agregar comisiones a la factura",
+  "addFeesToInvoiceDescription": "Cuando está activado, el remitente paga las comisiones y tú recibes el monto completo. Cuando está desactivado, la factura es por el monto exacto y las comisiones se descuentan de lo que recibes.",
   "txDetailAmount": "Monto",
   "txDetailTotalAmount": "Monto Total",
   "txDetailReceivedAmount": "Monto Recibido",

@@ -94,11 +94,13 @@ Future<ReceiveAmount> computeReceiveAmountWithFees({
   required String gatewayUrl,
   required bool isLnv2,
   required BigInt amountMsats,
+  required bool includeFees,
 }) => RustLib.instance.api.crateComputeReceiveAmountWithFees(
   federationId: federationId,
   gatewayUrl: gatewayUrl,
   isLnv2: isLnv2,
   amountMsats: amountMsats,
+  includeFees: includeFees,
 );
 
 Future<String> getInvoiceFromLnaddressOrLnurl({

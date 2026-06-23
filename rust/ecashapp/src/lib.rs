@@ -282,12 +282,13 @@ pub async fn compute_receive_amount_with_fees(
     gateway_url: String,
     is_lnv2: bool,
     amount_msats: u64,
+    include_fees: bool,
 ) -> anyhow::Result<ReceiveAmount> {
     let gateway_url = SafeUrl::parse(&gateway_url)?;
     let amount = Amount::from_msats(amount_msats);
     let multimint = get_multimint();
     multimint
-        .compute_receive_amount_with_fees(federation_id, gateway_url, is_lnv2, amount)
+        .compute_receive_amount_with_fees(federation_id, gateway_url, is_lnv2, amount, include_fees)
         .await
 }
 

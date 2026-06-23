@@ -357,6 +357,7 @@ abstract class RustLibApi extends BaseApi {
     required SafeUrl gatewayUrl,
     required bool isLnv2,
     required Amount amount,
+    required bool includeFees,
   });
 
   Future<bool> crateMultimintMultimintContainsClient({
@@ -921,6 +922,7 @@ abstract class RustLibApi extends BaseApi {
     required String gatewayUrl,
     required bool isLnv2,
     required BigInt amountMsats,
+    required bool includeFees,
   });
 
   Future<Connector> crateDbConnectorDefault();
@@ -3551,6 +3553,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
     required SafeUrl gatewayUrl,
     required bool isLnv2,
     required Amount amount,
+    required bool includeFees,
   }) {
     return handler.executeNormal(
       NormalTask(
@@ -3573,6 +3576,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
             amount,
             serializer,
           );
+          sse_encode_bool(includeFees, serializer);
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
@@ -3586,7 +3590,14 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
         ),
         constMeta:
             kCrateMultimintMultimintComputeReceiveAmountWithFeesConstMeta,
-        argValues: [that, federationId, gatewayUrl, isLnv2, amount],
+        argValues: [
+          that,
+          federationId,
+          gatewayUrl,
+          isLnv2,
+          amount,
+          includeFees,
+        ],
         apiImpl: this,
       ),
     );
@@ -3596,7 +3607,14 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   get kCrateMultimintMultimintComputeReceiveAmountWithFeesConstMeta =>
       const TaskConstMeta(
         debugName: "Multimint_compute_receive_amount_with_fees",
-        argNames: ["that", "federationId", "gatewayUrl", "isLnv2", "amount"],
+        argNames: [
+          "that",
+          "federationId",
+          "gatewayUrl",
+          "isLnv2",
+          "amount",
+          "includeFees",
+        ],
       );
 
   @override
@@ -8158,6 +8176,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
     required String gatewayUrl,
     required bool isLnv2,
     required BigInt amountMsats,
+    required bool includeFees,
   }) {
     return handler.executeNormal(
       NormalTask(
@@ -8170,6 +8189,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           sse_encode_String(gatewayUrl, serializer);
           sse_encode_bool(isLnv2, serializer);
           sse_encode_u_64(amountMsats, serializer);
+          sse_encode_bool(includeFees, serializer);
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
@@ -8182,7 +8202,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           decodeErrorData: sse_decode_AnyhowException,
         ),
         constMeta: kCrateComputeReceiveAmountWithFeesConstMeta,
-        argValues: [federationId, gatewayUrl, isLnv2, amountMsats],
+        argValues: [federationId, gatewayUrl, isLnv2, amountMsats, includeFees],
         apiImpl: this,
       ),
     );
@@ -8191,7 +8211,13 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   TaskConstMeta get kCrateComputeReceiveAmountWithFeesConstMeta =>
       const TaskConstMeta(
         debugName: "compute_receive_amount_with_fees",
-        argNames: ["federationId", "gatewayUrl", "isLnv2", "amountMsats"],
+        argNames: [
+          "federationId",
+          "gatewayUrl",
+          "isLnv2",
+          "amountMsats",
+          "includeFees",
+        ],
       );
 
   @override
@@ -19723,11 +19749,21 @@ class MultimintImpl extends RustOpaque implements Multimint {
     bolt11: bolt11,
   );
 
+  /// Computes the invoice amount and fee breakdown for a receive.
+  ///
+  /// When `include_fees` is true the fees are added on top of `amount`, so the
+  /// sender covers them and exactly `amount` is credited to the receiver. When
+  /// it is false the invoice equals `amount` exactly — the sender pays only what
+  /// was requested and the receiver absorbs the fees, netting `amount` minus the
+  /// fees. In both cases the returned `invoice_msats` is the invoice face value
+  /// and the receiver nets `invoice_msats - federation_fee_msats -
+  /// gateway_fee_msats`.
   Future<ReceiveAmount> computeReceiveAmountWithFees({
     required FederationId federationId,
     required SafeUrl gatewayUrl,
     required bool isLnv2,
     required Amount amount,
+    required bool includeFees,
   }) =>
       RustLib.instance.api.crateMultimintMultimintComputeReceiveAmountWithFees(
         that: this,
@@ -19735,6 +19771,7 @@ class MultimintImpl extends RustOpaque implements Multimint {
         gatewayUrl: gatewayUrl,
         isLnv2: isLnv2,
         amount: amount,
+        includeFees: includeFees,
       );
 
   Future<bool> containsClient({required FederationId federationId}) =>
