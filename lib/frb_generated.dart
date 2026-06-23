@@ -551,6 +551,7 @@ abstract class RustLibApi extends BaseApi {
     required Multimint that,
     required FederationId federationId,
     required BigInt amountMsats,
+    required BigInt feeMsats,
   });
 
   Future<void> crateMultimintMultimintSetBitcoinDisplay({
@@ -1140,6 +1141,7 @@ abstract class RustLibApi extends BaseApi {
   Future<OobNotesWrapper> crateSendEcash({
     required FederationId federationId,
     required BigInt amountMsats,
+    required BigInt feeMsats,
   });
 
   Future<OperationId> crateSendLnaddress({
@@ -5130,6 +5132,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
     required Multimint that,
     required FederationId federationId,
     required BigInt amountMsats,
+    required BigInt feeMsats,
   }) {
     return handler.executeNormal(
       NormalTask(
@@ -5144,6 +5147,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
             serializer,
           );
           sse_encode_u_64(amountMsats, serializer);
+          sse_encode_u_64(feeMsats, serializer);
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
@@ -5157,7 +5161,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           decodeErrorData: null,
         ),
         constMeta: kCrateMultimintMultimintSendEcashConstMeta,
-        argValues: [that, federationId, amountMsats],
+        argValues: [that, federationId, amountMsats, feeMsats],
         apiImpl: this,
       ),
     );
@@ -5166,7 +5170,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   TaskConstMeta get kCrateMultimintMultimintSendEcashConstMeta =>
       const TaskConstMeta(
         debugName: "Multimint_send_ecash",
-        argNames: ["that", "federationId", "amountMsats"],
+        argNames: ["that", "federationId", "amountMsats", "feeMsats"],
       );
 
   @override
@@ -10117,6 +10121,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   Future<OobNotesWrapper> crateSendEcash({
     required FederationId federationId,
     required BigInt amountMsats,
+    required BigInt feeMsats,
   }) {
     return handler.executeNormal(
       NormalTask(
@@ -10127,6 +10132,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
             serializer,
           );
           sse_encode_u_64(amountMsats, serializer);
+          sse_encode_u_64(feeMsats, serializer);
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
@@ -10140,7 +10146,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           decodeErrorData: sse_decode_ecash_app_error,
         ),
         constMeta: kCrateSendEcashConstMeta,
-        argValues: [federationId, amountMsats],
+        argValues: [federationId, amountMsats, feeMsats],
         apiImpl: this,
       ),
     );
@@ -10148,7 +10154,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
 
   TaskConstMeta get kCrateSendEcashConstMeta => const TaskConstMeta(
     debugName: "send_ecash",
-    argNames: ["federationId", "amountMsats"],
+    argNames: ["federationId", "amountMsats", "feeMsats"],
   );
 
   @override
@@ -20169,10 +20175,12 @@ class MultimintImpl extends RustOpaque implements Multimint {
   Future<EcashAppResultOobNotesWrapper> sendEcash({
     required FederationId federationId,
     required BigInt amountMsats,
+    required BigInt feeMsats,
   }) => RustLib.instance.api.crateMultimintMultimintSendEcash(
     that: this,
     federationId: federationId,
     amountMsats: amountMsats,
+    feeMsats: feeMsats,
   );
 
   Future<void> setBitcoinDisplay({required BitcoinDisplay bitcoinDisplay}) =>

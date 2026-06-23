@@ -85,6 +85,9 @@ class _EcashSendState extends State<EcashSend> {
       final notes = await sendEcash(
         federationId: widget.fed.federationId,
         amountMsats: widget.amountMsats,
+        // Persist the quoted fee so it can be shown in the transaction details.
+        // Falls back to zero if the (display-only) quote was unavailable.
+        feeMsats: _fees?.feeMsats ?? BigInt.zero,
       );
 
       final encoder = OobNotesEncoder(notes: notes);
@@ -387,6 +390,27 @@ class _EcashSendState extends State<EcashSend> {
                     bitcoinDisplay,
                   ),
                 ),
+                // Show the federation fee and total spent only when a fee was
+                // actually paid (exact-change sends are free), matching the
+                // review screen and the transaction details.
+                if (_fees != null && _fees!.feeMsats > BigInt.zero) ...[
+                  CopyableDetailRow(
+                    label: TransactionDetailKeys.federationFee,
+                    value: formatBalance(
+                      _fees!.feeMsats,
+                      showMsats,
+                      bitcoinDisplay,
+                    ),
+                  ),
+                  CopyableDetailRow(
+                    label: TransactionDetailKeys.total,
+                    value: formatBalance(
+                      _notes!.amountMsats() + _fees!.feeMsats,
+                      showMsats,
+                      bitcoinDisplay,
+                    ),
+                  ),
+                ],
                 CopyableDetailRow(
                   label: context.l10n.federationLabel,
                   value: widget.fed.federationName,

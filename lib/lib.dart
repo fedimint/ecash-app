@@ -194,9 +194,11 @@ Future<List<Transaction>> transactions({
 Future<OobNotesWrapper> sendEcash({
   required FederationId federationId,
   required BigInt amountMsats,
+  required BigInt feeMsats,
 }) => RustLib.instance.api.crateSendEcash(
   federationId: federationId,
   amountMsats: amountMsats,
+  feeMsats: feeMsats,
 );
 
 Future<ReissueFees> calculateEcashReissueFees({

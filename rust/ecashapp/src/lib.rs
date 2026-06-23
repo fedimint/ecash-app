@@ -503,9 +503,12 @@ pub async fn transactions(
 pub async fn send_ecash(
     federation_id: &FederationId,
     amount_msats: u64,
+    fee_msats: u64,
 ) -> Result<OOBNotesWrapper, EcashAppError> {
     let multimint = get_multimint();
-    multimint.send_ecash(federation_id, amount_msats).await
+    multimint
+        .send_ecash(federation_id, amount_msats, fee_msats)
+        .await
 }
 
 async fn parse_ecash(federation_id: &FederationId, notes: &OOBNotes) -> anyhow::Result<u64> {

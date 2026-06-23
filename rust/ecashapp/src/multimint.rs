@@ -3082,10 +3082,18 @@ impl Multimint {
                                 if internal_spends.contains(&key.operation_id) {
                                     continue;
                                 }
+                                // The send fee was stashed in extra_meta at send
+                                // time (see `send_ecash`); older transactions
+                                // predate it, so default to 0.
+                                let fees = meta
+                                    .extra_meta
+                                    .get("fee_msats")
+                                    .and_then(|v| v.as_u64())
+                                    .unwrap_or(0);
                                 Some(Transaction {
                                     kind: TransactionKind::EcashSend {
                                         oob_notes: oob_notes.to_string(),
-                                        fees: 0, // currently no fees for the mint module
+                                        fees,
                                     },
                                     amount: oob_notes.total_amount().msats,
                                     timestamp,
@@ -3189,21 +3197,27 @@ impl Multimint {
                                     None
                                 }
                             }
-                            MintV2OperationMeta::Send { ecash, .. } => {
+                            MintV2OperationMeta::Send {
+                                ecash, custom_meta, ..
+                            } => {
                                 // The amount isn't stored in the meta; recover it
                                 // from the ecash string.
                                 let amount = decode_prefixed::<ECash>(FEDIMINT_PREFIX, &ecash)
                                     .map(|e| e.amount().msats)
                                     .unwrap_or(0);
+                                // The send fee — incurred by the internal reissue
+                                // that mints the right denominations (the
+                                // filtered-out op below) — was stashed in
+                                // custom_meta at send time (see `send_ecash`).
+                                // Older transactions predate it, so default to 0.
+                                let fees = custom_meta
+                                    .get("fee_msats")
+                                    .and_then(|v| v.as_u64())
+                                    .unwrap_or(0);
                                 Some(Transaction {
                                     kind: TransactionKind::EcashSend {
                                         oob_notes: ecash,
-                                        // TODO: account for the send fee. The send
-                                        // itself is free, but reaching the right
-                                        // denominations may have required a reissue
-                                        // (the filtered-out op below) that did cost
-                                        // a fee, which we don't attribute here yet.
-                                        fees: 0,
+                                        fees,
                                     },
                                     amount,
                                     timestamp,
@@ -3516,6 +3530,7 @@ impl Multimint {
         &self,
         federation_id: &FederationId,
         amount_msats: u64,
+        fee_msats: u64,
     ) -> EcashAppResult<OOBNotesWrapper> {
         let client = self
             .clients
@@ -3524,6 +3539,13 @@ impl Multimint {
             .get(federation_id)
             .ok_or_else(|| EcashAppError::other("federation does not exist"))?
             .clone();
+        // The send fee (the federation reissue fee, quoted on the review screen)
+        // isn't recoverable from the operation log afterwards — the reissue that
+        // pays it is a separate, filtered-out operation. So we stash it in the
+        // send operation's meta here and read it back when reconstructing the
+        // transaction (see `transactions`), mirroring how lightning/onchain
+        // persist their fees in custom_meta.
+        let send_meta = json!({ "fee_msats": fee_msats });
         // mintv2: `send` produces the `ECash`, performing any internal reissue
         // (to mint the right denominations) inline before returning. There's no
         // SpendOOB/refund state to await as in walletv1, so the returned
@@ -3532,11 +3554,7 @@ impl Multimint {
         // federation can do so directly from the received ecash.
         if let Ok(mintv2) = client.get_first_module::<MintV2Module>() {
             let (_operation_id, ecash) = mintv2
-                .send(
-                    Amount::from_msats(amount_msats),
-                    serde_json::Value::Null,
-                    true,
-                )
+                .send(Amount::from_msats(amount_msats), send_meta, true)
                 .await
                 .map_err(EcashAppError::from_display)?;
             return Ok(OOBNotesWrapper(WrappedEcash::V2(ecash)));
@@ -3545,7 +3563,7 @@ impl Multimint {
         let notes = client
             .get_first_module::<MintClientModule>()
             .map_err(|e| EcashAppError::other(format!("mint module unavailable: {e:#}")))?
-            .send_oob_notes(Amount::from_msats(amount_msats), ())
+            .send_oob_notes(Amount::from_msats(amount_msats), send_meta)
             .await
             .map_err(EcashAppError::from_display)?;
         Ok(OOBNotesWrapper(WrappedEcash::V1(notes)))

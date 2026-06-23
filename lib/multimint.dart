@@ -355,6 +355,7 @@ abstract class Multimint implements RustOpaqueInterface {
   Future<EcashAppResultOobNotesWrapper> sendEcash({
     required FederationId federationId,
     required BigInt amountMsats,
+    required BigInt feeMsats,
   });
 
   Future<void> setBitcoinDisplay({required BitcoinDisplay bitcoinDisplay});

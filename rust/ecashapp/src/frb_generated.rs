@@ -5656,6 +5656,7 @@ fn wire__crate__multimint__Multimint_send_ecash_impl(
                 flutter_rust_bridge::for_generated::RustAutoOpaqueInner<FederationId>,
             >>::sse_decode(&mut deserializer);
             let api_amount_msats = <u64>::sse_decode(&mut deserializer);
+            let api_fee_msats = <u64>::sse_decode(&mut deserializer);
             deserializer.end();
             move |context| async move {
                 transform_result_sse::<_, ()>(
@@ -5695,6 +5696,7 @@ fn wire__crate__multimint__Multimint_send_ecash_impl(
                                 &*api_that_guard,
                                 &*api_federation_id_guard,
                                 api_amount_msats,
+                                api_fee_msats,
                             )
                             .await,
                         )?;
@@ -12527,6 +12529,7 @@ fn wire__crate__send_ecash_impl(
                 flutter_rust_bridge::for_generated::RustAutoOpaqueInner<FederationId>,
             >>::sse_decode(&mut deserializer);
             let api_amount_msats = <u64>::sse_decode(&mut deserializer);
+            let api_fee_msats = <u64>::sse_decode(&mut deserializer);
             deserializer.end();
             move |context| async move {
                 transform_result_sse::<_, crate::app_error::EcashAppError>(
@@ -12550,8 +12553,12 @@ fn wire__crate__send_ecash_impl(
                             }
                         }
                         let api_federation_id_guard = api_federation_id_guard.unwrap();
-                        let output_ok =
-                            crate::send_ecash(&*api_federation_id_guard, api_amount_msats).await?;
+                        let output_ok = crate::send_ecash(
+                            &*api_federation_id_guard,
+                            api_amount_msats,
+                            api_fee_msats,
+                        )
+                        .await?;
                         Ok(output_ok)
                     })()
                     .await,
