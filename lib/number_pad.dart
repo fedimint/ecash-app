@@ -66,6 +66,18 @@ class _NumberPadState extends State<NumberPad> {
   String? _selectedGatewayEndpoint;
   bool? _selectedGatewayIsLnv2;
 
+  // When true, fees are added on top of the invoice so the sender pays them and
+  // the receiver gets the full requested amount. When false, the invoice is for
+  // the exact requested amount and the receiver absorbs the fees. Resets to true
+  // each time the screen opens. Only relevant for Lightning receive.
+  bool _includeFees = true;
+
+  // The toggle only makes sense when generating a Lightning invoice to receive,
+  // not when paying a Lightning Address / LNURL or for ecash / on-chain.
+  bool get _isLightningReceive =>
+      widget.paymentType == PaymentType.lightning &&
+      widget.lightningAddressOrLnurl == null;
+
   @override
   void initState() {
     super.initState();
@@ -330,6 +342,7 @@ class _NumberPadState extends State<NumberPad> {
         gatewayUrl: selected.endpoint,
         isLnv2: selected.isLnv2,
         amountMsats: requestedAmountMsats,
+        includeFees: _includeFees,
       );
 
       // Create the invoice
@@ -990,6 +1003,40 @@ class _NumberPadState extends State<NumberPad> {
                 ),
               ),
             ),
+            if (_isLightningReceive)
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 0, 8, 8),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        context.l10n.addFeesToInvoice,
+                        style: Theme.of(context).textTheme.bodyMedium,
+                      ),
+                    ),
+                    Tooltip(
+                      message: context.l10n.addFeesToInvoiceDescription,
+                      triggerMode: TooltipTriggerMode.tap,
+                      showDuration: const Duration(seconds: 4),
+                      child: Padding(
+                        padding: const EdgeInsets.only(right: 4),
+                        child: Icon(
+                          Icons.info_outline,
+                          size: 18,
+                          color: Theme.of(context).colorScheme.onSurfaceVariant,
+                        ),
+                      ),
+                    ),
+                    Switch(
+                      value: _includeFees,
+                      activeThumbColor: Theme.of(context).colorScheme.primary,
+                      onChanged: (value) {
+                        setState(() => _includeFees = value);
+                      },
+                    ),
+                  ],
+                ),
+              ),
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16.0),
               child: SizedBox(
