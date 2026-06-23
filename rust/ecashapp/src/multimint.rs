@@ -2109,7 +2109,8 @@ impl Multimint {
             let federation_fee_msats = lnv2
                 .receive_fee_quote(Amount::from_msats(contract))
                 .await?
-                .total
+                .total()
+                .get_bitcoin()
                 .msats;
             return Ok(ReceiveAmount {
                 invoice_msats: requested,
@@ -2139,7 +2140,8 @@ impl Multimint {
         let federation_fee_msats = ln
             .receive_fee_quote(Amount::from_msats(requested))
             .await?
-            .total
+            .total()
+            .get_bitcoin()
             .msats;
         Ok(ReceiveAmount {
             invoice_msats: requested,
@@ -2234,13 +2236,13 @@ impl Multimint {
                 client.get_first_module::<fedimint_lnv2_client::LightningClientModule>()
             {
                 if let Ok(quote) = lnv2.send_fee_quote(contract_amount).await {
-                    return quote.total.msats;
+                    return quote.total().get_bitcoin().msats;
                 }
             }
         }
         if let Ok(ln) = client.get_first_module::<LightningClientModule>() {
             if let Ok(quote) = ln.send_fee_quote(contract_amount).await {
-                return quote.total.msats;
+                return quote.total().get_bitcoin().msats;
             }
         }
         0
@@ -3514,10 +3516,13 @@ impl Multimint {
             .clone();
         // mintv2: `send` produces the `ECash`, performing any internal reissue
         // (to mint the right denominations) inline before returning. There's no
-        // SpendOOB/refund state to await as in walletv1.
+        // SpendOOB/refund state to await as in walletv1, so the returned
+        // operation id is unused. `include_invite = true` embeds the federation
+        // invite code in the ecash so a recipient that has not joined the
+        // federation can do so directly from the received ecash.
         if let Ok(mintv2) = client.get_first_module::<MintV2Module>() {
-            let ecash = mintv2
-                .send(Amount::from_msats(amount_msats), serde_json::Value::Null)
+            let (_operation_id, ecash) = mintv2
+                .send(Amount::from_msats(amount_msats), serde_json::Value::Null, true)
                 .await
                 .map_err(EcashAppError::from_display)?;
             return Ok(OOBNotesWrapper(WrappedEcash::V2(ecash)));
@@ -3640,10 +3645,10 @@ impl Multimint {
         };
 
         Ok(ReissueFees {
-            total_msats: quote.total.msats,
-            input_msats: quote.input.msats,
-            output_msats: quote.output.msats,
-            dust_msats: quote.dust.msats,
+            total_msats: quote.total().get_bitcoin().msats,
+            input_msats: quote.input.get_bitcoin().msats,
+            output_msats: quote.output.get_bitcoin().msats,
+            dust_msats: quote.dust.get_bitcoin().msats,
         })
     }
 
@@ -5288,7 +5293,11 @@ where
     // 64 is a safety cap; convergence is normally reached in one or two steps
     // since the fee is tiny relative to the amount.
     for _ in 0..64 {
-        fee = quote(Amount::from_msats(gross)).await?.total.msats;
+        fee = quote(Amount::from_msats(gross))
+            .await?
+            .total()
+            .get_bitcoin()
+            .msats;
         let next = requested.saturating_add(fee);
         if next <= gross {
             // `fee` is the quote at the current (returned) `gross`.

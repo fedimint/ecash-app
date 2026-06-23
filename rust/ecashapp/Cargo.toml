@@ -12,34 +12,28 @@ async-stream = "0.3.6"
 async-trait = "0.1.88"
 bitcoin = { version = "0.32.5", features = ["serde"] }
 bitcoin-payment-instructions = { version = "0.4.0", features = [ "http" ]}
-# Pinned to a m1sterc001guy/fedimint branch (post-v0.11.0 master). Carries the
-# per-peer Connectivity on connection_status_stream (fedimint/fedimint#8520),
-# the module-agnostic fee-quote API (receive_fee_quote/reissue_fee_quote return
-# the shared fedimint_client::transaction::FeeQuote), and send_fee_quote on the
-# ln/lnv2 and wallet/walletv2 clients. Drop back to a version pin once a release
-# containing these ships.
-fedimint-api-client = { git = "https://github.com/m1sterc001guy/fedimint", rev = "466718ac3ca4eb31d2d121c2c3f32b8774614b1b" }
-fedimint-bip39 = { git = "https://github.com/m1sterc001guy/fedimint", rev = "466718ac3ca4eb31d2d121c2c3f32b8774614b1b" }
-fedimint-core = { git = "https://github.com/m1sterc001guy/fedimint", rev = "466718ac3ca4eb31d2d121c2c3f32b8774614b1b" }
-fedimint-fountain = { git = "https://github.com/m1sterc001guy/fedimint", rev = "466718ac3ca4eb31d2d121c2c3f32b8774614b1b" }
-fedimint-client = { git = "https://github.com/m1sterc001guy/fedimint", rev = "466718ac3ca4eb31d2d121c2c3f32b8774614b1b" }
-fedimint-eventlog = { git = "https://github.com/m1sterc001guy/fedimint", rev = "466718ac3ca4eb31d2d121c2c3f32b8774614b1b" }
-fedimint-connectors = { git = "https://github.com/m1sterc001guy/fedimint", rev = "466718ac3ca4eb31d2d121c2c3f32b8774614b1b" }
-fedimint-derive-secret = { git = "https://github.com/m1sterc001guy/fedimint", rev = "466718ac3ca4eb31d2d121c2c3f32b8774614b1b" }
-fedimint-rocksdb = { git = "https://github.com/m1sterc001guy/fedimint", rev = "466718ac3ca4eb31d2d121c2c3f32b8774614b1b" }
-fedimint-ln-client = { git = "https://github.com/m1sterc001guy/fedimint", rev = "466718ac3ca4eb31d2d121c2c3f32b8774614b1b" }
-fedimint-lnv2-client = { git = "https://github.com/m1sterc001guy/fedimint", rev = "466718ac3ca4eb31d2d121c2c3f32b8774614b1b" }
-fedimint-lnv2-common = { git = "https://github.com/m1sterc001guy/fedimint", rev = "466718ac3ca4eb31d2d121c2c3f32b8774614b1b" }
-fedimint-ln-common = { git = "https://github.com/m1sterc001guy/fedimint", rev = "466718ac3ca4eb31d2d121c2c3f32b8774614b1b" }
-fedimint-meta-client = { git = "https://github.com/m1sterc001guy/fedimint", rev = "466718ac3ca4eb31d2d121c2c3f32b8774614b1b" }
-fedimint-mint-client = { git = "https://github.com/m1sterc001guy/fedimint", rev = "466718ac3ca4eb31d2d121c2c3f32b8774614b1b" }
-fedimint-mint-common = { git = "https://github.com/m1sterc001guy/fedimint", rev = "466718ac3ca4eb31d2d121c2c3f32b8774614b1b" }
-fedimint-mintv2-client = { git = "https://github.com/m1sterc001guy/fedimint", rev = "466718ac3ca4eb31d2d121c2c3f32b8774614b1b" }
-fedimint-mintv2-common = { git = "https://github.com/m1sterc001guy/fedimint", rev = "466718ac3ca4eb31d2d121c2c3f32b8774614b1b" }
-fedimint-wallet-client = { git = "https://github.com/m1sterc001guy/fedimint", rev = "466718ac3ca4eb31d2d121c2c3f32b8774614b1b" }
-fedimint-wallet-common = { git = "https://github.com/m1sterc001guy/fedimint", rev = "466718ac3ca4eb31d2d121c2c3f32b8774614b1b" }
-fedimint-walletv2-client = { git = "https://github.com/m1sterc001guy/fedimint", rev = "466718ac3ca4eb31d2d121c2c3f32b8774614b1b" }
-fedimint-walletv2-common = { git = "https://github.com/m1sterc001guy/fedimint", rev = "466718ac3ca4eb31d2d121c2c3f32b8774614b1b" }
+fedimint-api-client = { git = "https://github.com/m1sterc001guy/fedimint", rev = "6dfa480c67ab37d29d8fa19f6a51c0d11201163b" }
+fedimint-bip39 = { git = "https://github.com/m1sterc001guy/fedimint", rev = "6dfa480c67ab37d29d8fa19f6a51c0d11201163b" }
+fedimint-core = { git = "https://github.com/m1sterc001guy/fedimint", rev = "6dfa480c67ab37d29d8fa19f6a51c0d11201163b" }
+fedimint-fountain = { git = "https://github.com/m1sterc001guy/fedimint", rev = "6dfa480c67ab37d29d8fa19f6a51c0d11201163b" }
+fedimint-client = { git = "https://github.com/m1sterc001guy/fedimint", rev = "6dfa480c67ab37d29d8fa19f6a51c0d11201163b" }
+fedimint-eventlog = { git = "https://github.com/m1sterc001guy/fedimint", rev = "6dfa480c67ab37d29d8fa19f6a51c0d11201163b" }
+fedimint-connectors = { git = "https://github.com/m1sterc001guy/fedimint", rev = "6dfa480c67ab37d29d8fa19f6a51c0d11201163b" }
+fedimint-derive-secret = { git = "https://github.com/m1sterc001guy/fedimint", rev = "6dfa480c67ab37d29d8fa19f6a51c0d11201163b" }
+fedimint-rocksdb = { git = "https://github.com/m1sterc001guy/fedimint", rev = "6dfa480c67ab37d29d8fa19f6a51c0d11201163b" }
+fedimint-ln-client = { git = "https://github.com/m1sterc001guy/fedimint", rev = "6dfa480c67ab37d29d8fa19f6a51c0d11201163b" }
+fedimint-lnv2-client = { git = "https://github.com/m1sterc001guy/fedimint", rev = "6dfa480c67ab37d29d8fa19f6a51c0d11201163b" }
+fedimint-lnv2-common = { git = "https://github.com/m1sterc001guy/fedimint", rev = "6dfa480c67ab37d29d8fa19f6a51c0d11201163b" }
+fedimint-ln-common = { git = "https://github.com/m1sterc001guy/fedimint", rev = "6dfa480c67ab37d29d8fa19f6a51c0d11201163b" }
+fedimint-meta-client = { git = "https://github.com/m1sterc001guy/fedimint", rev = "6dfa480c67ab37d29d8fa19f6a51c0d11201163b" }
+fedimint-mint-client = { git = "https://github.com/m1sterc001guy/fedimint", rev = "6dfa480c67ab37d29d8fa19f6a51c0d11201163b" }
+fedimint-mint-common = { git = "https://github.com/m1sterc001guy/fedimint", rev = "6dfa480c67ab37d29d8fa19f6a51c0d11201163b" }
+fedimint-mintv2-client = { git = "https://github.com/m1sterc001guy/fedimint", rev = "6dfa480c67ab37d29d8fa19f6a51c0d11201163b" }
+fedimint-mintv2-common = { git = "https://github.com/m1sterc001guy/fedimint", rev = "6dfa480c67ab37d29d8fa19f6a51c0d11201163b" }
+fedimint-wallet-client = { git = "https://github.com/m1sterc001guy/fedimint", rev = "6dfa480c67ab37d29d8fa19f6a51c0d11201163b" }
+fedimint-wallet-common = { git = "https://github.com/m1sterc001guy/fedimint", rev = "6dfa480c67ab37d29d8fa19f6a51c0d11201163b" }
+fedimint-walletv2-client = { git = "https://github.com/m1sterc001guy/fedimint", rev = "6dfa480c67ab37d29d8fa19f6a51c0d11201163b" }
+fedimint-walletv2-common = { git = "https://github.com/m1sterc001guy/fedimint", rev = "6dfa480c67ab37d29d8fa19f6a51c0d11201163b" }
 hex = "0.4"
 flutter_rust_bridge = "=2.9.0"
 futures-timer = "3.0.3"
