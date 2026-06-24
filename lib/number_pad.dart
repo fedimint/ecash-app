@@ -148,11 +148,12 @@ class _NumberPadState extends State<NumberPad> {
     super.initState();
     _selectedFed = widget.fed;
 
-    // Pre-fill a fixed-amount LNURLw withdraw (min == max) so the user can just
-    // confirm without typing.
+    // Default the amount to the maximum withdrawable, matching the old withdraw
+    // screen. For a fixed-amount card (min == max) the user can just confirm;
+    // for a range they can lower it. Set synchronously so it shows on the first
+    // build — no setState/race involved.
     final lnurlw = widget.lnurlWithdrawParams;
-    if (lnurlw != null &&
-        lnurlw.minWithdrawableMsats == lnurlw.maxWithdrawableMsats) {
+    if (lnurlw != null) {
       _rawAmount =
           (lnurlw.maxWithdrawableMsats ~/ BigInt.from(1000)).toString();
     }
