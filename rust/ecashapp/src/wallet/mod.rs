@@ -767,7 +767,7 @@ impl WalletHandler {
             let federation_fee_msats = walletv2
                 .send_fee_quote(bitcoin::Amount::from_sat(amount_sats + fee_sats))
                 .await
-                .map(|q| q.total.msats)
+                .map(|q| q.total().get_bitcoin().msats)
                 .unwrap_or(0);
 
             return Ok(WithdrawFeesResponse {
@@ -799,7 +799,7 @@ impl WalletHandler {
         let federation_fee_msats = wallet_module
             .send_fee_quote(bitcoin::Amount::from_sat(amount_sats + meta.fee_sats))
             .await
-            .map(|q| q.total.msats)
+            .map(|q| q.total().get_bitcoin().msats)
             .unwrap_or(0);
 
         Ok(WithdrawFeesResponse {

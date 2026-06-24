@@ -894,6 +894,15 @@
   "gettingChangeFromMint": "Getting change from mint...",
   "@gettingChangeFromMint": {},
 
+  "calculatingFees": "Calculating fees...",
+  "@calculatingFees": {},
+
+  "reviewEcashSend": "Review Ecash Send",
+  "@reviewEcashSend": {},
+
+  "confirmAndSendEcash": "Confirm & Generate",
+  "@confirmAndSendEcash": {},
+
   "failedToLoadEcash": "Failed to load Ecash",
   "@failedToLoadEcash": {},
 

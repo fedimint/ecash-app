@@ -109,7 +109,13 @@ class TransactionItem extends StatelessWidget {
               tx: tx,
               details: {
                 TransactionDetailKeys.amount: formattedAmount,
-                TransactionDetailKeys.fees: fmt(fees),
+                // The ecash send fee is a federation reissue fee (no gateway).
+                // Shown only when non-zero, matching the lightning send detail;
+                // exact-change sends are free. Total is what left the wallet.
+                if (fees > BigInt.zero)
+                  TransactionDetailKeys.federationFee: fmt(fees),
+                if (fees > BigInt.zero)
+                  TransactionDetailKeys.total: fmt(tx.amount + fees),
                 TransactionDetailKeys.ecash: oobNotes,
                 TransactionDetailKeys.timestamp: formattedDate,
               },

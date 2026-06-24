@@ -155,6 +155,16 @@ pub struct ReissueFees {
     pub dust_msats: u64,
 }
 
+/// Quote for an ecash send. `amount_msats` is the *actual* amount the send will
+/// spend on the ecash: the requested amount rounded up to a representable
+/// denomination, which both mint modules do before producing notes, so it can
+/// exceed what the user typed. `fee_msats` is the federation fee charged on top.
+/// The total debited from the wallet is `amount_msats + fee_msats`.
+pub struct EcashSendFees {
+    pub amount_msats: u64,
+    pub fee_msats: u64,
+}
+
 /// Result of pricing a Lightning receive. `invoice_msats` is the invoice's face
 /// value (what the payer pays). The fee is broken out into its two sources:
 /// `federation_fee_msats` (on-federation: lightning input fee plus mint output
@@ -2109,7 +2119,8 @@ impl Multimint {
             let federation_fee_msats = lnv2
                 .receive_fee_quote(Amount::from_msats(contract))
                 .await?
-                .total
+                .total()
+                .get_bitcoin()
                 .msats;
             return Ok(ReceiveAmount {
                 invoice_msats: requested,
@@ -2139,7 +2150,8 @@ impl Multimint {
         let federation_fee_msats = ln
             .receive_fee_quote(Amount::from_msats(requested))
             .await?
-            .total
+            .total()
+            .get_bitcoin()
             .msats;
         Ok(ReceiveAmount {
             invoice_msats: requested,
@@ -2234,13 +2246,13 @@ impl Multimint {
                 client.get_first_module::<fedimint_lnv2_client::LightningClientModule>()
             {
                 if let Ok(quote) = lnv2.send_fee_quote(contract_amount).await {
-                    return quote.total.msats;
+                    return quote.total().get_bitcoin().msats;
                 }
             }
         }
         if let Ok(ln) = client.get_first_module::<LightningClientModule>() {
             if let Ok(quote) = ln.send_fee_quote(contract_amount).await {
-                return quote.total.msats;
+                return quote.total().get_bitcoin().msats;
             }
         }
         0
@@ -3070,10 +3082,18 @@ impl Multimint {
                                 if internal_spends.contains(&key.operation_id) {
                                     continue;
                                 }
+                                // The send fee was stashed in extra_meta at send
+                                // time (see `send_ecash`); older transactions
+                                // predate it, so default to 0.
+                                let fees = meta
+                                    .extra_meta
+                                    .get("fee_msats")
+                                    .and_then(|v| v.as_u64())
+                                    .unwrap_or(0);
                                 Some(Transaction {
                                     kind: TransactionKind::EcashSend {
                                         oob_notes: oob_notes.to_string(),
-                                        fees: 0, // currently no fees for the mint module
+                                        fees,
                                     },
                                     amount: oob_notes.total_amount().msats,
                                     timestamp,
@@ -3177,21 +3197,27 @@ impl Multimint {
                                     None
                                 }
                             }
-                            MintV2OperationMeta::Send { ecash, .. } => {
+                            MintV2OperationMeta::Send {
+                                ecash, custom_meta, ..
+                            } => {
                                 // The amount isn't stored in the meta; recover it
                                 // from the ecash string.
                                 let amount = decode_prefixed::<ECash>(FEDIMINT_PREFIX, &ecash)
                                     .map(|e| e.amount().msats)
                                     .unwrap_or(0);
+                                // The send fee — incurred by the internal reissue
+                                // that mints the right denominations (the
+                                // filtered-out op below) — was stashed in
+                                // custom_meta at send time (see `send_ecash`).
+                                // Older transactions predate it, so default to 0.
+                                let fees = custom_meta
+                                    .get("fee_msats")
+                                    .and_then(|v| v.as_u64())
+                                    .unwrap_or(0);
                                 Some(Transaction {
                                     kind: TransactionKind::EcashSend {
                                         oob_notes: ecash,
-                                        // TODO: account for the send fee. The send
-                                        // itself is free, but reaching the right
-                                        // denominations may have required a reissue
-                                        // (the filtered-out op below) that did cost
-                                        // a fee, which we don't attribute here yet.
-                                        fees: 0,
+                                        fees,
                                     },
                                     amount,
                                     timestamp,
@@ -3504,6 +3530,7 @@ impl Multimint {
         &self,
         federation_id: &FederationId,
         amount_msats: u64,
+        fee_msats: u64,
     ) -> EcashAppResult<OOBNotesWrapper> {
         let client = self
             .clients
@@ -3512,12 +3539,22 @@ impl Multimint {
             .get(federation_id)
             .ok_or_else(|| EcashAppError::other("federation does not exist"))?
             .clone();
+        // The send fee (the federation reissue fee, quoted on the review screen)
+        // isn't recoverable from the operation log afterwards — the reissue that
+        // pays it is a separate, filtered-out operation. So we stash it in the
+        // send operation's meta here and read it back when reconstructing the
+        // transaction (see `transactions`), mirroring how lightning/onchain
+        // persist their fees in custom_meta.
+        let send_meta = json!({ "fee_msats": fee_msats });
         // mintv2: `send` produces the `ECash`, performing any internal reissue
         // (to mint the right denominations) inline before returning. There's no
-        // SpendOOB/refund state to await as in walletv1.
+        // SpendOOB/refund state to await as in walletv1, so the returned
+        // operation id is unused. `include_invite = true` embeds the federation
+        // invite code in the ecash so a recipient that has not joined the
+        // federation can do so directly from the received ecash.
         if let Ok(mintv2) = client.get_first_module::<MintV2Module>() {
-            let ecash = mintv2
-                .send(Amount::from_msats(amount_msats), serde_json::Value::Null)
+            let (_operation_id, ecash) = mintv2
+                .send(Amount::from_msats(amount_msats), send_meta, true)
                 .await
                 .map_err(EcashAppError::from_display)?;
             return Ok(OOBNotesWrapper(WrappedEcash::V2(ecash)));
@@ -3526,7 +3563,7 @@ impl Multimint {
         let notes = client
             .get_first_module::<MintClientModule>()
             .map_err(|e| EcashAppError::other(format!("mint module unavailable: {e:#}")))?
-            .send_oob_notes(Amount::from_msats(amount_msats), ())
+            .send_oob_notes(Amount::from_msats(amount_msats), send_meta)
             .await
             .map_err(EcashAppError::from_display)?;
         Ok(OOBNotesWrapper(WrappedEcash::V1(notes)))
@@ -3611,6 +3648,64 @@ impl Multimint {
         Ok(total_amount.msats)
     }
 
+    /// Quotes a [`Self::send_ecash`] of `amount_msats` without spending
+    /// anything, returning both the *actual* amount the send will spend and the
+    /// federation fee on top.
+    ///
+    /// Both mint modules round the requested amount up to a representable
+    /// denomination before producing notes (mintv1 to the smallest economical
+    /// denomination via `FeeConsensus::round_up`, mintv2 to a multiple of the
+    /// smallest client denomination), so the actual amount can exceed what the
+    /// user typed. We mirror that rounding here so the review screen shows the
+    /// amount that will really be spent, then quote the fee at that amount.
+    ///
+    /// The fee comes from the same `send_fee_quote` both modules expose: zero
+    /// when the wallet already holds exact-change notes (the send just hands
+    /// them out), otherwise the cost of the self-reissue the send performs. The
+    /// quote is point-in-time over the current note inventory and display-only.
+    pub async fn calculate_ecash_send_fees(
+        &self,
+        federation_id: &FederationId,
+        amount_msats: u64,
+    ) -> anyhow::Result<EcashSendFees> {
+        let client = self
+            .clients
+            .read()
+            .await
+            .get(federation_id)
+            .ok_or(anyhow!("No federation exists"))?
+            .clone();
+
+        let requested = Amount::from_msats(amount_msats);
+
+        if let Ok(mintv2) = client.get_first_module::<MintV2Module>() {
+            let min_denomination = fedimint_mintv2_common::config::client_denominations()
+                .next()
+                .ok_or(anyhow!("mintv2 has no client denominations"))?
+                .amount();
+            let actual =
+                Amount::from_msats(requested.msats.next_multiple_of(min_denomination.msats));
+            let quote = mintv2.send_fee_quote(actual).await?;
+            return Ok(EcashSendFees {
+                amount_msats: actual.msats,
+                fee_msats: quote.total().get_bitcoin().msats,
+            });
+        }
+
+        let mint = client.get_first_module::<MintClientModule>()?;
+        let module_configs = client.config().await.modules;
+        let mint_config = module_configs
+            .get(&mint.id)
+            .ok_or(anyhow!("Could not get mint config"))?
+            .cast::<fedimint_mint_common::config::MintClientConfig>()?;
+        let actual = mint_config.fee_consensus.round_up(requested);
+        let quote = mint.send_fee_quote(actual).await?;
+        Ok(EcashSendFees {
+            amount_msats: actual.msats,
+            fee_msats: quote.total().get_bitcoin().msats,
+        })
+    }
+
     pub async fn calculate_ecash_reissue_fees(
         &self,
         federation_id: &FederationId,
@@ -3640,10 +3735,10 @@ impl Multimint {
         };
 
         Ok(ReissueFees {
-            total_msats: quote.total.msats,
-            input_msats: quote.input.msats,
-            output_msats: quote.output.msats,
-            dust_msats: quote.dust.msats,
+            total_msats: quote.total().get_bitcoin().msats,
+            input_msats: quote.input.get_bitcoin().msats,
+            output_msats: quote.output.get_bitcoin().msats,
+            dust_msats: quote.dust.get_bitcoin().msats,
         })
     }
 
@@ -5288,7 +5383,11 @@ where
     // 64 is a safety cap; convergence is normally reached in one or two steps
     // since the fee is tiny relative to the amount.
     for _ in 0..64 {
-        fee = quote(Amount::from_msats(gross)).await?.total.msats;
+        fee = quote(Amount::from_msats(gross))
+            .await?
+            .total()
+            .get_bitcoin()
+            .msats;
         let next = requested.saturating_add(fee);
         if next <= gross {
             // `fee` is the quote at the current (returned) `gross`.
