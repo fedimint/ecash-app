@@ -12,28 +12,28 @@ async-stream = "0.3.6"
 async-trait = "0.1.88"
 bitcoin = { version = "0.32.5", features = ["serde"] }
 bitcoin-payment-instructions = { version = "0.4.0", features = [ "http" ]}
-fedimint-api-client = { git = "https://github.com/m1sterc001guy/fedimint", rev = "5acbaa63f01fe4351641396aa93afa7fed9bc5d3" }
-fedimint-bip39 = { git = "https://github.com/m1sterc001guy/fedimint", rev = "5acbaa63f01fe4351641396aa93afa7fed9bc5d3" }
-fedimint-core = { git = "https://github.com/m1sterc001guy/fedimint", rev = "5acbaa63f01fe4351641396aa93afa7fed9bc5d3" }
-fedimint-fountain = { git = "https://github.com/m1sterc001guy/fedimint", rev = "5acbaa63f01fe4351641396aa93afa7fed9bc5d3" }
-fedimint-client = { git = "https://github.com/m1sterc001guy/fedimint", rev = "5acbaa63f01fe4351641396aa93afa7fed9bc5d3" }
-fedimint-eventlog = { git = "https://github.com/m1sterc001guy/fedimint", rev = "5acbaa63f01fe4351641396aa93afa7fed9bc5d3" }
-fedimint-connectors = { git = "https://github.com/m1sterc001guy/fedimint", rev = "5acbaa63f01fe4351641396aa93afa7fed9bc5d3" }
-fedimint-derive-secret = { git = "https://github.com/m1sterc001guy/fedimint", rev = "5acbaa63f01fe4351641396aa93afa7fed9bc5d3" }
-fedimint-rocksdb = { git = "https://github.com/m1sterc001guy/fedimint", rev = "5acbaa63f01fe4351641396aa93afa7fed9bc5d3" }
-fedimint-ln-client = { git = "https://github.com/m1sterc001guy/fedimint", rev = "5acbaa63f01fe4351641396aa93afa7fed9bc5d3" }
-fedimint-lnv2-client = { git = "https://github.com/m1sterc001guy/fedimint", rev = "5acbaa63f01fe4351641396aa93afa7fed9bc5d3" }
-fedimint-lnv2-common = { git = "https://github.com/m1sterc001guy/fedimint", rev = "5acbaa63f01fe4351641396aa93afa7fed9bc5d3" }
-fedimint-ln-common = { git = "https://github.com/m1sterc001guy/fedimint", rev = "5acbaa63f01fe4351641396aa93afa7fed9bc5d3" }
-fedimint-meta-client = { git = "https://github.com/m1sterc001guy/fedimint", rev = "5acbaa63f01fe4351641396aa93afa7fed9bc5d3" }
-fedimint-mint-client = { git = "https://github.com/m1sterc001guy/fedimint", rev = "5acbaa63f01fe4351641396aa93afa7fed9bc5d3" }
-fedimint-mint-common = { git = "https://github.com/m1sterc001guy/fedimint", rev = "5acbaa63f01fe4351641396aa93afa7fed9bc5d3" }
-fedimint-mintv2-client = { git = "https://github.com/m1sterc001guy/fedimint", rev = "5acbaa63f01fe4351641396aa93afa7fed9bc5d3" }
-fedimint-mintv2-common = { git = "https://github.com/m1sterc001guy/fedimint", rev = "5acbaa63f01fe4351641396aa93afa7fed9bc5d3" }
-fedimint-wallet-client = { git = "https://github.com/m1sterc001guy/fedimint", rev = "5acbaa63f01fe4351641396aa93afa7fed9bc5d3" }
-fedimint-wallet-common = { git = "https://github.com/m1sterc001guy/fedimint", rev = "5acbaa63f01fe4351641396aa93afa7fed9bc5d3" }
-fedimint-walletv2-client = { git = "https://github.com/m1sterc001guy/fedimint", rev = "5acbaa63f01fe4351641396aa93afa7fed9bc5d3" }
-fedimint-walletv2-common = { git = "https://github.com/m1sterc001guy/fedimint", rev = "5acbaa63f01fe4351641396aa93afa7fed9bc5d3" }
+fedimint-api-client = { git = "https://github.com/fedimint/fedimint", rev = "64dc2aa4301dec42fb3f982913aac8aae78c2061" }
+fedimint-bip39 = { git = "https://github.com/fedimint/fedimint", rev = "64dc2aa4301dec42fb3f982913aac8aae78c2061" }
+fedimint-core = { git = "https://github.com/fedimint/fedimint", rev = "64dc2aa4301dec42fb3f982913aac8aae78c2061" }
+fedimint-fountain = { git = "https://github.com/fedimint/fedimint", rev = "64dc2aa4301dec42fb3f982913aac8aae78c2061" }
+fedimint-client = { git = "https://github.com/fedimint/fedimint", rev = "64dc2aa4301dec42fb3f982913aac8aae78c2061" }
+fedimint-eventlog = { git = "https://github.com/fedimint/fedimint", rev = "64dc2aa4301dec42fb3f982913aac8aae78c2061" }
+fedimint-connectors = { git = "https://github.com/fedimint/fedimint", rev = "64dc2aa4301dec42fb3f982913aac8aae78c2061" }
+fedimint-derive-secret = { git = "https://github.com/fedimint/fedimint", rev = "64dc2aa4301dec42fb3f982913aac8aae78c2061" }
+fedimint-rocksdb = { git = "https://github.com/fedimint/fedimint", rev = "64dc2aa4301dec42fb3f982913aac8aae78c2061" }
+fedimint-ln-client = { git = "https://github.com/fedimint/fedimint", rev = "64dc2aa4301dec42fb3f982913aac8aae78c2061" }
+fedimint-lnv2-client = { git = "https://github.com/fedimint/fedimint", rev = "64dc2aa4301dec42fb3f982913aac8aae78c2061" }
+fedimint-lnv2-common = { git = "https://github.com/fedimint/fedimint", rev = "64dc2aa4301dec42fb3f982913aac8aae78c2061" }
+fedimint-ln-common = { git = "https://github.com/fedimint/fedimint", rev = "64dc2aa4301dec42fb3f982913aac8aae78c2061" }
+fedimint-meta-client = { git = "https://github.com/fedimint/fedimint", rev = "64dc2aa4301dec42fb3f982913aac8aae78c2061" }
+fedimint-mint-client = { git = "https://github.com/fedimint/fedimint", rev = "64dc2aa4301dec42fb3f982913aac8aae78c2061" }
+fedimint-mint-common = { git = "https://github.com/fedimint/fedimint", rev = "64dc2aa4301dec42fb3f982913aac8aae78c2061" }
+fedimint-mintv2-client = { git = "https://github.com/fedimint/fedimint", rev = "64dc2aa4301dec42fb3f982913aac8aae78c2061" }
+fedimint-mintv2-common = { git = "https://github.com/fedimint/fedimint", rev = "64dc2aa4301dec42fb3f982913aac8aae78c2061" }
+fedimint-wallet-client = { git = "https://github.com/fedimint/fedimint", rev = "64dc2aa4301dec42fb3f982913aac8aae78c2061" }
+fedimint-wallet-common = { git = "https://github.com/fedimint/fedimint", rev = "64dc2aa4301dec42fb3f982913aac8aae78c2061" }
+fedimint-walletv2-client = { git = "https://github.com/fedimint/fedimint", rev = "64dc2aa4301dec42fb3f982913aac8aae78c2061" }
+fedimint-walletv2-common = { git = "https://github.com/fedimint/fedimint", rev = "64dc2aa4301dec42fb3f982913aac8aae78c2061" }
 hex = "0.4"
 flutter_rust_bridge = "=2.9.0"
 futures-timer = "3.0.3"
