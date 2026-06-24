@@ -1569,6 +1569,9 @@
   "lnurlWithdrawTitle": "Boltcard Withdraw",
   "@lnurlWithdrawTitle": {},
 
+  "lnurlWithdrawDescription": "Withdraw funds into your wallet",
+  "@lnurlWithdrawDescription": {},
+
   "lnurlWithdrawConfirm": "Withdraw",
   "@lnurlWithdrawConfirm": {},
 

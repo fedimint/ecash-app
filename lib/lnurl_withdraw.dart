@@ -6,6 +6,9 @@ import 'package:ecashapp/multimint.dart';
 import 'package:ecashapp/success.dart';
 import 'package:ecashapp/toast.dart';
 import 'package:ecashapp/utils.dart';
+import 'package:ecashapp/widgets/federation_card.dart';
+import 'package:ecashapp/widgets/federation_picker.dart'; // showFederationPicker
+import 'package:ecashapp/widgets/gateway_card.dart';
 import 'package:ecashapp/widgets/gateway_picker.dart'; // showGatewayPickerSheet
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -26,32 +29,42 @@ class LnurlWithdrawScreen extends StatefulWidget {
 class _LnurlWithdrawScreenState extends State<LnurlWithdrawScreen> {
   _WithdrawState _state = _WithdrawState.loading;
   LnurlWithdrawParams? _params;
-  List<FedimintGateway> _gateways = [];
+
+  // The federation the withdraw lands in determines the network of the invoice
+  // we generate, so it must be user-selectable.
+  late FederationSelector _selectedFed;
+  List<(FederationSelector, bool)> _allFederations = [];
+  FederationMeta? _federationMeta;
+  BigInt? _balanceMsats;
+
+  // `null` while gateways are loading for the selected federation.
+  List<FedimintGateway>? _gateways;
   FedimintGateway? _selectedGateway;
   BigInt _selectedAmountMsats = BigInt.zero;
 
   @override
   void initState() {
     super.initState();
-    _fetchParams();
+    _selectedFed = widget.fed;
+    _fetchInitial();
   }
 
-  Future<void> _fetchParams() async {
+  Future<void> _fetchInitial() async {
     try {
       final results = await Future.wait([
         fetchLnurlWithdraw(url: widget.url),
-        listGateways(federationId: widget.fed.federationId),
+        federations(),
       ]);
       if (!mounted) return;
       final params = results[0] as LnurlWithdrawParams;
-      final gateways = results[1] as List<FedimintGateway>;
+      final allFeds = results[1] as List<(FederationSelector, bool)>;
       setState(() {
         _params = params;
-        _gateways = gateways;
-        _selectedGateway = gateways.isNotEmpty ? gateways.first : null;
+        _allFederations = allFeds;
         _selectedAmountMsats = params.maxWithdrawableMsats;
         _state = _WithdrawState.showingDetails;
       });
+      _loadFederationData();
     } catch (e) {
       AppLogger.instance.error('Failed to fetch LNURLw params: $e');
       if (!mounted) return;
@@ -59,16 +72,76 @@ class _LnurlWithdrawScreenState extends State<LnurlWithdrawScreen> {
     }
   }
 
-  Future<void> _onGatewayTapped() async {
-    if (_gateways.isEmpty) return;
-    final currentIndex = _gateways.indexOf(_selectedGateway ?? _gateways.first);
+  /// Load gateways, metadata (for the picture) and balance for the currently
+  /// selected federation. Called on first load and whenever the federation
+  /// changes.
+  Future<void> _loadFederationData() async {
+    // `_selectedFed.federationId` is an opaque FFI handle that is consumed when
+    // passed across the bridge, so re-read it from `_selectedFed` for every
+    // call rather than caching it in a local — reusing one handle throws
+    // DroppableDisposedException on the second use.
+    try {
+      final gws = await listGateways(federationId: _selectedFed.federationId);
+      if (!mounted) return;
+      setState(() {
+        _gateways = gws;
+        _selectedGateway = gws.isNotEmpty ? gws.first : null;
+      });
+    } catch (e) {
+      AppLogger.instance.error('Failed to list gateways: $e');
+      if (!mounted) return;
+      setState(() {
+        _gateways = const [];
+        _selectedGateway = null;
+      });
+    }
+
+    // Picture and balance are best-effort cosmetics for the federation card.
+    try {
+      final meta = await getFederationMeta(
+        federationId: _selectedFed.federationId,
+      );
+      if (mounted) setState(() => _federationMeta = meta);
+    } catch (e) {
+      AppLogger.instance.error('Failed to fetch federation meta: $e');
+    }
+    try {
+      final bal = await balance(federationId: _selectedFed.federationId);
+      if (mounted) setState(() => _balanceMsats = bal);
+    } catch (e) {
+      AppLogger.instance.error('Failed to fetch balance: $e');
+    }
+  }
+
+  Future<void> _onFederationCardTapped() async {
+    if (_allFederations.length <= 1) return;
+    final selected = await showFederationPicker(
+      context: context,
+      federations: _allFederations,
+      title: context.l10n.selectMint,
+    );
+    if (selected == null || !mounted) return;
+    setState(() {
+      _selectedFed = selected.$1;
+      _federationMeta = null;
+      _balanceMsats = null;
+      _gateways = null;
+      _selectedGateway = null;
+    });
+    _loadFederationData();
+  }
+
+  Future<void> _onGatewayCardTapped() async {
+    final gateways = _gateways;
+    if (gateways == null || gateways.isEmpty) return;
+    final currentIndex = gateways.indexOf(_selectedGateway ?? gateways.first);
     final pickedIndex = await showGatewayPickerSheet(
       context,
-      gateways: _gateways,
+      gateways: gateways,
       selectedIndex: currentIndex >= 0 ? currentIndex : 0,
     );
     if (pickedIndex != null && mounted) {
-      setState(() => _selectedGateway = _gateways[pickedIndex]);
+      setState(() => _selectedGateway = gateways[pickedIndex]);
     }
   }
 
@@ -83,7 +156,7 @@ class _LnurlWithdrawScreenState extends State<LnurlWithdrawScreen> {
 
     final requestedMsats = _selectedAmountMsats;
     final receiveAmount = await computeReceiveAmountWithFees(
-      federationId: widget.fed.federationId,
+      federationId: _selectedFed.federationId,
       gatewayUrl: gateway.endpoint,
       isLnv2: gateway.isLnv2,
       amountMsats: requestedMsats,
@@ -93,7 +166,7 @@ class _LnurlWithdrawScreenState extends State<LnurlWithdrawScreen> {
     OperationId opId;
     try {
       opId = await executeLnurlWithdraw(
-        federationId: widget.fed.federationId,
+        federationId: _selectedFed.federationId,
         callback: params.callback,
         k1: params.k1,
         amountMsatsWithoutFees: requestedMsats,
@@ -115,7 +188,7 @@ class _LnurlWithdrawScreenState extends State<LnurlWithdrawScreen> {
 
     try {
       await awaitReceive(
-        federationId: widget.fed.federationId,
+        federationId: _selectedFed.federationId,
         operationId: opId,
       ).timeout(const Duration(minutes: 5));
       if (!mounted) return;
@@ -126,7 +199,7 @@ class _LnurlWithdrawScreenState extends State<LnurlWithdrawScreen> {
               (_) => Success(
                 lightning: true,
                 received: true,
-                amountMsats: params.maxWithdrawableMsats,
+                amountMsats: requestedMsats,
               ),
         ),
       );
@@ -181,12 +254,23 @@ class _LnurlWithdrawScreenState extends State<LnurlWithdrawScreen> {
             ),
             _WithdrawState.showingDetails => _DetailsView(
               params: _params!,
-              fed: widget.fed,
               selectedAmountMsats: _selectedAmountMsats,
               onAmountChanged: (v) => setState(() => _selectedAmountMsats = v),
-              selectedGateway: _selectedGateway,
-              hasMultipleGateways: _gateways.length > 1,
-              onGatewayTapped: _onGatewayTapped,
+              federationCard: FederationCard(
+                federation: _selectedFed,
+                pictureUrl: _federationMeta?.picture,
+                balanceMsats: _balanceMsats,
+                onTap:
+                    _allFederations.length > 1 ? _onFederationCardTapped : null,
+                margin: const EdgeInsets.only(bottom: 12),
+              ),
+              gatewayCard: GatewayCard(
+                gateways: _gateways,
+                selectedGateway: _selectedGateway,
+                onTap: _onGatewayCardTapped,
+                margin: const EdgeInsets.only(bottom: 12),
+              ),
+              confirmEnabled: _selectedGateway != null,
               onConfirm: _onConfirm,
             ),
             _WithdrawState.executing => _StatusView(
@@ -205,22 +289,20 @@ class _LnurlWithdrawScreenState extends State<LnurlWithdrawScreen> {
 
 class _DetailsView extends StatefulWidget {
   final LnurlWithdrawParams params;
-  final FederationSelector fed;
   final BigInt selectedAmountMsats;
   final ValueChanged<BigInt> onAmountChanged;
-  final FedimintGateway? selectedGateway;
-  final bool hasMultipleGateways;
-  final VoidCallback onGatewayTapped;
+  final Widget federationCard;
+  final Widget gatewayCard;
+  final bool confirmEnabled;
   final VoidCallback onConfirm;
 
   const _DetailsView({
     required this.params,
-    required this.fed,
     required this.selectedAmountMsats,
     required this.onAmountChanged,
-    required this.selectedGateway,
-    required this.hasMultipleGateways,
-    required this.onGatewayTapped,
+    required this.federationCard,
+    required this.gatewayCard,
+    required this.confirmEnabled,
     required this.onConfirm,
   });
 
@@ -281,19 +363,19 @@ class _DetailsViewState extends State<_DetailsView> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          const SizedBox(height: 16),
+          const SizedBox(height: 8),
           Icon(Icons.nfc, size: 64, color: theme.colorScheme.primary),
-          const SizedBox(height: 24),
-          if (widget.params.defaultDescription.isNotEmpty) ...[
-            Text(
-              widget.params.defaultDescription,
-              style: theme.textTheme.titleLarge?.copyWith(
-                fontWeight: FontWeight.bold,
-              ),
-              textAlign: TextAlign.center,
+          const SizedBox(height: 16),
+          // Static, app-controlled copy — never render the description text
+          // supplied by the (untrusted) LNURL server.
+          Text(
+            context.l10n.lnurlWithdrawDescription,
+            style: theme.textTheme.titleLarge?.copyWith(
+              fontWeight: FontWeight.bold,
             ),
-            const SizedBox(height: 16),
-          ],
+            textAlign: TextAlign.center,
+          ),
+          const SizedBox(height: 16),
           if (isFixed)
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
@@ -336,53 +418,15 @@ class _DetailsViewState extends State<_DetailsView> {
               onChanged: _onAmountChanged,
             ),
           ],
-          if (widget.selectedGateway != null) ...[
-            const SizedBox(height: 12),
-            InkWell(
-              onTap: widget.hasMultipleGateways ? widget.onGatewayTapped : null,
-              borderRadius: BorderRadius.circular(12),
-              child: Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 16,
-                  vertical: 12,
-                ),
-                decoration: BoxDecoration(
-                  color: theme.colorScheme.surface,
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(
-                    color: theme.colorScheme.primary.withValues(alpha: 0.1),
-                  ),
-                ),
-                child: Row(
-                  children: [
-                    Icon(
-                      Icons.device_hub,
-                      color: theme.colorScheme.primary,
-                      size: 20,
-                    ),
-                    const SizedBox(width: 10),
-                    Expanded(
-                      child: Text(
-                        widget.selectedGateway!.lightningAlias ??
-                            widget.selectedGateway!.endpoint,
-                        style: theme.textTheme.bodyMedium,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ),
-                    if (widget.hasMultipleGateways)
-                      Icon(
-                        Icons.unfold_more,
-                        color: Colors.grey[500],
-                        size: 18,
-                      ),
-                  ],
-                ),
-              ),
-            ),
-          ],
+          const SizedBox(height: 16),
+          widget.federationCard,
+          widget.gatewayCard,
           const Spacer(),
           FilledButton(
-            onPressed: _amountError == null ? widget.onConfirm : null,
+            onPressed:
+                (widget.confirmEnabled && _amountError == null)
+                    ? widget.onConfirm
+                    : null,
             style: FilledButton.styleFrom(
               padding: const EdgeInsets.symmetric(vertical: 16),
               textStyle: const TextStyle(fontSize: 18),

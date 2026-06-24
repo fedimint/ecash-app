@@ -28,7 +28,7 @@ use tokio::net::TcpListener;
 
 const TIMEOUT_SECS: u64 = 60;
 const MIN_WITHDRAWABLE: u64 = 1_000;
-const MAX_WITHDRAWABLE: u64 = 100_000;
+const MAX_WITHDRAWABLE: u64 = 1_000_000_000;
 
 #[derive(Parser, Debug)]
 #[command(about = "LNURLw end-to-end test harness with real gateway payment")]

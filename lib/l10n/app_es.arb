@@ -447,6 +447,7 @@
   "errTimeout": "La operación expiró",
 
   "lnurlWithdrawTitle": "Retiro con Boltcard",
+  "lnurlWithdrawDescription": "Retira fondos a tu billetera",
   "lnurlWithdrawConfirm": "Retirar",
   "lnurlWithdrawRequesting": "Solicitando retiro…",
   "lnurlWithdrawWaiting": "Esperando pago…",
