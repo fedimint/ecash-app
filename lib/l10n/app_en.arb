@@ -1566,7 +1566,7 @@
   "errTimeout": "Operation timed out",
   "@errTimeout": {},
 
-  "lnurlWithdrawTitle": "Boltcard Withdraw",
+  "lnurlWithdrawTitle": "LNURL Withdraw",
   "@lnurlWithdrawTitle": {},
 
   "lnurlWithdrawConfirm": "Withdraw",

@@ -446,7 +446,7 @@
   "errPaymentRefunded": "El pago fue reembolsado",
   "errTimeout": "La operación expiró",
 
-  "lnurlWithdrawTitle": "Retiro con Boltcard",
+  "lnurlWithdrawTitle": "Retiro LNURL",
   "lnurlWithdrawConfirm": "Retirar",
   "lnurlWithdrawRequesting": "Solicitando retiro…",
   "lnurlWithdrawWaiting": "Esperando pago…",

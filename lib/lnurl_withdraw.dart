@@ -20,6 +20,7 @@ class LnurlWithdrawWaiting extends StatefulWidget {
   final FedimintGateway gateway;
   final LnurlWithdrawParams params;
   final BigInt requestedMsats;
+  final bool includeFees;
 
   const LnurlWithdrawWaiting({
     super.key,
@@ -27,6 +28,7 @@ class LnurlWithdrawWaiting extends StatefulWidget {
     required this.gateway,
     required this.params,
     required this.requestedMsats,
+    required this.includeFees,
   });
 
   @override
@@ -54,7 +56,7 @@ class _LnurlWithdrawWaitingState extends State<LnurlWithdrawWaiting> {
         gatewayUrl: gateway.endpoint,
         isLnv2: gateway.isLnv2,
         amountMsats: requestedMsats,
-        includeFees: false,
+        includeFees: widget.includeFees,
       );
 
       opId = await executeLnurlWithdraw(
@@ -136,7 +138,6 @@ class _LnurlWithdrawWaitingState extends State<LnurlWithdrawWaiting> {
             ),
             _WithdrawState.waitingForPayment => _StatusView(
               message: context.l10n.lnurlWithdrawWaiting,
-              onCancel: () => Navigator.of(context).popUntil((r) => r.isFirst),
             ),
           },
         ),
@@ -147,9 +148,8 @@ class _LnurlWithdrawWaitingState extends State<LnurlWithdrawWaiting> {
 
 class _StatusView extends StatelessWidget {
   final String message;
-  final VoidCallback? onCancel;
 
-  const _StatusView({required this.message, this.onCancel});
+  const _StatusView({required this.message});
 
   @override
   Widget build(BuildContext context) {
@@ -167,15 +167,6 @@ class _StatusView extends StatelessWidget {
               style: theme.textTheme.titleMedium,
               textAlign: TextAlign.center,
             ),
-            if (onCancel != null) ...[
-              const SizedBox(height: 32),
-              TextButton(
-                onPressed: onCancel,
-                child: Text(
-                  MaterialLocalizations.of(context).cancelButtonLabel,
-                ),
-              ),
-            ],
           ],
         ),
       ),

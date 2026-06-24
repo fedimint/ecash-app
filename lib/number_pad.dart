@@ -138,10 +138,18 @@ class _NumberPadState extends State<NumberPad> {
       widget.paymentType == PaymentType.lightning &&
       widget.lightningAddressOrLnurl == null;
 
-  // LNURLw (Boltcard) withdraw mode: behaves like a Lightning receive in the
-  // UI, but on confirm the generated invoice is posted to the LNURLw callback
-  // instead of being shown as a QR.
+  // LNURLw withdraw mode: behaves like a Lightning receive in the UI, but on
+  // confirm the generated invoice is posted to the LNURLw callback instead of
+  // being shown as a QR.
   bool get _isLnurlWithdraw => widget.lnurlWithdrawParams != null;
+
+  // A fixed-amount LNURLw withdraw (min == max). The invoice must be exactly
+  // that amount, so fees can't be added on top — the fee toggle is hidden and
+  // fees are never added.
+  bool get _isFixedLnurlWithdraw {
+    final p = widget.lnurlWithdrawParams;
+    return p != null && p.minWithdrawableMsats == p.maxWithdrawableMsats;
+  }
 
   @override
   void initState() {
@@ -156,6 +164,9 @@ class _NumberPadState extends State<NumberPad> {
     if (lnurlw != null) {
       _rawAmount =
           (lnurlw.maxWithdrawableMsats ~/ BigInt.from(1000)).toString();
+      // Default to NOT adding fees so the pre-filled max amount stays in range.
+      // Ranged withdraws expose the toggle for opt-in; fixed ones keep it false.
+      _includeFees = false;
     }
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -510,6 +521,7 @@ class _NumberPadState extends State<NumberPad> {
               gateway: selected,
               params: params,
               requestedMsats: amountMsats,
+              includeFees: _includeFees,
             ),
       ),
     );
@@ -906,7 +918,7 @@ class _NumberPadState extends State<NumberPad> {
                 ),
               ),
             ),
-            if (_isLightningReceive && !_isLnurlWithdraw)
+            if (_isLightningReceive && !_isFixedLnurlWithdraw)
               Padding(
                 padding: const EdgeInsets.fromLTRB(16, 0, 8, 8),
                 child: Row(
