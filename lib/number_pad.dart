@@ -4,6 +4,7 @@ import 'package:ecashapp/ecash_send.dart';
 import 'package:ecashapp/extensions/build_context_l10n.dart';
 import 'package:ecashapp/lib.dart';
 import 'package:ecashapp/multimint.dart';
+import 'package:ecashapp/lnurl_withdraw.dart';
 import 'package:ecashapp/onchain_send.dart';
 import 'package:ecashapp/pay_preview.dart';
 import 'package:ecashapp/providers/preferences_provider.dart';
@@ -23,6 +24,62 @@ import 'package:ecashapp/widgets/gateway_picker.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 
+/// Fetches the LNURLw parameters for [url], then opens the number pad in
+/// withdraw mode so the user can choose the federation, gateway and amount.
+/// Shows a blocking spinner while the parameters are fetched. Used by both the
+/// scanner/paste path and the NFC deep-link path.
+Future<void> openLnurlWithdraw({
+  required BuildContext context,
+  required String url,
+  required FederationSelector fed,
+}) async {
+  // The app runs inside a nested Navigator. `showDialog` defaults to the root
+  // navigator, but our pop/push target the nearest one — so the spinner must be
+  // shown on that SAME (nearest) navigator (`useRootNavigator: false`) and
+  // dismissed via the captured `navigator`. Otherwise the spinner lands on the
+  // outer root navigator where pop can't reach it and it stays stuck on top of
+  // the pushed number pad.
+  final navigator = Navigator.of(context);
+  showDialog<void>(
+    context: context,
+    barrierDismissible: false,
+    useRootNavigator: false,
+    builder: (_) => const Center(child: CircularProgressIndicator()),
+  );
+
+  LnurlWithdrawParams params;
+  Map<FiatCurrency, double> btcPrices;
+  try {
+    params = await fetchLnurlWithdraw(url: url);
+    btcPrices = await fetchAllBtcPrices();
+  } catch (e) {
+    AppLogger.instance.error('Failed to fetch LNURLw params: $e');
+    navigator.pop(); // dismiss spinner
+    if (context.mounted) {
+      ToastService().show(
+        message: context.l10n.lnurlWithdrawFailed,
+        duration: const Duration(seconds: 5),
+        onTap: () {},
+        icon: const Icon(Icons.error),
+      );
+    }
+    return;
+  }
+
+  navigator.pop(); // dismiss spinner
+  await navigator.push(
+    MaterialPageRoute(
+      builder:
+          (_) => NumberPad(
+            fed: fed,
+            paymentType: PaymentType.lightning,
+            btcPrices: btcPrices,
+            lnurlWithdrawParams: params,
+          ),
+    ),
+  );
+}
+
 enum WithdrawalMode { specificAmount, maxBalance }
 
 class NumberPad extends StatefulWidget {
@@ -32,6 +89,7 @@ class NumberPad extends StatefulWidget {
   final VoidCallback? onWithdrawCompleted;
   final String? bitcoinAddress;
   final String? lightningAddressOrLnurl;
+  final LnurlWithdrawParams? lnurlWithdrawParams;
   const NumberPad({
     super.key,
     required this.fed,
@@ -40,6 +98,7 @@ class NumberPad extends StatefulWidget {
     this.onWithdrawCompleted,
     this.bitcoinAddress,
     this.lightningAddressOrLnurl,
+    this.lnurlWithdrawParams,
   });
 
   @override
@@ -79,10 +138,24 @@ class _NumberPadState extends State<NumberPad> {
       widget.paymentType == PaymentType.lightning &&
       widget.lightningAddressOrLnurl == null;
 
+  // LNURLw (Boltcard) withdraw mode: behaves like a Lightning receive in the
+  // UI, but on confirm the generated invoice is posted to the LNURLw callback
+  // instead of being shown as a QR.
+  bool get _isLnurlWithdraw => widget.lnurlWithdrawParams != null;
+
   @override
   void initState() {
     super.initState();
     _selectedFed = widget.fed;
+
+    // Pre-fill a fixed-amount LNURLw withdraw (min == max) so the user can just
+    // confirm without typing.
+    final lnurlw = widget.lnurlWithdrawParams;
+    if (lnurlw != null &&
+        lnurlw.minWithdrawableMsats == lnurlw.maxWithdrawableMsats) {
+      _rawAmount =
+          (lnurlw.maxWithdrawableMsats ~/ BigInt.from(1000)).toString();
+    }
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _numpadFocus.requestFocus();
@@ -397,12 +470,58 @@ class _NumberPadState extends State<NumberPad> {
     }
   }
 
+  Future<void> _handleLnurlWithdraw(BigInt amountSats) async {
+    final params = widget.lnurlWithdrawParams!;
+    final selected = _selectedReceiveGateway;
+    if (selected == null) {
+      ToastService().show(
+        message: context.l10n.noGatewaysAvailable,
+        duration: const Duration(seconds: 5),
+        onTap: () {},
+        icon: const Icon(Icons.error),
+      );
+      return;
+    }
+
+    final amountMsats = amountSats * BigInt.from(1000);
+    if (amountMsats < params.minWithdrawableMsats ||
+        amountMsats > params.maxWithdrawableMsats) {
+      final minSats = params.minWithdrawableMsats ~/ BigInt.from(1000);
+      final maxSats = params.maxWithdrawableMsats ~/ BigInt.from(1000);
+      ToastService().show(
+        message: context.l10n.lnurlWithdrawAmountRange(
+          minSats.toString(),
+          maxSats.toString(),
+        ),
+        duration: const Duration(seconds: 5),
+        onTap: () {},
+        icon: const Icon(Icons.warning),
+      );
+      return;
+    }
+
+    await Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder:
+            (_) => LnurlWithdrawWaiting(
+              fed: _selectedFed,
+              gateway: selected,
+              params: params,
+              requestedMsats: amountMsats,
+            ),
+      ),
+    );
+  }
+
   Future<void> _onConfirm() async {
     setState(() => _creating = true);
     final amountSats = BigInt.tryParse(_rawAmount);
     if (amountSats != null) {
       if (widget.paymentType == PaymentType.lightning) {
-        if (widget.lightningAddressOrLnurl != null) {
+        if (_isLnurlWithdraw) {
+          await _handleLnurlWithdraw(amountSats);
+        } else if (widget.lightningAddressOrLnurl != null) {
           final amountMsats = amountSats * BigInt.from(1000);
 
           // Check balance first
@@ -474,7 +593,7 @@ class _NumberPadState extends State<NumberPad> {
         );
       }
     }
-    setState(() => _creating = false);
+    if (mounted) setState(() => _creating = false);
   }
 
   void _handleKeyEvent(KeyEvent event) {
@@ -593,12 +712,13 @@ class _NumberPadState extends State<NumberPad> {
   }
 
   Widget _buildFederationCard() {
-    // Hide card for lightning receives
+    // Hide card for lightning receives, but keep it for LNURLw withdraws where
+    // the user must be able to choose which federation receives the funds.
     final isLightningReceive =
         widget.paymentType == PaymentType.lightning &&
         widget.lightningAddressOrLnurl == null;
 
-    if (isLightningReceive) {
+    if (isLightningReceive && !_isLnurlWithdraw) {
       return const SizedBox.shrink();
     }
 
@@ -785,7 +905,7 @@ class _NumberPadState extends State<NumberPad> {
                 ),
               ),
             ),
-            if (_isLightningReceive)
+            if (_isLightningReceive && !_isLnurlWithdraw)
               Padding(
                 padding: const EdgeInsets.fromLTRB(16, 0, 8, 8),
                 child: Row(

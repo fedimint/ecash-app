@@ -10,7 +10,6 @@ import 'package:ecashapp/multimint.dart';
 import 'package:ecashapp/number_pad.dart';
 import 'package:ecashapp/onchain_send.dart';
 import 'package:ecashapp/pay_preview.dart';
-import 'package:ecashapp/lnurl_withdraw.dart';
 import 'package:ecashapp/redeem_ecash.dart';
 import 'package:ecashapp/theme.dart';
 import 'package:ecashapp/toast.dart';
@@ -538,15 +537,10 @@ class _ScanQRPageState extends State<ScanQRPage> {
           break;
         case ParsedText_LnurlWithdraw(:final field0):
           if (chosenFederation != null) {
-            await Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder:
-                    (_) => LnurlWithdrawScreen(
-                      url: field0,
-                      fed: chosenFederation!,
-                    ),
-              ),
+            await openLnurlWithdraw(
+              context: context,
+              url: field0,
+              fed: chosenFederation,
             );
           }
           break;

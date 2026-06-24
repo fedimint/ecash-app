@@ -2,7 +2,6 @@ import 'dart:async';
 
 import 'package:ecashapp/contacts/contacts_screen.dart';
 import 'package:ecashapp/deep_link_handler.dart';
-import 'package:ecashapp/lnurl_withdraw.dart';
 import 'package:ecashapp/discover.dart';
 import 'package:ecashapp/error_helper.dart';
 import 'package:ecashapp/extensions/build_context_l10n.dart';
@@ -367,16 +366,11 @@ class _MyAppState extends State<MyApp> {
         return;
       }
 
-      // LNURLw (Boltcard) withdraw — type is already known from the scheme,
-      // so we skip the Rust parse pipeline and go straight to the withdraw screen.
+      // LNURLw (Boltcard) withdraw — type is already known from the scheme, so
+      // we skip the Rust parse pipeline and open the number pad in withdraw mode.
       if (deepLink.type == DeepLinkType.lnurlWithdraw) {
         if (!mounted) return;
-        await Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (_) => LnurlWithdrawScreen(url: deepLink.data, fed: fed),
-          ),
-        );
+        await openLnurlWithdraw(context: context, url: deepLink.data, fed: fed);
         return;
       }
 
