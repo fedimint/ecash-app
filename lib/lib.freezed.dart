@@ -474,4 +474,70 @@ String toString() {
 
 
 
+/// @nodoc
+
+
+class ParsedText_LnurlWithdraw extends ParsedText {
+  const ParsedText_LnurlWithdraw(this.field0): super._();
+  
+
+ final  String field0;
+
+/// Create a copy of ParsedText
+/// with the given fields replaced by the non-null parameter values.
+@JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+$ParsedText_LnurlWithdrawCopyWith<ParsedText_LnurlWithdraw> get copyWith => _$ParsedText_LnurlWithdrawCopyWithImpl<ParsedText_LnurlWithdraw>(this, _$identity);
+
+
+
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is ParsedText_LnurlWithdraw&&(identical(other.field0, field0) || other.field0 == field0));
+}
+
+
+@override
+int get hashCode => Object.hash(runtimeType,field0);
+
+@override
+String toString() {
+  return 'ParsedText.lnurlWithdraw(field0: $field0)';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class $ParsedText_LnurlWithdrawCopyWith<$Res> implements $ParsedTextCopyWith<$Res> {
+  factory $ParsedText_LnurlWithdrawCopyWith(ParsedText_LnurlWithdraw value, $Res Function(ParsedText_LnurlWithdraw) _then) = _$ParsedText_LnurlWithdrawCopyWithImpl;
+@useResult
+$Res call({
+ String field0
+});
+
+
+
+
+}
+/// @nodoc
+class _$ParsedText_LnurlWithdrawCopyWithImpl<$Res>
+    implements $ParsedText_LnurlWithdrawCopyWith<$Res> {
+  _$ParsedText_LnurlWithdrawCopyWithImpl(this._self, this._then);
+
+  final ParsedText_LnurlWithdraw _self;
+  final $Res Function(ParsedText_LnurlWithdraw) _then;
+
+/// Create a copy of ParsedText
+/// with the given fields replaced by the non-null parameter values.
+@pragma('vm:prefer-inline') $Res call({Object? field0 = null,}) {
+  return _then(ParsedText_LnurlWithdraw(
+null == field0 ? _self.field0 : field0 // ignore: cast_nullable_to_non_nullable
+as String,
+  ));
+}
+
+
+}
+
 // dart format on

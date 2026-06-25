@@ -366,6 +366,14 @@ class _MyAppState extends State<MyApp> {
         return;
       }
 
+      // LNURLw (Boltcard) withdraw — type is already known from the scheme, so
+      // we skip the Rust parse pipeline and open the number pad in withdraw mode.
+      if (deepLink.type == DeepLinkType.lnurlWithdraw) {
+        if (!mounted) return;
+        await openLnurlWithdraw(context: context, url: deepLink.data, fed: fed);
+        return;
+      }
+
       // Parse the payment data using the existing Rust parser
       final result = await parseScannedTextForFederation(
         text: deepLink.data,

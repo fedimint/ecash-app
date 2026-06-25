@@ -47,11 +47,41 @@ pub trait ParseContext: Sync + Send {
 /// federation-context flow). When `selected` is `None`, all known federations
 /// are considered and variants like `InviteCode`, `InviteCodeWithEcash`, and
 /// `EcashNoFederation` become reachable.
+/// Convert an `lnurlw://` URI to its `http(s)://` equivalent (LUD-17).
+/// Local hosts and `.onion` addresses use plain `http`; everything else uses `https`.
+fn lnurlw_to_http(uri: &str) -> Option<String> {
+    // Must start with the lnurlw scheme (case-insensitive).
+    let rest = uri.strip_prefix("lnurlw://")?;
+    // Extract host (everything before the first '/' or '?').
+    let host = rest.split(['/', '?']).next().unwrap_or(rest);
+    // Strip port if present.
+    let host_no_port = host.split(':').next().unwrap_or(host);
+    const LOCAL_HOSTS: &[&str] = &["localhost", "127.0.0.1", "10.0.2.2"];
+    let scheme = if host_no_port.ends_with(".onion") || LOCAL_HOSTS.contains(&host_no_port) {
+        "http"
+    } else {
+        "https"
+    };
+    Some(format!("{scheme}://{rest}"))
+}
+
 pub async fn parse_text<C: ParseContext + ?Sized>(
     text: String,
     ctx: &C,
     selected: Option<FederationSelector>,
 ) -> anyhow::Result<(ParsedText, Option<FederationSelector>)> {
+    // LUD-17: lnurlw:// is a raw-scheme Boltcard / LNURL-withdraw URI.
+    // Convert to http(s) and return immediately — no balance needed (receive flow).
+    if text.to_lowercase().starts_with("lnurlw://") {
+        if let Some(url) = lnurlw_to_http(&text) {
+            let fed = match &selected {
+                Some(f) => Some(f.clone()),
+                None => ctx.federations().await.into_iter().next(),
+            };
+            return Ok((ParsedText::LnurlWithdraw(url), fed));
+        }
+    }
+
     if selected.is_none() && InviteCode::from_str(&text).is_ok() {
         return Ok((ParsedText::InviteCode(text), None));
     }
@@ -545,6 +575,90 @@ mod tests {
             .await
             .unwrap();
         assert!(matches!(parsed, ParsedText::LightningAddressOrLnurl(_)));
+        assert_eq!(selected.unwrap().federation_id, fed_sel.federation_id);
+    }
+
+    // -- lnurlw:// tests -------------------------------------------------------
+
+    #[test]
+    fn lnurlw_to_http_normal_host_uses_https() {
+        let result = lnurlw_to_http("lnurlw://pay.example.com/withdraw?k1=abc");
+        assert_eq!(
+            result,
+            Some("https://pay.example.com/withdraw?k1=abc".to_string())
+        );
+    }
+
+    #[test]
+    fn lnurlw_to_http_localhost_uses_http() {
+        let result = lnurlw_to_http("lnurlw://localhost:8080/withdraw?k1=abc");
+        assert_eq!(
+            result,
+            Some("http://localhost:8080/withdraw?k1=abc".to_string())
+        );
+    }
+
+    #[test]
+    fn lnurlw_to_http_loopback_uses_http() {
+        let result = lnurlw_to_http("lnurlw://127.0.0.1:9000/path?k1=abc");
+        assert_eq!(
+            result,
+            Some("http://127.0.0.1:9000/path?k1=abc".to_string())
+        );
+    }
+
+    #[test]
+    fn lnurlw_to_http_android_emulator_uses_http() {
+        let result = lnurlw_to_http("lnurlw://10.0.2.2:9000/path?k1=abc");
+        assert_eq!(result, Some("http://10.0.2.2:9000/path?k1=abc".to_string()));
+    }
+
+    #[test]
+    fn lnurlw_to_http_onion_uses_http() {
+        let result = lnurlw_to_http("lnurlw://abc.onion/withdraw?k1=abc");
+        assert_eq!(result, Some("http://abc.onion/withdraw?k1=abc".to_string()));
+    }
+
+    #[test]
+    fn lnurlw_to_http_wrong_scheme_returns_none() {
+        assert!(lnurlw_to_http("lnurl://example.com/withdraw").is_none());
+        assert!(lnurlw_to_http("https://example.com/withdraw").is_none());
+    }
+
+    #[tokio::test]
+    async fn lnurlw_uri_returns_lnurl_withdraw_variant() {
+        let fed_sel = fed(0x01, "fed-btc", Some("bitcoin"));
+        let ctx = FakeParseContext {
+            feds: vec![fed_sel.clone()],
+            ..Default::default()
+        };
+
+        let uri = "lnurlw://pay.example.com/withdraw?k1=deadbeef".to_string();
+        let (parsed, selected) = parse_text(uri, &ctx, None).await.unwrap();
+        match parsed {
+            ParsedText::LnurlWithdraw(url) => {
+                assert!(url.starts_with("https://"));
+                assert!(url.contains("k1=deadbeef"));
+            }
+            other => panic!("expected LnurlWithdraw, got {other:?}"),
+        }
+        assert_eq!(selected.unwrap().federation_id, fed_sel.federation_id);
+    }
+
+    #[tokio::test]
+    async fn lnurlw_uri_with_selected_federation_uses_it() {
+        let fed_sel = fed(0x01, "fed-btc", Some("bitcoin"));
+        let ctx = FakeParseContext {
+            feds: vec![fed_sel.clone()],
+            ..Default::default()
+        };
+
+        let uri = "lnurlw://localhost:8080/withdraw?k1=abc".to_string();
+        let (parsed, selected) = parse_text(uri, &ctx, Some(fed_sel.clone())).await.unwrap();
+        match parsed {
+            ParsedText::LnurlWithdraw(url) => assert!(url.starts_with("http://")),
+            other => panic!("expected LnurlWithdraw, got {other:?}"),
+        }
         assert_eq!(selected.unwrap().federation_id, fed_sel.federation_id);
     }
 

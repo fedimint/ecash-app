@@ -4,6 +4,7 @@ import 'package:ecashapp/ecash_send.dart';
 import 'package:ecashapp/extensions/build_context_l10n.dart';
 import 'package:ecashapp/lib.dart';
 import 'package:ecashapp/multimint.dart';
+import 'package:ecashapp/lnurl_withdraw.dart';
 import 'package:ecashapp/onchain_send.dart';
 import 'package:ecashapp/pay_preview.dart';
 import 'package:ecashapp/providers/preferences_provider.dart';
@@ -16,11 +17,68 @@ import 'package:ecashapp/models.dart';
 import 'package:flutter/material.dart';
 import 'package:ecashapp/widgets/numpad/custom_numpad.dart';
 import 'package:ecashapp/widgets/numpad/numpad_button.dart';
+import 'package:ecashapp/widgets/federation_card.dart';
 import 'package:ecashapp/widgets/federation_picker.dart';
+import 'package:ecashapp/widgets/gateway_card.dart';
 import 'package:ecashapp/widgets/gateway_picker.dart';
-import 'package:ecashapp/widgets/protocol_badge.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
+
+/// Fetches the LNURLw parameters for [url], then opens the number pad in
+/// withdraw mode so the user can choose the federation, gateway and amount.
+/// Shows a blocking spinner while the parameters are fetched. Used by both the
+/// scanner/paste path and the NFC deep-link path.
+Future<void> openLnurlWithdraw({
+  required BuildContext context,
+  required String url,
+  required FederationSelector fed,
+}) async {
+  // The app runs inside a nested Navigator. `showDialog` defaults to the root
+  // navigator, but our pop/push target the nearest one — so the spinner must be
+  // shown on that SAME (nearest) navigator (`useRootNavigator: false`) and
+  // dismissed via the captured `navigator`. Otherwise the spinner lands on the
+  // outer root navigator where pop can't reach it and it stays stuck on top of
+  // the pushed number pad.
+  final navigator = Navigator.of(context);
+  showDialog<void>(
+    context: context,
+    barrierDismissible: false,
+    useRootNavigator: false,
+    builder: (_) => const Center(child: CircularProgressIndicator()),
+  );
+
+  LnurlWithdrawParams params;
+  Map<FiatCurrency, double> btcPrices;
+  try {
+    params = await fetchLnurlWithdraw(url: url);
+    btcPrices = await fetchAllBtcPrices();
+  } catch (e) {
+    AppLogger.instance.error('Failed to fetch LNURLw params: $e');
+    navigator.pop(); // dismiss spinner
+    if (context.mounted) {
+      ToastService().show(
+        message: context.l10n.lnurlWithdrawFailed,
+        duration: const Duration(seconds: 5),
+        onTap: () {},
+        icon: const Icon(Icons.error),
+      );
+    }
+    return;
+  }
+
+  navigator.pop(); // dismiss spinner
+  await navigator.push(
+    MaterialPageRoute(
+      builder:
+          (_) => NumberPad(
+            fed: fed,
+            paymentType: PaymentType.lightning,
+            btcPrices: btcPrices,
+            lnurlWithdrawParams: params,
+          ),
+    ),
+  );
+}
 
 enum WithdrawalMode { specificAmount, maxBalance }
 
@@ -31,6 +89,7 @@ class NumberPad extends StatefulWidget {
   final VoidCallback? onWithdrawCompleted;
   final String? bitcoinAddress;
   final String? lightningAddressOrLnurl;
+  final LnurlWithdrawParams? lnurlWithdrawParams;
   const NumberPad({
     super.key,
     required this.fed,
@@ -39,6 +98,7 @@ class NumberPad extends StatefulWidget {
     this.onWithdrawCompleted,
     this.bitcoinAddress,
     this.lightningAddressOrLnurl,
+    this.lnurlWithdrawParams,
   });
 
   @override
@@ -78,10 +138,36 @@ class _NumberPadState extends State<NumberPad> {
       widget.paymentType == PaymentType.lightning &&
       widget.lightningAddressOrLnurl == null;
 
+  // LNURLw withdraw mode: behaves like a Lightning receive in the UI, but on
+  // confirm the generated invoice is posted to the LNURLw callback instead of
+  // being shown as a QR.
+  bool get _isLnurlWithdraw => widget.lnurlWithdrawParams != null;
+
+  // A fixed-amount LNURLw withdraw (min == max). The invoice must be exactly
+  // that amount, so fees can't be added on top — the fee toggle is hidden and
+  // fees are never added.
+  bool get _isFixedLnurlWithdraw {
+    final p = widget.lnurlWithdrawParams;
+    return p != null && p.minWithdrawableMsats == p.maxWithdrawableMsats;
+  }
+
   @override
   void initState() {
     super.initState();
     _selectedFed = widget.fed;
+
+    // Default the amount to the maximum withdrawable, matching the old withdraw
+    // screen. For a fixed-amount card (min == max) the user can just confirm;
+    // for a range they can lower it. Set synchronously so it shows on the first
+    // build — no setState/race involved.
+    final lnurlw = widget.lnurlWithdrawParams;
+    if (lnurlw != null) {
+      _rawAmount =
+          (lnurlw.maxWithdrawableMsats ~/ BigInt.from(1000)).toString();
+      // Default to NOT adding fees so the pre-filled max amount stays in range.
+      // Ranged withdraws expose the toggle for opt-in; fixed ones keep it false.
+      _includeFees = false;
+    }
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _numpadFocus.requestFocus();
@@ -396,12 +482,59 @@ class _NumberPadState extends State<NumberPad> {
     }
   }
 
+  Future<void> _handleLnurlWithdraw(BigInt amountSats) async {
+    final params = widget.lnurlWithdrawParams!;
+    final selected = _selectedReceiveGateway;
+    if (selected == null) {
+      ToastService().show(
+        message: context.l10n.noGatewaysAvailable,
+        duration: const Duration(seconds: 5),
+        onTap: () {},
+        icon: const Icon(Icons.error),
+      );
+      return;
+    }
+
+    final amountMsats = amountSats * BigInt.from(1000);
+    if (amountMsats < params.minWithdrawableMsats ||
+        amountMsats > params.maxWithdrawableMsats) {
+      final minSats = params.minWithdrawableMsats ~/ BigInt.from(1000);
+      final maxSats = params.maxWithdrawableMsats ~/ BigInt.from(1000);
+      ToastService().show(
+        message: context.l10n.lnurlWithdrawAmountRange(
+          minSats.toString(),
+          maxSats.toString(),
+        ),
+        duration: const Duration(seconds: 5),
+        onTap: () {},
+        icon: const Icon(Icons.warning),
+      );
+      return;
+    }
+
+    await Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder:
+            (_) => LnurlWithdrawWaiting(
+              fed: _selectedFed,
+              gateway: selected,
+              params: params,
+              requestedMsats: amountMsats,
+              includeFees: _includeFees,
+            ),
+      ),
+    );
+  }
+
   Future<void> _onConfirm() async {
     setState(() => _creating = true);
     final amountSats = BigInt.tryParse(_rawAmount);
     if (amountSats != null) {
       if (widget.paymentType == PaymentType.lightning) {
-        if (widget.lightningAddressOrLnurl != null) {
+        if (_isLnurlWithdraw) {
+          await _handleLnurlWithdraw(amountSats);
+        } else if (widget.lightningAddressOrLnurl != null) {
           final amountMsats = amountSats * BigInt.from(1000);
 
           // Check balance first
@@ -473,7 +606,7 @@ class _NumberPadState extends State<NumberPad> {
         );
       }
     }
-    setState(() => _creating = false);
+    if (mounted) setState(() => _creating = false);
   }
 
   void _handleKeyEvent(KeyEvent event) {
@@ -592,142 +725,24 @@ class _NumberPadState extends State<NumberPad> {
   }
 
   Widget _buildFederationCard() {
-    // Hide card for lightning receives
+    // Hide card for lightning receives, but keep it for LNURLw withdraws where
+    // the user must be able to choose which federation receives the funds.
     final isLightningReceive =
         widget.paymentType == PaymentType.lightning &&
         widget.lightningAddressOrLnurl == null;
 
-    if (isLightningReceive) {
+    if (isLightningReceive && !_isLnurlWithdraw) {
       return const SizedBox.shrink();
     }
 
-    final remainingBalance = _getRemainingBalance();
-    final isOverBalance = _isAmountOverBalance();
-    final theme = Theme.of(context);
-    final bitcoinDisplay = context.select<PreferencesProvider, BitcoinDisplay>(
-      (prefs) => prefs.bitcoinDisplay,
-    );
-
     final hasMultipleFeds = (_allFederations?.length ?? 0) > 1;
 
-    return Center(
-      child: GestureDetector(
-        onTap: hasMultipleFeds ? _onFederationCardTapped : null,
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 300),
-          curve: Curves.easeInOut,
-          constraints: const BoxConstraints(maxWidth: 400),
-          margin: const EdgeInsets.fromLTRB(16, 16, 16, 12),
-          padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            color: theme.colorScheme.surface,
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(
-              color:
-                  isOverBalance
-                      ? Colors.red.withValues(alpha: 0.4)
-                      : theme.colorScheme.primary.withValues(alpha: 0.1),
-              width: 1,
-            ),
-            boxShadow: [
-              if (isOverBalance)
-                BoxShadow(
-                  color: Colors.red.withValues(alpha: 0.2),
-                  blurRadius: 12,
-                  spreadRadius: 2,
-                  offset: const Offset(0, 2),
-                )
-              else
-                BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.3),
-                  blurRadius: 8,
-                  offset: const Offset(0, 2),
-                ),
-            ],
-          ),
-          child: Row(
-            children: [
-              // Federation Image
-              ClipRRect(
-                borderRadius: BorderRadius.circular(28),
-                child: SizedBox(
-                  width: 56,
-                  height: 56,
-                  child:
-                      _federationMeta?.picture != null &&
-                              _federationMeta!.picture!.isNotEmpty
-                          ? Image.network(
-                            _federationMeta!.picture!,
-                            fit: BoxFit.cover,
-                            errorBuilder: (context, error, stackTrace) {
-                              return Image.asset(
-                                'assets/images/fedimint-icon-color.png',
-                                fit: BoxFit.cover,
-                              );
-                            },
-                          )
-                          : Image.asset(
-                            'assets/images/fedimint-icon-color.png',
-                            fit: BoxFit.cover,
-                          ),
-                ),
-              ),
-              const SizedBox(width: 12),
-              // Federation Name and Balance
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Text(
-                      _selectedFed.federationName,
-                      style: const TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.white,
-                      ),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                    const SizedBox(height: 6),
-                    Text(
-                      context.l10n.available,
-                      style: const TextStyle(fontSize: 11, color: Colors.grey),
-                    ),
-                    const SizedBox(height: 2),
-                    remainingBalance == null
-                        ? const SizedBox(
-                          width: 16,
-                          height: 16,
-                          child: CircularProgressIndicator(
-                            strokeWidth: 2,
-                            color: Colors.grey,
-                          ),
-                        )
-                        : AnimatedDefaultTextStyle(
-                          duration: const Duration(milliseconds: 300),
-                          curve: Curves.easeInOut,
-                          style: TextStyle(
-                            fontSize: 14,
-                            color: isOverBalance ? Colors.red : Colors.grey,
-                          ),
-                          child: Text(
-                            formatBalance(
-                              remainingBalance,
-                              false,
-                              bitcoinDisplay,
-                            ),
-                          ),
-                        ),
-                  ],
-                ),
-              ),
-              if (hasMultipleFeds)
-                Icon(Icons.unfold_more, color: Colors.grey[500], size: 20),
-            ],
-          ),
-        ),
-      ),
+    return FederationCard(
+      federation: _selectedFed,
+      pictureUrl: _federationMeta?.picture,
+      balanceMsats: _getRemainingBalance(),
+      isOverBalance: _isAmountOverBalance(),
+      onTap: hasMultipleFeds ? _onFederationCardTapped : null,
     );
   }
 
@@ -736,110 +751,10 @@ class _NumberPadState extends State<NumberPad> {
       return const SizedBox.shrink();
     }
 
-    final theme = Theme.of(context);
-    final bitcoinDisplay = context.select<PreferencesProvider, BitcoinDisplay>(
-      (prefs) => prefs.bitcoinDisplay,
-    );
-    final gateways = _receiveGateways;
-    final selected = _selectedReceiveGateway;
-    final canTap = gateways != null && gateways.isNotEmpty;
-
-    return Center(
-      child: GestureDetector(
-        onTap: canTap ? _onGatewayCardTapped : null,
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 300),
-          curve: Curves.easeInOut,
-          constraints: const BoxConstraints(maxWidth: 400),
-          margin: const EdgeInsets.fromLTRB(16, 16, 16, 12),
-          padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            color: theme.colorScheme.surface,
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(
-              color: theme.colorScheme.primary.withValues(alpha: 0.1),
-              width: 1,
-            ),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withValues(alpha: 0.3),
-                blurRadius: 8,
-                offset: const Offset(0, 2),
-              ),
-            ],
-          ),
-          child: Row(
-            children: [
-              Icon(
-                Icons.device_hub,
-                color: theme.colorScheme.primary,
-                size: 28,
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Text(
-                      context.l10n.gateway,
-                      style: const TextStyle(fontSize: 11, color: Colors.grey),
-                    ),
-                    const SizedBox(height: 4),
-                    if (gateways == null)
-                      const SizedBox(
-                        width: 16,
-                        height: 16,
-                        child: CircularProgressIndicator(
-                          strokeWidth: 2,
-                          color: Colors.grey,
-                        ),
-                      )
-                    else if (selected == null)
-                      Text(
-                        context.l10n.noGatewaysAvailableShort,
-                        style: const TextStyle(
-                          fontSize: 14,
-                          color: Colors.grey,
-                        ),
-                      )
-                    else ...[
-                      Row(
-                        children: [
-                          Flexible(
-                            child: Text(
-                              selected.lightningAlias ?? selected.endpoint,
-                              style: const TextStyle(
-                                fontSize: 14,
-                                fontWeight: FontWeight.bold,
-                                color: Colors.white,
-                              ),
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                          ),
-                          const SizedBox(width: 8),
-                          ProtocolBadge(isLnv2: selected.isLnv2),
-                        ],
-                      ),
-                      const SizedBox(height: 2),
-                      Text(
-                        '${formatBalance(selected.baseRoutingFee, true, bitcoinDisplay)} + ${selected.ppmRoutingFee} ppm',
-                        style: const TextStyle(
-                          fontSize: 12,
-                          color: Colors.grey,
-                        ),
-                      ),
-                    ],
-                  ],
-                ),
-              ),
-              if (canTap)
-                Icon(Icons.unfold_more, color: Colors.grey[500], size: 20),
-            ],
-          ),
-        ),
-      ),
+    return GatewayCard(
+      gateways: _receiveGateways,
+      selectedGateway: _selectedReceiveGateway,
+      onTap: _onGatewayCardTapped,
     );
   }
 
@@ -1003,7 +918,7 @@ class _NumberPadState extends State<NumberPad> {
                 ),
               ),
             ),
-            if (_isLightningReceive)
+            if (_isLightningReceive && !_isFixedLnurlWithdraw)
               Padding(
                 padding: const EdgeInsets.fromLTRB(16, 0, 8, 8),
                 child: Row(

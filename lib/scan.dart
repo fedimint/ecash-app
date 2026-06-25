@@ -535,6 +535,15 @@ class _ScanQRPageState extends State<ScanQRPage> {
             }
           }
           break;
+        case ParsedText_LnurlWithdraw(:final field0):
+          if (chosenFederation != null) {
+            await openLnurlWithdraw(
+              context: context,
+              url: field0,
+              fed: chosenFederation,
+            );
+          }
+          break;
         case ParsedText_EcashNoFederation():
           ToastService().show(
             message: context.l10n.validEcashNoFederation,

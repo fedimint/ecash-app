@@ -47,6 +47,7 @@
                 <data android:scheme="lnurl" />
                 <data android:scheme="bitcoin" />
                 <data android:scheme="lnurlp" />
+                <data android:scheme="lnurlw" />
             </intent-filter>
             <!-- NFC NDEF tag dispatch for payment URI records -->
             <intent-filter>
