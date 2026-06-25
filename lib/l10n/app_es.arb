@@ -128,6 +128,7 @@
   "txDetailReceivedAmount": "Monto Recibido",
   "txDetailFees": "Comisiones",
   "txDetailFederationFee": "Comisión de Federación",
+  "txDetailOnchainClaimFee": "Comisión de reclamo en cadena",
   "txDetailGatewayFee": "Comisión de Pasarela",
   "txDetailBitcoinNetworkFee": "Comisión de Red Bitcoin",
   "txDetailTimestamp": "Marca de tiempo",

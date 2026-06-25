@@ -464,6 +464,8 @@
   "@txDetailFees": {},
   "txDetailFederationFee": "Federation Fee",
   "@txDetailFederationFee": {},
+  "txDetailOnchainClaimFee": "On-chain Claim Fee",
+  "@txDetailOnchainClaimFee": {},
   "txDetailGatewayFee": "Gateway Fee",
   "@txDetailGatewayFee": {},
   "txDetailBitcoinNetworkFee": "Bitcoin Network Fee",

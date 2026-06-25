@@ -177,6 +177,7 @@ class TransactionItem extends StatelessWidget {
         address: final address,
         txid: final txid,
         federationFeeMsats: final federationFeeMsats,
+        onchainClaimFeeMsats: final onchainClaimFeeMsats,
       ):
         Map<String, String> details = {
           TransactionDetailKeys.amount: formattedAmount,
@@ -191,6 +192,16 @@ class TransactionItem extends StatelessWidget {
         if (federationFeeMsats != null && federationFeeMsats > BigInt.zero) {
           details[TransactionDetailKeys.federationFee] = fmt(
             federationFeeMsats,
+          );
+        }
+
+        // The actual on-chain claim/sweep fee paid at claim time (walletv2
+        // only). This is the real cost behind the estimate shown at address
+        // generation; absent for walletv1 and pre-fee-tracking deposits.
+        if (onchainClaimFeeMsats != null &&
+            onchainClaimFeeMsats > BigInt.zero) {
+          details[TransactionDetailKeys.onchainClaimFee] = fmt(
+            onchainClaimFeeMsats,
           );
         }
 

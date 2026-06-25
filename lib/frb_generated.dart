@@ -13487,6 +13487,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           address: dco_decode_String(raw[1]),
           txid: dco_decode_String(raw[2]),
           federationFeeMsats: dco_decode_opt_box_autoadd_u_64(raw[3]),
+          onchainClaimFeeMsats: dco_decode_opt_box_autoadd_u_64(raw[4]),
         );
       case 4:
         return TransactionKind_OnchainSend(
@@ -16320,10 +16321,14 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
         var var_federationFeeMsats = sse_decode_opt_box_autoadd_u_64(
           deserializer,
         );
+        var var_onchainClaimFeeMsats = sse_decode_opt_box_autoadd_u_64(
+          deserializer,
+        );
         return TransactionKind_OnchainReceive(
           address: var_address,
           txid: var_txid,
           federationFeeMsats: var_federationFeeMsats,
+          onchainClaimFeeMsats: var_onchainClaimFeeMsats,
         );
       case 4:
         var var_address = sse_decode_String(deserializer);
@@ -19187,11 +19192,13 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
         address: final address,
         txid: final txid,
         federationFeeMsats: final federationFeeMsats,
+        onchainClaimFeeMsats: final onchainClaimFeeMsats,
       ):
         sse_encode_i_32(3, serializer);
         sse_encode_String(address, serializer);
         sse_encode_String(txid, serializer);
         sse_encode_opt_box_autoadd_u_64(federationFeeMsats, serializer);
+        sse_encode_opt_box_autoadd_u_64(onchainClaimFeeMsats, serializer);
       case TransactionKind_OnchainSend(
         address: final address,
         txid: final txid,

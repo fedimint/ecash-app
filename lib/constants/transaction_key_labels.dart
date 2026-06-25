@@ -11,6 +11,7 @@ String localizedTxLabel(AppLocalizations l10n, String key) {
     TransactionDetailKeys.receivedAmount => l10n.txDetailReceivedAmount,
     TransactionDetailKeys.fees => l10n.txDetailFees,
     TransactionDetailKeys.federationFee => l10n.txDetailFederationFee,
+    TransactionDetailKeys.onchainClaimFee => l10n.txDetailOnchainClaimFee,
     TransactionDetailKeys.gatewayFee => l10n.txDetailGatewayFee,
     TransactionDetailKeys.bitcoinNetworkFee => l10n.txDetailBitcoinNetworkFee,
     TransactionDetailKeys.ecash => l10n.ecash,

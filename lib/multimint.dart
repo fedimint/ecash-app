@@ -1119,6 +1119,13 @@ sealed class TransactionKind with _$TransactionKind {
     /// Federation fee actually charged on the claimed deposit, in msats.
     /// `None` for deposits made before the fee-tracking feature existed.
     BigInt? federationFeeMsats,
+
+    /// Dynamic on-chain claim/sweep fee actually paid when the deposit was
+    /// claimed, in msats. This is the real fee (queried at claim time),
+    /// not the estimate shown at address-generation time. walletv2 only;
+    /// `None` for walletv1 (which has no separate claim fee) and for
+    /// deposits predating fee tracking.
+    BigInt? onchainClaimFeeMsats,
   }) = TransactionKind_OnchainReceive;
   const factory TransactionKind.onchainSend({
     required String address,

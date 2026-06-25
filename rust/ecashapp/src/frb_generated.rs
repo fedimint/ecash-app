@@ -15749,10 +15749,12 @@ impl SseDecode for crate::multimint::TransactionKind {
                 let mut var_address = <String>::sse_decode(deserializer);
                 let mut var_txid = <String>::sse_decode(deserializer);
                 let mut var_federationFeeMsats = <Option<u64>>::sse_decode(deserializer);
+                let mut var_onchainClaimFeeMsats = <Option<u64>>::sse_decode(deserializer);
                 return crate::multimint::TransactionKind::OnchainReceive {
                     address: var_address,
                     txid: var_txid,
                     federation_fee_msats: var_federationFeeMsats,
+                    onchain_claim_fee_msats: var_onchainClaimFeeMsats,
                 };
             }
             4 => {
@@ -18263,11 +18265,13 @@ impl flutter_rust_bridge::IntoDart for crate::multimint::TransactionKind {
                 address,
                 txid,
                 federation_fee_msats,
+                onchain_claim_fee_msats,
             } => [
                 3.into_dart(),
                 address.into_into_dart().into_dart(),
                 txid.into_into_dart().into_dart(),
                 federation_fee_msats.into_into_dart().into_dart(),
+                onchain_claim_fee_msats.into_into_dart().into_dart(),
             ]
             .into_dart(),
             crate::multimint::TransactionKind::OnchainSend {
@@ -20257,11 +20261,13 @@ impl SseEncode for crate::multimint::TransactionKind {
                 address,
                 txid,
                 federation_fee_msats,
+                onchain_claim_fee_msats,
             } => {
                 <i32>::sse_encode(3, serializer);
                 <String>::sse_encode(address, serializer);
                 <String>::sse_encode(txid, serializer);
                 <Option<u64>>::sse_encode(federation_fee_msats, serializer);
+                <Option<u64>>::sse_encode(onchain_claim_fee_msats, serializer);
             }
             crate::multimint::TransactionKind::OnchainSend {
                 address,

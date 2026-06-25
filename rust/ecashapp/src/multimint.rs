@@ -355,6 +355,12 @@ pub enum TransactionKind {
         /// Federation fee actually charged on the claimed deposit, in msats.
         /// `None` for deposits made before the fee-tracking feature existed.
         federation_fee_msats: Option<u64>,
+        /// Dynamic on-chain claim/sweep fee actually paid when the deposit was
+        /// claimed, in msats. This is the real fee (queried at claim time),
+        /// not the estimate shown at address-generation time. walletv2 only;
+        /// `None` for walletv1 (which has no separate claim fee) and for
+        /// deposits predating fee tracking.
+        onchain_claim_fee_msats: Option<u64>,
     },
     OnchainSend {
         address: String,
@@ -3299,6 +3305,10 @@ impl Multimint {
                                             address,
                                             txid,
                                             federation_fee_msats,
+                                            // walletv1 has no separate on-chain
+                                            // claim fee; the federation fee is the
+                                            // whole receive fee.
+                                            onchain_claim_fee_msats: None,
                                         },
                                         amount,
                                         timestamp,
@@ -3383,11 +3393,20 @@ impl Multimint {
                                         .flatten()
                                         .map(|fees| fees.get_bitcoin().msats);
 
+                                    // The on-chain claim/sweep fee is deducted from
+                                    // the deposit before it enters the fedimint tx,
+                                    // so it isn't part of `get_operation_fees`. The
+                                    // actual fee paid at claim time is recorded in
+                                    // the receive meta.
+                                    let onchain_claim_fee_msats =
+                                        Some(Amount::from_sats(receive.fee.to_sat()).msats);
+
                                     Some(Transaction {
                                         kind: TransactionKind::OnchainReceive {
                                             address,
                                             txid,
                                             federation_fee_msats,
+                                            onchain_claim_fee_msats,
                                         },
                                         amount,
                                         timestamp,
