@@ -1029,6 +1029,9 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   PeerStatus dco_decode_peer_status(dynamic raw);
 
   @protected
+  PeginFeeQuote dco_decode_pegin_fee_quote(dynamic raw);
+
+  @protected
   ReceiveAmount dco_decode_receive_amount(dynamic raw);
 
   @protected
@@ -2104,6 +2107,9 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
 
   @protected
   PeerStatus sse_decode_peer_status(SseDeserializer deserializer);
+
+  @protected
+  PeginFeeQuote sse_decode_pegin_fee_quote(SseDeserializer deserializer);
 
   @protected
   ReceiveAmount sse_decode_receive_amount(SseDeserializer deserializer);
@@ -3375,6 +3381,9 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
 
   @protected
   void sse_encode_peer_status(PeerStatus self, SseSerializer serializer);
+
+  @protected
+  void sse_encode_pegin_fee_quote(PeginFeeQuote self, SseSerializer serializer);
 
   @protected
   void sse_encode_receive_amount(ReceiveAmount self, SseSerializer serializer);

@@ -2533,11 +2533,14 @@ String toString() {
 
 
 class TransactionKind_OnchainReceive extends TransactionKind {
-  const TransactionKind_OnchainReceive({required this.address, required this.txid}): super._();
+  const TransactionKind_OnchainReceive({required this.address, required this.txid, this.federationFeeMsats}): super._();
   
 
  final  String address;
  final  String txid;
+/// Federation fee actually charged on the claimed deposit, in msats.
+/// `None` for deposits made before the fee-tracking feature existed.
+ final  BigInt? federationFeeMsats;
 
 /// Create a copy of TransactionKind
 /// with the given fields replaced by the non-null parameter values.
@@ -2549,16 +2552,16 @@ $TransactionKind_OnchainReceiveCopyWith<TransactionKind_OnchainReceive> get copy
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is TransactionKind_OnchainReceive&&(identical(other.address, address) || other.address == address)&&(identical(other.txid, txid) || other.txid == txid));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is TransactionKind_OnchainReceive&&(identical(other.address, address) || other.address == address)&&(identical(other.txid, txid) || other.txid == txid)&&(identical(other.federationFeeMsats, federationFeeMsats) || other.federationFeeMsats == federationFeeMsats));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,address,txid);
+int get hashCode => Object.hash(runtimeType,address,txid,federationFeeMsats);
 
 @override
 String toString() {
-  return 'TransactionKind.onchainReceive(address: $address, txid: $txid)';
+  return 'TransactionKind.onchainReceive(address: $address, txid: $txid, federationFeeMsats: $federationFeeMsats)';
 }
 
 
@@ -2569,7 +2572,7 @@ abstract mixin class $TransactionKind_OnchainReceiveCopyWith<$Res> implements $T
   factory $TransactionKind_OnchainReceiveCopyWith(TransactionKind_OnchainReceive value, $Res Function(TransactionKind_OnchainReceive) _then) = _$TransactionKind_OnchainReceiveCopyWithImpl;
 @useResult
 $Res call({
- String address, String txid
+ String address, String txid, BigInt? federationFeeMsats
 });
 
 
@@ -2586,11 +2589,12 @@ class _$TransactionKind_OnchainReceiveCopyWithImpl<$Res>
 
 /// Create a copy of TransactionKind
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') $Res call({Object? address = null,Object? txid = null,}) {
+@pragma('vm:prefer-inline') $Res call({Object? address = null,Object? txid = null,Object? federationFeeMsats = freezed,}) {
   return _then(TransactionKind_OnchainReceive(
 address: null == address ? _self.address : address // ignore: cast_nullable_to_non_nullable
 as String,txid: null == txid ? _self.txid : txid // ignore: cast_nullable_to_non_nullable
-as String,
+as String,federationFeeMsats: freezed == federationFeeMsats ? _self.federationFeeMsats : federationFeeMsats // ignore: cast_nullable_to_non_nullable
+as BigInt?,
   ));
 }
 

@@ -176,6 +176,7 @@ class TransactionItem extends StatelessWidget {
       case TransactionKind_OnchainReceive(
         address: final address,
         txid: final txid,
+        federationFeeMsats: final federationFeeMsats,
       ):
         Map<String, String> details = {
           TransactionDetailKeys.amount: formattedAmount,
@@ -183,6 +184,15 @@ class TransactionItem extends StatelessWidget {
           TransactionDetailKeys.address: address,
           TransactionDetailKeys.txid: txid,
         };
+
+        // The federation fee charged on the claimed deposit, computed from the
+        // operation's input/output difference. Absent for deposits made before
+        // fee tracking existed, so only show it when present.
+        if (federationFeeMsats != null && federationFeeMsats > BigInt.zero) {
+          details[TransactionDetailKeys.federationFee] = fmt(
+            federationFeeMsats,
+          );
+        }
 
         showAppModalBottomSheet(
           context: context,

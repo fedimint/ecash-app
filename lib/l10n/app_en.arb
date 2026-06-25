@@ -1038,6 +1038,18 @@
   "peginFeeDescription": "This fee is deducted by the federation when your deposit is claimed.",
   "@peginFeeDescription": {},
 
+  "federationBaseFee": "Federation Base Fee",
+  "@federationBaseFee": {},
+
+  "federationRate": "Federation Rate",
+  "@federationRate": {},
+
+  "onchainClaimFee": "On-chain Claim Fee",
+  "@onchainClaimFee": {},
+
+  "peginFeeVariableNote": "The exact federation fee depends on the amount you deposit.",
+  "@peginFeeVariableNote": {},
+
   "couldNotGetNewAddress": "Could not get new address",
   "@couldNotGetNewAddress": {},
 

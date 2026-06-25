@@ -24,7 +24,7 @@ class OnChainReceiveContent extends StatefulWidget {
 class _OnChainReceiveContentState extends State<OnChainReceiveContent> {
   String? _address;
   BigInt? _addressIndex;
-  BigInt? _peginFee;
+  PeginFeeQuote? _peginFeeQuote;
   bool _isLoading = true;
   bool _addressCopied = false;
 
@@ -39,13 +39,15 @@ class _OnChainReceiveContentState extends State<OnChainReceiveContent> {
       final (address, index) = await allocateDepositAddress(
         federationId: widget.fed.federationId,
       );
-      final fee = await getPeginFee(federationId: widget.fed.federationId);
+      final feeQuote = await getPeginFeeQuote(
+        federationId: widget.fed.federationId,
+      );
 
       if (!mounted) return;
       setState(() {
         _address = address;
         _addressIndex = index;
-        _peginFee = fee;
+        _peginFeeQuote = feeQuote;
         _isLoading = false;
       });
     } catch (e) {
@@ -77,6 +79,12 @@ class _OnChainReceiveContentState extends State<OnChainReceiveContent> {
         });
       }
     });
+  }
+
+  String _formatRate(BigInt partsPerMillion) {
+    // ppm → percentage: 10,000 ppm equals 1%.
+    final percent = partsPerMillion.toDouble() / 10000.0;
+    return '${percent.toStringAsFixed(2)}% ($partsPerMillion ppm)';
   }
 
   List<TextSpan> _formatAddressWithColor(String address, ThemeData theme) {
@@ -276,19 +284,50 @@ class _OnChainReceiveContentState extends State<OnChainReceiveContent> {
                           ],
                         ),
                         const SizedBox(height: 12),
-                        CopyableDetailRow(
-                          label: context.l10n.peginFee,
-                          value:
-                              _peginFee == null
-                                  ? context.l10n.unableToFetchFee
-                                  : _peginFee == BigInt.zero
-                                  ? context.l10n.noFeeConfigured
-                                  : formatBalance(
-                                    _peginFee!,
-                                    false,
-                                    bitcoinDisplay,
-                                  ),
-                        ),
+                        if (_peginFeeQuote == null)
+                          CopyableDetailRow(
+                            label: context.l10n.peginFee,
+                            value: context.l10n.unableToFetchFee,
+                          )
+                        else ...[
+                          // Constant base fee (walletv1 peg-in fee, or walletv2
+                          // base component of the federation fee).
+                          CopyableDetailRow(
+                            label: context.l10n.federationBaseFee,
+                            value:
+                                _peginFeeQuote!.baseFeeMsats == BigInt.zero
+                                    ? context.l10n.noFeeConfigured
+                                    : formatBalance(
+                                      _peginFeeQuote!.baseFeeMsats,
+                                      false,
+                                      bitcoinDisplay,
+                                    ),
+                          ),
+                          // Relative (ppm) fee, walletv2 only.
+                          if (_peginFeeQuote!.partsPerMillion >
+                              BigInt.zero) ...[
+                            const SizedBox(height: 8),
+                            CopyableDetailRow(
+                              label: context.l10n.federationRate,
+                              value: _formatRate(
+                                _peginFeeQuote!.partsPerMillion,
+                              ),
+                            ),
+                          ],
+                          // Dynamic on-chain claim fee, walletv2 only.
+                          if (_peginFeeQuote!.onchainClaimFeeSats != null) ...[
+                            const SizedBox(height: 8),
+                            CopyableDetailRow(
+                              label: context.l10n.onchainClaimFee,
+                              value: formatBalance(
+                                _peginFeeQuote!.onchainClaimFeeSats! *
+                                    BigInt.from(1000),
+                                false,
+                                bitcoinDisplay,
+                              ),
+                            ),
+                          ],
+                        ],
                         const SizedBox(height: 8),
                         Text(
                           context.l10n.peginFeeDescription,
@@ -297,6 +336,21 @@ class _OnChainReceiveContentState extends State<OnChainReceiveContent> {
                             fontSize: 12,
                           ),
                         ),
+                        // The relative fee makes the total depend on the deposit
+                        // amount, which we don't know yet, so flag that.
+                        if (_peginFeeQuote != null &&
+                            _peginFeeQuote!.partsPerMillion > BigInt.zero) ...[
+                          const SizedBox(height: 4),
+                          Text(
+                            context.l10n.peginFeeVariableNote,
+                            style: theme.textTheme.bodySmall?.copyWith(
+                              color: theme.colorScheme.onSurface.withOpacity(
+                                0.7,
+                              ),
+                              fontSize: 12,
+                            ),
+                          ),
+                        ],
                       ],
                     ),
                   ),

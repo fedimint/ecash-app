@@ -13,7 +13,7 @@ part 'multimint.freezed.dart';
 
 // These functions are ignored because they are not marked as `pub`: `await_receive_lnv1`, `await_receive_lnv2`, `await_send_lnv1`, `await_send_lnv2`, `backup`, `build_client`, `cache_btc_price`, `cache_federation_meta`, `check_for_update`, `compute_send_fees`, `extract_recipient_pk_from_lnv2_lnurl`, `finish_active_subscriptions`, `from_peg_out_fees`, `get_client_database`, `get_client`, `get_ecash_amount_from_meta`, `get_lnv1_amount_from_meta`, `get_lnv1_receive_tx`, `get_lnv1_send_tx`, `get_lnv2_amount_from_meta`, `get_mintv2_receive_amount`, `get_or_build_temp_client`, `get_recurringd_federations`, `get_url`, `gross_invoice_for_contract`, `init_recovery_progress_cache`, `invoice_routes_back_to_federation`, `is_newer_version`, `list_gateways`, `lnv1_select_gateway`, `lnv1_update_gateway_cache`, `lnv2_gateways`, `lnv2_select_gateway`, `load_clients`, `pay_lnv1`, `pay_lnv2`, `read_meta_msats`, `read_meta_u64`, `receive_lnv1`, `receive_lnv2`, `remove_existing_ln_address`, `remove_recovery_progress_cache`, `run_migrations`, `send_federation_fee`, `sign_challenge`, `solve_gross_for_net`, `spawn_await_ecash_reissue`, `spawn_await_ecash_send`, `spawn_await_mintv2_receive`, `spawn_await_receive`, `spawn_await_recurringd_receive`, `spawn_await_send`, `spawn_await_withdraw`, `spawn_backfill_recipient_pk`, `spawn_cache_task`, `spawn_lnv2_event_listener`, `spawn_recovery_progress`, `spawn_recurring_invoice_listener`, `update_recovery_progress_cache`, `wait_for_recovery`, `wallet_network`
 // These types are ignored because they are neither used by any `pub` functions nor (for structs and enums) marked `#[frb(unignore)]`: `ClientType`, `LNAddressRegisterRequest`, `LNAddressRemoveRequest`, `OnChainWithdrawalMeta`, `WrappedEcash`
-// These function are ignored because they are on traits that is not defined in current crate (put an empty `#[frb]` on it to unignore): `assert_receiver_is_total_eq`, `assert_receiver_is_total_eq`, `assert_receiver_is_total_eq`, `assert_receiver_is_total_eq`, `assert_receiver_is_total_eq`, `assert_receiver_is_total_eq`, `assert_receiver_is_total_eq`, `assert_receiver_is_total_eq`, `assert_receiver_is_total_eq`, `assert_receiver_is_total_eq`, `assert_receiver_is_total_eq`, `assert_receiver_is_total_eq`, `assert_receiver_is_total_eq`, `assert_receiver_is_total_eq`, `assert_receiver_is_total_eq`, `assert_receiver_is_total_eq`, `assert_receiver_is_total_eq`, `assert_receiver_is_total_eq`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `consensus_decode_partial_from_finite_reader`, `consensus_decode_partial_from_finite_reader`, `consensus_decode_partial_from_finite_reader`, `consensus_encode`, `consensus_encode`, `consensus_encode`, `eq`, `eq`, `eq`, `eq`, `eq`, `eq`, `eq`, `eq`, `eq`, `eq`, `eq`, `eq`, `eq`, `eq`, `eq`, `eq`, `eq`, `eq`, `eq`, `eq`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `from`, `from`
+// These function are ignored because they are on traits that is not defined in current crate (put an empty `#[frb]` on it to unignore): `assert_receiver_is_total_eq`, `assert_receiver_is_total_eq`, `assert_receiver_is_total_eq`, `assert_receiver_is_total_eq`, `assert_receiver_is_total_eq`, `assert_receiver_is_total_eq`, `assert_receiver_is_total_eq`, `assert_receiver_is_total_eq`, `assert_receiver_is_total_eq`, `assert_receiver_is_total_eq`, `assert_receiver_is_total_eq`, `assert_receiver_is_total_eq`, `assert_receiver_is_total_eq`, `assert_receiver_is_total_eq`, `assert_receiver_is_total_eq`, `assert_receiver_is_total_eq`, `assert_receiver_is_total_eq`, `assert_receiver_is_total_eq`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `consensus_decode_partial_from_finite_reader`, `consensus_decode_partial_from_finite_reader`, `consensus_decode_partial_from_finite_reader`, `consensus_encode`, `consensus_encode`, `consensus_encode`, `eq`, `eq`, `eq`, `eq`, `eq`, `eq`, `eq`, `eq`, `eq`, `eq`, `eq`, `eq`, `eq`, `eq`, `eq`, `eq`, `eq`, `eq`, `eq`, `eq`, `eq`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `from`, `from`
 // These functions have error during generation (see debug logs or enable `stop_on_error: true` for more details): `subscribe_peer_status`
 
 OobNotesWrapper? parseOobNotes({required String notes}) =>
@@ -249,7 +249,7 @@ abstract class Multimint implements RustOpaqueInterface {
     required FederationId federationId,
   });
 
-  Future<BigInt> getPeginFee({required FederationId federationId});
+  Future<PeginFeeQuote> getPeginFeeQuote({required FederationId federationId});
 
   Future<RecoveryProgress> getRecoveryProgress({
     required FederationId federationId,
@@ -904,6 +904,43 @@ class PeerStatus {
           url == other.url;
 }
 
+/// Fee parameters for an on-chain deposit (peg-in). We can't quote an exact
+/// charge up front because the deposit amount is unknown, and for walletv2 the
+/// federation fee scales with the amount, so we surface the parameters instead.
+class PeginFeeQuote {
+  /// Constant federation fee charged on the deposit, in msats.
+  /// walletv1: `peg_in_abs`; walletv2: `fee_consensus.base`.
+  final BigInt baseFeeMsats;
+
+  /// Relative federation fee in parts-per-million (walletv2 only; 0 for walletv1).
+  final BigInt partsPerMillion;
+
+  /// Dynamic on-chain claim/sweep fee in sats (walletv2 only; `None` for
+  /// walletv1 or when no consensus feerate is currently available).
+  final BigInt? onchainClaimFeeSats;
+
+  const PeginFeeQuote({
+    required this.baseFeeMsats,
+    required this.partsPerMillion,
+    this.onchainClaimFeeSats,
+  });
+
+  @override
+  int get hashCode =>
+      baseFeeMsats.hashCode ^
+      partsPerMillion.hashCode ^
+      onchainClaimFeeSats.hashCode;
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is PeginFeeQuote &&
+          runtimeType == other.runtimeType &&
+          baseFeeMsats == other.baseFeeMsats &&
+          partsPerMillion == other.partsPerMillion &&
+          onchainClaimFeeSats == other.onchainClaimFeeSats;
+}
+
 /// Result of pricing a Lightning receive. `invoice_msats` is the invoice's face
 /// value (what the payer pays). The fee is broken out into its two sources:
 /// `federation_fee_msats` (on-federation: lightning input fee plus mint output
@@ -1078,6 +1115,10 @@ sealed class TransactionKind with _$TransactionKind {
   const factory TransactionKind.onchainReceive({
     required String address,
     required String txid,
+
+    /// Federation fee actually charged on the claimed deposit, in msats.
+    /// `None` for deposits made before the fee-tracking feature existed.
+    BigInt? federationFeeMsats,
   }) = TransactionKind_OnchainReceive;
   const factory TransactionKind.onchainSend({
     required String address,
