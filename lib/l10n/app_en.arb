@@ -1049,8 +1049,11 @@
   "onchainClaimFee": "On-chain Claim Fee",
   "@onchainClaimFee": {},
 
-  "peginFeeVariableNote": "The exact federation fee depends on the amount you deposit.",
-  "@peginFeeVariableNote": {},
+  "peginFeeInfoTitle": "About these fees",
+  "@peginFeeInfoTitle": {},
+
+  "peginFeeInfoBody": "Fedimint charges a wallet fee plus a small mint fee to issue your ecash. The final total may be slightly higher than shown and depends on the amount you deposit.",
+  "@peginFeeInfoBody": {},
 
   "couldNotGetNewAddress": "Could not get new address",
   "@couldNotGetNewAddress": {},
