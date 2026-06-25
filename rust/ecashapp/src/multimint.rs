@@ -765,19 +765,42 @@ impl Multimint {
                         // Only drive operation to completion if there is no outcome yet
                         if entry.outcome::<serde_json::Value>().is_none() {
                             match entry.operation_module_kind() {
-                                "lnv2" | "ln" => {
-                                    // We could check what type of operation this is, but `await_receive` and `await_send`
-                                    // will do that internally. So we just spawn both here and let one fail since it is the wrong
-                                    // operation type.
-                                    self_copy.spawn_await_receive(federation_id, op_id);
-                                    self_copy.spawn_await_send(federation_id, op_id);
+                                // Spawn only the monitor matching the operation's
+                                // direction (like the wallet arms below). Driving
+                                // a send monitor on a receive op (or vice versa)
+                                // resolves to a "no final state" outcome, which
+                                // surfaces a spurious error toast to the user.
+                                "lnv2" => {
+                                    if matches!(
+                                        entry.meta::<LightningOperationMeta>(),
+                                        LightningOperationMeta::Send(_)
+                                    ) {
+                                        self_copy.spawn_await_send(federation_id, op_id);
+                                    } else {
+                                        self_copy.spawn_await_receive(federation_id, op_id);
+                                    }
+                                }
+                                "ln" => {
+                                    if matches!(
+                                        entry
+                                            .meta::<fedimint_ln_client::LightningOperationMeta>()
+                                            .variant,
+                                        LightningOperationMetaVariant::Pay(_)
+                                    ) {
+                                        self_copy.spawn_await_send(federation_id, op_id);
+                                    } else {
+                                        self_copy.spawn_await_receive(federation_id, op_id);
+                                    }
                                 }
                                 "mint" => {
-                                    // We could check what type of operation this is, but `await_ecash_reissue` and `await_ecash_send`
-                                    // will do that internally. So we just spawn both here and let one fail since it is the wrong
-                                    // operation type.
-                                    self_copy.spawn_await_ecash_reissue(federation_id, op_id);
-                                    self_copy.spawn_await_ecash_send(federation_id, op_id);
+                                    if matches!(
+                                        entry.meta::<MintOperationMeta>().variant,
+                                        MintOperationMetaVariant::SpendOOB { .. }
+                                    ) {
+                                        self_copy.spawn_await_ecash_send(federation_id, op_id);
+                                    } else {
+                                        self_copy.spawn_await_ecash_reissue(federation_id, op_id);
+                                    }
                                 }
                                 // Deposits/receives are re-driven by the pegin
                                 // monitor (v1) and the deposit event listener
