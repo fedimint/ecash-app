@@ -179,6 +179,21 @@ pub struct ReceiveAmount {
     pub gateway_fee_msats: u64,
 }
 
+/// Fee parameters for an on-chain deposit (peg-in). We can't quote an exact
+/// charge up front because the deposit amount is unknown, and for walletv2 the
+/// federation fee scales with the amount, so we surface the parameters instead.
+#[derive(Clone, PartialEq, Serialize, Debug)]
+pub struct PeginFeeQuote {
+    /// Constant federation fee charged on the deposit, in msats.
+    /// walletv1: `peg_in_abs`; walletv2: `fee_consensus.base`.
+    pub base_fee_msats: u64,
+    /// Relative federation fee in parts-per-million (walletv2 only; 0 for walletv1).
+    pub parts_per_million: u64,
+    /// Dynamic on-chain claim/sweep fee in sats (walletv2 only; `None` for
+    /// walletv1 or when no consensus feerate is currently available).
+    pub onchain_claim_fee_sats: Option<u64>,
+}
+
 /// Ecash produced by a send, in whichever encoding the federation's mint module
 /// uses: walletv1 `OOBNotes` or mintv2 `ECash` (base32). [`OOBNotesWrapper`]
 /// hides the difference behind `amount_msats()`/`to_string()`.
@@ -337,6 +352,15 @@ pub enum TransactionKind {
     OnchainReceive {
         address: String,
         txid: String,
+        /// Federation fee actually charged on the claimed deposit, in msats.
+        /// `None` for deposits made before the fee-tracking feature existed.
+        federation_fee_msats: Option<u64>,
+        /// Dynamic on-chain claim/sweep fee actually paid when the deposit was
+        /// claimed, in msats. This is the real fee (queried at claim time),
+        /// not the estimate shown at address-generation time. walletv2 only;
+        /// `None` for walletv1 (which has no separate claim fee) and for
+        /// deposits predating fee tracking.
+        onchain_claim_fee_msats: Option<u64>,
     },
     OnchainSend {
         address: String,
@@ -3266,8 +3290,26 @@ impl Multimint {
                                     let address = address.assume_checked().to_string();
                                     let txid = btc_out_point.txid.to_string();
 
+                                    // The actual federation fee is the difference
+                                    // between the transaction inputs and outputs;
+                                    // `None` for deposits predating fee tracking.
+                                    let federation_fee_msats = client
+                                        .get_operation_fees(key.operation_id)
+                                        .await
+                                        .ok()
+                                        .flatten()
+                                        .map(|fees| fees.get_bitcoin().msats);
+
                                     Some(Transaction {
-                                        kind: TransactionKind::OnchainReceive { address, txid },
+                                        kind: TransactionKind::OnchainReceive {
+                                            address,
+                                            txid,
+                                            federation_fee_msats,
+                                            // walletv1 has no separate on-chain
+                                            // claim fee; the federation fee is the
+                                            // whole receive fee.
+                                            onchain_claim_fee_msats: None,
+                                        },
                                         amount,
                                         timestamp,
                                         operation_id: key.operation_id.0.to_vec(),
@@ -3341,8 +3383,31 @@ impl Multimint {
                                         .map(|o| o.txid.to_string())
                                         .unwrap_or_default();
 
+                                    // The actual federation fee is the difference
+                                    // between the transaction inputs and outputs;
+                                    // `None` for deposits predating fee tracking.
+                                    let federation_fee_msats = client
+                                        .get_operation_fees(key.operation_id)
+                                        .await
+                                        .ok()
+                                        .flatten()
+                                        .map(|fees| fees.get_bitcoin().msats);
+
+                                    // The on-chain claim/sweep fee is deducted from
+                                    // the deposit before it enters the fedimint tx,
+                                    // so it isn't part of `get_operation_fees`. The
+                                    // actual fee paid at claim time is recorded in
+                                    // the receive meta.
+                                    let onchain_claim_fee_msats =
+                                        Some(Amount::from_sats(receive.fee.to_sat()).msats);
+
                                     Some(Transaction {
-                                        kind: TransactionKind::OnchainReceive { address, txid },
+                                        kind: TransactionKind::OnchainReceive {
+                                            address,
+                                            txid,
+                                            federation_fee_msats,
+                                            onchain_claim_fee_msats,
+                                        },
                                         amount,
                                         timestamp,
                                         operation_id: key.operation_id.0.to_vec(),
@@ -4101,7 +4166,10 @@ impl Multimint {
             .cloned()
     }
 
-    pub async fn get_pegin_fee(&self, federation_id: &FederationId) -> anyhow::Result<u64> {
+    pub async fn get_pegin_fee_quote(
+        &self,
+        federation_id: &FederationId,
+    ) -> anyhow::Result<PeginFeeQuote> {
         let client = self
             .clients
             .read()
@@ -4110,13 +4178,31 @@ impl Multimint {
             .ok_or(anyhow!("No federation exists for peg-in fee query"))?
             .clone();
 
-        // walletv2 charges a dynamic, feerate-based receive fee that is queried
-        // from the federation rather than read from a static config value.
+        // walletv2 charges a fixed base fee plus a relative (ppm) fee, both read
+        // from the module config, and additionally a dynamic, feerate-based
+        // on-chain claim fee queried from the federation.
         if let Ok(wallet_module) =
             client.get_first_module::<fedimint_walletv2_client::WalletClientModule>()
         {
-            let fee = wallet_module.receive_fee().await?;
-            return Ok(Amount::from_sats(fee.to_sat()).msats);
+            let client_module_config = client.config().await.modules;
+            let config = client_module_config
+                .get(&wallet_module.id)
+                .ok_or(anyhow!("Could not get WalletV2 config for peg-in fee"))?
+                .cast::<fedimint_walletv2_common::config::WalletClientConfig>()?;
+
+            // Best-effort: the claim fee is unavailable if the federation has no
+            // consensus feerate yet, in which case we simply omit it.
+            let onchain_claim_fee_sats = wallet_module
+                .receive_fee()
+                .await
+                .ok()
+                .map(|fee| fee.to_sat());
+
+            return Ok(PeginFeeQuote {
+                base_fee_msats: config.fee_consensus.base.msats,
+                parts_per_million: config.fee_consensus.parts_per_million,
+                onchain_claim_fee_sats,
+            });
         }
 
         let wallet_module =
@@ -4128,10 +4214,13 @@ impl Multimint {
             .ok_or(anyhow!("Could not get Wallet config for peg-in fee"))?
             .cast::<fedimint_wallet_common::config::WalletClientConfig>()?;
 
-        // Get the peg-in fee from the wallet config
-        let peg_in_fee_msats = config.fee_consensus.peg_in_abs.msats;
-
-        Ok(peg_in_fee_msats)
+        // walletv1 charges a single constant peg-in fee; there is no relative
+        // component and the on-chain claim is handled by the federation.
+        Ok(PeginFeeQuote {
+            base_fee_msats: config.fee_consensus.peg_in_abs.msats,
+            parts_per_million: 0,
+            onchain_claim_fee_sats: None,
+        })
     }
 
     pub async fn wallet_summary(

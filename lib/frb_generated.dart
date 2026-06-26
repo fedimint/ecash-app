@@ -68,7 +68,7 @@ class RustLib extends BaseEntrypoint<RustLibApi, RustLibApiImpl, RustLibWire> {
   String get codegenVersion => '2.9.0';
 
   @override
-  int get rustContentHash => -758031337;
+  int get rustContentHash => -1683014994;
 
   static const kDefaultExternalLibraryLoaderConfig =
       ExternalLibraryLoaderConfig(
@@ -434,7 +434,7 @@ abstract class RustLibApi extends BaseApi {
     required FederationId federationId,
   });
 
-  Future<BigInt> crateMultimintMultimintGetPeginFee({
+  Future<PeginFeeQuote> crateMultimintMultimintGetPeginFeeQuote({
     required Multimint that,
     required FederationId federationId,
   });
@@ -1026,7 +1026,9 @@ abstract class RustLibApi extends BaseApi {
   Future<List<(FederationSelector, NWCConnectionInfo)>>
   crateGetNwcConnectionInfo();
 
-  Future<BigInt> crateGetPeginFee({required FederationId federationId});
+  Future<PeginFeeQuote> crateGetPeginFeeQuote({
+    required FederationId federationId,
+  });
 
   Future<List<(String, bool)>> crateGetRelays();
 
@@ -4275,7 +4277,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
       );
 
   @override
-  Future<BigInt> crateMultimintMultimintGetPeginFee({
+  Future<PeginFeeQuote> crateMultimintMultimintGetPeginFeeQuote({
     required Multimint that,
     required FederationId federationId,
   }) {
@@ -4299,19 +4301,19 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           );
         },
         codec: SseCodec(
-          decodeSuccessData: sse_decode_u_64,
+          decodeSuccessData: sse_decode_pegin_fee_quote,
           decodeErrorData: sse_decode_AnyhowException,
         ),
-        constMeta: kCrateMultimintMultimintGetPeginFeeConstMeta,
+        constMeta: kCrateMultimintMultimintGetPeginFeeQuoteConstMeta,
         argValues: [that, federationId],
         apiImpl: this,
       ),
     );
   }
 
-  TaskConstMeta get kCrateMultimintMultimintGetPeginFeeConstMeta =>
+  TaskConstMeta get kCrateMultimintMultimintGetPeginFeeQuoteConstMeta =>
       const TaskConstMeta(
-        debugName: "Multimint_get_pegin_fee",
+        debugName: "Multimint_get_pegin_fee_quote",
         argNames: ["that", "federationId"],
       );
 
@@ -9132,7 +9134,9 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
       const TaskConstMeta(debugName: "get_nwc_connection_info", argNames: []);
 
   @override
-  Future<BigInt> crateGetPeginFee({required FederationId federationId}) {
+  Future<PeginFeeQuote> crateGetPeginFeeQuote({
+    required FederationId federationId,
+  }) {
     return handler.executeNormal(
       NormalTask(
         callFfi: (port_) {
@@ -9149,18 +9153,18 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           );
         },
         codec: SseCodec(
-          decodeSuccessData: sse_decode_u_64,
+          decodeSuccessData: sse_decode_pegin_fee_quote,
           decodeErrorData: sse_decode_AnyhowException,
         ),
-        constMeta: kCrateGetPeginFeeConstMeta,
+        constMeta: kCrateGetPeginFeeQuoteConstMeta,
         argValues: [federationId],
         apiImpl: this,
       ),
     );
   }
 
-  TaskConstMeta get kCrateGetPeginFeeConstMeta => const TaskConstMeta(
-    debugName: "get_pegin_fee",
+  TaskConstMeta get kCrateGetPeginFeeQuoteConstMeta => const TaskConstMeta(
+    debugName: "get_pegin_fee_quote",
     argNames: ["federationId"],
   );
 
@@ -13066,6 +13070,19 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   }
 
   @protected
+  PeginFeeQuote dco_decode_pegin_fee_quote(dynamic raw) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    final arr = raw as List<dynamic>;
+    if (arr.length != 3)
+      throw Exception('unexpected arr length: expect 3 but see ${arr.length}');
+    return PeginFeeQuote(
+      baseFeeMsats: dco_decode_u_64(arr[0]),
+      partsPerMillion: dco_decode_u_64(arr[1]),
+      onchainClaimFeeSats: dco_decode_opt_box_autoadd_u_64(arr[2]),
+    );
+  }
+
+  @protected
   ReceiveAmount dco_decode_receive_amount(dynamic raw) {
     // Codec=Dco (DartCObject based), see doc to use other codecs
     final arr = raw as List<dynamic>;
@@ -13469,6 +13486,8 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
         return TransactionKind_OnchainReceive(
           address: dco_decode_String(raw[1]),
           txid: dco_decode_String(raw[2]),
+          federationFeeMsats: dco_decode_opt_box_autoadd_u_64(raw[3]),
+          onchainClaimFeeMsats: dco_decode_opt_box_autoadd_u_64(raw[4]),
         );
       case 4:
         return TransactionKind_OnchainSend(
@@ -15926,6 +15945,19 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   }
 
   @protected
+  PeginFeeQuote sse_decode_pegin_fee_quote(SseDeserializer deserializer) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    var var_baseFeeMsats = sse_decode_u_64(deserializer);
+    var var_partsPerMillion = sse_decode_u_64(deserializer);
+    var var_onchainClaimFeeSats = sse_decode_opt_box_autoadd_u_64(deserializer);
+    return PeginFeeQuote(
+      baseFeeMsats: var_baseFeeMsats,
+      partsPerMillion: var_partsPerMillion,
+      onchainClaimFeeSats: var_onchainClaimFeeSats,
+    );
+  }
+
+  @protected
   ReceiveAmount sse_decode_receive_amount(SseDeserializer deserializer) {
     // Codec=Sse (Serialization based), see doc to use other codecs
     var var_invoiceMsats = sse_decode_u_64(deserializer);
@@ -16286,9 +16318,17 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
       case 3:
         var var_address = sse_decode_String(deserializer);
         var var_txid = sse_decode_String(deserializer);
+        var var_federationFeeMsats = sse_decode_opt_box_autoadd_u_64(
+          deserializer,
+        );
+        var var_onchainClaimFeeMsats = sse_decode_opt_box_autoadd_u_64(
+          deserializer,
+        );
         return TransactionKind_OnchainReceive(
           address: var_address,
           txid: var_txid,
+          federationFeeMsats: var_federationFeeMsats,
+          onchainClaimFeeMsats: var_onchainClaimFeeMsats,
         );
       case 4:
         var var_address = sse_decode_String(deserializer);
@@ -18799,6 +18839,17 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   }
 
   @protected
+  void sse_encode_pegin_fee_quote(
+    PeginFeeQuote self,
+    SseSerializer serializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    sse_encode_u_64(self.baseFeeMsats, serializer);
+    sse_encode_u_64(self.partsPerMillion, serializer);
+    sse_encode_opt_box_autoadd_u_64(self.onchainClaimFeeSats, serializer);
+  }
+
+  @protected
   void sse_encode_receive_amount(ReceiveAmount self, SseSerializer serializer) {
     // Codec=Sse (Serialization based), see doc to use other codecs
     sse_encode_u_64(self.invoiceMsats, serializer);
@@ -19140,10 +19191,14 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
       case TransactionKind_OnchainReceive(
         address: final address,
         txid: final txid,
+        federationFeeMsats: final federationFeeMsats,
+        onchainClaimFeeMsats: final onchainClaimFeeMsats,
       ):
         sse_encode_i_32(3, serializer);
         sse_encode_String(address, serializer);
         sse_encode_String(txid, serializer);
+        sse_encode_opt_box_autoadd_u_64(federationFeeMsats, serializer);
+        sse_encode_opt_box_autoadd_u_64(onchainClaimFeeMsats, serializer);
       case TransactionKind_OnchainSend(
         address: final address,
         txid: final txid,
@@ -20174,11 +20229,12 @@ class MultimintImpl extends RustOpaque implements Multimint {
     federationId: federationId,
   );
 
-  Future<BigInt> getPeginFee({required FederationId federationId}) =>
-      RustLib.instance.api.crateMultimintMultimintGetPeginFee(
-        that: this,
-        federationId: federationId,
-      );
+  Future<PeginFeeQuote> getPeginFeeQuote({
+    required FederationId federationId,
+  }) => RustLib.instance.api.crateMultimintMultimintGetPeginFeeQuote(
+    that: this,
+    federationId: federationId,
+  );
 
   Future<RecoveryProgress> getRecoveryProgress({
     required FederationId federationId,

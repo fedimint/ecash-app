@@ -23,8 +23,8 @@ use flutter_rust_bridge::frb;
 use futures_util::StreamExt;
 use multimint::{
     EcashSendFees, FederationMeta, FederationSelector, LightningSendOutcome, LogLevel, Multimint,
-    MultimintCreation, MultimintEvent, OOBNotesWrapper, PaymentPreviewWithGateways, ReceiveAmount,
-    ReissueFees, Transaction, Utxo, WithdrawFees, WithdrawFeesResponse,
+    MultimintCreation, MultimintEvent, OOBNotesWrapper, PaymentPreviewWithGateways, PeginFeeQuote,
+    ReceiveAmount, ReissueFees, Transaction, Utxo, WithdrawFees, WithdrawFeesResponse,
 };
 use nostr::{NWCConnectionInfo, NostrClient, PublicFederation};
 use serde::Serialize;
@@ -725,9 +725,9 @@ pub async fn allocate_deposit_address(
 }
 
 #[frb]
-pub async fn get_pegin_fee(federation_id: FederationId) -> anyhow::Result<u64> {
+pub async fn get_pegin_fee_quote(federation_id: FederationId) -> anyhow::Result<PeginFeeQuote> {
     let multimint = get_multimint();
-    multimint.get_pegin_fee(&federation_id).await
+    multimint.get_pegin_fee_quote(&federation_id).await
 }
 
 #[frb]

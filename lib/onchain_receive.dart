@@ -5,6 +5,7 @@ import 'package:ecashapp/extensions/build_context_l10n.dart';
 import 'package:ecashapp/lib.dart';
 import 'package:ecashapp/multimint.dart';
 import 'package:ecashapp/providers/preferences_provider.dart';
+import 'package:ecashapp/theme.dart';
 import 'package:ecashapp/toast.dart';
 import 'package:ecashapp/utils.dart';
 import 'package:flutter/material.dart';
@@ -24,7 +25,7 @@ class OnChainReceiveContent extends StatefulWidget {
 class _OnChainReceiveContentState extends State<OnChainReceiveContent> {
   String? _address;
   BigInt? _addressIndex;
-  BigInt? _peginFee;
+  PeginFeeQuote? _peginFeeQuote;
   bool _isLoading = true;
   bool _addressCopied = false;
 
@@ -39,13 +40,15 @@ class _OnChainReceiveContentState extends State<OnChainReceiveContent> {
       final (address, index) = await allocateDepositAddress(
         federationId: widget.fed.federationId,
       );
-      final fee = await getPeginFee(federationId: widget.fed.federationId);
+      final feeQuote = await getPeginFeeQuote(
+        federationId: widget.fed.federationId,
+      );
 
       if (!mounted) return;
       setState(() {
         _address = address;
         _addressIndex = index;
-        _peginFee = fee;
+        _peginFeeQuote = feeQuote;
         _isLoading = false;
       });
     } catch (e) {
@@ -77,6 +80,58 @@ class _OnChainReceiveContentState extends State<OnChainReceiveContent> {
         });
       }
     });
+  }
+
+  String _formatRate(BigInt partsPerMillion) {
+    // ppm → percentage: 10,000 ppm equals 1%.
+    final percent = partsPerMillion.toDouble() / 10000.0;
+    return '${percent.toStringAsFixed(2)}% ($partsPerMillion ppm)';
+  }
+
+  /// Explains why the quoted fees are only a lower bound: issuing the ecash
+  /// incurs an additional mint fee that depends on the deposit amount and so
+  /// can't be quoted exactly up front (applies to both walletv1 and walletv2).
+  void _showFeeInfoSheet(BuildContext context) {
+    final theme = Theme.of(context);
+    showAppModalBottomSheet(
+      context: context,
+      heightFactor: 0.33,
+      childBuilder:
+          () async => Padding(
+            padding: const EdgeInsets.fromLTRB(24, 8, 24, 24),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  context.l10n.peginFeeInfoTitle,
+                  style: theme.textTheme.titleLarge?.copyWith(
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                const SizedBox(height: 16),
+                Text(
+                  context.l10n.peginFeeInfoBody,
+                  style: theme.textTheme.bodyMedium?.copyWith(
+                    color: theme.colorScheme.onSurface.withOpacity(0.8),
+                    height: 1.4,
+                  ),
+                ),
+                const SizedBox(height: 24),
+                Builder(
+                  builder:
+                      (sheetContext) => SizedBox(
+                        width: double.infinity,
+                        child: FilledButton(
+                          onPressed: () => Navigator.of(sheetContext).pop(),
+                          child: Text(context.l10n.close),
+                        ),
+                      ),
+                ),
+              ],
+            ),
+          ),
+    );
   }
 
   List<TextSpan> _formatAddressWithColor(String address, ThemeData theme) {
@@ -273,22 +328,70 @@ class _OnChainReceiveContentState extends State<OnChainReceiveContent> {
                                 fontWeight: FontWeight.w600,
                               ),
                             ),
+                            const Spacer(),
+                            // The quoted fees are a lower bound: the federation
+                            // also charges a small mint fee to issue the ecash,
+                            // which we can't quote exactly up front. Explain that
+                            // on demand rather than cluttering the breakdown.
+                            IconButton(
+                              icon: Icon(
+                                Icons.help_outline,
+                                size: 20,
+                                color: theme.colorScheme.primary,
+                              ),
+                              padding: EdgeInsets.zero,
+                              constraints: const BoxConstraints(),
+                              visualDensity: VisualDensity.compact,
+                              tooltip: context.l10n.peginFeeInfoTitle,
+                              onPressed: () => _showFeeInfoSheet(context),
+                            ),
                           ],
                         ),
                         const SizedBox(height: 12),
-                        CopyableDetailRow(
-                          label: context.l10n.peginFee,
-                          value:
-                              _peginFee == null
-                                  ? context.l10n.unableToFetchFee
-                                  : _peginFee == BigInt.zero
-                                  ? context.l10n.noFeeConfigured
-                                  : formatBalance(
-                                    _peginFee!,
-                                    false,
-                                    bitcoinDisplay,
-                                  ),
-                        ),
+                        if (_peginFeeQuote == null)
+                          CopyableDetailRow(
+                            label: context.l10n.peginFee,
+                            value: context.l10n.unableToFetchFee,
+                          )
+                        else ...[
+                          // Constant base fee (walletv1 peg-in fee, or walletv2
+                          // base component of the federation fee).
+                          CopyableDetailRow(
+                            label: context.l10n.federationBaseFee,
+                            value:
+                                _peginFeeQuote!.baseFeeMsats == BigInt.zero
+                                    ? context.l10n.noFeeConfigured
+                                    : formatBalance(
+                                      _peginFeeQuote!.baseFeeMsats,
+                                      false,
+                                      bitcoinDisplay,
+                                    ),
+                          ),
+                          // Relative (ppm) fee, walletv2 only.
+                          if (_peginFeeQuote!.partsPerMillion >
+                              BigInt.zero) ...[
+                            const SizedBox(height: 8),
+                            CopyableDetailRow(
+                              label: context.l10n.federationRate,
+                              value: _formatRate(
+                                _peginFeeQuote!.partsPerMillion,
+                              ),
+                            ),
+                          ],
+                          // Dynamic on-chain claim fee, walletv2 only.
+                          if (_peginFeeQuote!.onchainClaimFeeSats != null) ...[
+                            const SizedBox(height: 8),
+                            CopyableDetailRow(
+                              label: context.l10n.onchainClaimFee,
+                              value: formatBalance(
+                                _peginFeeQuote!.onchainClaimFeeSats! *
+                                    BigInt.from(1000),
+                                false,
+                                bitcoinDisplay,
+                              ),
+                            ),
+                          ],
+                        ],
                         const SizedBox(height: 8),
                         Text(
                           context.l10n.peginFeeDescription,

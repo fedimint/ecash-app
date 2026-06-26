@@ -464,6 +464,8 @@
   "@txDetailFees": {},
   "txDetailFederationFee": "Federation Fee",
   "@txDetailFederationFee": {},
+  "txDetailOnchainClaimFee": "On-chain Claim Fee",
+  "@txDetailOnchainClaimFee": {},
   "txDetailGatewayFee": "Gateway Fee",
   "@txDetailGatewayFee": {},
   "txDetailBitcoinNetworkFee": "Bitcoin Network Fee",
@@ -1037,6 +1039,21 @@
 
   "peginFeeDescription": "This fee is deducted by the federation when your deposit is claimed.",
   "@peginFeeDescription": {},
+
+  "federationBaseFee": "Federation Base Fee",
+  "@federationBaseFee": {},
+
+  "federationRate": "Federation Rate",
+  "@federationRate": {},
+
+  "onchainClaimFee": "On-chain Claim Fee",
+  "@onchainClaimFee": {},
+
+  "peginFeeInfoTitle": "About these fees",
+  "@peginFeeInfoTitle": {},
+
+  "peginFeeInfoBody": "Fedimint charges a wallet fee plus a small mint fee to issue your ecash. The final total may be slightly higher than shown and depends on the amount you deposit.",
+  "@peginFeeInfoBody": {},
 
   "couldNotGetNewAddress": "Could not get new address",
   "@couldNotGetNewAddress": {},

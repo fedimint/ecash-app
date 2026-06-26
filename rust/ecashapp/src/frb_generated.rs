@@ -43,7 +43,7 @@ flutter_rust_bridge::frb_generated_boilerplate!(
     default_rust_auto_opaque = RustAutoOpaqueMoi,
 );
 pub(crate) const FLUTTER_RUST_BRIDGE_CODEGEN_VERSION: &str = "2.9.0";
-pub(crate) const FLUTTER_RUST_BRIDGE_CODEGEN_CONTENT_HASH: i32 = -758031337;
+pub(crate) const FLUTTER_RUST_BRIDGE_CODEGEN_CONTENT_HASH: i32 = -1683014994;
 
 // Section: executor
 
@@ -4278,7 +4278,7 @@ fn wire__crate__multimint__Multimint_get_note_summary_impl(
         },
     )
 }
-fn wire__crate__multimint__Multimint_get_pegin_fee_impl(
+fn wire__crate__multimint__Multimint_get_pegin_fee_quote_impl(
     port_: flutter_rust_bridge::for_generated::MessagePort,
     ptr_: flutter_rust_bridge::for_generated::PlatformGeneralizedUint8ListPtr,
     rust_vec_len_: i32,
@@ -4286,7 +4286,7 @@ fn wire__crate__multimint__Multimint_get_pegin_fee_impl(
 ) {
     FLUTTER_RUST_BRIDGE_HANDLER.wrap_async::<flutter_rust_bridge::for_generated::SseCodec, _, _, _>(
         flutter_rust_bridge::for_generated::TaskInfo {
-            debug_name: "Multimint_get_pegin_fee",
+            debug_name: "Multimint_get_pegin_fee_quote",
             port: Some(port_),
             mode: flutter_rust_bridge::for_generated::FfiCallMode::Normal,
         },
@@ -4340,7 +4340,7 @@ fn wire__crate__multimint__Multimint_get_pegin_fee_impl(
                         }
                         let api_that_guard = api_that_guard.unwrap();
                         let api_federation_id_guard = api_federation_id_guard.unwrap();
-                        let output_ok = crate::multimint::Multimint::get_pegin_fee(
+                        let output_ok = crate::multimint::Multimint::get_pegin_fee_quote(
                             &*api_that_guard,
                             &*api_federation_id_guard,
                         )
@@ -11249,7 +11249,7 @@ fn wire__crate__get_nwc_connection_info_impl(
         },
     )
 }
-fn wire__crate__get_pegin_fee_impl(
+fn wire__crate__get_pegin_fee_quote_impl(
     port_: flutter_rust_bridge::for_generated::MessagePort,
     ptr_: flutter_rust_bridge::for_generated::PlatformGeneralizedUint8ListPtr,
     rust_vec_len_: i32,
@@ -11257,7 +11257,7 @@ fn wire__crate__get_pegin_fee_impl(
 ) {
     FLUTTER_RUST_BRIDGE_HANDLER.wrap_async::<flutter_rust_bridge::for_generated::SseCodec, _, _, _>(
         flutter_rust_bridge::for_generated::TaskInfo {
-            debug_name: "get_pegin_fee",
+            debug_name: "get_pegin_fee_quote",
             port: Some(port_),
             mode: flutter_rust_bridge::for_generated::FfiCallMode::Normal,
         },
@@ -11276,7 +11276,7 @@ fn wire__crate__get_pegin_fee_impl(
             move |context| async move {
                 transform_result_sse::<_, flutter_rust_bridge::for_generated::anyhow::Error>(
                     (move || async move {
-                        let output_ok = crate::get_pegin_fee(api_federation_id).await?;
+                        let output_ok = crate::get_pegin_fee_quote(api_federation_id).await?;
                         Ok(output_ok)
                     })()
                     .await,
@@ -15425,6 +15425,20 @@ impl SseDecode for crate::multimint::PeerStatus {
     }
 }
 
+impl SseDecode for crate::multimint::PeginFeeQuote {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
+        let mut var_baseFeeMsats = <u64>::sse_decode(deserializer);
+        let mut var_partsPerMillion = <u64>::sse_decode(deserializer);
+        let mut var_onchainClaimFeeSats = <Option<u64>>::sse_decode(deserializer);
+        return crate::multimint::PeginFeeQuote {
+            base_fee_msats: var_baseFeeMsats,
+            parts_per_million: var_partsPerMillion,
+            onchain_claim_fee_sats: var_onchainClaimFeeSats,
+        };
+    }
+}
+
 impl SseDecode for crate::multimint::ReceiveAmount {
     // Codec=Sse (Serialization based), see doc to use other codecs
     fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
@@ -15734,9 +15748,13 @@ impl SseDecode for crate::multimint::TransactionKind {
             3 => {
                 let mut var_address = <String>::sse_decode(deserializer);
                 let mut var_txid = <String>::sse_decode(deserializer);
+                let mut var_federationFeeMsats = <Option<u64>>::sse_decode(deserializer);
+                let mut var_onchainClaimFeeMsats = <Option<u64>>::sse_decode(deserializer);
                 return crate::multimint::TransactionKind::OnchainReceive {
                     address: var_address,
                     txid: var_txid,
+                    federation_fee_msats: var_federationFeeMsats,
+                    onchain_claim_fee_msats: var_onchainClaimFeeMsats,
                 };
             }
             4 => {
@@ -16008,9 +16026,12 @@ fn pde_ffi_dispatcher_primary_impl(
             rust_vec_len,
             data_len,
         ),
-        74 => {
-            wire__crate__multimint__Multimint_get_pegin_fee_impl(port, ptr, rust_vec_len, data_len)
-        }
+        74 => wire__crate__multimint__Multimint_get_pegin_fee_quote_impl(
+            port,
+            ptr,
+            rust_vec_len,
+            data_len,
+        ),
         75 => wire__crate__multimint__Multimint_get_recovery_progress_impl(
             port,
             ptr,
@@ -16288,7 +16309,7 @@ fn pde_ffi_dispatcher_primary_impl(
         197 => wire__crate__get_module_recovery_progress_impl(port, ptr, rust_vec_len, data_len),
         198 => wire__crate__get_note_summary_impl(port, ptr, rust_vec_len, data_len),
         199 => wire__crate__get_nwc_connection_info_impl(port, ptr, rust_vec_len, data_len),
-        200 => wire__crate__get_pegin_fee_impl(port, ptr, rust_vec_len, data_len),
+        200 => wire__crate__get_pegin_fee_quote_impl(port, ptr, rust_vec_len, data_len),
         201 => wire__crate__get_relays_impl(port, ptr, rust_vec_len, data_len),
         202 => wire__crate__get_require_pin_for_spending_impl(port, ptr, rust_vec_len, data_len),
         203 => wire__crate__get_show_msats_impl(port, ptr, rust_vec_len, data_len),
@@ -18072,6 +18093,28 @@ impl flutter_rust_bridge::IntoIntoDart<crate::multimint::PeerStatus>
     }
 }
 // Codec=Dco (DartCObject based), see doc to use other codecs
+impl flutter_rust_bridge::IntoDart for crate::multimint::PeginFeeQuote {
+    fn into_dart(self) -> flutter_rust_bridge::for_generated::DartAbi {
+        [
+            self.base_fee_msats.into_into_dart().into_dart(),
+            self.parts_per_million.into_into_dart().into_dart(),
+            self.onchain_claim_fee_sats.into_into_dart().into_dart(),
+        ]
+        .into_dart()
+    }
+}
+impl flutter_rust_bridge::for_generated::IntoDartExceptPrimitive
+    for crate::multimint::PeginFeeQuote
+{
+}
+impl flutter_rust_bridge::IntoIntoDart<crate::multimint::PeginFeeQuote>
+    for crate::multimint::PeginFeeQuote
+{
+    fn into_into_dart(self) -> crate::multimint::PeginFeeQuote {
+        self
+    }
+}
+// Codec=Dco (DartCObject based), see doc to use other codecs
 impl flutter_rust_bridge::IntoDart for crate::multimint::ReceiveAmount {
     fn into_dart(self) -> flutter_rust_bridge::for_generated::DartAbi {
         [
@@ -18218,10 +18261,17 @@ impl flutter_rust_bridge::IntoDart for crate::multimint::TransactionKind {
             ]
             .into_dart(),
             crate::multimint::TransactionKind::LightningRecurring => [2.into_dart()].into_dart(),
-            crate::multimint::TransactionKind::OnchainReceive { address, txid } => [
+            crate::multimint::TransactionKind::OnchainReceive {
+                address,
+                txid,
+                federation_fee_msats,
+                onchain_claim_fee_msats,
+            } => [
                 3.into_dart(),
                 address.into_into_dart().into_dart(),
                 txid.into_into_dart().into_dart(),
+                federation_fee_msats.into_into_dart().into_dart(),
+                onchain_claim_fee_msats.into_into_dart().into_dart(),
             ]
             .into_dart(),
             crate::multimint::TransactionKind::OnchainSend {
@@ -19933,6 +19983,15 @@ impl SseEncode for crate::multimint::PeerStatus {
     }
 }
 
+impl SseEncode for crate::multimint::PeginFeeQuote {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
+        <u64>::sse_encode(self.base_fee_msats, serializer);
+        <u64>::sse_encode(self.parts_per_million, serializer);
+        <Option<u64>>::sse_encode(self.onchain_claim_fee_sats, serializer);
+    }
+}
+
 impl SseEncode for crate::multimint::ReceiveAmount {
     // Codec=Sse (Serialization based), see doc to use other codecs
     fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
@@ -20198,10 +20257,17 @@ impl SseEncode for crate::multimint::TransactionKind {
             crate::multimint::TransactionKind::LightningRecurring => {
                 <i32>::sse_encode(2, serializer);
             }
-            crate::multimint::TransactionKind::OnchainReceive { address, txid } => {
+            crate::multimint::TransactionKind::OnchainReceive {
+                address,
+                txid,
+                federation_fee_msats,
+                onchain_claim_fee_msats,
+            } => {
                 <i32>::sse_encode(3, serializer);
                 <String>::sse_encode(address, serializer);
                 <String>::sse_encode(txid, serializer);
+                <Option<u64>>::sse_encode(federation_fee_msats, serializer);
+                <Option<u64>>::sse_encode(onchain_claim_fee_msats, serializer);
             }
             crate::multimint::TransactionKind::OnchainSend {
                 address,
