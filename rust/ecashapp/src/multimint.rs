@@ -310,6 +310,10 @@ pub struct PeerStatus {
     pub online: bool,
     pub connectivity: PeerConnectivity,
     pub url: String,
+    /// Guardian's reported `fedimintd` version. Travels with the peer status so
+    /// the UI reflects guardian upgrades in real time (a guardian upgrade
+    /// restarts fedimintd, which surfaces as a reconnect on the status stream).
+    pub version: Option<String>,
 }
 
 #[derive(Debug, Serialize, Clone)]
@@ -1510,19 +1514,17 @@ impl Multimint {
                 futures_util::future::join_all(peers.iter().map(|(peer_id, (name, url))| {
                     let client = client.clone();
                     async move {
-                        let online = client
-                            .api()
-                            .fedimintd_version((*peer_id).into())
-                            .await
-                            .is_ok();
+                        let fetched_version =
+                            client.api().fedimintd_version((*peer_id).into()).await.ok();
                         PeerStatus {
                             peer_id: *peer_id,
                             name: name.clone(),
-                            online,
+                            online: fetched_version.is_some(),
                             // The preview path calls fedimintd_version directly rather than
                             // going through the pooled connection, so the hop is always direct.
                             connectivity: PeerConnectivity::Direct,
                             url: url.clone(),
+                            version: fetched_version,
                         }
                     }
                 }))
@@ -1534,28 +1536,67 @@ impl Multimint {
         // Get the connection status stream from the client
         let status_stream = client.api().connection_status_stream();
 
-        let mapped_stream = status_stream.map(move |status_map| {
-            let peers_status: Vec<PeerStatus> = peers
-                .iter()
-                .map(|(peer_id, (name, url))| {
+        // Fold the guardian version into each peer status so the UI reflects
+        // upgrades in real time without a separate timer. The version only needs
+        // (re)fetching when a peer comes online: a guardian upgrade restarts
+        // fedimintd, which surfaces here as an offline->online transition. We
+        // cache the last-known version per peer and refetch only on that
+        // transition (or if we never managed to fetch it) to avoid hitting every
+        // guardian on each unrelated connectivity change.
+        let mapped_stream = stream::unfold(
+            (
+                Box::pin(status_stream),
+                client,
+                peers,
+                BTreeMap::<u16, Option<String>>::new(),
+                BTreeMap::<u16, bool>::new(),
+            ),
+            |(mut status_stream, client, peers, mut cached_versions, mut prev_online)| async move {
+                let status_map = status_stream.next().await?;
+
+                let mut peers_status = Vec::with_capacity(peers.len());
+                for (peer_id, (name, url)) in peers.iter() {
                     let (online, connectivity) = match status_map.get(&(*peer_id).into()) {
                         Some(FedimintPeerStatus::Connected(c)) => (true, (*c).into()),
                         Some(FedimintPeerStatus::Disconnected) | None => {
                             (false, PeerConnectivity::Unknown)
                         }
                     };
-                    PeerStatus {
+
+                    let version = if online {
+                        let was_online = prev_online.get(peer_id).copied().unwrap_or(false);
+                        let have_version =
+                            cached_versions.get(peer_id).is_some_and(|v| v.is_some());
+                        if was_online && have_version {
+                            cached_versions.get(peer_id).cloned().flatten()
+                        } else {
+                            let fetched =
+                                client.api().fedimintd_version((*peer_id).into()).await.ok();
+                            cached_versions.insert(*peer_id, fetched.clone());
+                            fetched
+                        }
+                    } else {
+                        None
+                    };
+
+                    prev_online.insert(*peer_id, online);
+
+                    peers_status.push(PeerStatus {
                         peer_id: *peer_id,
                         name: name.clone(),
                         online,
                         connectivity,
                         url: url.clone(),
-                    }
-                })
-                .collect();
+                        version,
+                    });
+                }
 
-            peers_status
-        });
+                Some((
+                    peers_status,
+                    (status_stream, client, peers, cached_versions, prev_online),
+                ))
+            },
+        );
 
         Ok(mapped_stream.boxed())
     }

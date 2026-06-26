@@ -17,7 +17,6 @@ class FederationInfoScreen extends StatefulWidget {
   final FederationSelector fed;
   final String? welcomeMessage;
   final String? imageUrl;
-  final List<Guardian>? guardians;
   final VoidCallback onLeaveFederation;
 
   // Joinable mode fields
@@ -30,7 +29,6 @@ class FederationInfoScreen extends StatefulWidget {
     required this.fed,
     this.welcomeMessage,
     this.imageUrl,
-    this.guardians,
     required this.onLeaveFederation,
     this.joinable = false,
     this.inviteCode,
@@ -472,9 +470,7 @@ class _FederationInfoScreenState extends State<FederationInfoScreen> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        context.l10n.versionLabel(
-                          widget.guardians?[index].version ?? '',
-                        ),
+                        context.l10n.versionLabel(peer.version ?? ''),
                         style: theme.textTheme.bodySmall?.copyWith(
                           color: Colors.grey,
                         ),
