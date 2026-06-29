@@ -70,6 +70,7 @@ class TransactionItem extends StatelessWidget {
         federationFees: final federationFees,
         gatewayFees: final gatewayFees,
         gateway: final gateway,
+        invoice: final invoice,
         paymentHash: final paymentHash,
         preimage: final preimage,
         lnAddress: final lnAddress,
@@ -80,14 +81,20 @@ class TransactionItem extends StatelessWidget {
             return TransactionDetails(
               tx: tx,
               details: {
+                // A human-readable Lightning Address shows in full; a raw LNURL
+                // gets the abbreviated LNURL row instead.
                 if (lnAddress != null)
-                  TransactionDetailKeys.lnAddress: lnAddress,
+                  (lnAddress.contains('@')
+                          ? TransactionDetailKeys.lnAddress
+                          : TransactionDetailKeys.lnurl):
+                      lnAddress,
                 TransactionDetailKeys.amount: formattedAmount,
                 if (federationFees > BigInt.zero)
                   TransactionDetailKeys.federationFee: fmt(federationFees),
                 if (gatewayFees > BigInt.zero)
                   TransactionDetailKeys.gatewayFee: fmt(gatewayFees),
                 TransactionDetailKeys.gateway: gateway,
+                TransactionDetailKeys.invoice: invoice,
                 TransactionDetailKeys.paymentHash: paymentHash,
                 TransactionDetailKeys.preimage: preimage,
                 TransactionDetailKeys.timestamp: formattedDate,
@@ -157,16 +164,44 @@ class TransactionItem extends StatelessWidget {
           },
         );
         break;
-      case TransactionKind_LightningRecurring():
+      case TransactionKind_LightningRecurring(
+        lnAddress: final lnAddress,
+        federationFees: final federationFees,
+        gatewayFees: final gatewayFees,
+      ):
+        // `tx.amount` is the net amount credited; the gross invoice the payer
+        // paid is the net plus the fees. The federation claim fee comes from
+        // the operation; the gateway routing fee is recovered from the
+        // fee-encoded contract expiration (LNv2) or is zero (LNv1). Either may
+        // be absent for receives predating fee tracking / fee-encoding, so each
+        // line is shown only when known and non-zero.
+        final fedFee = federationFees ?? BigInt.zero;
+        final gwFee = gatewayFees ?? BigInt.zero;
+        final Map<String, String> details;
+        if (fedFee > BigInt.zero || gwFee > BigInt.zero) {
+          details = {
+            if (lnAddress != null) TransactionDetailKeys.lnAddress: lnAddress,
+            TransactionDetailKeys.amount: fmt(tx.amount + fedFee + gwFee),
+            if (fedFee > BigInt.zero)
+              TransactionDetailKeys.federationFee: fmt(fedFee),
+            if (gwFee > BigInt.zero)
+              TransactionDetailKeys.gatewayFee: fmt(gwFee),
+            TransactionDetailKeys.receivedAmount: formattedAmount,
+            TransactionDetailKeys.timestamp: formattedDate,
+          };
+        } else {
+          details = {
+            if (lnAddress != null) TransactionDetailKeys.lnAddress: lnAddress,
+            TransactionDetailKeys.amount: formattedAmount,
+            TransactionDetailKeys.timestamp: formattedDate,
+          };
+        }
         showAppModalBottomSheet(
           context: context,
           childBuilder: () async {
             return TransactionDetails(
               tx: tx,
-              details: {
-                TransactionDetailKeys.amount: formattedAmount,
-                TransactionDetailKeys.timestamp: formattedDate,
-              },
+              details: details,
               icon: icon,
               fed: fed,
             );

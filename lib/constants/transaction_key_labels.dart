@@ -23,6 +23,8 @@ String localizedTxLabel(AppLocalizations l10n, String key) {
     TransactionDetailKeys.paymentHash => l10n.txDetailPaymentHash,
     TransactionDetailKeys.preimage => l10n.txDetailPreimage,
     TransactionDetailKeys.lnAddress => l10n.txDetailLnAddress,
+    TransactionDetailKeys.lnurl => l10n.txDetailLnurl,
+    TransactionDetailKeys.invoice => l10n.txDetailInvoice,
     TransactionDetailKeys.minFeeRate => l10n.txDetailMinFeeRate,
     TransactionDetailKeys.maxTxSize => l10n.txDetailMaxTxSize,
     TransactionDetailKeys.fee => l10n.txDetailFee,

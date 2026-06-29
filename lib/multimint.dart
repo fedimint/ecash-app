@@ -1114,12 +1114,35 @@ sealed class TransactionKind with _$TransactionKind {
     /// Gateway off-chain routing fee.
     required BigInt gatewayFees,
     required String gateway,
+
+    /// The BOLT11 invoice that was paid.
+    required String invoice,
     required String paymentHash,
     required String preimage,
     String? lnAddress,
   }) = TransactionKind_LightningSend;
-  const factory TransactionKind.lightningRecurring() =
-      TransactionKind_LightningRecurring;
+  const factory TransactionKind.lightningRecurring({
+    /// The Lightning Address (`username@domain`) registered for this
+    /// federation that received the payment, looked up from
+    /// `LightningAddressKey` (one address per federation). `None` if no
+    /// address is currently registered for the federation.
+    String? lnAddress,
+
+    /// On-federation fee actually charged when the incoming contract was
+    /// claimed (mint input/output fees), derived from the operation's
+    /// input/output difference via `get_operation_fees`. `None` for receives
+    /// that predate fee tracking.
+    BigInt? federationFees,
+
+    /// Gateway off-chain routing fee. The LNURL invoice is minted by
+    /// recurringd and never seen by this client, so for LNv2 the fee is
+    /// recovered from the fee-encoded contract expiration
+    /// (`fee_from_expiration`). `Some(0)` for LNv1 (no gateway layer);
+    /// `None` when unrecoverable (LNv2 contracts created before fee-encoding
+    /// existed). The gross invoice the payer paid is `amount +
+    /// federation_fees + gateway_fees`.
+    BigInt? gatewayFees,
+  }) = TransactionKind_LightningRecurring;
   const factory TransactionKind.onchainReceive({
     required String address,
     required String txid,

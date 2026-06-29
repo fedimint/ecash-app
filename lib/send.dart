@@ -54,6 +54,9 @@ class _SendPaymentState extends State<SendPayment> {
         amountWithFees: widget.amountMsatsWithFees!,
         federationFeeMsats: widget.federationFeeMsats ?? BigInt.zero,
         gatewayFeeMsats: widget.gatewayFeeMsats ?? BigInt.zero,
+        // When the invoice was resolved from a Lightning Address, thread it
+        // through so it's recorded and shown in the transaction details.
+        lnAddress: widget.lnAddress,
       );
       return operationId;
     } else {

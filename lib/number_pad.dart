@@ -574,6 +574,9 @@ class _NumberPadState extends State<NumberPad> {
                 fed: _selectedFed,
                 previewData: preview,
                 federations: _allFederations ?? await federations(),
+                // Record the destination (a Lightning Address or a raw LNURL)
+                // so it shows in the transaction details.
+                lnAddress: widget.lightningAddressOrLnurl,
               );
             },
           );
