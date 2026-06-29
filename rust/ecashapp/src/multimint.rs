@@ -350,6 +350,8 @@ pub enum TransactionKind {
         /// Gateway off-chain routing fee.
         gateway_fees: u64,
         gateway: String,
+        /// The BOLT11 invoice that was paid.
+        invoice: String,
         payment_hash: String,
         preimage: String,
         ln_address: Option<String>,
@@ -3145,6 +3147,7 @@ impl Multimint {
                                                 federation_fees,
                                                 gateway_fees,
                                                 gateway: send.gateway.to_string(),
+                                                invoice: bolt11.to_string(),
                                                 payment_hash: bolt11.payment_hash().to_string(),
                                                 preimage: preimage.consensus_encode_to_hex(),
                                                 ln_address,
@@ -3670,6 +3673,7 @@ impl Multimint {
                         federation_fees,
                         gateway_fees,
                         gateway,
+                        invoice: meta.invoice.to_string(),
                         payment_hash: meta.invoice.payment_hash().to_string(),
                         preimage: preimage.0.consensus_encode_to_hex(),
                         ln_address,
@@ -3688,6 +3692,7 @@ impl Multimint {
                         federation_fees,
                         gateway_fees,
                         gateway,
+                        invoice: meta.invoice.to_string(),
                         payment_hash: meta.invoice.payment_hash().to_string(),
                         preimage,
                         ln_address,

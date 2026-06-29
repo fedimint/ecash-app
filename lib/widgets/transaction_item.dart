@@ -70,6 +70,7 @@ class TransactionItem extends StatelessWidget {
         federationFees: final federationFees,
         gatewayFees: final gatewayFees,
         gateway: final gateway,
+        invoice: final invoice,
         paymentHash: final paymentHash,
         preimage: final preimage,
         lnAddress: final lnAddress,
@@ -88,6 +89,7 @@ class TransactionItem extends StatelessWidget {
                 if (gatewayFees > BigInt.zero)
                   TransactionDetailKeys.gatewayFee: fmt(gatewayFees),
                 TransactionDetailKeys.gateway: gateway,
+                TransactionDetailKeys.invoice: invoice,
                 TransactionDetailKeys.paymentHash: paymentHash,
                 TransactionDetailKeys.preimage: preimage,
                 TransactionDetailKeys.timestamp: formattedDate,

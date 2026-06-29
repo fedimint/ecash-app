@@ -2422,7 +2422,7 @@ as String,
 
 
 class TransactionKind_LightningSend extends TransactionKind {
-  const TransactionKind_LightningSend({required this.federationFees, required this.gatewayFees, required this.gateway, required this.paymentHash, required this.preimage, this.lnAddress}): super._();
+  const TransactionKind_LightningSend({required this.federationFees, required this.gatewayFees, required this.gateway, required this.invoice, required this.paymentHash, required this.preimage, this.lnAddress}): super._();
   
 
 /// On-federation fee: lightning output fee + mint funding/change fees +
@@ -2431,6 +2431,8 @@ class TransactionKind_LightningSend extends TransactionKind {
 /// Gateway off-chain routing fee.
  final  BigInt gatewayFees;
  final  String gateway;
+/// The BOLT11 invoice that was paid.
+ final  String invoice;
  final  String paymentHash;
  final  String preimage;
  final  String? lnAddress;
@@ -2445,16 +2447,16 @@ $TransactionKind_LightningSendCopyWith<TransactionKind_LightningSend> get copyWi
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is TransactionKind_LightningSend&&(identical(other.federationFees, federationFees) || other.federationFees == federationFees)&&(identical(other.gatewayFees, gatewayFees) || other.gatewayFees == gatewayFees)&&(identical(other.gateway, gateway) || other.gateway == gateway)&&(identical(other.paymentHash, paymentHash) || other.paymentHash == paymentHash)&&(identical(other.preimage, preimage) || other.preimage == preimage)&&(identical(other.lnAddress, lnAddress) || other.lnAddress == lnAddress));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is TransactionKind_LightningSend&&(identical(other.federationFees, federationFees) || other.federationFees == federationFees)&&(identical(other.gatewayFees, gatewayFees) || other.gatewayFees == gatewayFees)&&(identical(other.gateway, gateway) || other.gateway == gateway)&&(identical(other.invoice, invoice) || other.invoice == invoice)&&(identical(other.paymentHash, paymentHash) || other.paymentHash == paymentHash)&&(identical(other.preimage, preimage) || other.preimage == preimage)&&(identical(other.lnAddress, lnAddress) || other.lnAddress == lnAddress));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,federationFees,gatewayFees,gateway,paymentHash,preimage,lnAddress);
+int get hashCode => Object.hash(runtimeType,federationFees,gatewayFees,gateway,invoice,paymentHash,preimage,lnAddress);
 
 @override
 String toString() {
-  return 'TransactionKind.lightningSend(federationFees: $federationFees, gatewayFees: $gatewayFees, gateway: $gateway, paymentHash: $paymentHash, preimage: $preimage, lnAddress: $lnAddress)';
+  return 'TransactionKind.lightningSend(federationFees: $federationFees, gatewayFees: $gatewayFees, gateway: $gateway, invoice: $invoice, paymentHash: $paymentHash, preimage: $preimage, lnAddress: $lnAddress)';
 }
 
 
@@ -2465,7 +2467,7 @@ abstract mixin class $TransactionKind_LightningSendCopyWith<$Res> implements $Tr
   factory $TransactionKind_LightningSendCopyWith(TransactionKind_LightningSend value, $Res Function(TransactionKind_LightningSend) _then) = _$TransactionKind_LightningSendCopyWithImpl;
 @useResult
 $Res call({
- BigInt federationFees, BigInt gatewayFees, String gateway, String paymentHash, String preimage, String? lnAddress
+ BigInt federationFees, BigInt gatewayFees, String gateway, String invoice, String paymentHash, String preimage, String? lnAddress
 });
 
 
@@ -2482,11 +2484,12 @@ class _$TransactionKind_LightningSendCopyWithImpl<$Res>
 
 /// Create a copy of TransactionKind
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') $Res call({Object? federationFees = null,Object? gatewayFees = null,Object? gateway = null,Object? paymentHash = null,Object? preimage = null,Object? lnAddress = freezed,}) {
+@pragma('vm:prefer-inline') $Res call({Object? federationFees = null,Object? gatewayFees = null,Object? gateway = null,Object? invoice = null,Object? paymentHash = null,Object? preimage = null,Object? lnAddress = freezed,}) {
   return _then(TransactionKind_LightningSend(
 federationFees: null == federationFees ? _self.federationFees : federationFees // ignore: cast_nullable_to_non_nullable
 as BigInt,gatewayFees: null == gatewayFees ? _self.gatewayFees : gatewayFees // ignore: cast_nullable_to_non_nullable
 as BigInt,gateway: null == gateway ? _self.gateway : gateway // ignore: cast_nullable_to_non_nullable
+as String,invoice: null == invoice ? _self.invoice : invoice // ignore: cast_nullable_to_non_nullable
 as String,paymentHash: null == paymentHash ? _self.paymentHash : paymentHash // ignore: cast_nullable_to_non_nullable
 as String,preimage: null == preimage ? _self.preimage : preimage // ignore: cast_nullable_to_non_nullable
 as String,lnAddress: freezed == lnAddress ? _self.lnAddress : lnAddress // ignore: cast_nullable_to_non_nullable

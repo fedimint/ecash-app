@@ -495,6 +495,9 @@
   "txDetailLnAddress": "LN Address",
   "@txDetailLnAddress": {},
 
+  "txDetailInvoice": "Invoice",
+  "@txDetailInvoice": {},
+
   "txDetailMinFeeRate": "Min Fee Rate",
   "@txDetailMinFeeRate": {},
 

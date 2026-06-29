@@ -1114,6 +1114,9 @@ sealed class TransactionKind with _$TransactionKind {
     /// Gateway off-chain routing fee.
     required BigInt gatewayFees,
     required String gateway,
+
+    /// The BOLT11 invoice that was paid.
+    required String invoice,
     required String paymentHash,
     required String preimage,
     String? lnAddress,
