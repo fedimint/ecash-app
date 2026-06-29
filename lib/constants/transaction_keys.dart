@@ -21,6 +21,7 @@ class TransactionDetailKeys {
   static const String paymentHash = 'Payment Hash';
   static const String preimage = 'Preimage';
   static const String lnAddress = 'LN Address';
+  static const String lnurl = 'LNURL';
   static const String invoice = 'Invoice';
   static const String minFeeRate = 'Min Fee Rate';
   static const String maxTxSize = 'Max Tx Size';

@@ -19,11 +19,16 @@ class PaymentPreviewWidget extends StatefulWidget {
   final PaymentPreviewWithGateways previewData;
   final List<(FederationSelector, bool)> federations;
 
+  /// The Lightning Address this payment was resolved from, when applicable, so
+  /// it can be recorded and shown in the transaction details.
+  final String? lnAddress;
+
   const PaymentPreviewWidget({
     super.key,
     required this.fed,
     required this.previewData,
     required this.federations,
+    this.lnAddress,
   });
 
   @override
@@ -357,6 +362,7 @@ class _PaymentPreviewWidgetState extends State<PaymentPreviewWidget> {
                               (context) => SendPayment(
                                 fed: _selectedFed,
                                 invoice: _previewData.invoice,
+                                lnAddress: widget.lnAddress,
                                 amountMsats: amount,
                                 gateway: _selectedPreview.gateway.endpoint,
                                 isLnv2: _selectedPreview.gateway.isLnv2,

@@ -139,6 +139,7 @@
   "txDetailPaymentHash": "Hash de pago",
   "txDetailPreimage": "Preimagen",
   "txDetailLnAddress": "Dirección LN",
+  "txDetailLnurl": "LNURL",
   "txDetailInvoice": "Factura",
   "txDetailMinFeeRate": "Tarifa mínima",
   "txDetailMaxTxSize": "Tamaño máx. de tx",

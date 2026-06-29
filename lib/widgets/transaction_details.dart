@@ -188,6 +188,7 @@ class _TransactionDetailsState extends State<TransactionDetails> {
                         TransactionDetailKeys.paymentHash,
                         TransactionDetailKeys.preimage,
                         TransactionDetailKeys.invoice,
+                        TransactionDetailKeys.lnurl,
                       }.contains(entry.key);
 
                       if (entry.key == TransactionDetailKeys.txid) {

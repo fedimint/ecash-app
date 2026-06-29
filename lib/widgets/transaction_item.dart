@@ -81,8 +81,13 @@ class TransactionItem extends StatelessWidget {
             return TransactionDetails(
               tx: tx,
               details: {
+                // A human-readable Lightning Address shows in full; a raw LNURL
+                // gets the abbreviated LNURL row instead.
                 if (lnAddress != null)
-                  TransactionDetailKeys.lnAddress: lnAddress,
+                  (lnAddress.contains('@')
+                          ? TransactionDetailKeys.lnAddress
+                          : TransactionDetailKeys.lnurl):
+                      lnAddress,
                 TransactionDetailKeys.amount: formattedAmount,
                 if (federationFees > BigInt.zero)
                   TransactionDetailKeys.federationFee: fmt(federationFees),
