@@ -564,7 +564,6 @@ class _MyAppState extends State<MyApp> {
               fed: _selectedFederation!,
               welcomeMessage: meta.welcome,
               imageUrl: meta.picture,
-              guardians: meta.guardians,
               onLeaveFederation: _leaveFederation,
             ),
       ),

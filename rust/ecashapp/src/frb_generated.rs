@@ -15415,12 +15415,14 @@ impl SseDecode for crate::multimint::PeerStatus {
         let mut var_online = <bool>::sse_decode(deserializer);
         let mut var_connectivity = <crate::multimint::PeerConnectivity>::sse_decode(deserializer);
         let mut var_url = <String>::sse_decode(deserializer);
+        let mut var_version = <Option<String>>::sse_decode(deserializer);
         return crate::multimint::PeerStatus {
             peer_id: var_peerId,
             name: var_name,
             online: var_online,
             connectivity: var_connectivity,
             url: var_url,
+            version: var_version,
         };
     }
 }
@@ -18080,6 +18082,7 @@ impl flutter_rust_bridge::IntoDart for crate::multimint::PeerStatus {
             self.online.into_into_dart().into_dart(),
             self.connectivity.into_into_dart().into_dart(),
             self.url.into_into_dart().into_dart(),
+            self.version.into_into_dart().into_dart(),
         ]
         .into_dart()
     }
@@ -19980,6 +19983,7 @@ impl SseEncode for crate::multimint::PeerStatus {
         <bool>::sse_encode(self.online, serializer);
         <crate::multimint::PeerConnectivity>::sse_encode(self.connectivity, serializer);
         <String>::sse_encode(self.url, serializer);
+        <Option<String>>::sse_encode(self.version, serializer);
     }
 }
 

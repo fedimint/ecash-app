@@ -164,7 +164,6 @@ class _MyWalletScreenState extends State<MyWalletScreen> {
                   fed: widget.fed,
                   welcomeMessage: _federationMeta?.welcome,
                   imageUrl: _federationMeta?.picture,
-                  guardians: _federationMeta?.guardians ?? [],
                   onLeaveFederation: widget.onLeaveFederation ?? () {},
                 ),
           ),

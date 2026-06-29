@@ -13058,14 +13058,15 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   PeerStatus dco_decode_peer_status(dynamic raw) {
     // Codec=Dco (DartCObject based), see doc to use other codecs
     final arr = raw as List<dynamic>;
-    if (arr.length != 5)
-      throw Exception('unexpected arr length: expect 5 but see ${arr.length}');
+    if (arr.length != 6)
+      throw Exception('unexpected arr length: expect 6 but see ${arr.length}');
     return PeerStatus(
       peerId: dco_decode_u_16(arr[0]),
       name: dco_decode_String(arr[1]),
       online: dco_decode_bool(arr[2]),
       connectivity: dco_decode_peer_connectivity(arr[3]),
       url: dco_decode_String(arr[4]),
+      version: dco_decode_opt_String(arr[5]),
     );
   }
 
@@ -15935,12 +15936,14 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
     var var_online = sse_decode_bool(deserializer);
     var var_connectivity = sse_decode_peer_connectivity(deserializer);
     var var_url = sse_decode_String(deserializer);
+    var var_version = sse_decode_opt_String(deserializer);
     return PeerStatus(
       peerId: var_peerId,
       name: var_name,
       online: var_online,
       connectivity: var_connectivity,
       url: var_url,
+      version: var_version,
     );
   }
 
@@ -18836,6 +18839,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
     sse_encode_bool(self.online, serializer);
     sse_encode_peer_connectivity(self.connectivity, serializer);
     sse_encode_String(self.url, serializer);
+    sse_encode_opt_String(self.version, serializer);
   }
 
   @protected

@@ -876,12 +876,18 @@ class PeerStatus {
   final PeerConnectivity connectivity;
   final String url;
 
+  /// Guardian's reported `fedimintd` version. Travels with the peer status so
+  /// the UI reflects guardian upgrades in real time (a guardian upgrade
+  /// restarts fedimintd, which surfaces as a reconnect on the status stream).
+  final String? version;
+
   const PeerStatus({
     required this.peerId,
     required this.name,
     required this.online,
     required this.connectivity,
     required this.url,
+    this.version,
   });
 
   @override
@@ -890,7 +896,8 @@ class PeerStatus {
       name.hashCode ^
       online.hashCode ^
       connectivity.hashCode ^
-      url.hashCode;
+      url.hashCode ^
+      version.hashCode;
 
   @override
   bool operator ==(Object other) =>
@@ -901,7 +908,8 @@ class PeerStatus {
           name == other.name &&
           online == other.online &&
           connectivity == other.connectivity &&
-          url == other.url;
+          url == other.url &&
+          version == other.version;
 }
 
 /// Fee parameters for an on-chain deposit (peg-in). We can't quote an exact

@@ -468,7 +468,6 @@ class FederationListItem extends StatelessWidget {
                               fed: fed,
                               welcomeMessage: data.welcomeMessage,
                               imageUrl: data.federationImageUrl,
-                              guardians: data.guardians,
                               onLeaveFederation: onLeaveFederation,
                             ),
                       ),

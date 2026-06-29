@@ -75,7 +75,6 @@ class _Discover extends State<Discover> with SingleTickerProviderStateMixin {
                 inviteCode: inviteCode,
                 welcomeMessage: meta.welcome,
                 imageUrl: meta.picture,
-                guardians: meta.guardians,
                 joinable: true,
                 onLeaveFederation: () {},
               ),
