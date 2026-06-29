@@ -159,18 +159,24 @@ class TransactionItem extends StatelessWidget {
         break;
       case TransactionKind_LightningRecurring(
         federationFees: final federationFees,
+        gatewayFees: final gatewayFees,
       ):
-        // `tx.amount` is the net amount credited. The federation claim fee is
-        // derived from the operation; it's absent for receives predating fee
-        // tracking, so only break it out when present. The gateway's routing
-        // fee isn't recoverable for LNURL receives (and is zero on LNv1), so
-        // there's no gateway line to show.
+        // `tx.amount` is the net amount credited; the gross invoice the payer
+        // paid is the net plus the fees. The federation claim fee comes from
+        // the operation; the gateway routing fee is recovered from the
+        // fee-encoded contract expiration (LNv2) or is zero (LNv1). Either may
+        // be absent for receives predating fee tracking / fee-encoding, so each
+        // line is shown only when known and non-zero.
+        final fedFee = federationFees ?? BigInt.zero;
+        final gwFee = gatewayFees ?? BigInt.zero;
         final Map<String, String> details;
-        if (federationFees != null && federationFees > BigInt.zero) {
+        if (fedFee > BigInt.zero || gwFee > BigInt.zero) {
           details = {
-            // Amount that arrived at the federation; received = amount − fee.
-            TransactionDetailKeys.amount: fmt(tx.amount + federationFees),
-            TransactionDetailKeys.federationFee: fmt(federationFees),
+            TransactionDetailKeys.amount: fmt(tx.amount + fedFee + gwFee),
+            if (fedFee > BigInt.zero)
+              TransactionDetailKeys.federationFee: fmt(fedFee),
+            if (gwFee > BigInt.zero)
+              TransactionDetailKeys.gatewayFee: fmt(gwFee),
             TransactionDetailKeys.receivedAmount: formattedAmount,
             TransactionDetailKeys.timestamp: formattedDate,
           };

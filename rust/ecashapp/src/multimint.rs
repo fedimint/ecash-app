@@ -46,7 +46,9 @@ use fedimint_lnv2_client::{
     events::ReceivePaymentEvent, FinalReceiveOperationState, LightningOperationMeta,
     ReceiveOperationState, SendOperationState,
 };
-use fedimint_lnv2_common::{gateway_api::PaymentFee, Bolt11InvoiceDescription};
+use fedimint_lnv2_common::{
+    contracts::fee_from_expiration, gateway_api::PaymentFee, Bolt11InvoiceDescription,
+};
 use fedimint_meta_client::{common::DEFAULT_META_KEY, MetaClientInit};
 use fedimint_mint_client::{
     api::MintFederationApi, MintClientInit, MintClientModule, MintOperationMeta,
@@ -356,11 +358,16 @@ pub enum TransactionKind {
         /// On-federation fee actually charged when the incoming contract was
         /// claimed (mint input/output fees), derived from the operation's
         /// input/output difference via `get_operation_fees`. `None` for receives
-        /// that predate fee tracking. The gateway's off-chain routing fee is not
-        /// recoverable here: LNURL invoices are minted by recurringd, so the
-        /// invoice face value isn't persisted in the operation (and LNv1 has no
-        /// gateway fee at all), leaving the gateway cut unmeasurable.
+        /// that predate fee tracking.
         federation_fees: Option<u64>,
+        /// Gateway off-chain routing fee. The LNURL invoice is minted by
+        /// recurringd and never seen by this client, so for LNv2 the fee is
+        /// recovered from the fee-encoded contract expiration
+        /// (`fee_from_expiration`). `Some(0)` for LNv1 (no gateway layer);
+        /// `None` when unrecoverable (LNv2 contracts created before fee-encoding
+        /// existed). The gross invoice the payer paid is `amount +
+        /// federation_fees + gateway_fees`.
+        gateway_fees: Option<u64>,
     },
     OnchainReceive {
         address: String,
@@ -3124,14 +3131,25 @@ impl Multimint {
                                         // The federation fee for claiming the incoming
                                         // contract is the operation's input/output
                                         // difference; `None` predates fee tracking. The
-                                        // gateway's cut was already taken before the
-                                        // contract and isn't part of this.
+                                        // gateway's cut was taken before the contract, so
+                                        // it isn't part of this.
                                         let federation_fees = client
                                             .get_operation_fees(key.operation_id)
                                             .await
                                             .ok()
                                             .flatten()
                                             .map(|fees| fees.get_bitcoin().msats);
+                                        // LNURL incoming contracts fee-encode the gateway's
+                                        // routing fee into the expiration field as
+                                        // `u64::MAX - fee` (the client never sees the
+                                        // invoice). Contracts created before that encoding
+                                        // existed hold a real unix timestamp, which would
+                                        // decode to an absurd fee, so only decode values
+                                        // far too large to be a timestamp.
+                                        let expiration_or_fee =
+                                            receive.contract.commitment.expiration_or_fee;
+                                        let gateway_fees = (expiration_or_fee > u64::MAX / 2)
+                                            .then(|| fee_from_expiration(expiration_or_fee));
                                         // Headline is the net amount credited: the
                                         // contract the gateway funded, minus the
                                         // federation claim fee.
@@ -3144,6 +3162,7 @@ impl Multimint {
                                         Some(Transaction {
                                             kind: TransactionKind::LightningRecurring {
                                                 federation_fees,
+                                                gateway_fees,
                                             },
                                             amount,
                                             timestamp,
@@ -3199,6 +3218,8 @@ impl Multimint {
                                         Some(Transaction {
                                             kind: TransactionKind::LightningRecurring {
                                                 federation_fees,
+                                                // LNv1 has no gateway/routing fee layer.
+                                                gateway_fees: Some(0),
                                             },
                                             amount,
                                             timestamp,
