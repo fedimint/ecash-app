@@ -1,7 +1,7 @@
 name: ecashapp
 description: "A Fedimint Wallet"
 publish_to: 'none'
-version: 0.9.0-alpha
+version: 0.9.0-rc.0+90000
 
 environment:
   sdk: ^3.7.2
