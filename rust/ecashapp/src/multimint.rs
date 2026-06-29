@@ -352,7 +352,16 @@ pub enum TransactionKind {
         preimage: String,
         ln_address: Option<String>,
     },
-    LightningRecurring,
+    LightningRecurring {
+        /// On-federation fee actually charged when the incoming contract was
+        /// claimed (mint input/output fees), derived from the operation's
+        /// input/output difference via `get_operation_fees`. `None` for receives
+        /// that predate fee tracking. The gateway's off-chain routing fee is not
+        /// recoverable here: LNURL invoices are minted by recurringd, so the
+        /// invoice face value isn't persisted in the operation (and LNv1 has no
+        /// gateway fee at all), leaving the gateway cut unmeasurable.
+        federation_fees: Option<u64>,
+    },
     OnchainReceive {
         address: String,
         txid: String,
@@ -3111,12 +3120,36 @@ impl Multimint {
                             LightningOperationMeta::LnurlReceive(receive) => {
                                 let outcome = op_log_val.outcome::<ReceiveOperationState>();
                                 match outcome {
-                                    Some(ReceiveOperationState::Claimed) => Some(Transaction {
-                                        kind: TransactionKind::LightningRecurring,
-                                        amount: receive.contract.commitment.amount.msats,
-                                        timestamp,
-                                        operation_id: key.operation_id.0.to_vec(),
-                                    }),
+                                    Some(ReceiveOperationState::Claimed) => {
+                                        // The federation fee for claiming the incoming
+                                        // contract is the operation's input/output
+                                        // difference; `None` predates fee tracking. The
+                                        // gateway's cut was already taken before the
+                                        // contract and isn't part of this.
+                                        let federation_fees = client
+                                            .get_operation_fees(key.operation_id)
+                                            .await
+                                            .ok()
+                                            .flatten()
+                                            .map(|fees| fees.get_bitcoin().msats);
+                                        // Headline is the net amount credited: the
+                                        // contract the gateway funded, minus the
+                                        // federation claim fee.
+                                        let amount = receive
+                                            .contract
+                                            .commitment
+                                            .amount
+                                            .msats
+                                            .saturating_sub(federation_fees.unwrap_or(0));
+                                        Some(Transaction {
+                                            kind: TransactionKind::LightningRecurring {
+                                                federation_fees,
+                                            },
+                                            amount,
+                                            timestamp,
+                                            operation_id: key.operation_id.0.to_vec(),
+                                        })
+                                    }
                                     _ => None,
                                 }
                             }
@@ -3145,13 +3178,29 @@ impl Multimint {
                                 let receive_outcome = op_log_val.outcome::<LnReceiveState>();
                                 match receive_outcome {
                                     Some(LnReceiveState::Claimed) => {
-                                        let amount_msat = recurring
+                                        let invoice_msat = recurring
                                             .invoice
                                             .amount_milli_satoshis()
                                             .expect("Amountless invoice");
+                                        // The federation fee for claiming the contract is
+                                        // the operation's input/output difference; `None`
+                                        // predates fee tracking. LNv1 has no gateway fee,
+                                        // so this is the entire receive cost.
+                                        let federation_fees = client
+                                            .get_operation_fees(key.operation_id)
+                                            .await
+                                            .ok()
+                                            .flatten()
+                                            .map(|fees| fees.get_bitcoin().msats);
+                                        // Headline is the net credited: invoice face value
+                                        // minus the federation claim fee.
+                                        let amount = invoice_msat
+                                            .saturating_sub(federation_fees.unwrap_or(0));
                                         Some(Transaction {
-                                            kind: TransactionKind::LightningRecurring,
-                                            amount: amount_msat,
+                                            kind: TransactionKind::LightningRecurring {
+                                                federation_fees,
+                                            },
+                                            amount,
                                             timestamp,
                                             operation_id: key.operation_id.0.to_vec(),
                                         })

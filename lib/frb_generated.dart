@@ -13482,7 +13482,9 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           lnAddress: dco_decode_opt_String(raw[6]),
         );
       case 2:
-        return TransactionKind_LightningRecurring();
+        return TransactionKind_LightningRecurring(
+          federationFees: dco_decode_opt_box_autoadd_u_64(raw[1]),
+        );
       case 3:
         return TransactionKind_OnchainReceive(
           address: dco_decode_String(raw[1]),
@@ -16317,7 +16319,10 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           lnAddress: var_lnAddress,
         );
       case 2:
-        return TransactionKind_LightningRecurring();
+        var var_federationFees = sse_decode_opt_box_autoadd_u_64(deserializer);
+        return TransactionKind_LightningRecurring(
+          federationFees: var_federationFees,
+        );
       case 3:
         var var_address = sse_decode_String(deserializer);
         var var_txid = sse_decode_String(deserializer);
@@ -19190,8 +19195,11 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
         sse_encode_String(paymentHash, serializer);
         sse_encode_String(preimage, serializer);
         sse_encode_opt_String(lnAddress, serializer);
-      case TransactionKind_LightningRecurring():
+      case TransactionKind_LightningRecurring(
+        federationFees: final federationFees,
+      ):
         sse_encode_i_32(2, serializer);
+        sse_encode_opt_box_autoadd_u_64(federationFees, serializer);
       case TransactionKind_OnchainReceive(
         address: final address,
         txid: final txid,

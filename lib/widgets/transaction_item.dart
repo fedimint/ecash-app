@@ -157,16 +157,35 @@ class TransactionItem extends StatelessWidget {
           },
         );
         break;
-      case TransactionKind_LightningRecurring():
+      case TransactionKind_LightningRecurring(
+        federationFees: final federationFees,
+      ):
+        // `tx.amount` is the net amount credited. The federation claim fee is
+        // derived from the operation; it's absent for receives predating fee
+        // tracking, so only break it out when present. The gateway's routing
+        // fee isn't recoverable for LNURL receives (and is zero on LNv1), so
+        // there's no gateway line to show.
+        final Map<String, String> details;
+        if (federationFees != null && federationFees > BigInt.zero) {
+          details = {
+            // Amount that arrived at the federation; received = amount − fee.
+            TransactionDetailKeys.amount: fmt(tx.amount + federationFees),
+            TransactionDetailKeys.federationFee: fmt(federationFees),
+            TransactionDetailKeys.receivedAmount: formattedAmount,
+            TransactionDetailKeys.timestamp: formattedDate,
+          };
+        } else {
+          details = {
+            TransactionDetailKeys.amount: formattedAmount,
+            TransactionDetailKeys.timestamp: formattedDate,
+          };
+        }
         showAppModalBottomSheet(
           context: context,
           childBuilder: () async {
             return TransactionDetails(
               tx: tx,
-              details: {
-                TransactionDetailKeys.amount: formattedAmount,
-                TransactionDetailKeys.timestamp: formattedDate,
-              },
+              details: details,
               icon: icon,
               fed: fed,
             );

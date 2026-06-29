@@ -1118,8 +1118,16 @@ sealed class TransactionKind with _$TransactionKind {
     required String preimage,
     String? lnAddress,
   }) = TransactionKind_LightningSend;
-  const factory TransactionKind.lightningRecurring() =
-      TransactionKind_LightningRecurring;
+  const factory TransactionKind.lightningRecurring({
+    /// On-federation fee actually charged when the incoming contract was
+    /// claimed (mint input/output fees), derived from the operation's
+    /// input/output difference via `get_operation_fees`. `None` for receives
+    /// that predate fee tracking. The gateway's off-chain routing fee is not
+    /// recoverable here: LNURL invoices are minted by recurringd, so the
+    /// invoice face value isn't persisted in the operation (and LNv1 has no
+    /// gateway fee at all), leaving the gateway cut unmeasurable.
+    BigInt? federationFees,
+  }) = TransactionKind_LightningRecurring;
   const factory TransactionKind.onchainReceive({
     required String address,
     required String txid,
