@@ -130,9 +130,13 @@ runs:
         sed -i 's/namespace = ".*"/namespace = "org.fedimint.app"/' android/app/build.gradle.kts
         sed -i 's/applicationId = ".*"/applicationId = "org.fedimint.app"/' android/app/build.gradle.kts
 
-        # Update package in MainActivity.kt
+        # Update the package in EVERY Kotlin source (MainActivity, EcashHceService, …)
+        # so they all share the same package as the namespace. Rewriting only one file
+        # orphans the others in org.fedimint.app.master and the release build fails with
+        # "Unresolved reference".
         CURRENT_PACKAGE=$(grep '^package ' android/app/src/main/kotlin/app/ecash/MainActivity.kt | sed 's/package //')
-        sed -i "s/package ${CURRENT_PACKAGE}/package org.fedimint.app/" android/app/src/main/kotlin/app/ecash/MainActivity.kt
+        find android/app/src/main/kotlin -name '*.kt' -print0 \
+          | xargs -0 sed -i "s/^package ${CURRENT_PACKAGE}\$/package org.fedimint.app/"
 
         # Update APPLICATION_ID in Linux CMakeLists.txt
         sed -i 's/set(APPLICATION_ID ".*")/set(APPLICATION_ID "org.fedimint.app")/' linux/CMakeLists.txt

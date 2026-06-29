@@ -89,10 +89,18 @@ echo "Updating Cargo.lock..."
 cargo check --manifest-path "$PROJECT_ROOT/rust/ecashapp/Cargo.toml" --target-dir "$PROJECT_ROOT/rust/ecashapp/target" 2>/dev/null || true
 echo "Updated Cargo.lock"
 
-# Update Android package ID to production (org.fedimint.app)
+# Update Android package ID to production (org.fedimint.app) in the Gradle config
+# AND every Kotlin source. The source `package` must move in lockstep with the
+# namespace: if MainActivity.kt is rewritten but a sibling like EcashHceService.kt
+# is left at org.fedimint.app.master, they land in different packages and the
+# release build fails with "Unresolved reference". This also keeps the tagged
+# commit fully production-consistent for F-Droid, which builds from the tag
+# without the CI package-id rewrite.
 GRADLE_FILE="$PROJECT_ROOT/android/app/build.gradle.kts"
 sed -i 's/org\.fedimint\.app\.master/org.fedimint.app/g' "$GRADLE_FILE"
-echo "Updated build.gradle.kts → applicationId: org.fedimint.app"
+find "$PROJECT_ROOT/android/app/src/main/kotlin" -name '*.kt' -print0 \
+    | xargs -0 sed -i 's/org\.fedimint\.app\.master/org.fedimint.app/g'
+echo "Updated build.gradle.kts + Kotlin sources → package: org.fedimint.app"
 
 # For final releases only: update appstream and create changelog
 APPSTREAM_FILE=""
@@ -145,7 +153,7 @@ EOF
 fi
 
 # Commit and tag
-git -C "$PROJECT_ROOT" add pubspec.yaml rust/ecashapp/Cargo.toml rust/ecashapp/Cargo.lock android/app/build.gradle.kts
+git -C "$PROJECT_ROOT" add pubspec.yaml rust/ecashapp/Cargo.toml rust/ecashapp/Cargo.lock android/app/build.gradle.kts android/app/src/main/kotlin
 if [[ -n "$APPSTREAM_FILE" && -f "$APPSTREAM_FILE" ]]; then
     git -C "$PROJECT_ROOT" add "$APPSTREAM_FILE"
 fi
