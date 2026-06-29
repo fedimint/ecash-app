@@ -15745,9 +15745,11 @@ impl SseDecode for crate::multimint::TransactionKind {
                 };
             }
             2 => {
+                let mut var_lnAddress = <Option<String>>::sse_decode(deserializer);
                 let mut var_federationFees = <Option<u64>>::sse_decode(deserializer);
                 let mut var_gatewayFees = <Option<u64>>::sse_decode(deserializer);
                 return crate::multimint::TransactionKind::LightningRecurring {
+                    ln_address: var_lnAddress,
                     federation_fees: var_federationFees,
                     gateway_fees: var_gatewayFees,
                 };
@@ -18269,10 +18271,12 @@ impl flutter_rust_bridge::IntoDart for crate::multimint::TransactionKind {
             ]
             .into_dart(),
             crate::multimint::TransactionKind::LightningRecurring {
+                ln_address,
                 federation_fees,
                 gateway_fees,
             } => [
                 2.into_dart(),
+                ln_address.into_into_dart().into_dart(),
                 federation_fees.into_into_dart().into_dart(),
                 gateway_fees.into_into_dart().into_dart(),
             ]
@@ -20272,10 +20276,12 @@ impl SseEncode for crate::multimint::TransactionKind {
                 <Option<String>>::sse_encode(ln_address, serializer);
             }
             crate::multimint::TransactionKind::LightningRecurring {
+                ln_address,
                 federation_fees,
                 gateway_fees,
             } => {
                 <i32>::sse_encode(2, serializer);
+                <Option<String>>::sse_encode(ln_address, serializer);
                 <Option<u64>>::sse_encode(federation_fees, serializer);
                 <Option<u64>>::sse_encode(gateway_fees, serializer);
             }

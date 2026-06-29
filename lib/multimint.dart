@@ -1119,6 +1119,12 @@ sealed class TransactionKind with _$TransactionKind {
     String? lnAddress,
   }) = TransactionKind_LightningSend;
   const factory TransactionKind.lightningRecurring({
+    /// The Lightning Address (`username@domain`) registered for this
+    /// federation that received the payment, looked up from
+    /// `LightningAddressKey` (one address per federation). `None` if no
+    /// address is currently registered for the federation.
+    String? lnAddress,
+
     /// On-federation fee actually charged when the incoming contract was
     /// claimed (mint input/output fees), derived from the operation's
     /// input/output difference via `get_operation_fees`. `None` for receives

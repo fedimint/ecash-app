@@ -2501,9 +2501,14 @@ as String?,
 
 
 class TransactionKind_LightningRecurring extends TransactionKind {
-  const TransactionKind_LightningRecurring({this.federationFees, this.gatewayFees}): super._();
+  const TransactionKind_LightningRecurring({this.lnAddress, this.federationFees, this.gatewayFees}): super._();
   
 
+/// The Lightning Address (`username@domain`) registered for this
+/// federation that received the payment, looked up from
+/// `LightningAddressKey` (one address per federation). `None` if no
+/// address is currently registered for the federation.
+ final  String? lnAddress;
 /// On-federation fee actually charged when the incoming contract was
 /// claimed (mint input/output fees), derived from the operation's
 /// input/output difference via `get_operation_fees`. `None` for receives
@@ -2528,16 +2533,16 @@ $TransactionKind_LightningRecurringCopyWith<TransactionKind_LightningRecurring> 
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is TransactionKind_LightningRecurring&&(identical(other.federationFees, federationFees) || other.federationFees == federationFees)&&(identical(other.gatewayFees, gatewayFees) || other.gatewayFees == gatewayFees));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is TransactionKind_LightningRecurring&&(identical(other.lnAddress, lnAddress) || other.lnAddress == lnAddress)&&(identical(other.federationFees, federationFees) || other.federationFees == federationFees)&&(identical(other.gatewayFees, gatewayFees) || other.gatewayFees == gatewayFees));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,federationFees,gatewayFees);
+int get hashCode => Object.hash(runtimeType,lnAddress,federationFees,gatewayFees);
 
 @override
 String toString() {
-  return 'TransactionKind.lightningRecurring(federationFees: $federationFees, gatewayFees: $gatewayFees)';
+  return 'TransactionKind.lightningRecurring(lnAddress: $lnAddress, federationFees: $federationFees, gatewayFees: $gatewayFees)';
 }
 
 
@@ -2548,7 +2553,7 @@ abstract mixin class $TransactionKind_LightningRecurringCopyWith<$Res> implement
   factory $TransactionKind_LightningRecurringCopyWith(TransactionKind_LightningRecurring value, $Res Function(TransactionKind_LightningRecurring) _then) = _$TransactionKind_LightningRecurringCopyWithImpl;
 @useResult
 $Res call({
- BigInt? federationFees, BigInt? gatewayFees
+ String? lnAddress, BigInt? federationFees, BigInt? gatewayFees
 });
 
 
@@ -2565,9 +2570,10 @@ class _$TransactionKind_LightningRecurringCopyWithImpl<$Res>
 
 /// Create a copy of TransactionKind
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') $Res call({Object? federationFees = freezed,Object? gatewayFees = freezed,}) {
+@pragma('vm:prefer-inline') $Res call({Object? lnAddress = freezed,Object? federationFees = freezed,Object? gatewayFees = freezed,}) {
   return _then(TransactionKind_LightningRecurring(
-federationFees: freezed == federationFees ? _self.federationFees : federationFees // ignore: cast_nullable_to_non_nullable
+lnAddress: freezed == lnAddress ? _self.lnAddress : lnAddress // ignore: cast_nullable_to_non_nullable
+as String?,federationFees: freezed == federationFees ? _self.federationFees : federationFees // ignore: cast_nullable_to_non_nullable
 as BigInt?,gatewayFees: freezed == gatewayFees ? _self.gatewayFees : gatewayFees // ignore: cast_nullable_to_non_nullable
 as BigInt?,
   ));

@@ -158,6 +158,7 @@ class TransactionItem extends StatelessWidget {
         );
         break;
       case TransactionKind_LightningRecurring(
+        lnAddress: final lnAddress,
         federationFees: final federationFees,
         gatewayFees: final gatewayFees,
       ):
@@ -172,6 +173,7 @@ class TransactionItem extends StatelessWidget {
         final Map<String, String> details;
         if (fedFee > BigInt.zero || gwFee > BigInt.zero) {
           details = {
+            if (lnAddress != null) TransactionDetailKeys.lnAddress: lnAddress,
             TransactionDetailKeys.amount: fmt(tx.amount + fedFee + gwFee),
             if (fedFee > BigInt.zero)
               TransactionDetailKeys.federationFee: fmt(fedFee),
@@ -182,6 +184,7 @@ class TransactionItem extends StatelessWidget {
           };
         } else {
           details = {
+            if (lnAddress != null) TransactionDetailKeys.lnAddress: lnAddress,
             TransactionDetailKeys.amount: formattedAmount,
             TransactionDetailKeys.timestamp: formattedDate,
           };

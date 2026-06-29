@@ -355,6 +355,11 @@ pub enum TransactionKind {
         ln_address: Option<String>,
     },
     LightningRecurring {
+        /// The Lightning Address (`username@domain`) registered for this
+        /// federation that received the payment, looked up from
+        /// `LightningAddressKey` (one address per federation). `None` if no
+        /// address is currently registered for the federation.
+        ln_address: Option<String>,
         /// On-federation fee actually charged when the incoming contract was
         /// claimed (mint input/output fees), derived from the operation's
         /// input/output difference via `get_operation_fees`. `None` for receives
@@ -922,7 +927,21 @@ impl Multimint {
                         if let Some(receive_event) =
                             event.to_event::<ReceivePaymentEvent>()
                         {
-                            let amount_msats = receive_event.amount.msats;
+                            // fedimint reports `amount` as the gross invoice and
+                            // `fee` as the gateway's cut, with `amount = contract +
+                            // fee` by construction (lnv2 PR #8741). `amount - fee`
+                            // is therefore always the incoming-contract amount
+                            // credited, with no need to second-guess the value:
+                            // it cancels back to the contract amount even when a
+                            // recurring daemon older than #8741 leaves a real
+                            // timestamp in the fee-encoded expiration field (which
+                            // otherwise inflates fedimint's `fee`/`amount` toward
+                            // u64::MAX), and for pre-#8741 events where `fee`
+                            // defaults to zero.
+                            let amount_msats = receive_event
+                                .amount
+                                .msats
+                                .saturating_sub(receive_event.fee.msats);
                             let operation_id = receive_event.operation_id;
                             info_to_flutter(format!(
                                 "LNv2 receive event: {amount_msats} msats, op={operation_id:?} for {federation_id}"
@@ -2907,9 +2926,15 @@ impl Multimint {
         let lnv1_client = client.clone();
         self.task_group
             .spawn_cancellable("update gateway cache", async move {
-                let lnv1 = lnv1_client
-                    .get_first_module::<LightningClientModule>()
-                    .expect("LNv1 should be present");
+                // LNv2-only federations have no LNv1 (`ln`) module, so there is
+                // no LNv1 gateway cache to maintain — skip instead of panicking.
+                let Ok(lnv1) = lnv1_client.get_first_module::<LightningClientModule>() else {
+                    info_to_flutter(
+                        "Skipping LNv1 gateway cache update; federation has no LNv1 module",
+                    )
+                    .await;
+                    return;
+                };
                 match lnv1.update_gateway_cache().await {
                     Ok(_) => info_to_flutter("Updated gateway cache").await,
                     Err(e) => info_to_flutter(format!("Could not update gateway cache {e}")).await,
@@ -2980,6 +3005,14 @@ impl Multimint {
             .get(federation_id)
             .expect("No federation exists")
             .clone();
+
+        // There is one Lightning Address per federation, so any recurring/LNURL
+        // receive on this federation was received via it. Looked up once here
+        // and reused for every recurring receive built below.
+        let ln_address = self
+            .get_ln_address_config(federation_id)
+            .await
+            .map(|config| format!("{}@{}", config.username, config.domain));
 
         let mut collected = Vec::new();
         let mut next_key = timestamp.map(|timestamp| ChronologicalOperationLogKey {
@@ -3161,6 +3194,7 @@ impl Multimint {
                                             .saturating_sub(federation_fees.unwrap_or(0));
                                         Some(Transaction {
                                             kind: TransactionKind::LightningRecurring {
+                                                ln_address: ln_address.clone(),
                                                 federation_fees,
                                                 gateway_fees,
                                             },
@@ -3217,6 +3251,7 @@ impl Multimint {
                                             .saturating_sub(federation_fees.unwrap_or(0));
                                         Some(Transaction {
                                             kind: TransactionKind::LightningRecurring {
+                                                ln_address: ln_address.clone(),
                                                 federation_fees,
                                                 // LNv1 has no gateway/routing fee layer.
                                                 gateway_fees: Some(0),
@@ -5196,9 +5231,14 @@ impl Multimint {
                     for (key, config) in lightning_configs {
                         let federation_id = key.federation_id;
                         if let Some(client) = self_copy.clients.read().await.get(&federation_id) {
-                            let lnv1 = client
-                                .get_first_module::<LightningClientModule>()
-                                .expect("No LNv1 module");
+                            // This poller only drives the LNv1 recurringd flow.
+                            // LNv2-only federations have no `ln` module (their
+                            // LNURL receives are detected via the LNv2 contract
+                            // stream), so skip them instead of panicking.
+                            let Ok(lnv1) = client.get_first_module::<LightningClientModule>()
+                            else {
+                                continue;
+                            };
                             let payment_codes = lnv1.list_recurring_payment_codes().await;
                             if let Some((index, _)) = payment_codes
                                 .into_iter()
