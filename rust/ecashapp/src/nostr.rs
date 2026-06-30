@@ -606,7 +606,7 @@ impl NostrClient {
         let filter = nostr_sdk::Filter::new().kind(nostr_sdk::Kind::from(38173));
         match self
             .nostr_client
-            .fetch_events(filter, Duration::from_secs(10))
+            .fetch_events(filter, Duration::from_secs(1))
             .await
         {
             Ok(events) => {

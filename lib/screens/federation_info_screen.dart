@@ -14,7 +14,10 @@ import 'package:qr_flutter/qr_flutter.dart';
 enum _InfoSection { guardians, utxos, gateways }
 
 class FederationInfoScreen extends StatefulWidget {
-  final FederationSelector fed;
+  /// The federation to display. For joinable previews this can be null: the
+  /// screen then downloads the metadata itself (from [inviteCode]) and shows a
+  /// loading state, so the user is never stuck on a blocking spinner.
+  final FederationSelector? fed;
   final String? welcomeMessage;
   final String? imageUrl;
   final VoidCallback onLeaveFederation;
@@ -24,15 +27,19 @@ class FederationInfoScreen extends StatefulWidget {
   final String? inviteCode;
   final String? ecash;
 
+  /// Name shown in the app bar while a joinable preview's metadata loads.
+  final String? previewName;
+
   const FederationInfoScreen({
     super.key,
-    required this.fed,
+    this.fed,
     this.welcomeMessage,
     this.imageUrl,
     required this.onLeaveFederation,
     this.joinable = false,
     this.inviteCode,
     this.ecash,
+    this.previewName,
   });
 
   @override
@@ -41,34 +48,85 @@ class FederationInfoScreen extends StatefulWidget {
 
 class _FederationInfoScreenState extends State<FederationInfoScreen> {
   double _animatedPercent = 0.0;
-  late StreamSubscription<List<PeerStatus>> _peerUpdates;
+  StreamSubscription<List<PeerStatus>>? _peerUpdates;
   List<PeerStatus>? _peers;
   _InfoSection _selectedSection = _InfoSection.guardians;
   bool _isJoining = false;
+
+  // Resolved federation data. Populated immediately from the widget when the
+  // caller already has it, or after [_loadMeta] succeeds for a joinable preview.
+  FederationSelector? _fed;
+  String? _welcomeMessage;
+  String? _imageUrl;
+
+  // Joinable preview loading state.
+  bool _isLoadingMeta = false;
+  Object? _loadError;
 
   @override
   void initState() {
     super.initState();
 
-    Stream<List<PeerStatus>> stream = subscribePeerStatus(
+    if (widget.joinable && widget.fed == null) {
+      // Preview: navigate in immediately and download the metadata here so the
+      // user always has a back button while it loads (or fails).
+      _loadMeta();
+    } else {
+      _fed = widget.fed;
+      _welcomeMessage = widget.welcomeMessage;
+      _imageUrl = widget.imageUrl;
+      _subscribePeers();
+    }
+  }
+
+  @override
+  void dispose() {
+    _peerUpdates?.cancel();
+    super.dispose();
+  }
+
+  Future<void> _loadMeta() async {
+    setState(() {
+      _isLoadingMeta = true;
+      _loadError = null;
+    });
+    try {
+      final meta = await getFederationMeta(inviteCode: widget.inviteCode);
+      if (!mounted) return;
+      setState(() {
+        _fed = meta.selector;
+        _welcomeMessage = meta.welcome;
+        _imageUrl = meta.picture;
+        _isLoadingMeta = false;
+      });
+      _subscribePeers();
+    } catch (e) {
+      AppLogger.instance.warn("Error when retrieving federation meta: $e");
+      if (!mounted) return;
+      setState(() {
+        _isLoadingMeta = false;
+        _loadError = e;
+      });
+    }
+  }
+
+  void _subscribePeers() {
+    final fed = _fed;
+    if (fed == null) return;
+    final stream = subscribePeerStatus(
       invite: widget.joinable ? widget.inviteCode : null,
-      federationId: widget.fed.federationId,
+      federationId: fed.federationId,
     );
     _peerUpdates = stream.listen((List<PeerStatus> event) {
       final onlineCount = event.where((p) => p.online).length;
       final totalCount = event.length;
 
+      if (!mounted) return;
       setState(() {
         _peers = event;
         _animatedPercent = totalCount > 0 ? onlineCount / totalCount : 0.0;
       });
     });
-  }
-
-  @override
-  void dispose() {
-    _peerUpdates.cancel();
-    super.dispose();
   }
 
   // --- Leave federation logic ---
@@ -105,7 +163,7 @@ class _FederationInfoScreenState extends State<FederationInfoScreen> {
 
                             try {
                               await leaveFederation(
-                                federationId: widget.fed.federationId,
+                                federationId: _fed!.federationId,
                               );
                               try {
                                 backupInviteCodes();
@@ -222,7 +280,7 @@ class _FederationInfoScreenState extends State<FederationInfoScreen> {
   Future<void> _redeemEcash(String ecash) async {
     try {
       final isSpent = await checkEcashSpent(
-        federationId: widget.fed.federationId,
+        federationId: _fed!.federationId,
         ecash: ecash,
       );
 
@@ -239,12 +297,12 @@ class _FederationInfoScreenState extends State<FederationInfoScreen> {
       }
 
       final fees = await calculateEcashReissueFees(
-        federationId: widget.fed.federationId,
+        federationId: _fed!.federationId,
         ecash: ecash,
       );
 
       await reissueEcash(
-        federationId: widget.fed.federationId,
+        federationId: _fed!.federationId,
         ecash: ecash,
         fees: fees,
       );
@@ -495,7 +553,7 @@ class _FederationInfoScreenState extends State<FederationInfoScreen> {
                         onPressed: () async {
                           try {
                             final inviteCode = await getInviteCode(
-                              federationId: widget.fed.federationId,
+                              federationId: _fed!.federationId,
                               peer: peer.peerId,
                             );
                             if (!context.mounted) return;
@@ -527,7 +585,7 @@ class _FederationInfoScreenState extends State<FederationInfoScreen> {
                         onPressed: () async {
                           try {
                             final inviteCode = await getInviteCode(
-                              federationId: widget.fed.federationId,
+                              federationId: _fed!.federationId,
                               peer: peer.peerId,
                             );
                             if (!context.mounted) return;
@@ -630,12 +688,12 @@ class _FederationInfoScreenState extends State<FederationInfoScreen> {
       case _InfoSection.utxos:
         return FederationUtxoList(
           invite: widget.joinable ? widget.inviteCode : null,
-          fed: widget.fed,
+          fed: _fed!,
           isFederationOnline: isFederationOnline,
         );
       case _InfoSection.gateways:
         return GatewaysList(
-          fed: widget.fed,
+          fed: _fed!,
           invite: widget.joinable ? widget.inviteCode : null,
         );
     }
@@ -681,9 +739,74 @@ class _FederationInfoScreenState extends State<FederationInfoScreen> {
     );
   }
 
+  /// Shown for a joinable preview while its metadata downloads, or if the
+  /// download fails. Always has a back button (the app bar), so the user can
+  /// cancel instead of being stuck on a spinner, plus a Retry on failure.
+  Widget _buildLoadingOrError(ThemeData theme) {
+    return Scaffold(
+      appBar: AppBar(
+        centerTitle: true,
+        title: Text(widget.previewName ?? context.l10n.loading),
+      ),
+      body: SafeArea(
+        child: Center(
+          child: Padding(
+            padding: const EdgeInsets.all(24),
+            child:
+                _loadError != null
+                    ? Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Icon(
+                          Icons.cloud_off,
+                          size: 48,
+                          color: Colors.grey,
+                        ),
+                        const SizedBox(height: 16),
+                        Text(
+                          context.l10n.couldNotGetFederationMetadata,
+                          textAlign: TextAlign.center,
+                          style: theme.textTheme.bodyMedium?.copyWith(
+                            color: Colors.grey,
+                          ),
+                        ),
+                        const SizedBox(height: 24),
+                        ElevatedButton.icon(
+                          onPressed: _isLoadingMeta ? null : _loadMeta,
+                          icon: const Icon(Icons.refresh),
+                          label: Text(context.l10n.retry),
+                        ),
+                      ],
+                    )
+                    : Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const CircularProgressIndicator(),
+                        const SizedBox(height: 16),
+                        Text(
+                          context.l10n.loading,
+                          style: theme.textTheme.bodyMedium?.copyWith(
+                            color: Colors.grey,
+                          ),
+                        ),
+                      ],
+                    ),
+          ),
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+
+    // Joinable preview whose metadata hasn't resolved yet (still loading or
+    // failed): show a cancellable loading/error screen instead of the content.
+    if (_fed == null) {
+      return _buildLoadingOrError(theme);
+    }
+
     final totalGuardians = _peers?.length ?? 0;
     final thresh = threshold(totalGuardians);
     final onlineGuardians = _peers?.where((p) => p.online).toList() ?? [];
@@ -693,7 +816,7 @@ class _FederationInfoScreenState extends State<FederationInfoScreen> {
     return Scaffold(
       appBar: AppBar(
         centerTitle: true,
-        title: Text(widget.fed.federationName),
+        title: Text(_fed!.federationName),
         actions: [
           PopupMenuButton<String>(
             icon: const Icon(Icons.more_vert),
@@ -750,9 +873,9 @@ class _FederationInfoScreenState extends State<FederationInfoScreen> {
                       width: 80,
                       height: 80,
                       child:
-                          widget.imageUrl != null
+                          _imageUrl != null
                               ? Image.network(
-                                widget.imageUrl!,
+                                _imageUrl!,
                                 fit: BoxFit.cover,
                                 errorBuilder: (context, error, stackTrace) {
                                   return Image.asset(
@@ -767,18 +890,18 @@ class _FederationInfoScreenState extends State<FederationInfoScreen> {
                               ),
                     ),
                   ),
-                  if (widget.welcomeMessage != null) ...[
+                  if (_welcomeMessage != null) ...[
                     const SizedBox(height: 8),
                     Text(
-                      widget.welcomeMessage!,
+                      _welcomeMessage!,
                       style: theme.textTheme.bodyMedium?.copyWith(
                         color: Colors.grey,
                       ),
                       textAlign: TextAlign.center,
                     ),
                   ],
-                  if (widget.fed.network != null &&
-                      widget.fed.network!.toLowerCase() != 'bitcoin') ...[
+                  if (_fed!.network != null &&
+                      _fed!.network!.toLowerCase() != 'bitcoin') ...[
                     const SizedBox(height: 8),
                     Container(
                       padding: const EdgeInsets.all(8),
@@ -793,7 +916,7 @@ class _FederationInfoScreenState extends State<FederationInfoScreen> {
                           Expanded(
                             child: Text(
                               context.l10n.testNetworkWarning(
-                                widget.fed.network ?? '',
+                                _fed!.network ?? '',
                               ),
                               style: const TextStyle(color: Colors.orange),
                             ),

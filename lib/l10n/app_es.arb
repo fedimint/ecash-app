@@ -17,6 +17,7 @@
   "noFederationsFound": "No se encontraron federaciones",
   "recovering": "Recuperando...",
   "loading": "Cargando...",
+  "retry": "Reintentar",
   "offline": "Sin conexión",
   "guardianCount": "{count, plural, =1{1 guardián} other{{count} guardianes}}",
   "retrievingFederationBackup": "Recuperando respaldo de federación de Nostr...",
