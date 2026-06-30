@@ -48,6 +48,8 @@
 
   "loading": "Loading...",
   "@loading": {},
+  "retry": "Retry",
+  "@retry": {},
 
   "offline": "Offline",
   "@offline": {},

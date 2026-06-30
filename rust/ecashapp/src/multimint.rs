@@ -1333,7 +1333,16 @@ impl Multimint {
                 let invite =
                     invite.ok_or(anyhow!("Federation ID and Invite cannot both be None"))?;
                 let invite_code = InviteCode::from_str(&invite)?;
-                self.get_or_build_temp_client(invite_code).await?
+                // Building a temporary client downloads the config from the
+                // federation's guardians. If they're unreachable this otherwise
+                // hangs forever, leaving the preview spinner stuck. Bound it so
+                // the caller gets a real error instead.
+                timeout(
+                    Duration::from_secs(15),
+                    self.get_or_build_temp_client(invite_code),
+                )
+                .await
+                .map_err(|_| anyhow!("Timed out downloading federation config from guardians"))??
             }
         };
 

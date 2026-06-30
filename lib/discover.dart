@@ -4,7 +4,6 @@ import 'package:ecashapp/lib.dart';
 import 'package:ecashapp/multimint.dart';
 import 'package:ecashapp/nostr.dart';
 import 'package:ecashapp/toast.dart';
-import 'package:ecashapp/utils.dart';
 import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:shimmer/shimmer.dart';
@@ -20,11 +19,11 @@ class Discover extends StatefulWidget {
 
 class _Discover extends State<Discover> with SingleTickerProviderStateMixin {
   late Future<List<PublicFederation>> _futureFeds;
-  PublicFederation? _gettingMetadata;
 
   final TextEditingController _inviteCodeController = TextEditingController();
   bool _isInviteCodeValid = false;
-  bool _isLoadingInvitePreview = false;
+  // Guards against pushing the preview route twice while one is already opening.
+  bool _isOpeningPreview = false;
 
   @override
   void initState() {
@@ -48,66 +47,47 @@ class _Discover extends State<Discover> with SingleTickerProviderStateMixin {
     }
   }
 
-  Future<void> _onPreviewPressed(String inviteCode) async {
-    final overlay = OverlayEntry(
-      builder:
-          (_) => Container(
-            color: Colors.black54,
-            child: const Center(child: CircularProgressIndicator()),
-          ),
+  Future<void> _onPreviewPressed(
+    String inviteCode, {
+    String? previewName,
+  }) async {
+    if (_isOpeningPreview) return;
+    setState(() => _isOpeningPreview = true);
+
+    // Open the preview screen immediately. It downloads the federation config
+    // itself and shows a loading/error state, so the user always has a back
+    // button instead of being stuck behind a blocking spinner.
+    final fed = await Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder:
+            (_) => FederationInfoScreen(
+              inviteCode: inviteCode,
+              previewName: previewName,
+              joinable: true,
+              onLeaveFederation: () {},
+            ),
+      ),
     );
-    try {
-      setState(() {
-        _gettingMetadata = null;
-        _isLoadingInvitePreview = false;
-      });
 
-      Overlay.of(context).insert(overlay);
-      final meta = await getFederationMeta(inviteCode: inviteCode);
-      overlay.remove();
-      if (!mounted) return;
-      final fed = await Navigator.push(
-        context,
-        MaterialPageRoute(
-          builder:
-              (_) => FederationInfoScreen(
-                fed: meta.selector,
-                inviteCode: inviteCode,
-                welcomeMessage: meta.welcome,
-                imageUrl: meta.picture,
-                joinable: true,
-                onLeaveFederation: () {},
-              ),
-        ),
-      );
+    if (mounted) setState(() => _isOpeningPreview = false);
 
-      if (fed != null) {
-        final name = fed.$1.federationName;
-        widget.onJoin(fed.$1, fed.$2);
+    if (fed != null) {
+      final name = fed.$1.federationName;
+      widget.onJoin(fed.$1, fed.$2);
 
-        // If we're in a pushed route (showAppBar is true), pop back to main screen
-        // so the user can see the newly joined federation
-        if (widget.showAppBar && mounted) {
-          Navigator.popUntil(context, (route) => route.isFirst);
-        }
-
-        ToastService().show(
-          message: context.l10n.joinedFederation(name),
-          duration: const Duration(seconds: 5),
-          onTap: () {},
-          icon: const Icon(Icons.info),
-        );
+      // If we're in a pushed route (showAppBar is true), pop back to main screen
+      // so the user can see the newly joined federation
+      if (widget.showAppBar && mounted) {
+        Navigator.popUntil(context, (route) => route.isFirst);
       }
-    } catch (e) {
-      overlay.remove();
-      AppLogger.instance.warn("Error when retrieving federation meta: $e");
+
       ToastService().show(
-        message: context.l10n.couldNotGetFederationMetadata,
+        message: context.l10n.joinedFederation(name),
         duration: const Duration(seconds: 5),
         onTap: () {},
-        icon: const Icon(Icons.error),
+        icon: const Icon(Icons.info),
       );
-      setState(() => _gettingMetadata = null);
     }
   }
 
@@ -224,7 +204,7 @@ class _Discover extends State<Discover> with SingleTickerProviderStateMixin {
                 labelStyle: TextStyle(color: Colors.grey[400]),
                 border: InputBorder.none,
               ),
-              enabled: !_isLoadingInvitePreview,
+              enabled: !_isOpeningPreview,
             ),
           ),
           if (_isInviteCodeValid)
@@ -235,15 +215,8 @@ class _Discover extends State<Discover> with SingleTickerProviderStateMixin {
           const SizedBox(width: 8),
           ElevatedButton(
             onPressed:
-                (_isInviteCodeValid &&
-                        !_isLoadingInvitePreview &&
-                        _gettingMetadata == null)
-                    ? () async {
-                      setState(() => _isLoadingInvitePreview = true);
-                      final inviteCode = _inviteCodeController.text.trim();
-                      await _onPreviewPressed(inviteCode);
-                      setState(() => _isLoadingInvitePreview = false);
-                    }
+                (_isInviteCodeValid && !_isOpeningPreview)
+                    ? () => _onPreviewPressed(_inviteCodeController.text.trim())
                     : null,
             style: ElevatedButton.styleFrom(
               backgroundColor: Theme.of(context).colorScheme.primary,
@@ -253,17 +226,7 @@ class _Discover extends State<Discover> with SingleTickerProviderStateMixin {
               ),
               padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
             ),
-            child:
-                _isLoadingInvitePreview
-                    ? const SizedBox(
-                      width: 20,
-                      height: 20,
-                      child: CircularProgressIndicator(
-                        strokeWidth: 2,
-                        color: Colors.black,
-                      ),
-                    )
-                    : Text(context.l10n.preview),
+            child: Text(context.l10n.preview),
           ),
         ],
       ),
@@ -305,12 +268,12 @@ class _Discover extends State<Discover> with SingleTickerProviderStateMixin {
         child: InkWell(
           borderRadius: BorderRadius.circular(20),
           onTap:
-              (_gettingMetadata == null && !_isLoadingInvitePreview)
-                  ? () async {
-                    setState(() => _gettingMetadata = federation);
-                    await _onPreviewPressed(federation.inviteCodes.first);
-                  }
-                  : null,
+              _isOpeningPreview
+                  ? null
+                  : () => _onPreviewPressed(
+                    federation.inviteCodes.first,
+                    previewName: federation.federationName,
+                  ),
           child: Padding(
             padding: const EdgeInsets.all(16),
             child: Row(
@@ -376,36 +339,28 @@ class _Discover extends State<Discover> with SingleTickerProviderStateMixin {
                   ),
                 ),
                 const SizedBox(width: 12),
-                _gettingMetadata == federation
-                    ? const SizedBox(
-                      width: 24,
-                      height: 24,
-                      child: CircularProgressIndicator(strokeWidth: 2),
-                    )
-                    : ElevatedButton.icon(
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Theme.of(context).colorScheme.primary,
-                        foregroundColor: Colors.black,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 14,
-                          vertical: 10,
-                        ),
-                      ),
-                      onPressed:
-                          (_gettingMetadata == null && !_isLoadingInvitePreview)
-                              ? () async {
-                                setState(() => _gettingMetadata = federation);
-                                await _onPreviewPressed(
-                                  federation.inviteCodes.first,
-                                );
-                              }
-                              : null,
-                      icon: const Icon(Icons.info_outline, size: 18),
-                      label: Text(context.l10n.preview),
+                ElevatedButton.icon(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Theme.of(context).colorScheme.primary,
+                    foregroundColor: Colors.black,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
                     ),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 14,
+                      vertical: 10,
+                    ),
+                  ),
+                  onPressed:
+                      _isOpeningPreview
+                          ? null
+                          : () => _onPreviewPressed(
+                            federation.inviteCodes.first,
+                            previewName: federation.federationName,
+                          ),
+                  icon: const Icon(Icons.info_outline, size: 18),
+                  label: Text(context.l10n.preview),
+                ),
               ],
             ),
           ),
