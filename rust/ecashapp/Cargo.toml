@@ -52,6 +52,16 @@ serde_json = "1.0.140"
 thiserror = "1.0"
 tokio = "1.45.1"
 
+# Android-only. `iroh` (fedimint's guardian transport) pulls in native
+# networking crates — `hickory-resolver` (DNS) and `netdev` — that, since the
+# hickory 0.26 / netdev 0.44 upgrade, read the device network config through
+# `ndk_context`. Flutter loads our .so via Dart `dlopen`, which never runs
+# `JNI_OnLoad`, so nothing initializes that context. We do it ourselves in
+# src/android_init.rs using these crates. See that file for the full story.
+[target.'cfg(target_os = "android")'.dependencies]
+jni = "0.21"
+ndk-context = "0.1"
+
 [profile.dev.package]
 librocksdb-sys = { opt-level = 3 }
 secp256k1 = { opt-level = 3}

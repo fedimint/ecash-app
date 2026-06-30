@@ -10,6 +10,8 @@ mod nostr;
 mod parse;
 mod wallet;
 mod words;
+#[cfg(target_os = "android")]
+mod android_init;
 use bitcoin::key::rand::rngs::OsRng;
 use bitcoin::key::rand::seq::SliceRandom;
 use bitcoin::key::rand::Rng;

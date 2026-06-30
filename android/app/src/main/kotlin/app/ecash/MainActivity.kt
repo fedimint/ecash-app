@@ -14,6 +14,19 @@ import io.flutter.plugin.common.MethodChannel
 
 class MainActivity : FlutterActivity() {
 
+    companion object {
+        init {
+            // Load the Rust library through the JVM so its `JNI_OnLoad` runs and
+            // initializes `ndk_context`. Native networking crates used by
+            // fedimint's iroh transport (hickory-resolver for DNS, netdev) read
+            // the Android system network config through `ndk_context`; without it
+            // the first federation DNS lookup panics with
+            // "android context was not initialized". Flutter later dlopen()s the
+            // same .so from Dart, which just reuses this already-loaded library.
+            System.loadLibrary("ecashapp")
+        }
+    }
+
     private val hceComponent by lazy {
         ComponentName(this, EcashHceService::class.java)
     }
