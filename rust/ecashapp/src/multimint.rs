@@ -1573,67 +1573,55 @@ impl Multimint {
         // Get the connection status stream from the client
         let status_stream = client.api().connection_status_stream();
 
-        // Fold the guardian version into each peer status so the UI reflects
-        // upgrades in real time without a separate timer. The version only needs
-        // (re)fetching when a peer comes online: a guardian upgrade restarts
-        // fedimintd, which surfaces here as an offline->online transition. We
-        // cache the last-known version per peer and refetch only on that
-        // transition (or if we never managed to fetch it) to avoid hitting every
-        // guardian on each unrelated connectivity change.
-        let mapped_stream = stream::unfold(
-            (
-                Box::pin(status_stream),
-                client,
-                peers,
-                BTreeMap::<u16, Option<String>>::new(),
-                BTreeMap::<u16, bool>::new(),
-            ),
-            |(mut status_stream, client, peers, mut cached_versions, mut prev_online)| async move {
-                let status_map = status_stream.next().await?;
+        // Guardian versions are refreshed out-of-band by the periodic meta cache
+        // task (`spawn_cache_task` -> `cache_federation_meta`) and persisted under
+        // `FederationMetaKey`. We read them from that cache rather than fetching
+        // inline, so this stream stays a cheap, purely-local mapping of
+        // connectivity -> status: the sidebar's online indicator updates the
+        // instant fedimint reports a peer up/down, with no per-guardian network
+        // round-trips gating the emission.
+        let db = self.db.clone();
+        let federation_id = client.federation_id();
+        let peers = Arc::new(peers);
+        let mapped_stream = status_stream.then(move |status_map| {
+            let db = db.clone();
+            let peers = peers.clone();
+            async move {
+                // A single local read returns every guardian's last-known version.
+                let cached_versions: BTreeMap<u16, Option<String>> = {
+                    let mut dbtx = db.begin_transaction_nc().await;
+                    dbtx.get_value(&FederationMetaKey { federation_id })
+                        .await
+                        .map(|meta| {
+                            meta.guardians
+                                .into_iter()
+                                .map(|g| (g.peer_id, g.version))
+                                .collect()
+                        })
+                        .unwrap_or_default()
+                };
 
-                let mut peers_status = Vec::with_capacity(peers.len());
-                for (peer_id, (name, url)) in peers.iter() {
-                    let (online, connectivity) = match status_map.get(&(*peer_id).into()) {
-                        Some(FedimintPeerStatus::Connected(c)) => (true, (*c).into()),
-                        Some(FedimintPeerStatus::Disconnected) | None => {
-                            (false, PeerConnectivity::Unknown)
+                peers
+                    .iter()
+                    .map(|(peer_id, (name, url))| {
+                        let (online, connectivity) = match status_map.get(&(*peer_id).into()) {
+                            Some(FedimintPeerStatus::Connected(c)) => (true, (*c).into()),
+                            Some(FedimintPeerStatus::Disconnected) | None => {
+                                (false, PeerConnectivity::Unknown)
+                            }
+                        };
+                        PeerStatus {
+                            peer_id: *peer_id,
+                            name: name.clone(),
+                            online,
+                            connectivity,
+                            url: url.clone(),
+                            version: cached_versions.get(peer_id).cloned().flatten(),
                         }
-                    };
-
-                    let version = if online {
-                        let was_online = prev_online.get(peer_id).copied().unwrap_or(false);
-                        let have_version =
-                            cached_versions.get(peer_id).is_some_and(|v| v.is_some());
-                        if was_online && have_version {
-                            cached_versions.get(peer_id).cloned().flatten()
-                        } else {
-                            let fetched =
-                                client.api().fedimintd_version((*peer_id).into()).await.ok();
-                            cached_versions.insert(*peer_id, fetched.clone());
-                            fetched
-                        }
-                    } else {
-                        None
-                    };
-
-                    prev_online.insert(*peer_id, online);
-
-                    peers_status.push(PeerStatus {
-                        peer_id: *peer_id,
-                        name: name.clone(),
-                        online,
-                        connectivity,
-                        url: url.clone(),
-                        version,
-                    });
-                }
-
-                Some((
-                    peers_status,
-                    (status_stream, client, peers, cached_versions, prev_online),
-                ))
-            },
-        );
+                    })
+                    .collect::<Vec<_>>()
+            }
+        });
 
         Ok(mapped_stream.boxed())
     }

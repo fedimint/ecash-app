@@ -41,9 +41,22 @@ use tokio::{
 };
 
 pub const DEFAULT_RELAYS: &[&str] = &[
-    "wss://nostr.bitcoiner.social",
-    "wss://relay.nostr.band",
     "wss://relay.damus.io",
+    "wss://nos.lol",
+    "wss://relay.snort.social",
+    "wss://relay.nostr.band",
+    "wss://relay.primal.net",
+];
+
+/// Relays we shipped as defaults historically that are now permanently offline.
+/// Most of the original default set has been dead for years, so federation
+/// announcements (kind 38173) — which are published to currently-active relays
+/// like nos.lol and snort.social — never reached us, and Discover stalled
+/// waiting on the dead connections until the fetch timed out. We prune these
+/// from existing wallets on startup. A relay the user added themselves will
+/// never be in this list, so their relays are preserved.
+const DEPRECATED_DEFAULT_RELAYS: &[&str] = &[
+    "wss://nostr.bitcoiner.social",
     "wss://nostr.zebedee.cloud",
     "wss://relay.plebstr.com",
     "wss://relayer.fiatjaf.com",
@@ -53,6 +66,11 @@ pub const DEFAULT_RELAYS: &[&str] = &[
     "wss://nostr-pub.wellorder.net",
     "wss://nostr1.tunnelsats.com",
 ];
+
+/// Public fedimint observer instance. It monitors federations submitted to it
+/// directly (many of which never publish a nostr announcement), so we query it
+/// to widen Discover beyond what is currently announced on nostr.
+const FEDERATION_OBSERVER_URL: &str = "https://observer.fedimint.org";
 
 pub const NWC_SUPPORTED_METHODS: &[&str] = &["get_info", "get_balance", "pay_invoice"];
 
@@ -239,27 +257,50 @@ impl NostrClient {
 
     async fn get_or_insert_default_relays(db: Database) -> Vec<String> {
         let mut dbtx = db.begin_transaction().await;
-        let relays = dbtx
+        let mut relays = dbtx
             .find_by_prefix(&NostrRelaysKeyPrefix)
             .await
             .map(|(k, _)| k.uri)
             .collect::<Vec<_>>()
             .await;
-        if !relays.is_empty() {
-            return relays;
+
+        let mut changed = false;
+
+        // Migrate existing wallets off the now-defunct default relays so Discover
+        // doesn't stall waiting on dead connections (see DEPRECATED_DEFAULT_RELAYS).
+        for relay in DEPRECATED_DEFAULT_RELAYS {
+            if let Some(pos) = relays.iter().position(|r| r == relay) {
+                dbtx.remove_entry(&NostrRelaysKey {
+                    uri: relay.to_string(),
+                })
+                .await;
+                relays.remove(pos);
+                changed = true;
+            }
         }
 
+        // Ensure every current default relay is present. Covers fresh installs
+        // (empty set) and existing wallets that predate a newly-added default,
+        // without disturbing relays the user added themselves.
         for relay in DEFAULT_RELAYS {
-            dbtx.insert_new_entry(
-                &NostrRelaysKey {
-                    uri: relay.to_string(),
-                },
-                &SystemTime::now(),
-            )
-            .await;
+            if !relays.iter().any(|r| r == relay) {
+                dbtx.insert_new_entry(
+                    &NostrRelaysKey {
+                        uri: relay.to_string(),
+                    },
+                    &SystemTime::now(),
+                )
+                .await;
+                relays.push(relay.to_string());
+                changed = true;
+            }
         }
-        dbtx.commit_tx().await;
-        DEFAULT_RELAYS.iter().map(|s| s.to_string()).collect()
+
+        if changed {
+            dbtx.commit_tx().await;
+        }
+
+        relays
     }
 
     async fn broadcast_nwc_info(nostr_client: &nostr_sdk::Client, federation_id: &FederationId) {
@@ -555,36 +596,145 @@ impl NostrClient {
     async fn update_federations_from_nostr(&mut self) {
         self.nostr_client.connect().await;
 
+        // Deduplicate by federation_id across all sources so the same federation
+        // isn't shown twice (e.g. returned by several relays, or by both nostr
+        // and the observer).
+        let mut deduped: std::collections::HashMap<FederationId, PublicFederation> =
+            std::collections::HashMap::new();
+
+        // Source 1: live nostr announcements (kind 38173).
         let filter = nostr_sdk::Filter::new().kind(nostr_sdk::Kind::from(38173));
         match self
             .nostr_client
-            .fetch_events(filter, Duration::from_secs(3))
+            .fetch_events(filter, Duration::from_secs(10))
             .await
         {
             Ok(events) => {
                 let all_events = events.to_vec();
-                // Deduplicate by federation_id to avoid showing the same
-                // federation multiple times when multiple relays return it.
-                let mut deduped: std::collections::HashMap<FederationId, PublicFederation> =
-                    std::collections::HashMap::new();
+                info_to_flutter(format!(
+                    "Fetched {} federation announcement(s) (kind 38173) from nostr",
+                    all_events.len()
+                ))
+                .await;
+
+                let mut skipped_regtest = 0usize;
+                let mut failed = 0usize;
                 for event in &all_events {
                     if let Ok(Network::Regtest) = PublicFederation::parse_network(&event.tags) {
                         // Skip over regtest advertisements
+                        skipped_regtest += 1;
                         continue;
                     }
 
-                    if let Ok(pub_fed) = PublicFederation::try_from(event.clone()) {
-                        deduped.insert(pub_fed.federation_id, pub_fed);
+                    match PublicFederation::try_from(event.clone()) {
+                        Ok(pub_fed) => {
+                            deduped.insert(pub_fed.federation_id, pub_fed);
+                        }
+                        Err(e) => {
+                            // Log why an announcement was dropped so we can spot
+                            // announcements with missing/unexpected tags.
+                            failed += 1;
+                            error_to_flutter(format!(
+                                "Skipping federation announcement {}: {e:#}",
+                                event.id
+                            ))
+                            .await;
+                        }
                     }
                 }
 
-                let mut public_federations = self.public_federations.write().await;
-                *public_federations = deduped.into_values().collect();
+                info_to_flutter(format!(
+                    "Discover: {} unique federation(s) from {} nostr announcement(s) \
+                     ({} regtest skipped, {} failed to parse)",
+                    deduped.len(),
+                    all_events.len(),
+                    skipped_regtest,
+                    failed
+                ))
+                .await;
             }
             Err(e) => {
                 error_to_flutter(format!("Failed to fetch events from nostr: {e}")).await;
             }
         }
+
+        // Source 2: federations tracked by the fedimint observer. Live nostr
+        // entries carry richer metadata (network/about/picture), so they win on
+        // overlap; the observer only fills in federations nostr discovery missed.
+        let before = deduped.len();
+        for fed in self.fetch_observer_federations().await {
+            deduped.entry(fed.federation_id).or_insert(fed);
+        }
+        info_to_flutter(format!(
+            "Discover: added {} federation(s) from the fedimint observer ({} total)",
+            deduped.len().saturating_sub(before),
+            deduped.len()
+        ))
+        .await;
+
+        let mut public_federations = self.public_federations.write().await;
+        *public_federations = deduped.into_values().collect();
+    }
+
+    /// Fetches the federations tracked by the fedimint observer
+    /// (`FEDERATION_OBSERVER_URL`). These are submitted to the observer directly
+    /// for monitoring and may never have published a nostr announcement, so they
+    /// surface federations live nostr discovery misses. Returns an empty list
+    /// (and logs) on any failure so Discover degrades to nostr-only rather than
+    /// breaking.
+    async fn fetch_observer_federations(&self) -> Vec<PublicFederation> {
+        #[derive(Deserialize)]
+        struct ObserverFederation {
+            id: String,
+            name: Option<String>,
+            invite: String,
+        }
+
+        let url = format!("{FEDERATION_OBSERVER_URL}/api/federations");
+        let response = match reqwest::Client::new()
+            .get(&url)
+            .timeout(Duration::from_secs(10))
+            .send()
+            .await
+        {
+            Ok(response) => response,
+            Err(e) => {
+                error_to_flutter(format!("Failed to reach fedimint observer: {e}")).await;
+                return Vec::new();
+            }
+        };
+
+        let federations: Vec<ObserverFederation> = match response.json().await {
+            Ok(federations) => federations,
+            Err(e) => {
+                error_to_flutter(format!("Failed to parse fedimint observer response: {e}")).await;
+                return Vec::new();
+            }
+        };
+
+        federations
+            .into_iter()
+            .filter_map(|fed| {
+                // Skip unnamed entries (poor Discover UX) and anything we can't
+                // actually identify or join.
+                let federation_name = fed.name?;
+                let federation_id = FederationId::from_str(&fed.id).ok()?;
+                InviteCode::from_str(&fed.invite).ok()?;
+                Some(PublicFederation {
+                    federation_name,
+                    federation_id,
+                    invite_codes: vec![fed.invite],
+                    about: None,
+                    picture: None,
+                    modules: Vec::new(),
+                    // The observer is a mainnet federation tracker and doesn't
+                    // report the network. Default to mainnet; any signet/test
+                    // federation that is also on nostr keeps its real network
+                    // because the live nostr entry wins the merge above.
+                    network: Network::Bitcoin.to_string(),
+                })
+            })
+            .collect()
     }
 
     pub async fn get_backup_invite_codes(&self) -> Vec<String> {
@@ -1387,11 +1537,21 @@ impl TryFrom<nostr_sdk::Event> for PublicFederation {
 
     fn try_from(event: nostr_sdk::Event) -> Result<Self, Self::Error> {
         let tags = event.tags;
-        let network = Self::parse_network(&tags)?;
-        let (federation_name, about, picture) = Self::parse_content(event.content)?;
+
+        // Required fields. A well-formed announcement must identify the
+        // federation (`d`), provide an invite code (`u`) so the user can join,
+        // name itself (content), and declare its network (`n`). We intentionally
+        // drop announcements missing any of these: a federation with no network
+        // tag also has no name to show, which is a poor Discover experience.
         let federation_id = Self::parse_federation_id(&tags)?;
         let invite_codes = Self::parse_invite_codes(&tags)?;
-        let modules = Self::parse_modules(&tags)?;
+        let (federation_name, about, picture) = Self::parse_content(event.content)?;
+        let network = Self::parse_network(&tags)?;
+
+        // `modules` is a non-standard custom tag that most announcers omit, so it
+        // stays best-effort — requiring it would hide otherwise-valid federations.
+        let modules = Self::parse_modules(&tags).unwrap_or_default();
+
         Ok(PublicFederation {
             federation_name,
             federation_id,
@@ -1430,7 +1590,8 @@ impl PublicFederation {
                 let federation_name = Self::parse_federation_name(&json)?;
                 let about = json
                     .get("about")
-                    .map(|val| val.as_str().expect("about is not a string").to_string());
+                    .and_then(|val| val.as_str())
+                    .map(|val| val.to_string());
 
                 let picture = Self::parse_picture(&json);
                 Ok((federation_name, about, picture))

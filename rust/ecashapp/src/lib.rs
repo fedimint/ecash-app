@@ -1,5 +1,7 @@
 #![allow(unexpected_cfgs)]
 
+#[cfg(target_os = "android")]
+mod android_init;
 mod app_error;
 mod db;
 mod event_bus;
