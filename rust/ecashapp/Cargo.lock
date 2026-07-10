@@ -1594,6 +1594,7 @@ dependencies = [
  "async-trait",
  "bitcoin",
  "bitcoin-payment-instructions",
+ "chacha20poly1305",
  "fedimint-api-client",
  "fedimint-bip39",
  "fedimint-client",
@@ -1620,6 +1621,7 @@ dependencies = [
  "futures-timer",
  "futures-util",
  "hex",
+ "hkdf",
  "jni 0.21.1",
  "lightning-invoice",
  "lnurl-rs",
@@ -1630,6 +1632,7 @@ dependencies = [
  "semver",
  "serde",
  "serde_json",
+ "sha2 0.10.9",
  "thiserror 1.0.69",
  "tokio",
 ]
@@ -3291,6 +3294,15 @@ dependencies = [
  "tokio",
  "tokio-rustls 0.26.4",
  "tracing",
+]
+
+[[package]]
+name = "hkdf"
+version = "0.12.4"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "7b5f8eb2ad728638ea2c7d47a21db23b7b58a72ed6a38256b8a1849f15fbbdf7"
+dependencies = [
+ "hmac",
 ]
 
 [[package]]

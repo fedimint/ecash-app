@@ -232,6 +232,18 @@ Future<OobNotesWrapper> sendEcash({
   feeMsats: feeMsats,
 );
 
+/// Encrypt an ecash string for a tap-transfer recipient (Phase 1 of the NFC +
+/// BLE "tap to send" feature). `recipient_pubkey` is the 33-byte compressed key
+/// received over NFC; the returned blob is delivered to the receiver over BLE
+/// and decrypted with `TapRecipient::decrypt`. See `tap_transfer.rs`.
+Uint8List encryptEcashForTap({
+  required String ecash,
+  required List<int> recipientPubkey,
+}) => RustLib.instance.api.crateEncryptEcashForTap(
+  ecash: ecash,
+  recipientPubkey: recipientPubkey,
+);
+
 Future<ReissueFees> calculateEcashReissueFees({
   required FederationId federationId,
   required String ecash,

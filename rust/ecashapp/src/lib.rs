@@ -10,6 +10,7 @@ mod frb_generated;
 mod multimint;
 mod nostr;
 mod parse;
+mod tap_transfer;
 mod wallet;
 mod words;
 use bitcoin::key::rand::rngs::OsRng;
@@ -631,6 +632,18 @@ pub async fn send_ecash(
     multimint
         .send_ecash(federation_id, amount_msats, fee_msats)
         .await
+}
+
+/// Encrypt an ecash string for a tap-transfer recipient (Phase 1 of the NFC +
+/// BLE "tap to send" feature). `recipient_pubkey` is the 33-byte compressed key
+/// received over NFC; the returned blob is delivered to the receiver over BLE
+/// and decrypted with `TapRecipient::decrypt`. See `tap_transfer.rs`.
+#[frb(sync)]
+pub fn encrypt_ecash_for_tap(
+    ecash: String,
+    recipient_pubkey: Vec<u8>,
+) -> Result<Vec<u8>, EcashAppError> {
+    crate::tap_transfer::encrypt_ecash(&ecash, &recipient_pubkey)
 }
 
 async fn parse_ecash(federation_id: &FederationId, notes: &OOBNotes) -> anyhow::Result<u64> {
