@@ -32,20 +32,20 @@ import java.io.ByteArrayOutputStream
 import java.util.UUID
 
 /**
- * Native BLE transport for "tap to send" ecash (Phase 2).
+ * Native BLE transport for "tap to send" ecash (Phase 3).
  *
- * The receiver runs a GATT server and advertises a fixed dev service UUID; the
- * sender scans for it, connects **without bonding**, reads the receiver's
- * ephemeral public key, and streams the encrypted blob. There is no pairing:
- * all characteristics are unencrypted at the link layer because the payload is
- * already encrypted at the app layer (see rust/ecashapp/src/tap_transfer.rs).
+ * The rendezvous service UUID and the receiver's ephemeral public key are
+ * exchanged over NFC (see MainActivity's `ecashapp/nfc_tap` reader + the HCE
+ * publish path). BLE then only carries the already-encrypted blob:
+ *   - Receiver advertises the per-session [serviceUuid] and runs a GATT server.
+ *   - Sender scans for that UUID, connects **without bonding**, and streams the
+ *     blob it encrypted for the NFC-delivered pubkey.
  *
- * All BLE ops assume the Dart layer has already obtained the runtime
- * BLUETOOTH_SCAN/CONNECT/ADVERTISE permissions, hence @SuppressLint.
+ * All characteristics are unencrypted at the link layer (no pairing); the
+ * payload is already encrypted at the app layer (rust/ecashapp/src/tap_transfer.rs).
  *
- * Events are emitted to Dart via [emit] (posted to the main thread) as maps:
+ * Events emitted to Dart via [emit] (posted to the main thread):
  *   {event:"status", state:"advertising|scanning|connecting|connected|writing|sent|confirmed|stopped"}
- *   {event:"pubkey",   data:ByteArray}   // sender read the receiver's pubkey
  *   {event:"received", data:ByteArray}   // receiver assembled the full blob
  *   {event:"error",    message:String}
  */
@@ -57,14 +57,7 @@ class BleTapController(
     companion object {
         private const val TAG = "BleTap"
 
-        // PHASE 2 DEV ONLY. A single hardcoded rendezvous UUID so two dev devices
-        // find each other with zero manual entry. Phase 3 replaces this with a
-        // per-transfer random UUID delivered over the NFC tap.
-        private val SERVICE_UUID: UUID = UUID.fromString("e3c0f2a1-0b7d-4c6e-9a2f-1d5b0e7a0001")
-        // PHASE 2 DEV ONLY. Exposes the receiver's ephemeral pubkey over BLE.
-        // Phase 3 moves the pubkey to the (proximity-authenticated) NFC channel;
-        // reading it over BLE is not MITM-safe and exists only for the harness.
-        private val CHAR_PUBKEY_UUID: UUID = UUID.fromString("e3c0f2a1-0b7d-4c6e-9a2f-1d5b0e7a0002")
+        // Fixed characteristic UUIDs living inside the per-session rendezvous service.
         private val CHAR_INBOX_UUID: UUID = UUID.fromString("e3c0f2a1-0b7d-4c6e-9a2f-1d5b0e7a0003")
         private val CHAR_STATUS_UUID: UUID = UUID.fromString("e3c0f2a1-0b7d-4c6e-9a2f-1d5b0e7a0004")
         private val CCCD_UUID: UUID = UUID.fromString("00002902-0000-1000-8000-00805f9b34fb")
@@ -83,13 +76,15 @@ class BleTapController(
 
     private var mtu = DEFAULT_MTU
 
+    // Rendezvous service UUID for the current transfer (from NFC), used by both roles.
+    private var serviceUuid: UUID? = null
+
     // --- receiver (peripheral) state ---
     private var gattServer: BluetoothGattServer? = null
     private var advertiser: BluetoothLeAdvertiser? = null
     private var advertiseCallback: AdvertiseCallback? = null
     private var statusChar: BluetoothGattCharacteristic? = null
     private var connectedCentral: BluetoothDevice? = null
-    private var pubkey: ByteArray? = null
     private var expectingHeader = true
     private var expectedLen = 0
     private val inbox = ByteArrayOutputStream()
@@ -100,6 +95,7 @@ class BleTapController(
     private var gatt: BluetoothGatt? = null
     private var inboxChar: BluetoothGattCharacteristic? = null
     private val writeQueue = ArrayDeque<ByteArray>()
+    private var pendingBlob: ByteArray? = null
 
     /** BLE present + enabled. Peripheral (advertise) support is checked in [startReceiver]. */
     fun isAvailable(): Boolean {
@@ -114,12 +110,13 @@ class BleTapController(
 
     // ---------------------------------------------------------------- receiver
 
-    fun startReceiver(pub: ByteArray) {
+    fun startReceiver(uuidString: String) {
         stopInternal()
         val a = adapter ?: return sendError("bluetooth unavailable")
         val adv = a.bluetoothLeAdvertiser
             ?: return sendError("BLE advertising is not supported on this device")
-        pubkey = pub
+        val uuid = parseUuid(uuidString) ?: return sendError("invalid rendezvous uuid")
+        serviceUuid = uuid
         advertiser = adv
         resetInbox()
 
@@ -127,14 +124,7 @@ class BleTapController(
             ?: return sendError("could not open GATT server")
         gattServer = server
 
-        val service = BluetoothGattService(SERVICE_UUID, BluetoothGattService.SERVICE_TYPE_PRIMARY)
-        service.addCharacteristic(
-            BluetoothGattCharacteristic(
-                CHAR_PUBKEY_UUID,
-                BluetoothGattCharacteristic.PROPERTY_READ,
-                BluetoothGattCharacteristic.PERMISSION_READ,
-            )
-        )
+        val service = BluetoothGattService(uuid, BluetoothGattService.SERVICE_TYPE_PRIMARY)
         service.addCharacteristic(
             BluetoothGattCharacteristic(
                 CHAR_INBOX_UUID,
@@ -162,6 +152,7 @@ class BleTapController(
 
     private fun startAdvertisingInternal() {
         val adv = advertiser ?: return
+        val uuid = serviceUuid ?: return
         val settings = AdvertiseSettings.Builder()
             .setAdvertiseMode(AdvertiseSettings.ADVERTISE_MODE_LOW_LATENCY)
             .setConnectable(true)
@@ -170,7 +161,7 @@ class BleTapController(
             .build()
         val data = AdvertiseData.Builder()
             .setIncludeDeviceName(false)
-            .addServiceUuid(ParcelUuid(SERVICE_UUID))
+            .addServiceUuid(ParcelUuid(uuid))
             .build()
         val cb = object : AdvertiseCallback() {
             override fun onStartSuccess(settingsInEffect: AdvertiseSettings?) {
@@ -188,7 +179,7 @@ class BleTapController(
 
     private val serverCallback = object : BluetoothGattServerCallback() {
         override fun onServiceAdded(status: Int, service: BluetoothGattService) {
-            if (service.uuid != SERVICE_UUID) return
+            if (service.uuid != serviceUuid) return
             if (status == BluetoothGatt.GATT_SUCCESS) {
                 startAdvertisingInternal()
             } else {
@@ -211,21 +202,6 @@ class BleTapController(
 
         override fun onMtuChanged(device: BluetoothDevice, mtu: Int) {
             this@BleTapController.mtu = mtu
-        }
-
-        override fun onCharacteristicReadRequest(
-            device: BluetoothDevice,
-            requestId: Int,
-            offset: Int,
-            characteristic: BluetoothGattCharacteristic,
-        ) {
-            if (characteristic.uuid == CHAR_PUBKEY_UUID) {
-                val value = pubkey ?: ByteArray(0)
-                val slice = if (offset >= value.size) ByteArray(0) else value.copyOfRange(offset, value.size)
-                gattServer?.sendResponse(device, requestId, BluetoothGatt.GATT_SUCCESS, offset, slice)
-            } else {
-                gattServer?.sendResponse(device, requestId, BluetoothGatt.GATT_FAILURE, offset, null)
-            }
         }
 
         override fun onCharacteristicWriteRequest(
@@ -302,12 +278,17 @@ class BleTapController(
 
     // ------------------------------------------------------------------ sender
 
-    fun startSender() {
+    /** Encrypt-then-send: scan for [uuidString], connect, and stream [blob]. */
+    fun sendToPeer(uuidString: String, blob: ByteArray) {
         stopInternal()
         val a = adapter ?: return sendError("bluetooth unavailable")
         val s = a.bluetoothLeScanner ?: return sendError("BLE scanning not supported")
+        val uuid = parseUuid(uuidString) ?: return sendError("invalid rendezvous uuid")
+        serviceUuid = uuid
+        pendingBlob = blob
+
         val filters = listOf(
-            ScanFilter.Builder().setServiceUuid(ParcelUuid(SERVICE_UUID)).build()
+            ScanFilter.Builder().setServiceUuid(ParcelUuid(uuid)).build()
         )
         val settings = ScanSettings.Builder()
             .setScanMode(ScanSettings.SCAN_MODE_LOW_LATENCY)
@@ -339,31 +320,6 @@ class BleTapController(
         }
     }
 
-    /** Called from Dart once it has encrypted the blob for the pubkey we emitted. */
-    fun sendBlob(blob: ByteArray) {
-        val g = gatt ?: return sendError("not connected")
-        if (inboxChar == null) return sendError("inbox characteristic unavailable")
-        writeQueue.clear()
-
-        val header = ByteArray(5)
-        header[0] = HEADER_VERSION
-        header[1] = ((blob.size ushr 24) and 0xFF).toByte()
-        header[2] = ((blob.size ushr 16) and 0xFF).toByte()
-        header[3] = ((blob.size ushr 8) and 0xFF).toByte()
-        header[4] = (blob.size and 0xFF).toByte()
-        writeQueue.addLast(header)
-
-        val chunkSize = (mtu - ATT_WRITE_OVERHEAD).coerceAtLeast(20)
-        var i = 0
-        while (i < blob.size) {
-            val end = minOf(i + chunkSize, blob.size)
-            writeQueue.addLast(blob.copyOfRange(i, end))
-            i = end
-        }
-        sendStatus("writing")
-        writeNext(g)
-    }
-
     private val gattCallback = object : BluetoothGattCallback() {
         override fun onConnectionStateChange(g: BluetoothGatt, status: Int, newState: Int) {
             if (newState == BluetoothProfile.STATE_CONNECTED) {
@@ -378,42 +334,24 @@ class BleTapController(
         }
 
         override fun onServicesDiscovered(g: BluetoothGatt, status: Int) {
-            val service = g.getService(SERVICE_UUID) ?: return sendError("rendezvous service not found")
+            val uuid = serviceUuid ?: return sendError("no rendezvous uuid")
+            val service = g.getService(uuid) ?: return sendError("rendezvous service not found")
             inboxChar = service.getCharacteristic(CHAR_INBOX_UUID)
             val statusCharRemote = service.getCharacteristic(CHAR_STATUS_UUID)
             if (statusCharRemote != null) {
                 g.setCharacteristicNotification(statusCharRemote, true)
                 val cccd = statusCharRemote.getDescriptor(CCCD_UUID)
                 if (cccd != null) {
-                    // Serialize GATT ops: subscribe first, read pubkey in onDescriptorWrite.
+                    // Serialize GATT ops: subscribe first, then write in onDescriptorWrite.
                     writeDescriptor(g, cccd, BluetoothGattDescriptor.ENABLE_NOTIFICATION_VALUE)
                     return
                 }
             }
-            readPubkey(g)
+            startWriting(g)
         }
 
         override fun onDescriptorWrite(g: BluetoothGatt, descriptor: BluetoothGattDescriptor, status: Int) {
-            if (descriptor.uuid == CCCD_UUID) readPubkey(g)
-        }
-
-        override fun onCharacteristicRead(
-            g: BluetoothGatt,
-            characteristic: BluetoothGattCharacteristic,
-            value: ByteArray,
-            status: Int,
-        ) {
-            if (characteristic.uuid == CHAR_PUBKEY_UUID) onPubkeyRead(value, status)
-        }
-
-        @Deprecated("Deprecated in Java")
-        @Suppress("DEPRECATION")
-        override fun onCharacteristicRead(
-            g: BluetoothGatt,
-            characteristic: BluetoothGattCharacteristic,
-            status: Int,
-        ) {
-            if (characteristic.uuid == CHAR_PUBKEY_UUID) onPubkeyRead(characteristic.value ?: ByteArray(0), status)
+            if (descriptor.uuid == CCCD_UUID) startWriting(g)
         }
 
         override fun onCharacteristicWrite(
@@ -447,16 +385,28 @@ class BleTapController(
         }
     }
 
-    private fun onPubkeyRead(value: ByteArray, status: Int) {
-        if (status != BluetoothGatt.GATT_SUCCESS) return sendError("pubkey read failed: $status")
-        sendPubkey(value)
-    }
+    private fun startWriting(g: BluetoothGatt) {
+        val blob = pendingBlob ?: return sendError("no payload to send")
+        if (inboxChar == null) return sendError("inbox characteristic unavailable")
+        writeQueue.clear()
 
-    private fun readPubkey(g: BluetoothGatt) {
-        val service = g.getService(SERVICE_UUID) ?: return sendError("rendezvous service not found")
-        val pubChar = service.getCharacteristic(CHAR_PUBKEY_UUID)
-            ?: return sendError("pubkey characteristic not found")
-        g.readCharacteristic(pubChar)
+        val header = ByteArray(5)
+        header[0] = HEADER_VERSION
+        header[1] = ((blob.size ushr 24) and 0xFF).toByte()
+        header[2] = ((blob.size ushr 16) and 0xFF).toByte()
+        header[3] = ((blob.size ushr 8) and 0xFF).toByte()
+        header[4] = (blob.size and 0xFF).toByte()
+        writeQueue.addLast(header)
+
+        val chunkSize = (mtu - ATT_WRITE_OVERHEAD).coerceAtLeast(20)
+        var i = 0
+        while (i < blob.size) {
+            val end = minOf(i + chunkSize, blob.size)
+            writeQueue.addLast(blob.copyOfRange(i, end))
+            i = end
+        }
+        sendStatus("writing")
+        writeNext(g)
     }
 
     private fun writeNext(g: BluetoothGatt) {
@@ -522,6 +472,7 @@ class BleTapController(
         gatt = null
         inboxChar = null
         writeQueue.clear()
+        pendingBlob = null
 
         try {
             advertiseCallback?.let { advertiser?.stopAdvertising(it) }
@@ -539,8 +490,8 @@ class BleTapController(
         gattServer = null
         statusChar = null
         connectedCentral = null
-        pubkey = null
 
+        serviceUuid = null
         resetInbox()
         mtu = DEFAULT_MTU
     }
@@ -551,9 +502,14 @@ class BleTapController(
         inbox.reset()
     }
 
+    private fun parseUuid(value: String): UUID? = try {
+        UUID.fromString(value)
+    } catch (e: IllegalArgumentException) {
+        null
+    }
+
     private fun send(map: Map<String, Any?>) = main.post { emit(map) }
     private fun sendStatus(state: String) = send(mapOf("event" to "status", "state" to state))
-    private fun sendPubkey(pub: ByteArray) = send(mapOf("event" to "pubkey", "data" to pub))
     private fun sendReceived(blob: ByteArray) = send(mapOf("event" to "received", "data" to blob))
     private fun sendError(message: String) {
         Log.w(TAG, message)

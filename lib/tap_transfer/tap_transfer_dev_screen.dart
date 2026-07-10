@@ -3,17 +3,19 @@ import 'dart:typed_data';
 
 import 'package:ecashapp/lib.dart';
 import 'package:ecashapp/tap_transfer/ble_tap.dart';
+import 'package:ecashapp/tap_transfer/tap_nfc.dart';
 import 'package:ecashapp/tap_transfer.dart';
 import 'package:flutter/material.dart';
 import 'package:permission_handler/permission_handler.dart';
 
-/// Debug-only harness for Phase 2 of the NFC + BLE "tap to send" feature.
+/// Debug-only harness for Phase 3 of the NFC + BLE "tap to send" feature.
 ///
-/// Exercises the real end-to-end path minus NFC: one device receives (advertises
-/// + serves its ephemeral pubkey), the other sends (scans, reads the pubkey,
-/// encrypts with [encryptEcashForTap], and streams the blob over BLE). The
-/// receiver decrypts with [TapRecipient]. Any text works as the payload — Phase 2
-/// verifies transport + crypto, not reissue.
+/// Full end-to-end flow: the receiver generates an ephemeral key + rendezvous
+/// UUID, publishes them over NFC (HCE) and advertises over BLE; the sender enters
+/// reader mode, taps, reads the rendezvous, encrypts with [encryptEcashForTap]
+/// for the NFC-delivered pubkey, and streams the blob over BLE. The receiver
+/// decrypts with [TapRecipient]. Any text works as the payload — this verifies
+/// the handshake + transport + crypto, not reissue (that's Phase 4).
 class TapTransferDevScreen extends StatefulWidget {
   const TapTransferDevScreen({super.key});
 
@@ -30,24 +32,33 @@ class _TapTransferDevScreenState extends State<TapTransferDevScreen> {
   );
   final List<String> _log = [];
 
-  StreamSubscription<BleTapEvent>? _subscription;
+  StreamSubscription<BleTapEvent>? _bleSub;
+  StreamSubscription<TapRendezvous>? _nfcSub;
   TapRecipient? _recipient;
   _Mode _mode = _Mode.idle;
+  bool _sendStarted = false;
   String? _result;
 
   @override
   void initState() {
     super.initState();
-    _subscription = BleTap.events().listen(
-      _onEvent,
-      onError: (e) => _append('stream error: $e'),
+    _bleSub = BleTap.events().listen(
+      _onBleEvent,
+      onError: (e) => _append('ble stream error: $e'),
+    );
+    _nfcSub = TapNfc.reads().listen(
+      _onRendezvous,
+      onError: (e) => _append('nfc stream error: $e'),
     );
   }
 
   @override
   void dispose() {
-    _subscription?.cancel();
+    _bleSub?.cancel();
+    _nfcSub?.cancel();
     BleTap.stop();
+    TapNfc.stopPublish();
+    TapNfc.stopReader();
     _recipient?.dispose();
     _payloadController.dispose();
     super.dispose();
@@ -58,14 +69,9 @@ class _TapTransferDevScreenState extends State<TapTransferDevScreen> {
     setState(() => _log.insert(0, line));
   }
 
-  void _onEvent(BleTapEvent e) {
+  void _onBleEvent(BleTapEvent e) {
     _append(e.toString());
     switch (e.event) {
-      case 'pubkey':
-        if (_mode == _Mode.sending && e.data != null) {
-          _encryptAndSend(e.data!);
-        }
-        break;
       case 'received':
         if (_mode == _Mode.receiving && e.data != null) {
           _decryptReceived(e.data!);
@@ -73,11 +79,7 @@ class _TapTransferDevScreenState extends State<TapTransferDevScreen> {
         break;
       case 'status':
         if (e.state == 'sent' || e.state == 'confirmed') {
-          setState(
-            () =>
-                _result =
-                    'Sent (${e.state}) — ${_payloadController.text.length} chars',
-          );
+          setState(() => _result = 'Sent (${e.state})');
         }
         break;
       case 'error':
@@ -86,14 +88,18 @@ class _TapTransferDevScreenState extends State<TapTransferDevScreen> {
     }
   }
 
-  void _encryptAndSend(Uint8List pubkey) {
+  void _onRendezvous(TapRendezvous r) {
+    if (_mode != _Mode.sending || _sendStarted) return;
+    _sendStarted = true;
+    _append('tapped: uuid=${r.uuid} pubkey=${r.pubkey.length}B');
+    TapNfc.stopReader();
     try {
       final blob = encryptEcashForTap(
         ecash: _payloadController.text,
-        recipientPubkey: pubkey,
+        recipientPubkey: r.pubkey,
       );
-      _append('encrypted ${blob.length}B, sending…');
-      BleTap.sendBlob(blob);
+      _append('encrypted ${blob.length}B, connecting over BLE…');
+      BleTap.sendToPeer(r.uuid, blob);
     } catch (e) {
       setState(() => _result = 'Encrypt failed: $e');
     }
@@ -127,17 +133,24 @@ class _TapTransferDevScreenState extends State<TapTransferDevScreen> {
       setState(() => _result = 'BLE unavailable (off or unsupported)');
       return;
     }
+    if (!await TapNfc.hceAvailable()) {
+      setState(() => _result = 'NFC/HCE unavailable (off or unsupported)');
+      return;
+    }
     if (!await _ensurePermissions()) return;
+
     final recipient = TapRecipient();
     _recipient?.dispose();
     _recipient = recipient;
     final pubkey = recipient.publicKey();
+    final uuid = TapNfc.randomUuid();
     setState(() {
       _mode = _Mode.receiving;
-      _result = 'Waiting for a sender to tap…';
+      _result = 'Waiting for a tap…';
     });
-    _append('receiver pubkey ${pubkey.length}B; advertising');
-    await BleTap.startReceiver(pubkey);
+    _append('rendezvous uuid=$uuid pubkey=${pubkey.length}B');
+    await TapNfc.publish(TapRendezvous(pubkey: pubkey, uuid: uuid));
+    await BleTap.startReceiver(uuid);
   }
 
   Future<void> _startSend() async {
@@ -146,17 +159,21 @@ class _TapTransferDevScreenState extends State<TapTransferDevScreen> {
       return;
     }
     if (!await _ensurePermissions()) return;
+    _sendStarted = false;
     setState(() {
       _mode = _Mode.sending;
-      _result = 'Scanning for a receiver…';
+      _result = 'Tap the receiver…';
     });
-    await BleTap.startSender();
+    await TapNfc.startReader();
   }
 
   Future<void> _stop() async {
     await BleTap.stop();
+    await TapNfc.stopPublish();
+    await TapNfc.stopReader();
     _recipient?.dispose();
     _recipient = null;
+    _sendStarted = false;
     setState(() {
       _mode = _Mode.idle;
       _result = null;

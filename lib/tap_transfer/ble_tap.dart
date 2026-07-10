@@ -4,9 +4,8 @@ import 'package:flutter/services.dart';
 
 /// An event streamed from the native BLE tap-transfer controller.
 ///
-/// `event` is one of: `status`, `pubkey`, `received`, `error`.
+/// `event` is one of: `status`, `received`, `error`.
 ///  - `status`  → [state] set (advertising/scanning/connecting/connected/writing/sent/confirmed/stopped)
-///  - `pubkey`  → [data] is the receiver's 33-byte ephemeral public key (sender side)
 ///  - `received`→ [data] is the fully reassembled encrypted blob (receiver side)
 ///  - `error`   → [message] set
 class BleTapEvent {
@@ -50,18 +49,15 @@ class BleTap {
   static Future<bool> isAvailable() async =>
       (await _method.invokeMethod<bool>('isAvailable')) ?? false;
 
-  /// Receiver: advertise the rendezvous service and serve [pubkey] to senders.
-  static Future<void> startReceiver(Uint8List pubkey) =>
-      _method.invokeMethod<void>('startReceiver', {'pubkey': pubkey});
+  /// Receiver: advertise the per-session rendezvous [serviceUuid] (from NFC) and
+  /// listen for an incoming encrypted blob (emitted as a `received` event).
+  static Future<void> startReceiver(String serviceUuid) =>
+      _method.invokeMethod<void>('startReceiver', {'uuid': serviceUuid});
 
-  /// Sender: scan for a receiver, connect, and read its pubkey (emitted as a
-  /// `pubkey` event). Call [sendBlob] once you've encrypted for that pubkey.
-  static Future<void> startSender() =>
-      _method.invokeMethod<void>('startSender');
-
-  /// Sender: stream an encrypted blob to the connected receiver.
-  static Future<void> sendBlob(Uint8List blob) =>
-      _method.invokeMethod<void>('sendBlob', {'blob': blob});
+  /// Sender: scan for [serviceUuid], connect (no bond), and stream [blob] —
+  /// already encrypted for the pubkey received over NFC.
+  static Future<void> sendToPeer(String serviceUuid, Uint8List blob) => _method
+      .invokeMethod<void>('sendToPeer', {'uuid': serviceUuid, 'blob': blob});
 
   /// Tear down whichever role is active and release BLE resources.
   static Future<void> stop() => _method.invokeMethod<void>('stop');
