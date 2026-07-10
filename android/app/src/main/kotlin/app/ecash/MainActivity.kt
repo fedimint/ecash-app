@@ -10,6 +10,7 @@ import android.nfc.cardemulation.CardEmulation
 import android.util.Log
 import io.flutter.embedding.android.FlutterActivity
 import io.flutter.embedding.engine.FlutterEngine
+import io.flutter.plugin.common.EventChannel
 import io.flutter.plugin.common.MethodChannel
 
 class MainActivity : FlutterActivity() {
@@ -34,6 +35,9 @@ class MainActivity : FlutterActivity() {
     private var nfcAdapter: NfcAdapter? = null
     private var nfcPendingIntent: PendingIntent? = null
     private var nfcIntentFilters: Array<IntentFilter>? = null
+
+    private var bleController: BleTapController? = null
+    private var bleEventSink: EventChannel.EventSink? = null
 
     override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
         super.configureFlutterEngine(flutterEngine)
@@ -98,6 +102,60 @@ class MainActivity : FlutterActivity() {
                     else -> result.notImplemented()
                 }
             }
+
+        // BLE "tap to send" transport (Phase 2). Events stream to Dart over an
+        // EventChannel; the controller posts them on the main thread already.
+        EventChannel(flutterEngine.dartExecutor.binaryMessenger, "ecashapp/ble_tap/events")
+            .setStreamHandler(object : EventChannel.StreamHandler {
+                override fun onListen(arguments: Any?, events: EventChannel.EventSink?) {
+                    bleEventSink = events
+                }
+
+                override fun onCancel(arguments: Any?) {
+                    bleEventSink = null
+                }
+            })
+
+        val ble = BleTapController(applicationContext) { event -> bleEventSink?.success(event) }
+        bleController = ble
+        MethodChannel(flutterEngine.dartExecutor.binaryMessenger, "ecashapp/ble_tap")
+            .setMethodCallHandler { call, result ->
+                when (call.method) {
+                    "isAvailable" -> result.success(ble.isAvailable())
+                    "startReceiver" -> {
+                        val pubkey = call.argument<ByteArray>("pubkey")
+                        if (pubkey == null) {
+                            result.error("missing_pubkey", "pubkey required", null)
+                        } else {
+                            ble.startReceiver(pubkey)
+                            result.success(null)
+                        }
+                    }
+                    "startSender" -> {
+                        ble.startSender()
+                        result.success(null)
+                    }
+                    "sendBlob" -> {
+                        val blob = call.argument<ByteArray>("blob")
+                        if (blob == null) {
+                            result.error("missing_blob", "blob required", null)
+                        } else {
+                            ble.sendBlob(blob)
+                            result.success(null)
+                        }
+                    }
+                    "stop" -> {
+                        ble.stop()
+                        result.success(null)
+                    }
+                    else -> result.notImplemented()
+                }
+            }
+    }
+
+    override fun onDestroy() {
+        bleController?.stop()
+        super.onDestroy()
     }
 
     override fun onResume() {
