@@ -4235,6 +4235,35 @@ impl Multimint {
                     .await
                 {
                     Ok(MintV2FinalReceiveOperationState::Success) => {
+                        // Reaching `Success` only means the reissue tx was accepted
+                        // into consensus; the reissued notes are finalized
+                        // asynchronously by the mintv2 output state machines
+                        // (blind-signature fetch + note write). Wait for those
+                        // outputs before publishing so the balance reflects the
+                        // reissue — otherwise the dashboard refreshes before the
+                        // notes land and shows a stale value until the next manual
+                        // refresh. This mirrors the walletv2 deposit path.
+                        if let Some(op) = client.operation_log().get_operation(operation_id).await {
+                            if let MintV2OperationMeta::Receive {
+                                change_outpoint_range,
+                                ..
+                            } = op.meta::<MintV2OperationMeta>()
+                            {
+                                if let Err(e) = client
+                                    .await_primary_bitcoin_module_outputs(
+                                        operation_id,
+                                        change_outpoint_range.into_iter().collect(),
+                                    )
+                                    .await
+                                {
+                                    info_to_flutter(format!(
+                                        "mintv2 await primary module outputs error: {e:?}"
+                                    ))
+                                    .await;
+                                }
+                            }
+                        }
+
                         get_event_bus()
                             .publish(MultimintEvent::Ecash((federation_id, amount_msats)))
                             .await;
