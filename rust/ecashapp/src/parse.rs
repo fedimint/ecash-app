@@ -154,10 +154,18 @@ pub async fn parse_text<C: ParseContext + ?Sized>(
             {
                 return Ok((ParsedText::Ecash(ecash.amount().msats), Some(fed.clone())));
             }
-            // Recognized mintv2 ecash but not joined to its federation. Unlike v1
-            // OOBNotes, v2 ecash carries no invite code, so we can't offer to
-            // join — surface the same outcome v1 uses for codeless ecash.
+            // Recognized mintv2 ecash but not joined to its federation. If the
+            // sender embedded the federation's invite code (our send path sets
+            // `include_invite = true`), offer to join and redeem in one step,
+            // mirroring the v1 OOBNotes branch below. Otherwise surface the
+            // codeless outcome.
             if selected.is_none() {
+                if let Some(invite_code) = ecash.federation_invite() {
+                    return Ok((
+                        ParsedText::InviteCodeWithEcash(invite_code.to_string(), text),
+                        None,
+                    ));
+                }
                 return Ok((ParsedText::EcashNoFederation, None));
             }
         }
@@ -258,6 +266,7 @@ mod tests {
     use bitcoin::hashes::{sha256, Hash as _};
     use bitcoin::secp256k1::{Secp256k1, SecretKey};
     use bitcoin_payment_instructions::hrn_resolution::DummyHrnResolver;
+    use fedimint_core::base32::encode_prefixed;
     use fedimint_core::encoding::Decodable;
     use fedimint_core::module::registry::ModuleDecoderRegistry;
     use fedimint_core::{Amount, PeerId, TieredMulti};
@@ -346,6 +355,26 @@ mod tests {
         } else {
             OOBNotes::new(federation_id.to_prefix(), notes).to_string()
         }
+    }
+
+    /// Build a mintv2 `ECash` string for `federation_id`, optionally embedding
+    /// the federation's invite code (as our send path does with
+    /// `include_invite = true`). An empty note set is sufficient: the parser
+    /// only reads `mint()`, `amount()`, and `federation_invite()`, none of which
+    /// require a signed note.
+    fn make_v2_ecash_string(federation_id: FederationId, with_invite: bool) -> String {
+        let ecash = if with_invite {
+            let invite = InviteCode::new(
+                "wss://foo.bar".parse().unwrap(),
+                PeerId::from(0),
+                federation_id,
+                None,
+            );
+            ECash::new_with_invite(vec![], &invite)
+        } else {
+            ECash::new(federation_id, vec![])
+        };
+        encode_prefixed(FEDIMINT_PREFIX, &ecash)
     }
 
     /// In-memory fake of [`ParseContext`]. Overrides `parse_payment_instructions`
@@ -538,6 +567,50 @@ mod tests {
             }
             other => panic!("expected InviteCodeWithEcash, got {other:?}"),
         }
+        assert!(selected.is_none());
+    }
+
+    #[tokio::test]
+    async fn mintv2_ecash_unknown_federation_with_invite_returns_invite_code_with_ecash() {
+        let our_fid = federation_id_from(0x01);
+        let stranger_fid = federation_id_from(0xFF);
+        let ctx = FakeParseContext {
+            feds: vec![FederationSelector {
+                federation_name: "our-fed".to_string(),
+                federation_id: our_fid,
+                network: Some("bitcoin".to_string()),
+            }],
+            ..Default::default()
+        };
+
+        let ecash = make_v2_ecash_string(stranger_fid, true);
+        let (parsed, selected) = parse_text(ecash.clone(), &ctx, None).await.unwrap();
+        match parsed {
+            ParsedText::InviteCodeWithEcash(invite, original) => {
+                assert!(!invite.is_empty());
+                assert_eq!(original, ecash);
+            }
+            other => panic!("expected InviteCodeWithEcash, got {other:?}"),
+        }
+        assert!(selected.is_none());
+    }
+
+    #[tokio::test]
+    async fn mintv2_ecash_unknown_federation_without_invite_returns_ecash_no_federation() {
+        let our_fid = federation_id_from(0x01);
+        let stranger_fid = federation_id_from(0xFF);
+        let ctx = FakeParseContext {
+            feds: vec![FederationSelector {
+                federation_name: "our-fed".to_string(),
+                federation_id: our_fid,
+                network: Some("bitcoin".to_string()),
+            }],
+            ..Default::default()
+        };
+
+        let ecash = make_v2_ecash_string(stranger_fid, false);
+        let (parsed, selected) = parse_text(ecash, &ctx, None).await.unwrap();
+        assert!(matches!(parsed, ParsedText::EcashNoFederation));
         assert!(selected.is_none());
     }
 
