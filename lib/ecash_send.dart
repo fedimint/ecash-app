@@ -216,7 +216,6 @@ class _EcashSendState extends State<EcashSend> {
 
   void _onTapBleEvent(BleTapEvent e) {
     if (!mounted) return;
-    AppLogger.instance.info("tap ble: $e");
     switch (e.event) {
       case 'status':
         switch (e.state) {
@@ -236,6 +235,7 @@ class _EcashSendState extends State<EcashSend> {
         break;
       case 'error':
         _tapSending = false;
+        AppLogger.instance.warn("tap send failed: ${e.message}");
         setState(() => _tapStatus = null);
         ToastService().show(
           message: context.l10n.tapSendFailed,

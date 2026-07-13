@@ -100,7 +100,6 @@ class TapReceive {
   }
 
   void _onEvent(BleTapEvent e) {
-    AppLogger.instance.info("tap receive ble: $e");
     if (e.event != 'received' || e.data == null) return;
     final recipient = _recipient;
     if (recipient == null) return;
@@ -112,6 +111,7 @@ class TapReceive {
       _rotate();
       return;
     }
+    AppLogger.instance.info("tap receive: decrypted a token, presenting");
     onEcash?.call(ecash);
     // Fresh rendezvous + key for the next transfer.
     _rotate();

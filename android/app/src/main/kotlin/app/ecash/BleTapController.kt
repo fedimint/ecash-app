@@ -593,10 +593,10 @@ class BleTapController(
     private fun send(map: Map<String, Any?>) = main.post { emit(map) }
     private fun sendStatus(state: String) = send(mapOf("event" to "status", "state" to state))
 
-    /** Log to logcat AND forward to Dart as a `log` event for the in-app log. */
+    /** Log to logcat only (adb logcat -s BleTap). The native BLE trace stays out
+     *  of the in-app log so it doesn't flood it during a multi-chunk transfer. */
     private fun logd(message: String) {
         Log.i(TAG, message)
-        send(mapOf("event" to "log", "message" to message))
     }
     private fun sendReceived(blob: ByteArray) = send(mapOf("event" to "received", "data" to blob))
     private fun sendError(message: String) {
