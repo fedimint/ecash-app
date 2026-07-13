@@ -11,6 +11,7 @@ import 'package:ecashapp/lib.dart';
 import 'package:ecashapp/multimint.dart';
 import 'package:ecashapp/tap_transfer/ble_tap.dart';
 import 'package:ecashapp/tap_transfer/tap_nfc.dart';
+import 'package:ecashapp/tap_transfer/tap_receive.dart';
 import 'package:ecashapp/toast.dart';
 import 'package:ecashapp/utils.dart';
 import 'package:ecashapp/utils/pin_guard.dart';
@@ -59,6 +60,9 @@ class _EcashSendState extends State<EcashSend> {
   @override
   void initState() {
     super.initState();
+    // The send screen needs exclusive NFC/BLE (reader mode + outgoing GATT), so
+    // pause the passive receiver while it's open.
+    TapReceive.instance.pause();
     _loadQuote();
   }
 
@@ -156,6 +160,7 @@ class _EcashSendState extends State<EcashSend> {
     _tapNfcSub?.cancel();
     TapNfc.stopReader();
     BleTap.stop();
+    TapReceive.instance.resume();
     super.dispose();
   }
 

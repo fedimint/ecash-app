@@ -4,6 +4,7 @@ import 'dart:typed_data';
 import 'package:ecashapp/lib.dart';
 import 'package:ecashapp/tap_transfer/ble_tap.dart';
 import 'package:ecashapp/tap_transfer/tap_nfc.dart';
+import 'package:ecashapp/tap_transfer/tap_receive.dart';
 import 'package:ecashapp/tap_transfer.dart';
 import 'package:ecashapp/utils.dart';
 import 'package:flutter/material.dart';
@@ -43,6 +44,7 @@ class _TapTransferDevScreenState extends State<TapTransferDevScreen> {
   @override
   void initState() {
     super.initState();
+    TapReceive.instance.pause();
     _bleSub = BleTap.events().listen(
       _onBleEvent,
       onError: (e) => _append('ble stream error: $e'),
@@ -62,6 +64,7 @@ class _TapTransferDevScreenState extends State<TapTransferDevScreen> {
     TapNfc.stopReader();
     _recipient?.dispose();
     _payloadController.dispose();
+    TapReceive.instance.resume();
     super.dispose();
   }
 
