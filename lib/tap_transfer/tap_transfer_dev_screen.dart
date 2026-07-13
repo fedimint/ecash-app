@@ -5,6 +5,7 @@ import 'package:ecashapp/lib.dart';
 import 'package:ecashapp/tap_transfer/ble_tap.dart';
 import 'package:ecashapp/tap_transfer/tap_nfc.dart';
 import 'package:ecashapp/tap_transfer.dart';
+import 'package:ecashapp/utils.dart';
 import 'package:flutter/material.dart';
 import 'package:permission_handler/permission_handler.dart';
 
@@ -71,6 +72,7 @@ class _TapTransferDevScreenState extends State<TapTransferDevScreen> {
 
   void _onBleEvent(BleTapEvent e) {
     _append(e.toString());
+    AppLogger.instance.info("tap ble(rx): $e");
     switch (e.event) {
       case 'received':
         if (_mode == _Mode.receiving && e.data != null) {

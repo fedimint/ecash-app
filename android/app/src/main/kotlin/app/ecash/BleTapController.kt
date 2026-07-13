@@ -12,6 +12,7 @@ import android.bluetooth.BluetoothGattServerCallback
 import android.bluetooth.BluetoothGattService
 import android.bluetooth.BluetoothManager
 import android.bluetooth.BluetoothProfile
+import android.bluetooth.BluetoothStatusCodes
 import android.bluetooth.le.AdvertiseCallback
 import android.bluetooth.le.AdvertiseData
 import android.bluetooth.le.AdvertiseSettings
@@ -65,6 +66,11 @@ class BleTapController(
         private const val HEADER_VERSION: Byte = 1
         private const val DEFAULT_MTU = 23
         private const val ATT_WRITE_OVERHEAD = 3
+        // Cap chunk size well below the negotiated MTU. Writing exactly (MTU - 3)
+        // can push Android into a "long write" (prepared writes) that our GATT
+        // server doesn't implement, stalling the transfer; a smaller single write
+        // is delivered atomically and acknowledged.
+        private const val MAX_SAFE_CHUNK = 180
         private const val STATUS_DONE: Byte = 0x01
         private const val STATUS_ERROR: Byte = 0x02
     }
@@ -96,6 +102,10 @@ class BleTapController(
     private var inboxChar: BluetoothGattCharacteristic? = null
     private val writeQueue = ArrayDeque<ByteArray>()
     private var pendingBlob: ByteArray? = null
+    private var currentChunk: ByteArray? = null
+    private var writeRetries = 0
+    private var midTransfer = false
+    private val sendTimeout = Runnable { onSendTimeout() }
 
     /** BLE present + enabled. Peripheral (advertise) support is checked in [startReceiver]. */
     fun isAvailable(): Boolean {
@@ -165,7 +175,7 @@ class BleTapController(
             .build()
         val cb = object : AdvertiseCallback() {
             override fun onStartSuccess(settingsInEffect: AdvertiseSettings?) {
-                Log.i(TAG, "advertising started")
+                logd("advertising started")
             }
 
             override fun onStartFailure(errorCode: Int) {
@@ -188,10 +198,15 @@ class BleTapController(
         }
 
         override fun onConnectionStateChange(device: BluetoothDevice, status: Int, newState: Int) {
+            logd("server conn newState=$newState status=$status")
             when (newState) {
                 BluetoothProfile.STATE_CONNECTED -> {
                     connectedCentral = device
                     resetInbox()
+                    // Stop advertising for the duration of the connection: some
+                    // Android BLE stacks drop or corrupt an active connection while
+                    // still advertising, which stalls a multi-chunk transfer.
+                    stopAdvertising()
                     sendStatus("connected")
                 }
                 BluetoothProfile.STATE_DISCONNECTED -> {
@@ -201,6 +216,7 @@ class BleTapController(
         }
 
         override fun onMtuChanged(device: BluetoothDevice, mtu: Int) {
+            logd("server mtu=$mtu")
             this@BleTapController.mtu = mtu
         }
 
@@ -214,6 +230,7 @@ class BleTapController(
             value: ByteArray,
         ) {
             val ok = characteristic.uuid == CHAR_INBOX_UUID
+            if (preparedWrite) logd("prepared write offset=$offset size=${value.size}")
             if (ok) handleInbound(value)
             if (responseNeeded) {
                 val gattStatus = if (ok) BluetoothGatt.GATT_SUCCESS else BluetoothGatt.GATT_FAILURE
@@ -240,6 +257,7 @@ class BleTapController(
     private fun handleInbound(value: ByteArray) {
         if (expectingHeader) {
             if (value.size < 5 || value[0] != HEADER_VERSION) {
+                logd("bad header size=${value.size}")
                 sendError("bad transfer header")
                 notifyStatus(STATUS_ERROR)
                 return
@@ -250,12 +268,15 @@ class BleTapController(
                 (value[4].toInt() and 0xFF)
             expectingHeader = false
             inbox.reset()
+            logd("header ok expectedLen=$expectedLen")
             return
         }
         inbox.write(value)
+        logd("inbound ${value.size}B total=${inbox.size()}/$expectedLen")
         if (inbox.size() >= expectedLen) {
             val full = inbox.toByteArray()
             val blob = if (full.size > expectedLen) full.copyOfRange(0, expectedLen) else full
+            logd("assembled ${blob.size}B, notifying done")
             sendReceived(blob)
             notifyStatus(STATUS_DONE)
             resetInbox()
@@ -286,6 +307,7 @@ class BleTapController(
         val uuid = parseUuid(uuidString) ?: return sendError("invalid rendezvous uuid")
         serviceUuid = uuid
         pendingBlob = blob
+        logd("sendToPeer uuid=$uuid blob=${blob.size}B")
 
         val filters = listOf(
             ScanFilter.Builder().setServiceUuid(ParcelUuid(uuid)).build()
@@ -308,6 +330,7 @@ class BleTapController(
         scanner = s
         scanCallback = cb
         s.startScan(filters, settings, cb)
+        main.postDelayed(sendTimeout, 20_000L)
         sendStatus("scanning")
     }
 
@@ -322,14 +345,21 @@ class BleTapController(
 
     private val gattCallback = object : BluetoothGattCallback() {
         override fun onConnectionStateChange(g: BluetoothGatt, status: Int, newState: Int) {
-            if (newState == BluetoothProfile.STATE_CONNECTED) {
-                sendStatus("connected")
-                g.requestMtu(517)
+            logd("client conn newState=$newState status=$status midTransfer=$midTransfer")
+            when (newState) {
+                BluetoothProfile.STATE_CONNECTED -> {
+                    sendStatus("connected")
+                    g.requestMtu(517)
+                }
+                BluetoothProfile.STATE_DISCONNECTED -> {
+                    if (midTransfer) sendError("disconnected mid-transfer (status=$status)")
+                }
             }
         }
 
         override fun onMtuChanged(g: BluetoothGatt, mtu: Int, status: Int) {
             this@BleTapController.mtu = if (status == BluetoothGatt.GATT_SUCCESS) mtu else DEFAULT_MTU
+            logd("client mtu=$mtu status=$status using=${this@BleTapController.mtu}")
             g.discoverServices()
         }
 
@@ -337,6 +367,7 @@ class BleTapController(
             val uuid = serviceUuid ?: return sendError("no rendezvous uuid")
             val service = g.getService(uuid) ?: return sendError("rendezvous service not found")
             inboxChar = service.getCharacteristic(CHAR_INBOX_UUID)
+            logd("services discovered inbox=${inboxChar != null}")
             val statusCharRemote = service.getCharacteristic(CHAR_STATUS_UUID)
             if (statusCharRemote != null) {
                 g.setCharacteristicNotification(statusCharRemote, true)
@@ -364,6 +395,7 @@ class BleTapController(
                 sendError("chunk write failed: $status")
                 return
             }
+            currentChunk = null
             writeNext(g)
         }
 
@@ -398,13 +430,15 @@ class BleTapController(
         header[4] = (blob.size and 0xFF).toByte()
         writeQueue.addLast(header)
 
-        val chunkSize = (mtu - ATT_WRITE_OVERHEAD).coerceAtLeast(20)
+        val chunkSize = (mtu - ATT_WRITE_OVERHEAD).coerceAtMost(MAX_SAFE_CHUNK).coerceAtLeast(20)
         var i = 0
         while (i < blob.size) {
             val end = minOf(i + chunkSize, blob.size)
             writeQueue.addLast(blob.copyOfRange(i, end))
             i = end
         }
+        midTransfer = true
+        logd("startWriting blob=${blob.size}B mtu=$mtu chunkSize=$chunkSize chunks=${writeQueue.size}")
         sendStatus("writing")
         writeNext(g)
     }
@@ -413,16 +447,46 @@ class BleTapController(
         val ch = inboxChar ?: return
         val chunk = writeQueue.removeFirstOrNull()
         if (chunk == null) {
+            midTransfer = false
+            logd("all chunks written")
             sendStatus("sent")
             return
         }
-        writeCharacteristic(g, ch, chunk)
+        currentChunk = chunk
+        writeRetries = 0
+        issueWrite(g, ch, chunk)
+    }
+
+    /**
+     * Issue one chunk write, retrying briefly if the stack reports it wasn't
+     * queued (e.g. ERROR_GATT_WRITE_REQUEST_BUSY). Each accepted write is
+     * acknowledged in onCharacteristicWrite, which drives the next chunk.
+     */
+    private fun issueWrite(g: BluetoothGatt, ch: BluetoothGattCharacteristic, chunk: ByteArray) {
+        if (writeCharacteristic(g, ch, chunk)) return
+        if (writeRetries < 20) {
+            writeRetries++
+            main.postDelayed({
+                val gg = gatt ?: return@postDelayed
+                val cc = inboxChar ?: return@postDelayed
+                val ck = currentChunk ?: return@postDelayed
+                issueWrite(gg, cc, ck)
+            }, 20L)
+        } else {
+            sendError("write failed to initiate after $writeRetries retries")
+        }
     }
 
     @Suppress("DEPRECATION")
-    private fun writeCharacteristic(g: BluetoothGatt, ch: BluetoothGattCharacteristic, value: ByteArray) {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-            g.writeCharacteristic(ch, value, BluetoothGattCharacteristic.WRITE_TYPE_DEFAULT)
+    private fun writeCharacteristic(
+        g: BluetoothGatt,
+        ch: BluetoothGattCharacteristic,
+        value: ByteArray,
+    ): Boolean {
+        return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            val res = g.writeCharacteristic(ch, value, BluetoothGattCharacteristic.WRITE_TYPE_DEFAULT)
+            if (res != BluetoothStatusCodes.SUCCESS) logd("writeCharacteristic code=$res")
+            res == BluetoothStatusCodes.SUCCESS
         } else {
             ch.writeType = BluetoothGattCharacteristic.WRITE_TYPE_DEFAULT
             ch.value = value
@@ -442,9 +506,18 @@ class BleTapController(
 
     private fun handleStatusNotify(value: ByteArray) {
         when (value.firstOrNull()) {
-            STATUS_DONE -> sendStatus("confirmed")
+            STATUS_DONE -> {
+                main.removeCallbacks(sendTimeout)
+                sendStatus("confirmed")
+            }
             STATUS_ERROR -> sendError("receiver reported an error")
         }
+    }
+
+    private fun onSendTimeout() {
+        logd("send timed out midTransfer=$midTransfer queued=${writeQueue.size}")
+        sendError("tap transfer timed out")
+        stopInternal()
     }
 
     // ------------------------------------------------------------------ common
@@ -454,7 +527,18 @@ class BleTapController(
         sendStatus("stopped")
     }
 
+    private fun stopAdvertising() {
+        try {
+            advertiseCallback?.let { advertiser?.stopAdvertising(it) }
+        } catch (e: Exception) {
+            Log.w(TAG, "stopAdvertising: ${e.message}")
+        }
+        advertiseCallback = null
+    }
+
     private fun stopInternal() {
+        main.removeCallbacks(sendTimeout)
+
         try {
             scanCallback?.let { scanner?.stopScan(it) }
         } catch (e: Exception) {
@@ -473,13 +557,11 @@ class BleTapController(
         inboxChar = null
         writeQueue.clear()
         pendingBlob = null
+        currentChunk = null
+        writeRetries = 0
+        midTransfer = false
 
-        try {
-            advertiseCallback?.let { advertiser?.stopAdvertising(it) }
-        } catch (e: Exception) {
-            Log.w(TAG, "stopAdvertising: ${e.message}")
-        }
-        advertiseCallback = null
+        stopAdvertising()
         advertiser = null
 
         try {
@@ -510,9 +592,16 @@ class BleTapController(
 
     private fun send(map: Map<String, Any?>) = main.post { emit(map) }
     private fun sendStatus(state: String) = send(mapOf("event" to "status", "state" to state))
+
+    /** Log to logcat AND forward to Dart as a `log` event for the in-app log. */
+    private fun logd(message: String) {
+        Log.i(TAG, message)
+        send(mapOf("event" to "log", "message" to message))
+    }
     private fun sendReceived(blob: ByteArray) = send(mapOf("event" to "received", "data" to blob))
     private fun sendError(message: String) {
         Log.w(TAG, message)
+        main.removeCallbacks(sendTimeout)
         send(mapOf("event" to "error", "message" to message))
     }
 }

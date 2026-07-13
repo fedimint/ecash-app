@@ -922,6 +922,18 @@
   "ecashCopiedToClipboard": "Ecash copied to clipboard",
   "@ecashCopiedToClipboard": {},
 
+  "tapToSendHint": "Or tap the recipient's phone",
+  "@tapToSendHint": {},
+
+  "tapConnecting": "Connecting…",
+  "@tapConnecting": {},
+
+  "tapSending": "Sending…",
+  "@tapSending": {},
+
+  "tapSendFailed": "Tap-to-send failed — use the QR code",
+  "@tapSendFailed": {},
+
   "federationLabel": "Federation",
   "@federationLabel": {},
 

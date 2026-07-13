@@ -9,12 +9,15 @@ import 'package:ecashapp/fountain.dart';
 import 'package:ecashapp/qr_export.dart';
 import 'package:ecashapp/lib.dart';
 import 'package:ecashapp/multimint.dart';
+import 'package:ecashapp/tap_transfer/ble_tap.dart';
+import 'package:ecashapp/tap_transfer/tap_nfc.dart';
 import 'package:ecashapp/toast.dart';
 import 'package:ecashapp/utils.dart';
 import 'package:ecashapp/utils/pin_guard.dart';
 import 'package:ecashapp/extensions/build_context_l10n.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:permission_handler/permission_handler.dart';
 import 'package:provider/provider.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 
@@ -44,6 +47,14 @@ class _EcashSendState extends State<EcashSend> {
   bool _generating = false;
   bool _copied = false;
   _QrMode _mode = _QrMode.legacy;
+
+  // Tap-to-send (NFC handshake + BLE). Additive: the QR is untouched and stays
+  // the fallback. Armed once the notes are generated, if BLE is available.
+  StreamSubscription<BleTapEvent>? _tapBleSub;
+  StreamSubscription<TapRendezvous>? _tapNfcSub;
+  bool _tapAvailable = false;
+  bool _tapSending = false;
+  String? _tapStatus;
 
   @override
   void initState() {
@@ -99,6 +110,7 @@ class _EcashSendState extends State<EcashSend> {
         _fragmentStream = _createFrameStream(encoder, legacyFrames);
         _generating = false;
       });
+      unawaited(_armTap());
     } catch (e) {
       AppLogger.instance.error("Could not send Ecash: $e");
       if (mounted) showErrorToast(context, e);
@@ -136,6 +148,151 @@ class _EcashSendState extends State<EcashSend> {
     Future.delayed(const Duration(seconds: 2), () {
       if (mounted) setState(() => _copied = false);
     });
+  }
+
+  @override
+  void dispose() {
+    _tapBleSub?.cancel();
+    _tapNfcSub?.cancel();
+    TapNfc.stopReader();
+    BleTap.stop();
+    super.dispose();
+  }
+
+  /// Arm NFC reader mode on the QR screen so a receiver can tap to pull the
+  /// ecash over BLE. Additive: the QR remains the primary/fallback path. Only
+  /// enabled when BLE is present and enabled.
+  Future<void> _armTap() async {
+    if (!await BleTap.isAvailable()) return;
+    if (!mounted) return;
+    _tapBleSub = BleTap.events().listen(_onTapBleEvent);
+    _tapNfcSub = TapNfc.reads().listen(_onTapRendezvous);
+    setState(() => _tapAvailable = true);
+    try {
+      await TapNfc.startReader();
+    } catch (e) {
+      AppLogger.instance.warn("Tap send: could not start NFC reader: $e");
+    }
+  }
+
+  /// A receiver tapped: encrypt the already-generated notes for its NFC-delivered
+  /// pubkey and stream them over BLE. BLE permission is requested here — only
+  /// once a real tap happens — rather than up front.
+  Future<void> _onTapRendezvous(TapRendezvous r) async {
+    if (_tapSending || _notes == null) return;
+    _tapSending = true;
+    AppLogger.instance.info(
+      "tap: read rendezvous uuid=${r.uuid} pubkey=${r.pubkey.length}B",
+    );
+    await TapNfc.stopReader();
+    if (!await _ensureBlePermissions()) {
+      _tapSending = false;
+      if (mounted) await TapNfc.startReader();
+      return;
+    }
+    try {
+      final blob = encryptEcashForTap(
+        ecash: _notes!.toString(),
+        recipientPubkey: r.pubkey,
+      );
+      AppLogger.instance.info("tap: encrypted ${blob.length}B, sending");
+      if (mounted) setState(() => _tapStatus = context.l10n.tapConnecting);
+      await BleTap.sendToPeer(r.uuid, blob);
+    } catch (e) {
+      AppLogger.instance.error("Tap send failed: $e");
+      _tapSending = false;
+      if (mounted) {
+        setState(() => _tapStatus = null);
+        showErrorToast(context, e);
+        await TapNfc.startReader();
+      }
+    }
+  }
+
+  void _onTapBleEvent(BleTapEvent e) {
+    if (!mounted) return;
+    AppLogger.instance.info("tap ble: $e");
+    switch (e.event) {
+      case 'status':
+        switch (e.state) {
+          case 'confirmed':
+            _onTapSuccess();
+            break;
+          case 'writing':
+          case 'sent':
+            setState(() => _tapStatus = context.l10n.tapSending);
+            break;
+          case 'scanning':
+          case 'connecting':
+          case 'connected':
+            setState(() => _tapStatus = context.l10n.tapConnecting);
+            break;
+        }
+        break;
+      case 'error':
+        _tapSending = false;
+        setState(() => _tapStatus = null);
+        ToastService().show(
+          message: context.l10n.tapSendFailed,
+          duration: const Duration(seconds: 3),
+          onTap: () {},
+          icon: Icon(Icons.error),
+        );
+        TapNfc.startReader();
+        break;
+    }
+  }
+
+  void _onTapSuccess() {
+    if (!mounted) return;
+    final prefs = context.read<PreferencesProvider>();
+    final message = context.l10n.amountSpent(
+      formatBalance(
+        _notes!.amountMsats(),
+        prefs.showMsats,
+        prefs.bitcoinDisplay,
+      ),
+    );
+    Navigator.of(context).popUntil((route) => route.isFirst);
+    ToastService().show(
+      message: message,
+      duration: const Duration(seconds: 5),
+      onTap: () {},
+      icon: Icon(Icons.currency_bitcoin),
+    );
+  }
+
+  Future<bool> _ensureBlePermissions() async {
+    final statuses =
+        await [Permission.bluetoothScan, Permission.bluetoothConnect].request();
+    return statuses.values.every((s) => s.isGranted);
+  }
+
+  Widget _buildTapStatus(ThemeData theme) {
+    final sending = _tapStatus != null;
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        if (sending)
+          const SizedBox(
+            width: 16,
+            height: 16,
+            child: CircularProgressIndicator(strokeWidth: 2),
+          )
+        else
+          Icon(Icons.contactless, size: 20, color: theme.colorScheme.primary),
+        const SizedBox(width: 8),
+        Flexible(
+          child: Text(
+            sending ? _tapStatus! : context.l10n.tapToSendHint,
+            style: theme.textTheme.bodyMedium?.copyWith(
+              color: theme.colorScheme.onSurfaceVariant,
+            ),
+            textAlign: TextAlign.center,
+          ),
+        ),
+      ],
+    );
   }
 
   Widget _buildLoading(String message) {
@@ -319,6 +476,10 @@ class _EcashSendState extends State<EcashSend> {
               setState(() => _mode = selection.first);
             },
           ),
+          if (_tapAvailable) ...[
+            const SizedBox(height: 16),
+            _buildTapStatus(theme),
+          ],
           const SizedBox(height: 24),
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
