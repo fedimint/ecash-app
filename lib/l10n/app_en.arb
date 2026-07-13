@@ -934,6 +934,15 @@
   "tapSendFailed": "Tap-to-send failed — use the QR code",
   "@tapSendFailed": {},
 
+  "tapToReceiveTitle": "Tap to receive",
+  "@tapToReceiveTitle": {},
+
+  "tapToReceiveSubtitle": "Let others tap your phone to send you ecash",
+  "@tapToReceiveSubtitle": {},
+
+  "tapToReceivePermissionDenied": "Bluetooth permission is required for tap to receive",
+  "@tapToReceivePermissionDenied": {},
+
   "federationLabel": "Federation",
   "@federationLabel": {},
 

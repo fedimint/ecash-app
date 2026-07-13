@@ -45,6 +45,7 @@ class TapReceive {
   Future<void> arm() async {
     if (_armed || _paused) return;
     try {
+      if (!await getTapReceiveEnabled()) return;
       if (!await BleTap.isAvailable()) return;
       if (!await TapNfc.hceAvailable()) return;
       if (!await _permissionsGranted()) return;
@@ -121,6 +122,18 @@ class TapReceive {
     final connect = await Permission.bluetoothConnect.status;
     final advertise = await Permission.bluetoothAdvertise.status;
     return scan.isGranted && connect.isGranted && advertise.isGranted;
+  }
+
+  /// Prompt for the BLE permissions the receiver needs. Called from the Settings
+  /// toggle (the one place we're allowed to prompt), not from [arm].
+  Future<bool> requestPermissions() async {
+    final statuses =
+        await [
+          Permission.bluetoothScan,
+          Permission.bluetoothConnect,
+          Permission.bluetoothAdvertise,
+        ].request();
+    return statuses.values.every((s) => s.isGranted);
   }
 }
 

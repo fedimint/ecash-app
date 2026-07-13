@@ -1161,6 +1161,18 @@ pub async fn set_show_msats(show_msats: bool) {
 }
 
 #[frb]
+pub async fn get_tap_receive_enabled() -> bool {
+    let multimint = get_multimint();
+    multimint.get_tap_receive_enabled().await
+}
+
+#[frb]
+pub async fn set_tap_receive_enabled(enabled: bool) {
+    let multimint = get_multimint();
+    multimint.set_tap_receive_enabled(enabled).await;
+}
+
+#[frb]
 pub async fn has_pin_code() -> bool {
     let multimint = get_multimint();
     multimint.has_pin_code().await

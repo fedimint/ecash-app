@@ -508,6 +508,12 @@ Future<bool> getShowMsats() => RustLib.instance.api.crateGetShowMsats();
 Future<void> setShowMsats({required bool showMsats}) =>
     RustLib.instance.api.crateSetShowMsats(showMsats: showMsats);
 
+Future<bool> getTapReceiveEnabled() =>
+    RustLib.instance.api.crateGetTapReceiveEnabled();
+
+Future<void> setTapReceiveEnabled({required bool enabled}) =>
+    RustLib.instance.api.crateSetTapReceiveEnabled(enabled: enabled);
+
 Future<bool> hasPinCode() => RustLib.instance.api.crateHasPinCode();
 
 Future<void> setPinCode({required String pin}) =>

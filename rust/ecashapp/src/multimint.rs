@@ -5567,6 +5567,24 @@ impl Multimint {
         dbtx.commit_tx().await;
     }
 
+    pub async fn get_tap_receive_enabled(&self) -> bool {
+        let mut dbtx = self.db.begin_transaction_nc().await;
+        dbtx.get_value(&crate::db::TapReceiveEnabledKey)
+            .await
+            .is_some()
+    }
+
+    pub async fn set_tap_receive_enabled(&self, enabled: bool) {
+        let mut dbtx = self.db.begin_transaction().await;
+        if enabled {
+            dbtx.insert_entry(&crate::db::TapReceiveEnabledKey, &())
+                .await;
+        } else {
+            dbtx.remove_entry(&crate::db::TapReceiveEnabledKey).await;
+        }
+        dbtx.commit_tx().await;
+    }
+
     pub async fn get_federation_order(&self) -> Option<Vec<FederationId>> {
         let mut dbtx = self.db.begin_transaction_nc().await;
         dbtx.get_value(&crate::db::FederationOrderKey)

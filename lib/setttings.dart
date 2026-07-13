@@ -5,13 +5,17 @@ import 'package:ecashapp/ln_address.dart';
 import 'package:ecashapp/mnemonic.dart';
 import 'package:ecashapp/multimint.dart';
 import 'package:ecashapp/nwc.dart';
+import 'package:ecashapp/providers/preferences_provider.dart';
 import 'package:ecashapp/relays.dart';
 import 'package:ecashapp/screens/access_control.dart';
 import 'package:ecashapp/screens/btcmap_screen.dart';
 import 'package:ecashapp/screens/display_settings.dart';
+import 'package:ecashapp/tap_transfer/tap_receive.dart';
 import 'package:ecashapp/theme.dart';
+import 'package:ecashapp/toast.dart';
 import 'package:flutter/material.dart';
 import 'package:package_info_plus/package_info_plus.dart';
+import 'package:provider/provider.dart';
 
 class SettingsScreen extends StatefulWidget {
   final void Function(FederationSelector fed, bool recovering) onJoin;
@@ -49,6 +53,31 @@ class _SettingsScreenState extends State<SettingsScreen> {
     setState(() {
       _version = "v${info.version}+${info.buildNumber}";
     });
+  }
+
+  /// Toggle passive "tap to receive". Enabling requests the BLE permissions the
+  /// receiver needs (the one place we prompt) before persisting and arming.
+  Future<void> _toggleTapReceive(bool value) async {
+    final prefs = context.read<PreferencesProvider>();
+    if (value) {
+      final granted = await TapReceive.instance.requestPermissions();
+      if (!granted) {
+        if (mounted) {
+          ToastService().show(
+            message: context.l10n.tapToReceivePermissionDenied,
+            duration: const Duration(seconds: 4),
+            onTap: () {},
+            icon: const Icon(Icons.error),
+          );
+        }
+        return;
+      }
+      await prefs.setTapReceiveEnabled(true);
+      await TapReceive.instance.arm();
+    } else {
+      await prefs.setTapReceiveEnabled(false);
+      await TapReceive.instance.disarm();
+    }
   }
 
   @override
@@ -154,6 +183,22 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 ),
               );
             },
+          ),
+          Card(
+            elevation: 2,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(16),
+            ),
+            child: SwitchListTile(
+              secondary: Icon(
+                Icons.contactless,
+                color: Theme.of(context).colorScheme.primary,
+              ),
+              title: Text(context.l10n.tapToReceiveTitle),
+              subtitle: Text(context.l10n.tapToReceiveSubtitle),
+              value: context.watch<PreferencesProvider>().tapReceiveEnabled,
+              onChanged: _toggleTapReceive,
+            ),
           ),
           _SettingsOption(
             icon: Icon(
