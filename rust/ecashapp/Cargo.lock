@@ -345,6 +345,15 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "ef49f5882e4b6afaac09ad239a4f8c70a24b8f2b0897edb1f706008efd109cf4"
 
 [[package]]
+name = "atomic-polyfill"
+version = "1.0.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "8cf2bce30dfe09ef0bfaef228b9d414faaf7e563035494d7fe092dba54b300f4"
+dependencies = [
+ "critical-section",
+]
+
+[[package]]
 name = "atomic-waker"
 version = "1.1.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -966,6 +975,12 @@ dependencies = [
 ]
 
 [[package]]
+name = "const-crc32-nostd"
+version = "1.3.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "808ac43170e95b11dd23d78aa9eaac5bea45776a602955552c4e833f3f0f823d"
+
+[[package]]
 name = "const-oid"
 version = "0.9.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1106,6 +1121,18 @@ name = "crunchy"
 version = "0.2.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "460fbee9c2c2f33933d720630a6a0bac33ba7053db5344fac858d4b8952d77d5"
+
+[[package]]
+name = "crypto-bigint"
+version = "0.5.5"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "0dc92fb57ca44df6db8059111ab3af99a63d5d0f8375d9972e319a379c6bab76"
+dependencies = [
+ "generic-array",
+ "rand_core 0.6.4",
+ "subtle",
+ "zeroize",
+]
 
 [[package]]
 name = "crypto-common"
@@ -1408,6 +1435,17 @@ dependencies = [
 ]
 
 [[package]]
+name = "derive-getters"
+version = "0.5.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "74ef43543e701c01ad77d3a5922755c6a1d71b22d942cb8042be4994b380caff"
+dependencies = [
+ "proc-macro2",
+ "quote",
+ "syn 2.0.117",
+]
+
+[[package]]
 name = "derive_builder"
 version = "0.20.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1694,6 +1732,24 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "91622ff5e7162018101f2fea40d6ebf4a78bbe5a49736a2020649edf9693679e"
 
 [[package]]
+name = "elliptic-curve"
+version = "0.13.8"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "b5e6043086bf7973472e0c7dff2142ea0b680d30e18d9cc40f267efbf222bd47"
+dependencies = [
+ "base16ct 0.2.0",
+ "crypto-bigint",
+ "digest 0.10.7",
+ "ff",
+ "generic-array",
+ "group",
+ "rand_core 0.6.4",
+ "sec1",
+ "subtle",
+ "zeroize",
+]
+
+[[package]]
 name = "email_address"
 version = "0.2.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1854,7 +1910,7 @@ checksum = "9f1f227452a390804cdb637b74a86990f2a7d7ba4b7d5693aac9b4dd6defd8d6"
 [[package]]
 name = "fedimint-aead"
 version = "0.12.0-alpha"
-source = "git+https://github.com/fedimint/fedimint?rev=64dc2aa4301dec42fb3f982913aac8aae78c2061#64dc2aa4301dec42fb3f982913aac8aae78c2061"
+source = "git+https://github.com/m1sterc001guy/fedimint?branch=frost_implementation#9dace3acd7b10156e4bccce39fa537dd1ee5cf49"
 dependencies = [
  "anyhow",
  "argon2",
@@ -1866,7 +1922,7 @@ dependencies = [
 [[package]]
 name = "fedimint-api-client"
 version = "0.12.0-alpha"
-source = "git+https://github.com/fedimint/fedimint?rev=64dc2aa4301dec42fb3f982913aac8aae78c2061#64dc2aa4301dec42fb3f982913aac8aae78c2061"
+source = "git+https://github.com/m1sterc001guy/fedimint?branch=frost_implementation#9dace3acd7b10156e4bccce39fa537dd1ee5cf49"
 dependencies = [
  "anyhow",
  "async-channel",
@@ -1892,7 +1948,7 @@ dependencies = [
 [[package]]
 name = "fedimint-bip39"
 version = "0.12.0-alpha"
-source = "git+https://github.com/fedimint/fedimint?rev=64dc2aa4301dec42fb3f982913aac8aae78c2061#64dc2aa4301dec42fb3f982913aac8aae78c2061"
+source = "git+https://github.com/m1sterc001guy/fedimint?branch=frost_implementation#9dace3acd7b10156e4bccce39fa537dd1ee5cf49"
 dependencies = [
  "bip39",
  "fedimint-client",
@@ -1904,7 +1960,7 @@ dependencies = [
 [[package]]
 name = "fedimint-bitcoind"
 version = "0.12.0-alpha"
-source = "git+https://github.com/fedimint/fedimint?rev=64dc2aa4301dec42fb3f982913aac8aae78c2061#64dc2aa4301dec42fb3f982913aac8aae78c2061"
+source = "git+https://github.com/m1sterc001guy/fedimint?branch=frost_implementation#9dace3acd7b10156e4bccce39fa537dd1ee5cf49"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -1919,7 +1975,7 @@ dependencies = [
 [[package]]
 name = "fedimint-build"
 version = "0.12.0-alpha"
-source = "git+https://github.com/fedimint/fedimint?rev=64dc2aa4301dec42fb3f982913aac8aae78c2061#64dc2aa4301dec42fb3f982913aac8aae78c2061"
+source = "git+https://github.com/m1sterc001guy/fedimint?branch=frost_implementation#9dace3acd7b10156e4bccce39fa537dd1ee5cf49"
 dependencies = [
  "serde_json",
 ]
@@ -1927,7 +1983,7 @@ dependencies = [
 [[package]]
 name = "fedimint-client"
 version = "0.12.0-alpha"
-source = "git+https://github.com/fedimint/fedimint?rev=64dc2aa4301dec42fb3f982913aac8aae78c2061#64dc2aa4301dec42fb3f982913aac8aae78c2061"
+source = "git+https://github.com/m1sterc001guy/fedimint?branch=frost_implementation#9dace3acd7b10156e4bccce39fa537dd1ee5cf49"
 dependencies = [
  "anyhow",
  "async-stream",
@@ -1950,6 +2006,7 @@ dependencies = [
  "serde_json",
  "strum 0.27.2",
  "strum_macros 0.27.2",
+ "thiserror 2.0.18",
  "time",
  "tokio",
  "tokio-stream",
@@ -1959,7 +2016,7 @@ dependencies = [
 [[package]]
 name = "fedimint-client-module"
 version = "0.12.0-alpha"
-source = "git+https://github.com/fedimint/fedimint?rev=64dc2aa4301dec42fb3f982913aac8aae78c2061#64dc2aa4301dec42fb3f982913aac8aae78c2061"
+source = "git+https://github.com/m1sterc001guy/fedimint?branch=frost_implementation#9dace3acd7b10156e4bccce39fa537dd1ee5cf49"
 dependencies = [
  "anyhow",
  "aquamarine",
@@ -1991,7 +2048,7 @@ dependencies = [
 [[package]]
 name = "fedimint-connectors"
 version = "0.12.0-alpha"
-source = "git+https://github.com/fedimint/fedimint?rev=64dc2aa4301dec42fb3f982913aac8aae78c2061#64dc2aa4301dec42fb3f982913aac8aae78c2061"
+source = "git+https://github.com/m1sterc001guy/fedimint?branch=frost_implementation#9dace3acd7b10156e4bccce39fa537dd1ee5cf49"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -2023,7 +2080,7 @@ dependencies = [
 [[package]]
 name = "fedimint-core"
 version = "0.12.0-alpha"
-source = "git+https://github.com/fedimint/fedimint?rev=64dc2aa4301dec42fb3f982913aac8aae78c2061#64dc2aa4301dec42fb3f982913aac8aae78c2061"
+source = "git+https://github.com/m1sterc001guy/fedimint?branch=frost_implementation#9dace3acd7b10156e4bccce39fa537dd1ee5cf49"
 dependencies = [
  "anyhow",
  "async-channel",
@@ -2087,7 +2144,7 @@ dependencies = [
 [[package]]
 name = "fedimint-db-locked"
 version = "0.12.0-alpha"
-source = "git+https://github.com/fedimint/fedimint?rev=64dc2aa4301dec42fb3f982913aac8aae78c2061#64dc2aa4301dec42fb3f982913aac8aae78c2061"
+source = "git+https://github.com/m1sterc001guy/fedimint?branch=frost_implementation#9dace3acd7b10156e4bccce39fa537dd1ee5cf49"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -2100,7 +2157,7 @@ dependencies = [
 [[package]]
 name = "fedimint-derive"
 version = "0.12.0-alpha"
-source = "git+https://github.com/fedimint/fedimint?rev=64dc2aa4301dec42fb3f982913aac8aae78c2061#64dc2aa4301dec42fb3f982913aac8aae78c2061"
+source = "git+https://github.com/m1sterc001guy/fedimint?branch=frost_implementation#9dace3acd7b10156e4bccce39fa537dd1ee5cf49"
 dependencies = [
  "itertools 0.14.0",
  "proc-macro2",
@@ -2111,7 +2168,7 @@ dependencies = [
 [[package]]
 name = "fedimint-derive-secret"
 version = "0.12.0-alpha"
-source = "git+https://github.com/fedimint/fedimint?rev=64dc2aa4301dec42fb3f982913aac8aae78c2061#64dc2aa4301dec42fb3f982913aac8aae78c2061"
+source = "git+https://github.com/m1sterc001guy/fedimint?branch=frost_implementation#9dace3acd7b10156e4bccce39fa537dd1ee5cf49"
 dependencies = [
  "anyhow",
  "bitcoin_hashes",
@@ -2124,7 +2181,7 @@ dependencies = [
 [[package]]
 name = "fedimint-eventlog"
 version = "0.12.0-alpha"
-source = "git+https://github.com/fedimint/fedimint?rev=64dc2aa4301dec42fb3f982913aac8aae78c2061#64dc2aa4301dec42fb3f982913aac8aae78c2061"
+source = "git+https://github.com/m1sterc001guy/fedimint?branch=frost_implementation#9dace3acd7b10156e4bccce39fa537dd1ee5cf49"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -2142,7 +2199,7 @@ dependencies = [
 [[package]]
 name = "fedimint-fountain"
 version = "0.12.0-alpha"
-source = "git+https://github.com/fedimint/fedimint?rev=64dc2aa4301dec42fb3f982913aac8aae78c2061#64dc2aa4301dec42fb3f982913aac8aae78c2061"
+source = "git+https://github.com/m1sterc001guy/fedimint?branch=frost_implementation#9dace3acd7b10156e4bccce39fa537dd1ee5cf49"
 dependencies = [
  "anyhow",
  "bitcoin_hashes",
@@ -2154,7 +2211,7 @@ dependencies = [
 [[package]]
 name = "fedimint-hkdf"
 version = "0.12.0-alpha"
-source = "git+https://github.com/fedimint/fedimint?rev=64dc2aa4301dec42fb3f982913aac8aae78c2061#64dc2aa4301dec42fb3f982913aac8aae78c2061"
+source = "git+https://github.com/m1sterc001guy/fedimint?branch=frost_implementation#9dace3acd7b10156e4bccce39fa537dd1ee5cf49"
 dependencies = [
  "bitcoin_hashes",
 ]
@@ -2162,7 +2219,7 @@ dependencies = [
 [[package]]
 name = "fedimint-ln-client"
 version = "0.12.0-alpha"
-source = "git+https://github.com/fedimint/fedimint?rev=64dc2aa4301dec42fb3f982913aac8aae78c2061#64dc2aa4301dec42fb3f982913aac8aae78c2061"
+source = "git+https://github.com/m1sterc001guy/fedimint?branch=frost_implementation#9dace3acd7b10156e4bccce39fa537dd1ee5cf49"
 dependencies = [
  "anyhow",
  "aquamarine",
@@ -2196,7 +2253,7 @@ dependencies = [
 [[package]]
 name = "fedimint-ln-common"
 version = "0.12.0-alpha"
-source = "git+https://github.com/fedimint/fedimint?rev=64dc2aa4301dec42fb3f982913aac8aae78c2061#64dc2aa4301dec42fb3f982913aac8aae78c2061"
+source = "git+https://github.com/m1sterc001guy/fedimint?branch=frost_implementation#9dace3acd7b10156e4bccce39fa537dd1ee5cf49"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -2220,7 +2277,7 @@ dependencies = [
 [[package]]
 name = "fedimint-lnurl"
 version = "0.12.0-alpha"
-source = "git+https://github.com/fedimint/fedimint?rev=64dc2aa4301dec42fb3f982913aac8aae78c2061#64dc2aa4301dec42fb3f982913aac8aae78c2061"
+source = "git+https://github.com/m1sterc001guy/fedimint?branch=frost_implementation#9dace3acd7b10156e4bccce39fa537dd1ee5cf49"
 dependencies = [
  "bech32",
  "lightning-invoice",
@@ -2232,7 +2289,7 @@ dependencies = [
 [[package]]
 name = "fedimint-lnv2-client"
 version = "0.12.0-alpha"
-source = "git+https://github.com/fedimint/fedimint?rev=64dc2aa4301dec42fb3f982913aac8aae78c2061#64dc2aa4301dec42fb3f982913aac8aae78c2061"
+source = "git+https://github.com/m1sterc001guy/fedimint?branch=frost_implementation#9dace3acd7b10156e4bccce39fa537dd1ee5cf49"
 dependencies = [
  "anyhow",
  "aquamarine",
@@ -2264,7 +2321,7 @@ dependencies = [
 [[package]]
 name = "fedimint-lnv2-common"
 version = "0.12.0-alpha"
-source = "git+https://github.com/fedimint/fedimint?rev=64dc2aa4301dec42fb3f982913aac8aae78c2061#64dc2aa4301dec42fb3f982913aac8aae78c2061"
+source = "git+https://github.com/m1sterc001guy/fedimint?branch=frost_implementation#9dace3acd7b10156e4bccce39fa537dd1ee5cf49"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -2285,7 +2342,7 @@ dependencies = [
 [[package]]
 name = "fedimint-logging"
 version = "0.12.0-alpha"
-source = "git+https://github.com/fedimint/fedimint?rev=64dc2aa4301dec42fb3f982913aac8aae78c2061#64dc2aa4301dec42fb3f982913aac8aae78c2061"
+source = "git+https://github.com/m1sterc001guy/fedimint?branch=frost_implementation#9dace3acd7b10156e4bccce39fa537dd1ee5cf49"
 dependencies = [
  "anyhow",
  "tracing-subscriber",
@@ -2294,7 +2351,7 @@ dependencies = [
 [[package]]
 name = "fedimint-meta-client"
 version = "0.12.0-alpha"
-source = "git+https://github.com/fedimint/fedimint?rev=64dc2aa4301dec42fb3f982913aac8aae78c2061#64dc2aa4301dec42fb3f982913aac8aae78c2061"
+source = "git+https://github.com/m1sterc001guy/fedimint?branch=frost_implementation#9dace3acd7b10156e4bccce39fa537dd1ee5cf49"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -2316,7 +2373,7 @@ dependencies = [
 [[package]]
 name = "fedimint-meta-common"
 version = "0.12.0-alpha"
-source = "git+https://github.com/fedimint/fedimint?rev=64dc2aa4301dec42fb3f982913aac8aae78c2061#64dc2aa4301dec42fb3f982913aac8aae78c2061"
+source = "git+https://github.com/m1sterc001guy/fedimint?branch=frost_implementation#9dace3acd7b10156e4bccce39fa537dd1ee5cf49"
 dependencies = [
  "anyhow",
  "fedimint-core",
@@ -2331,7 +2388,7 @@ dependencies = [
 [[package]]
 name = "fedimint-metrics"
 version = "0.12.0-alpha"
-source = "git+https://github.com/fedimint/fedimint?rev=64dc2aa4301dec42fb3f982913aac8aae78c2061#64dc2aa4301dec42fb3f982913aac8aae78c2061"
+source = "git+https://github.com/m1sterc001guy/fedimint?branch=frost_implementation#9dace3acd7b10156e4bccce39fa537dd1ee5cf49"
 dependencies = [
  "anyhow",
  "axum",
@@ -2344,7 +2401,7 @@ dependencies = [
 [[package]]
 name = "fedimint-mint-client"
 version = "0.12.0-alpha"
-source = "git+https://github.com/fedimint/fedimint?rev=64dc2aa4301dec42fb3f982913aac8aae78c2061#64dc2aa4301dec42fb3f982913aac8aae78c2061"
+source = "git+https://github.com/m1sterc001guy/fedimint?branch=frost_implementation#9dace3acd7b10156e4bccce39fa537dd1ee5cf49"
 dependencies = [
  "anyhow",
  "aquamarine",
@@ -2384,7 +2441,7 @@ dependencies = [
 [[package]]
 name = "fedimint-mint-common"
 version = "0.12.0-alpha"
-source = "git+https://github.com/fedimint/fedimint?rev=64dc2aa4301dec42fb3f982913aac8aae78c2061#64dc2aa4301dec42fb3f982913aac8aae78c2061"
+source = "git+https://github.com/m1sterc001guy/fedimint?branch=frost_implementation#9dace3acd7b10156e4bccce39fa537dd1ee5cf49"
 dependencies = [
  "anyhow",
  "bitcoin_hashes",
@@ -2398,7 +2455,7 @@ dependencies = [
 [[package]]
 name = "fedimint-mintv2-client"
 version = "0.12.0-alpha"
-source = "git+https://github.com/fedimint/fedimint?rev=64dc2aa4301dec42fb3f982913aac8aae78c2061#64dc2aa4301dec42fb3f982913aac8aae78c2061"
+source = "git+https://github.com/m1sterc001guy/fedimint?branch=frost_implementation#9dace3acd7b10156e4bccce39fa537dd1ee5cf49"
 dependencies = [
  "anyhow",
  "aquamarine",
@@ -2436,7 +2493,7 @@ dependencies = [
 [[package]]
 name = "fedimint-mintv2-common"
 version = "0.12.0-alpha"
-source = "git+https://github.com/fedimint/fedimint?rev=64dc2aa4301dec42fb3f982913aac8aae78c2061#64dc2aa4301dec42fb3f982913aac8aae78c2061"
+source = "git+https://github.com/m1sterc001guy/fedimint?branch=frost_implementation#9dace3acd7b10156e4bccce39fa537dd1ee5cf49"
 dependencies = [
  "anyhow",
  "bitcoin_hashes",
@@ -2450,7 +2507,7 @@ dependencies = [
 [[package]]
 name = "fedimint-rocksdb"
 version = "0.12.0-alpha"
-source = "git+https://github.com/fedimint/fedimint?rev=64dc2aa4301dec42fb3f982913aac8aae78c2061#64dc2aa4301dec42fb3f982913aac8aae78c2061"
+source = "git+https://github.com/m1sterc001guy/fedimint?branch=frost_implementation#9dace3acd7b10156e4bccce39fa537dd1ee5cf49"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -2467,7 +2524,7 @@ dependencies = [
 [[package]]
 name = "fedimint-tbs"
 version = "0.12.0-alpha"
-source = "git+https://github.com/fedimint/fedimint?rev=64dc2aa4301dec42fb3f982913aac8aae78c2061#64dc2aa4301dec42fb3f982913aac8aae78c2061"
+source = "git+https://github.com/m1sterc001guy/fedimint?branch=frost_implementation#9dace3acd7b10156e4bccce39fa537dd1ee5cf49"
 dependencies = [
  "bls12_381",
  "fedimint-core",
@@ -2504,7 +2561,7 @@ dependencies = [
 [[package]]
 name = "fedimint-tpe"
 version = "0.12.0-alpha"
-source = "git+https://github.com/fedimint/fedimint?rev=64dc2aa4301dec42fb3f982913aac8aae78c2061#64dc2aa4301dec42fb3f982913aac8aae78c2061"
+source = "git+https://github.com/m1sterc001guy/fedimint?branch=frost_implementation#9dace3acd7b10156e4bccce39fa537dd1ee5cf49"
 dependencies = [
  "bitcoin_hashes",
  "bls12_381",
@@ -2519,7 +2576,7 @@ dependencies = [
 [[package]]
 name = "fedimint-util-error"
 version = "0.12.0-alpha"
-source = "git+https://github.com/fedimint/fedimint?rev=64dc2aa4301dec42fb3f982913aac8aae78c2061#64dc2aa4301dec42fb3f982913aac8aae78c2061"
+source = "git+https://github.com/m1sterc001guy/fedimint?branch=frost_implementation#9dace3acd7b10156e4bccce39fa537dd1ee5cf49"
 dependencies = [
  "anyhow",
 ]
@@ -2527,7 +2584,7 @@ dependencies = [
 [[package]]
 name = "fedimint-wallet-client"
 version = "0.12.0-alpha"
-source = "git+https://github.com/fedimint/fedimint?rev=64dc2aa4301dec42fb3f982913aac8aae78c2061#64dc2aa4301dec42fb3f982913aac8aae78c2061"
+source = "git+https://github.com/m1sterc001guy/fedimint?branch=frost_implementation#9dace3acd7b10156e4bccce39fa537dd1ee5cf49"
 dependencies = [
  "anyhow",
  "aquamarine",
@@ -2550,6 +2607,7 @@ dependencies = [
  "serde_json",
  "strum 0.27.2",
  "strum_macros 0.27.2",
+ "thiserror 2.0.18",
  "tokio",
  "tracing",
 ]
@@ -2557,7 +2615,7 @@ dependencies = [
 [[package]]
 name = "fedimint-wallet-common"
 version = "0.12.0-alpha"
-source = "git+https://github.com/fedimint/fedimint?rev=64dc2aa4301dec42fb3f982913aac8aae78c2061#64dc2aa4301dec42fb3f982913aac8aae78c2061"
+source = "git+https://github.com/m1sterc001guy/fedimint?branch=frost_implementation#9dace3acd7b10156e4bccce39fa537dd1ee5cf49"
 dependencies = [
  "anyhow",
  "bitcoin",
@@ -2573,7 +2631,7 @@ dependencies = [
 [[package]]
 name = "fedimint-walletv2-client"
 version = "0.12.0-alpha"
-source = "git+https://github.com/fedimint/fedimint?rev=64dc2aa4301dec42fb3f982913aac8aae78c2061#64dc2aa4301dec42fb3f982913aac8aae78c2061"
+source = "git+https://github.com/m1sterc001guy/fedimint?branch=frost_implementation#9dace3acd7b10156e4bccce39fa537dd1ee5cf49"
 dependencies = [
  "anyhow",
  "async-stream",
@@ -2601,11 +2659,12 @@ dependencies = [
 [[package]]
 name = "fedimint-walletv2-common"
 version = "0.12.0-alpha"
-source = "git+https://github.com/fedimint/fedimint?rev=64dc2aa4301dec42fb3f982913aac8aae78c2061#64dc2aa4301dec42fb3f982913aac8aae78c2061"
+source = "git+https://github.com/m1sterc001guy/fedimint?branch=frost_implementation#9dace3acd7b10156e4bccce39fa537dd1ee5cf49"
 dependencies = [
  "anyhow",
  "bitcoin",
  "fedimint-core",
+ "frost-secp256k1-tr",
  "miniscript",
  "secp256k1",
  "serde",
@@ -2719,6 +2778,55 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "cb4cb245038516f5f85277875cdaa4f7d2c9a0fa0468de06ed190163b1581fcf"
 dependencies = [
  "percent-encoding",
+]
+
+[[package]]
+name = "frost-core"
+version = "3.0.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "81ef2787af391c7e8bedc037a3b9ea03dde803fbd93e778e6bb369547800e5cd"
+dependencies = [
+ "byteorder",
+ "const-crc32-nostd",
+ "derive-getters",
+ "document-features",
+ "hex",
+ "itertools 0.14.0",
+ "postcard",
+ "rand_core 0.6.4",
+ "serde",
+ "serdect 0.2.0",
+ "thiserror 2.0.18",
+ "visibility",
+ "zeroize",
+ "zeroize_derive",
+]
+
+[[package]]
+name = "frost-rerandomized"
+version = "3.0.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "8f4c5cedd2426728adef2c0b1720f57676354c473836d1ccc50d0f0d1c91942b"
+dependencies = [
+ "derive-getters",
+ "document-features",
+ "frost-core",
+ "hex",
+ "rand_core 0.6.4",
+]
+
+[[package]]
+name = "frost-secp256k1-tr"
+version = "3.0.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "c6fca4ca9f057cf22066f3eb5bbda59d2af51f429f2aac5982a11a8a841c0993"
+dependencies = [
+ "document-features",
+ "frost-core",
+ "frost-rerandomized",
+ "k256",
+ "rand_core 0.6.4",
+ "sha2 0.10.9",
 ]
 
 [[package]]
@@ -3075,6 +3183,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "hash32"
+version = "0.2.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "b0c35f58762feb77d74ebe43bdbc3210f09be9fe6742234d573bacc26ed92b67"
+dependencies = [
+ "byteorder",
+]
+
+[[package]]
 name = "hashbrown"
 version = "0.12.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3117,6 +3234,20 @@ dependencies = [
  "allocator-api2",
  "equivalent",
  "foldhash 0.2.0",
+]
+
+[[package]]
+name = "heapless"
+version = "0.7.17"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "cdc6457c0eb62c71aac4bc17216026d8410337c4126773b9c5daba343f17964f"
+dependencies = [
+ "atomic-polyfill",
+ "hash32",
+ "rustc_version",
+ "serde",
+ "spin 0.9.8",
+ "stable_deref_trait",
 ]
 
 [[package]]
@@ -4415,6 +4546,16 @@ dependencies = [
  "jsonrpsee-core",
  "jsonrpsee-types",
  "url",
+]
+
+[[package]]
+name = "k256"
+version = "0.13.4"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "f6e3919bbaa2945715f0bb6d3934a173d1e9a59ac23767fbaaef277265a7411b"
+dependencies = [
+ "cfg-if",
+ "elliptic-curve",
 ]
 
 [[package]]
@@ -5940,6 +6081,7 @@ dependencies = [
  "cobs",
  "embedded-io 0.4.0",
  "embedded-io 0.6.1",
+ "heapless",
  "postcard-derive",
  "serde",
 ]
@@ -6833,6 +6975,19 @@ checksum = "da046153aa2352493d6cb7da4b6e5c0c057d8a1d0a9aa8560baffdd945acd414"
 dependencies = [
  "ring",
  "untrusted",
+]
+
+[[package]]
+name = "sec1"
+version = "0.7.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "d3e97a565f76233a6003f9f5c54be1d9c5bdfa3eccfb189469f11ec4901c47dc"
+dependencies = [
+ "base16ct 0.2.0",
+ "der 0.7.10",
+ "generic-array",
+ "subtle",
+ "zeroize",
 ]
 
 [[package]]
@@ -8144,6 +8299,17 @@ name = "version_check"
 version = "0.9.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "0b928f33d975fc6ad9f86c8f283853ad26bdd5b10b7f1542aa2fa15e2289105a"
+
+[[package]]
+name = "visibility"
+version = "0.1.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "d674d135b4a8c1d7e813e2f8d1c9a58308aee4a680323066025e53132218bd91"
+dependencies = [
+ "proc-macro2",
+ "quote",
+ "syn 2.0.117",
+]
 
 [[package]]
 name = "walkdir"
