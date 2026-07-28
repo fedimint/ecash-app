@@ -3,6 +3,7 @@ import 'package:ecashapp/lib.dart';
 import 'package:ecashapp/multimint.dart';
 import 'package:ecashapp/screens/guardian_audit.dart';
 import 'package:ecashapp/screens/guardian_backups.dart';
+import 'package:ecashapp/screens/guardian_gateways.dart';
 import 'package:ecashapp/utils.dart';
 import 'package:flutter/material.dart';
 
@@ -166,6 +167,26 @@ class _GuardianDashboardScreenState extends State<GuardianDashboardScreen> {
                   ),
                 ),
           ),
+          if (status.hasLnv2) ...[
+            const SizedBox(height: 8),
+            _manageTile(
+              theme: theme,
+              icon: Icons.bolt_outlined,
+              title: context.l10n.guardianGatewaysTitle,
+              subtitle: context.l10n.guardianGatewaysSubtitle,
+              onTap:
+                  () => Navigator.of(context).push(
+                    MaterialPageRoute(
+                      builder:
+                          (_) => GuardianGatewaysScreen(
+                            fed: widget.fed,
+                            peer: widget.peer,
+                            password: widget.password,
+                          ),
+                    ),
+                  ),
+            ),
+          ],
         ],
       ),
     );

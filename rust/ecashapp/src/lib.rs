@@ -1161,6 +1161,41 @@ pub async fn guardian_status(
 }
 
 #[frb]
+pub async fn guardian_list_gateways(
+    federation_id: &FederationId,
+    peer: u16,
+) -> anyhow::Result<Vec<String>> {
+    let multimint = get_multimint();
+    multimint.guardian_list_gateways(federation_id, peer).await
+}
+
+#[frb]
+pub async fn guardian_add_gateway(
+    federation_id: &FederationId,
+    peer: u16,
+    password: String,
+    gateway_url: String,
+) -> anyhow::Result<bool> {
+    let multimint = get_multimint();
+    multimint
+        .guardian_add_gateway(federation_id, peer, password, gateway_url)
+        .await
+}
+
+#[frb]
+pub async fn guardian_remove_gateway(
+    federation_id: &FederationId,
+    peer: u16,
+    password: String,
+    gateway_url: String,
+) -> anyhow::Result<bool> {
+    let multimint = get_multimint();
+    multimint
+        .guardian_remove_gateway(federation_id, peer, password, gateway_url)
+        .await
+}
+
+#[frb]
 pub async fn get_bitcoin_display() -> BitcoinDisplay {
     let multimint = get_multimint();
     multimint.get_bitcoin_display().await

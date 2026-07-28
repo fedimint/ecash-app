@@ -859,6 +859,51 @@
   "guardianEcashBackupsSubtitle": "Client wallet backups stored on this guardian",
   "@guardianEcashBackupsSubtitle": {},
 
+  "guardianGatewaysTitle": "Lightning Gateways",
+  "@guardianGatewaysTitle": {},
+
+  "guardianGatewaysSubtitle": "Gateways whitelisted by this guardian",
+  "@guardianGatewaysSubtitle": {},
+
+  "guardianAddGateway": "Add Gateway",
+  "@guardianAddGateway": {},
+
+  "guardianGatewayUrlLabel": "Gateway URL",
+  "@guardianGatewayUrlLabel": {},
+
+  "guardianGatewayUrlHint": "https://... or iroh://...",
+  "@guardianGatewayUrlHint": {},
+
+  "guardianGatewayUrlHelper": "Gateways are reachable over HTTPS or Iroh (iroh:// followed by the node ID)",
+  "@guardianGatewayUrlHelper": {},
+
+  "guardianNoGateways": "No gateways whitelisted",
+  "@guardianNoGateways": {},
+
+  "guardianGatewayUnreachable": "Gateway did not respond",
+  "@guardianGatewayUnreachable": {},
+
+  "guardianGatewayAdded": "Gateway added",
+  "@guardianGatewayAdded": {},
+
+  "guardianGatewayAlreadyPresent": "Gateway was already whitelisted",
+  "@guardianGatewayAlreadyPresent": {},
+
+  "guardianGatewayRemoved": "Gateway removed",
+  "@guardianGatewayRemoved": {},
+
+  "guardianRemoveGatewayConfirm": "Remove this gateway from the whitelist?",
+  "@guardianRemoveGatewayConfirm": {},
+
+  "guardianCouldNotAddGateway": "Could not add gateway",
+  "@guardianCouldNotAddGateway": {},
+
+  "guardianCouldNotRemoveGateway": "Could not remove gateway",
+  "@guardianCouldNotRemoveGateway": {},
+
+  "guardianCouldNotLoadGateways": "Could not load gateways",
+  "@guardianCouldNotLoadGateways": {},
+
   "connectedToGuardians": "Connected to {online} / {total} Guardians",
   "@connectedToGuardians": {
     "placeholders": {

@@ -13,7 +13,7 @@ use anyhow::bail;
 use anyhow::Context;
 use bitcoin::hashes::{sha256, Hash};
 use bitcoin::key::rand::{seq::SliceRandom, thread_rng};
-use fedimint_api_client::api::{DynGlobalApi, FederationApiExt, FederationError};
+use fedimint_api_client::api::{DynGlobalApi, DynModuleApi, FederationApiExt, FederationError};
 use fedimint_bip39::{Bip39RootSecretStrategy, Language, Mnemonic};
 use fedimint_client::{
     db::ChronologicalOperationLogKey,
@@ -52,7 +52,10 @@ use fedimint_lnv2_client::{
     ReceiveOperationState, SendOperationState,
 };
 use fedimint_lnv2_common::{
-    contracts::fee_from_expiration, gateway_api::PaymentFee, Bolt11InvoiceDescription,
+    contracts::fee_from_expiration,
+    endpoint_constants::{ADD_GATEWAY_ENDPOINT, REMOVE_GATEWAY_ENDPOINT},
+    gateway_api::PaymentFee,
+    Bolt11InvoiceDescription,
 };
 use fedimint_meta_client::{common::DEFAULT_META_KEY, MetaClientInit};
 use fedimint_mint_client::{
@@ -392,8 +395,11 @@ pub struct GuardianBitcoinStatus {
 #[derive(Debug, Serialize, Clone)]
 pub struct GuardianStatusSummary {
     pub health: GuardianHealth,
-    /// None when the federation has no wallet (v1) module.
+    /// None when the federation has no wallet module.
     pub bitcoin: Option<GuardianBitcoinStatus>,
+    /// Whether the federation runs the lnv2 module, i.e. whether gateway
+    /// management is available.
+    pub has_lnv2: bool,
 }
 
 #[derive(Debug, Serialize, Clone)]
@@ -5697,6 +5703,13 @@ impl Multimint {
         peer: u16,
         password: String,
     ) -> anyhow::Result<GuardianStatusSummary> {
+        let client = self
+            .clients
+            .read()
+            .await
+            .get(federation_id)
+            .ok_or(anyhow!("Federation does not exist"))?
+            .clone();
         let api = self.guardian_admin_api(federation_id, peer).await?;
 
         let status = api.status().await?;
@@ -5718,26 +5731,23 @@ impl Multimint {
             scheduled_shutdown_session: federation.and_then(|f| f.scheduled_shutdown),
         };
 
-        let bitcoin = self
-            .guardian_bitcoin_status(federation_id, &api, password)
-            .await;
+        let bitcoin = Self::guardian_bitcoin_status(&client, &api, password).await;
+        let has_lnv2 = client
+            .get_first_module::<fedimint_lnv2_client::LightningClientModule>()
+            .is_ok();
 
-        Ok(GuardianStatusSummary { health, bitcoin })
+        Ok(GuardianStatusSummary {
+            health,
+            bitcoin,
+            has_lnv2,
+        })
     }
 
     async fn guardian_bitcoin_status(
-        &self,
-        federation_id: &FederationId,
+        client: &ClientHandleArc,
         admin_api: &DynGlobalApi,
         password: String,
     ) -> Option<GuardianBitcoinStatus> {
-        let client = self
-            .clients
-            .read()
-            .await
-            .get(federation_id)?
-            .clone();
-
         if let Ok(wallet) = client.get_first_module::<WalletClientModule>() {
             let module_api = admin_api.with_module(wallet.id);
 
@@ -5790,6 +5800,85 @@ impl Multimint {
             local_block_count: None,
             consensus_feerate_sats_per_kvb: consensus_feerate,
         })
+    }
+
+    /// The lnv2 gateway whitelist is per-guardian state, so listing queries
+    /// the given peer directly instead of the client's default strategy.
+    pub async fn guardian_list_gateways(
+        &self,
+        federation_id: &FederationId,
+        peer: u16,
+    ) -> anyhow::Result<Vec<String>> {
+        let client = self
+            .clients
+            .read()
+            .await
+            .get(federation_id)
+            .ok_or(anyhow!("Federation does not exist"))?
+            .clone();
+        let lnv2 = client.get_first_module::<fedimint_lnv2_client::LightningClientModule>()?;
+        let gateways = lnv2
+            .list_gateways(Some(peer.into()))
+            .await
+            .map_err(|err| anyhow!("Could not list gateways: {err:?}"))?;
+        Ok(gateways.into_iter().map(|url| url.to_string()).collect())
+    }
+
+    async fn guardian_lnv2_module_api(
+        &self,
+        federation_id: &FederationId,
+        peer: u16,
+    ) -> anyhow::Result<DynModuleApi> {
+        let client = self
+            .clients
+            .read()
+            .await
+            .get(federation_id)
+            .ok_or(anyhow!("Federation does not exist"))?
+            .clone();
+        let lnv2_id = client
+            .get_first_module::<fedimint_lnv2_client::LightningClientModule>()?
+            .id;
+        let api = self.guardian_admin_api(federation_id, peer).await?;
+        Ok(api.with_module(lnv2_id))
+    }
+
+    /// Returns false when the gateway was already whitelisted.
+    pub async fn guardian_add_gateway(
+        &self,
+        federation_id: &FederationId,
+        peer: u16,
+        password: String,
+        gateway_url: String,
+    ) -> anyhow::Result<bool> {
+        let gateway = SafeUrl::parse(gateway_url.trim())?;
+        let module_api = self.guardian_lnv2_module_api(federation_id, peer).await?;
+        Ok(module_api
+            .request_admin(
+                ADD_GATEWAY_ENDPOINT,
+                ApiRequestErased::new(gateway),
+                ApiAuth::new(password),
+            )
+            .await?)
+    }
+
+    /// Returns false when the gateway was not whitelisted to begin with.
+    pub async fn guardian_remove_gateway(
+        &self,
+        federation_id: &FederationId,
+        peer: u16,
+        password: String,
+        gateway_url: String,
+    ) -> anyhow::Result<bool> {
+        let gateway = SafeUrl::parse(gateway_url.trim())?;
+        let module_api = self.guardian_lnv2_module_api(federation_id, peer).await?;
+        Ok(module_api
+            .request_admin(
+                REMOVE_GATEWAY_ENDPOINT,
+                ApiRequestErased::new(gateway),
+                ApiAuth::new(password),
+            )
+            .await?)
     }
 
     pub async fn get_bitcoin_display(&self) -> BitcoinDisplay {

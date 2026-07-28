@@ -11,7 +11,7 @@ import 'package:flutter_rust_bridge/flutter_rust_bridge_for_generated.dart';
 import 'package:freezed_annotation/freezed_annotation.dart' hide protected;
 part 'multimint.freezed.dart';
 
-// These functions are ignored because they are not marked as `pub`: `await_receive_lnv1`, `await_receive_lnv2`, `await_send_lnv1`, `await_send_lnv2`, `backup`, `build_client`, `cache_btc_price`, `cache_federation_meta`, `check_for_update`, `compute_send_fees`, `extract_recipient_pk_from_lnv2_lnurl`, `finish_active_subscriptions`, `from_peg_out_fees`, `get_client_database`, `get_client`, `get_ecash_amount_from_meta`, `get_lnv1_amount_from_meta`, `get_lnv1_receive_tx`, `get_lnv1_send_tx`, `get_lnv2_amount_from_meta`, `get_mintv2_receive_amount`, `get_or_build_temp_client`, `get_recurringd_federations`, `get_url`, `gross_invoice_for_contract`, `guardian_admin_api`, `guardian_bitcoin_status`, `init_recovery_progress_cache`, `invoice_routes_back_to_federation`, `is_invalid_guardian_auth`, `is_newer_version`, `list_gateways`, `lnv1_select_gateway`, `lnv1_update_gateway_cache`, `lnv2_gateways`, `lnv2_select_gateway`, `load_clients`, `pay_lnv1`, `pay_lnv2`, `read_meta_msats`, `read_meta_u64`, `receive_lnv1`, `receive_lnv2`, `remove_existing_ln_address`, `remove_recovery_progress_cache`, `run_migrations`, `send_federation_fee`, `sign_challenge`, `solve_gross_for_net`, `spawn_await_ecash_reissue`, `spawn_await_ecash_send`, `spawn_await_mintv2_receive`, `spawn_await_receive`, `spawn_await_recurringd_receive`, `spawn_await_send`, `spawn_await_withdraw`, `spawn_backfill_recipient_pk`, `spawn_cache_task`, `spawn_lnv2_event_listener`, `spawn_recovery_progress`, `spawn_recurring_invoice_listener`, `update_recovery_progress_cache`, `wait_for_recovery`, `wallet_network`
+// These functions are ignored because they are not marked as `pub`: `await_receive_lnv1`, `await_receive_lnv2`, `await_send_lnv1`, `await_send_lnv2`, `backup`, `build_client`, `cache_btc_price`, `cache_federation_meta`, `check_for_update`, `compute_send_fees`, `extract_recipient_pk_from_lnv2_lnurl`, `finish_active_subscriptions`, `from_peg_out_fees`, `get_client_database`, `get_client`, `get_ecash_amount_from_meta`, `get_lnv1_amount_from_meta`, `get_lnv1_receive_tx`, `get_lnv1_send_tx`, `get_lnv2_amount_from_meta`, `get_mintv2_receive_amount`, `get_or_build_temp_client`, `get_recurringd_federations`, `get_url`, `gross_invoice_for_contract`, `guardian_admin_api`, `guardian_bitcoin_status`, `guardian_lnv2_module_api`, `init_recovery_progress_cache`, `invoice_routes_back_to_federation`, `is_invalid_guardian_auth`, `is_newer_version`, `list_gateways`, `lnv1_select_gateway`, `lnv1_update_gateway_cache`, `lnv2_gateways`, `lnv2_select_gateway`, `load_clients`, `pay_lnv1`, `pay_lnv2`, `read_meta_msats`, `read_meta_u64`, `receive_lnv1`, `receive_lnv2`, `remove_existing_ln_address`, `remove_recovery_progress_cache`, `run_migrations`, `send_federation_fee`, `sign_challenge`, `solve_gross_for_net`, `spawn_await_ecash_reissue`, `spawn_await_ecash_send`, `spawn_await_mintv2_receive`, `spawn_await_receive`, `spawn_await_recurringd_receive`, `spawn_await_send`, `spawn_await_withdraw`, `spawn_backfill_recipient_pk`, `spawn_cache_task`, `spawn_lnv2_event_listener`, `spawn_recovery_progress`, `spawn_recurring_invoice_listener`, `update_recovery_progress_cache`, `wait_for_recovery`, `wallet_network`
 // These types are ignored because they are neither used by any `pub` functions nor (for structs and enums) marked `#[frb(unignore)]`: `ClientType`, `LNAddressRegisterRequest`, `LNAddressRemoveRequest`, `OnChainWithdrawalMeta`, `WrappedEcash`
 // These function are ignored because they are on traits that is not defined in current crate (put an empty `#[frb]` on it to unignore): `assert_receiver_is_total_eq`, `assert_receiver_is_total_eq`, `assert_receiver_is_total_eq`, `assert_receiver_is_total_eq`, `assert_receiver_is_total_eq`, `assert_receiver_is_total_eq`, `assert_receiver_is_total_eq`, `assert_receiver_is_total_eq`, `assert_receiver_is_total_eq`, `assert_receiver_is_total_eq`, `assert_receiver_is_total_eq`, `assert_receiver_is_total_eq`, `assert_receiver_is_total_eq`, `assert_receiver_is_total_eq`, `assert_receiver_is_total_eq`, `assert_receiver_is_total_eq`, `assert_receiver_is_total_eq`, `assert_receiver_is_total_eq`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `consensus_decode_partial_from_finite_reader`, `consensus_decode_partial_from_finite_reader`, `consensus_decode_partial_from_finite_reader`, `consensus_encode`, `consensus_encode`, `consensus_encode`, `eq`, `eq`, `eq`, `eq`, `eq`, `eq`, `eq`, `eq`, `eq`, `eq`, `eq`, `eq`, `eq`, `eq`, `eq`, `eq`, `eq`, `eq`, `eq`, `eq`, `eq`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `from`, `from`
 // These functions have error during generation (see debug logs or enable `stop_on_error: true` for more details): `subscribe_peer_status`
@@ -260,6 +260,14 @@ abstract class Multimint implements RustOpaqueInterface {
 
   Future<bool> getShowMsats();
 
+  /// Returns false when the gateway was already whitelisted.
+  Future<bool> guardianAddGateway({
+    required FederationId federationId,
+    required int peer,
+    required String password,
+    required String gatewayUrl,
+  });
+
   Future<GuardianAuditSummary> guardianAudit({
     required FederationId federationId,
     required int peer,
@@ -272,6 +280,13 @@ abstract class Multimint implements RustOpaqueInterface {
     required String password,
   });
 
+  /// The lnv2 gateway whitelist is per-guardian state, so listing queries
+  /// the given peer directly instead of the client's default strategy.
+  Future<List<String>> guardianListGateways({
+    required FederationId federationId,
+    required int peer,
+  });
+
   /// Verify guardian admin credentials against the `auth` endpoint, which
   /// succeeds only with the correct password. Returns `Ok(false)` on a
   /// rejected password (also the guardian's response when it has no admin
@@ -280,6 +295,14 @@ abstract class Multimint implements RustOpaqueInterface {
     required FederationId federationId,
     required int peer,
     required String password,
+  });
+
+  /// Returns false when the gateway was not whitelisted to begin with.
+  Future<bool> guardianRemoveGateway({
+    required FederationId federationId,
+    required int peer,
+    required String password,
+    required String gatewayUrl,
   });
 
   Future<GuardianStatusSummary> guardianStatus({
@@ -892,13 +915,21 @@ class GuardianModuleSummary {
 class GuardianStatusSummary {
   final GuardianHealth health;
 
-  /// None when the federation has no wallet (v1) module.
+  /// None when the federation has no wallet module.
   final GuardianBitcoinStatus? bitcoin;
 
-  const GuardianStatusSummary({required this.health, this.bitcoin});
+  /// Whether the federation runs the lnv2 module, i.e. whether gateway
+  /// management is available.
+  final bool hasLnv2;
+
+  const GuardianStatusSummary({
+    required this.health,
+    this.bitcoin,
+    required this.hasLnv2,
+  });
 
   @override
-  int get hashCode => health.hashCode ^ bitcoin.hashCode;
+  int get hashCode => health.hashCode ^ bitcoin.hashCode ^ hasLnv2.hashCode;
 
   @override
   bool operator ==(Object other) =>
@@ -906,7 +937,8 @@ class GuardianStatusSummary {
       other is GuardianStatusSummary &&
           runtimeType == other.runtimeType &&
           health == other.health &&
-          bitcoin == other.bitcoin;
+          bitcoin == other.bitcoin &&
+          hasLnv2 == other.hasLnv2;
 }
 
 class InvoicePaidEvent {

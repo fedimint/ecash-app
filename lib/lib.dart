@@ -519,6 +519,38 @@ Future<GuardianStatusSummary> guardianStatus({
   password: password,
 );
 
+Future<List<String>> guardianListGateways({
+  required FederationId federationId,
+  required int peer,
+}) => RustLib.instance.api.crateGuardianListGateways(
+  federationId: federationId,
+  peer: peer,
+);
+
+Future<bool> guardianAddGateway({
+  required FederationId federationId,
+  required int peer,
+  required String password,
+  required String gatewayUrl,
+}) => RustLib.instance.api.crateGuardianAddGateway(
+  federationId: federationId,
+  peer: peer,
+  password: password,
+  gatewayUrl: gatewayUrl,
+);
+
+Future<bool> guardianRemoveGateway({
+  required FederationId federationId,
+  required int peer,
+  required String password,
+  required String gatewayUrl,
+}) => RustLib.instance.api.crateGuardianRemoveGateway(
+  federationId: federationId,
+  peer: peer,
+  password: password,
+  gatewayUrl: gatewayUrl,
+);
+
 Future<BitcoinDisplay> getBitcoinDisplay() =>
     RustLib.instance.api.crateGetBitcoinDisplay();
 
