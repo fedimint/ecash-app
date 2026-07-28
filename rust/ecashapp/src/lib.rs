@@ -26,9 +26,9 @@ use futures_util::StreamExt;
 use multimint::{
     EcashSendFees, FederationMeta, FederationSelector, GuardianAuditSummary,
     GuardianBackupStatistics, GuardianMetaState, GuardianStatusSummary, LightningSendOutcome,
-    LogLevel, Multimint,
-    MultimintCreation, MultimintEvent, OOBNotesWrapper, PaymentPreviewWithGateways, PeginFeeQuote,
-    ReceiveAmount, ReissueFees, Transaction, Utxo, WithdrawFees, WithdrawFeesResponse,
+    LogLevel, Multimint, MultimintCreation, MultimintEvent, OOBNotesWrapper,
+    PaymentPreviewWithGateways, PeginFeeQuote, ReceiveAmount, ReissueFees, Transaction, Utxo,
+    WithdrawFees, WithdrawFeesResponse,
 };
 use nostr::{NWCConnectionInfo, NostrClient, PublicFederation};
 use serde::Serialize;

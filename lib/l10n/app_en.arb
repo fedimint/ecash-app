@@ -781,6 +781,63 @@
   "guardianNetAssets": "Net Assets",
   "@guardianNetAssets": {},
 
+  "guardianAuditFullyBacked": "Fully backed",
+  "@guardianAuditFullyBacked": {},
+
+  "guardianAuditUnderBacked": "Not fully backed",
+  "@guardianAuditUnderBacked": {},
+
+  "guardianAuditReserveExplain": "held beyond what users are owed, earned from transaction fees",
+  "@guardianAuditReserveExplain": {},
+
+  "guardianAuditExactExplain": "every unit of ecash is exactly backed",
+  "@guardianAuditExactExplain": {},
+
+  "guardianAuditShortfallExplain": "owed to users beyond what the federation holds",
+  "@guardianAuditShortfallExplain": {},
+
+  "guardianAuditHoldings": "Holdings",
+  "@guardianAuditHoldings": {},
+
+  "guardianAuditOwed": "Owed to users",
+  "@guardianAuditOwed": {},
+
+  "guardianAuditWhereValueIs": "Where the value is",
+  "@guardianAuditWhereValueIs": {},
+
+  "guardianAuditWalletTitle": "Bitcoin Reserve",
+  "@guardianAuditWalletTitle": {},
+
+  "guardianAuditWalletSubtitle": "On-chain bitcoin the federation holds",
+  "@guardianAuditWalletSubtitle": {},
+
+  "guardianAuditMintTitle": "Ecash in Circulation",
+  "@guardianAuditMintTitle": {},
+
+  "guardianAuditMintSubtitle": "Value users hold as ecash",
+  "@guardianAuditMintSubtitle": {},
+
+  "guardianAuditLightningTitle": "Lightning Contracts",
+  "@guardianAuditLightningTitle": {},
+
+  "guardianAuditLightningSubtitle": "Payments currently in flight",
+  "@guardianAuditLightningSubtitle": {},
+
+  "guardianAuditOtherSubtitle": "Other module balance",
+  "@guardianAuditOtherSubtitle": {},
+
+  "guardianAuditHeldTag": "held",
+  "@guardianAuditHeldTag": {},
+
+  "guardianAuditOwedTag": "owed",
+  "@guardianAuditOwedTag": {},
+
+  "guardianAuditExplainerTitle": "What am I looking at?",
+  "@guardianAuditExplainerTitle": {},
+
+  "guardianAuditExplainerBody": "Each module reports what it adds to or takes from the federation's books. The wallet holds bitcoin on chain, while every ecash note in circulation is value the federation owes back to a user. Subtracting what is owed from what is held gives the figure above: as long as it is not negative, every note in circulation is covered. Any surplus is fee revenue — the federation charges a small fee on each transaction, so the amount it holds grows slightly faster than the amount it owes.",
+  "@guardianAuditExplainerBody": {},
+
   "guardianEcashBackups": "Ecash Backups",
   "@guardianEcashBackups": {},
 
@@ -853,7 +910,7 @@
   "guardianManageSection": "Manage",
   "@guardianManageSection": {},
 
-  "guardianBalanceSheetSubtitle": "Assets and liabilities by module",
+  "guardianBalanceSheetSubtitle": "Assets and liabilities",
   "@guardianBalanceSheetSubtitle": {},
 
   "guardianEcashBackupsSubtitle": "Client wallet backups stored on this guardian",
@@ -862,7 +919,7 @@
   "guardianMetaTitle": "Federation Settings",
   "@guardianMetaTitle": {},
 
-  "guardianMetaSubtitle": "Name, picture and welcome message",
+  "guardianMetaSubtitle": "View and propose changes",
   "@guardianMetaSubtitle": {},
 
   "guardianMetaCurrentSettings": "Current Settings",

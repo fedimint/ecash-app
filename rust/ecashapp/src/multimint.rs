@@ -72,12 +72,6 @@ use fedimint_mintv2_client::{
     MintClientInit as MintV2Init, MintClientModule as MintV2Module,
     MintOperationMeta as MintV2OperationMeta,
 };
-use fedimint_wallet_common::endpoint_constants::{
-    BITCOIN_RPC_CONFIG_ENDPOINT, BLOCK_COUNT_ENDPOINT, BLOCK_COUNT_LOCAL_ENDPOINT,
-};
-use fedimint_walletv2_common::endpoint_constants::{
-    CONSENSUS_BLOCK_COUNT_ENDPOINT, CONSENSUS_FEERATE_ENDPOINT,
-};
 use fedimint_wallet_client::client_db::TweakIdx;
 use fedimint_wallet_client::TxOutputSummary;
 use fedimint_wallet_client::WithdrawState;
@@ -85,10 +79,16 @@ use fedimint_wallet_client::{
     DepositStateV2, PegOutFees, WalletClientInit, WalletClientModule, WalletOperationMeta,
     WalletOperationMetaVariant,
 };
+use fedimint_wallet_common::endpoint_constants::{
+    BITCOIN_RPC_CONFIG_ENDPOINT, BLOCK_COUNT_ENDPOINT, BLOCK_COUNT_LOCAL_ENDPOINT,
+};
 use fedimint_walletv2_client::{
     FinalReceiveOperationState as WalletV2FinalReceiveOperationState,
     FinalSendOperationState as WalletV2FinalSendOperationState, WalletClientInit as WalletV2Init,
     WalletClientModule as WalletV2Module, WalletOperationMeta as WalletV2OperationMeta,
+};
+use fedimint_walletv2_common::endpoint_constants::{
+    CONSENSUS_BLOCK_COUNT_ENDPOINT, CONSENSUS_FEERATE_ENDPOINT,
 };
 use futures_util::{stream, Stream, StreamExt};
 use lightning_invoice::{Bolt11Invoice, Description};
@@ -6111,12 +6111,7 @@ impl Multimint {
         }
 
         let encoded = serde_json::to_vec(&document)?;
-        Self::guardian_meta_submit(
-            &module_api,
-            password,
-            MetaValue::from(encoded.as_slice()),
-        )
-        .await
+        Self::guardian_meta_submit(&module_api, password, MetaValue::from(encoded.as_slice())).await
     }
 
     /// Returns false when the gateway was not whitelisted to begin with.
