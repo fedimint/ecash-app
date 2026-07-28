@@ -841,20 +841,41 @@
   "guardianEcashBackups": "Ecash Backups",
   "@guardianEcashBackups": {},
 
-  "guardianStoredBackups": "Stored backups",
-  "@guardianStoredBackups": {},
+  "guardianBackupsWalletsProtected": "wallet backups stored on this guardian",
+  "@guardianBackupsWalletsProtected": {},
 
-  "guardianRefreshedLastDay": "Refreshed in last day",
-  "@guardianRefreshedLastDay": {},
+  "guardianBackupsActiveShare": "{percent}% active this month",
+  "@guardianBackupsActiveShare": {
+    "placeholders": {
+      "percent": {
+        "type": "String"
+      }
+    }
+  },
 
-  "guardianRefreshedLastWeek": "Refreshed in last week",
-  "@guardianRefreshedLastWeek": {},
+  "guardianBackupsLastRefreshed": "Last refreshed",
+  "@guardianBackupsLastRefreshed": {},
 
-  "guardianRefreshedLastMonth": "Refreshed in last month",
-  "@guardianRefreshedLastMonth": {},
+  "guardianBackupsToday": "Today",
+  "@guardianBackupsToday": {},
 
-  "guardianRefreshedLast3Months": "Refreshed in last 3 months",
-  "@guardianRefreshedLast3Months": {},
+  "guardianBackupsThisWeek": "This week",
+  "@guardianBackupsThisWeek": {},
+
+  "guardianBackupsThisMonth": "This month",
+  "@guardianBackupsThisMonth": {},
+
+  "guardianBackupsThisQuarter": "Last 3 months",
+  "@guardianBackupsThisQuarter": {},
+
+  "guardianBackupsDormant": "Over 3 months ago",
+  "@guardianBackupsDormant": {},
+
+  "guardianBackupsExplainerTitle": "What am I looking at?",
+  "@guardianBackupsExplainerTitle": {},
+
+  "guardianBackupsExplainerBody": "Users can store an encrypted backup of their wallet with the federation, so they can recover it from their seed phrase alone. Guardians cannot read them. A backup is refreshed whenever that wallet reconnects, so these figures are a rough measure of how many users are still active — plenty of dormant backups is normal, since wallets that are no longer used simply stop refreshing.",
+  "@guardianBackupsExplainerBody": {},
 
   "guardianDashboardLoadFailed": "Could not load guardian data",
   "@guardianDashboardLoadFailed": {},
