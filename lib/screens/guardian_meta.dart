@@ -6,29 +6,56 @@ import 'package:ecashapp/multimint.dart';
 import 'package:ecashapp/toast.dart';
 import 'package:ecashapp/utils.dart';
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 
 /// Meta fields this screen exposes as guided flows. Everything else in the
 /// document is preserved untouched and summarised as "other changes".
-enum _MetaField { federationName, profilePicture, welcomeMessage }
+enum _MetaField { federationName, profilePicture, welcomeMessage, expiryDate }
 
 extension _MetaFieldKey on _MetaField {
   String get key => switch (this) {
     _MetaField.federationName => 'federation_name',
     _MetaField.profilePicture => 'fedi:federation_icon_url',
     _MetaField.welcomeMessage => 'welcome_message',
+    _MetaField.expiryDate => 'federation_expiry_timestamp',
   };
 
   String label(BuildContext context) => switch (this) {
     _MetaField.federationName => context.l10n.guardianMetaFederationName,
     _MetaField.profilePicture => context.l10n.guardianMetaProfilePicture,
     _MetaField.welcomeMessage => context.l10n.guardianMetaWelcomeMessage,
+    _MetaField.expiryDate => context.l10n.guardianMetaExpiryDate,
   };
 
   IconData get icon => switch (this) {
     _MetaField.federationName => Icons.badge_outlined,
     _MetaField.profilePicture => Icons.image_outlined,
     _MetaField.welcomeMessage => Icons.waving_hand_outlined,
+    _MetaField.expiryDate => Icons.event_busy_outlined,
   };
+}
+
+/// The expiry is stored as Unix seconds, as a JSON string — the same encoding
+/// the guardian web UI writes. Returns null when unset or unparseable.
+DateTime? _parseExpiry(String? raw) {
+  if (raw == null || raw.trim().isEmpty) return null;
+  final seconds = int.tryParse(raw.trim());
+  if (seconds == null) return null;
+  return DateTime.fromMillisecondsSinceEpoch(seconds * 1000);
+}
+
+/// Renders a stored meta value for display. Only the expiry needs translating
+/// out of its raw form; everything else is already human-readable.
+String _displayValue(BuildContext context, _MetaField field, String? raw) {
+  if (raw == null || raw.isEmpty) {
+    return field == _MetaField.expiryDate
+        ? context.l10n.guardianMetaNeverExpires
+        : context.l10n.guardianMetaNotSet;
+  }
+  if (field != _MetaField.expiryDate) return raw;
+
+  final date = _parseExpiry(raw);
+  return date == null ? raw : DateFormat.yMMMd().add_jm().format(date);
 }
 
 /// A single human-readable difference between two meta documents.
@@ -66,6 +93,10 @@ class _GuardianMetaScreenState extends State<GuardianMetaScreen> {
   Object? _error;
   bool _busy = false;
 
+  /// Guardian names by peer id, so proposals can name who backs them rather
+  /// than showing bare peer numbers.
+  Map<int, String> _guardianNames = {};
+
   /// Proposals the operator chose to hide. The protocol has no "reject", so
   /// dismissing is deliberately local and forgotten on reload.
   final Set<String> _dismissed = {};
@@ -73,8 +104,28 @@ class _GuardianMetaScreenState extends State<GuardianMetaScreen> {
   @override
   void initState() {
     super.initState();
+    _loadGuardianNames();
     _load();
   }
+
+  Future<void> _loadGuardianNames() async {
+    try {
+      final meta = await getFederationMeta(
+        federationId: widget.fed.federationId,
+      );
+      if (!mounted) return;
+      setState(() {
+        _guardianNames = {for (final g in meta.guardians) g.peerId: g.name};
+      });
+    } catch (e) {
+      // Falls back to "Guardian N" labels; not worth failing the screen over.
+      AppLogger.instance.warn("Could not load guardian names: $e");
+    }
+  }
+
+  String _guardianLabel(int peerId) =>
+      _guardianNames[peerId] ??
+      context.l10n.guardianMetaPeerFallback(peerId.toString());
 
   Future<void> _load() async {
     setState(() {
@@ -223,8 +274,14 @@ class _GuardianMetaScreenState extends State<GuardianMetaScreen> {
       changes.add(
         _MetaChange(
           label: field.label(context),
-          from: before?.toString(),
-          to: after?.toString(),
+          from:
+              before == null
+                  ? null
+                  : _displayValue(context, field, before.toString()),
+          to:
+              after == null
+                  ? null
+                  : _displayValue(context, field, after.toString()),
         ),
       );
     }
@@ -234,8 +291,220 @@ class _GuardianMetaScreenState extends State<GuardianMetaScreen> {
 
   // --- Edit flows ---
 
+  /// A bordered, tappable row showing a chosen value. Used for the expiry
+  /// date and time, which open native pickers instead of a keyboard.
+  Widget _pickerTile({
+    required ThemeData theme,
+    required IconData icon,
+    required String text,
+    required bool isPlaceholder,
+    required VoidCallback? onTap,
+  }) {
+    final enabled = onTap != null;
+    return InkWell(
+      borderRadius: BorderRadius.circular(12),
+      onTap: onTap,
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(
+            color: Colors.grey.withValues(alpha: enabled ? 0.4 : 0.2),
+          ),
+        ),
+        child: Row(
+          children: [
+            Icon(
+              icon,
+              size: 20,
+              color: enabled ? theme.colorScheme.primary : Colors.grey,
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Text(
+                text,
+                style: theme.textTheme.bodyLarge?.copyWith(
+                  fontWeight: FontWeight.w600,
+                  color: isPlaceholder || !enabled ? Colors.grey : null,
+                ),
+              ),
+            ),
+            Icon(
+              Icons.edit_outlined,
+              size: 18,
+              color: enabled ? Colors.grey : Colors.grey.withValues(alpha: 0.4),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  /// Expiry uses a date picker rather than a text field. The chosen day is
+  /// stored as its final second in local time, so a federation set to expire
+  /// "on the 5th" stays usable through all of the 5th.
+  Future<void> _onEditExpiry(String current) async {
+    final existing = _parseExpiry(current);
+    DateTime? selected = existing;
+
+    final result = await showModalBottomSheet<({String? value})>(
+      context: context,
+      isScrollControlled: true,
+      builder: (sheetContext) {
+        return Padding(
+          padding: const EdgeInsets.all(20),
+          child: StatefulBuilder(
+            builder: (sbContext, setSheetState) {
+              final theme = Theme.of(sbContext);
+              return Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    sbContext.l10n.guardianMetaExpiryDate,
+                    style: theme.textTheme.titleLarge?.copyWith(
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    sbContext.l10n.guardianMetaExpiryHelp,
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: Colors.grey,
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  _pickerTile(
+                    theme: theme,
+                    icon: Icons.calendar_today_outlined,
+                    // Default to the end of the chosen day, so an expiry set
+                    // "on the 5th" leaves the federation usable through it.
+                    text:
+                        selected == null
+                            ? sbContext.l10n.guardianMetaChooseDate
+                            : DateFormat.yMMMd().format(selected!),
+                    isPlaceholder: selected == null,
+                    onTap: () async {
+                      final now = DateTime.now();
+                      final picked = await showDatePicker(
+                        context: sbContext,
+                        initialDate:
+                            selected != null && selected!.isAfter(now)
+                                ? selected!
+                                : now.add(const Duration(days: 365)),
+                        firstDate: now,
+                        lastDate: DateTime(now.year + 20),
+                      );
+                      if (picked == null) return;
+                      setSheetState(() {
+                        selected = DateTime(
+                          picked.year,
+                          picked.month,
+                          picked.day,
+                          selected?.hour ?? 23,
+                          selected?.minute ?? 59,
+                          selected == null ? 59 : 0,
+                        );
+                      });
+                    },
+                  ),
+                  const SizedBox(height: 10),
+                  _pickerTile(
+                    theme: theme,
+                    icon: Icons.schedule_outlined,
+                    text:
+                        selected == null
+                            ? sbContext.l10n.guardianMetaChooseTime
+                            : DateFormat.jm().format(selected!),
+                    isPlaceholder: selected == null,
+                    // A time alone is meaningless, so require the date first.
+                    onTap:
+                        selected == null
+                            ? null
+                            : () async {
+                              final picked = await showTimePicker(
+                                context: sbContext,
+                                initialTime: TimeOfDay.fromDateTime(selected!),
+                              );
+                              if (picked == null) return;
+                              setSheetState(() {
+                                selected = DateTime(
+                                  selected!.year,
+                                  selected!.month,
+                                  selected!.day,
+                                  picked.hour,
+                                  picked.minute,
+                                );
+                              });
+                            },
+                  ),
+                  const SizedBox(height: 12),
+                  Text(
+                    sbContext.l10n.guardianMetaThresholdHint(
+                      _state!.threshold.toString(),
+                    ),
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: Colors.grey,
+                    ),
+                  ),
+                  const SizedBox(height: 20),
+                  Row(
+                    children: [
+                      if (existing != null)
+                        TextButton(
+                          onPressed:
+                              () =>
+                                  Navigator.of(sheetContext).pop((value: null)),
+                          child: Text(sbContext.l10n.guardianMetaClear),
+                        ),
+                      const Spacer(),
+                      TextButton(
+                        onPressed: () => Navigator.of(sheetContext).pop(),
+                        child: Text(sbContext.l10n.cancel),
+                      ),
+                      const SizedBox(width: 8),
+                      FilledButton(
+                        onPressed:
+                            selected == null
+                                ? null
+                                : () => Navigator.of(sheetContext).pop((
+                                  value:
+                                      (selected!.millisecondsSinceEpoch ~/ 1000)
+                                          .toString(),
+                                )),
+                        child: Text(sbContext.l10n.guardianMetaPropose),
+                      ),
+                    ],
+                  ),
+                ],
+              );
+            },
+          ),
+        );
+      },
+    );
+
+    if (result == null || !mounted) return;
+    if (result.value == (current.isEmpty ? null : current)) return;
+
+    await _submit(
+      () => guardianMetaProposeField(
+        federationId: widget.fed.federationId,
+        peer: widget.peer.peerId,
+        password: widget.password,
+        field: _MetaField.expiryDate.key,
+        value: result.value,
+      ),
+      context.l10n.guardianMetaProposed,
+    );
+  }
+
   Future<void> _onEditField(_MetaField field) async {
     final current = _consensus[field.key]?.toString() ?? '';
+    if (field == _MetaField.expiryDate) {
+      return _onEditExpiry(current);
+    }
     final controller = TextEditingController(text: current);
     final isPicture = field == _MetaField.profilePicture;
     final isMultiline = field == _MetaField.welcomeMessage;
@@ -502,7 +771,7 @@ class _GuardianMetaScreenState extends State<GuardianMetaScreen> {
                   ),
                   const SizedBox(height: 2),
                   Text(
-                    hasValue ? value : context.l10n.guardianMetaNotSet,
+                    _displayValue(context, field, value),
                     style: theme.textTheme.bodyMedium?.copyWith(
                       fontWeight: FontWeight.w600,
                       color: hasValue ? null : Colors.grey,
@@ -606,6 +875,28 @@ class _GuardianMetaScreenState extends State<GuardianMetaScreen> {
                 votes >= threshold ? Colors.green : theme.colorScheme.primary,
               ),
             ),
+          ),
+          const SizedBox(height: 8),
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Icon(
+                Icons.how_to_vote_outlined,
+                size: 14,
+                color: Colors.grey,
+              ),
+              const SizedBox(width: 6),
+              Expanded(
+                child: Text(
+                  context.l10n.guardianMetaBackedBy(
+                    proposal.peerIds.map(_guardianLabel).join(', '),
+                  ),
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: Colors.grey,
+                  ),
+                ),
+              ),
+            ],
           ),
           const SizedBox(height: 12),
           if (changes.isEmpty && otherCount == 0)

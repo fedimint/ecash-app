@@ -883,6 +883,39 @@
   "guardianMetaNotSet": "Not set",
   "@guardianMetaNotSet": {},
 
+  "guardianMetaExpiryDate": "Expiration date",
+  "@guardianMetaExpiryDate": {},
+
+  "guardianMetaExpiryHelp": "The federation shuts down after this date. Leave unset for no expiration.",
+  "@guardianMetaExpiryHelp": {},
+
+  "guardianMetaNeverExpires": "Never expires",
+  "@guardianMetaNeverExpires": {},
+
+  "guardianMetaChooseDate": "Choose a date",
+  "@guardianMetaChooseDate": {},
+
+  "guardianMetaChooseTime": "Choose a time",
+  "@guardianMetaChooseTime": {},
+
+  "guardianMetaBackedBy": "Backed by {guardians}",
+  "@guardianMetaBackedBy": {
+    "placeholders": {
+      "guardians": {
+        "type": "String"
+      }
+    }
+  },
+
+  "guardianMetaPeerFallback": "Guardian {peerId}",
+  "@guardianMetaPeerFallback": {
+    "placeholders": {
+      "peerId": {
+        "type": "String"
+      }
+    }
+  },
+
   "guardianMetaNoProposals": "No pending proposals",
   "@guardianMetaNoProposals": {},
 
