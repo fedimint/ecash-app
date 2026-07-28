@@ -13,6 +13,7 @@ use anyhow::bail;
 use anyhow::Context;
 use bitcoin::hashes::{sha256, Hash};
 use bitcoin::key::rand::{seq::SliceRandom, thread_rng};
+use fedimint_api_client::api::{DynGlobalApi, FederationError};
 use fedimint_bip39::{Bip39RootSecretStrategy, Language, Mnemonic};
 use fedimint_client::{
     db::ChronologicalOperationLogKey,
@@ -32,6 +33,7 @@ use fedimint_core::{
     db::{mem_impl::MemDatabase, Database, IDatabaseTransactionOpsCoreTyped},
     encoding::{Decodable, Encodable},
     invite_code::InviteCode,
+    module::ApiAuth,
     task::TaskGroup,
     util::SafeUrl,
     Amount,
@@ -103,6 +105,14 @@ const CONTACT_SYNC_INTERVAL_SECS: u64 = 90;
 const VERSION_CHECK_INTERVAL_SECS: u64 = 60 * 60 * 6;
 const GITHUB_LATEST_RELEASE_URL: &str =
     "https://api.github.com/repos/fedimint/ecash-app/releases/latest";
+
+/// fedimintd rejects a wrong (or unconfigured) admin password with JSON-RPC
+/// code 401 / "Invalid authorization". The client surfaces that as an opaque
+/// server error inside [`FederationError`], so matching the message is the
+/// only way to tell a bad password apart from an unreachable guardian.
+fn is_invalid_guardian_auth(err: &FederationError) -> bool {
+    err.to_string().contains("Invalid authorization")
+}
 
 fn is_newer_version(current: &str, latest: &str) -> bool {
     match (
@@ -316,6 +326,31 @@ pub struct PeerStatus {
     /// the UI reflects guardian upgrades in real time (a guardian upgrade
     /// restarts fedimintd, which surfaces as a reconnect on the status stream).
     pub version: Option<String>,
+}
+
+#[derive(Debug, Serialize, Clone)]
+pub struct GuardianModuleSummary {
+    pub module_instance_id: u16,
+    pub kind: String,
+    /// Positive means assets, negative means liabilities (e.g. the mint
+    /// module's outstanding e-cash).
+    pub net_assets_msats: i64,
+}
+
+#[derive(Debug, Serialize, Clone)]
+pub struct GuardianAuditSummary {
+    pub net_assets_msats: i64,
+    pub module_summaries: Vec<GuardianModuleSummary>,
+}
+
+#[derive(Debug, Serialize, Clone)]
+pub struct GuardianBackupStatistics {
+    pub num_backups: u64,
+    pub total_size_bytes: u64,
+    pub refreshed_1d: u64,
+    pub refreshed_1w: u64,
+    pub refreshed_1m: u64,
+    pub refreshed_3m: u64,
 }
 
 #[derive(Debug, Serialize, Clone)]
@@ -5523,6 +5558,94 @@ impl Multimint {
             .await
             .ok_or(anyhow!("Peer does not exist"))?
             .to_string())
+    }
+
+    /// Build an admin API handle scoped to a single guardian. Authenticated
+    /// (admin) endpoints read or mutate that guardian's local state, so unlike
+    /// regular client requests they always target one peer's URL.
+    async fn guardian_admin_api(
+        &self,
+        federation_id: &FederationId,
+        peer: u16,
+    ) -> anyhow::Result<DynGlobalApi> {
+        let client = self
+            .clients
+            .read()
+            .await
+            .get(federation_id)
+            .ok_or(anyhow!("Federation does not exist"))?
+            .clone();
+        let invite = client
+            .invite_code(peer.into())
+            .await
+            .ok_or(anyhow!("Peer does not exist"))?;
+        let connectors = ConnectorRegistry::build_from_client_defaults()
+            .bind()
+            .await?;
+        DynGlobalApi::new_admin(
+            connectors,
+            peer.into(),
+            invite.url(),
+            invite.api_secret().as_deref(),
+        )
+    }
+
+    /// Verify guardian admin credentials against the `auth` endpoint, which
+    /// succeeds only with the correct password. Returns `Ok(false)` on a
+    /// rejected password (also the guardian's response when it has no admin
+    /// password configured at all) and `Err` when the guardian is unreachable.
+    pub async fn guardian_login(
+        &self,
+        federation_id: &FederationId,
+        peer: u16,
+        password: String,
+    ) -> anyhow::Result<bool> {
+        let api = self.guardian_admin_api(federation_id, peer).await?;
+        match api.auth(ApiAuth::new(password)).await {
+            Ok(()) => Ok(true),
+            Err(err) if is_invalid_guardian_auth(&err) => Ok(false),
+            Err(err) => Err(err.into()),
+        }
+    }
+
+    pub async fn guardian_audit(
+        &self,
+        federation_id: &FederationId,
+        peer: u16,
+        password: String,
+    ) -> anyhow::Result<GuardianAuditSummary> {
+        let api = self.guardian_admin_api(federation_id, peer).await?;
+        let summary = api.audit(ApiAuth::new(password)).await?;
+        Ok(GuardianAuditSummary {
+            net_assets_msats: summary.net_assets,
+            module_summaries: summary
+                .module_summaries
+                .into_iter()
+                .map(|(module_instance_id, module)| GuardianModuleSummary {
+                    module_instance_id,
+                    kind: module.kind,
+                    net_assets_msats: module.net_assets,
+                })
+                .collect(),
+        })
+    }
+
+    pub async fn guardian_backup_statistics(
+        &self,
+        federation_id: &FederationId,
+        peer: u16,
+        password: String,
+    ) -> anyhow::Result<GuardianBackupStatistics> {
+        let api = self.guardian_admin_api(federation_id, peer).await?;
+        let stats = api.backup_statistics(ApiAuth::new(password)).await?;
+        Ok(GuardianBackupStatistics {
+            num_backups: stats.num_backups as u64,
+            total_size_bytes: stats.total_size as u64,
+            refreshed_1d: stats.refreshed_1d as u64,
+            refreshed_1w: stats.refreshed_1w as u64,
+            refreshed_1m: stats.refreshed_1m as u64,
+            refreshed_3m: stats.refreshed_3m as u64,
+        })
     }
 
     pub async fn get_bitcoin_display(&self) -> BitcoinDisplay {

@@ -24,9 +24,10 @@ use app_error::{EcashAppError, EcashAppResult};
 use flutter_rust_bridge::frb;
 use futures_util::StreamExt;
 use multimint::{
-    EcashSendFees, FederationMeta, FederationSelector, LightningSendOutcome, LogLevel, Multimint,
-    MultimintCreation, MultimintEvent, OOBNotesWrapper, PaymentPreviewWithGateways, PeginFeeQuote,
-    ReceiveAmount, ReissueFees, Transaction, Utxo, WithdrawFees, WithdrawFeesResponse,
+    EcashSendFees, FederationMeta, FederationSelector, GuardianAuditSummary,
+    GuardianBackupStatistics, LightningSendOutcome, LogLevel, Multimint, MultimintCreation,
+    MultimintEvent, OOBNotesWrapper, PaymentPreviewWithGateways, PeginFeeQuote, ReceiveAmount,
+    ReissueFees, Transaction, Utxo, WithdrawFees, WithdrawFeesResponse,
 };
 use nostr::{NWCConnectionInfo, NostrClient, PublicFederation};
 use serde::Serialize;
@@ -1109,6 +1110,42 @@ pub async fn register_ln_address(
 pub async fn get_invite_code(federation_id: &FederationId, peer: u16) -> anyhow::Result<String> {
     let multimint = get_multimint();
     multimint.get_invite_code(federation_id, peer).await
+}
+
+#[frb]
+pub async fn guardian_login(
+    federation_id: &FederationId,
+    peer: u16,
+    password: String,
+) -> anyhow::Result<bool> {
+    let multimint = get_multimint();
+    multimint
+        .guardian_login(federation_id, peer, password)
+        .await
+}
+
+#[frb]
+pub async fn guardian_audit(
+    federation_id: &FederationId,
+    peer: u16,
+    password: String,
+) -> anyhow::Result<GuardianAuditSummary> {
+    let multimint = get_multimint();
+    multimint
+        .guardian_audit(federation_id, peer, password)
+        .await
+}
+
+#[frb]
+pub async fn guardian_backup_statistics(
+    federation_id: &FederationId,
+    peer: u16,
+    password: String,
+) -> anyhow::Result<GuardianBackupStatistics> {
+    let multimint = get_multimint();
+    multimint
+        .guardian_backup_statistics(federation_id, peer, password)
+        .await
 }
 
 #[frb]

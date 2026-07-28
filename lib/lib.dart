@@ -479,6 +479,36 @@ Future<String> getInviteCode({
   peer: peer,
 );
 
+Future<bool> guardianLogin({
+  required FederationId federationId,
+  required int peer,
+  required String password,
+}) => RustLib.instance.api.crateGuardianLogin(
+  federationId: federationId,
+  peer: peer,
+  password: password,
+);
+
+Future<GuardianAuditSummary> guardianAudit({
+  required FederationId federationId,
+  required int peer,
+  required String password,
+}) => RustLib.instance.api.crateGuardianAudit(
+  federationId: federationId,
+  peer: peer,
+  password: password,
+);
+
+Future<GuardianBackupStatistics> guardianBackupStatistics({
+  required FederationId federationId,
+  required int peer,
+  required String password,
+}) => RustLib.instance.api.crateGuardianBackupStatistics(
+  federationId: federationId,
+  peer: peer,
+  password: password,
+);
+
 Future<BitcoinDisplay> getBitcoinDisplay() =>
     RustLib.instance.api.crateGetBitcoinDisplay();
 

@@ -837,7 +837,19 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   Guardian dco_decode_guardian(dynamic raw);
 
   @protected
+  GuardianAuditSummary dco_decode_guardian_audit_summary(dynamic raw);
+
+  @protected
+  GuardianBackupStatistics dco_decode_guardian_backup_statistics(dynamic raw);
+
+  @protected
+  GuardianModuleSummary dco_decode_guardian_module_summary(dynamic raw);
+
+  @protected
   int dco_decode_i_32(dynamic raw);
+
+  @protected
+  PlatformInt64 dco_decode_i_64(dynamic raw);
 
   @protected
   InvoicePaidEvent dco_decode_invoice_paid_event(dynamic raw);
@@ -876,6 +888,11 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
 
   @protected
   List<Guardian> dco_decode_list_guardian(dynamic raw);
+
+  @protected
+  List<GuardianModuleSummary> dco_decode_list_guardian_module_summary(
+    dynamic raw,
+  );
 
   @protected
   List<NostrProfile> dco_decode_list_nostr_profile(dynamic raw);
@@ -1895,7 +1912,25 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   Guardian sse_decode_guardian(SseDeserializer deserializer);
 
   @protected
+  GuardianAuditSummary sse_decode_guardian_audit_summary(
+    SseDeserializer deserializer,
+  );
+
+  @protected
+  GuardianBackupStatistics sse_decode_guardian_backup_statistics(
+    SseDeserializer deserializer,
+  );
+
+  @protected
+  GuardianModuleSummary sse_decode_guardian_module_summary(
+    SseDeserializer deserializer,
+  );
+
+  @protected
   int sse_decode_i_32(SseDeserializer deserializer);
+
+  @protected
+  PlatformInt64 sse_decode_i_64(SseDeserializer deserializer);
 
   @protected
   InvoicePaidEvent sse_decode_invoice_paid_event(SseDeserializer deserializer);
@@ -1940,6 +1975,11 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
 
   @protected
   List<Guardian> sse_decode_list_guardian(SseDeserializer deserializer);
+
+  @protected
+  List<GuardianModuleSummary> sse_decode_list_guardian_module_summary(
+    SseDeserializer deserializer,
+  );
 
   @protected
   List<NostrProfile> sse_decode_list_nostr_profile(
@@ -3114,7 +3154,28 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   void sse_encode_guardian(Guardian self, SseSerializer serializer);
 
   @protected
+  void sse_encode_guardian_audit_summary(
+    GuardianAuditSummary self,
+    SseSerializer serializer,
+  );
+
+  @protected
+  void sse_encode_guardian_backup_statistics(
+    GuardianBackupStatistics self,
+    SseSerializer serializer,
+  );
+
+  @protected
+  void sse_encode_guardian_module_summary(
+    GuardianModuleSummary self,
+    SseSerializer serializer,
+  );
+
+  @protected
   void sse_encode_i_32(int self, SseSerializer serializer);
+
+  @protected
+  void sse_encode_i_64(PlatformInt64 self, SseSerializer serializer);
 
   @protected
   void sse_encode_invoice_paid_event(
@@ -3168,6 +3229,12 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
 
   @protected
   void sse_encode_list_guardian(List<Guardian> self, SseSerializer serializer);
+
+  @protected
+  void sse_encode_list_guardian_module_summary(
+    List<GuardianModuleSummary> self,
+    SseSerializer serializer,
+  );
 
   @protected
   void sse_encode_list_nostr_profile(

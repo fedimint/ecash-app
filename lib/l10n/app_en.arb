@@ -751,6 +751,60 @@
   "utxoTab": "UTXOs",
   "@utxoTab": {},
 
+  "guardianDashboardTitle": "Guardian Dashboard",
+  "@guardianDashboardTitle": {},
+
+  "guardianLoginPrompt": "Enter the admin password for {guardian}.",
+  "@guardianLoginPrompt": {
+    "placeholders": {
+      "guardian": {
+        "type": "String"
+      }
+    }
+  },
+
+  "guardianPasswordLabel": "Admin password",
+  "@guardianPasswordLabel": {},
+
+  "logIn": "Log In",
+  "@logIn": {},
+
+  "guardianInvalidPassword": "Invalid admin password",
+  "@guardianInvalidPassword": {},
+
+  "guardianLoginFailed": "Could not reach guardian",
+  "@guardianLoginFailed": {},
+
+  "guardianBalanceSheet": "Balance Sheet",
+  "@guardianBalanceSheet": {},
+
+  "guardianNetAssets": "Net Assets",
+  "@guardianNetAssets": {},
+
+  "guardianEcashBackups": "Ecash Backups",
+  "@guardianEcashBackups": {},
+
+  "guardianStoredBackups": "Stored backups",
+  "@guardianStoredBackups": {},
+
+  "guardianBackupsTotalSize": "Total size",
+  "@guardianBackupsTotalSize": {},
+
+  "guardianRefreshedLastDay": "Refreshed in last day",
+  "@guardianRefreshedLastDay": {},
+
+  "guardianRefreshedLastWeek": "Refreshed in last week",
+  "@guardianRefreshedLastWeek": {},
+
+  "guardianRefreshedLastMonth": "Refreshed in last month",
+  "@guardianRefreshedLastMonth": {},
+
+  "guardianRefreshedLast3Months": "Refreshed in last 3 months",
+  "@guardianRefreshedLast3Months": {},
+
+  "guardianDashboardLoadFailed": "Could not load guardian data",
+  "@guardianDashboardLoadFailed": {},
+
   "connectedToGuardians": "Connected to {online} / {total} Guardians",
   "@connectedToGuardians": {
     "placeholders": {
