@@ -854,6 +854,12 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   GuardianHealth dco_decode_guardian_health(dynamic raw);
 
   @protected
+  GuardianMetaProposal dco_decode_guardian_meta_proposal(dynamic raw);
+
+  @protected
+  GuardianMetaState dco_decode_guardian_meta_state(dynamic raw);
+
+  @protected
   GuardianModuleSummary dco_decode_guardian_module_summary(dynamic raw);
 
   @protected
@@ -904,6 +910,11 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   List<Guardian> dco_decode_list_guardian(dynamic raw);
 
   @protected
+  List<GuardianMetaProposal> dco_decode_list_guardian_meta_proposal(
+    dynamic raw,
+  );
+
+  @protected
   List<GuardianModuleSummary> dco_decode_list_guardian_module_summary(
     dynamic raw,
   );
@@ -913,6 +924,9 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
 
   @protected
   List<PeerStatus> dco_decode_list_peer_status(dynamic raw);
+
+  @protected
+  Uint16List dco_decode_list_prim_u_16_strict(dynamic raw);
 
   @protected
   Uint8List dco_decode_list_prim_u_8_strict(dynamic raw);
@@ -1954,6 +1968,16 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   GuardianHealth sse_decode_guardian_health(SseDeserializer deserializer);
 
   @protected
+  GuardianMetaProposal sse_decode_guardian_meta_proposal(
+    SseDeserializer deserializer,
+  );
+
+  @protected
+  GuardianMetaState sse_decode_guardian_meta_state(
+    SseDeserializer deserializer,
+  );
+
+  @protected
   GuardianModuleSummary sse_decode_guardian_module_summary(
     SseDeserializer deserializer,
   );
@@ -2014,6 +2038,11 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   List<Guardian> sse_decode_list_guardian(SseDeserializer deserializer);
 
   @protected
+  List<GuardianMetaProposal> sse_decode_list_guardian_meta_proposal(
+    SseDeserializer deserializer,
+  );
+
+  @protected
   List<GuardianModuleSummary> sse_decode_list_guardian_module_summary(
     SseDeserializer deserializer,
   );
@@ -2025,6 +2054,9 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
 
   @protected
   List<PeerStatus> sse_decode_list_peer_status(SseDeserializer deserializer);
+
+  @protected
+  Uint16List sse_decode_list_prim_u_16_strict(SseDeserializer deserializer);
 
   @protected
   Uint8List sse_decode_list_prim_u_8_strict(SseDeserializer deserializer);
@@ -3226,6 +3258,18 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   );
 
   @protected
+  void sse_encode_guardian_meta_proposal(
+    GuardianMetaProposal self,
+    SseSerializer serializer,
+  );
+
+  @protected
+  void sse_encode_guardian_meta_state(
+    GuardianMetaState self,
+    SseSerializer serializer,
+  );
+
+  @protected
   void sse_encode_guardian_module_summary(
     GuardianModuleSummary self,
     SseSerializer serializer,
@@ -3297,6 +3341,12 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   void sse_encode_list_guardian(List<Guardian> self, SseSerializer serializer);
 
   @protected
+  void sse_encode_list_guardian_meta_proposal(
+    List<GuardianMetaProposal> self,
+    SseSerializer serializer,
+  );
+
+  @protected
   void sse_encode_list_guardian_module_summary(
     List<GuardianModuleSummary> self,
     SseSerializer serializer,
@@ -3311,6 +3361,12 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   @protected
   void sse_encode_list_peer_status(
     List<PeerStatus> self,
+    SseSerializer serializer,
+  );
+
+  @protected
+  void sse_encode_list_prim_u_16_strict(
+    Uint16List self,
     SseSerializer serializer,
   );
 

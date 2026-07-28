@@ -50,6 +50,7 @@ class FederationInfoScreen extends StatefulWidget {
 class _FederationInfoScreenState extends State<FederationInfoScreen> {
   double _animatedPercent = 0.0;
   StreamSubscription<List<PeerStatus>>? _peerUpdates;
+  StreamSubscription<MultimintEvent>? _metaUpdates;
   List<PeerStatus>? _peers;
   _InfoSection _selectedSection = _InfoSection.guardians;
   bool _isJoining = false;
@@ -77,13 +78,42 @@ class _FederationInfoScreenState extends State<FederationInfoScreen> {
       _welcomeMessage = widget.welcomeMessage;
       _imageUrl = widget.imageUrl;
       _subscribePeers();
+      _subscribeMetaUpdates();
     }
   }
 
   @override
   void dispose() {
     _peerUpdates?.cancel();
+    _metaUpdates?.cancel();
     super.dispose();
+  }
+
+  /// Reload the name, picture and welcome message when a guardian changes them
+  /// through the meta module, so this screen updates while it is open.
+  void _subscribeMetaUpdates() {
+    _metaUpdates = subscribeMultimintEvents().listen((event) async {
+      if (event is! MultimintEvent_MetaUpdated) return;
+      final fed = _fed;
+      if (fed == null || !mounted) return;
+
+      final federationIdStr = await federationIdToString(
+        federationId: fed.federationId,
+      );
+      if (event.field0 != federationIdStr || !mounted) return;
+
+      try {
+        final meta = await getFederationMeta(federationId: fed.federationId);
+        if (!mounted) return;
+        setState(() {
+          _fed = meta.selector;
+          _welcomeMessage = meta.welcome;
+          _imageUrl = meta.picture;
+        });
+      } catch (e) {
+        AppLogger.instance.warn("Could not reload federation meta: $e");
+      }
+    });
   }
 
   Future<void> _loadMeta() async {

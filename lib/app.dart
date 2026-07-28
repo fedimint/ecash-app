@@ -186,6 +186,40 @@ class _MyAppState extends State<MyApp> {
           },
           icon: Icon(Icons.system_update, color: primary),
         );
+      } else if (event is MultimintEvent_MetaUpdated) {
+        if (!mounted) return;
+        // Rebuilds the sidebar (keyed on _refreshTrigger) so it re-reads the
+        // federation picture, welcome message and guardians.
+        await _refreshFederations();
+        if (!mounted) return;
+
+        // The app bar renders the selected federation's name, which a guardian
+        // can change via the meta module.
+        final selected = _selectedFederation;
+        if (selected == null) return;
+
+        // FederationId is an opaque bridge type, so two instances of the same
+        // id are never `==`. Match on the string form the event carries.
+        final selectedIdStr = await federationIdToString(
+          federationId: selected.federationId,
+        );
+        if (event.field0 != selectedIdStr || !mounted) return;
+
+        try {
+          final meta = await getFederationMeta(
+            federationId: selected.federationId,
+          );
+          if (!mounted) return;
+          if (meta.selector.federationName != selected.federationName) {
+            // Update the existing selector rather than replacing it: the
+            // Dashboard is keyed on this federationId instance, and swapping in
+            // a freshly decoded one would remount the whole screen.
+            selected.federationName = meta.selector.federationName;
+            setState(() {});
+          }
+        } catch (e) {
+          AppLogger.instance.warn("Could not reload selected federation: $e");
+        }
       }
     });
   }

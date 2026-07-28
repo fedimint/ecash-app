@@ -2050,6 +2050,72 @@ as String,
 /// @nodoc
 
 
+class MultimintEvent_MetaUpdated extends MultimintEvent {
+  const MultimintEvent_MetaUpdated(this.field0): super._();
+  
+
+@override final  String field0;
+
+/// Create a copy of MultimintEvent
+/// with the given fields replaced by the non-null parameter values.
+@JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+$MultimintEvent_MetaUpdatedCopyWith<MultimintEvent_MetaUpdated> get copyWith => _$MultimintEvent_MetaUpdatedCopyWithImpl<MultimintEvent_MetaUpdated>(this, _$identity);
+
+
+
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is MultimintEvent_MetaUpdated&&(identical(other.field0, field0) || other.field0 == field0));
+}
+
+
+@override
+int get hashCode => Object.hash(runtimeType,field0);
+
+@override
+String toString() {
+  return 'MultimintEvent.metaUpdated(field0: $field0)';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class $MultimintEvent_MetaUpdatedCopyWith<$Res> implements $MultimintEventCopyWith<$Res> {
+  factory $MultimintEvent_MetaUpdatedCopyWith(MultimintEvent_MetaUpdated value, $Res Function(MultimintEvent_MetaUpdated) _then) = _$MultimintEvent_MetaUpdatedCopyWithImpl;
+@useResult
+$Res call({
+ String field0
+});
+
+
+
+
+}
+/// @nodoc
+class _$MultimintEvent_MetaUpdatedCopyWithImpl<$Res>
+    implements $MultimintEvent_MetaUpdatedCopyWith<$Res> {
+  _$MultimintEvent_MetaUpdatedCopyWithImpl(this._self, this._then);
+
+  final MultimintEvent_MetaUpdated _self;
+  final $Res Function(MultimintEvent_MetaUpdated) _then;
+
+/// Create a copy of MultimintEvent
+/// with the given fields replaced by the non-null parameter values.
+@pragma('vm:prefer-inline') $Res call({Object? field0 = null,}) {
+  return _then(MultimintEvent_MetaUpdated(
+null == field0 ? _self.field0 : field0 // ignore: cast_nullable_to_non_nullable
+as String,
+  ));
+}
+
+
+}
+
+/// @nodoc
+
+
 class MultimintEvent_PaymentError extends MultimintEvent {
   const MultimintEvent_PaymentError(this.field0): super._();
   

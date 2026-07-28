@@ -25,7 +25,8 @@ use flutter_rust_bridge::frb;
 use futures_util::StreamExt;
 use multimint::{
     EcashSendFees, FederationMeta, FederationSelector, GuardianAuditSummary,
-    GuardianBackupStatistics, GuardianStatusSummary, LightningSendOutcome, LogLevel, Multimint,
+    GuardianBackupStatistics, GuardianMetaState, GuardianStatusSummary, LightningSendOutcome,
+    LogLevel, Multimint,
     MultimintCreation, MultimintEvent, OOBNotesWrapper, PaymentPreviewWithGateways, PeginFeeQuote,
     ReceiveAmount, ReissueFees, Transaction, Utxo, WithdrawFees, WithdrawFeesResponse,
 };
@@ -607,6 +608,14 @@ pub async fn get_federation_meta(
     multimint
         .get_cached_federation_meta(invite_code, federation_id)
         .await
+}
+
+#[frb]
+pub async fn refresh_federation_meta(
+    federation_id: &FederationId,
+) -> anyhow::Result<FederationMeta> {
+    let multimint = get_multimint();
+    multimint.refresh_federation_meta(federation_id).await
 }
 
 #[frb]
@@ -1192,6 +1201,57 @@ pub async fn guardian_remove_gateway(
     let multimint = get_multimint();
     multimint
         .guardian_remove_gateway(federation_id, peer, password, gateway_url)
+        .await
+}
+
+#[frb]
+pub async fn guardian_meta_state(
+    federation_id: &FederationId,
+    peer: u16,
+    password: String,
+) -> anyhow::Result<GuardianMetaState> {
+    let multimint = get_multimint();
+    multimint
+        .guardian_meta_state(federation_id, peer, password)
+        .await
+}
+
+#[frb]
+pub async fn guardian_meta_accept(
+    federation_id: &FederationId,
+    peer: u16,
+    password: String,
+    value_hex: String,
+) -> anyhow::Result<()> {
+    let multimint = get_multimint();
+    multimint
+        .guardian_meta_accept(federation_id, peer, password, value_hex)
+        .await
+}
+
+#[frb]
+pub async fn guardian_meta_withdraw(
+    federation_id: &FederationId,
+    peer: u16,
+    password: String,
+) -> anyhow::Result<()> {
+    let multimint = get_multimint();
+    multimint
+        .guardian_meta_withdraw(federation_id, peer, password)
+        .await
+}
+
+#[frb]
+pub async fn guardian_meta_propose_field(
+    federation_id: &FederationId,
+    peer: u16,
+    password: String,
+    field: String,
+    value: Option<String>,
+) -> anyhow::Result<()> {
+    let multimint = get_multimint();
+    multimint
+        .guardian_meta_propose_field(federation_id, peer, password, field, value)
         .await
 }
 

@@ -39,7 +39,7 @@ use fedimint_core::{
     module::{ApiAuth, ApiRequestErased},
     task::TaskGroup,
     util::SafeUrl,
-    Amount,
+    Amount, NumPeers,
 };
 use fedimint_eventlog::Event;
 use fedimint_ln_client::{
@@ -57,7 +57,12 @@ use fedimint_lnv2_common::{
     gateway_api::PaymentFee,
     Bolt11InvoiceDescription,
 };
-use fedimint_meta_client::{common::DEFAULT_META_KEY, MetaClientInit};
+use fedimint_meta_client::common::endpoint::{
+    GetConsensusRequest, GetSubmissionResponse, GetSubmissionsRequest, SubmitRequest,
+    GET_CONSENSUS_ENDPOINT, GET_SUBMISSIONS_ENDPOINT, SUBMIT_ENDPOINT,
+};
+use fedimint_meta_client::common::{MetaConsensusValue, MetaValue};
+use fedimint_meta_client::{common::DEFAULT_META_KEY, MetaClientInit, MetaClientModule};
 use fedimint_mint_client::{
     api::MintFederationApi, MintClientInit, MintClientModule, MintOperationMeta,
     MintOperationMetaVariant, OOBNotes, ReissueExternalNotesState, SpendOOBState,
@@ -400,6 +405,39 @@ pub struct GuardianStatusSummary {
     /// Whether the federation runs the lnv2 module, i.e. whether gateway
     /// management is available.
     pub has_lnv2: bool,
+    /// Whether the federation runs the meta module, i.e. whether federation
+    /// settings can be viewed and proposed.
+    pub has_meta: bool,
+}
+
+/// A pending meta submission, grouped across every guardian that submitted
+/// this exact value.
+#[derive(Debug, Serialize, Clone)]
+pub struct GuardianMetaProposal {
+    pub peer_ids: Vec<u16>,
+    /// The raw submitted bytes, hex encoded. Accepting a proposal must
+    /// resubmit these exact bytes: consensus only forms over byte-identical
+    /// values, so re-serializing the parsed document could silently never
+    /// converge.
+    pub value_hex: String,
+    /// The submission parsed as JSON, or None when a guardian submitted
+    /// something that is not valid JSON.
+    pub value_json: Option<String>,
+    /// Whether the guardian we are logged into is backing this value.
+    pub is_ours: bool,
+}
+
+#[derive(Debug, Serialize, Clone)]
+pub struct GuardianMetaState {
+    /// The current agreed meta document as JSON, absent until a first
+    /// consensus forms.
+    pub consensus_json: Option<String>,
+    pub revision: Option<u64>,
+    pub proposals: Vec<GuardianMetaProposal>,
+    /// How many guardians must submit an identical value for it to become the
+    /// new consensus.
+    pub threshold: u16,
+    pub total_guardians: u16,
 }
 
 #[derive(Debug, Serialize, Clone)]
@@ -633,6 +671,11 @@ pub enum MultimintEvent {
     NostrRecoveryPhase(NostrRecoveryPhase),
     ContactSync(ContactSyncEventKind),
     UpdateAvailable(String),
+    /// A federation's cached meta changed (name, picture, welcome message or
+    /// guardians), so screens holding it should reload. Carries the federation
+    /// id as a string: a bare opaque type as an enum payload makes the bridge
+    /// generate the whole enum as opaque, breaking every other variant.
+    MetaUpdated(String),
     /// Structured payment-flow error. The Dart layer auto-surfaces these as
     /// localized error toasts (see `lib/app.dart` and `lib/error_helper.dart`).
     PaymentError((FederationId, EcashAppError)),
@@ -1441,6 +1484,26 @@ impl Multimint {
             .await)
     }
 
+    /// Refetch and re-cache a federation's meta immediately, bypassing both the
+    /// cached value and the periodic refresh task. Used after a guardian action
+    /// changes meta consensus, so the app reflects it without waiting out the
+    /// cache interval.
+    pub async fn refresh_federation_meta(
+        &self,
+        federation_id: &FederationId,
+    ) -> anyhow::Result<FederationMeta> {
+        let client = self
+            .clients
+            .read()
+            .await
+            .get(federation_id)
+            .ok_or(anyhow!("Federation does not exist"))?
+            .clone();
+        Ok(self
+            .cache_federation_meta(client, std::time::SystemTime::now())
+            .await)
+    }
+
     fn get_url(key: &str, meta: &serde_json::Value) -> Option<String> {
         let value = meta.get(key)?;
         let url_str = value.as_str()?;
@@ -1472,19 +1535,21 @@ impl Multimint {
         let config = client.config().await;
         let network = Self::wallet_network(&client);
 
-        // Load cached guardian versions so we can preserve them when a guardian is offline
-        let cached_versions: BTreeMap<u16, Option<String>> = {
+        let cached_meta: Option<FederationMeta> = {
             let mut dbtx = self.db.begin_transaction_nc().await;
-            dbtx.get_value(&FederationMetaKey { federation_id })
-                .await
-                .map(|m| {
-                    m.guardians
-                        .into_iter()
-                        .map(|g| (g.peer_id, g.version))
-                        .collect()
-                })
-                .unwrap_or_default()
+            dbtx.get_value(&FederationMetaKey { federation_id }).await
         };
+
+        // Load cached guardian versions so we can preserve them when a guardian is offline
+        let cached_versions: BTreeMap<u16, Option<String>> = cached_meta
+            .as_ref()
+            .map(|m| {
+                m.guardians
+                    .iter()
+                    .map(|g| (g.peer_id, g.version.clone()))
+                    .collect()
+            })
+            .unwrap_or_default();
 
         let peers = &config.global.api_endpoints;
         let mut guardians = Vec::new();
@@ -1597,6 +1662,24 @@ impl Multimint {
             federation_meta.selector.federation_name
         ))
         .await;
+
+        // Notify the UI only when something it renders actually changed. This
+        // runs on a timer, and `last_updated` differs on every pass, so
+        // comparing whole values would republish constantly.
+        let changed = match &cached_meta {
+            Some(old) => {
+                old.picture != federation_meta.picture
+                    || old.welcome != federation_meta.welcome
+                    || old.selector.federation_name != federation_meta.selector.federation_name
+                    || old.guardians != federation_meta.guardians
+            }
+            None => true,
+        };
+        if changed {
+            get_event_bus()
+                .publish(MultimintEvent::MetaUpdated(federation_id.to_string()))
+                .await;
+        }
 
         federation_meta
     }
@@ -5735,11 +5818,13 @@ impl Multimint {
         let has_lnv2 = client
             .get_first_module::<fedimint_lnv2_client::LightningClientModule>()
             .is_ok();
+        let has_meta = client.get_first_module::<MetaClientModule>().is_ok();
 
         Ok(GuardianStatusSummary {
             health,
             bitcoin,
             has_lnv2,
+            has_meta,
         })
     }
 
@@ -5860,6 +5945,178 @@ impl Multimint {
                 ApiAuth::new(password),
             )
             .await?)
+    }
+
+    async fn guardian_meta_module_api(
+        &self,
+        federation_id: &FederationId,
+        peer: u16,
+    ) -> anyhow::Result<(DynModuleApi, u16)> {
+        let client = self
+            .clients
+            .read()
+            .await
+            .get(federation_id)
+            .ok_or(anyhow!("Federation does not exist"))?
+            .clone();
+        let meta_id = client.get_first_module::<MetaClientModule>()?.id;
+        let total_guardians = client.config().await.global.api_endpoints.len() as u16;
+        let api = self.guardian_admin_api(federation_id, peer).await?;
+        Ok((api.with_module(meta_id), total_guardians))
+    }
+
+    async fn guardian_meta_consensus(
+        module_api: &DynModuleApi,
+    ) -> anyhow::Result<Option<MetaConsensusValue>> {
+        Ok(module_api
+            .request_admin_no_auth(
+                GET_CONSENSUS_ENDPOINT,
+                ApiRequestErased::new(GetConsensusRequest(DEFAULT_META_KEY)),
+            )
+            .await?)
+    }
+
+    pub async fn guardian_meta_state(
+        &self,
+        federation_id: &FederationId,
+        peer: u16,
+        password: String,
+    ) -> anyhow::Result<GuardianMetaState> {
+        let (module_api, total_guardians) =
+            self.guardian_meta_module_api(federation_id, peer).await?;
+
+        let consensus = Self::guardian_meta_consensus(&module_api).await?;
+        let submissions: GetSubmissionResponse = module_api
+            .request_admin(
+                GET_SUBMISSIONS_ENDPOINT,
+                ApiRequestErased::new(GetSubmissionsRequest(DEFAULT_META_KEY)),
+                ApiAuth::new(password),
+            )
+            .await?;
+
+        // Guardians backing byte-identical values are voting together, so group
+        // them into a single proposal the UI can show one vote tally for.
+        let mut by_value: BTreeMap<Vec<u8>, Vec<u16>> = BTreeMap::new();
+        for (peer_id, value) in submissions {
+            by_value
+                .entry(value.as_slice().to_vec())
+                .or_default()
+                .push(peer_id.to_usize() as u16);
+        }
+
+        let proposals = by_value
+            .into_iter()
+            .map(|(value, peer_ids)| {
+                let is_ours = peer_ids.contains(&peer);
+                let value_json = serde_json::from_slice::<serde_json::Value>(&value)
+                    .ok()
+                    .and_then(|json| serde_json::to_string(&json).ok());
+                GuardianMetaProposal {
+                    peer_ids,
+                    value_hex: hex::encode(&value),
+                    value_json,
+                    is_ours,
+                }
+            })
+            .collect();
+
+        Ok(GuardianMetaState {
+            consensus_json: consensus
+                .as_ref()
+                .and_then(|c| c.value.to_json().ok())
+                .and_then(|json| serde_json::to_string(&json).ok()),
+            revision: consensus.as_ref().map(|c| c.revision),
+            proposals,
+            threshold: NumPeers::from(total_guardians as usize).threshold() as u16,
+            total_guardians,
+        })
+    }
+
+    async fn guardian_meta_submit(
+        module_api: &DynModuleApi,
+        password: String,
+        value: MetaValue,
+    ) -> anyhow::Result<()> {
+        // The endpoint returns unit; naming the type keeps the generic return
+        // from falling back to the never type.
+        let () = module_api
+            .request_admin(
+                SUBMIT_ENDPOINT,
+                ApiRequestErased::new(SubmitRequest {
+                    key: DEFAULT_META_KEY,
+                    value,
+                }),
+                ApiAuth::new(password),
+            )
+            .await?;
+        Ok(())
+    }
+
+    /// Back an existing proposal by resubmitting its exact bytes.
+    pub async fn guardian_meta_accept(
+        &self,
+        federation_id: &FederationId,
+        peer: u16,
+        password: String,
+        value_hex: String,
+    ) -> anyhow::Result<()> {
+        let (module_api, _) = self.guardian_meta_module_api(federation_id, peer).await?;
+        let value = MetaValue::from(hex::decode(value_hex)?.as_slice());
+        Self::guardian_meta_submit(&module_api, password, value).await
+    }
+
+    /// Withdraw this guardian's vote by submitting the current consensus
+    /// value, which is how the meta module expresses "no change".
+    pub async fn guardian_meta_withdraw(
+        &self,
+        federation_id: &FederationId,
+        peer: u16,
+        password: String,
+    ) -> anyhow::Result<()> {
+        let (module_api, _) = self.guardian_meta_module_api(federation_id, peer).await?;
+        let consensus = Self::guardian_meta_consensus(&module_api)
+            .await?
+            .ok_or(anyhow!("Federation has no meta consensus value yet"))?;
+        Self::guardian_meta_submit(&module_api, password, consensus.value).await
+    }
+
+    /// Propose a single field change. The meta module stores one JSON document
+    /// per key, so this reads the current consensus document, applies the edit
+    /// and submits the whole document back. Passing `None` removes the field.
+    pub async fn guardian_meta_propose_field(
+        &self,
+        federation_id: &FederationId,
+        peer: u16,
+        password: String,
+        field: String,
+        value: Option<String>,
+    ) -> anyhow::Result<()> {
+        let (module_api, _) = self.guardian_meta_module_api(federation_id, peer).await?;
+
+        let mut document = match Self::guardian_meta_consensus(&module_api).await? {
+            Some(consensus) => consensus.value.to_json().unwrap_or_else(|_| json!({})),
+            None => json!({}),
+        };
+        let object = document
+            .as_object_mut()
+            .ok_or(anyhow!("Meta consensus value is not a JSON object"))?;
+
+        match value {
+            Some(value) => {
+                object.insert(field, serde_json::Value::String(value));
+            }
+            None => {
+                object.remove(&field);
+            }
+        }
+
+        let encoded = serde_json::to_vec(&document)?;
+        Self::guardian_meta_submit(
+            &module_api,
+            password,
+            MetaValue::from(encoded.as_slice()),
+        )
+        .await
     }
 
     /// Returns false when the gateway was not whitelisted to begin with.

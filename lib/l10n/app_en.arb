@@ -859,6 +859,114 @@
   "guardianEcashBackupsSubtitle": "Client wallet backups stored on this guardian",
   "@guardianEcashBackupsSubtitle": {},
 
+  "guardianMetaTitle": "Federation Settings",
+  "@guardianMetaTitle": {},
+
+  "guardianMetaSubtitle": "Name, picture and welcome message",
+  "@guardianMetaSubtitle": {},
+
+  "guardianMetaCurrentSettings": "Current Settings",
+  "@guardianMetaCurrentSettings": {},
+
+  "guardianMetaPendingProposals": "Pending Proposals",
+  "@guardianMetaPendingProposals": {},
+
+  "guardianMetaFederationName": "Federation name",
+  "@guardianMetaFederationName": {},
+
+  "guardianMetaProfilePicture": "Profile picture",
+  "@guardianMetaProfilePicture": {},
+
+  "guardianMetaWelcomeMessage": "Welcome message",
+  "@guardianMetaWelcomeMessage": {},
+
+  "guardianMetaNotSet": "Not set",
+  "@guardianMetaNotSet": {},
+
+  "guardianMetaNoProposals": "No pending proposals",
+  "@guardianMetaNoProposals": {},
+
+  "guardianMetaNoConsensus": "No settings agreed yet",
+  "@guardianMetaNoConsensus": {},
+
+  "guardianMetaVotes": "{votes} of {threshold} guardians",
+  "@guardianMetaVotes": {
+    "placeholders": {
+      "votes": {
+        "type": "String"
+      },
+      "threshold": {
+        "type": "String"
+      }
+    }
+  },
+
+  "guardianMetaYourProposal": "Your proposal",
+  "@guardianMetaYourProposal": {},
+
+  "guardianMetaAccept": "Accept",
+  "@guardianMetaAccept": {},
+
+  "guardianMetaWithdraw": "Withdraw",
+  "@guardianMetaWithdraw": {},
+
+  "guardianMetaAccepted": "Proposal accepted",
+  "@guardianMetaAccepted": {},
+
+  "guardianMetaWithdrawn": "Vote withdrawn",
+  "@guardianMetaWithdrawn": {},
+
+  "guardianMetaProposed": "Change proposed",
+  "@guardianMetaProposed": {},
+
+  "guardianMetaCouldNotLoad": "Could not load federation settings",
+  "@guardianMetaCouldNotLoad": {},
+
+  "guardianMetaCouldNotSubmit": "Could not submit change",
+  "@guardianMetaCouldNotSubmit": {},
+
+  "guardianMetaRemoves": "Removes {field}",
+  "@guardianMetaRemoves": {
+    "placeholders": {
+      "field": {
+        "type": "String"
+      }
+    }
+  },
+
+  "guardianMetaOtherChanges": "and {count} other changes",
+  "@guardianMetaOtherChanges": {
+    "placeholders": {
+      "count": {
+        "type": "String"
+      }
+    }
+  },
+
+  "guardianMetaNoChanges": "No changes from current settings",
+  "@guardianMetaNoChanges": {},
+
+  "guardianMetaThresholdHint": "Takes effect once {threshold} guardians agree",
+  "@guardianMetaThresholdHint": {
+    "placeholders": {
+      "threshold": {
+        "type": "String"
+      }
+    }
+  },
+
+  "guardianMetaPropose": "Propose",
+  "@guardianMetaPropose": {},
+
+  "guardianMetaClear": "Clear",
+  "@guardianMetaClear": {},
+
+  "guardianMetaImageUrlLabel": "Image URL",
+  "@guardianMetaImageUrlLabel": {},
+
+  "guardianMetaImagePreviewFailed": "Image could not be loaded",
+  "@guardianMetaImagePreviewFailed": {},
+
   "guardianGatewaysTitle": "Lightning Gateways",
   "@guardianGatewaysTitle": {},
 
