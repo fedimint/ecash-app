@@ -25,9 +25,9 @@ use flutter_rust_bridge::frb;
 use futures_util::StreamExt;
 use multimint::{
     EcashSendFees, FederationMeta, FederationSelector, GuardianAuditSummary,
-    GuardianBackupStatistics, LightningSendOutcome, LogLevel, Multimint, MultimintCreation,
-    MultimintEvent, OOBNotesWrapper, PaymentPreviewWithGateways, PeginFeeQuote, ReceiveAmount,
-    ReissueFees, Transaction, Utxo, WithdrawFees, WithdrawFeesResponse,
+    GuardianBackupStatistics, GuardianStatusSummary, LightningSendOutcome, LogLevel, Multimint,
+    MultimintCreation, MultimintEvent, OOBNotesWrapper, PaymentPreviewWithGateways, PeginFeeQuote,
+    ReceiveAmount, ReissueFees, Transaction, Utxo, WithdrawFees, WithdrawFeesResponse,
 };
 use nostr::{NWCConnectionInfo, NostrClient, PublicFederation};
 use serde::Serialize;
@@ -1145,6 +1145,18 @@ pub async fn guardian_backup_statistics(
     let multimint = get_multimint();
     multimint
         .guardian_backup_statistics(federation_id, peer, password)
+        .await
+}
+
+#[frb]
+pub async fn guardian_status(
+    federation_id: &FederationId,
+    peer: u16,
+    password: String,
+) -> anyhow::Result<GuardianStatusSummary> {
+    let multimint = get_multimint();
+    multimint
+        .guardian_status(federation_id, peer, password)
         .await
 }
 

@@ -742,6 +742,11 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   double dco_decode_box_autoadd_f_64(dynamic raw);
 
   @protected
+  GuardianBitcoinStatus dco_decode_box_autoadd_guardian_bitcoin_status(
+    dynamic raw,
+  );
+
+  @protected
   InvoicePaidEvent dco_decode_box_autoadd_invoice_paid_event(dynamic raw);
 
   @protected
@@ -843,7 +848,16 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   GuardianBackupStatistics dco_decode_guardian_backup_statistics(dynamic raw);
 
   @protected
+  GuardianBitcoinStatus dco_decode_guardian_bitcoin_status(dynamic raw);
+
+  @protected
+  GuardianHealth dco_decode_guardian_health(dynamic raw);
+
+  @protected
   GuardianModuleSummary dco_decode_guardian_module_summary(dynamic raw);
+
+  @protected
+  GuardianStatusSummary dco_decode_guardian_status_summary(dynamic raw);
 
   @protected
   int dco_decode_i_32(dynamic raw);
@@ -1008,6 +1022,11 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
 
   @protected
   double? dco_decode_opt_box_autoadd_f_64(dynamic raw);
+
+  @protected
+  GuardianBitcoinStatus? dco_decode_opt_box_autoadd_guardian_bitcoin_status(
+    dynamic raw,
+  );
 
   @protected
   int? dco_decode_opt_box_autoadd_u_32(dynamic raw);
@@ -1803,6 +1822,11 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   double sse_decode_box_autoadd_f_64(SseDeserializer deserializer);
 
   @protected
+  GuardianBitcoinStatus sse_decode_box_autoadd_guardian_bitcoin_status(
+    SseDeserializer deserializer,
+  );
+
+  @protected
   InvoicePaidEvent sse_decode_box_autoadd_invoice_paid_event(
     SseDeserializer deserializer,
   );
@@ -1922,7 +1946,20 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   );
 
   @protected
+  GuardianBitcoinStatus sse_decode_guardian_bitcoin_status(
+    SseDeserializer deserializer,
+  );
+
+  @protected
+  GuardianHealth sse_decode_guardian_health(SseDeserializer deserializer);
+
+  @protected
   GuardianModuleSummary sse_decode_guardian_module_summary(
+    SseDeserializer deserializer,
+  );
+
+  @protected
+  GuardianStatusSummary sse_decode_guardian_status_summary(
     SseDeserializer deserializer,
   );
 
@@ -2111,6 +2148,11 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
 
   @protected
   double? sse_decode_opt_box_autoadd_f_64(SseDeserializer deserializer);
+
+  @protected
+  GuardianBitcoinStatus? sse_decode_opt_box_autoadd_guardian_bitcoin_status(
+    SseDeserializer deserializer,
+  );
 
   @protected
   int? sse_decode_opt_box_autoadd_u_32(SseDeserializer deserializer);
@@ -3021,6 +3063,12 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   void sse_encode_box_autoadd_f_64(double self, SseSerializer serializer);
 
   @protected
+  void sse_encode_box_autoadd_guardian_bitcoin_status(
+    GuardianBitcoinStatus self,
+    SseSerializer serializer,
+  );
+
+  @protected
   void sse_encode_box_autoadd_invoice_paid_event(
     InvoicePaidEvent self,
     SseSerializer serializer,
@@ -3166,8 +3214,26 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   );
 
   @protected
+  void sse_encode_guardian_bitcoin_status(
+    GuardianBitcoinStatus self,
+    SseSerializer serializer,
+  );
+
+  @protected
+  void sse_encode_guardian_health(
+    GuardianHealth self,
+    SseSerializer serializer,
+  );
+
+  @protected
   void sse_encode_guardian_module_summary(
     GuardianModuleSummary self,
+    SseSerializer serializer,
+  );
+
+  @protected
+  void sse_encode_guardian_status_summary(
+    GuardianStatusSummary self,
     SseSerializer serializer,
   );
 
@@ -3403,6 +3469,12 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
 
   @protected
   void sse_encode_opt_box_autoadd_f_64(double? self, SseSerializer serializer);
+
+  @protected
+  void sse_encode_opt_box_autoadd_guardian_bitcoin_status(
+    GuardianBitcoinStatus? self,
+    SseSerializer serializer,
+  );
 
   @protected
   void sse_encode_opt_box_autoadd_u_32(int? self, SseSerializer serializer);

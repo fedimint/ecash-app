@@ -787,9 +787,6 @@
   "guardianStoredBackups": "Stored backups",
   "@guardianStoredBackups": {},
 
-  "guardianBackupsTotalSize": "Total size",
-  "@guardianBackupsTotalSize": {},
-
   "guardianRefreshedLastDay": "Refreshed in last day",
   "@guardianRefreshedLastDay": {},
 
@@ -804,6 +801,63 @@
 
   "guardianDashboardLoadFailed": "Could not load guardian data",
   "@guardianDashboardLoadFailed": {},
+
+  "guardianHealthTitle": "Guardian Health",
+  "@guardianHealthTitle": {},
+
+  "guardianStatusConsensusRunning": "Consensus running",
+  "@guardianStatusConsensusRunning": {},
+
+  "guardianConnectedGuardians": "Connected guardians",
+  "@guardianConnectedGuardians": {},
+
+  "guardianSessionsLabel": "Sessions",
+  "@guardianSessionsLabel": {},
+
+  "guardianLatencyLabel": "Consensus latency",
+  "@guardianLatencyLabel": {},
+
+  "guardianConsensusFeerateLabel": "Consensus fee rate",
+  "@guardianConsensusFeerateLabel": {},
+
+  "guardianShutdownWarning": "Shutdown scheduled at session {session}",
+  "@guardianShutdownWarning": {
+    "placeholders": {
+      "session": {
+        "type": "String"
+      }
+    }
+  },
+
+  "guardianBitcoinTitle": "Bitcoin Node",
+  "@guardianBitcoinTitle": {},
+
+  "guardianChainHeightConsensus": "Chain height (consensus)",
+  "@guardianChainHeightConsensus": {},
+
+  "guardianChainHeightLocal": "Chain height (local)",
+  "@guardianChainHeightLocal": {},
+
+  "guardianNodeSynced": "Synced",
+  "@guardianNodeSynced": {},
+
+  "guardianNodeBehind": "{blocks} blocks behind",
+  "@guardianNodeBehind": {
+    "placeholders": {
+      "blocks": {
+        "type": "String"
+      }
+    }
+  },
+
+  "guardianManageSection": "Manage",
+  "@guardianManageSection": {},
+
+  "guardianBalanceSheetSubtitle": "Assets and liabilities by module",
+  "@guardianBalanceSheetSubtitle": {},
+
+  "guardianEcashBackupsSubtitle": "Client wallet backups stored on this guardian",
+  "@guardianEcashBackupsSubtitle": {},
 
   "connectedToGuardians": "Connected to {online} / {total} Guardians",
   "@connectedToGuardians": {

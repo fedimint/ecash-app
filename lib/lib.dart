@@ -509,6 +509,16 @@ Future<GuardianBackupStatistics> guardianBackupStatistics({
   password: password,
 );
 
+Future<GuardianStatusSummary> guardianStatus({
+  required FederationId federationId,
+  required int peer,
+  required String password,
+}) => RustLib.instance.api.crateGuardianStatus(
+  federationId: federationId,
+  peer: peer,
+  password: password,
+);
+
 Future<BitcoinDisplay> getBitcoinDisplay() =>
     RustLib.instance.api.crateGetBitcoinDisplay();
 

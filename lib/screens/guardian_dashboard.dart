@@ -1,13 +1,15 @@
-import 'package:ecashapp/db.dart';
 import 'package:ecashapp/extensions/build_context_l10n.dart';
 import 'package:ecashapp/lib.dart';
 import 'package:ecashapp/multimint.dart';
-import 'package:ecashapp/providers/preferences_provider.dart';
+import 'package:ecashapp/screens/guardian_audit.dart';
+import 'package:ecashapp/screens/guardian_backups.dart';
 import 'package:ecashapp/utils.dart';
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
 
-/// Admin dashboard for a single guardian, shown after a successful login.
+/// Admin dashboard hub for a single guardian, shown after a successful login.
+///
+/// Shows the guardian's health and bitcoin node status up top, followed by a
+/// list of detail screens to drill into (audit, backups, ...).
 ///
 /// The password is held in memory only and sent with every authenticated
 /// request, which is how fedimint's admin API works (there is no session).
@@ -29,8 +31,7 @@ class GuardianDashboardScreen extends StatefulWidget {
 }
 
 class _GuardianDashboardScreenState extends State<GuardianDashboardScreen> {
-  GuardianAuditSummary? _audit;
-  GuardianBackupStatistics? _backups;
+  GuardianStatusSummary? _status;
   Object? _error;
 
   @override
@@ -44,25 +45,17 @@ class _GuardianDashboardScreenState extends State<GuardianDashboardScreen> {
       _error = null;
     });
     try {
-      final results = await Future.wait<Object>([
-        guardianAudit(
-          federationId: widget.fed.federationId,
-          peer: widget.peer.peerId,
-          password: widget.password,
-        ),
-        guardianBackupStatistics(
-          federationId: widget.fed.federationId,
-          peer: widget.peer.peerId,
-          password: widget.password,
-        ),
-      ]);
+      final status = await guardianStatus(
+        federationId: widget.fed.federationId,
+        peer: widget.peer.peerId,
+        password: widget.password,
+      );
       if (!mounted) return;
       setState(() {
-        _audit = results[0] as GuardianAuditSummary;
-        _backups = results[1] as GuardianBackupStatistics;
+        _status = status;
       });
     } catch (e) {
-      AppLogger.instance.error("Could not load guardian dashboard: $e");
+      AppLogger.instance.error("Could not load guardian status: $e");
       if (!mounted) return;
       setState(() {
         _error = e;
@@ -70,32 +63,29 @@ class _GuardianDashboardScreenState extends State<GuardianDashboardScreen> {
     }
   }
 
-  String _formatBytes(BigInt bytes) {
-    final kib = BigInt.from(1024);
-    if (bytes < kib) return '$bytes B';
-    if (bytes < kib * kib) {
-      return '${(bytes.toDouble() / 1024).toStringAsFixed(1)} KiB';
-    }
-    return '${(bytes.toDouble() / (1024 * 1024)).toStringAsFixed(1)} MiB';
-  }
-
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final bitcoinDisplay = context.select<PreferencesProvider, BitcoinDisplay>(
-      (prefs) => prefs.bitcoinDisplay,
-    );
 
     return Scaffold(
       appBar: AppBar(
         centerTitle: true,
-        title: Text(context.l10n.guardianDashboardTitle),
+        title: Column(
+          children: [
+            Text(widget.peer.name, overflow: TextOverflow.ellipsis),
+            if (widget.peer.version != null)
+              Text(
+                context.l10n.versionLabel(widget.peer.version!),
+                style: theme.textTheme.bodySmall?.copyWith(color: Colors.grey),
+              ),
+          ],
+        ),
       ),
-      body: SafeArea(child: _buildBody(theme, bitcoinDisplay)),
+      body: SafeArea(child: _buildBody(theme)),
     );
   }
 
-  Widget _buildBody(ThemeData theme, BitcoinDisplay bitcoinDisplay) {
+  Widget _buildBody(ThemeData theme) {
     if (_error != null) {
       return Center(
         child: Padding(
@@ -122,7 +112,8 @@ class _GuardianDashboardScreenState extends State<GuardianDashboardScreen> {
       );
     }
 
-    if (_audit == null || _backups == null) {
+    final status = _status;
+    if (status == null) {
       return const Center(child: CircularProgressIndicator());
     }
 
@@ -132,15 +123,55 @@ class _GuardianDashboardScreenState extends State<GuardianDashboardScreen> {
         physics: const AlwaysScrollableScrollPhysics(),
         padding: const EdgeInsets.all(16),
         children: [
-          _buildGuardianCard(theme),
-          const SizedBox(height: 12),
-          _buildBalanceSheetCard(theme, bitcoinDisplay),
-          const SizedBox(height: 12),
-          _buildBackupsCard(theme),
+          _buildHealthCard(theme, status.health),
+          if (status.bitcoin != null) ...[
+            const SizedBox(height: 12),
+            _buildBitcoinCard(theme, status.bitcoin!),
+          ],
+          const SizedBox(height: 24),
+          _sectionHeader(theme, context.l10n.guardianManageSection),
+          const SizedBox(height: 8),
+          _manageTile(
+            theme: theme,
+            icon: Icons.account_balance_outlined,
+            title: context.l10n.guardianBalanceSheet,
+            subtitle: context.l10n.guardianBalanceSheetSubtitle,
+            onTap:
+                () => Navigator.of(context).push(
+                  MaterialPageRoute(
+                    builder:
+                        (_) => GuardianAuditScreen(
+                          fed: widget.fed,
+                          peer: widget.peer,
+                          password: widget.password,
+                        ),
+                  ),
+                ),
+          ),
+          const SizedBox(height: 8),
+          _manageTile(
+            theme: theme,
+            icon: Icons.cloud_outlined,
+            title: context.l10n.guardianEcashBackups,
+            subtitle: context.l10n.guardianEcashBackupsSubtitle,
+            onTap:
+                () => Navigator.of(context).push(
+                  MaterialPageRoute(
+                    builder:
+                        (_) => GuardianBackupsScreen(
+                          fed: widget.fed,
+                          peer: widget.peer,
+                          password: widget.password,
+                        ),
+                  ),
+                ),
+          ),
         ],
       ),
     );
   }
+
+  // --- Summary cards ---
 
   Widget _card({required List<Widget> children}) {
     return Container(
@@ -195,142 +226,228 @@ class _GuardianDashboardScreenState extends State<GuardianDashboardScreen> {
     );
   }
 
-  Widget _buildGuardianCard(ThemeData theme) {
+  Widget _warningRow(ThemeData theme, String message) {
+    return Padding(
+      padding: const EdgeInsets.only(top: 8),
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.all(10),
+        decoration: BoxDecoration(
+          color: Colors.orange.withValues(alpha: 0.12),
+          borderRadius: BorderRadius.circular(8),
+        ),
+        child: Row(
+          children: [
+            const Icon(Icons.warning_amber, size: 18, color: Colors.orange),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Text(
+                message,
+                style: theme.textTheme.bodySmall?.copyWith(
+                  color: Colors.orange,
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildHealthCard(ThemeData theme, GuardianHealth health) {
+    final statusColor = health.consensusRunning ? Colors.green : Colors.orange;
+    final statusText =
+        health.consensusRunning
+            ? context.l10n.guardianStatusConsensusRunning
+            : health.serverStatus;
+
     return _card(
       children: [
+        _cardTitle(
+          theme,
+          Icons.monitor_heart_outlined,
+          context.l10n.guardianHealthTitle,
+        ),
+        const SizedBox(height: 12),
         Row(
           children: [
-            Icon(
-              Icons.shield_outlined,
-              size: 32,
-              color: theme.colorScheme.primary,
+            Icon(Icons.circle, size: 12, color: statusColor),
+            const SizedBox(width: 8),
+            Text(
+              statusText,
+              style: theme.textTheme.bodyMedium?.copyWith(
+                color: statusColor,
+                fontWeight: FontWeight.w600,
+              ),
             ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    widget.peer.name,
-                    style: theme.textTheme.titleMedium?.copyWith(
-                      fontWeight: FontWeight.bold,
-                    ),
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                  if (widget.peer.version != null)
+          ],
+        ),
+        const SizedBox(height: 8),
+        _statRow(
+          theme,
+          context.l10n.guardianConnectedGuardians,
+          '${health.peersOnline} / ${health.peersTotal}',
+        ),
+        if (health.sessionCount != null)
+          _statRow(
+            theme,
+            context.l10n.guardianSessionsLabel,
+            health.sessionCount.toString(),
+          ),
+        if (health.consensusOrdLatencyMs != null)
+          _statRow(
+            theme,
+            context.l10n.guardianLatencyLabel,
+            '${health.consensusOrdLatencyMs} ms',
+          ),
+        if (health.scheduledShutdownSession != null)
+          _warningRow(
+            theme,
+            context.l10n.guardianShutdownWarning(
+              health.scheduledShutdownSession.toString(),
+            ),
+          ),
+      ],
+    );
+  }
+
+  Widget _buildBitcoinCard(ThemeData theme, GuardianBitcoinStatus bitcoin) {
+    final local = bitcoin.localBlockCount;
+    final behind =
+        local != null && local < bitcoin.consensusBlockCount
+            ? bitcoin.consensusBlockCount - local
+            : BigInt.zero;
+
+    return _card(
+      children: [
+        _cardTitle(
+          theme,
+          Icons.currency_bitcoin,
+          context.l10n.guardianBitcoinTitle,
+        ),
+        if (bitcoin.kind != null || bitcoin.url != null) ...[
+          const SizedBox(height: 4),
+          Text(
+            [bitcoin.kind, bitcoin.url].whereType<String>().join(' · '),
+            style: theme.textTheme.bodySmall?.copyWith(color: Colors.grey),
+            overflow: TextOverflow.ellipsis,
+          ),
+        ],
+        const SizedBox(height: 8),
+        _statRow(
+          theme,
+          context.l10n.guardianChainHeightConsensus,
+          bitcoin.consensusBlockCount.toString(),
+        ),
+        if (bitcoin.consensusFeerateSatsPerKvb != null)
+          _statRow(
+            theme,
+            context.l10n.guardianConsensusFeerateLabel,
+            '${(bitcoin.consensusFeerateSatsPerKvb!.toDouble() / 1000).toStringAsFixed(1)} sat/vB',
+          ),
+        if (local != null) ...[
+          _statRow(
+            theme,
+            context.l10n.guardianChainHeightLocal,
+            local.toString(),
+          ),
+          const SizedBox(height: 4),
+          Row(
+            children: [
+              Icon(
+                behind == BigInt.zero
+                    ? Icons.check_circle
+                    : Icons.warning_amber,
+                size: 16,
+                color: behind == BigInt.zero ? Colors.green : Colors.orange,
+              ),
+              const SizedBox(width: 6),
+              Text(
+                behind == BigInt.zero
+                    ? context.l10n.guardianNodeSynced
+                    : context.l10n.guardianNodeBehind(behind.toString()),
+                style: theme.textTheme.bodySmall?.copyWith(
+                  color: behind == BigInt.zero ? Colors.green : Colors.orange,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ],
+          ),
+        ],
+      ],
+    );
+  }
+
+  // --- Manage list ---
+
+  Widget _sectionHeader(ThemeData theme, String title) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 4),
+      child: Text(
+        title.toUpperCase(),
+        style: theme.textTheme.labelSmall?.copyWith(
+          color: Colors.grey,
+          fontWeight: FontWeight.w600,
+          letterSpacing: 1.2,
+        ),
+      ),
+    );
+  }
+
+  Widget _manageTile({
+    required ThemeData theme,
+    required IconData icon,
+    required String title,
+    required String subtitle,
+    required VoidCallback onTap,
+  }) {
+    return Material(
+      color: const Color(0xFF1A1A1A),
+      borderRadius: BorderRadius.circular(12),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(12),
+        onTap: onTap,
+        child: Padding(
+          padding: const EdgeInsets.all(14),
+          child: Row(
+            children: [
+              Container(
+                width: 40,
+                height: 40,
+                decoration: BoxDecoration(
+                  color: theme.colorScheme.primary.withValues(alpha: 0.12),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Icon(icon, size: 22, color: theme.colorScheme.primary),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
                     Text(
-                      context.l10n.versionLabel(widget.peer.version!),
+                      title,
+                      style: theme.textTheme.bodyLarge?.copyWith(
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      subtitle,
                       style: theme.textTheme.bodySmall?.copyWith(
                         color: Colors.grey,
                       ),
+                      overflow: TextOverflow.ellipsis,
                     ),
-                  Text(
-                    widget.peer.url,
-                    style: theme.textTheme.bodySmall?.copyWith(
-                      color: Colors.grey,
-                    ),
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                ],
+                  ],
+                ),
               ),
-            ),
-          ],
-        ),
-      ],
-    );
-  }
-
-  Widget _buildBalanceSheetCard(
-    ThemeData theme,
-    BitcoinDisplay bitcoinDisplay,
-  ) {
-    final audit = _audit!;
-    return _card(
-      children: [
-        _cardTitle(
-          theme,
-          Icons.account_balance_outlined,
-          context.l10n.guardianBalanceSheet,
-        ),
-        const SizedBox(height: 8),
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Text(
-              context.l10n.guardianNetAssets,
-              style: theme.textTheme.bodyMedium?.copyWith(color: Colors.grey),
-            ),
-            Text(
-              formatBalance(
-                BigInt.from(audit.netAssetsMsats),
-                false,
-                bitcoinDisplay,
-              ),
-              style: theme.textTheme.bodyLarge?.copyWith(
-                fontWeight: FontWeight.bold,
-                color: theme.colorScheme.primary,
-              ),
-            ),
-          ],
-        ),
-        const Divider(height: 24),
-        ...audit.moduleSummaries.map(
-          (module) => _statRow(
-            theme,
-            '${module.kind} · #${module.moduleInstanceId}',
-            formatBalance(
-              BigInt.from(module.netAssetsMsats),
-              false,
-              bitcoinDisplay,
-            ),
+              const SizedBox(width: 8),
+              const Icon(Icons.chevron_right, color: Colors.grey),
+            ],
           ),
         ),
-      ],
-    );
-  }
-
-  Widget _buildBackupsCard(ThemeData theme) {
-    final backups = _backups!;
-    return _card(
-      children: [
-        _cardTitle(
-          theme,
-          Icons.cloud_outlined,
-          context.l10n.guardianEcashBackups,
-        ),
-        const SizedBox(height: 8),
-        _statRow(
-          theme,
-          context.l10n.guardianStoredBackups,
-          backups.numBackups.toString(),
-        ),
-        _statRow(
-          theme,
-          context.l10n.guardianBackupsTotalSize,
-          _formatBytes(backups.totalSizeBytes),
-        ),
-        const Divider(height: 24),
-        _statRow(
-          theme,
-          context.l10n.guardianRefreshedLastDay,
-          backups.refreshed1D.toString(),
-        ),
-        _statRow(
-          theme,
-          context.l10n.guardianRefreshedLastWeek,
-          backups.refreshed1W.toString(),
-        ),
-        _statRow(
-          theme,
-          context.l10n.guardianRefreshedLastMonth,
-          backups.refreshed1M.toString(),
-        ),
-        _statRow(
-          theme,
-          context.l10n.guardianRefreshedLast3Months,
-          backups.refreshed3M.toString(),
-        ),
-      ],
+      ),
     );
   }
 }

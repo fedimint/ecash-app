@@ -11,9 +11,9 @@ import 'package:flutter_rust_bridge/flutter_rust_bridge_for_generated.dart';
 import 'package:freezed_annotation/freezed_annotation.dart' hide protected;
 part 'multimint.freezed.dart';
 
-// These functions are ignored because they are not marked as `pub`: `await_receive_lnv1`, `await_receive_lnv2`, `await_send_lnv1`, `await_send_lnv2`, `backup`, `build_client`, `cache_btc_price`, `cache_federation_meta`, `check_for_update`, `compute_send_fees`, `extract_recipient_pk_from_lnv2_lnurl`, `finish_active_subscriptions`, `from_peg_out_fees`, `get_client_database`, `get_client`, `get_ecash_amount_from_meta`, `get_lnv1_amount_from_meta`, `get_lnv1_receive_tx`, `get_lnv1_send_tx`, `get_lnv2_amount_from_meta`, `get_mintv2_receive_amount`, `get_or_build_temp_client`, `get_recurringd_federations`, `get_url`, `gross_invoice_for_contract`, `guardian_admin_api`, `init_recovery_progress_cache`, `invoice_routes_back_to_federation`, `is_invalid_guardian_auth`, `is_newer_version`, `list_gateways`, `lnv1_select_gateway`, `lnv1_update_gateway_cache`, `lnv2_gateways`, `lnv2_select_gateway`, `load_clients`, `pay_lnv1`, `pay_lnv2`, `read_meta_msats`, `read_meta_u64`, `receive_lnv1`, `receive_lnv2`, `remove_existing_ln_address`, `remove_recovery_progress_cache`, `run_migrations`, `send_federation_fee`, `sign_challenge`, `solve_gross_for_net`, `spawn_await_ecash_reissue`, `spawn_await_ecash_send`, `spawn_await_mintv2_receive`, `spawn_await_receive`, `spawn_await_recurringd_receive`, `spawn_await_send`, `spawn_await_withdraw`, `spawn_backfill_recipient_pk`, `spawn_cache_task`, `spawn_lnv2_event_listener`, `spawn_recovery_progress`, `spawn_recurring_invoice_listener`, `update_recovery_progress_cache`, `wait_for_recovery`, `wallet_network`
+// These functions are ignored because they are not marked as `pub`: `await_receive_lnv1`, `await_receive_lnv2`, `await_send_lnv1`, `await_send_lnv2`, `backup`, `build_client`, `cache_btc_price`, `cache_federation_meta`, `check_for_update`, `compute_send_fees`, `extract_recipient_pk_from_lnv2_lnurl`, `finish_active_subscriptions`, `from_peg_out_fees`, `get_client_database`, `get_client`, `get_ecash_amount_from_meta`, `get_lnv1_amount_from_meta`, `get_lnv1_receive_tx`, `get_lnv1_send_tx`, `get_lnv2_amount_from_meta`, `get_mintv2_receive_amount`, `get_or_build_temp_client`, `get_recurringd_federations`, `get_url`, `gross_invoice_for_contract`, `guardian_admin_api`, `guardian_bitcoin_status`, `init_recovery_progress_cache`, `invoice_routes_back_to_federation`, `is_invalid_guardian_auth`, `is_newer_version`, `list_gateways`, `lnv1_select_gateway`, `lnv1_update_gateway_cache`, `lnv2_gateways`, `lnv2_select_gateway`, `load_clients`, `pay_lnv1`, `pay_lnv2`, `read_meta_msats`, `read_meta_u64`, `receive_lnv1`, `receive_lnv2`, `remove_existing_ln_address`, `remove_recovery_progress_cache`, `run_migrations`, `send_federation_fee`, `sign_challenge`, `solve_gross_for_net`, `spawn_await_ecash_reissue`, `spawn_await_ecash_send`, `spawn_await_mintv2_receive`, `spawn_await_receive`, `spawn_await_recurringd_receive`, `spawn_await_send`, `spawn_await_withdraw`, `spawn_backfill_recipient_pk`, `spawn_cache_task`, `spawn_lnv2_event_listener`, `spawn_recovery_progress`, `spawn_recurring_invoice_listener`, `update_recovery_progress_cache`, `wait_for_recovery`, `wallet_network`
 // These types are ignored because they are neither used by any `pub` functions nor (for structs and enums) marked `#[frb(unignore)]`: `ClientType`, `LNAddressRegisterRequest`, `LNAddressRemoveRequest`, `OnChainWithdrawalMeta`, `WrappedEcash`
-// These function are ignored because they are on traits that is not defined in current crate (put an empty `#[frb]` on it to unignore): `assert_receiver_is_total_eq`, `assert_receiver_is_total_eq`, `assert_receiver_is_total_eq`, `assert_receiver_is_total_eq`, `assert_receiver_is_total_eq`, `assert_receiver_is_total_eq`, `assert_receiver_is_total_eq`, `assert_receiver_is_total_eq`, `assert_receiver_is_total_eq`, `assert_receiver_is_total_eq`, `assert_receiver_is_total_eq`, `assert_receiver_is_total_eq`, `assert_receiver_is_total_eq`, `assert_receiver_is_total_eq`, `assert_receiver_is_total_eq`, `assert_receiver_is_total_eq`, `assert_receiver_is_total_eq`, `assert_receiver_is_total_eq`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `consensus_decode_partial_from_finite_reader`, `consensus_decode_partial_from_finite_reader`, `consensus_decode_partial_from_finite_reader`, `consensus_encode`, `consensus_encode`, `consensus_encode`, `eq`, `eq`, `eq`, `eq`, `eq`, `eq`, `eq`, `eq`, `eq`, `eq`, `eq`, `eq`, `eq`, `eq`, `eq`, `eq`, `eq`, `eq`, `eq`, `eq`, `eq`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `from`, `from`
+// These function are ignored because they are on traits that is not defined in current crate (put an empty `#[frb]` on it to unignore): `assert_receiver_is_total_eq`, `assert_receiver_is_total_eq`, `assert_receiver_is_total_eq`, `assert_receiver_is_total_eq`, `assert_receiver_is_total_eq`, `assert_receiver_is_total_eq`, `assert_receiver_is_total_eq`, `assert_receiver_is_total_eq`, `assert_receiver_is_total_eq`, `assert_receiver_is_total_eq`, `assert_receiver_is_total_eq`, `assert_receiver_is_total_eq`, `assert_receiver_is_total_eq`, `assert_receiver_is_total_eq`, `assert_receiver_is_total_eq`, `assert_receiver_is_total_eq`, `assert_receiver_is_total_eq`, `assert_receiver_is_total_eq`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `consensus_decode_partial_from_finite_reader`, `consensus_decode_partial_from_finite_reader`, `consensus_decode_partial_from_finite_reader`, `consensus_encode`, `consensus_encode`, `consensus_encode`, `eq`, `eq`, `eq`, `eq`, `eq`, `eq`, `eq`, `eq`, `eq`, `eq`, `eq`, `eq`, `eq`, `eq`, `eq`, `eq`, `eq`, `eq`, `eq`, `eq`, `eq`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `from`, `from`
 // These functions have error during generation (see debug logs or enable `stop_on_error: true` for more details): `subscribe_peer_status`
 
 OobNotesWrapper? parseOobNotes({required String notes}) =>
@@ -277,6 +277,12 @@ abstract class Multimint implements RustOpaqueInterface {
   /// rejected password (also the guardian's response when it has no admin
   /// password configured at all) and `Err` when the guardian is unreachable.
   Future<bool> guardianLogin({
+    required FederationId federationId,
+    required int peer,
+    required String password,
+  });
+
+  Future<GuardianStatusSummary> guardianStatus({
     required FederationId federationId,
     required int peer,
     required String password,
@@ -767,6 +773,94 @@ class GuardianBackupStatistics {
           refreshed3M == other.refreshed3M;
 }
 
+class GuardianBitcoinStatus {
+  /// Backend kind and credential-stripped URL; None when the authenticated
+  /// `bitcoin_rpc_config` endpoint is unavailable on this guardian.
+  final String? kind;
+  final String? url;
+  final BigInt consensusBlockCount;
+
+  /// This guardian's own bitcoin node height; comparing it against the
+  /// consensus count reveals a node that has fallen behind. Wallet v1 only.
+  final BigInt? localBlockCount;
+
+  /// Consensus fee rate in sats per kvB. Wallet v2 only.
+  final BigInt? consensusFeerateSatsPerKvb;
+
+  const GuardianBitcoinStatus({
+    this.kind,
+    this.url,
+    required this.consensusBlockCount,
+    this.localBlockCount,
+    this.consensusFeerateSatsPerKvb,
+  });
+
+  @override
+  int get hashCode =>
+      kind.hashCode ^
+      url.hashCode ^
+      consensusBlockCount.hashCode ^
+      localBlockCount.hashCode ^
+      consensusFeerateSatsPerKvb.hashCode;
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is GuardianBitcoinStatus &&
+          runtimeType == other.runtimeType &&
+          kind == other.kind &&
+          url == other.url &&
+          consensusBlockCount == other.consensusBlockCount &&
+          localBlockCount == other.localBlockCount &&
+          consensusFeerateSatsPerKvb == other.consensusFeerateSatsPerKvb;
+}
+
+class GuardianHealth {
+  final bool consensusRunning;
+
+  /// Raw server status, shown when consensus is not running (e.g. during
+  /// setup or an upgrade).
+  final String serverStatus;
+  final BigInt? sessionCount;
+  final BigInt peersOnline;
+  final BigInt peersTotal;
+  final BigInt? consensusOrdLatencyMs;
+  final BigInt? scheduledShutdownSession;
+
+  const GuardianHealth({
+    required this.consensusRunning,
+    required this.serverStatus,
+    this.sessionCount,
+    required this.peersOnline,
+    required this.peersTotal,
+    this.consensusOrdLatencyMs,
+    this.scheduledShutdownSession,
+  });
+
+  @override
+  int get hashCode =>
+      consensusRunning.hashCode ^
+      serverStatus.hashCode ^
+      sessionCount.hashCode ^
+      peersOnline.hashCode ^
+      peersTotal.hashCode ^
+      consensusOrdLatencyMs.hashCode ^
+      scheduledShutdownSession.hashCode;
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is GuardianHealth &&
+          runtimeType == other.runtimeType &&
+          consensusRunning == other.consensusRunning &&
+          serverStatus == other.serverStatus &&
+          sessionCount == other.sessionCount &&
+          peersOnline == other.peersOnline &&
+          peersTotal == other.peersTotal &&
+          consensusOrdLatencyMs == other.consensusOrdLatencyMs &&
+          scheduledShutdownSession == other.scheduledShutdownSession;
+}
+
 class GuardianModuleSummary {
   final int moduleInstanceId;
   final String kind;
@@ -793,6 +887,26 @@ class GuardianModuleSummary {
           moduleInstanceId == other.moduleInstanceId &&
           kind == other.kind &&
           netAssetsMsats == other.netAssetsMsats;
+}
+
+class GuardianStatusSummary {
+  final GuardianHealth health;
+
+  /// None when the federation has no wallet (v1) module.
+  final GuardianBitcoinStatus? bitcoin;
+
+  const GuardianStatusSummary({required this.health, this.bitcoin});
+
+  @override
+  int get hashCode => health.hashCode ^ bitcoin.hashCode;
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is GuardianStatusSummary &&
+          runtimeType == other.runtimeType &&
+          health == other.health &&
+          bitcoin == other.bitcoin;
 }
 
 class InvoicePaidEvent {

@@ -13,7 +13,7 @@ use anyhow::bail;
 use anyhow::Context;
 use bitcoin::hashes::{sha256, Hash};
 use bitcoin::key::rand::{seq::SliceRandom, thread_rng};
-use fedimint_api_client::api::{DynGlobalApi, FederationError};
+use fedimint_api_client::api::{DynGlobalApi, FederationApiExt, FederationError};
 use fedimint_bip39::{Bip39RootSecretStrategy, Language, Mnemonic};
 use fedimint_client::{
     db::ChronologicalOperationLogKey,
@@ -28,12 +28,15 @@ use fedimint_client::{
 };
 use fedimint_connectors::{Connectivity, ConnectorRegistry, PeerStatus as FedimintPeerStatus};
 use fedimint_core::{
+    admin_client::ServerStatusLegacy,
     base32::{decode_prefixed, encode_prefixed, FEDIMINT_PREFIX},
     config::{FederationId, META_FEDERATION_NAME_KEY},
     db::{mem_impl::MemDatabase, Database, IDatabaseTransactionOpsCoreTyped},
     encoding::{Decodable, Encodable},
+    endpoint_constants::CONSENSUS_ORD_LATENCY_ENDPOINT,
+    envs::BitcoinRpcConfig,
     invite_code::InviteCode,
-    module::ApiAuth,
+    module::{ApiAuth, ApiRequestErased},
     task::TaskGroup,
     util::SafeUrl,
     Amount,
@@ -60,6 +63,12 @@ use fedimint_mintv2_client::{
     ECash, FinalReceiveOperationState as MintV2FinalReceiveOperationState,
     MintClientInit as MintV2Init, MintClientModule as MintV2Module,
     MintOperationMeta as MintV2OperationMeta,
+};
+use fedimint_wallet_common::endpoint_constants::{
+    BITCOIN_RPC_CONFIG_ENDPOINT, BLOCK_COUNT_ENDPOINT, BLOCK_COUNT_LOCAL_ENDPOINT,
+};
+use fedimint_walletv2_common::endpoint_constants::{
+    CONSENSUS_BLOCK_COUNT_ENDPOINT, CONSENSUS_FEERATE_ENDPOINT,
 };
 use fedimint_wallet_client::client_db::TweakIdx;
 use fedimint_wallet_client::TxOutputSummary;
@@ -351,6 +360,40 @@ pub struct GuardianBackupStatistics {
     pub refreshed_1w: u64,
     pub refreshed_1m: u64,
     pub refreshed_3m: u64,
+}
+
+#[derive(Debug, Serialize, Clone)]
+pub struct GuardianHealth {
+    pub consensus_running: bool,
+    /// Raw server status, shown when consensus is not running (e.g. during
+    /// setup or an upgrade).
+    pub server_status: String,
+    pub session_count: Option<u64>,
+    pub peers_online: u64,
+    pub peers_total: u64,
+    pub consensus_ord_latency_ms: Option<u64>,
+    pub scheduled_shutdown_session: Option<u64>,
+}
+
+#[derive(Debug, Serialize, Clone)]
+pub struct GuardianBitcoinStatus {
+    /// Backend kind and credential-stripped URL; None when the authenticated
+    /// `bitcoin_rpc_config` endpoint is unavailable on this guardian.
+    pub kind: Option<String>,
+    pub url: Option<String>,
+    pub consensus_block_count: u64,
+    /// This guardian's own bitcoin node height; comparing it against the
+    /// consensus count reveals a node that has fallen behind. Wallet v1 only.
+    pub local_block_count: Option<u64>,
+    /// Consensus fee rate in sats per kvB. Wallet v2 only.
+    pub consensus_feerate_sats_per_kvb: Option<u64>,
+}
+
+#[derive(Debug, Serialize, Clone)]
+pub struct GuardianStatusSummary {
+    pub health: GuardianHealth,
+    /// None when the federation has no wallet (v1) module.
+    pub bitcoin: Option<GuardianBitcoinStatus>,
 }
 
 #[derive(Debug, Serialize, Clone)]
@@ -5645,6 +5688,107 @@ impl Multimint {
             refreshed_1w: stats.refreshed_1w as u64,
             refreshed_1m: stats.refreshed_1m as u64,
             refreshed_3m: stats.refreshed_3m as u64,
+        })
+    }
+
+    pub async fn guardian_status(
+        &self,
+        federation_id: &FederationId,
+        peer: u16,
+        password: String,
+    ) -> anyhow::Result<GuardianStatusSummary> {
+        let api = self.guardian_admin_api(federation_id, peer).await?;
+
+        let status = api.status().await?;
+        let latency: Option<Duration> = api
+            .request_admin_no_auth(CONSENSUS_ORD_LATENCY_ENDPOINT, ApiRequestErased::default())
+            .await
+            .unwrap_or_default();
+
+        let federation = status.federation.as_ref();
+        let health = GuardianHealth {
+            consensus_running: status.server == ServerStatusLegacy::ConsensusRunning,
+            server_status: format!("{:?}", status.server),
+            session_count: federation.map(|f| f.session_count),
+            peers_online: federation.map(|f| f.peers_online).unwrap_or_default(),
+            peers_total: federation
+                .map(|f| f.status_by_peer.len() as u64)
+                .unwrap_or_default(),
+            consensus_ord_latency_ms: latency.map(|latency| latency.as_millis() as u64),
+            scheduled_shutdown_session: federation.and_then(|f| f.scheduled_shutdown),
+        };
+
+        let bitcoin = self
+            .guardian_bitcoin_status(federation_id, &api, password)
+            .await;
+
+        Ok(GuardianStatusSummary { health, bitcoin })
+    }
+
+    async fn guardian_bitcoin_status(
+        &self,
+        federation_id: &FederationId,
+        admin_api: &DynGlobalApi,
+        password: String,
+    ) -> Option<GuardianBitcoinStatus> {
+        let client = self
+            .clients
+            .read()
+            .await
+            .get(federation_id)?
+            .clone();
+
+        if let Ok(wallet) = client.get_first_module::<WalletClientModule>() {
+            let module_api = admin_api.with_module(wallet.id);
+
+            let consensus_block_count: u32 = module_api
+                .request_admin_no_auth(BLOCK_COUNT_ENDPOINT, ApiRequestErased::default())
+                .await
+                .ok()?;
+            let local_block_count: Option<u32> = module_api
+                .request_admin_no_auth(BLOCK_COUNT_LOCAL_ENDPOINT, ApiRequestErased::default())
+                .await
+                .unwrap_or_default();
+            // Requires guardian auth and a recent fedimintd; the block counts
+            // above are still useful without it.
+            let rpc_config: Option<BitcoinRpcConfig> = module_api
+                .request_admin(
+                    BITCOIN_RPC_CONFIG_ENDPOINT,
+                    ApiRequestErased::default(),
+                    ApiAuth::new(password),
+                )
+                .await
+                .ok();
+
+            return Some(GuardianBitcoinStatus {
+                kind: rpc_config.as_ref().map(|config| config.kind.clone()),
+                url: rpc_config.map(|config| config.url.to_string()),
+                consensus_block_count: consensus_block_count.into(),
+                local_block_count: local_block_count.map(Into::into),
+                consensus_feerate_sats_per_kvb: None,
+            });
+        }
+
+        // Wallet v2 exposes no local block count or backend config, so the
+        // card degrades to consensus height plus fee rate.
+        let wallet_id = client.get_first_module::<WalletV2Module>().ok()?.id;
+        let module_api = admin_api.with_module(wallet_id);
+
+        let consensus_block_count: u64 = module_api
+            .request_admin_no_auth(CONSENSUS_BLOCK_COUNT_ENDPOINT, ApiRequestErased::default())
+            .await
+            .ok()?;
+        let consensus_feerate: Option<u64> = module_api
+            .request_admin_no_auth(CONSENSUS_FEERATE_ENDPOINT, ApiRequestErased::default())
+            .await
+            .unwrap_or_default();
+
+        Some(GuardianBitcoinStatus {
+            kind: None,
+            url: None,
+            consensus_block_count,
+            local_block_count: None,
+            consensus_feerate_sats_per_kvb: consensus_feerate,
         })
     }
 
