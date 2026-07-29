@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:ecashapp/extensions/build_context_l10n.dart';
+import 'package:ecashapp/screens/guardian_dashboard.dart';
 import 'package:ecashapp/widgets/federation_utxo_list.dart';
 import 'package:ecashapp/lib.dart';
 import 'package:ecashapp/multimint.dart';
@@ -49,6 +50,7 @@ class FederationInfoScreen extends StatefulWidget {
 class _FederationInfoScreenState extends State<FederationInfoScreen> {
   double _animatedPercent = 0.0;
   StreamSubscription<List<PeerStatus>>? _peerUpdates;
+  StreamSubscription<MultimintEvent>? _metaUpdates;
   List<PeerStatus>? _peers;
   _InfoSection _selectedSection = _InfoSection.guardians;
   bool _isJoining = false;
@@ -76,13 +78,42 @@ class _FederationInfoScreenState extends State<FederationInfoScreen> {
       _welcomeMessage = widget.welcomeMessage;
       _imageUrl = widget.imageUrl;
       _subscribePeers();
+      _subscribeMetaUpdates();
     }
   }
 
   @override
   void dispose() {
     _peerUpdates?.cancel();
+    _metaUpdates?.cancel();
     super.dispose();
+  }
+
+  /// Reload the name, picture and welcome message when a guardian changes them
+  /// through the meta module, so this screen updates while it is open.
+  void _subscribeMetaUpdates() {
+    _metaUpdates = subscribeMultimintEvents().listen((event) async {
+      if (event is! MultimintEvent_MetaUpdated) return;
+      final fed = _fed;
+      if (fed == null || !mounted) return;
+
+      final federationIdStr = await federationIdToString(
+        federationId: fed.federationId,
+      );
+      if (event.field0 != federationIdStr || !mounted) return;
+
+      try {
+        final meta = await getFederationMeta(federationId: fed.federationId);
+        if (!mounted) return;
+        setState(() {
+          _fed = meta.selector;
+          _welcomeMessage = meta.welcome;
+          _imageUrl = meta.picture;
+        });
+      } catch (e) {
+        AppLogger.instance.warn("Could not reload federation meta: $e");
+      }
+    });
   }
 
   Future<void> _loadMeta() async {
@@ -206,6 +237,111 @@ class _FederationInfoScreenState extends State<FederationInfoScreen> {
                             child: CircularProgressIndicator(strokeWidth: 2),
                           )
                           : Text(sbContext.l10n.confirm),
+                ),
+              ],
+            );
+          },
+        );
+      },
+    );
+  }
+
+  // --- Guardian dashboard login logic ---
+
+  Future<void> _onGuardianTapped(PeerStatus peer) async {
+    final passwordController = TextEditingController();
+
+    await showDialog(
+      context: context,
+      builder: (dialogContext) {
+        bool isVerifying = false;
+        String? errorText;
+
+        return StatefulBuilder(
+          builder: (sbContext, setState) {
+            Future<void> submit() async {
+              final password = passwordController.text;
+              if (password.isEmpty || isVerifying) return;
+              setState(() {
+                isVerifying = true;
+                errorText = null;
+              });
+
+              try {
+                final ok = await guardianLogin(
+                  federationId: _fed!.federationId,
+                  peer: peer.peerId,
+                  password: password,
+                );
+                if (!sbContext.mounted) return;
+                if (!ok) {
+                  setState(() {
+                    isVerifying = false;
+                    errorText = sbContext.l10n.guardianInvalidPassword;
+                  });
+                  return;
+                }
+                Navigator.of(dialogContext).pop();
+                if (!mounted) return;
+                Navigator.of(context).push(
+                  MaterialPageRoute(
+                    builder:
+                        (_) => GuardianDashboardScreen(
+                          fed: _fed!,
+                          peer: peer,
+                          password: password,
+                        ),
+                  ),
+                );
+              } catch (e) {
+                AppLogger.instance.error("Guardian login failed: $e");
+                if (!sbContext.mounted) return;
+                setState(() {
+                  isVerifying = false;
+                  errorText = sbContext.l10n.guardianLoginFailed;
+                });
+              }
+            }
+
+            return AlertDialog(
+              title: Text(sbContext.l10n.guardianDashboardTitle),
+              content: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(sbContext.l10n.guardianLoginPrompt(peer.name)),
+                  const SizedBox(height: 12),
+                  TextField(
+                    controller: passwordController,
+                    obscureText: true,
+                    autofocus: true,
+                    enabled: !isVerifying,
+                    decoration: InputDecoration(
+                      labelText: sbContext.l10n.guardianPasswordLabel,
+                      errorText: errorText,
+                    ),
+                    onSubmitted: (_) => submit(),
+                  ),
+                ],
+              ),
+              actions: [
+                TextButton(
+                  onPressed:
+                      isVerifying
+                          ? null
+                          : () => Navigator.of(dialogContext).pop(),
+                  child: Text(sbContext.l10n.cancel),
+                ),
+                TextButton(
+                  onPressed: isVerifying ? null : submit,
+                  child:
+                      isVerifying
+                          ? const SizedBox(
+                            height: 20,
+                            width: 20,
+                            child: CircularProgressIndicator(strokeWidth: 2),
+                          )
+                          : Text(sbContext.l10n.logIn),
                 ),
               ],
             );
@@ -508,6 +644,10 @@ class _FederationInfoScreenState extends State<FederationInfoScreen> {
         return ListTile(
           dense: true,
           contentPadding: EdgeInsets.zero,
+          onTap:
+              !widget.joinable && isOnline
+                  ? () => _onGuardianTapped(peer)
+                  : null,
           leading: Icon(
             Icons.circle,
             color: isOnline ? Colors.green : Colors.red,

@@ -13,6 +13,7 @@ use anyhow::bail;
 use anyhow::Context;
 use bitcoin::hashes::{sha256, Hash};
 use bitcoin::key::rand::{seq::SliceRandom, thread_rng};
+use fedimint_api_client::api::{DynGlobalApi, DynModuleApi, FederationApiExt, FederationError};
 use fedimint_bip39::{Bip39RootSecretStrategy, Language, Mnemonic};
 use fedimint_client::{
     db::ChronologicalOperationLogKey,
@@ -27,14 +28,18 @@ use fedimint_client::{
 };
 use fedimint_connectors::{Connectivity, ConnectorRegistry, PeerStatus as FedimintPeerStatus};
 use fedimint_core::{
+    admin_client::ServerStatusLegacy,
     base32::{decode_prefixed, encode_prefixed, FEDIMINT_PREFIX},
     config::{FederationId, META_FEDERATION_NAME_KEY},
     db::{mem_impl::MemDatabase, Database, IDatabaseTransactionOpsCoreTyped},
     encoding::{Decodable, Encodable},
+    endpoint_constants::CONSENSUS_ORD_LATENCY_ENDPOINT,
+    envs::BitcoinRpcConfig,
     invite_code::InviteCode,
+    module::{ApiAuth, ApiRequestErased},
     task::TaskGroup,
     util::SafeUrl,
-    Amount,
+    Amount, NumPeers,
 };
 use fedimint_eventlog::Event;
 use fedimint_ln_client::{
@@ -47,9 +52,17 @@ use fedimint_lnv2_client::{
     ReceiveOperationState, SendOperationState,
 };
 use fedimint_lnv2_common::{
-    contracts::fee_from_expiration, gateway_api::PaymentFee, Bolt11InvoiceDescription,
+    contracts::fee_from_expiration,
+    endpoint_constants::{ADD_GATEWAY_ENDPOINT, REMOVE_GATEWAY_ENDPOINT},
+    gateway_api::PaymentFee,
+    Bolt11InvoiceDescription,
 };
-use fedimint_meta_client::{common::DEFAULT_META_KEY, MetaClientInit};
+use fedimint_meta_client::common::endpoint::{
+    GetConsensusRequest, GetSubmissionResponse, GetSubmissionsRequest, SubmitRequest,
+    GET_CONSENSUS_ENDPOINT, GET_SUBMISSIONS_ENDPOINT, SUBMIT_ENDPOINT,
+};
+use fedimint_meta_client::common::{MetaConsensusValue, MetaValue};
+use fedimint_meta_client::{common::DEFAULT_META_KEY, MetaClientInit, MetaClientModule};
 use fedimint_mint_client::{
     api::MintFederationApi, MintClientInit, MintClientModule, MintOperationMeta,
     MintOperationMetaVariant, OOBNotes, ReissueExternalNotesState, SpendOOBState,
@@ -66,10 +79,16 @@ use fedimint_wallet_client::{
     DepositStateV2, PegOutFees, WalletClientInit, WalletClientModule, WalletOperationMeta,
     WalletOperationMetaVariant,
 };
+use fedimint_wallet_common::endpoint_constants::{
+    BITCOIN_RPC_CONFIG_ENDPOINT, BLOCK_COUNT_ENDPOINT, BLOCK_COUNT_LOCAL_ENDPOINT,
+};
 use fedimint_walletv2_client::{
     FinalReceiveOperationState as WalletV2FinalReceiveOperationState,
     FinalSendOperationState as WalletV2FinalSendOperationState, WalletClientInit as WalletV2Init,
     WalletClientModule as WalletV2Module, WalletOperationMeta as WalletV2OperationMeta,
+};
+use fedimint_walletv2_common::endpoint_constants::{
+    CONSENSUS_BLOCK_COUNT_ENDPOINT, CONSENSUS_FEERATE_ENDPOINT,
 };
 use futures_util::{stream, Stream, StreamExt};
 use lightning_invoice::{Bolt11Invoice, Description};
@@ -103,6 +122,14 @@ const CONTACT_SYNC_INTERVAL_SECS: u64 = 90;
 const VERSION_CHECK_INTERVAL_SECS: u64 = 60 * 60 * 6;
 const GITHUB_LATEST_RELEASE_URL: &str =
     "https://api.github.com/repos/fedimint/ecash-app/releases/latest";
+
+/// fedimintd rejects a wrong (or unconfigured) admin password with JSON-RPC
+/// code 401 / "Invalid authorization". The client surfaces that as an opaque
+/// server error inside [`FederationError`], so matching the message is the
+/// only way to tell a bad password apart from an unreachable guardian.
+fn is_invalid_guardian_auth(err: &FederationError) -> bool {
+    err.to_string().contains("Invalid authorization")
+}
 
 fn is_newer_version(current: &str, latest: &str) -> bool {
     match (
@@ -316,6 +343,101 @@ pub struct PeerStatus {
     /// the UI reflects guardian upgrades in real time (a guardian upgrade
     /// restarts fedimintd, which surfaces as a reconnect on the status stream).
     pub version: Option<String>,
+}
+
+#[derive(Debug, Serialize, Clone)]
+pub struct GuardianModuleSummary {
+    pub module_instance_id: u16,
+    pub kind: String,
+    /// Positive means assets, negative means liabilities (e.g. the mint
+    /// module's outstanding e-cash).
+    pub net_assets_msats: i64,
+}
+
+#[derive(Debug, Serialize, Clone)]
+pub struct GuardianAuditSummary {
+    pub net_assets_msats: i64,
+    pub module_summaries: Vec<GuardianModuleSummary>,
+}
+
+#[derive(Debug, Serialize, Clone)]
+pub struct GuardianBackupStatistics {
+    pub num_backups: u64,
+    pub total_size_bytes: u64,
+    pub refreshed_1d: u64,
+    pub refreshed_1w: u64,
+    pub refreshed_1m: u64,
+    pub refreshed_3m: u64,
+}
+
+#[derive(Debug, Serialize, Clone)]
+pub struct GuardianHealth {
+    pub consensus_running: bool,
+    /// Raw server status, shown when consensus is not running (e.g. during
+    /// setup or an upgrade).
+    pub server_status: String,
+    pub session_count: Option<u64>,
+    pub peers_online: u64,
+    pub peers_total: u64,
+    pub consensus_ord_latency_ms: Option<u64>,
+    pub scheduled_shutdown_session: Option<u64>,
+}
+
+#[derive(Debug, Serialize, Clone)]
+pub struct GuardianBitcoinStatus {
+    /// Backend kind and credential-stripped URL; None when the authenticated
+    /// `bitcoin_rpc_config` endpoint is unavailable on this guardian.
+    pub kind: Option<String>,
+    pub url: Option<String>,
+    pub consensus_block_count: u64,
+    /// This guardian's own bitcoin node height; comparing it against the
+    /// consensus count reveals a node that has fallen behind. Wallet v1 only.
+    pub local_block_count: Option<u64>,
+    /// Consensus fee rate in sats per kvB. Wallet v2 only.
+    pub consensus_feerate_sats_per_kvb: Option<u64>,
+}
+
+#[derive(Debug, Serialize, Clone)]
+pub struct GuardianStatusSummary {
+    pub health: GuardianHealth,
+    /// None when the federation has no wallet module.
+    pub bitcoin: Option<GuardianBitcoinStatus>,
+    /// Whether the federation runs the lnv2 module, i.e. whether gateway
+    /// management is available.
+    pub has_lnv2: bool,
+    /// Whether the federation runs the meta module, i.e. whether federation
+    /// settings can be viewed and proposed.
+    pub has_meta: bool,
+}
+
+/// A pending meta submission, grouped across every guardian that submitted
+/// this exact value.
+#[derive(Debug, Serialize, Clone)]
+pub struct GuardianMetaProposal {
+    pub peer_ids: Vec<u16>,
+    /// The raw submitted bytes, hex encoded. Accepting a proposal must
+    /// resubmit these exact bytes: consensus only forms over byte-identical
+    /// values, so re-serializing the parsed document could silently never
+    /// converge.
+    pub value_hex: String,
+    /// The submission parsed as JSON, or None when a guardian submitted
+    /// something that is not valid JSON.
+    pub value_json: Option<String>,
+    /// Whether the guardian we are logged into is backing this value.
+    pub is_ours: bool,
+}
+
+#[derive(Debug, Serialize, Clone)]
+pub struct GuardianMetaState {
+    /// The current agreed meta document as JSON, absent until a first
+    /// consensus forms.
+    pub consensus_json: Option<String>,
+    pub revision: Option<u64>,
+    pub proposals: Vec<GuardianMetaProposal>,
+    /// How many guardians must submit an identical value for it to become the
+    /// new consensus.
+    pub threshold: u16,
+    pub total_guardians: u16,
 }
 
 #[derive(Debug, Serialize, Clone)]
@@ -549,6 +671,11 @@ pub enum MultimintEvent {
     NostrRecoveryPhase(NostrRecoveryPhase),
     ContactSync(ContactSyncEventKind),
     UpdateAvailable(String),
+    /// A federation's cached meta changed (name, picture, welcome message or
+    /// guardians), so screens holding it should reload. Carries the federation
+    /// id as a string: a bare opaque type as an enum payload makes the bridge
+    /// generate the whole enum as opaque, breaking every other variant.
+    MetaUpdated(String),
     /// Structured payment-flow error. The Dart layer auto-surfaces these as
     /// localized error toasts (see `lib/app.dart` and `lib/error_helper.dart`).
     PaymentError((FederationId, EcashAppError)),
@@ -1357,6 +1484,26 @@ impl Multimint {
             .await)
     }
 
+    /// Refetch and re-cache a federation's meta immediately, bypassing both the
+    /// cached value and the periodic refresh task. Used after a guardian action
+    /// changes meta consensus, so the app reflects it without waiting out the
+    /// cache interval.
+    pub async fn refresh_federation_meta(
+        &self,
+        federation_id: &FederationId,
+    ) -> anyhow::Result<FederationMeta> {
+        let client = self
+            .clients
+            .read()
+            .await
+            .get(federation_id)
+            .ok_or(anyhow!("Federation does not exist"))?
+            .clone();
+        Ok(self
+            .cache_federation_meta(client, std::time::SystemTime::now())
+            .await)
+    }
+
     fn get_url(key: &str, meta: &serde_json::Value) -> Option<String> {
         let value = meta.get(key)?;
         let url_str = value.as_str()?;
@@ -1388,19 +1535,21 @@ impl Multimint {
         let config = client.config().await;
         let network = Self::wallet_network(&client);
 
-        // Load cached guardian versions so we can preserve them when a guardian is offline
-        let cached_versions: BTreeMap<u16, Option<String>> = {
+        let cached_meta: Option<FederationMeta> = {
             let mut dbtx = self.db.begin_transaction_nc().await;
-            dbtx.get_value(&FederationMetaKey { federation_id })
-                .await
-                .map(|m| {
-                    m.guardians
-                        .into_iter()
-                        .map(|g| (g.peer_id, g.version))
-                        .collect()
-                })
-                .unwrap_or_default()
+            dbtx.get_value(&FederationMetaKey { federation_id }).await
         };
+
+        // Load cached guardian versions so we can preserve them when a guardian is offline
+        let cached_versions: BTreeMap<u16, Option<String>> = cached_meta
+            .as_ref()
+            .map(|m| {
+                m.guardians
+                    .iter()
+                    .map(|g| (g.peer_id, g.version.clone()))
+                    .collect()
+            })
+            .unwrap_or_default();
 
         let peers = &config.global.api_endpoints;
         let mut guardians = Vec::new();
@@ -1513,6 +1662,24 @@ impl Multimint {
             federation_meta.selector.federation_name
         ))
         .await;
+
+        // Notify the UI only when something it renders actually changed. This
+        // runs on a timer, and `last_updated` differs on every pass, so
+        // comparing whole values would republish constantly.
+        let changed = match &cached_meta {
+            Some(old) => {
+                old.picture != federation_meta.picture
+                    || old.welcome != federation_meta.welcome
+                    || old.selector.federation_name != federation_meta.selector.federation_name
+                    || old.guardians != federation_meta.guardians
+            }
+            None => true,
+        };
+        if changed {
+            get_event_bus()
+                .publish(MultimintEvent::MetaUpdated(federation_id.to_string()))
+                .await;
+        }
 
         federation_meta
     }
@@ -5523,6 +5690,447 @@ impl Multimint {
             .await
             .ok_or(anyhow!("Peer does not exist"))?
             .to_string())
+    }
+
+    /// Build an admin API handle scoped to a single guardian. Authenticated
+    /// (admin) endpoints read or mutate that guardian's local state, so unlike
+    /// regular client requests they always target one peer's URL.
+    async fn guardian_admin_api(
+        &self,
+        federation_id: &FederationId,
+        peer: u16,
+    ) -> anyhow::Result<DynGlobalApi> {
+        let client = self
+            .clients
+            .read()
+            .await
+            .get(federation_id)
+            .ok_or(anyhow!("Federation does not exist"))?
+            .clone();
+        let invite = client
+            .invite_code(peer.into())
+            .await
+            .ok_or(anyhow!("Peer does not exist"))?;
+        let connectors = ConnectorRegistry::build_from_client_defaults()
+            .bind()
+            .await?;
+        DynGlobalApi::new_admin(
+            connectors,
+            peer.into(),
+            invite.url(),
+            invite.api_secret().as_deref(),
+        )
+    }
+
+    /// Verify guardian admin credentials against the `auth` endpoint, which
+    /// succeeds only with the correct password. Returns `Ok(false)` on a
+    /// rejected password (also the guardian's response when it has no admin
+    /// password configured at all) and `Err` when the guardian is unreachable.
+    pub async fn guardian_login(
+        &self,
+        federation_id: &FederationId,
+        peer: u16,
+        password: String,
+    ) -> anyhow::Result<bool> {
+        let api = self.guardian_admin_api(federation_id, peer).await?;
+        match api.auth(ApiAuth::new(password)).await {
+            Ok(()) => Ok(true),
+            Err(err) if is_invalid_guardian_auth(&err) => Ok(false),
+            Err(err) => Err(err.into()),
+        }
+    }
+
+    pub async fn guardian_audit(
+        &self,
+        federation_id: &FederationId,
+        peer: u16,
+        password: String,
+    ) -> anyhow::Result<GuardianAuditSummary> {
+        let api = self.guardian_admin_api(federation_id, peer).await?;
+        let summary = api.audit(ApiAuth::new(password)).await?;
+        Ok(GuardianAuditSummary {
+            net_assets_msats: summary.net_assets,
+            module_summaries: summary
+                .module_summaries
+                .into_iter()
+                .map(|(module_instance_id, module)| GuardianModuleSummary {
+                    module_instance_id,
+                    kind: module.kind,
+                    net_assets_msats: module.net_assets,
+                })
+                .collect(),
+        })
+    }
+
+    pub async fn guardian_backup_statistics(
+        &self,
+        federation_id: &FederationId,
+        peer: u16,
+        password: String,
+    ) -> anyhow::Result<GuardianBackupStatistics> {
+        let api = self.guardian_admin_api(federation_id, peer).await?;
+        let stats = api.backup_statistics(ApiAuth::new(password)).await?;
+        Ok(GuardianBackupStatistics {
+            num_backups: stats.num_backups as u64,
+            total_size_bytes: stats.total_size as u64,
+            refreshed_1d: stats.refreshed_1d as u64,
+            refreshed_1w: stats.refreshed_1w as u64,
+            refreshed_1m: stats.refreshed_1m as u64,
+            refreshed_3m: stats.refreshed_3m as u64,
+        })
+    }
+
+    pub async fn guardian_status(
+        &self,
+        federation_id: &FederationId,
+        peer: u16,
+        password: String,
+    ) -> anyhow::Result<GuardianStatusSummary> {
+        let client = self
+            .clients
+            .read()
+            .await
+            .get(federation_id)
+            .ok_or(anyhow!("Federation does not exist"))?
+            .clone();
+        let api = self.guardian_admin_api(federation_id, peer).await?;
+
+        let status = api.status().await?;
+        let latency: Option<Duration> = api
+            .request_admin_no_auth(CONSENSUS_ORD_LATENCY_ENDPOINT, ApiRequestErased::default())
+            .await
+            .unwrap_or_default();
+
+        let federation = status.federation.as_ref();
+        let health = GuardianHealth {
+            consensus_running: status.server == ServerStatusLegacy::ConsensusRunning,
+            server_status: format!("{:?}", status.server),
+            session_count: federation.map(|f| f.session_count),
+            peers_online: federation.map(|f| f.peers_online).unwrap_or_default(),
+            peers_total: federation
+                .map(|f| f.status_by_peer.len() as u64)
+                .unwrap_or_default(),
+            consensus_ord_latency_ms: latency.map(|latency| latency.as_millis() as u64),
+            scheduled_shutdown_session: federation.and_then(|f| f.scheduled_shutdown),
+        };
+
+        let bitcoin = Self::guardian_bitcoin_status(&client, &api, password).await;
+        let has_lnv2 = client
+            .get_first_module::<fedimint_lnv2_client::LightningClientModule>()
+            .is_ok();
+        let has_meta = client.get_first_module::<MetaClientModule>().is_ok();
+
+        Ok(GuardianStatusSummary {
+            health,
+            bitcoin,
+            has_lnv2,
+            has_meta,
+        })
+    }
+
+    async fn guardian_bitcoin_status(
+        client: &ClientHandleArc,
+        admin_api: &DynGlobalApi,
+        password: String,
+    ) -> Option<GuardianBitcoinStatus> {
+        if let Ok(wallet) = client.get_first_module::<WalletClientModule>() {
+            let module_api = admin_api.with_module(wallet.id);
+
+            let consensus_block_count: u32 = module_api
+                .request_admin_no_auth(BLOCK_COUNT_ENDPOINT, ApiRequestErased::default())
+                .await
+                .ok()?;
+            let local_block_count: Option<u32> = module_api
+                .request_admin_no_auth(BLOCK_COUNT_LOCAL_ENDPOINT, ApiRequestErased::default())
+                .await
+                .unwrap_or_default();
+            // Requires guardian auth and a recent fedimintd; the block counts
+            // above are still useful without it.
+            let rpc_config: Option<BitcoinRpcConfig> = module_api
+                .request_admin(
+                    BITCOIN_RPC_CONFIG_ENDPOINT,
+                    ApiRequestErased::default(),
+                    ApiAuth::new(password),
+                )
+                .await
+                .ok();
+
+            return Some(GuardianBitcoinStatus {
+                kind: rpc_config.as_ref().map(|config| config.kind.clone()),
+                url: rpc_config.map(|config| config.url.to_string()),
+                consensus_block_count: consensus_block_count.into(),
+                local_block_count: local_block_count.map(Into::into),
+                consensus_feerate_sats_per_kvb: None,
+            });
+        }
+
+        // Wallet v2 exposes no local block count or backend config, so the
+        // card degrades to consensus height plus fee rate.
+        let wallet_id = client.get_first_module::<WalletV2Module>().ok()?.id;
+        let module_api = admin_api.with_module(wallet_id);
+
+        let consensus_block_count: u64 = module_api
+            .request_admin_no_auth(CONSENSUS_BLOCK_COUNT_ENDPOINT, ApiRequestErased::default())
+            .await
+            .ok()?;
+        let consensus_feerate: Option<u64> = module_api
+            .request_admin_no_auth(CONSENSUS_FEERATE_ENDPOINT, ApiRequestErased::default())
+            .await
+            .unwrap_or_default();
+
+        Some(GuardianBitcoinStatus {
+            kind: None,
+            url: None,
+            consensus_block_count,
+            local_block_count: None,
+            consensus_feerate_sats_per_kvb: consensus_feerate,
+        })
+    }
+
+    /// The lnv2 gateway whitelist is per-guardian state, so listing queries
+    /// the given peer directly instead of the client's default strategy.
+    pub async fn guardian_list_gateways(
+        &self,
+        federation_id: &FederationId,
+        peer: u16,
+    ) -> anyhow::Result<Vec<String>> {
+        let client = self
+            .clients
+            .read()
+            .await
+            .get(federation_id)
+            .ok_or(anyhow!("Federation does not exist"))?
+            .clone();
+        let lnv2 = client.get_first_module::<fedimint_lnv2_client::LightningClientModule>()?;
+        let gateways = lnv2
+            .list_gateways(Some(peer.into()))
+            .await
+            .map_err(|err| anyhow!("Could not list gateways: {err:?}"))?;
+        Ok(gateways.into_iter().map(|url| url.to_string()).collect())
+    }
+
+    async fn guardian_lnv2_module_api(
+        &self,
+        federation_id: &FederationId,
+        peer: u16,
+    ) -> anyhow::Result<DynModuleApi> {
+        let client = self
+            .clients
+            .read()
+            .await
+            .get(federation_id)
+            .ok_or(anyhow!("Federation does not exist"))?
+            .clone();
+        let lnv2_id = client
+            .get_first_module::<fedimint_lnv2_client::LightningClientModule>()?
+            .id;
+        let api = self.guardian_admin_api(federation_id, peer).await?;
+        Ok(api.with_module(lnv2_id))
+    }
+
+    /// Returns false when the gateway was already whitelisted.
+    pub async fn guardian_add_gateway(
+        &self,
+        federation_id: &FederationId,
+        peer: u16,
+        password: String,
+        gateway_url: String,
+    ) -> anyhow::Result<bool> {
+        let gateway = SafeUrl::parse(gateway_url.trim())?;
+        let module_api = self.guardian_lnv2_module_api(federation_id, peer).await?;
+        Ok(module_api
+            .request_admin(
+                ADD_GATEWAY_ENDPOINT,
+                ApiRequestErased::new(gateway),
+                ApiAuth::new(password),
+            )
+            .await?)
+    }
+
+    async fn guardian_meta_module_api(
+        &self,
+        federation_id: &FederationId,
+        peer: u16,
+    ) -> anyhow::Result<(DynModuleApi, u16)> {
+        let client = self
+            .clients
+            .read()
+            .await
+            .get(federation_id)
+            .ok_or(anyhow!("Federation does not exist"))?
+            .clone();
+        let meta_id = client.get_first_module::<MetaClientModule>()?.id;
+        let total_guardians = client.config().await.global.api_endpoints.len() as u16;
+        let api = self.guardian_admin_api(federation_id, peer).await?;
+        Ok((api.with_module(meta_id), total_guardians))
+    }
+
+    async fn guardian_meta_consensus(
+        module_api: &DynModuleApi,
+    ) -> anyhow::Result<Option<MetaConsensusValue>> {
+        Ok(module_api
+            .request_admin_no_auth(
+                GET_CONSENSUS_ENDPOINT,
+                ApiRequestErased::new(GetConsensusRequest(DEFAULT_META_KEY)),
+            )
+            .await?)
+    }
+
+    pub async fn guardian_meta_state(
+        &self,
+        federation_id: &FederationId,
+        peer: u16,
+        password: String,
+    ) -> anyhow::Result<GuardianMetaState> {
+        let (module_api, total_guardians) =
+            self.guardian_meta_module_api(federation_id, peer).await?;
+
+        let consensus = Self::guardian_meta_consensus(&module_api).await?;
+        let submissions: GetSubmissionResponse = module_api
+            .request_admin(
+                GET_SUBMISSIONS_ENDPOINT,
+                ApiRequestErased::new(GetSubmissionsRequest(DEFAULT_META_KEY)),
+                ApiAuth::new(password),
+            )
+            .await?;
+
+        // Guardians backing byte-identical values are voting together, so group
+        // them into a single proposal the UI can show one vote tally for.
+        let mut by_value: BTreeMap<Vec<u8>, Vec<u16>> = BTreeMap::new();
+        for (peer_id, value) in submissions {
+            by_value
+                .entry(value.as_slice().to_vec())
+                .or_default()
+                .push(peer_id.to_usize() as u16);
+        }
+
+        let proposals = by_value
+            .into_iter()
+            .map(|(value, peer_ids)| {
+                let is_ours = peer_ids.contains(&peer);
+                let value_json = serde_json::from_slice::<serde_json::Value>(&value)
+                    .ok()
+                    .and_then(|json| serde_json::to_string(&json).ok());
+                GuardianMetaProposal {
+                    peer_ids,
+                    value_hex: hex::encode(&value),
+                    value_json,
+                    is_ours,
+                }
+            })
+            .collect();
+
+        Ok(GuardianMetaState {
+            consensus_json: consensus
+                .as_ref()
+                .and_then(|c| c.value.to_json().ok())
+                .and_then(|json| serde_json::to_string(&json).ok()),
+            revision: consensus.as_ref().map(|c| c.revision),
+            proposals,
+            threshold: NumPeers::from(total_guardians as usize).threshold() as u16,
+            total_guardians,
+        })
+    }
+
+    async fn guardian_meta_submit(
+        module_api: &DynModuleApi,
+        password: String,
+        value: MetaValue,
+    ) -> anyhow::Result<()> {
+        // The endpoint returns unit; naming the type keeps the generic return
+        // from falling back to the never type.
+        let () = module_api
+            .request_admin(
+                SUBMIT_ENDPOINT,
+                ApiRequestErased::new(SubmitRequest {
+                    key: DEFAULT_META_KEY,
+                    value,
+                }),
+                ApiAuth::new(password),
+            )
+            .await?;
+        Ok(())
+    }
+
+    /// Back an existing proposal by resubmitting its exact bytes.
+    pub async fn guardian_meta_accept(
+        &self,
+        federation_id: &FederationId,
+        peer: u16,
+        password: String,
+        value_hex: String,
+    ) -> anyhow::Result<()> {
+        let (module_api, _) = self.guardian_meta_module_api(federation_id, peer).await?;
+        let value = MetaValue::from(hex::decode(value_hex)?.as_slice());
+        Self::guardian_meta_submit(&module_api, password, value).await
+    }
+
+    /// Withdraw this guardian's vote by submitting the current consensus
+    /// value, which is how the meta module expresses "no change".
+    pub async fn guardian_meta_withdraw(
+        &self,
+        federation_id: &FederationId,
+        peer: u16,
+        password: String,
+    ) -> anyhow::Result<()> {
+        let (module_api, _) = self.guardian_meta_module_api(federation_id, peer).await?;
+        let consensus = Self::guardian_meta_consensus(&module_api)
+            .await?
+            .ok_or(anyhow!("Federation has no meta consensus value yet"))?;
+        Self::guardian_meta_submit(&module_api, password, consensus.value).await
+    }
+
+    /// Propose a single field change. The meta module stores one JSON document
+    /// per key, so this reads the current consensus document, applies the edit
+    /// and submits the whole document back. Passing `None` removes the field.
+    pub async fn guardian_meta_propose_field(
+        &self,
+        federation_id: &FederationId,
+        peer: u16,
+        password: String,
+        field: String,
+        value: Option<String>,
+    ) -> anyhow::Result<()> {
+        let (module_api, _) = self.guardian_meta_module_api(federation_id, peer).await?;
+
+        let mut document = match Self::guardian_meta_consensus(&module_api).await? {
+            Some(consensus) => consensus.value.to_json().unwrap_or_else(|_| json!({})),
+            None => json!({}),
+        };
+        let object = document
+            .as_object_mut()
+            .ok_or(anyhow!("Meta consensus value is not a JSON object"))?;
+
+        match value {
+            Some(value) => {
+                object.insert(field, serde_json::Value::String(value));
+            }
+            None => {
+                object.remove(&field);
+            }
+        }
+
+        let encoded = serde_json::to_vec(&document)?;
+        Self::guardian_meta_submit(&module_api, password, MetaValue::from(encoded.as_slice())).await
+    }
+
+    /// Returns false when the gateway was not whitelisted to begin with.
+    pub async fn guardian_remove_gateway(
+        &self,
+        federation_id: &FederationId,
+        peer: u16,
+        password: String,
+        gateway_url: String,
+    ) -> anyhow::Result<bool> {
+        let gateway = SafeUrl::parse(gateway_url.trim())?;
+        let module_api = self.guardian_lnv2_module_api(federation_id, peer).await?;
+        Ok(module_api
+            .request_admin(
+                REMOVE_GATEWAY_ENDPOINT,
+                ApiRequestErased::new(gateway),
+                ApiAuth::new(password),
+            )
+            .await?)
     }
 
     pub async fn get_bitcoin_display(&self) -> BitcoinDisplay {

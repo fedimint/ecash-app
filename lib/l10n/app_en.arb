@@ -751,6 +751,378 @@
   "utxoTab": "UTXOs",
   "@utxoTab": {},
 
+  "guardianDashboardTitle": "Guardian Dashboard",
+  "@guardianDashboardTitle": {},
+
+  "guardianLoginPrompt": "Enter the admin password for {guardian}.",
+  "@guardianLoginPrompt": {
+    "placeholders": {
+      "guardian": {
+        "type": "String"
+      }
+    }
+  },
+
+  "guardianPasswordLabel": "Admin password",
+  "@guardianPasswordLabel": {},
+
+  "logIn": "Log In",
+  "@logIn": {},
+
+  "guardianInvalidPassword": "Invalid admin password",
+  "@guardianInvalidPassword": {},
+
+  "guardianLoginFailed": "Could not reach guardian",
+  "@guardianLoginFailed": {},
+
+  "guardianBalanceSheet": "Balance Sheet",
+  "@guardianBalanceSheet": {},
+
+  "guardianNetAssets": "Net Assets",
+  "@guardianNetAssets": {},
+
+  "guardianAuditFullyBacked": "Fully backed",
+  "@guardianAuditFullyBacked": {},
+
+  "guardianAuditUnderBacked": "Not fully backed",
+  "@guardianAuditUnderBacked": {},
+
+  "guardianAuditReserveExplain": "held beyond what users are owed, earned from transaction fees",
+  "@guardianAuditReserveExplain": {},
+
+  "guardianAuditExactExplain": "every unit of ecash is exactly backed",
+  "@guardianAuditExactExplain": {},
+
+  "guardianAuditShortfallExplain": "owed to users beyond what the federation holds",
+  "@guardianAuditShortfallExplain": {},
+
+  "guardianAuditHoldings": "Holdings",
+  "@guardianAuditHoldings": {},
+
+  "guardianAuditOwed": "Owed to users",
+  "@guardianAuditOwed": {},
+
+  "guardianAuditWhereValueIs": "Where the value is",
+  "@guardianAuditWhereValueIs": {},
+
+  "guardianAuditWalletTitle": "Bitcoin Reserve",
+  "@guardianAuditWalletTitle": {},
+
+  "guardianAuditWalletSubtitle": "On-chain bitcoin the federation holds",
+  "@guardianAuditWalletSubtitle": {},
+
+  "guardianAuditMintTitle": "Ecash in Circulation",
+  "@guardianAuditMintTitle": {},
+
+  "guardianAuditMintSubtitle": "Value users hold as ecash",
+  "@guardianAuditMintSubtitle": {},
+
+  "guardianAuditLightningTitle": "Lightning Contracts",
+  "@guardianAuditLightningTitle": {},
+
+  "guardianAuditLightningSubtitle": "Payments currently in flight",
+  "@guardianAuditLightningSubtitle": {},
+
+  "guardianAuditOtherSubtitle": "Other module balance",
+  "@guardianAuditOtherSubtitle": {},
+
+  "guardianAuditHeldTag": "held",
+  "@guardianAuditHeldTag": {},
+
+  "guardianAuditOwedTag": "owed",
+  "@guardianAuditOwedTag": {},
+
+  "guardianAuditExplainerTitle": "What am I looking at?",
+  "@guardianAuditExplainerTitle": {},
+
+  "guardianAuditExplainerBody": "Each module reports what it adds to or takes from the federation's books. The wallet holds bitcoin on chain, while every ecash note in circulation is value the federation owes back to a user. Subtracting what is owed from what is held gives the figure above: as long as it is not negative, every note in circulation is covered. Any surplus is fee revenue — the federation charges a small fee on each transaction, so the amount it holds grows slightly faster than the amount it owes.",
+  "@guardianAuditExplainerBody": {},
+
+  "guardianEcashBackups": "Ecash Backups",
+  "@guardianEcashBackups": {},
+
+  "guardianBackupsWalletsProtected": "wallet backups stored on this guardian",
+  "@guardianBackupsWalletsProtected": {},
+
+  "guardianBackupsActiveShare": "{percent}% active this month",
+  "@guardianBackupsActiveShare": {
+    "placeholders": {
+      "percent": {
+        "type": "String"
+      }
+    }
+  },
+
+  "guardianBackupsLastRefreshed": "Last refreshed",
+  "@guardianBackupsLastRefreshed": {},
+
+  "guardianBackupsToday": "Today",
+  "@guardianBackupsToday": {},
+
+  "guardianBackupsThisWeek": "This week",
+  "@guardianBackupsThisWeek": {},
+
+  "guardianBackupsThisMonth": "This month",
+  "@guardianBackupsThisMonth": {},
+
+  "guardianBackupsThisQuarter": "Last 3 months",
+  "@guardianBackupsThisQuarter": {},
+
+  "guardianBackupsDormant": "Over 3 months ago",
+  "@guardianBackupsDormant": {},
+
+  "guardianBackupsExplainerTitle": "What am I looking at?",
+  "@guardianBackupsExplainerTitle": {},
+
+  "guardianBackupsExplainerBody": "Users can store an encrypted backup of their wallet with the federation, so they can recover it from their seed phrase alone. Guardians cannot read them. A backup is refreshed whenever that wallet reconnects, so these figures are a rough measure of how many users are still active — plenty of dormant backups is normal, since wallets that are no longer used simply stop refreshing.",
+  "@guardianBackupsExplainerBody": {},
+
+  "guardianDashboardLoadFailed": "Could not load guardian data",
+  "@guardianDashboardLoadFailed": {},
+
+  "guardianHealthTitle": "Guardian Health",
+  "@guardianHealthTitle": {},
+
+  "guardianStatusConsensusRunning": "Consensus running",
+  "@guardianStatusConsensusRunning": {},
+
+  "guardianConnectedGuardians": "Connected guardians",
+  "@guardianConnectedGuardians": {},
+
+  "guardianSessionsLabel": "Sessions",
+  "@guardianSessionsLabel": {},
+
+  "guardianLatencyLabel": "Consensus latency",
+  "@guardianLatencyLabel": {},
+
+  "guardianConsensusFeerateLabel": "Consensus fee rate",
+  "@guardianConsensusFeerateLabel": {},
+
+  "guardianShutdownWarning": "Shutdown scheduled at session {session}",
+  "@guardianShutdownWarning": {
+    "placeholders": {
+      "session": {
+        "type": "String"
+      }
+    }
+  },
+
+  "guardianBitcoinTitle": "Bitcoin Node",
+  "@guardianBitcoinTitle": {},
+
+  "guardianChainHeightConsensus": "Chain height (consensus)",
+  "@guardianChainHeightConsensus": {},
+
+  "guardianChainHeightLocal": "Chain height (local)",
+  "@guardianChainHeightLocal": {},
+
+  "guardianNodeSynced": "Synced",
+  "@guardianNodeSynced": {},
+
+  "guardianNodeBehind": "{blocks} blocks behind",
+  "@guardianNodeBehind": {
+    "placeholders": {
+      "blocks": {
+        "type": "String"
+      }
+    }
+  },
+
+  "guardianManageSection": "Manage",
+  "@guardianManageSection": {},
+
+  "guardianBalanceSheetSubtitle": "Assets and liabilities",
+  "@guardianBalanceSheetSubtitle": {},
+
+  "guardianEcashBackupsSubtitle": "Client wallet backups stored on this guardian",
+  "@guardianEcashBackupsSubtitle": {},
+
+  "guardianMetaTitle": "Federation Settings",
+  "@guardianMetaTitle": {},
+
+  "guardianMetaSubtitle": "View and propose changes",
+  "@guardianMetaSubtitle": {},
+
+  "guardianMetaCurrentSettings": "Current Settings",
+  "@guardianMetaCurrentSettings": {},
+
+  "guardianMetaPendingProposals": "Pending Proposals",
+  "@guardianMetaPendingProposals": {},
+
+  "guardianMetaFederationName": "Federation name",
+  "@guardianMetaFederationName": {},
+
+  "guardianMetaProfilePicture": "Profile picture",
+  "@guardianMetaProfilePicture": {},
+
+  "guardianMetaWelcomeMessage": "Welcome message",
+  "@guardianMetaWelcomeMessage": {},
+
+  "guardianMetaNotSet": "Not set",
+  "@guardianMetaNotSet": {},
+
+  "guardianMetaExpiryDate": "Expiration date",
+  "@guardianMetaExpiryDate": {},
+
+  "guardianMetaExpiryHelp": "The federation shuts down after this date. Leave unset for no expiration.",
+  "@guardianMetaExpiryHelp": {},
+
+  "guardianMetaNeverExpires": "Never expires",
+  "@guardianMetaNeverExpires": {},
+
+  "guardianMetaChooseDate": "Choose a date",
+  "@guardianMetaChooseDate": {},
+
+  "guardianMetaChooseTime": "Choose a time",
+  "@guardianMetaChooseTime": {},
+
+  "guardianMetaBackedBy": "Backed by {guardians}",
+  "@guardianMetaBackedBy": {
+    "placeholders": {
+      "guardians": {
+        "type": "String"
+      }
+    }
+  },
+
+  "guardianMetaPeerFallback": "Guardian {peerId}",
+  "@guardianMetaPeerFallback": {
+    "placeholders": {
+      "peerId": {
+        "type": "String"
+      }
+    }
+  },
+
+  "guardianMetaNoProposals": "No pending proposals",
+  "@guardianMetaNoProposals": {},
+
+  "guardianMetaNoConsensus": "No settings agreed yet",
+  "@guardianMetaNoConsensus": {},
+
+  "guardianMetaVotes": "{votes} of {threshold} guardians",
+  "@guardianMetaVotes": {
+    "placeholders": {
+      "votes": {
+        "type": "String"
+      },
+      "threshold": {
+        "type": "String"
+      }
+    }
+  },
+
+  "guardianMetaYourProposal": "Your proposal",
+  "@guardianMetaYourProposal": {},
+
+  "guardianMetaAccept": "Accept",
+  "@guardianMetaAccept": {},
+
+  "guardianMetaWithdraw": "Withdraw",
+  "@guardianMetaWithdraw": {},
+
+  "guardianMetaAccepted": "Proposal accepted",
+  "@guardianMetaAccepted": {},
+
+  "guardianMetaWithdrawn": "Vote withdrawn",
+  "@guardianMetaWithdrawn": {},
+
+  "guardianMetaProposed": "Change proposed",
+  "@guardianMetaProposed": {},
+
+  "guardianMetaCouldNotLoad": "Could not load federation settings",
+  "@guardianMetaCouldNotLoad": {},
+
+  "guardianMetaCouldNotSubmit": "Could not submit change",
+  "@guardianMetaCouldNotSubmit": {},
+
+  "guardianMetaRemoves": "Removes {field}",
+  "@guardianMetaRemoves": {
+    "placeholders": {
+      "field": {
+        "type": "String"
+      }
+    }
+  },
+
+  "guardianMetaOtherChanges": "and {count} other changes",
+  "@guardianMetaOtherChanges": {
+    "placeholders": {
+      "count": {
+        "type": "String"
+      }
+    }
+  },
+
+  "guardianMetaNoChanges": "No changes from current settings",
+  "@guardianMetaNoChanges": {},
+
+  "guardianMetaThresholdHint": "Takes effect once {threshold} guardians agree",
+  "@guardianMetaThresholdHint": {
+    "placeholders": {
+      "threshold": {
+        "type": "String"
+      }
+    }
+  },
+
+  "guardianMetaPropose": "Propose",
+  "@guardianMetaPropose": {},
+
+  "guardianMetaClear": "Clear",
+  "@guardianMetaClear": {},
+
+  "guardianMetaImageUrlLabel": "Image URL",
+  "@guardianMetaImageUrlLabel": {},
+
+  "guardianMetaImagePreviewFailed": "Image could not be loaded",
+  "@guardianMetaImagePreviewFailed": {},
+
+  "guardianGatewaysTitle": "Lightning Gateways",
+  "@guardianGatewaysTitle": {},
+
+  "guardianGatewaysSubtitle": "Gateways whitelisted by this guardian",
+  "@guardianGatewaysSubtitle": {},
+
+  "guardianAddGateway": "Add Gateway",
+  "@guardianAddGateway": {},
+
+  "guardianGatewayUrlLabel": "Gateway URL",
+  "@guardianGatewayUrlLabel": {},
+
+  "guardianGatewayUrlHint": "https://... or iroh://...",
+  "@guardianGatewayUrlHint": {},
+
+  "guardianGatewayUrlHelper": "Gateways are reachable over HTTPS or Iroh (iroh:// followed by the node ID)",
+  "@guardianGatewayUrlHelper": {},
+
+  "guardianNoGateways": "No gateways whitelisted",
+  "@guardianNoGateways": {},
+
+  "guardianGatewayUnreachable": "Gateway did not respond",
+  "@guardianGatewayUnreachable": {},
+
+  "guardianGatewayAdded": "Gateway added",
+  "@guardianGatewayAdded": {},
+
+  "guardianGatewayAlreadyPresent": "Gateway was already whitelisted",
+  "@guardianGatewayAlreadyPresent": {},
+
+  "guardianGatewayRemoved": "Gateway removed",
+  "@guardianGatewayRemoved": {},
+
+  "guardianRemoveGatewayConfirm": "Remove this gateway from the whitelist?",
+  "@guardianRemoveGatewayConfirm": {},
+
+  "guardianCouldNotAddGateway": "Could not add gateway",
+  "@guardianCouldNotAddGateway": {},
+
+  "guardianCouldNotRemoveGateway": "Could not remove gateway",
+  "@guardianCouldNotRemoveGateway": {},
+
+  "guardianCouldNotLoadGateways": "Could not load gateways",
+  "@guardianCouldNotLoadGateways": {},
+
   "connectedToGuardians": "Connected to {online} / {total} Guardians",
   "@connectedToGuardians": {
     "placeholders": {

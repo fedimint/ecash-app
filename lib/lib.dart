@@ -210,6 +210,11 @@ Future<FederationMeta> getFederationMeta({
   federationId: federationId,
 );
 
+Future<FederationMeta> refreshFederationMeta({
+  required FederationId federationId,
+}) =>
+    RustLib.instance.api.crateRefreshFederationMeta(federationId: federationId);
+
 Future<List<Transaction>> transactions({
   required FederationId federationId,
   BigInt? timestamp,
@@ -477,6 +482,124 @@ Future<String> getInviteCode({
 }) => RustLib.instance.api.crateGetInviteCode(
   federationId: federationId,
   peer: peer,
+);
+
+Future<bool> guardianLogin({
+  required FederationId federationId,
+  required int peer,
+  required String password,
+}) => RustLib.instance.api.crateGuardianLogin(
+  federationId: federationId,
+  peer: peer,
+  password: password,
+);
+
+Future<GuardianAuditSummary> guardianAudit({
+  required FederationId federationId,
+  required int peer,
+  required String password,
+}) => RustLib.instance.api.crateGuardianAudit(
+  federationId: federationId,
+  peer: peer,
+  password: password,
+);
+
+Future<GuardianBackupStatistics> guardianBackupStatistics({
+  required FederationId federationId,
+  required int peer,
+  required String password,
+}) => RustLib.instance.api.crateGuardianBackupStatistics(
+  federationId: federationId,
+  peer: peer,
+  password: password,
+);
+
+Future<GuardianStatusSummary> guardianStatus({
+  required FederationId federationId,
+  required int peer,
+  required String password,
+}) => RustLib.instance.api.crateGuardianStatus(
+  federationId: federationId,
+  peer: peer,
+  password: password,
+);
+
+Future<List<String>> guardianListGateways({
+  required FederationId federationId,
+  required int peer,
+}) => RustLib.instance.api.crateGuardianListGateways(
+  federationId: federationId,
+  peer: peer,
+);
+
+Future<bool> guardianAddGateway({
+  required FederationId federationId,
+  required int peer,
+  required String password,
+  required String gatewayUrl,
+}) => RustLib.instance.api.crateGuardianAddGateway(
+  federationId: federationId,
+  peer: peer,
+  password: password,
+  gatewayUrl: gatewayUrl,
+);
+
+Future<bool> guardianRemoveGateway({
+  required FederationId federationId,
+  required int peer,
+  required String password,
+  required String gatewayUrl,
+}) => RustLib.instance.api.crateGuardianRemoveGateway(
+  federationId: federationId,
+  peer: peer,
+  password: password,
+  gatewayUrl: gatewayUrl,
+);
+
+Future<GuardianMetaState> guardianMetaState({
+  required FederationId federationId,
+  required int peer,
+  required String password,
+}) => RustLib.instance.api.crateGuardianMetaState(
+  federationId: federationId,
+  peer: peer,
+  password: password,
+);
+
+Future<void> guardianMetaAccept({
+  required FederationId federationId,
+  required int peer,
+  required String password,
+  required String valueHex,
+}) => RustLib.instance.api.crateGuardianMetaAccept(
+  federationId: federationId,
+  peer: peer,
+  password: password,
+  valueHex: valueHex,
+);
+
+Future<void> guardianMetaWithdraw({
+  required FederationId federationId,
+  required int peer,
+  required String password,
+}) => RustLib.instance.api.crateGuardianMetaWithdraw(
+  federationId: federationId,
+  peer: peer,
+  password: password,
+);
+
+Future<void> guardianMetaProposeField({
+  required FederationId federationId,
+  required int peer,
+  required String password,
+  required String field,
+  String? value,
+}) => RustLib.instance.api.crateGuardianMetaProposeField(
+  federationId: federationId,
+  peer: peer,
+  password: password,
+  field: field,
+  value: value,
 );
 
 Future<BitcoinDisplay> getBitcoinDisplay() =>
