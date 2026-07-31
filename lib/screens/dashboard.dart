@@ -601,6 +601,7 @@ class _DashboardState extends State<Dashboard> {
                               if (index < _pendingDeposits.length) {
                                 return PendingDepositItem(
                                   event: _pendingDeposits[index],
+                                  fed: widget.fed,
                                 );
                               }
                               final tx =

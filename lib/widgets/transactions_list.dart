@@ -229,7 +229,7 @@ class _TransactionsListState extends State<TransactionsList> {
     return ListView(
       controller: _scrollController,
       children: [
-        ...pending.map((e) => PendingDepositItem(event: e)),
+        ...pending.map((e) => PendingDepositItem(event: e, fed: widget.fed)),
         ..._transactions.map((tx) => TransactionItem(tx: tx, fed: widget.fed)),
         if (_hasMore)
           const Padding(

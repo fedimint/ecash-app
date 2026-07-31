@@ -11,6 +11,10 @@ String localizedTxLabel(AppLocalizations l10n, String key) {
     TransactionDetailKeys.receivedAmount => l10n.txDetailReceivedAmount,
     TransactionDetailKeys.fees => l10n.txDetailFees,
     TransactionDetailKeys.federationFee => l10n.txDetailFederationFee,
+    // Reuses the receive screen's fee-component labels so the pending-deposit
+    // breakdown reads identically to the one shown at address generation.
+    TransactionDetailKeys.federationBaseFee => l10n.federationBaseFee,
+    TransactionDetailKeys.federationRate => l10n.federationRate,
     TransactionDetailKeys.onchainClaimFee => l10n.txDetailOnchainClaimFee,
     TransactionDetailKeys.gatewayFee => l10n.txDetailGatewayFee,
     TransactionDetailKeys.bitcoinNetworkFee => l10n.txDetailBitcoinNetworkFee,

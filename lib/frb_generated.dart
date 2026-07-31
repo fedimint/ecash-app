@@ -13036,13 +13036,14 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   AwaitingConfsEvent dco_decode_awaiting_confs_event(dynamic raw) {
     // Codec=Dco (DartCObject based), see doc to use other codecs
     final arr = raw as List<dynamic>;
-    if (arr.length != 4)
-      throw Exception('unexpected arr length: expect 4 but see ${arr.length}');
+    if (arr.length != 5)
+      throw Exception('unexpected arr length: expect 5 but see ${arr.length}');
     return AwaitingConfsEvent(
       amount: dco_decode_u_64(arr[0]),
       outpoint: dco_decode_String(arr[1]),
       blockHeight: dco_decode_u_64(arr[2]),
       needed: dco_decode_u_64(arr[3]),
+      txid: dco_decode_opt_String(arr[4]),
     );
   }
 
@@ -13248,11 +13249,12 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   ClaimedEvent dco_decode_claimed_event(dynamic raw) {
     // Codec=Dco (DartCObject based), see doc to use other codecs
     final arr = raw as List<dynamic>;
-    if (arr.length != 2)
-      throw Exception('unexpected arr length: expect 2 but see ${arr.length}');
+    if (arr.length != 3)
+      throw Exception('unexpected arr length: expect 3 but see ${arr.length}');
     return ClaimedEvent(
       amount: dco_decode_u_64(arr[0]),
       outpoint: dco_decode_String(arr[1]),
+      txid: dco_decode_opt_String(arr[2]),
     );
   }
 
@@ -13260,11 +13262,12 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   ConfirmedEvent dco_decode_confirmed_event(dynamic raw) {
     // Codec=Dco (DartCObject based), see doc to use other codecs
     final arr = raw as List<dynamic>;
-    if (arr.length != 2)
-      throw Exception('unexpected arr length: expect 2 but see ${arr.length}');
+    if (arr.length != 3)
+      throw Exception('unexpected arr length: expect 3 but see ${arr.length}');
     return ConfirmedEvent(
       amount: dco_decode_u_64(arr[0]),
       outpoint: dco_decode_String(arr[1]),
+      txid: dco_decode_opt_String(arr[2]),
     );
   }
 
@@ -13870,11 +13873,12 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   MempoolEvent dco_decode_mempool_event(dynamic raw) {
     // Codec=Dco (DartCObject based), see doc to use other codecs
     final arr = raw as List<dynamic>;
-    if (arr.length != 2)
-      throw Exception('unexpected arr length: expect 2 but see ${arr.length}');
+    if (arr.length != 3)
+      throw Exception('unexpected arr length: expect 3 but see ${arr.length}');
     return MempoolEvent(
       amount: dco_decode_u_64(arr[0]),
       outpoint: dco_decode_String(arr[1]),
+      txid: dco_decode_opt_String(arr[2]),
     );
   }
 
@@ -15775,11 +15779,13 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
     var var_outpoint = sse_decode_String(deserializer);
     var var_blockHeight = sse_decode_u_64(deserializer);
     var var_needed = sse_decode_u_64(deserializer);
+    var var_txid = sse_decode_opt_String(deserializer);
     return AwaitingConfsEvent(
       amount: var_amount,
       outpoint: var_outpoint,
       blockHeight: var_blockHeight,
       needed: var_needed,
+      txid: var_txid,
     );
   }
 
@@ -16017,7 +16023,12 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
     // Codec=Sse (Serialization based), see doc to use other codecs
     var var_amount = sse_decode_u_64(deserializer);
     var var_outpoint = sse_decode_String(deserializer);
-    return ClaimedEvent(amount: var_amount, outpoint: var_outpoint);
+    var var_txid = sse_decode_opt_String(deserializer);
+    return ClaimedEvent(
+      amount: var_amount,
+      outpoint: var_outpoint,
+      txid: var_txid,
+    );
   }
 
   @protected
@@ -16025,7 +16036,12 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
     // Codec=Sse (Serialization based), see doc to use other codecs
     var var_amount = sse_decode_u_64(deserializer);
     var var_outpoint = sse_decode_String(deserializer);
-    return ConfirmedEvent(amount: var_amount, outpoint: var_outpoint);
+    var var_txid = sse_decode_opt_String(deserializer);
+    return ConfirmedEvent(
+      amount: var_amount,
+      outpoint: var_outpoint,
+      txid: var_txid,
+    );
   }
 
   @protected
@@ -16836,7 +16852,12 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
     // Codec=Sse (Serialization based), see doc to use other codecs
     var var_amount = sse_decode_u_64(deserializer);
     var var_outpoint = sse_decode_String(deserializer);
-    return MempoolEvent(amount: var_amount, outpoint: var_outpoint);
+    var var_txid = sse_decode_opt_String(deserializer);
+    return MempoolEvent(
+      amount: var_amount,
+      outpoint: var_outpoint,
+      txid: var_txid,
+    );
   }
 
   @protected
@@ -18956,6 +18977,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
     sse_encode_String(self.outpoint, serializer);
     sse_encode_u_64(self.blockHeight, serializer);
     sse_encode_u_64(self.needed, serializer);
+    sse_encode_opt_String(self.txid, serializer);
   }
 
   @protected
@@ -19223,6 +19245,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
     // Codec=Sse (Serialization based), see doc to use other codecs
     sse_encode_u_64(self.amount, serializer);
     sse_encode_String(self.outpoint, serializer);
+    sse_encode_opt_String(self.txid, serializer);
   }
 
   @protected
@@ -19233,6 +19256,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
     // Codec=Sse (Serialization based), see doc to use other codecs
     sse_encode_u_64(self.amount, serializer);
     sse_encode_String(self.outpoint, serializer);
+    sse_encode_opt_String(self.txid, serializer);
   }
 
   @protected
@@ -19900,6 +19924,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
     // Codec=Sse (Serialization based), see doc to use other codecs
     sse_encode_u_64(self.amount, serializer);
     sse_encode_String(self.outpoint, serializer);
+    sse_encode_opt_String(self.txid, serializer);
   }
 
   @protected

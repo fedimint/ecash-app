@@ -187,6 +187,7 @@ impl WalletHandler {
                         DepositEventKind::Confirmed(ConfirmedEvent {
                             amount: Amount::from_sats(btc_deposited.to_sat()).msats,
                             outpoint: btc_out_point.to_string(),
+                            txid: Some(btc_out_point.txid.to_string()),
                         }),
                     ));
 
@@ -201,6 +202,7 @@ impl WalletHandler {
                         DepositEventKind::Claimed(ClaimedEvent {
                             amount: Amount::from_sats(btc_deposited.to_sat()).msats,
                             outpoint: btc_out_point.to_string(),
+                            txid: Some(btc_out_point.txid.to_string()),
                         }),
                     ));
 
@@ -696,6 +698,7 @@ impl WalletHandler {
                         let deposited_sats = receive_event.value.to_sat();
                         let amount_msats = Amount::from_sats(deposited_sats).msats;
                         let operation_id = receive_event.operation_id;
+                        let txid = receive_event.outpoint.map(|op| op.txid.to_string());
 
                         info_to_flutter(format!(
                             "spawn_v2_deposit_event_listener: ReceivePaymentEvent for fed {federation_id} address={address} amount={amount_msats} msats op={operation_id:?}, publishing Confirmed"
@@ -716,6 +719,7 @@ impl WalletHandler {
                                 DepositEventKind::Confirmed(ConfirmedEvent {
                                     amount: amount_msats,
                                     outpoint: address.clone(),
+                                    txid: txid.clone(),
                                 }),
                             )))
                             .await;
@@ -777,6 +781,7 @@ impl WalletHandler {
                                             DepositEventKind::Claimed(ClaimedEvent {
                                                 amount: amount_msats,
                                                 outpoint: address,
+                                                txid,
                                             }),
                                         )))
                                         .await;
@@ -1183,6 +1188,7 @@ where
             DepositEventKind::Mempool(MempoolEvent {
                 amount: amount_msats,
                 outpoint: outpoint_label.clone(),
+                txid: Some(txid.to_string()),
             }),
         )))
         .await;
@@ -1240,6 +1246,7 @@ where
                     outpoint: outpoint_label.clone(),
                     block_height: tx_height,
                     needed,
+                    txid: Some(txid.to_string()),
                 }),
             )))
             .await;

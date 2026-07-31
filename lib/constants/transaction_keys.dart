@@ -9,6 +9,8 @@ class TransactionDetailKeys {
   static const String receivedAmount = 'Received Amount';
   static const String fees = 'Fees';
   static const String federationFee = 'Federation Fee';
+  static const String federationBaseFee = 'Federation Base Fee';
+  static const String federationRate = 'Federation Rate';
   static const String onchainClaimFee = 'On-chain Claim Fee';
   static const String gatewayFee = 'Gateway Fee';
   static const String bitcoinNetworkFee = 'Bitcoin Network Fee';

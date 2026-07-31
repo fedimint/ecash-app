@@ -595,6 +595,11 @@ impl fmt::Display for ClientType {
 pub struct MempoolEvent {
     pub amount: u64,
     pub outpoint: String,
+    /// The on-chain transaction id. `outpoint` is a correlation key that, for
+    /// walletv2, is actually the receive address rather than `txid:vout`
+    /// (see `track_pegin_confirmation`), so this field is the only reliable
+    /// source of the txid for display purposes.
+    pub txid: Option<String>,
 }
 
 #[derive(Clone, Eq, PartialEq, Serialize, Debug)]
@@ -603,18 +608,21 @@ pub struct AwaitingConfsEvent {
     pub outpoint: String,
     pub block_height: u64,
     pub needed: u64,
+    pub txid: Option<String>,
 }
 
 #[derive(Clone, Eq, PartialEq, Serialize, Debug)]
 pub struct ConfirmedEvent {
     pub amount: u64,
     pub outpoint: String,
+    pub txid: Option<String>,
 }
 
 #[derive(Clone, Eq, PartialEq, Serialize, Debug)]
 pub struct ClaimedEvent {
     pub amount: u64,
     pub outpoint: String,
+    pub txid: Option<String>,
 }
 
 #[derive(Clone, Eq, PartialEq, Serialize, Debug)]
