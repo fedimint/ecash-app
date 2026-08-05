@@ -1191,9 +1191,6 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   RelayStatusKind dco_decode_relay_status_kind(dynamic raw);
 
   @protected
-  SendGatewaySelection dco_decode_send_gateway_selection(dynamic raw);
-
-  @protected
   Transaction dco_decode_transaction(dynamic raw);
 
   @protected
@@ -2339,11 +2336,6 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
 
   @protected
   RelayStatusKind sse_decode_relay_status_kind(SseDeserializer deserializer);
-
-  @protected
-  SendGatewaySelection sse_decode_send_gateway_selection(
-    SseDeserializer deserializer,
-  );
 
   @protected
   Transaction sse_decode_transaction(SseDeserializer deserializer);
@@ -3716,12 +3708,6 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   @protected
   void sse_encode_relay_status_kind(
     RelayStatusKind self,
-    SseSerializer serializer,
-  );
-
-  @protected
-  void sse_encode_send_gateway_selection(
-    SendGatewaySelection self,
     SseSerializer serializer,
   );
 

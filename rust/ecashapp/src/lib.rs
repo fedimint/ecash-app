@@ -296,8 +296,53 @@ pub async fn compute_receive_amount_with_fees(
         .await
 }
 
+/// LUD-06 requires the wallet to check that the invoice an LNURL-pay server
+/// hands back actually matches what was asked for. `lnurl-rs` validates the
+/// *requested* amount against the server's `min/maxSendable` and then returns
+/// the server's invoice verbatim, so nothing downstream catches a server that
+/// answers a 10 sat request with a 10,000 sat invoice: the fedimint modules
+/// fund a contract for the invoice's amount, while the fee quote the user
+/// approved was computed on the requested amount.
+///
+/// `expected_network` is `None` when the federation's network is unknown, in
+/// which case the network check is skipped — the amount check is not optional.
+fn verify_lnurl_invoice(
+    bolt11: &Bolt11Invoice,
+    requested_msats: u64,
+    expected_network: Option<bitcoin::Network>,
+) -> Result<(), EcashAppError> {
+    match bolt11.amount_milli_satoshis() {
+        Some(invoice_msats) if invoice_msats == requested_msats => {}
+        Some(invoice_msats) => {
+            return Err(EcashAppError::LnurlAmountMismatch {
+                requested_msats,
+                invoice_msats,
+            })
+        }
+        // An amountless invoice would let the gateway settle for any value it
+        // likes, so it is never acceptable as an answer to an amount request.
+        None => {
+            return Err(EcashAppError::InvalidInvoice(
+                "LNURL server returned an invoice with no amount".to_string(),
+            ))
+        }
+    }
+
+    if let Some(expected) = expected_network {
+        let invoice_network = bolt11.network();
+        if invoice_network != expected {
+            return Err(EcashAppError::InvalidInvoice(format!(
+                "LNURL server returned a {invoice_network} invoice, but this federation is on {expected}"
+            )));
+        }
+    }
+
+    Ok(())
+}
+
 #[frb]
 pub async fn get_invoice_from_lnaddress_or_lnurl(
+    federation_id: &FederationId,
     amount_msats: u64,
     lnaddress_or_lnurl: String,
 ) -> Result<String, EcashAppError> {
@@ -325,6 +370,12 @@ pub async fn get_invoice_from_lnaddress_or_lnurl(
 
             let bolt11 = Bolt11Invoice::from_str(invoice.invoice())
                 .map_err(|e| EcashAppError::InvalidInvoice(e.to_string()))?;
+            let multimint = get_multimint();
+            verify_lnurl_invoice(
+                &bolt11,
+                amount_msats,
+                multimint.federation_network(federation_id).await,
+            )?;
             Ok(bolt11.to_string())
         }
         other => Err(EcashAppError::other(format!(
@@ -451,59 +502,6 @@ pub async fn execute_lnurl_withdraw(
 fn build_lnurlw_callback_url(callback: &str, k1: &str, invoice: &str) -> String {
     let separator = if callback.contains('?') { '&' } else { '?' };
     format!("{}{}k1={}&pr={}", callback, separator, k1, invoice)
-}
-
-#[frb]
-pub async fn send_lnaddress(
-    federation_id: &FederationId,
-    amount_msats: u64,
-    address: String,
-) -> Result<OperationId, EcashAppError> {
-    let lnurl = lnurl::lightning_address::LightningAddress::from_str(&address)
-        .map_err(|e| EcashAppError::InvalidLightningAddress(e.to_string()))?
-        .lnurl();
-    let async_client = lnurl::AsyncClient::from_client(reqwest::Client::new());
-    let response = async_client
-        .make_request(&lnurl.url)
-        .await
-        .map_err(|e| EcashAppError::other(format!("LNURL request failed: {e}")))?;
-    match response {
-        lnurl::LnUrlResponse::LnUrlPayResponse(response) => {
-            let invoice = async_client
-                .get_invoice(&response, amount_msats, None, None)
-                .await
-                .map_err(|e| EcashAppError::other(format!("LNURL invoice fetch failed: {e}")))?;
-
-            let multimint = get_multimint();
-            let bolt11 = Bolt11Invoice::from_str(invoice.invoice())
-                .map_err(|e| EcashAppError::InvalidInvoice(e.to_string()))?;
-            let selection = multimint
-                .select_send_gateway(
-                    federation_id,
-                    Amount::from_msats(amount_msats),
-                    bolt11.clone(),
-                )
-                .await
-                .map_err(EcashAppError::from)?;
-            let gateway = SafeUrl::parse(&selection.gateway_url)
-                .map_err(|e| EcashAppError::other(format!("invalid gateway URL: {e}")))?;
-            return multimint
-                .send(
-                    federation_id,
-                    bolt11.to_string(),
-                    gateway,
-                    selection.is_lnv2,
-                    selection.amount_with_fees,
-                    selection.federation_fee,
-                    selection.gateway_fee,
-                    Some(address),
-                )
-                .await;
-        }
-        other => Err(EcashAppError::other(format!(
-            "unexpected LNURL response: {other:?}"
-        ))),
-    }
 }
 
 #[frb]
@@ -1620,6 +1618,96 @@ mod tests {
         assert_eq!(
             url,
             "https://example.com/withdraw?foo=bar&k1=mykey&pr=lnbc1invoice"
+        );
+    }
+
+    // --- verify_lnurl_invoice ---
+
+    fn signed_invoice(
+        amount_msats: Option<u64>,
+        currency: lightning_invoice::Currency,
+    ) -> Bolt11Invoice {
+        use bitcoin::hashes::{sha256, Hash as _};
+        use bitcoin::secp256k1::{Secp256k1, SecretKey};
+        use lightning_invoice::{InvoiceBuilder, PaymentSecret};
+
+        let secret_key = SecretKey::from_slice(&[0x11; 32]).expect("valid key");
+        let builder = InvoiceBuilder::new(currency)
+            .description("lnurl test".to_string())
+            .payment_hash(sha256::Hash::hash(b"lnurl test payment hash"))
+            .payment_secret(PaymentSecret([42u8; 32]))
+            .current_timestamp()
+            .min_final_cltv_expiry_delta(144);
+        let builder = match amount_msats {
+            Some(msats) => builder.amount_milli_satoshis(msats),
+            None => builder,
+        };
+        builder
+            .build_signed(|hash| Secp256k1::new().sign_ecdsa_recoverable(hash, &secret_key))
+            .expect("invoice builds")
+    }
+
+    #[test]
+    fn test_verify_lnurl_invoice_accepts_exact_amount() {
+        let invoice = signed_invoice(Some(10_000), lightning_invoice::Currency::Bitcoin);
+        assert!(
+            verify_lnurl_invoice(&invoice, 10_000, Some(bitcoin::Network::Bitcoin)).is_ok(),
+            "an invoice matching the request should be accepted"
+        );
+    }
+
+    /// The H1 scenario: request 10 sats, server answers with an invoice for
+    /// 1000x that amount.
+    #[test]
+    fn test_verify_lnurl_invoice_rejects_overcharge() {
+        let invoice = signed_invoice(Some(10_000_000), lightning_invoice::Currency::Bitcoin);
+        let err = verify_lnurl_invoice(&invoice, 10_000, None).unwrap_err();
+        assert_eq!(
+            err,
+            EcashAppError::LnurlAmountMismatch {
+                requested_msats: 10_000,
+                invoice_msats: 10_000_000,
+            }
+        );
+    }
+
+    #[test]
+    fn test_verify_lnurl_invoice_rejects_undercharge() {
+        let invoice = signed_invoice(Some(1_000), lightning_invoice::Currency::Bitcoin);
+        let err = verify_lnurl_invoice(&invoice, 10_000, None).unwrap_err();
+        assert_eq!(
+            err,
+            EcashAppError::LnurlAmountMismatch {
+                requested_msats: 10_000,
+                invoice_msats: 1_000,
+            }
+        );
+    }
+
+    #[test]
+    fn test_verify_lnurl_invoice_rejects_amountless() {
+        let invoice = signed_invoice(None, lightning_invoice::Currency::Bitcoin);
+        let err = verify_lnurl_invoice(&invoice, 10_000, None).unwrap_err();
+        assert!(
+            matches!(err, EcashAppError::InvalidInvoice(msg) if msg.contains("no amount")),
+            "an amountless invoice lets the gateway settle for any value"
+        );
+    }
+
+    #[test]
+    fn test_verify_lnurl_invoice_rejects_network_mismatch() {
+        let invoice = signed_invoice(Some(10_000), lightning_invoice::Currency::Bitcoin);
+        let err =
+            verify_lnurl_invoice(&invoice, 10_000, Some(bitcoin::Network::Signet)).unwrap_err();
+        assert!(matches!(err, EcashAppError::InvalidInvoice(_)));
+    }
+
+    #[test]
+    fn test_verify_lnurl_invoice_skips_network_check_when_unknown() {
+        let invoice = signed_invoice(Some(10_000), lightning_invoice::Currency::Bitcoin);
+        assert!(
+            verify_lnurl_invoice(&invoice, 10_000, None).is_ok(),
+            "an unknown federation network must not block a correct invoice"
         );
     }
 }

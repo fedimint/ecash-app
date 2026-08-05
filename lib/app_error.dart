@@ -37,6 +37,10 @@ sealed class EcashAppError with _$EcashAppError {
       EcashAppError_InvalidBitcoinAddress;
   const factory EcashAppError.invalidLightningAddress(String field0) =
       EcashAppError_InvalidLightningAddress;
+  const factory EcashAppError.lnurlAmountMismatch({
+    required BigInt requestedMsats,
+    required BigInt invoiceMsats,
+  }) = EcashAppError_LnurlAmountMismatch;
   const factory EcashAppError.paymentRefunded(String field0) =
       EcashAppError_PaymentRefunded;
   const factory EcashAppError.timeout() = EcashAppError_Timeout;

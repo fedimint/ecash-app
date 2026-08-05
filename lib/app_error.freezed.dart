@@ -569,6 +569,74 @@ as String,
 /// @nodoc
 
 
+class EcashAppError_LnurlAmountMismatch extends EcashAppError {
+  const EcashAppError_LnurlAmountMismatch({required this.requestedMsats, required this.invoiceMsats}): super._();
+  
+
+ final  BigInt requestedMsats;
+ final  BigInt invoiceMsats;
+
+/// Create a copy of EcashAppError
+/// with the given fields replaced by the non-null parameter values.
+@JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+$EcashAppError_LnurlAmountMismatchCopyWith<EcashAppError_LnurlAmountMismatch> get copyWith => _$EcashAppError_LnurlAmountMismatchCopyWithImpl<EcashAppError_LnurlAmountMismatch>(this, _$identity);
+
+
+
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is EcashAppError_LnurlAmountMismatch&&(identical(other.requestedMsats, requestedMsats) || other.requestedMsats == requestedMsats)&&(identical(other.invoiceMsats, invoiceMsats) || other.invoiceMsats == invoiceMsats));
+}
+
+
+@override
+int get hashCode => Object.hash(runtimeType,requestedMsats,invoiceMsats);
+
+@override
+String toString() {
+  return 'EcashAppError.lnurlAmountMismatch(requestedMsats: $requestedMsats, invoiceMsats: $invoiceMsats)';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class $EcashAppError_LnurlAmountMismatchCopyWith<$Res> implements $EcashAppErrorCopyWith<$Res> {
+  factory $EcashAppError_LnurlAmountMismatchCopyWith(EcashAppError_LnurlAmountMismatch value, $Res Function(EcashAppError_LnurlAmountMismatch) _then) = _$EcashAppError_LnurlAmountMismatchCopyWithImpl;
+@useResult
+$Res call({
+ BigInt requestedMsats, BigInt invoiceMsats
+});
+
+
+
+
+}
+/// @nodoc
+class _$EcashAppError_LnurlAmountMismatchCopyWithImpl<$Res>
+    implements $EcashAppError_LnurlAmountMismatchCopyWith<$Res> {
+  _$EcashAppError_LnurlAmountMismatchCopyWithImpl(this._self, this._then);
+
+  final EcashAppError_LnurlAmountMismatch _self;
+  final $Res Function(EcashAppError_LnurlAmountMismatch) _then;
+
+/// Create a copy of EcashAppError
+/// with the given fields replaced by the non-null parameter values.
+@pragma('vm:prefer-inline') $Res call({Object? requestedMsats = null,Object? invoiceMsats = null,}) {
+  return _then(EcashAppError_LnurlAmountMismatch(
+requestedMsats: null == requestedMsats ? _self.requestedMsats : requestedMsats // ignore: cast_nullable_to_non_nullable
+as BigInt,invoiceMsats: null == invoiceMsats ? _self.invoiceMsats : invoiceMsats // ignore: cast_nullable_to_non_nullable
+as BigInt,
+  ));
+}
+
+
+}
+
+/// @nodoc
+
+
 class EcashAppError_PaymentRefunded extends EcashAppError {
   const EcashAppError_PaymentRefunded(this.field0): super._();
   
