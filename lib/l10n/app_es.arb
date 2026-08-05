@@ -555,6 +555,7 @@
   "errEcashAlreadySpent": "Este ecash ya ha sido gastado",
   "errInvalidBitcoinAddress": "Dirección de Bitcoin inválida",
   "errInvalidLightningAddress": "Dirección Lightning inválida",
+  "errLnurlAmountMismatch": "El servidor de la dirección Lightning devolvió una factura por un monto distinto al solicitado. Pago cancelado.",
   "errPaymentRefunded": "El pago fue reembolsado",
   "errTimeout": "La operación expiró",
 

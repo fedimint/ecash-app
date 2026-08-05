@@ -11869,13 +11869,36 @@ fn wire__crate__get_invoice_from_lnaddress_or_lnurl_impl(
             };
             let mut deserializer =
                 flutter_rust_bridge::for_generated::SseDeserializer::new(message);
+            let api_federation_id = <RustOpaqueMoi<
+                flutter_rust_bridge::for_generated::RustAutoOpaqueInner<FederationId>,
+            >>::sse_decode(&mut deserializer);
             let api_amount_msats = <u64>::sse_decode(&mut deserializer);
             let api_lnaddress_or_lnurl = <String>::sse_decode(&mut deserializer);
             deserializer.end();
             move |context| async move {
                 transform_result_sse::<_, crate::app_error::EcashAppError>(
                     (move || async move {
+                        let mut api_federation_id_guard = None;
+                        let decode_indices_ =
+                            flutter_rust_bridge::for_generated::lockable_compute_decode_order(
+                                vec![flutter_rust_bridge::for_generated::LockableOrderInfo::new(
+                                    &api_federation_id,
+                                    0,
+                                    false,
+                                )],
+                            );
+                        for i in decode_indices_ {
+                            match i {
+                                0 => {
+                                    api_federation_id_guard =
+                                        Some(api_federation_id.lockable_decode_async_ref().await)
+                                }
+                                _ => unreachable!(),
+                            }
+                        }
+                        let api_federation_id_guard = api_federation_id_guard.unwrap();
                         let output_ok = crate::get_invoice_from_lnaddress_or_lnurl(
+                            &*api_federation_id_guard,
                             api_amount_msats,
                             api_lnaddress_or_lnurl,
                         )
@@ -16249,13 +16272,21 @@ impl SseDecode for crate::app_error::EcashAppError {
                 return crate::app_error::EcashAppError::InvalidLightningAddress(var_field0);
             }
             11 => {
+                let mut var_requestedMsats = <u64>::sse_decode(deserializer);
+                let mut var_invoiceMsats = <u64>::sse_decode(deserializer);
+                return crate::app_error::EcashAppError::LnurlAmountMismatch {
+                    requested_msats: var_requestedMsats,
+                    invoice_msats: var_invoiceMsats,
+                };
+            }
+            12 => {
                 let mut var_field0 = <String>::sse_decode(deserializer);
                 return crate::app_error::EcashAppError::PaymentRefunded(var_field0);
             }
-            12 => {
+            13 => {
                 return crate::app_error::EcashAppError::Timeout;
             }
-            13 => {
+            14 => {
                 let mut var_field0 = <String>::sse_decode(deserializer);
                 return crate::app_error::EcashAppError::Other(var_field0);
             }
@@ -19508,12 +19539,21 @@ impl flutter_rust_bridge::IntoDart for crate::app_error::EcashAppError {
             crate::app_error::EcashAppError::InvalidLightningAddress(field0) => {
                 [10.into_dart(), field0.into_into_dart().into_dart()].into_dart()
             }
+            crate::app_error::EcashAppError::LnurlAmountMismatch {
+                requested_msats,
+                invoice_msats,
+            } => [
+                11.into_dart(),
+                requested_msats.into_into_dart().into_dart(),
+                invoice_msats.into_into_dart().into_dart(),
+            ]
+            .into_dart(),
             crate::app_error::EcashAppError::PaymentRefunded(field0) => {
-                [11.into_dart(), field0.into_into_dart().into_dart()].into_dart()
+                [12.into_dart(), field0.into_into_dart().into_dart()].into_dart()
             }
-            crate::app_error::EcashAppError::Timeout => [12.into_dart()].into_dart(),
+            crate::app_error::EcashAppError::Timeout => [13.into_dart()].into_dart(),
             crate::app_error::EcashAppError::Other(field0) => {
-                [13.into_dart(), field0.into_into_dart().into_dart()].into_dart()
+                [14.into_dart(), field0.into_into_dart().into_dart()].into_dart()
             }
             _ => {
                 unimplemented!("");
@@ -21440,15 +21480,23 @@ impl SseEncode for crate::app_error::EcashAppError {
                 <i32>::sse_encode(10, serializer);
                 <String>::sse_encode(field0, serializer);
             }
-            crate::app_error::EcashAppError::PaymentRefunded(field0) => {
+            crate::app_error::EcashAppError::LnurlAmountMismatch {
+                requested_msats,
+                invoice_msats,
+            } => {
                 <i32>::sse_encode(11, serializer);
+                <u64>::sse_encode(requested_msats, serializer);
+                <u64>::sse_encode(invoice_msats, serializer);
+            }
+            crate::app_error::EcashAppError::PaymentRefunded(field0) => {
+                <i32>::sse_encode(12, serializer);
                 <String>::sse_encode(field0, serializer);
             }
             crate::app_error::EcashAppError::Timeout => {
-                <i32>::sse_encode(12, serializer);
+                <i32>::sse_encode(13, serializer);
             }
             crate::app_error::EcashAppError::Other(field0) => {
-                <i32>::sse_encode(13, serializer);
+                <i32>::sse_encode(14, serializer);
                 <String>::sse_encode(field0, serializer);
             }
             _ => {

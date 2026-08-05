@@ -44,6 +44,9 @@ String ecashAppErrorToL10n(BuildContext context, Object err) {
   if (err is EcashAppError_InvalidLightningAddress) {
     return context.l10n.errInvalidLightningAddress;
   }
+  if (err is EcashAppError_LnurlAmountMismatch) {
+    return context.l10n.errLnurlAmountMismatch;
+  }
   if (err is EcashAppError_PaymentRefunded) {
     return context.l10n.errPaymentRefunded;
   }

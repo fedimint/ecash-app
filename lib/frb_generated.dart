@@ -1086,6 +1086,7 @@ abstract class RustLibApi extends BaseApi {
   });
 
   Future<String> crateGetInvoiceFromLnaddressOrLnurl({
+    required FederationId federationId,
     required BigInt amountMsats,
     required String lnaddressOrLnurl,
   });
@@ -9611,6 +9612,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
 
   @override
   Future<String> crateGetInvoiceFromLnaddressOrLnurl({
+    required FederationId federationId,
     required BigInt amountMsats,
     required String lnaddressOrLnurl,
   }) {
@@ -9618,6 +9620,10 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
       NormalTask(
         callFfi: (port_) {
           final serializer = SseSerializer(generalizedFrbRustBinding);
+          sse_encode_Auto_Ref_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerFederationId(
+            federationId,
+            serializer,
+          );
           sse_encode_u_64(amountMsats, serializer);
           sse_encode_String(lnaddressOrLnurl, serializer);
           pdeCallFfi(
@@ -9632,7 +9638,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           decodeErrorData: sse_decode_ecash_app_error,
         ),
         constMeta: kCrateGetInvoiceFromLnaddressOrLnurlConstMeta,
-        argValues: [amountMsats, lnaddressOrLnurl],
+        argValues: [federationId, amountMsats, lnaddressOrLnurl],
         apiImpl: this,
       ),
     );
@@ -9641,7 +9647,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   TaskConstMeta get kCrateGetInvoiceFromLnaddressOrLnurlConstMeta =>
       const TaskConstMeta(
         debugName: "get_invoice_from_lnaddress_or_lnurl",
-        argNames: ["amountMsats", "lnaddressOrLnurl"],
+        argNames: ["federationId", "amountMsats", "lnaddressOrLnurl"],
       );
 
   @override
@@ -13598,10 +13604,15 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
       case 10:
         return EcashAppError_InvalidLightningAddress(dco_decode_String(raw[1]));
       case 11:
-        return EcashAppError_PaymentRefunded(dco_decode_String(raw[1]));
+        return EcashAppError_LnurlAmountMismatch(
+          requestedMsats: dco_decode_u_64(raw[1]),
+          invoiceMsats: dco_decode_u_64(raw[2]),
+        );
       case 12:
-        return EcashAppError_Timeout();
+        return EcashAppError_PaymentRefunded(dco_decode_String(raw[1]));
       case 13:
+        return EcashAppError_Timeout();
+      case 14:
         return EcashAppError_Other(dco_decode_String(raw[1]));
       default:
         throw Exception("unreachable");
@@ -16425,11 +16436,18 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
         var var_field0 = sse_decode_String(deserializer);
         return EcashAppError_InvalidLightningAddress(var_field0);
       case 11:
+        var var_requestedMsats = sse_decode_u_64(deserializer);
+        var var_invoiceMsats = sse_decode_u_64(deserializer);
+        return EcashAppError_LnurlAmountMismatch(
+          requestedMsats: var_requestedMsats,
+          invoiceMsats: var_invoiceMsats,
+        );
+      case 12:
         var var_field0 = sse_decode_String(deserializer);
         return EcashAppError_PaymentRefunded(var_field0);
-      case 12:
-        return EcashAppError_Timeout();
       case 13:
+        return EcashAppError_Timeout();
+      case 14:
         var var_field0 = sse_decode_String(deserializer);
         return EcashAppError_Other(var_field0);
       default:
@@ -19641,13 +19659,20 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
       case EcashAppError_InvalidLightningAddress(field0: final field0):
         sse_encode_i_32(10, serializer);
         sse_encode_String(field0, serializer);
-      case EcashAppError_PaymentRefunded(field0: final field0):
+      case EcashAppError_LnurlAmountMismatch(
+        requestedMsats: final requestedMsats,
+        invoiceMsats: final invoiceMsats,
+      ):
         sse_encode_i_32(11, serializer);
+        sse_encode_u_64(requestedMsats, serializer);
+        sse_encode_u_64(invoiceMsats, serializer);
+      case EcashAppError_PaymentRefunded(field0: final field0):
+        sse_encode_i_32(12, serializer);
         sse_encode_String(field0, serializer);
       case EcashAppError_Timeout():
-        sse_encode_i_32(12, serializer);
-      case EcashAppError_Other(field0: final field0):
         sse_encode_i_32(13, serializer);
+      case EcashAppError_Other(field0: final field0):
+        sse_encode_i_32(14, serializer);
         sse_encode_String(field0, serializer);
     }
   }

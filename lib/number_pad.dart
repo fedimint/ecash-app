@@ -560,6 +560,7 @@ class _NumberPadState extends State<NumberPad> {
             childBuilder: () async {
               // Get invoice from LN Address
               final invoice = await getInvoiceFromLnaddressOrLnurl(
+                federationId: _selectedFed.federationId,
                 amountMsats: amountMsats,
                 lnaddressOrLnurl: widget.lightningAddressOrLnurl!,
               );

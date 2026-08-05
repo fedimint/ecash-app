@@ -31,6 +31,11 @@ pub enum EcashAppError {
     InvalidBitcoinAddress(String),
     #[error("invalid lightning address: {0}")]
     InvalidLightningAddress(String),
+    #[error("lightning address server returned an invoice for {invoice_msats} msat, but {requested_msats} msat was requested")]
+    LnurlAmountMismatch {
+        requested_msats: u64,
+        invoice_msats: u64,
+    },
     #[error("payment was refunded: {0}")]
     PaymentRefunded(String),
     #[error("operation timed out")]

@@ -1957,6 +1957,9 @@
   "errInvalidLightningAddress": "Invalid Lightning address",
   "@errInvalidLightningAddress": {},
 
+  "errLnurlAmountMismatch": "The Lightning address server returned an invoice for a different amount than you requested. Payment cancelled.",
+  "@errLnurlAmountMismatch": {},
+
   "errPaymentRefunded": "Payment was refunded",
   "@errPaymentRefunded": {},
 

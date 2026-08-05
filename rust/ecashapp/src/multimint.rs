@@ -2158,6 +2158,27 @@ impl Multimint {
         federations
     }
 
+    /// The Bitcoin network this federation operates on, as recorded in its
+    /// persisted config. `None` when the federation has no wallet module, or
+    /// when the stored string isn't a network we recognize — callers should
+    /// treat that as "unknown" and skip network-dependent checks rather than
+    /// guessing.
+    ///
+    /// Not exposed over the bridge: `bitcoin::Network` has no FRB
+    /// representation, and Dart already gets the network as a string on
+    /// [`FederationSelector`].
+    #[flutter_rust_bridge::frb(ignore)]
+    pub async fn federation_network(
+        &self,
+        federation_id: &FederationId,
+    ) -> Option<bitcoin::Network> {
+        let mut dbtx = self.db.begin_transaction_nc().await;
+        let config = dbtx
+            .get_value(&FederationConfigKey { id: *federation_id })
+            .await?;
+        bitcoin::Network::from_str(&config.network?).ok()
+    }
+
     pub async fn balance(&self, federation_id: &FederationId) -> u64 {
         let client = self
             .clients
