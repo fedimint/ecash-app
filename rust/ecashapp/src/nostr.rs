@@ -10,8 +10,8 @@ use crate::{
     anyhow, await_send, balance,
     db::{
         Contact, ContactCursor, ContactKey, ContactKeyPrefix, ContactSyncConfig,
-        ContactSyncConfigKey, NostrRelaysKey, NostrRelaysKeyPrefix, NostrWalletConnectConfig,
-        NostrWalletConnectKey, NostrWalletConnectKeyPrefix,
+        ContactSyncConfigKey, NostrRelaysKey, NostrRelaysKeyPrefix, NostrWalletConnectKeyPrefix,
+        NostrWalletConnectV2Config, NostrWalletConnectV2Key, NostrWalletConnectV2KeyPrefix,
     },
     error_to_flutter, federations, get_event_bus, info_to_flutter,
     multimint::{
@@ -27,7 +27,6 @@ use fedimint_client::{secret::RootSecretStrategy, Client};
 use fedimint_core::{
     config::FederationId,
     db::{Database, IDatabaseTransactionOpsCoreTyped},
-    encoding::Encodable,
     invite_code::InviteCode,
     task::TaskGroup,
     util::{retry, FmtCompact, SafeUrl},
@@ -153,11 +152,13 @@ impl NostrClient {
                 background_nostr.update_federations_from_nostr().await;
             });
 
+        Self::purge_legacy_nwc_configs(&db).await;
+
         // On desktop, we need to spawn the background listener for NWC
         if is_desktop {
             let mut dbtx = db.begin_transaction_nc().await;
             let federation_configs = dbtx
-                .find_by_prefix(&NostrWalletConnectKeyPrefix)
+                .find_by_prefix(&NostrWalletConnectV2KeyPrefix)
                 .await
                 .collect::<Vec<_>>()
                 .await;
@@ -170,6 +171,36 @@ impl NostrClient {
 
         info_to_flutter(format!("Initialized Nostr client in {:?}", start.elapsed())).await;
         Ok(nostr_client)
+    }
+
+    /// Drop any pre-V2 NWC records. Those stored one keypair used as both the
+    /// wallet service *and* the client identity, so the connection URI handed to
+    /// the paired app contained this wallet's own secret key — anyone who ever
+    /// saw that URI can impersonate the service and decrypt its traffic.
+    ///
+    /// Deliberately not a migration. The credential is already disclosed and
+    /// cannot be revoked while it stays in use, so the user has to pair again.
+    ///
+    /// The legacy key/value types stay defined in `db.rs` purely so this counts
+    /// what it removes; the removal itself is by prefix.
+    async fn purge_legacy_nwc_configs(db: &Database) {
+        let mut dbtx = db.begin_transaction().await;
+        let legacy = dbtx
+            .find_by_prefix(&NostrWalletConnectKeyPrefix)
+            .await
+            .collect::<Vec<_>>()
+            .await;
+        if legacy.is_empty() {
+            return;
+        }
+        dbtx.remove_by_prefix(&NostrWalletConnectKeyPrefix).await;
+        dbtx.commit_tx().await;
+        error_to_flutter(format!(
+            "Removed {} Nostr Wallet Connect connection(s) that used an insecure shared key. \
+             Please reconnect your app to create a new connection.",
+            legacy.len()
+        ))
+        .await;
     }
 
     async fn add_relays_from_db(&self, mut recover_relays: Vec<String>) {
@@ -323,7 +354,7 @@ impl NostrClient {
     async fn spawn_listen_for_nwc(
         &mut self,
         federation_id: &FederationId,
-        nwc_config: NostrWalletConnectConfig,
+        nwc_config: NostrWalletConnectV2Config,
     ) {
         let mut listeners = self.nwc_listeners.write().await;
         if let Some(listener) = listeners.remove(federation_id) {
@@ -347,14 +378,31 @@ impl NostrClient {
 
     /// Blocking NWC listener - runs until the relay connection is closed or an error occurs.
     /// This function is intended to be called directly from the foreground task.
+    ///
+    /// Not exposed over the bridge: it takes the raw pairing secrets. Dart
+    /// starts the listener through `listen_for_nwc_blocking`, which looks the
+    /// config up by federation id so the keys never cross the boundary.
+    #[flutter_rust_bridge::frb(ignore)]
     pub async fn listen_for_nwc(
         federation_id: &FederationId,
-        nwc_config: NostrWalletConnectConfig,
+        nwc_config: NostrWalletConnectV2Config,
     ) {
-        let secret_key = nostr_sdk::SecretKey::from_slice(&nwc_config.secret_key)
-            .expect("Could not create secret key");
+        let Ok(secret_key) = nostr_sdk::SecretKey::from_slice(&nwc_config.service_secret_key)
+        else {
+            error_to_flutter("NWC service key is corrupt; not listening").await;
+            return;
+        };
+        let Ok(client_secret_key) = nostr_sdk::SecretKey::from_slice(&nwc_config.client_secret_key)
+        else {
+            error_to_flutter("NWC client key is corrupt; not listening").await;
+            return;
+        };
         let keys =
             nostr_sdk::Keys::new_with_ctx(fedimint_core::secp256k1::SECP256K1, secret_key.clone());
+        // The one client we paired with. Any other author is rejected outright.
+        let authorized_client =
+            nostr_sdk::Keys::new_with_ctx(fedimint_core::secp256k1::SECP256K1, client_secret_key)
+                .public_key;
         let nostr_client = nostr_sdk::Client::builder().signer(keys.clone()).build();
 
         let relay = nwc_config.relay.clone();
@@ -381,7 +429,14 @@ impl NostrClient {
             .await;
         info_to_flutter("Connected to relay!").await;
 
-        let filter = nostr_sdk::Filter::new().kind(nostr_sdk::Kind::WalletConnectRequest);
+        // Scope the subscription to requests *from* the paired client and
+        // addressed *to* this wallet service. Without the author bound we would
+        // receive (and try to decrypt) every NWC request on the relay, and
+        // without the p-tag bound we would receive other wallets' traffic.
+        let filter = nostr_sdk::Filter::new()
+            .kind(nostr_sdk::Kind::WalletConnectRequest)
+            .author(authorized_client)
+            .pubkey(keys.public_key);
         let Ok(subscription_id) = nostr_client.subscribe(filter, None).await else {
             info_to_flutter("Error subscribing to WalletConnectRequest").await;
             return;
@@ -404,6 +459,14 @@ impl NostrClient {
 
             if event.kind == nostr_sdk::Kind::WalletConnectRequest {
                 let sender_pubkey = event.pubkey;
+                // A relay is free to ignore our filter, so re-check the author
+                // here. This is the authorization boundary: everything past it
+                // can move money.
+                if sender_pubkey != authorized_client {
+                    info_to_flutter("Dropping NWC request from an unauthorized sender".to_string())
+                        .await;
+                    continue;
+                }
                 let Ok(decrypted) =
                     nostr_sdk::nips::nip04::decrypt(&secret_key, &sender_pubkey, &event.content)
                 else {
@@ -807,34 +870,40 @@ impl NostrClient {
         let feds = federations().await;
         let mut dbtx = self.db.begin_transaction().await;
         let federation_configs = dbtx
-            .find_by_prefix(&NostrWalletConnectKeyPrefix)
+            .find_by_prefix(&NostrWalletConnectV2KeyPrefix)
             .await
             .collect::<Vec<_>>()
             .await;
         federation_configs
             .iter()
-            .map(|(key, config)| {
-                let secret_key = nostr_sdk::SecretKey::from_slice(&config.secret_key)
-                    .expect("Could not create secret key");
-                let keys =
-                    nostr_sdk::Keys::new_with_ctx(fedimint_core::secp256k1::SECP256K1, secret_key);
-                let public_key = keys.public_key.to_hex();
+            .filter_map(|(key, config)| {
+                let info = Self::connection_info(config)?;
+                // A config can outlive the federation it points at (left while
+                // the NWC entry stayed); skip it rather than panicking.
                 let selector = feds
                     .iter()
-                    .find(|fed| fed.0.federation_id == key.federation_id)
-                    .expect("Federation should exist")
+                    .find(|fed| fed.0.federation_id == key.federation_id)?
                     .0
                     .clone();
-                (
-                    selector,
-                    NWCConnectionInfo {
-                        public_key,
-                        relay: config.relay.clone(),
-                        secret: config.secret_key.consensus_encode_to_hex(),
-                    },
-                )
+                Some((selector, info))
             })
             .collect::<Vec<_>>()
+    }
+
+    /// Public half of the pairing: the service key identifies the wallet, the
+    /// client secret is what the paired app authenticates with. Both are
+    /// rendered the same way here and at pairing time so the connection URI is
+    /// stable across restarts.
+    fn connection_info(config: &NostrWalletConnectV2Config) -> Option<NWCConnectionInfo> {
+        let service_secret = nostr_sdk::SecretKey::from_slice(&config.service_secret_key).ok()?;
+        let client_secret = nostr_sdk::SecretKey::from_slice(&config.client_secret_key).ok()?;
+        let service_keys =
+            nostr_sdk::Keys::new_with_ctx(fedimint_core::secp256k1::SECP256K1, service_secret);
+        Some(NWCConnectionInfo {
+            public_key: service_keys.public_key.to_hex(),
+            relay: config.relay.clone(),
+            secret: client_secret.to_secret_hex(),
+        })
     }
 
     pub async fn set_nwc_connection_info(
@@ -844,35 +913,44 @@ impl NostrClient {
         is_desktop: bool,
     ) -> NWCConnectionInfo {
         let mut dbtx = self.db.begin_transaction().await;
-        let keys = nostr_sdk::Keys::generate();
-        let nwc_config = NostrWalletConnectConfig {
-            secret_key: keys
+        // Two separate identities: the service key stays here, the client key
+        // is what we hand out. Reusing one keypair for both would put this
+        // wallet's own secret in the connection URI.
+        let service_keys = nostr_sdk::Keys::generate();
+        let client_keys = nostr_sdk::Keys::generate();
+        let nwc_config = NostrWalletConnectV2Config {
+            service_secret_key: service_keys
                 .secret_key()
                 .as_secret_bytes()
                 .try_into()
-                .expect("Could not serialize secret key"),
+                .expect("Could not serialize service secret key"),
+            client_secret_key: client_keys
+                .secret_key()
+                .as_secret_bytes()
+                .try_into()
+                .expect("Could not serialize client secret key"),
             relay: relay.clone(),
         };
-        dbtx.insert_entry(&NostrWalletConnectKey { federation_id }, &nwc_config)
+        dbtx.insert_entry(&NostrWalletConnectV2Key { federation_id }, &nwc_config)
             .await;
 
         dbtx.commit_tx().await;
 
-        let public_key = keys.public_key.to_hex();
+        let public_key = service_keys.public_key.to_hex();
         if is_desktop {
             self.spawn_listen_for_nwc(&federation_id, nwc_config).await;
         }
         NWCConnectionInfo {
             public_key,
             relay,
-            secret: keys.secret_key().to_secret_hex(),
+            secret: client_keys.secret_key().to_secret_hex(),
         }
     }
 
     pub async fn remove_nwc_connection_info(&self, federation_id: FederationId) {
         // Remove from database
         let mut dbtx = self.db.begin_transaction().await;
-        dbtx.remove_entry(&NostrWalletConnectKey { federation_id })
+        dbtx.remove_entry(&NostrWalletConnectV2Key { federation_id })
             .await;
         dbtx.commit_tx().await;
 
@@ -884,30 +962,23 @@ impl NostrClient {
 
     /// Get NWC config for a federation and return it.
     /// This is used by the blocking listen function.
+    ///
+    /// Not exposed over the bridge: the config holds both pairing secrets.
+    #[flutter_rust_bridge::frb(ignore)]
     pub async fn get_nwc_config(
         &self,
         federation_id: FederationId,
-    ) -> anyhow::Result<(NostrWalletConnectConfig, NWCConnectionInfo)> {
+    ) -> anyhow::Result<(NostrWalletConnectV2Config, NWCConnectionInfo)> {
         let mut dbtx = self.db.begin_transaction().await;
 
         let existing_config = dbtx
-            .get_value(&NostrWalletConnectKey { federation_id })
+            .get_value(&NostrWalletConnectV2Key { federation_id })
             .await
-            .ok_or(anyhow!("NostrWalletConnectKey does not exist"))?;
+            .ok_or(anyhow!("NostrWalletConnectV2Key does not exist"))?;
 
-        let secret_key = nostr_sdk::SecretKey::from_slice(&existing_config.secret_key)
-            .expect("Could not create secret key");
-        let keys = nostr_sdk::Keys::new_with_ctx(fedimint_core::secp256k1::SECP256K1, secret_key);
-        let public_key = keys.public_key.to_hex();
-        let relay = existing_config.relay.clone();
-        Ok((
-            existing_config,
-            NWCConnectionInfo {
-                public_key,
-                relay,
-                secret: keys.secret_key().to_secret_hex(),
-            },
-        ))
+        let info = Self::connection_info(&existing_config)
+            .ok_or(anyhow!("Stored NWC keys are corrupt"))?;
+        Ok((existing_config, info))
     }
 
     pub async fn get_relays(&self) -> Vec<(String, bool)> {

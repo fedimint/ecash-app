@@ -50,6 +50,7 @@ pub(crate) enum DbKeyPrefix {
     RequirePinForSpending = 0x13,
     ShowMsats = 0x14,
     WalletV2PendingDeposit = 0x15,
+    NwcV2 = 0x16,
 }
 
 #[derive(Debug, Clone, Encodable, Decodable, Eq, PartialEq, Hash, Ord, PartialOrd)]
@@ -111,6 +112,44 @@ impl_db_record!(
 impl_db_lookup!(
     key = NostrWalletConnectKey,
     query_prefix = NostrWalletConnectKeyPrefix,
+);
+
+#[derive(Debug, Encodable, Decodable)]
+pub(crate) struct NostrWalletConnectV2Key {
+    pub(crate) federation_id: FederationId,
+}
+
+#[derive(Debug, Encodable, Decodable)]
+pub(crate) struct NostrWalletConnectV2KeyPrefix;
+
+/// NWC pairing state, with the two independent keypairs NIP-47 calls for.
+///
+/// The wallet service keeps `service_secret_key` and never discloses it; the
+/// connection URI carries `client_secret_key` instead. Only the public key
+/// derived from `client_secret_key` is accepted as a request author, which is
+/// what stops an arbitrary relay observer from spending.
+///
+/// This replaces the [`DbKeyPrefix::Nwc`] records, which stored a single
+/// keypair used as *both* identities — so every connection URI ever issued
+/// contained the wallet service's own secret key. Those records are purged
+/// rather than migrated: a leaked service key cannot be un-leaked, so the only
+/// way to revoke it is to make the user pair again.
+#[derive(Debug, Encodable, Decodable)]
+pub(crate) struct NostrWalletConnectV2Config {
+    pub(crate) service_secret_key: [u8; 32],
+    pub(crate) client_secret_key: [u8; 32],
+    pub(crate) relay: String,
+}
+
+impl_db_record!(
+    key = NostrWalletConnectV2Key,
+    value = NostrWalletConnectV2Config,
+    db_prefix = DbKeyPrefix::NwcV2,
+);
+
+impl_db_lookup!(
+    key = NostrWalletConnectV2Key,
+    query_prefix = NostrWalletConnectV2KeyPrefix,
 );
 
 #[derive(Debug, Encodable, Decodable)]

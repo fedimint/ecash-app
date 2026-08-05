@@ -761,11 +761,6 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   NostrRecoveryPhase dco_decode_box_autoadd_nostr_recovery_phase(dynamic raw);
 
   @protected
-  NostrWalletConnectConfig dco_decode_box_autoadd_nostr_wallet_connect_config(
-    dynamic raw,
-  );
-
-  @protected
   (FederationId, DepositEventKind)
   dco_decode_box_autoadd_record_auto_owned_rust_opaque_flutter_rust_bridgefor_generated_rust_auto_opaque_inner_federation_id_deposit_event_kind(
     dynamic raw,
@@ -993,9 +988,6 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   NostrRecoveryPhase dco_decode_nostr_recovery_phase(dynamic raw);
 
   @protected
-  NostrWalletConnectConfig dco_decode_nostr_wallet_connect_config(dynamic raw);
-
-  @protected
   NWCConnectionInfo dco_decode_nwc_connection_info(dynamic raw);
 
   @protected
@@ -1142,12 +1134,6 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   (FiatCurrency, BigInt) dco_decode_record_fiat_currency_u_64(dynamic raw);
 
   @protected
-  (NostrWalletConnectConfig, NWCConnectionInfo)
-  dco_decode_record_nostr_wallet_connect_config_nwc_connection_info(
-    dynamic raw,
-  );
-
-  @protected
   (ParsedText, FederationSelector)
   dco_decode_record_parsed_text_auto_owned_rust_opaque_flutter_rust_bridgefor_generated_rust_auto_opaque_inner_federation_selector(
     dynamic raw,
@@ -1209,9 +1195,6 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
 
   @protected
   int dco_decode_u_8(dynamic raw);
-
-  @protected
-  U8Array32 dco_decode_u_8_array_32(dynamic raw);
 
   @protected
   void dco_decode_unit(dynamic raw);
@@ -1860,11 +1843,6 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   );
 
   @protected
-  NostrWalletConnectConfig sse_decode_box_autoadd_nostr_wallet_connect_config(
-    SseDeserializer deserializer,
-  );
-
-  @protected
   (FederationId, DepositEventKind)
   sse_decode_box_autoadd_record_auto_owned_rust_opaque_flutter_rust_bridgefor_generated_rust_auto_opaque_inner_federation_id_deposit_event_kind(
     SseDeserializer deserializer,
@@ -2128,11 +2106,6 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   );
 
   @protected
-  NostrWalletConnectConfig sse_decode_nostr_wallet_connect_config(
-    SseDeserializer deserializer,
-  );
-
-  @protected
   NWCConnectionInfo sse_decode_nwc_connection_info(
     SseDeserializer deserializer,
   );
@@ -2285,12 +2258,6 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   );
 
   @protected
-  (NostrWalletConnectConfig, NWCConnectionInfo)
-  sse_decode_record_nostr_wallet_connect_config_nwc_connection_info(
-    SseDeserializer deserializer,
-  );
-
-  @protected
   (ParsedText, FederationSelector)
   sse_decode_record_parsed_text_auto_owned_rust_opaque_flutter_rust_bridgefor_generated_rust_auto_opaque_inner_federation_selector(
     SseDeserializer deserializer,
@@ -2356,9 +2323,6 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
 
   @protected
   int sse_decode_u_8(SseDeserializer deserializer);
-
-  @protected
-  U8Array32 sse_decode_u_8_array_32(SseDeserializer deserializer);
 
   @protected
   void sse_decode_unit(SseDeserializer deserializer);
@@ -3119,12 +3083,6 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   );
 
   @protected
-  void sse_encode_box_autoadd_nostr_wallet_connect_config(
-    NostrWalletConnectConfig self,
-    SseSerializer serializer,
-  );
-
-  @protected
   void
   sse_encode_box_autoadd_record_auto_owned_rust_opaque_flutter_rust_bridgefor_generated_rust_auto_opaque_inner_federation_id_deposit_event_kind(
     (FederationId, DepositEventKind) self,
@@ -3457,12 +3415,6 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   );
 
   @protected
-  void sse_encode_nostr_wallet_connect_config(
-    NostrWalletConnectConfig self,
-    SseSerializer serializer,
-  );
-
-  @protected
   void sse_encode_nwc_connection_info(
     NWCConnectionInfo self,
     SseSerializer serializer,
@@ -3645,12 +3597,6 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   );
 
   @protected
-  void sse_encode_record_nostr_wallet_connect_config_nwc_connection_info(
-    (NostrWalletConnectConfig, NWCConnectionInfo) self,
-    SseSerializer serializer,
-  );
-
-  @protected
   void
   sse_encode_record_parsed_text_auto_owned_rust_opaque_flutter_rust_bridgefor_generated_rust_auto_opaque_inner_federation_selector(
     (ParsedText, FederationSelector) self,
@@ -3733,9 +3679,6 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
 
   @protected
   void sse_encode_u_8(int self, SseSerializer serializer);
-
-  @protected
-  void sse_encode_u_8_array_32(U8Array32 self, SseSerializer serializer);
 
   @protected
   void sse_encode_unit(void self, SseSerializer serializer);
