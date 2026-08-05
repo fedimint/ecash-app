@@ -505,68 +505,6 @@ fn build_lnurlw_callback_url(callback: &str, k1: &str, invoice: &str) -> String 
 }
 
 #[frb]
-pub async fn send_lnaddress(
-    federation_id: &FederationId,
-    amount_msats: u64,
-    address: String,
-) -> Result<OperationId, EcashAppError> {
-    let lnurl = lnurl::lightning_address::LightningAddress::from_str(&address)
-        .map_err(|e| EcashAppError::InvalidLightningAddress(e.to_string()))?
-        .lnurl();
-    let async_client = lnurl::AsyncClient::from_client(reqwest::Client::new());
-    let response = async_client
-        .make_request(&lnurl.url)
-        .await
-        .map_err(|e| EcashAppError::other(format!("LNURL request failed: {e}")))?;
-    match response {
-        lnurl::LnUrlResponse::LnUrlPayResponse(response) => {
-            let invoice = async_client
-                .get_invoice(&response, amount_msats, None, None)
-                .await
-                .map_err(|e| EcashAppError::other(format!("LNURL invoice fetch failed: {e}")))?;
-
-            let multimint = get_multimint();
-            let bolt11 = Bolt11Invoice::from_str(invoice.invoice())
-                .map_err(|e| EcashAppError::InvalidInvoice(e.to_string()))?;
-            // Must happen before the gateway quote: `select_send_gateway` is
-            // quoted on `amount_msats`, but `send` funds the contract for
-            // `bolt11`'s amount. If the two disagree the user pays the
-            // invoice's amount having approved a quote for the requested one.
-            verify_lnurl_invoice(
-                &bolt11,
-                amount_msats,
-                multimint.federation_network(federation_id).await,
-            )?;
-            let selection = multimint
-                .select_send_gateway(
-                    federation_id,
-                    Amount::from_msats(amount_msats),
-                    bolt11.clone(),
-                )
-                .await
-                .map_err(EcashAppError::from)?;
-            let gateway = SafeUrl::parse(&selection.gateway_url)
-                .map_err(|e| EcashAppError::other(format!("invalid gateway URL: {e}")))?;
-            return multimint
-                .send(
-                    federation_id,
-                    bolt11.to_string(),
-                    gateway,
-                    selection.is_lnv2,
-                    selection.amount_with_fees,
-                    selection.federation_fee,
-                    selection.gateway_fee,
-                    Some(address),
-                )
-                .await;
-        }
-        other => Err(EcashAppError::other(format!(
-            "unexpected LNURL response: {other:?}"
-        ))),
-    }
-}
-
-#[frb]
 #[allow(clippy::too_many_arguments)]
 pub async fn send(
     federation_id: &FederationId,

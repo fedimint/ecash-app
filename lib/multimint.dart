@@ -428,12 +428,6 @@ abstract class Multimint implements RustOpaqueInterface {
     required List<String> backupInviteCodes,
   });
 
-  Future<SendGatewaySelection> selectSendGateway({
-    required FederationId federationId,
-    required Amount amount,
-    required Bolt11Invoice bolt11,
-  });
-
   Future<EcashAppResultOperationId> send({
     required FederationId federationId,
     required String invoice,
@@ -1411,43 +1405,6 @@ class ReissueFees {
 }
 
 enum RelayStatusKind { connecting, connected, failed }
-
-/// Gateway chosen for a Lightning send (used by the LN-address path, which has
-/// no on-screen gateway picker), with the same fee breakdown as a preview.
-class SendGatewaySelection {
-  final String gatewayUrl;
-  final BigInt amountWithFees;
-  final BigInt gatewayFee;
-  final BigInt federationFee;
-  final bool isLnv2;
-
-  const SendGatewaySelection({
-    required this.gatewayUrl,
-    required this.amountWithFees,
-    required this.gatewayFee,
-    required this.federationFee,
-    required this.isLnv2,
-  });
-
-  @override
-  int get hashCode =>
-      gatewayUrl.hashCode ^
-      amountWithFees.hashCode ^
-      gatewayFee.hashCode ^
-      federationFee.hashCode ^
-      isLnv2.hashCode;
-
-  @override
-  bool operator ==(Object other) =>
-      identical(this, other) ||
-      other is SendGatewaySelection &&
-          runtimeType == other.runtimeType &&
-          gatewayUrl == other.gatewayUrl &&
-          amountWithFees == other.amountWithFees &&
-          gatewayFee == other.gatewayFee &&
-          federationFee == other.federationFee &&
-          isLnv2 == other.isLnv2;
-}
 
 class Transaction {
   final TransactionKind kind;

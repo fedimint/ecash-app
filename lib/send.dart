@@ -9,26 +9,29 @@ import 'package:flutter/material.dart';
 
 class SendPayment extends StatefulWidget {
   final FederationSelector fed;
-  final String? invoice;
+  final String invoice;
+
+  /// Set when the invoice was resolved from a Lightning Address, so the
+  /// destination can be shown in the transaction details.
   final String? lnAddress;
   final BigInt amountMsats;
-  final String? gateway;
-  final bool? isLnv2;
-  final BigInt? amountMsatsWithFees;
-  final BigInt? federationFeeMsats;
-  final BigInt? gatewayFeeMsats;
+  final String gateway;
+  final bool isLnv2;
+  final BigInt amountMsatsWithFees;
+  final BigInt federationFeeMsats;
+  final BigInt gatewayFeeMsats;
 
   const SendPayment({
     super.key,
     required this.fed,
     required this.amountMsats,
-    this.gateway,
-    this.isLnv2,
-    this.invoice,
+    required this.gateway,
+    required this.isLnv2,
+    required this.invoice,
+    required this.amountMsatsWithFees,
+    required this.federationFeeMsats,
+    required this.gatewayFeeMsats,
     this.lnAddress,
-    this.amountMsatsWithFees,
-    this.federationFeeMsats,
-    this.gatewayFeeMsats,
   });
 
   @override
@@ -45,29 +48,16 @@ class _SendPaymentState extends State<SendPayment> {
   }
 
   Future<OperationId> _sendPayment() async {
-    if (widget.invoice != null) {
-      final operationId = await send(
-        federationId: widget.fed.federationId,
-        invoice: widget.invoice!,
-        gateway: widget.gateway!,
-        isLnv2: widget.isLnv2!,
-        amountWithFees: widget.amountMsatsWithFees!,
-        federationFeeMsats: widget.federationFeeMsats ?? BigInt.zero,
-        gatewayFeeMsats: widget.gatewayFeeMsats ?? BigInt.zero,
-        // When the invoice was resolved from a Lightning Address, thread it
-        // through so it's recorded and shown in the transaction details.
-        lnAddress: widget.lnAddress,
-      );
-      return operationId;
-    } else {
-      // When sending via LN address, gateway is selected internally
-      final operationId = await sendLnaddress(
-        federationId: widget.fed.federationId,
-        amountMsats: widget.amountMsats,
-        address: widget.lnAddress!,
-      );
-      return operationId;
-    }
+    return await send(
+      federationId: widget.fed.federationId,
+      invoice: widget.invoice,
+      gateway: widget.gateway,
+      isLnv2: widget.isLnv2,
+      amountWithFees: widget.amountMsatsWithFees,
+      federationFeeMsats: widget.federationFeeMsats,
+      gatewayFeeMsats: widget.gatewayFeeMsats,
+      lnAddress: widget.lnAddress,
+    );
   }
 
   void _payInvoice() async {
