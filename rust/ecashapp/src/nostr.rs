@@ -33,6 +33,7 @@ use fedimint_core::{
 };
 use fedimint_derive_secret::ChildId;
 use futures_util::StreamExt;
+use lightning_invoice::Bolt11Invoice;
 use serde::{Deserialize, Serialize};
 use tokio::{
     sync::{oneshot, RwLock},
@@ -72,6 +73,31 @@ const DEPRECATED_DEFAULT_RELAYS: &[&str] = &[
 const FEDERATION_OBSERVER_URL: &str = "https://observer.fedimint.org";
 
 pub const NWC_SUPPORTED_METHODS: &[&str] = &["get_info", "get_balance", "pay_invoice"];
+
+/// Ceiling on a single wallet-connect payment, in msats (1,000,000 sats).
+///
+/// The paired client can spend without any on-screen confirmation — the Android
+/// listener runs in a background isolate with no UI — so this caps what a
+/// compromised or buggy client can move in one request. It is deliberately not
+/// user-configurable yet; the point is that some bound exists.
+pub const NWC_MAX_PAYMENT_MSATS: u64 = 1_000_000 * 1_000;
+
+/// Enforce [`NWC_MAX_PAYMENT_MSATS`] on an incoming wallet-connect payment.
+fn check_nwc_payment_limit(bolt11: &Bolt11Invoice) -> anyhow::Result<()> {
+    match bolt11.amount_milli_satoshis() {
+        Some(msats) if msats > NWC_MAX_PAYMENT_MSATS => bail!(
+            "NWC pay_invoice: invoice is for {msats} msat, over the \
+             {NWC_MAX_PAYMENT_MSATS} msat limit for wallet-connect payments"
+        ),
+        Some(_) => Ok(()),
+        // An amountless invoice carries no ceiling of its own — the gateway
+        // would settle it for whatever the payee asks — so accepting one would
+        // defeat the limit entirely.
+        None => bail!(
+            "NWC pay_invoice: invoice has no amount, which is not supported over wallet connect"
+        ),
+    }
+}
 
 #[derive(Debug, Deserialize)]
 #[serde(tag = "method", content = "params")]
@@ -597,6 +623,14 @@ impl NostrClient {
                 .await?;
             }
             WalletConnectRequest::PayInvoice { invoice } => {
+                // Bound the request before doing any work for it. Parsing is
+                // local, so an oversized or unbounded invoice is rejected
+                // without the gateway round trips `payment_preview_with_gateways`
+                // would otherwise perform on the caller's behalf.
+                let bolt11 = Bolt11Invoice::from_str(&invoice)
+                    .map_err(|e| anyhow!("NWC pay_invoice: could not parse invoice: {e}"))?;
+                check_nwc_payment_limit(&bolt11)?;
+
                 let payment_preview =
                     payment_preview_with_gateways(federation_id, invoice.clone()).await?;
                 let preview = payment_preview
@@ -1781,5 +1815,55 @@ impl TryFrom<nostr_sdk::Event> for NostrProfile {
             nip05: json.get("nip05").and_then(|v| v.as_str()).map(String::from),
             about: json.get("about").and_then(|v| v.as_str()).map(String::from),
         })
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::{check_nwc_payment_limit, NWC_MAX_PAYMENT_MSATS};
+    use lightning_invoice::Bolt11Invoice;
+
+    fn signed_invoice(amount_msats: Option<u64>) -> Bolt11Invoice {
+        use bitcoin::hashes::{sha256, Hash as _};
+        use bitcoin::secp256k1::{Secp256k1, SecretKey};
+        use lightning_invoice::{Currency, InvoiceBuilder, PaymentSecret};
+
+        let secret_key = SecretKey::from_slice(&[0x11; 32]).expect("valid key");
+        let builder = InvoiceBuilder::new(Currency::Bitcoin)
+            .description("nwc limit test".to_string())
+            .payment_hash(sha256::Hash::hash(b"nwc limit test payment hash"))
+            .payment_secret(PaymentSecret([42u8; 32]))
+            .current_timestamp()
+            .min_final_cltv_expiry_delta(144);
+        let builder = match amount_msats {
+            Some(msats) => builder.amount_milli_satoshis(msats),
+            None => builder,
+        };
+        builder
+            .build_signed(|hash| Secp256k1::new().sign_ecdsa_recoverable(hash, &secret_key))
+            .expect("invoice builds")
+    }
+
+    #[test]
+    fn test_nwc_limit_allows_payment_at_the_cap() {
+        let invoice = signed_invoice(Some(NWC_MAX_PAYMENT_MSATS));
+        assert!(
+            check_nwc_payment_limit(&invoice).is_ok(),
+            "the cap itself must be payable"
+        );
+    }
+
+    #[test]
+    fn test_nwc_limit_rejects_payment_over_the_cap() {
+        let invoice = signed_invoice(Some(NWC_MAX_PAYMENT_MSATS + 1));
+        let err = check_nwc_payment_limit(&invoice).unwrap_err();
+        assert!(err.to_string().contains("over the"), "got: {err}");
+    }
+
+    #[test]
+    fn test_nwc_limit_rejects_amountless_invoice() {
+        let invoice = signed_invoice(None);
+        let err = check_nwc_payment_limit(&invoice).unwrap_err();
+        assert!(err.to_string().contains("no amount"), "got: {err}");
     }
 }
