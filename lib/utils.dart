@@ -15,6 +15,17 @@ extension MilliSats on BigInt {
   BigInt get toSats => this ~/ BigInt.from(1000);
 }
 
+/// Render a deep link for logging without its payload.
+///
+/// A deep link routinely carries a one-time credential — an LNURLw `k1` is on
+/// its own enough to claim a Boltcard withdrawal, and a `lightning:` link is a
+/// full bolt11 invoice. Whoever reads the log would be racing the user for it,
+/// so only the scheme and host are ever recorded.
+String redactUriForLog(Uri uri) {
+  final host = uri.host.isEmpty ? '' : '//${uri.host}';
+  return '${uri.scheme}:$host<redacted ${uri.toString().length} chars>';
+}
+
 class AppLogger {
   static late final File _logFile;
   static final AppLogger instance = AppLogger._internal();
@@ -44,6 +55,11 @@ class AppLogger {
     instance.info("Logger initialized. Log file: ${_logFile.path}");
   }
 
+  /// Roll over once the log passes this size, keeping one previous generation.
+  /// Bounds on-disk history to ~2x this, so a leak that slips through has a
+  /// finite lifetime instead of living in the file forever.
+  static const int _maxLogBytes = 2 * 1024 * 1024;
+
   void _log(String level, String message) {
     final timestamp = DateTime.now().toIso8601String();
     final formatted = "[$timestamp] [$level] $message";
@@ -52,11 +68,45 @@ class AppLogger {
     debugPrint(formatted);
 
     // Write to file
+    _rotateIfOversized();
     _logFile.writeAsStringSync(
       "$formatted\n",
       mode: FileMode.append,
       flush: true,
     );
+  }
+
+  void _rotateIfOversized() {
+    try {
+      if (!_logFile.existsSync() || _logFile.lengthSync() < _maxLogBytes) {
+        return;
+      }
+      final previous = File('${_logFile.path}.1');
+      if (previous.existsSync()) {
+        previous.deleteSync();
+      }
+      _logFile.renameSync(previous.path);
+      _logFile.createSync(recursive: true);
+    } catch (_) {
+      // Rotation is best-effort; never let it break logging itself.
+    }
+  }
+
+  /// Delete the log and its rotated generation. Exposed so the user can clear
+  /// history without hunting for the file on disk.
+  Future<void> clear() async {
+    try {
+      final previous = File('${_logFile.path}.1');
+      if (await previous.exists()) {
+        await previous.delete();
+      }
+      if (await _logFile.exists()) {
+        await _logFile.delete();
+      }
+      await _logFile.create(recursive: true);
+    } catch (e) {
+      debugPrint('Could not clear log file: $e');
+    }
   }
 
   void _rustLog(LogLevel level, String message) {

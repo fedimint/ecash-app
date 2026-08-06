@@ -112,6 +112,18 @@ pub enum WalletConnectRequest {
     GetInfo {},
 }
 
+impl WalletConnectRequest {
+    /// Log-safe label for a request. The `Debug` rendering includes the bolt11
+    /// invoice, so it must not be used for logging.
+    fn method_name(&self) -> &'static str {
+        match self {
+            WalletConnectRequest::PayInvoice { .. } => "pay_invoice",
+            WalletConnectRequest::GetBalance {} => "get_balance",
+            WalletConnectRequest::GetInfo {} => "get_info",
+        }
+    }
+}
+
 #[derive(Debug, Serialize, Deserialize)]
 #[serde(tag = "result_type", content = "result")]
 pub enum WalletConnectResponse {
@@ -504,7 +516,10 @@ impl NostrClient {
                     continue;
                 };
 
-                info_to_flutter(format!("WalletConnectRequest: {request:?}")).await;
+                // Method name only. The `PayInvoice` payload is a full bolt11
+                // invoice (amount, payment hash, description), which does not
+                // belong in a persistent log.
+                info_to_flutter(format!("WalletConnectRequest: {}", request.method_name())).await;
                 if let Err(err) = Self::handle_request(
                     federation_id,
                     &nostr_client,

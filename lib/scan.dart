@@ -293,9 +293,9 @@ class _ScanQRPageState extends State<ScanQRPage> {
       }
 
       AppLogger.instance.info("Passed isValid check. Decoding payload...");
-      AppLogger.instance.error("Payload: $payload");
+      // The payload is never logged: a reassembled ecash token is a bearer
+      // instrument, and this log is a plaintext file that outlives the transfer.
       final actualPayload = utf8.decode(payload);
-      AppLogger.instance.info("Decoded QR payload: $actualPayload");
       final parsed = await _handleText(actualPayload);
       if (!parsed) {
         ToastService().show(
@@ -582,7 +582,11 @@ class _ScanQRPageState extends State<ScanQRPage> {
     });
     final parsed = await _handleText(code);
     if (!parsed) {
-      AppLogger.instance.warn("$code cannot be parsed");
+      // Only the length: an unparseable scan is often an ecash token, and the
+      // content would be spendable by anyone who reads the log.
+      AppLogger.instance.warn(
+        "Scanned code could not be parsed (${code.length} chars)",
+      );
       ToastService().show(
         message: context.l10n.cannotBeParsed,
         duration: const Duration(seconds: 5),
@@ -611,7 +615,12 @@ class _ScanQRPageState extends State<ScanQRPage> {
 
     final parsed = await _handleText(text);
     if (!parsed) {
-      AppLogger.instance.warn("$text cannot be parsed");
+      // Never the clipboard contents. A user who copied their seed phrase and
+      // then pasted here would otherwise write all 12 words to a plaintext file
+      // — parse failure is the *expected* outcome for a mnemonic.
+      AppLogger.instance.warn(
+        "Pasted text could not be parsed (${text.length} chars)",
+      );
       ToastService().show(
         message: context.l10n.cannotBeParsed,
         duration: const Duration(seconds: 5),
