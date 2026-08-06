@@ -8,6 +8,7 @@ mod event_bus;
 mod fountain;
 mod frb_generated;
 mod multimint;
+mod net;
 mod nostr;
 mod parse;
 mod wallet;
@@ -356,7 +357,7 @@ pub async fn get_invoice_from_lnaddress_or_lnurl(
             .map_err(|e| EcashAppError::InvalidLightningAddress(e.to_string()))?,
     };
 
-    let async_client = lnurl::AsyncClient::from_client(reqwest::Client::new());
+    let async_client = lnurl::AsyncClient::from_client(crate::net::http_client());
     let response = async_client
         .make_request(&lnurl.url)
         .await
@@ -401,7 +402,7 @@ pub struct LnurlWithdrawParams {
 /// withdraw details and get user confirmation before any money moves.
 #[frb]
 pub async fn fetch_lnurl_withdraw(url: String) -> anyhow::Result<LnurlWithdrawParams> {
-    let resp: serde_json::Value = reqwest::Client::new()
+    let resp: serde_json::Value = crate::net::http_client()
         .get(&url)
         .send()
         .await?
@@ -480,7 +481,7 @@ pub async fn execute_lnurl_withdraw(
 
     // Hand the invoice to the Boltcard/LNURLw service via the callback URL.
     let callback_url = build_lnurlw_callback_url(&callback, &k1, &invoice.to_string());
-    let resp: serde_json::Value = reqwest::Client::new()
+    let resp: serde_json::Value = crate::net::http_client()
         .get(&callback_url)
         .send()
         .await?
@@ -959,7 +960,7 @@ impl parse::ParseContext for MultimintParseContext {
             _ => lnurl::lnurl::LnUrl::from_str(lnurl_or_address)?,
         };
 
-        let async_client = lnurl::AsyncClient::from_client(reqwest::Client::new());
+        let async_client = lnurl::AsyncClient::from_client(crate::net::http_client());
         let response = async_client.make_request(&lnurl.url).await?;
         let pay_response = match response {
             lnurl::LnUrlResponse::LnUrlPayResponse(r) => r,
@@ -1055,7 +1056,7 @@ pub async fn check_ecash_spent(
 #[frb]
 pub async fn list_ln_address_domains(ln_address_api: String) -> anyhow::Result<Vec<String>> {
     let safe_ln_address_api = SafeUrl::parse(&ln_address_api)?.join("domains")?;
-    let http_client = reqwest::Client::new();
+    let http_client = crate::net::http_client();
     let url = safe_ln_address_api.to_unsafe();
     let result = http_client
         .get(url)
