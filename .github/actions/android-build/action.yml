@@ -55,31 +55,6 @@ runs:
         rm -rf ~/.pub-cache/*
         df -h
 
-    # Cache Rust dependencies
-    - name: Cache cargo registry
-      uses: actions/cache@v4
-      with:
-        path: ~/.cargo/registry
-        key: ${{ runner.os }}-cargo-registry-${{ hashFiles('**/Cargo.lock') }}
-        restore-keys: |
-          ${{ runner.os }}-cargo-registry-
-
-    - name: Cache cargo git index
-      uses: actions/cache@v4
-      with:
-        path: ~/.cargo/git
-        key: ${{ runner.os }}-cargo-git-${{ hashFiles('**/Cargo.lock') }}
-        restore-keys: |
-          ${{ runner.os }}-cargo-git-
-
-    - name: Cache cargo target
-      uses: actions/cache@v4
-      with:
-        path: target
-        key: ${{ runner.os }}-cargo-target-${{ inputs.mode }}-${{ hashFiles('**/Cargo.lock') }}
-        restore-keys: |
-          ${{ runner.os }}-cargo-target-${{ inputs.mode }}-
-
     # Cache Flutter pub packages
     - name: Cache Flutter pub
       uses: actions/cache@v4
@@ -107,6 +82,26 @@ runs:
       with:
         toolchain: stable
         targets: aarch64-linux-android
+
+    # Caches the cargo registry, the git index, ~/.cargo/bin and the build
+    # artifacts, replacing three hand-rolled actions/cache steps.
+    #
+    # `workspaces` has to name the crate directory. There is no workspace at the
+    # repo root, and the build below does `cd rust/ecashapp && cargo ndk … build`
+    # with no --target-dir, so Cargo writes to `rust/ecashapp/target`. The old
+    # step cached `target` at the repo root — a path nothing writes to — so it
+    # never produced a cache entry and every run recompiled all ~500
+    # dependencies, RocksDB included, for about 20 minutes.
+    #
+    # Must run after the toolchain is installed: the cache key includes the
+    # rustc version, so keying it earlier would pin to whatever compiler the
+    # runner image ships rather than the one the build actually uses.
+    - name: Cache Rust build
+      uses: Swatinem/rust-cache@v2
+      with:
+        workspaces: rust/ecashapp
+        # debug and release use different cargo profiles; keep them apart.
+        key: ${{ inputs.mode }}
 
     - name: Install dependencies
       shell: bash

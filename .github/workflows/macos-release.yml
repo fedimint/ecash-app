@@ -13,6 +13,7 @@ jobs:
     runs-on: macos-latest
     env:
       HAS_SIGNING_CERT: ${{ secrets.MACOS_CERTIFICATE_BASE64 != '' }}
+      IS_TAGGED_RELEASE: ${{ startsWith(github.ref, 'refs/tags/') }}
     steps:
       - uses: actions/checkout@v4
       - name: Read Flutter version
@@ -25,6 +26,17 @@ jobs:
           channel: 'stable'
       - name: Install Rust
         uses: dtolnay/rust-toolchain@stable
+      # `package-macos.sh` builds with `--target-dir rust/ecashapp/target`, so
+      # that is what needs caching. Without this the job recompiles every
+      # dependency — RocksDB from source included — on every run, which is
+      # essentially all of the ~25 minutes the build step takes.
+      #
+      # After the toolchain install on purpose: the cache key includes the rustc
+      # version.
+      - name: Cache Rust build
+        uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: rust/ecashapp
       - name: Install create-dmg
         run: brew install create-dmg
       - name: Import signing certificate
@@ -49,10 +61,19 @@ jobs:
           security list-keychain -d user -s "$KEYCHAIN_PATH"
       - name: Build DMG
         env:
+          # Signing stays on for pull requests: it costs seconds and is what
+          # proves the certificate import and codesign path still work before a
+          # tag depends on them.
           MACOS_SIGN_IDENTITY: ${{ env.HAS_SIGNING_CERT == 'true' && 'Developer ID Application' || '' }}
-          MACOS_NOTARIZE_APPLE_ID: ${{ secrets.MACOS_APPLE_ID }}
-          MACOS_NOTARIZE_TEAM_ID: ${{ secrets.MACOS_TEAM_ID }}
-          MACOS_NOTARIZE_PASSWORD: ${{ secrets.MACOS_APP_SPECIFIC_PASSWORD }}
+          # Notarization does not. `notarytool submit --wait` blocks on Apple's
+          # service for 5-15 minutes, and only an artifact somebody downloads
+          # needs to be notarized. `package-macos.sh` skips the whole
+          # notarize-and-staple block when the Apple ID is empty, so leaving
+          # these unset on a pull request builds, signs and packages the DMG
+          # exactly as a release would, minus the wait.
+          MACOS_NOTARIZE_APPLE_ID: ${{ env.IS_TAGGED_RELEASE == 'true' && secrets.MACOS_APPLE_ID || '' }}
+          MACOS_NOTARIZE_TEAM_ID: ${{ env.IS_TAGGED_RELEASE == 'true' && secrets.MACOS_TEAM_ID || '' }}
+          MACOS_NOTARIZE_PASSWORD: ${{ env.IS_TAGGED_RELEASE == 'true' && secrets.MACOS_APP_SPECIFIC_PASSWORD || '' }}
         run: ./scripts/package-macos.sh
       - name: Clean up keychain
         if: always()
