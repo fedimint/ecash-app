@@ -129,6 +129,13 @@ const VERSION_CHECK_INTERVAL_SECS: u64 = 60 * 60 * 6;
 const CACHE_TASK_STAGE_TIMEOUT_SECS: u64 = 60;
 /// Timeout for the BTC price HTTP request itself.
 const PRICE_FETCH_TIMEOUT_SECS: u64 = 10;
+/// A gateway routing fee at or above this takes 100% of the payment, which
+/// makes the fee inversion in [`gross_invoice_for_contract`] unsolvable.
+const MAX_GATEWAY_PPM: u64 = 1_000_000;
+/// Backstop on the fee-inversion correction walks. The closed form lands within
+/// a step or two, so anything beyond this means the gateway's fee curve is not
+/// what the algebra assumes.
+const MAX_FEE_WALK_STEPS: u32 = 1_000;
 const GITHUB_LATEST_RELEASE_URL: &str =
     "https://api.github.com/repos/fedimint/ecash-app/releases/latest";
 
@@ -2445,6 +2452,11 @@ impl Multimint {
                 .routing_info(&gateway_url)
                 .await?
                 .ok_or(anyhow!("Gateway has no routing info"))?;
+            // Both branches below consume this gateway-supplied fee. Reject a
+            // 100%-or-more fee up front so neither has to cope with it: the
+            // `include_fees` path cannot invert it, and the exact-invoice path
+            // would otherwise quote a receive that credits the user nothing.
+            validate_receive_fee(&routing_info.receive_fee)?;
 
             if include_fees {
                 // Invert both layers so the sender covers everything and exactly
@@ -2460,7 +2472,8 @@ impl Multimint {
                 // Gateway layer: invert the off-chain routing fee so the gateway
                 // funds the contract with at least `contract` msats. The gateway's
                 // cut is the difference between the invoice and the contract it funds.
-                let invoice_msats = gross_invoice_for_contract(contract, &routing_info.receive_fee);
+                let invoice_msats =
+                    gross_invoice_for_contract(contract, &routing_info.receive_fee)?;
                 return Ok(ReceiveAmount {
                     invoice_msats,
                     federation_fee_msats,
@@ -6269,49 +6282,143 @@ where
 /// fee is deducted, funds the on-federation contract with at least `contract`
 /// msats. This inverts [`PaymentFee::subtract_from`], correcting the closed-form
 /// estimate for integer-division rounding.
-fn gross_invoice_for_contract(contract: u64, receive_fee: &PaymentFee) -> u64 {
+fn gross_invoice_for_contract(contract: u64, receive_fee: &PaymentFee) -> anyhow::Result<u64> {
+    validate_receive_fee(receive_fee)?;
+
     let ppm = receive_fee.parts_per_million as f64;
     let base = receive_fee.base.msats;
     // invoice - (base + ppm * invoice / 1e6) = contract
     //   => invoice = (contract + base) / (1 - ppm / 1e6)
-    let estimate = ((contract + base) as f64 / (1.0 - ppm / 1_000_000.0)).ceil() as u64;
-    let mut invoice = estimate.max(contract);
-    // Walk up until the post-fee contract reaches `contract` ...
-    while receive_fee.subtract_from(invoice).msats < contract {
-        invoice += 1;
+    let numerator = contract
+        .checked_add(base)
+        .ok_or_else(|| anyhow!("Gateway base fee of {base} msat overflows the contract amount"))?;
+    let estimate = (numerator as f64 / (1.0 - ppm / 1_000_000.0)).ceil();
+    // A ppm close to 100% drives the estimate past `u64`. `as u64` saturates
+    // silently rather than wrapping, which would leave the walk below starting
+    // at `u64::MAX` and overflowing on its first increment.
+    if !estimate.is_finite() || estimate >= u64::MAX as f64 {
+        bail!(
+            "Gateway receive fee ({ppm} ppm, {base} msat base) makes the required \
+             invoice amount too large to represent"
+        );
     }
-    // ... then back down to the smallest invoice that still satisfies it.
+    let mut invoice = (estimate as u64).max(contract);
+
+    // Walk up until the post-fee contract reaches `contract`, then back down to
+    // the smallest invoice that still satisfies it.
+    //
+    // The closed form above is exact for this fee curve apart from
+    // integer-division rounding, so both walks converge in a step or two. The
+    // caps are a backstop: `receive_fee` comes straight from the gateway, and a
+    // fee that does not behave the way the algebra assumes must not be able to
+    // spin a tokio worker — there is no `.await` in either loop.
+    let mut steps = 0u32;
+    while receive_fee.subtract_from(invoice).msats < contract {
+        invoice = invoice
+            .checked_add(1)
+            .ok_or_else(|| anyhow!("Gateway receive fee could not be inverted"))?;
+        steps += 1;
+        if steps > MAX_FEE_WALK_STEPS {
+            bail!("Gateway receive fee did not converge to a payable invoice amount");
+        }
+    }
+    steps = 0;
     while invoice > contract && receive_fee.subtract_from(invoice - 1).msats >= contract {
         invoice -= 1;
+        steps += 1;
+        if steps > MAX_FEE_WALK_STEPS {
+            break;
+        }
     }
-    invoice
+    Ok(invoice)
+}
+
+/// Reject a gateway whose receive fee would swallow the entire payment.
+///
+/// [`PaymentFee::subtract_from`] saturates at zero, so at 1,000,000 ppm or more
+/// the post-fee amount is always zero: no invoice can fund a non-zero contract.
+/// The closed-form inversion is undefined there too — the divisor is exactly
+/// zero at 100% and negative above it.
+fn validate_receive_fee(receive_fee: &PaymentFee) -> anyhow::Result<()> {
+    if receive_fee.parts_per_million >= MAX_GATEWAY_PPM {
+        bail!(
+            "Gateway receive fee of {} ppm would take the entire payment",
+            receive_fee.parts_per_million
+        );
+    }
+    Ok(())
 }
 
 #[cfg(test)]
 mod tests {
     use fedimint_lnv2_common::gateway_api::PaymentFee;
 
-    use crate::multimint::gross_invoice_for_contract;
+    use crate::multimint::{gross_invoice_for_contract, MAX_GATEWAY_PPM};
+
+    fn payment_fee(base_msats: u64, ppm: u64) -> PaymentFee {
+        PaymentFee {
+            base: fedimint_core::Amount::from_msats(base_msats),
+            parts_per_million: ppm,
+        }
+    }
 
     #[test]
     fn verify_gross_invoice_for_contract() {
-        let fee = PaymentFee {
-            base: fedimint_core::Amount::from_msats(1_000),
-            parts_per_million: 5_000,
-        };
+        let fee = payment_fee(1_000, 5_000);
 
         // The invoice must fund the contract with at least its amount, ...
         let contract = 1_000_000;
-        let invoice = gross_invoice_for_contract(contract, &fee);
+        let invoice = gross_invoice_for_contract(contract, &fee).expect("solvable fee");
         assert!(fee.subtract_from(invoice).msats >= contract);
         // ... and be the smallest such invoice (one msat less falls short).
         assert!(fee.subtract_from(invoice - 1).msats < contract);
 
         // A zero-fee gateway (e.g. loopback) leaves the contract unchanged.
-        let zero = PaymentFee {
-            base: fedimint_core::Amount::ZERO,
-            parts_per_million: 0,
-        };
-        assert_eq!(gross_invoice_for_contract(contract, &zero), contract);
+        let zero = payment_fee(0, 0);
+        assert_eq!(
+            gross_invoice_for_contract(contract, &zero).expect("solvable fee"),
+            contract
+        );
+    }
+
+    /// The H2 case. `subtract_from` saturates at zero, so at exactly 100% no
+    /// invoice can ever satisfy the walk — it used to spin forever with no
+    /// `.await`, pinning a tokio worker. The closed form is a divide by zero
+    /// here too, and `f64::INFINITY as u64` saturates rather than wrapping, so
+    /// the walk would have started at `u64::MAX`.
+    #[test]
+    fn gross_invoice_rejects_fee_at_one_hundred_percent() {
+        let err = gross_invoice_for_contract(1_000_000, &payment_fee(0, MAX_GATEWAY_PPM))
+            .expect_err("100% fee is not invertible");
+        assert!(err.to_string().contains("entire payment"), "got: {err}");
+    }
+
+    #[test]
+    fn gross_invoice_rejects_fee_above_one_hundred_percent() {
+        let err = gross_invoice_for_contract(1_000_000, &payment_fee(0, MAX_GATEWAY_PPM + 1))
+            .expect_err("over-100% fee is not invertible");
+        assert!(err.to_string().contains("entire payment"), "got: {err}");
+    }
+
+    /// Just below the ceiling must still work — the guard bounds the hostile
+    /// case without rejecting an expensive but legitimate gateway.
+    #[test]
+    fn gross_invoice_accepts_fee_just_below_the_ceiling() {
+        let steep = payment_fee(0, MAX_GATEWAY_PPM - 1);
+        let contract = 1_000;
+        let invoice = gross_invoice_for_contract(contract, &steep).expect("solvable fee");
+        assert!(steep.subtract_from(invoice).msats >= contract);
+    }
+
+    /// A gateway can also push the required invoice past `u64` with a large
+    /// base fee rather than a large ppm.
+    #[test]
+    fn gross_invoice_rejects_unrepresentable_amount() {
+        let err = gross_invoice_for_contract(u64::MAX, &payment_fee(u64::MAX, 0))
+            .expect_err("overflowing base fee has no solution");
+        assert!(
+            err.to_string().contains("overflows") || err.to_string().contains("too large"),
+            "got: {err}"
+        );
     }
 }
