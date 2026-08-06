@@ -363,7 +363,13 @@ class _MyAppState extends State<MyApp> {
     }
 
     _processingDeepLink = true;
-    AppLogger.instance.info('Handling deep link: $deepLink');
+    // The type is the useful diagnostic; `data` is the payload (a bolt11
+    // invoice, or an LNURLw URL whose `k1` is a one-time withdrawal credential)
+    // and is never logged.
+    AppLogger.instance.info(
+      'Handling deep link: ${deepLink.type.name} '
+      '(${deepLink.data.length} chars)',
+    );
 
     try {
       final context = _navigatorKey.currentContext;

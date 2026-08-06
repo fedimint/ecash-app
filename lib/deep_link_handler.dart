@@ -109,7 +109,9 @@ class DeepLinkHandler {
     try {
       final initialUri = await _appLinks.getInitialLink();
       if (initialUri != null) {
-        AppLogger.instance.info('Deep link cold start: $initialUri');
+        AppLogger.instance.info(
+          'Deep link cold start: ${redactUriForLog(initialUri)}',
+        );
         final deepLinkData = parseDeepLinkUri(initialUri);
         if (deepLinkData != null) {
           _pendingDeepLink = deepLinkData;
@@ -122,7 +124,9 @@ class DeepLinkHandler {
     // Listen for warm start links
     _subscription = _appLinks.uriLinkStream.listen(
       (uri) {
-        AppLogger.instance.info('Deep link warm start: $uri');
+        AppLogger.instance.info(
+          'Deep link warm start: ${redactUriForLog(uri)}',
+        );
         final deepLinkData = parseDeepLinkUri(uri);
         if (deepLinkData != null) {
           _deepLinkController.add(deepLinkData);

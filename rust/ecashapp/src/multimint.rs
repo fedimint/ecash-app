@@ -2689,12 +2689,14 @@ impl Multimint {
         self.task_group.spawn_cancellable("await send", async move {
             let final_state = self_copy.await_send(&federation_id, operation_id).await;
             match final_state {
-                LightningSendOutcome::Success(preimage) => {
+                // The preimage is deliberately not bound: it is the
+                // cryptographic proof of this payment and used to be written to
+                // the log. It remains available in the transaction details.
+                LightningSendOutcome::Success(_) => {
                     let multimint_event =
                         MultimintEvent::Lightning((federation_id, LightningEventKind::PaymentSent));
                     get_event_bus().publish(multimint_event).await;
-                    info_to_flutter(format!("Successfuly sent payment. Preimage: {preimage}"))
-                        .await;
+                    info_to_flutter("Successfully sent payment").await;
                 }
                 LightningSendOutcome::Failure(err) => {
                     payment_error_to_flutter(federation_id, err).await;
@@ -4854,7 +4856,10 @@ impl Multimint {
             .ok_or(anyhow!("No authentication token"))?
             .as_str()
             .expect("Authentication token is not a String");
-        info_to_flutter(format!("Registration result: {registration_result}")).await;
+        // Never the raw response: it carries `authentication_token`, which is
+        // the bearer credential for this lightning address. Log access would
+        // otherwise be enough to hijack the address.
+        info_to_flutter("Registered lightning address").await;
 
         let mut dbtx = self.db.begin_transaction().await;
         dbtx.insert_entry(
