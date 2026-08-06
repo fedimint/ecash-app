@@ -46,6 +46,10 @@ class _OnchainSendState extends State<OnchainSend> {
   WithdrawFees? _fees;
   bool _loadingFees = false;
   bool _withdrawing = false;
+
+  /// Re-entrancy guard for [_withdraw], covering the PIN-prompt gap that
+  /// [_withdrawing] leaves open.
+  bool _confirming = false;
   DateTime? _quoteExpiry;
   Timer? _quoteTimer;
 
@@ -178,12 +182,26 @@ class _OnchainSendState extends State<OnchainSend> {
       return;
     }
 
-    final authorized = await checkSpendingPin(context);
-    if (!authorized) return;
+    // Claimed before the first `await`. `_withdrawing` is only set after the
+    // PIN prompt returns, which leaves a window where a double tap produces two
+    // identical on-chain withdrawals.
+    if (_confirming) return;
+    _confirming = true;
+    try {
+      final authorized = await checkSpendingPin(context);
+      if (!authorized) return;
+      if (!mounted) return;
 
-    _quoteTimer?.cancel();
-    setState(() => _withdrawing = true);
+      _quoteTimer?.cancel();
+      setState(() => _withdrawing = true);
 
+      await _performWithdraw();
+    } finally {
+      _confirming = false;
+    }
+  }
+
+  Future<void> _performWithdraw() async {
     try {
       final operationId = await withdrawToAddress(
         federationId: widget.fed.federationId,
