@@ -119,6 +119,16 @@ const PRICE_CACHE_UPDATE_INTERVAL_SECS: u64 = 60 * 5;
 const FEDERATION_BACKUP_CACHE_UPDATE_INTERVAL_SECS: u64 = 60 * 60 * 24;
 const CONTACT_SYNC_INTERVAL_SECS: u64 = 90;
 const VERSION_CHECK_INTERVAL_SECS: u64 = 60 * 60 * 6;
+/// Longest any single stage of the cache task may run before it is abandoned.
+///
+/// The stages run in sequence within one loop iteration, so a stage that never
+/// returns stops every stage behind it from running again — including the
+/// federation ecash backup, which would leave the user transacting against a
+/// backup that silently stopped updating. Bounding each stage costs at most one
+/// skipped cycle of that stage instead.
+const CACHE_TASK_STAGE_TIMEOUT_SECS: u64 = 60;
+/// Timeout for the BTC price HTTP request itself.
+const PRICE_FETCH_TIMEOUT_SECS: u64 = 10;
 const GITHUB_LATEST_RELEASE_URL: &str =
     "https://api.github.com/repos/fedimint/ecash-app/releases/latest";
 
@@ -1157,6 +1167,29 @@ impl Multimint {
         Ok((client, federation_id))
     }
 
+    /// Run one stage of the cache task under [`CACHE_TASK_STAGE_TIMEOUT_SECS`],
+    /// returning `None` if it ran out of time.
+    ///
+    /// The point is liveness of the *loop*, not of the stage: several stages
+    /// call out to the network (guardians, mempool.space, nostr relays) and a
+    /// black-holed TCP connection produces a future that simply never resolves.
+    async fn run_cache_stage<T, F>(name: &str, fut: F) -> Option<T>
+    where
+        F: std::future::Future<Output = T>,
+    {
+        match timeout(Duration::from_secs(CACHE_TASK_STAGE_TIMEOUT_SECS), fut).await {
+            Ok(value) => Some(value),
+            Err(_) => {
+                error_to_flutter(format!(
+                    "Cache task stage '{name}' timed out after \
+                     {CACHE_TASK_STAGE_TIMEOUT_SECS}s; skipping it this cycle"
+                ))
+                .await;
+                None
+            }
+        }
+    }
+
     fn spawn_cache_task(&self) {
         let self_copy = self.clone();
         self.task_group
@@ -1179,7 +1212,8 @@ impl Multimint {
                         };
                         if version_due {
                             last_version_check = Some(now);
-                            self_copy.check_for_update().await;
+                            Self::run_cache_stage("version check", self_copy.check_for_update())
+                                .await;
                         }
                     }
                     let threshold = now
@@ -1211,7 +1245,13 @@ impl Multimint {
                         let Some(client) = client else { continue };
 
                         if !client.has_pending_recoveries() {
-                            self_copy.cache_federation_meta(client.clone(), now).await;
+                            // Bounded per federation: one unreachable guardian
+                            // must not consume the whole cycle.
+                            Self::run_cache_stage(
+                                "federation meta",
+                                self_copy.cache_federation_meta(client.clone(), now),
+                            )
+                            .await;
                         }
                     }
 
@@ -1221,12 +1261,15 @@ impl Multimint {
                         .checked_sub(Duration::from_secs(PRICE_CACHE_UPDATE_INTERVAL_SECS))
                         .expect("Cannot be negative");
                     let cached_price = dbtx.get_value(&BtcPriceKey).await;
-                    if let Some(cached_price) = cached_price {
-                        if cached_price.last_updated < threshold {
-                            self_copy.cache_btc_price(now).await;
-                        }
-                    } else {
-                        self_copy.cache_btc_price(now).await;
+                    let price_due = match cached_price {
+                        Some(cached_price) => cached_price.last_updated < threshold,
+                        None => true,
+                    };
+                    if price_due {
+                        // This is the stage that used to starve the backup
+                        // below it: an unresponsive mempool.space held a
+                        // no-timeout request open forever.
+                        Self::run_cache_stage("btc price", self_copy.cache_btc_price(now)).await;
                     }
 
                     // Next check if we need to backup our ecash to the federation
@@ -1239,12 +1282,16 @@ impl Multimint {
                         let federation_id = key.id;
                         let backup_time =
                             dbtx.get_value(&FederationBackupKey { federation_id }).await;
-                        if let Some(backup) = backup_time {
-                            if backup < threshold {
-                                self_copy.backup(&federation_id, now).await;
-                            }
-                        } else {
-                            self_copy.backup(&federation_id, now).await;
+                        let backup_due = match backup_time {
+                            Some(backup) => backup < threshold,
+                            None => true,
+                        };
+                        if backup_due {
+                            Self::run_cache_stage(
+                                "federation backup",
+                                self_copy.backup(&federation_id, now),
+                            )
+                            .await;
                         }
                     }
 
@@ -1272,7 +1319,7 @@ impl Multimint {
                                 // readers (like get_nwc_connection_info) due to Tokio's
                                 // write-preferring RwLock.
                                 let nostr = nostr_client.read().await.clone();
-                                let _ = nostr.sync_contacts().await;
+                                Self::run_cache_stage("contact sync", nostr.sync_contacts()).await;
                             }
                         }
                     }
@@ -1283,7 +1330,7 @@ impl Multimint {
     }
 
     async fn check_for_update(&self) {
-        let client = match reqwest::Client::builder()
+        let client = match crate::net::http_client_builder()
             .user_agent(concat!("ecash-app/", env!("CARGO_PKG_VERSION")))
             .timeout(Duration::from_secs(10))
             .build()
@@ -1357,7 +1404,19 @@ impl Multimint {
 
     async fn cache_btc_price(&self, now: std::time::SystemTime) {
         let url = "https://mempool.space/api/v1/prices";
-        let Ok(response) = reqwest::get(url).await else {
+        // `reqwest::get` applies no timeout at all, so a black-holed connection
+        // leaves this future pending forever.
+        let client = match crate::net::http_client_builder()
+            .timeout(Duration::from_secs(PRICE_FETCH_TIMEOUT_SECS))
+            .build()
+        {
+            Ok(client) => client,
+            Err(e) => {
+                error_to_flutter(format!("Could not build BTC price HTTP client: {e}")).await;
+                return;
+            }
+        };
+        let Ok(response) = client.get(url).send().await else {
             error_to_flutter("BTC Price GET returned error").await;
             return;
         };
@@ -4747,7 +4806,7 @@ impl Multimint {
                 authentication_token: config.authentication_token,
             };
 
-            let http_client = reqwest::Client::new();
+            let http_client = crate::net::http_client();
             let remove_endpoint = safe_ln_address_api.join("lnaddress/remove")?;
             let result = http_client
                 .delete(remove_endpoint.to_unsafe())
@@ -4835,7 +4894,7 @@ impl Multimint {
             recipient_pk: recipient_pk.clone(),
         };
 
-        let http_client = reqwest::Client::new();
+        let http_client = crate::net::http_client();
         let register_endpoint = safe_ln_address_api.join("lnaddress/register")?;
         let result = http_client
             .post(register_endpoint.to_unsafe())
@@ -4936,7 +4995,7 @@ impl Multimint {
             .clone();
 
         let safe_ln_address_api = SafeUrl::parse(ln_address_api)?;
-        let http_client = reqwest::Client::new();
+        let http_client = crate::net::http_client();
 
         // Try LNv2 first: generate LNURL with a dummy gateway to extract recipient_pk
         let mut recovered_pk: Option<String> = None;
@@ -5269,7 +5328,7 @@ impl Multimint {
 
         let safe_url = SafeUrl::parse(&ln_address_api)?;
         let endpoint = safe_url.join(&format!("lnaddress/{}/{}", domain, username))?;
-        let http_client = reqwest::Client::new();
+        let http_client = crate::net::http_client();
         let result = http_client
             .get(endpoint.to_unsafe())
             .send()
@@ -5307,7 +5366,7 @@ impl Multimint {
     ) -> anyhow::Result<Vec<FederationId>> {
         let endpoint = SafeUrl::parse(&recurringd_api)?.join("lnv1/federations")?;
 
-        let http_client = reqwest::Client::new();
+        let http_client = crate::net::http_client();
         let result = http_client
             .get(endpoint.to_unsafe())
             .send()
@@ -5432,7 +5491,7 @@ impl Multimint {
                     };
 
                     if let Some(pk) = recipient_pk {
-                        let http_client = reqwest::Client::new();
+                        let http_client = crate::net::http_client();
                         let update_url = match config.ln_address_api.join("lnaddress/update-pk") {
                             Ok(url) => url,
                             Err(_) => continue,

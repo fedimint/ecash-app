@@ -82,6 +82,10 @@ pub const NWC_SUPPORTED_METHODS: &[&str] = &["get_info", "get_balance", "pay_inv
 /// user-configurable yet; the point is that some bound exists.
 pub const NWC_MAX_PAYMENT_MSATS: u64 = 1_000_000 * 1_000;
 
+/// How long to wait for the wallet-connect relay before giving up on this
+/// listener run.
+const NWC_RELAY_CONNECT_TIMEOUT: Duration = Duration::from_secs(30);
+
 /// Enforce [`NWC_MAX_PAYMENT_MSATS`] on an incoming wallet-connect payment.
 fn check_nwc_payment_limit(bolt11: &Bolt11Invoice) -> anyhow::Result<()> {
     match bolt11.amount_milli_satoshis() {
@@ -462,9 +466,21 @@ impl NostrClient {
         info_to_flutter(format!("Relay connection status: {status:?}")).await;
         relay.connect();
         info_to_flutter("Waiting for connection to relay...").await;
-        relay
-            .wait_for_connection(Duration::from_secs(u64::MAX))
+        // Bounded: this used to wait `u64::MAX` seconds, so a dead relay meant
+        // NWC silently stopped working with no error, forever. Report instead
+        // and let the caller decide — the listener is restarted when the
+        // foreground service or the app starts again.
+        relay.wait_for_connection(NWC_RELAY_CONNECT_TIMEOUT).await;
+        if relay.status() != nostr_sdk::RelayStatus::Connected {
+            error_to_flutter(format!(
+                "Could not connect to the Nostr Wallet Connect relay {} within {}s; \
+                 wallet connect is not running",
+                nwc_config.relay,
+                NWC_RELAY_CONNECT_TIMEOUT.as_secs()
+            ))
             .await;
+            return;
+        }
         info_to_flutter("Connected to relay!").await;
 
         // Scope the subscription to requests *from* the paired client and
@@ -803,7 +819,7 @@ impl NostrClient {
         }
 
         let url = format!("{FEDERATION_OBSERVER_URL}/api/federations");
-        let response = match reqwest::Client::new()
+        let response = match crate::net::http_client()
             .get(&url)
             .timeout(Duration::from_secs(10))
             .send()
@@ -1216,7 +1232,7 @@ impl NostrClient {
         let url = format!("https://{}/.well-known/nostr.json?name={}", domain, name);
 
         // Make the HTTP request
-        let client = reqwest::Client::builder()
+        let client = crate::net::http_client_builder()
             .timeout(Duration::from_secs(10))
             .build()?;
 

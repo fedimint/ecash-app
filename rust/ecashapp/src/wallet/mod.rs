@@ -556,7 +556,7 @@ impl WalletHandler {
         let wallet_module = client.get_first_module::<WalletV2Module>()?;
         let network = wallet_module.get_network();
         let api_url = mempool_api_url(network);
-        let http = reqwest::Client::new();
+        let http = crate::net::http_client();
 
         info_to_flutter(format!(
             "watch_v2_pegin_address: polling {api_url} for deposit to {address} (network {network})"
@@ -1144,7 +1144,7 @@ where
         .await;
 
     let api_url = mempool_api_url(network);
-    let http = reqwest::Client::new();
+    let http = crate::net::http_client();
 
     let tx_height = fedimint_core::util::retry(
         "get confirmed block height",
