@@ -42,6 +42,11 @@ class _EcashSendState extends State<EcashSend> {
   EcashSendFees? _fees;
   // Generating the ecash — this is the step that actually spends.
   bool _generating = false;
+
+  /// Re-entrancy guard for [_generateEcash]. Distinct from [_generating],
+  /// which drives the loading screen and is only set once the send is
+  /// genuinely in flight — this covers the earlier PIN-prompt gap too.
+  bool _confirming = false;
   bool _copied = false;
   _QrMode _mode = _QrMode.legacy;
 
@@ -78,10 +83,23 @@ class _EcashSendState extends State<EcashSend> {
   /// Actually performs the send: this is where the ecash is taken from the
   /// wallet. Only invoked once the user confirms on the review screen.
   Future<void> _generateEcash() async {
-    final authorized = await checkSpendingPin(context);
-    if (!authorized) return;
-    setState(() => _generating = true);
+    // Claimed synchronously, before the first `await`. Dart runs this isolate
+    // on a single thread, so a check-and-set with no await between the two is
+    // a complete guard.
+    //
+    // It has to happen before the PIN prompt, not after: with the spending PIN
+    // switched off `checkSpendingPin` returns almost immediately, and a double
+    // tap in that window used to run two sends. That debits the wallet twice
+    // and the second `setState` overwrites `_notes`, so the first token is
+    // never rendered or copied — unrecoverable from the UI.
+    if (_confirming) return;
+    _confirming = true;
     try {
+      final authorized = await checkSpendingPin(context);
+      if (!authorized) return;
+      if (!mounted) return;
+      setState(() => _generating = true);
+
       final notes = await sendEcash(
         federationId: widget.fed.federationId,
         amountMsats: widget.amountMsats,
@@ -102,8 +120,9 @@ class _EcashSendState extends State<EcashSend> {
     } catch (e) {
       AppLogger.instance.error("Could not send Ecash: $e");
       if (mounted) showErrorToast(context, e);
-      if (!mounted) return;
-      setState(() => _generating = false);
+      if (mounted) setState(() => _generating = false);
+    } finally {
+      _confirming = false;
     }
   }
 

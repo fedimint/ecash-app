@@ -42,6 +42,10 @@ class _PaymentPreviewWidgetState extends State<PaymentPreviewWidget> {
   late String _invoice;
   bool _reloadingPreview = false;
 
+  /// Re-entrancy guard for the send button, covering the PIN-prompt gap and
+  /// the lifetime of the pushed payment screen.
+  bool _confirming = false;
+
   @override
   void initState() {
     super.initState();
@@ -349,29 +353,39 @@ class _PaymentPreviewWidgetState extends State<PaymentPreviewWidget> {
               ),
             ),
             onPressed:
-                _reloadingPreview
+                (_reloadingPreview || _confirming)
                     ? null
                     : () async {
-                      final authorized = await checkSpendingPin(context);
-                      if (!authorized) return;
-                      if (!context.mounted) return;
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder:
-                              (context) => SendPayment(
-                                fed: _selectedFed,
-                                invoice: _previewData.invoice,
-                                lnAddress: widget.lnAddress,
-                                amountMsats: amount,
-                                gateway: _selectedPreview.gateway.endpoint,
-                                isLnv2: _selectedPreview.gateway.isLnv2,
-                                amountMsatsWithFees: amountWithFees,
-                                federationFeeMsats: federationFee,
-                                gatewayFeeMsats: gatewayFee,
-                              ),
-                        ),
-                      );
+                      // Claimed before the PIN prompt: two taps in that gap
+                      // used to push two payment screens, each paying the same
+                      // invoice. Reset only after the pushed route is popped,
+                      // so the button stays inert while the payment runs.
+                      if (_confirming) return;
+                      setState(() => _confirming = true);
+                      try {
+                        final authorized = await checkSpendingPin(context);
+                        if (!authorized) return;
+                        if (!context.mounted) return;
+                        await Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder:
+                                (context) => SendPayment(
+                                  fed: _selectedFed,
+                                  invoice: _previewData.invoice,
+                                  lnAddress: widget.lnAddress,
+                                  amountMsats: amount,
+                                  gateway: _selectedPreview.gateway.endpoint,
+                                  isLnv2: _selectedPreview.gateway.isLnv2,
+                                  amountMsatsWithFees: amountWithFees,
+                                  federationFeeMsats: federationFee,
+                                  gatewayFeeMsats: gatewayFee,
+                                ),
+                          ),
+                        );
+                      } finally {
+                        if (mounted) setState(() => _confirming = false);
+                      }
                     },
           ),
         ),
