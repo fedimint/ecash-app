@@ -577,9 +577,12 @@ pub async fn payment_preview_with_gateways(
     bolt11: String,
 ) -> anyhow::Result<PaymentPreviewWithGateways> {
     let invoice = Bolt11Invoice::from_str(&bolt11)?;
+    // Amountless invoices are common (donations, point-of-sale, amountless
+    // LNURL) and reach here straight from a scan or paste, so this must be an
+    // error the UI can show rather than a panic across the bridge.
     let amount_msats = invoice
         .amount_milli_satoshis()
-        .expect("No amount specified");
+        .ok_or_else(|| anyhow!("This invoice has no amount, which is not supported"))?;
     let payment_hash = invoice.payment_hash().consensus_encode_to_hex();
     let network = invoice.network().to_string();
 
