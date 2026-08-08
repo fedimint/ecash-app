@@ -642,7 +642,7 @@ impl NostrClient {
                 }
             }
             WalletConnectRequest::GetBalance {} => {
-                let balance = balance(federation_id).await;
+                let balance = balance(federation_id).await?;
                 let response = WalletConnectResponse::GetBalance { balance };
                 Self::broadcast_response(
                     response,

@@ -2626,7 +2626,7 @@ fn wire__crate__multimint__Multimint_balance_impl(
             >>::sse_decode(&mut deserializer);
             deserializer.end();
             move |context| async move {
-                transform_result_sse::<_, ()>(
+                transform_result_sse::<_, flutter_rust_bridge::for_generated::anyhow::Error>(
                     (move || async move {
                         let mut api_that_guard = None;
                         let mut api_federation_id_guard = None;
@@ -2658,13 +2658,11 @@ fn wire__crate__multimint__Multimint_balance_impl(
                         }
                         let api_that_guard = api_that_guard.unwrap();
                         let api_federation_id_guard = api_federation_id_guard.unwrap();
-                        let output_ok = Result::<_, ()>::Ok(
-                            crate::multimint::Multimint::balance(
-                                &*api_that_guard,
-                                &*api_federation_id_guard,
-                            )
-                            .await,
-                        )?;
+                        let output_ok = crate::multimint::Multimint::balance(
+                            &*api_that_guard,
+                            &*api_federation_id_guard,
+                        )
+                        .await?;
                         Ok(output_ok)
                     })()
                     .await,
@@ -10398,7 +10396,7 @@ fn wire__crate__balance_impl(
             >>::sse_decode(&mut deserializer);
             deserializer.end();
             move |context| async move {
-                transform_result_sse::<_, ()>(
+                transform_result_sse::<_, flutter_rust_bridge::for_generated::anyhow::Error>(
                     (move || async move {
                         let mut api_federation_id_guard = None;
                         let decode_indices_ =
@@ -10419,8 +10417,7 @@ fn wire__crate__balance_impl(
                             }
                         }
                         let api_federation_id_guard = api_federation_id_guard.unwrap();
-                        let output_ok =
-                            Result::<_, ()>::Ok(crate::balance(&*api_federation_id_guard).await)?;
+                        let output_ok = crate::balance(&*api_federation_id_guard).await?;
                         Ok(output_ok)
                     })()
                     .await,

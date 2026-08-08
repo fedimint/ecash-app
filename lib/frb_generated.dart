@@ -3413,7 +3413,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
         },
         codec: SseCodec(
           decodeSuccessData: sse_decode_u_64,
-          decodeErrorData: null,
+          decodeErrorData: sse_decode_AnyhowException,
         ),
         constMeta: kCrateMultimintMultimintBalanceConstMeta,
         argValues: [that, federationId],
@@ -8520,7 +8520,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
         },
         codec: SseCodec(
           decodeSuccessData: sse_decode_u_64,
-          decodeErrorData: null,
+          decodeErrorData: sse_decode_AnyhowException,
         ),
         constMeta: kCrateBalanceConstMeta,
         argValues: [federationId],
@@ -21482,6 +21482,13 @@ class MultimintImpl extends RustOpaque implements Multimint {
     operationId: operationId,
   );
 
+  /// Fallible on purpose. The UI polls this, and both failure modes are
+  /// ordinary rather than exceptional: the federation can be left while a
+  /// screen still holds its id, and the balance query itself can fail
+  /// transiently while a module is still coming up during recovery.
+  ///
+  /// Returning zero for either would be worse than an error — a wallet
+  /// showing a confident zero is alarming and wrong.
   Future<BigInt> balance({required FederationId federationId}) => RustLib
       .instance
       .api

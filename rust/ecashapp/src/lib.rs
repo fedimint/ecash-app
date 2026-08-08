@@ -241,7 +241,7 @@ pub async fn refresh_connections() {
 }
 
 #[frb]
-pub async fn balance(federation_id: &FederationId) -> u64 {
+pub async fn balance(federation_id: &FederationId) -> anyhow::Result<u64> {
     let multimint = get_multimint();
     multimint.balance(federation_id).await
 }
@@ -943,7 +943,10 @@ impl parse::ParseContext for MultimintParseContext {
     }
 
     async fn balance(&self, federation_id: &FederationId) -> u64 {
-        balance(federation_id).await
+        // The parser uses this to pick a federation that can cover a payment.
+        // A balance we cannot read must not be treated as spendable, so an
+        // unreadable federation reads as zero and is simply not selected.
+        balance(federation_id).await.unwrap_or(0)
     }
 
     async fn parse_ecash(

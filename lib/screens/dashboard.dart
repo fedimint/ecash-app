@@ -202,7 +202,16 @@ class _DashboardState extends State<Dashboard> {
 
   Future<void> _loadBalance() async {
     if (recovering) return;
-    final bal = await balance(federationId: widget.fed.federationId);
+    final BigInt bal;
+    try {
+      bal = await balance(federationId: widget.fed.federationId);
+    } catch (e) {
+      // Expected when the federation was left while this screen is still up,
+      // and possible transiently while a module is starting. Keep the last
+      // known figure rather than showing a misleading zero.
+      AppLogger.instance.warn('Could not load balance: $e');
+      return;
+    }
     if (!mounted) return;
     setState(() {
       balanceMsats = bal;

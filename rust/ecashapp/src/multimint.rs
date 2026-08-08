@@ -1929,11 +1929,17 @@ impl Multimint {
     }
 
     pub async fn leave_federation(&mut self, federation_id: &FederationId) {
-        self.clients.write().await.remove(federation_id);
+        // Config first, client second. `federations()` walks the persisted
+        // configs and looks each one up in the client map, so removing the
+        // client first opened a window — the two removals are separated by
+        // several awaits — where a config existed with no client behind it.
+        // Dropping the config first means the federation is simply absent from
+        // that walk, never half-present.
         let mut dbtx = self.db.begin_transaction().await;
         dbtx.remove_entry(&FederationConfigKey { id: *federation_id })
             .await;
         dbtx.commit_tx().await;
+        self.clients.write().await.remove(federation_id);
     }
 
     async fn build_client(
@@ -2176,21 +2182,19 @@ impl Multimint {
         let mut federations: Vec<(FederationSelector, bool)> = dbtx
             .find_by_prefix(&FederationConfigKeyPrefix)
             .await
-            .then(|(id, config)| {
+            .filter_map(|(id, config)| {
                 let clients_clone = self.clients.clone();
                 async move {
-                    let client = clients_clone
-                        .read()
-                        .await
-                        .get(&id.id)
-                        .expect("No client exists")
-                        .clone();
+                    // Belt and braces alongside the removal order in
+                    // `leave_federation`: a config with no client is skipped
+                    // rather than panicking the whole listing.
+                    let client = clients_clone.read().await.get(&id.id).cloned()?;
                     let selector = FederationSelector {
                         federation_name: config.federation_name,
                         federation_id: id.id,
                         network: config.network,
                     };
-                    (selector, client.has_pending_recoveries())
+                    Some((selector, client.has_pending_recoveries()))
                 }
             })
             .collect::<Vec<_>>()
@@ -2242,19 +2246,22 @@ impl Multimint {
         bitcoin::Network::from_str(&config.network?).ok()
     }
 
-    pub async fn balance(&self, federation_id: &FederationId) -> u64 {
+    /// Fallible on purpose. The UI polls this, and both failure modes are
+    /// ordinary rather than exceptional: the federation can be left while a
+    /// screen still holds its id, and the balance query itself can fail
+    /// transiently while a module is still coming up during recovery.
+    ///
+    /// Returning zero for either would be worse than an error — a wallet
+    /// showing a confident zero is alarming and wrong.
+    pub async fn balance(&self, federation_id: &FederationId) -> anyhow::Result<u64> {
         let client = self
             .clients
             .read()
             .await
             .get(federation_id)
-            .expect("No federation exists")
-            .clone();
-        client
-            .get_balance_for_btc()
-            .await
-            .expect("balance unavailable")
-            .msats
+            .cloned()
+            .ok_or(anyhow!("No federation exists"))?;
+        Ok(client.get_balance_for_btc().await?.msats)
     }
 
     #[allow(clippy::too_many_arguments)]
@@ -2279,8 +2286,8 @@ impl Multimint {
             .read()
             .await
             .get(federation_id)
-            .expect("No federation exists")
-            .clone();
+            .cloned()
+            .ok_or(anyhow!("No federation exists"))?;
 
         if is_lnv2 {
             if let Ok((invoice, operation_id)) = Self::receive_lnv2(
@@ -2324,13 +2331,12 @@ impl Multimint {
                 // are handled by the event listener, so we only publish to the
                 // EventBus for LNv1 receives.
                 let is_lnv1 = {
-                    let client = self_copy
-                        .clients
-                        .read()
-                        .await
-                        .get(&federation_id)
-                        .expect("No federation exists")
-                        .clone();
+                    // Federation left while this watcher was running. Nothing
+                    // left to report to, so end the task instead of panicking it.
+                    let Some(client) = self_copy.clients.read().await.get(&federation_id).cloned()
+                    else {
+                        return;
+                    };
                     client
                         .operation_log()
                         .get_operation(operation_id)
@@ -2812,13 +2818,14 @@ impl Multimint {
         federation_id: &FederationId,
         operation_id: OperationId,
     ) -> LightningSendOutcome {
-        let client = self
-            .clients
-            .read()
-            .await
-            .get(federation_id)
-            .expect("No federation exists")
-            .clone();
+        // Left mid-payment: report a failure to whoever is awaiting rather than
+        // panicking their task. The payment's real outcome is settled by the
+        // federation regardless of whether this client is still around to watch.
+        let Some(client) = self.clients.read().await.get(federation_id).cloned() else {
+            return LightningSendOutcome::Failure(EcashAppError::other(
+                "Federation was left while the payment was in flight",
+            ));
+        };
 
         let send_state = match Self::await_send_lnv2(&client, operation_id).await {
             Ok(lnv2_final_state) => lnv2_final_state,
@@ -2952,8 +2959,8 @@ impl Multimint {
             .read()
             .await
             .get(federation_id)
-            .expect("No federation exists")
-            .clone();
+            .cloned()
+            .ok_or(anyhow!("No federation exists"))?;
         let (receive_state, amount) = match Self::await_receive_lnv2(&client, operation_id).await {
             Ok(lnv2_final_state) => lnv2_final_state,
             Err(_) => Self::await_receive_lnv1(&client, operation_id).await?,
@@ -3159,13 +3166,11 @@ impl Multimint {
         operation_id: Option<Vec<u8>>,
         modules: Vec<String>,
     ) -> Vec<Transaction> {
-        let client = self
-            .clients
-            .read()
-            .await
-            .get(federation_id)
-            .expect("No federation exists")
-            .clone();
+        // A federation that is gone has no history to render. Callers poll this
+        // from screens that can outlive the client by a frame or two.
+        let Some(client) = self.clients.read().await.get(federation_id).cloned() else {
+            return Vec::new();
+        };
 
         // There is one Lightning Address per federation, so any recurring/LNURL
         // receive on this federation was received via it. Looked up once here
@@ -4597,8 +4602,8 @@ impl Multimint {
             .read()
             .await
             .get(&federation_id)
-            .expect("No federation exists")
-            .clone();
+            .cloned()
+            .ok_or(anyhow!("No federation exists"))?;
         self.wallet_handler
             .allocate_deposit_address(federation_id, client)
             .await
