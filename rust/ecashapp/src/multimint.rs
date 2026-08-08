@@ -672,6 +672,14 @@ pub enum NostrRecoveryPhase {
     FetchingBackup,
     DecryptingInvites,
     RejoiningFederations(u32),
+    /// The relays returned nothing to restore.
+    ///
+    /// Distinct from `RejoiningFederations(0)` so the UI cannot render "found
+    /// nothing" the same way it renders "restored everything". The nostr backup
+    /// is best effort — relays prune, and the seed phrase is the real backup —
+    /// so an empty result is an ordinary outcome the user has to be told about,
+    /// because rejoining then needs invite codes they must supply themselves.
+    NoBackupFound,
 }
 
 #[derive(Clone, Eq, PartialEq, Serialize, Debug)]
@@ -5572,6 +5580,16 @@ impl Multimint {
             backup_invite_codes.len()
         ))
         .await;
+
+        if backup_invite_codes.is_empty() {
+            get_event_bus()
+                .publish(MultimintEvent::NostrRecoveryPhase(
+                    NostrRecoveryPhase::NoBackupFound,
+                ))
+                .await;
+            return;
+        }
+
         get_event_bus()
             .publish(MultimintEvent::NostrRecoveryPhase(
                 NostrRecoveryPhase::RejoiningFederations(backup_invite_codes.len() as u32),

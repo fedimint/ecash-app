@@ -58,6 +58,10 @@ class _MyAppState extends State<MyApp> {
   final GlobalKey<NavigatorState> _navigatorKey = ToastService().navigatorKey;
 
   bool recoverFederations = false;
+
+  /// Recovery finished without restoring any federation. Keeps the recovery
+  /// screen up, showing why, until the user chooses to continue.
+  bool _recoveryRestoredNothing = false;
   bool _processingDeepLink = false;
 
   String? _rejoinHost;
@@ -301,14 +305,24 @@ class _MyAppState extends State<MyApp> {
   Future<void> _rejoinFederations() async {
     setState(() {
       recoverFederations = true;
+      _recoveryRestoredNothing = false;
     });
     await rejoinFromBackupInvites();
     await _refreshFederations();
 
-    if (_feds.isNotEmpty) {
-      final first = _feds.first;
-      _setSelectedFederation(first.$1, first.$2);
+    if (_feds.isEmpty) {
+      // Nothing was restored. Hold the recovery screen so its explanation can
+      // actually be read — tearing it down here is what made the phase flash
+      // past — and show no success toast, because nothing succeeded. The user
+      // dismisses it themselves.
+      setState(() {
+        _recoveryRestoredNothing = true;
+      });
+      return;
     }
+
+    final first = _feds.first;
+    _setSelectedFederation(first.$1, first.$2);
 
     setState(() {
       recoverFederations = false;
@@ -588,20 +602,25 @@ class _MyAppState extends State<MyApp> {
   }
 
   void _showFederationPreview() async {
-    if (_selectedFederation == null) return;
+    // Captured once, up front. A route builder runs again on every rebuild of
+    // the app above it, so reading `_selectedFederation` inside the closure
+    // would re-read whatever the field holds *now* rather than the federation
+    // this screen was opened for. Leaving the last federation sets it to null
+    // while this route is still on the stack mid-pop, and the next rebuild then
+    // threw a null-check error on `_selectedFederation!`.
+    final selected = _selectedFederation;
+    if (selected == null) return;
     final context = _navigatorKey.currentContext;
     if (context == null) return;
 
-    final meta = await getFederationMeta(
-      federationId: _selectedFederation!.federationId,
-    );
+    final meta = await getFederationMeta(federationId: selected.federationId);
     if (!mounted) return;
 
     Navigator.of(context).push(
       MaterialPageRoute(
         builder:
             (_) => FederationInfoScreen(
-              fed: _selectedFederation!,
+              fed: selected,
               welcomeMessage: meta.welcome,
               imageUrl: meta.picture,
               onLeaveFederation: _leaveFederation,
@@ -628,6 +647,12 @@ class _MyAppState extends State<MyApp> {
           rejoinHost: _rejoinHost,
           rejoinPeer: _rejoinPeer,
           recoverySecondsRemaining: _recoverySecondsRemaining,
+          finishedWithNoFederations: _recoveryRestoredNothing,
+          onContinue:
+              () => setState(() {
+                recoverFederations = false;
+                _recoveryRestoredNothing = false;
+              }),
         );
       } else {
         bodyContent = Discover(onJoin: _onJoinPressed);

@@ -16810,6 +16810,9 @@ impl SseDecode for crate::multimint::NostrRecoveryPhase {
                 let mut var_field0 = <u32>::sse_decode(deserializer);
                 return crate::multimint::NostrRecoveryPhase::RejoiningFederations(var_field0);
             }
+            4 => {
+                return crate::multimint::NostrRecoveryPhase::NoBackupFound;
+            }
             _ => {
                 unimplemented!("");
             }
@@ -19830,6 +19833,7 @@ impl flutter_rust_bridge::IntoDart for crate::multimint::NostrRecoveryPhase {
             crate::multimint::NostrRecoveryPhase::RejoiningFederations(field0) => {
                 [3.into_dart(), field0.into_into_dart().into_dart()].into_dart()
             }
+            crate::multimint::NostrRecoveryPhase::NoBackupFound => [4.into_dart()].into_dart(),
             _ => {
                 unimplemented!("");
             }
@@ -21745,6 +21749,9 @@ impl SseEncode for crate::multimint::NostrRecoveryPhase {
             crate::multimint::NostrRecoveryPhase::RejoiningFederations(field0) => {
                 <i32>::sse_encode(3, serializer);
                 <u32>::sse_encode(field0, serializer);
+            }
+            crate::multimint::NostrRecoveryPhase::NoBackupFound => {
+                <i32>::sse_encode(4, serializer);
             }
             _ => {
                 unimplemented!("");

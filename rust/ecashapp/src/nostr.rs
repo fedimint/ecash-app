@@ -1088,9 +1088,32 @@ impl NostrClient {
                     .send_event_builder(event_builder.clone())
                     .await
                 {
-                    Ok(event_id) => {
-                        info_to_flutter(format!("Broadcasted Fedimint Backup: {event_id:?}")).await;
-                        return Ok(());
+                    Ok(output) => {
+                        // `send_event_builder` returns `Ok` when the *call*
+                        // completed, including when every relay rejected the
+                        // event. Treating that as success short-circuits the
+                        // retry wrapped around this closure, so a transient
+                        // all-relay failure — offline, rate limited, defaults
+                        // unreachable — got exactly one attempt and was dropped.
+                        //
+                        // This backup is best effort by design: relays may prune
+                        // whenever they like and the seed phrase is the real
+                        // backup. Best effort still means noticing that nothing
+                        // was accepted and trying again, rather than not looking.
+                        if !output.success.is_empty() {
+                            info_to_flutter(format!(
+                                "Broadcasted Fedimint backup to {} relay(s), {} rejected",
+                                output.success.len(),
+                                output.failed.len()
+                            ))
+                            .await;
+                            return Ok(());
+                        }
+                        error_to_flutter(format!(
+                            "No relay accepted the Fedimint backup ({} rejected); retrying",
+                            output.failed.len()
+                        ))
+                        .await;
                     }
                     Err(e) => {
                         info_to_flutter(format!("Error broadcasting Fedimint backup: {e:?}")).await;

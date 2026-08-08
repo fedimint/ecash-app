@@ -66,6 +66,15 @@
   "retrievingFederationBackup": "Retrieving federation backup from Nostr...",
   "@retrievingFederationBackup": {},
 
+  "recoveryNoBackupFound": "No federation backup found",
+  "@recoveryNoBackupFound": {},
+
+  "recoveryNoBackupFoundDetail": "Nothing could be restored from the Nostr relays. This backup is best effort — relays don't guarantee they keep it. Your wallet is still recovered from your seed phrase, but to rejoin a federation you'll need its invite code.",
+  "@recoveryNoBackupFoundDetail": {},
+
+  "continueLabel": "Continue",
+  "@continueLabel": {},
+
   "tryingToRejoin": "Trying to re-join {host} using peer {peer}...",
   "@tryingToRejoin": {
     "placeholders": {

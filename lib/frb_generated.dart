@@ -13997,6 +13997,8 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
         return NostrRecoveryPhase_DecryptingInvites();
       case 3:
         return NostrRecoveryPhase_RejoiningFederations(dco_decode_u_32(raw[1]));
+      case 4:
+        return NostrRecoveryPhase_NoBackupFound();
       default:
         throw Exception("unreachable");
     }
@@ -16967,6 +16969,8 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
       case 3:
         var var_field0 = sse_decode_u_32(deserializer);
         return NostrRecoveryPhase_RejoiningFederations(var_field0);
+      case 4:
+        return NostrRecoveryPhase_NoBackupFound();
       default:
         throw UnimplementedError('');
     }
@@ -20007,6 +20011,8 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
       case NostrRecoveryPhase_RejoiningFederations(field0: final field0):
         sse_encode_i_32(3, serializer);
         sse_encode_u_32(field0, serializer);
+      case NostrRecoveryPhase_NoBackupFound():
+        sse_encode_i_32(4, serializer);
     }
   }
 
