@@ -2990,16 +2990,12 @@ impl Multimint {
         };
         let meta = op_log_val.meta::<LightningOperationMeta>();
         match meta {
+            // Runs inside the spawned `await_receive` task, which re-drives old
+            // operations after an upgrade — so `amount` may predate this build.
+            // Fall back to the same zero this function returns for an unknown
+            // operation instead of panicking a background task.
             LightningOperationMeta::Receive(receive) => {
-                serde_json::from_value::<Amount>(
-                    receive
-                        .custom_meta
-                        .get("amount")
-                        .expect("amount should be present")
-                        .clone(),
-                )
-                .expect("Could not deserialize amount")
-                .msats
+                read_meta_msats(&receive.custom_meta, "amount").unwrap_or(0)
             }
             LightningOperationMeta::Send(send) => send.contract.amount.msats,
             LightningOperationMeta::LnurlReceive(receive) => {
@@ -3056,10 +3052,11 @@ impl Multimint {
                                     .meta::<fedimint_ln_client::LightningOperationMeta>()
                                     .variant
                                 {
-                                    let amount_msats = meta
-                                        .invoice
-                                        .amount_milli_satoshis()
-                                        .expect("Amount not present");
+                                    // The payment landed either way; report zero
+                                    // rather than panicking this spawned task if
+                                    // the invoice carried no amount.
+                                    let amount_msats =
+                                        meta.invoice.amount_milli_satoshis().unwrap_or(0);
                                     let lightning_event =
                                         LightningEventKind::InvoicePaid(InvoicePaidEvent {
                                             amount_msats,
@@ -3092,18 +3089,19 @@ impl Multimint {
         };
 
         let meta = op_log_val.meta::<fedimint_ln_client::LightningOperationMeta>();
+        // An amountless invoice carries no amount to report, so it falls back to
+        // the same zero this function already returns for an unknown operation.
+        // Panicking here would take down every caller for one odd entry.
         match meta.variant {
-            LightningOperationMetaVariant::Pay(send) => send
-                .invoice
-                .amount_milli_satoshis()
-                .expect("Cannot pay amountless invoice"),
-            LightningOperationMetaVariant::Receive { invoice, .. } => invoice
-                .amount_milli_satoshis()
-                .expect("Cannot receive amountless invoice"),
-            LightningOperationMetaVariant::RecurringPaymentReceive(recurring) => recurring
-                .invoice
-                .amount_milli_satoshis()
-                .expect("Cannot receive amountless invoice"),
+            LightningOperationMetaVariant::Pay(send) => {
+                send.invoice.amount_milli_satoshis().unwrap_or(0)
+            }
+            LightningOperationMetaVariant::Receive { invoice, .. } => {
+                invoice.amount_milli_satoshis().unwrap_or(0)
+            }
+            LightningOperationMetaVariant::RecurringPaymentReceive(recurring) => {
+                recurring.invoice.amount_milli_satoshis().unwrap_or(0)
+            }
             // Claim is covered by send
             _ => 0,
         }
@@ -3130,6 +3128,20 @@ impl Multimint {
                 lnv1.update_gateway_cache_continuously(|gateway| async { gateway })
                     .await
             });
+    }
+
+    /// Report an operation the history renderer cannot read and move on.
+    ///
+    /// The `custom_meta` keys these rows depend on have changed across app
+    /// versions, so an operation written by an older build, restored into a
+    /// recovered wallet, or left behind by an interrupted write can be missing
+    /// any of them. Skipping costs one row; the `.expect()`s this replaces took
+    /// down the entire history screen for that federation, permanently.
+    async fn skip_unrenderable(operation_id: OperationId, reason: &str) {
+        error_to_flutter(format!(
+            "Skipping unreadable transaction {operation_id:?}: {reason}"
+        ))
+        .await;
     }
 
     pub async fn transactions(
@@ -3200,24 +3212,26 @@ impl Multimint {
                                 let fedimint_lnv2_common::LightningInvoice::Bolt11(bolt11) =
                                     receive.invoice;
                                 if let Some(ReceiveOperationState::Claimed) = outcome {
-                                    let amount = from_value::<Amount>(
-                                        receive
-                                            .custom_meta
-                                            .get("amount")
-                                            .expect("Field missing lightning receive custom meta")
-                                            .clone(),
-                                    )
-                                    .expect("Could not parse to Amount")
-                                    .msats;
-                                    let amount_with_fees = from_value::<Amount>(
-                                        receive
-                                            .custom_meta
-                                            .get("amount_with_fees")
-                                            .expect("Field missing lightning receive custom meta")
-                                            .clone(),
-                                    )
-                                    .expect("Could not parse to Amount")
-                                    .msats;
+                                    let Some(amount) =
+                                        read_meta_msats(&receive.custom_meta, "amount")
+                                    else {
+                                        Self::skip_unrenderable(
+                                            key.operation_id,
+                                            "lnv2 receive has no readable 'amount'",
+                                        )
+                                        .await;
+                                        continue;
+                                    };
+                                    let Some(amount_with_fees) =
+                                        read_meta_msats(&receive.custom_meta, "amount_with_fees")
+                                    else {
+                                        Self::skip_unrenderable(
+                                            key.operation_id,
+                                            "lnv2 receive has no readable 'amount_with_fees'",
+                                        )
+                                        .await;
+                                        continue;
+                                    };
                                     // Per-source fees stored at invoice creation.
                                     // Fall back through the earlier combined `fees`
                                     // key, then the invoice-minus-requested
@@ -3254,15 +3268,16 @@ impl Multimint {
                                     send.invoice;
                                 match outcome {
                                     Some(SendOperationState::Success(preimage)) => {
-                                        let amount_with_fees = from_value::<u64>(
-                                            send.custom_meta
-                                                .get("amount_with_fees")
-                                                .expect(
-                                                    "Field missing lightning receive custom meta",
-                                                )
-                                                .clone(),
-                                        )
-                                        .expect("Could not parse to u64");
+                                        let Some(amount_with_fees) =
+                                            read_meta_u64(&send.custom_meta, "amount_with_fees")
+                                        else {
+                                            Self::skip_unrenderable(
+                                                key.operation_id,
+                                                "lnv2 send has no readable 'amount_with_fees'",
+                                            )
+                                            .await;
+                                            continue;
+                                        };
 
                                         let ln_address = send
                                             .custom_meta
@@ -3373,10 +3388,16 @@ impl Multimint {
                                 let receive_outcome = op_log_val.outcome::<LnReceiveState>();
                                 match receive_outcome {
                                     Some(LnReceiveState::Claimed) => {
-                                        let invoice_msat = recurring
-                                            .invoice
-                                            .amount_milli_satoshis()
-                                            .expect("Amountless invoice");
+                                        let Some(invoice_msat) =
+                                            recurring.invoice.amount_milli_satoshis()
+                                        else {
+                                            Self::skip_unrenderable(
+                                                key.operation_id,
+                                                "recurring receive invoice has no amount",
+                                            )
+                                            .await;
+                                            continue;
+                                        };
                                         // The federation fee for claiming the contract is
                                         // the operation's input/output difference; `None`
                                         // predates fee tracking. LNv1 has no gateway fee,
@@ -3448,32 +3469,34 @@ impl Multimint {
 
                                 let outcome = op_log_val.outcome::<ReissueExternalNotesState>();
                                 if let Some(ReissueExternalNotesState::Done) = outcome {
-                                    let amount = from_value::<Amount>(
-                                        meta.extra_meta
-                                            .get("total_amount")
-                                            .expect("Field missing ecash custom meta")
-                                            .clone(),
-                                    )
-                                    .expect("Could not parse to Amount");
-                                    let ecash = from_value::<String>(
-                                        meta.extra_meta
-                                            .get("ecash")
-                                            .expect("Field missing ecash custom meta")
-                                            .clone(),
-                                    )
-                                    .expect("Could not parse to Amount");
-                                    let input_fees = meta
-                                        .extra_meta
-                                        .get("input_fee")
-                                        .map(|f| f.as_u64().expect("Could not convert"));
-                                    let output_fees = meta
-                                        .extra_meta
-                                        .get("output_fee")
-                                        .map(|f| f.as_u64().expect("Could not convert"));
-                                    let dust = meta
-                                        .extra_meta
-                                        .get("dust")
-                                        .map(|f| f.as_u64().expect("Could not convert"));
+                                    let Some(amount) =
+                                        read_meta_msats(&meta.extra_meta, "total_amount")
+                                    else {
+                                        Self::skip_unrenderable(
+                                            key.operation_id,
+                                            "ecash receive has no readable 'total_amount'",
+                                        )
+                                        .await;
+                                        continue;
+                                    };
+                                    let Some(ecash) = read_meta_string(&meta.extra_meta, "ecash")
+                                    else {
+                                        Self::skip_unrenderable(
+                                            key.operation_id,
+                                            "ecash receive has no readable 'ecash'",
+                                        )
+                                        .await;
+                                        continue;
+                                    };
+                                    // Fee breakdown is optional: absent for
+                                    // reissues predating fee tracking, and a
+                                    // non-numeric value is treated the same as
+                                    // absent rather than panicking.
+                                    let input_fees =
+                                        meta.extra_meta.get("input_fee").and_then(|f| f.as_u64());
+                                    let output_fees =
+                                        meta.extra_meta.get("output_fee").and_then(|f| f.as_u64());
+                                    let dust = meta.extra_meta.get("dust").and_then(|f| f.as_u64());
                                     Some(Transaction {
                                         kind: TransactionKind::EcashReceive {
                                             oob_notes: ecash,
@@ -3481,7 +3504,7 @@ impl Multimint {
                                             output_fees,
                                             dust,
                                         },
-                                        amount: amount.msats,
+                                        amount,
                                         timestamp,
                                         operation_id: key.operation_id.0.to_vec(),
                                     })
@@ -3771,33 +3794,19 @@ impl Multimint {
         operation_id: OperationId,
         custom_meta: serde_json::Value,
     ) -> Option<Transaction> {
-        let amount = meta
-            .invoice
-            .amount_milli_satoshis()
-            .expect("Cannot pay amountless invoice");
-        let amount_with_fees = from_value::<u64>(
-            custom_meta
-                .get("amount_with_fees")
-                .expect("Field missing lightning receive custom meta")
-                .clone(),
-        )
-        .expect("Could not parse to u64");
-        let gateway = from_value::<SafeUrl>(
-            custom_meta
-                .get("gateway_url")
-                .expect("Field missing lightning receive custom meta")
-                .clone(),
-        )
-        .expect("Could not parse SafeUrl")
-        .to_string();
+        // These keys have changed across app versions, so an operation written by
+        // an older build — or a recovered wallet, or an interrupted write — can be
+        // missing any of them. Returning `None` drops just this row from the
+        // history; the panic it replaces took the whole screen down permanently.
+        let amount = meta.invoice.amount_milli_satoshis()?;
+        let amount_with_fees = read_meta_u64(&custom_meta, "amount_with_fees")?;
+        let gateway = read_meta_url(&custom_meta, "gateway_url")?;
 
-        let ln_address = custom_meta
-            .get("ln_address")
-            .and_then(|v| from_value::<String>(v.clone()).ok());
+        let ln_address = read_meta_string(&custom_meta, "ln_address");
 
         // Per-source fees stored at send time; older transactions predate them,
         // so fall back to attributing the whole fee to the gateway.
-        let combined = amount_with_fees - amount;
+        let combined = amount_with_fees.saturating_sub(amount);
         let federation_fees = read_meta_u64(&custom_meta, "federation_fees").unwrap_or(0);
         let gateway_fees = read_meta_u64(&custom_meta, "gateway_fees").unwrap_or(combined);
 
@@ -3855,30 +3864,11 @@ impl Multimint {
         custom_meta: serde_json::Value,
     ) -> Option<Transaction> {
         let receive_outcome = ln_outcome.outcome::<LnReceiveState>();
-        let amount = from_value::<Amount>(
-            custom_meta
-                .get("amount")
-                .expect("Field missing lightning receive custom meta")
-                .clone(),
-        )
-        .expect("Could not parse to Amount")
-        .msats;
-        let amount_with_fees = from_value::<Amount>(
-            custom_meta
-                .get("amount_with_fees")
-                .expect("Field missing lightning receive custom meta")
-                .clone(),
-        )
-        .expect("Could not parse to Amount")
-        .msats;
-        let gateway = from_value::<SafeUrl>(
-            custom_meta
-                .get("gateway_url")
-                .expect("Field missing lightning receive custom meta")
-                .clone(),
-        )
-        .expect("Could not parse SafeUrl")
-        .to_string();
+        // As in `get_lnv1_send_tx`: skip a row whose meta this build cannot read
+        // rather than panicking the whole history query.
+        let amount = read_meta_msats(&custom_meta, "amount")?;
+        let amount_with_fees = read_meta_msats(&custom_meta, "amount_with_fees")?;
+        let gateway = read_meta_url(&custom_meta, "gateway_url")?;
         // Per-source fees stored at invoice creation. Fall back through the
         // earlier combined `fees` key, then the invoice-minus-requested estimate,
         // for transactions that predate them.
@@ -6247,6 +6237,21 @@ fn read_meta_u64(custom_meta: &serde_json::Value, key: &str) -> Option<u64> {
     custom_meta
         .get(key)
         .and_then(|v| from_value::<u64>(v.clone()).ok())
+}
+
+/// Reads a key from an operation's stored meta as a gateway URL.
+fn read_meta_url(custom_meta: &serde_json::Value, key: &str) -> Option<String> {
+    custom_meta
+        .get(key)
+        .and_then(|v| from_value::<SafeUrl>(v.clone()).ok())
+        .map(|url| url.to_string())
+}
+
+/// Reads a key from an operation's stored meta as a `String`.
+fn read_meta_string(custom_meta: &serde_json::Value, key: &str) -> Option<String> {
+    custom_meta
+        .get(key)
+        .and_then(|v| from_value::<String>(v.clone()).ok())
 }
 
 /// Returns `(gross, fee)` where `fee` is the quote taken at the returned `gross`
