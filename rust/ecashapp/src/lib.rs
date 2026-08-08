@@ -1354,6 +1354,20 @@ pub async fn set_federation_order(order: Vec<FederationId>) {
     multimint.set_federation_order(order).await;
 }
 
+/// How many generated usernames to try before giving up.
+///
+/// The name space is large — every adjective × every noun × 1..=99,999 — so a
+/// genuine collision is rare and one retry is the realistic worst case. Needing
+/// more than a handful means the server is not answering the way the protocol
+/// says it should. Before this cap existed the loop had no exit for that case:
+/// an endpoint reporting every name as taken kept it spinning indefinitely, two
+/// HTTP requests per pass, with the caller still awaiting the result.
+const LN_ADDRESS_CLAIM_ATTEMPTS: u32 = 20;
+
+/// Pause between attempts, so a server that rejects everything is asked slowly.
+/// Invisible in the normal case, where the first or second name is accepted.
+const LN_ADDRESS_CLAIM_BACKOFF: Duration = Duration::from_millis(250);
+
 #[frb]
 pub async fn claim_random_ln_address(
     federation_id: &FederationId,
@@ -1362,7 +1376,7 @@ pub async fn claim_random_ln_address(
 ) -> anyhow::Result<(String, String)> {
     let mut rng = OsRng;
     let domains = list_ln_address_domains(ln_address_api.clone()).await?;
-    loop {
+    for attempt in 1..=LN_ADDRESS_CLAIM_ATTEMPTS {
         let domain = domains
             .choose(&mut rng)
             .ok_or(anyhow!("No domains available"))?;
@@ -1402,12 +1416,21 @@ pub async fn claim_random_ln_address(
             }
             _ => {
                 info_to_flutter(format!(
-                    "Could not claim {username}@{domain} Trying again..."
+                    "Could not claim {username}@{domain} \
+                     (attempt {attempt}/{LN_ADDRESS_CLAIM_ATTEMPTS})"
                 ))
                 .await;
+                if attempt < LN_ADDRESS_CLAIM_ATTEMPTS {
+                    tokio::time::sleep(LN_ADDRESS_CLAIM_BACKOFF).await;
+                }
             }
         }
     }
+
+    bail!(
+        "Could not claim a Lightning Address: the server reported every one of \
+         {LN_ADDRESS_CLAIM_ATTEMPTS} generated names as unavailable"
+    )
 }
 
 #[frb]
