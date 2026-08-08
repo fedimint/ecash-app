@@ -254,7 +254,17 @@ Future<OperationId> reissueEcash({
   fees: fees,
 );
 
-Future<(ReissueExternalNotesState, BigInt?)> awaitEcashReissue({
+/// Returns `(succeeded, amount_msats)`.
+///
+/// The bool is the outcome. `ReissueExternalNotesState` is a fedimint type that
+/// FRB can only hand across as an opaque handle with no readable variants, so
+/// returning it left Dart unable to tell success from failure — which is why the
+/// redeem screen fell back to inferring the outcome from whether an amount came
+/// back. The amount is `None` for reasons that have nothing to do with failure
+/// (an internal reissue, or meta this build cannot read), so that inference
+/// reported completed reissues as failures. Translating here keeps the typed
+/// state on the Rust side, where the rest of the code still matches on it.
+Future<(bool, BigInt?)> awaitEcashReissue({
   required FederationId federationId,
   required OperationId operationId,
 }) => RustLib.instance.api.crateAwaitEcashReissue(
