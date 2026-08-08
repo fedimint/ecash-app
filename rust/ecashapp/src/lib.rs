@@ -7,6 +7,7 @@ mod db;
 mod event_bus;
 mod fountain;
 mod frb_generated;
+mod http;
 mod multimint;
 mod nostr;
 mod parse;
@@ -311,7 +312,7 @@ pub async fn get_invoice_from_lnaddress_or_lnurl(
             .map_err(|e| EcashAppError::InvalidLightningAddress(e.to_string()))?,
     };
 
-    let async_client = lnurl::AsyncClient::from_client(reqwest::Client::new());
+    let async_client = http::lnurl_client();
     let response = async_client
         .make_request(&lnurl.url)
         .await
@@ -350,8 +351,9 @@ pub struct LnurlWithdrawParams {
 /// withdraw details and get user confirmation before any money moves.
 #[frb]
 pub async fn fetch_lnurl_withdraw(url: String) -> anyhow::Result<LnurlWithdrawParams> {
-    let resp: serde_json::Value = reqwest::Client::new()
+    let resp: serde_json::Value = http::client()
         .get(&url)
+        .timeout(http::INTERACTIVE)
         .send()
         .await?
         .json()
@@ -429,7 +431,10 @@ pub async fn execute_lnurl_withdraw(
 
     // Hand the invoice to the Boltcard/LNURLw service via the callback URL.
     let callback_url = build_lnurlw_callback_url(&callback, &k1, &invoice.to_string());
-    let resp: serde_json::Value = reqwest::Client::new()
+    // Inherits the default `BACKGROUND` budget rather than the tighter
+    // interactive one: the receive invoice is already minted at this point, so
+    // giving up early leaves the withdraw in an ambiguous state.
+    let resp: serde_json::Value = http::client()
         .get(&callback_url)
         .send()
         .await?
@@ -462,7 +467,7 @@ pub async fn send_lnaddress(
     let lnurl = lnurl::lightning_address::LightningAddress::from_str(&address)
         .map_err(|e| EcashAppError::InvalidLightningAddress(e.to_string()))?
         .lnurl();
-    let async_client = lnurl::AsyncClient::from_client(reqwest::Client::new());
+    let async_client = http::lnurl_client();
     let response = async_client
         .make_request(&lnurl.url)
         .await
@@ -961,7 +966,7 @@ impl parse::ParseContext for MultimintParseContext {
             _ => lnurl::lnurl::LnUrl::from_str(lnurl_or_address)?,
         };
 
-        let async_client = lnurl::AsyncClient::from_client(reqwest::Client::new());
+        let async_client = http::lnurl_client();
         let response = async_client.make_request(&lnurl.url).await?;
         let pay_response = match response {
             lnurl::LnUrlResponse::LnUrlPayResponse(r) => r,
@@ -1057,10 +1062,10 @@ pub async fn check_ecash_spent(
 #[frb]
 pub async fn list_ln_address_domains(ln_address_api: String) -> anyhow::Result<Vec<String>> {
     let safe_ln_address_api = SafeUrl::parse(&ln_address_api)?.join("domains")?;
-    let http_client = reqwest::Client::new();
     let url = safe_ln_address_api.to_unsafe();
-    let result = http_client
+    let result = http::client()
         .get(url)
+        .timeout(http::INTERACTIVE)
         .send()
         .await
         .context("Failed to send domains request")?;

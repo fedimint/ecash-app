@@ -13,7 +13,7 @@ use crate::{
         ContactSyncConfigKey, NostrRelaysKey, NostrRelaysKeyPrefix, NostrWalletConnectConfig,
         NostrWalletConnectKey, NostrWalletConnectKeyPrefix,
     },
-    error_to_flutter, federations, get_event_bus, info_to_flutter,
+    error_to_flutter, federations, get_event_bus, http, info_to_flutter,
     multimint::{
         ContactSyncEventKind, FederationSelector, LightningSendOutcome, MultimintEvent,
         NostrRecoveryPhase, RelayStatusKind,
@@ -691,12 +691,7 @@ impl NostrClient {
         }
 
         let url = format!("{FEDERATION_OBSERVER_URL}/api/federations");
-        let response = match reqwest::Client::new()
-            .get(&url)
-            .timeout(Duration::from_secs(10))
-            .send()
-            .await
-        {
+        let response = match http::client().get(&url).timeout(http::QUICK).send().await {
             Ok(response) => response,
             Err(e) => {
                 error_to_flutter(format!("Failed to reach fedimint observer: {e}")).await;
@@ -1096,11 +1091,7 @@ impl NostrClient {
         let url = format!("https://{}/.well-known/nostr.json?name={}", domain, name);
 
         // Make the HTTP request
-        let client = reqwest::Client::builder()
-            .timeout(Duration::from_secs(10))
-            .build()?;
-
-        let response = client.get(&url).send().await?;
+        let response = http::client().get(&url).timeout(http::QUICK).send().await?;
 
         if !response.status().is_success() {
             bail!("NIP-05 verification failed: HTTP {}", response.status());

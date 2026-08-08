@@ -109,7 +109,7 @@ use crate::{
         LightningAddressKey, LightningAddressKeyPrefix, PinCodeHashKey, RequirePinForSpendingKey,
         SchemaVersionKey,
     },
-    error_to_flutter, get_nostr_client, info_to_flutter, payment_error_to_flutter,
+    error_to_flutter, get_nostr_client, http, info_to_flutter, payment_error_to_flutter,
     wallet::WalletHandler,
     FederationConfig, FederationConfigKey, FederationConfigKeyPrefix, SeedPhraseAckKey,
 };
@@ -1294,16 +1294,19 @@ impl Multimint {
     }
 
     async fn check_for_update(&self) {
-        let client = match reqwest::Client::builder()
-            .user_agent(concat!("ecash-app/", env!("CARGO_PKG_VERSION")))
-            .timeout(Duration::from_secs(10))
-            .build()
+        // The shared client sets no `User-Agent` (it would fingerprint the
+        // wallet to the user-supplied hosts every other call site talks to),
+        // but the GitHub API rejects requests without one, so set it here.
+        let response = match http::client()
+            .get(GITHUB_LATEST_RELEASE_URL)
+            .header(
+                reqwest::header::USER_AGENT,
+                concat!("ecash-app/", env!("CARGO_PKG_VERSION")),
+            )
+            .timeout(http::QUICK)
+            .send()
+            .await
         {
-            Ok(c) => c,
-            Err(_) => return,
-        };
-
-        let response = match client.get(GITHUB_LATEST_RELEASE_URL).send().await {
             Ok(r) => r,
             Err(_) => return,
         };
@@ -1368,7 +1371,10 @@ impl Multimint {
 
     async fn cache_btc_price(&self, now: std::time::SystemTime) {
         let url = "https://mempool.space/api/v1/prices";
-        let Ok(response) = reqwest::get(url).await else {
+        // Kept short on purpose: this runs inside the strictly serial cache
+        // loop, which reaches the federation ecash backup only after it
+        // returns. A stalled price fetch must never hold that up.
+        let Ok(response) = http::client().get(url).timeout(http::QUICK).send().await else {
             error_to_flutter("BTC Price GET returned error").await;
             return;
         };
@@ -4844,9 +4850,8 @@ impl Multimint {
                 authentication_token: config.authentication_token,
             };
 
-            let http_client = reqwest::Client::new();
             let remove_endpoint = safe_ln_address_api.join("lnaddress/remove")?;
-            let result = http_client
+            let result = http::client()
                 .delete(remove_endpoint.to_unsafe())
                 .json(&remove_request)
                 .send()
@@ -4932,9 +4937,8 @@ impl Multimint {
             recipient_pk: recipient_pk.clone(),
         };
 
-        let http_client = reqwest::Client::new();
         let register_endpoint = safe_ln_address_api.join("lnaddress/register")?;
-        let result = http_client
+        let result = http::client()
             .post(register_endpoint.to_unsafe())
             .json(&register_request)
             .send()
@@ -5030,7 +5034,7 @@ impl Multimint {
             .clone();
 
         let safe_ln_address_api = SafeUrl::parse(ln_address_api)?;
-        let http_client = reqwest::Client::new();
+        let http_client = http::client();
 
         // Try LNv2 first: generate LNURL with a dummy gateway to extract recipient_pk
         let mut recovered_pk: Option<String> = None;
@@ -5363,9 +5367,9 @@ impl Multimint {
 
         let safe_url = SafeUrl::parse(&ln_address_api)?;
         let endpoint = safe_url.join(&format!("lnaddress/{}/{}", domain, username))?;
-        let http_client = reqwest::Client::new();
-        let result = http_client
+        let result = http::client()
             .get(endpoint.to_unsafe())
+            .timeout(http::QUICK)
             .send()
             .await
             .context("Failed to send GET request")?;
@@ -5401,9 +5405,11 @@ impl Multimint {
     ) -> anyhow::Result<Vec<FederationId>> {
         let endpoint = SafeUrl::parse(&recurringd_api)?.join("lnv1/federations")?;
 
-        let http_client = reqwest::Client::new();
-        let result = http_client
+        // `check_ln_address_availability` calls this before its own request, so
+        // the two share one user-visible wait — keep both on the short budget.
+        let result = http::client()
             .get(endpoint.to_unsafe())
+            .timeout(http::QUICK)
             .send()
             .await
             .context("Failed to send domains request")?;
@@ -5526,7 +5532,7 @@ impl Multimint {
                     };
 
                     if let Some(pk) = recipient_pk {
-                        let http_client = reqwest::Client::new();
+                        let http_client = http::client();
                         let update_url = match config.ln_address_api.join("lnaddress/update-pk") {
                             Ok(url) => url,
                             Err(_) => continue,

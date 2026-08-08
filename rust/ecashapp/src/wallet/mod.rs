@@ -29,7 +29,7 @@ use crate::{
     app_error::{classify_anyhow, EcashAppError, EcashAppResult},
     db::{WalletV2PendingDepositFederationPrefix, WalletV2PendingDepositKey},
     event_bus::EventBus,
-    get_event_bus, info_to_flutter,
+    get_event_bus, http, info_to_flutter,
     multimint::{
         AwaitingConfsEvent, ClaimedEvent, ConfirmedEvent, DepositEventKind, MempoolEvent,
         MultimintEvent, OnChainWithdrawalMeta, WithdrawFees, WithdrawFeesResponse,
@@ -556,17 +556,21 @@ impl WalletHandler {
         let wallet_module = client.get_first_module::<WalletV2Module>()?;
         let network = wallet_module.get_network();
         let api_url = mempool_api_url(network);
-        let http = reqwest::Client::new();
+        let http_client = http::client();
 
         info_to_flutter(format!(
             "watch_v2_pegin_address: polling {api_url} for deposit to {address} (network {network})"
         ))
         .await;
 
+        // The shared client's timeout is what keeps this loop alive: `retry`
+        // only advances its backoff when the closure returns `Err`, so an
+        // untimed request hung on a half-open socket would stop the poller for
+        // good rather than retrying.
         let (txid, value) = fedimint_core::util::retry(
             "discover walletv2 deposit",
             fedimint_core::util::backoff_util::background_backoff(),
-            || async { discover_deposit(&http, &api_url, &address).await },
+            || async { discover_deposit(http_client, &api_url, &address).await },
         )
         .await
         .expect("Never gives up");
@@ -1144,13 +1148,13 @@ where
         .await;
 
     let api_url = mempool_api_url(network);
-    let http = reqwest::Client::new();
+    let http_client = http::client();
 
     let tx_height = fedimint_core::util::retry(
         "get confirmed block height",
         fedimint_core::util::backoff_util::background_backoff(),
         || async {
-            let resp = http
+            let resp = http_client
                 .get(format!("{}/tx/{}", api_url, txid))
                 .send()
                 .await?
