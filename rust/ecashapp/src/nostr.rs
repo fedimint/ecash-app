@@ -74,6 +74,13 @@ const FEDERATION_OBSERVER_URL: &str = "https://observer.fedimint.org";
 
 pub const NWC_SUPPORTED_METHODS: &[&str] = &["get_info", "get_balance", "pay_invoice"];
 
+/// How long a single NWC relay connection attempt may take before the listener
+/// reports it and backs off. Without a bound here a dead relay leaves NWC
+/// silently non-functional for the lifetime of the process.
+const NWC_RELAY_CONNECT_TIMEOUT: Duration = Duration::from_secs(30);
+const NWC_RELAY_BACKOFF_START: Duration = Duration::from_secs(5);
+const NWC_RELAY_BACKOFF_MAX: Duration = Duration::from_secs(300);
+
 #[derive(Debug, Deserialize)]
 #[serde(tag = "method", content = "params")]
 pub enum WalletConnectRequest {
@@ -374,11 +381,27 @@ impl NostrClient {
 
         let status = relay.status();
         info_to_flutter(format!("Relay connection status: {status:?}")).await;
-        relay.connect();
         info_to_flutter("Waiting for connection to relay...").await;
-        relay
-            .wait_for_connection(Duration::from_secs(u64::MAX))
+
+        // Keep retrying so a transient relay outage still self-heals, but with
+        // a bounded wait per attempt so an unreachable relay is reported rather
+        // than leaving NWC silently dead forever.
+        let mut backoff = NWC_RELAY_BACKOFF_START;
+        loop {
+            relay.connect();
+            relay.wait_for_connection(NWC_RELAY_CONNECT_TIMEOUT).await;
+            if matches!(relay.status(), nostr_sdk::RelayStatus::Connected) {
+                break;
+            }
+            error_to_flutter(format!(
+                "NWC relay {} unreachable, retrying in {}s",
+                nwc_config.relay,
+                backoff.as_secs()
+            ))
             .await;
+            tokio::time::sleep(backoff).await;
+            backoff = (backoff * 2).min(NWC_RELAY_BACKOFF_MAX);
+        }
         info_to_flutter("Connected to relay!").await;
 
         let filter = nostr_sdk::Filter::new().kind(nostr_sdk::Kind::WalletConnectRequest);
