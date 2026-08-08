@@ -51,7 +51,13 @@ class _MyWalletScreenState extends State<MyWalletScreen> {
   }
 
   Future<void> _loadBalance() async {
-    final bal = await balance(federationId: widget.fed.federationId);
+    final BigInt bal;
+    try {
+      bal = await balance(federationId: widget.fed.federationId);
+    } catch (e) {
+      AppLogger.instance.warn('Could not load balance: $e');
+      return;
+    }
     if (!mounted) return;
     setState(() {
       _balanceMsats = bal;

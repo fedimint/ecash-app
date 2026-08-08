@@ -133,6 +133,13 @@ abstract class Multimint implements RustOpaqueInterface {
     required OperationId operationId,
   });
 
+  /// Fallible on purpose. The UI polls this, and both failure modes are
+  /// ordinary rather than exceptional: the federation can be left while a
+  /// screen still holds its id, and the balance query itself can fail
+  /// transiently while a module is still coming up during recovery.
+  ///
+  /// Returning zero for either would be worse than an error — a wallet
+  /// showing a confident zero is alarming and wrong.
   Future<BigInt> balance({required FederationId federationId});
 
   Future<ReissueFees> calculateEcashReissueFees({

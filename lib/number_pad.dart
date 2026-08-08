@@ -590,7 +590,13 @@ class _NumberPadState extends State<NumberPad> {
           childBuilder: () async {
             BigInt amount = amountSats * BigInt.from(1000);
             if (_withdrawalMode == WithdrawalMode.maxBalance) {
-              amount = await balance(federationId: _selectedFed.federationId);
+              // Send-max needs a real figure; falling back to the typed amount
+              // is safer than spending against a balance we could not read.
+              try {
+                amount = await balance(federationId: _selectedFed.federationId);
+              } catch (e) {
+                AppLogger.instance.warn('Could not load balance: $e');
+              }
             }
             return EcashSend(fed: _selectedFed, amountMsats: amount);
           },

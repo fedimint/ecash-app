@@ -79,12 +79,18 @@ impl WalletHandler {
                     let event_bus = event_bus_clone.clone();
                     // wrapping the clients in Arc<RwLock<..>> allows us to monitor using clients
                     // created after the background task is spawned
-                    let client = clients
-                        .read()
-                        .await
-                        .get(&fed_id)
-                        .expect("No federation exists")
-                        .clone();
+                    // This watcher outlives individual federations — a monitor
+                    // request can still be queued when its federation is left.
+                    // Skip that request and keep the loop alive; panicking here
+                    // would take down deposit monitoring for every other
+                    // federation too.
+                    let Some(client) = clients.read().await.get(&fed_id).cloned() else {
+                        info_to_flutter(format!(
+                            "Skipping peg-in watch for {fed_id}: federation was left"
+                        ))
+                        .await;
+                        continue;
+                    };
 
                     let addresses_clone = addresses_clone.clone();
                     task_group_clone.spawn_cancellable("tweak index watcher", async move {
