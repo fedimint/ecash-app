@@ -21,12 +21,24 @@ class NostrRecoveryProgress extends StatefulWidget {
   final String? rejoinPeer;
   final int recoverySecondsRemaining;
 
+  /// Recovery has finished and restored no federations.
+  ///
+  /// The screen stays up in this state instead of returning to Discover on its
+  /// own, so the outcome is actually readable. Dismissing is left to the user
+  /// via [onContinue].
+  final bool finishedWithNoFederations;
+
+  /// Invoked when the user acknowledges an empty recovery.
+  final VoidCallback? onContinue;
+
   const NostrRecoveryProgress({
     super.key,
     required this.events,
     this.rejoinHost,
     this.rejoinPeer,
     this.recoverySecondsRemaining = 30,
+    this.finishedWithNoFederations = false,
+    this.onContinue,
   });
 
   @override
@@ -111,6 +123,17 @@ class _NostrRecoveryProgressState extends State<NostrRecoveryProgress> {
               _RelayStatusList(relays: _relays, theme: theme),
               const SizedBox(height: 24),
             ],
+            // Nothing was restored. Shown instead of silently returning to
+            // Discover, because rejoining now needs invite codes the user has to
+            // supply themselves.
+            if (widget.finishedWithNoFederations) ...[
+              _NoBackupFound(
+                theme: theme,
+                l10n: l10n,
+                onContinue: widget.onContinue,
+              ),
+              const SizedBox(height: 24),
+            ],
             // Fetching activity indicator
             if (_phase is NostrRecoveryPhase_FetchingBackup) ...[
               _FetchingIndicator(
@@ -152,6 +175,9 @@ class _PhaseHeader extends StatelessWidget {
   int get _phaseIndex {
     return switch (phase) {
       NostrRecoveryPhase_ConnectingToRelays() => 0,
+      // Reached the fetch and got an answer — an empty one. The explanation
+      // lives in the panel below rather than in the stepper.
+      NostrRecoveryPhase_NoBackupFound() => 1,
       NostrRecoveryPhase_FetchingBackup() => 1,
       NostrRecoveryPhase_DecryptingInvites() => 2,
       NostrRecoveryPhase_RejoiningFederations() => 3,
@@ -566,6 +592,81 @@ class _RejoinStatus extends StatelessWidget {
                 fontWeight: FontWeight.w600,
               ),
               textAlign: TextAlign.center,
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+/// Shown when the relays returned no backup.
+///
+/// Deliberately not styled as an error: the nostr backup is best effort, relays
+/// are free to prune it, and the seed phrase is what actually recovers the
+/// wallet. What the user needs to take away is the one thing that is now on
+/// them — rejoining a federation requires its invite code.
+class _NoBackupFound extends StatelessWidget {
+  final ThemeData theme;
+  final dynamic l10n;
+  final VoidCallback? onContinue;
+
+  const _NoBackupFound({
+    required this.theme,
+    required this.l10n,
+    this.onContinue,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: theme.colorScheme.surfaceContainer,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.amber.withOpacity(0.4)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              const Icon(Icons.info_outline, color: Colors.amber, size: 20),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  l10n.recoveryNoBackupFound,
+                  style: theme.textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          Text(
+            l10n.recoveryNoBackupFoundDetail,
+            style: theme.textTheme.bodySmall?.copyWith(
+              color: theme.colorScheme.onSurfaceVariant,
+            ),
+          ),
+          if (onContinue != null) ...[
+            const SizedBox(height: 16),
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton(
+                onPressed: onContinue,
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: theme.colorScheme.primary,
+                  foregroundColor: Colors.black,
+                  padding: const EdgeInsets.symmetric(vertical: 14),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
+                child: Text(l10n.continueLabel),
+              ),
             ),
           ],
         ],

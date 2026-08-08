@@ -2372,6 +2372,38 @@ as int,
 }
 
 /// @nodoc
+
+
+class NostrRecoveryPhase_NoBackupFound extends NostrRecoveryPhase {
+  const NostrRecoveryPhase_NoBackupFound(): super._();
+  
+
+
+
+
+
+
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is NostrRecoveryPhase_NoBackupFound);
+}
+
+
+@override
+int get hashCode => runtimeType.hashCode;
+
+@override
+String toString() {
+  return 'NostrRecoveryPhase.noBackupFound()';
+}
+
+
+}
+
+
+
+
+/// @nodoc
 mixin _$TransactionKind {
 
 
