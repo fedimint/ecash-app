@@ -213,6 +213,8 @@
   "couldNotRegisterLnAddress": "No se pudo registrar la Dirección Lightning",
   "leaveFederation": "Abandonar Federación",
   "leaveFederationConfirm": "¿Estás seguro de que quieres abandonar esta federación? Necesitarás volver a unirte para acceder a los fondos restantes.",
+  "currentBalance": "Saldo actual",
+  "leaveFederationError": "No se pudo abandonar la federación. Inténtalo de nuevo.",
   "joinFederation": "Unirse a Federación",
   "joinAndRedeemEcash": "Unirse y canjear Ecash",
   "recover": "Recuperar",
