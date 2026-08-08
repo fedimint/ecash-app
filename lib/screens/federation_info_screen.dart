@@ -233,7 +233,7 @@ class _FederationInfoScreenState extends State<FederationInfoScreen> {
                           ),
                           const SizedBox(width: 10),
                           Text(
-                            sbContext.l10n.balanceAtRisk,
+                            sbContext.l10n.currentBalance,
                             style: theme.textTheme.bodyMedium?.copyWith(
                               color: theme.colorScheme.onSurfaceVariant,
                             ),

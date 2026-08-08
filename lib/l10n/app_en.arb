@@ -745,8 +745,8 @@
   "leaveFederationConfirm": "Are you sure you want to leave this federation? You will need to re-join this federation to access any remaining funds.",
   "@leaveFederationConfirm": {},
 
-  "balanceAtRisk": "Balance at risk",
-  "@balanceAtRisk": {},
+  "currentBalance": "Current balance",
+  "@currentBalance": {},
 
   "leaveFederationError": "Could not leave federation. Please try again.",
   "@leaveFederationError": {},
