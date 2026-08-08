@@ -8,6 +8,7 @@ import android.content.pm.PackageManager
 import android.nfc.NfcAdapter
 import android.nfc.cardemulation.CardEmulation
 import android.util.Log
+import android.view.WindowManager
 import io.flutter.embedding.android.FlutterActivity
 import io.flutter.embedding.engine.FlutterEngine
 import io.flutter.plugin.common.MethodChannel
@@ -37,6 +38,8 @@ class MainActivity : FlutterActivity() {
 
     override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
         super.configureFlutterEngine(flutterEngine)
+
+        configureSecureScreenChannel(flutterEngine)
 
         // Foreground dispatch routes NFC taps for payment URIs straight to
         // this activity's onNewIntent while it's in the foreground. Without
@@ -93,6 +96,38 @@ class MainActivity : FlutterActivity() {
                         EcashHceService.ndefMessage = null
                         val preferred = setPreferredHce(false)
                         Log.i("EcashHce", "stop preferred=$preferred")
+                        result.success(null)
+                    }
+                    else -> result.notImplemented()
+                }
+            }
+    }
+
+    /**
+     * Screens showing a bearer secret — the recovery seed, an ecash token —
+     * ask for FLAG_SECURE while they are visible. It keeps the contents out of
+     * screenshots, screen recordings and, importantly, the thumbnail the OS
+     * captures for the app switcher when the app is backgrounded.
+     *
+     * Applied per screen rather than to the whole app so that receive addresses
+     * and invoices, which users legitimately screenshot and share, stay
+     * capturable. Dart reference-counts the requests, so nested secure screens
+     * do not clear the flag early.
+     */
+    private fun configureSecureScreenChannel(flutterEngine: FlutterEngine) {
+        MethodChannel(flutterEngine.dartExecutor.binaryMessenger, "ecashapp/secure_screen")
+            .setMethodCallHandler { call, result ->
+                when (call.method) {
+                    "enable" -> {
+                        runOnUiThread {
+                            window.addFlags(WindowManager.LayoutParams.FLAG_SECURE)
+                        }
+                        result.success(null)
+                    }
+                    "disable" -> {
+                        runOnUiThread {
+                            window.clearFlags(WindowManager.LayoutParams.FLAG_SECURE)
+                        }
                         result.success(null)
                     }
                     else -> result.notImplemented()

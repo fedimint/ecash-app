@@ -1,5 +1,6 @@
 import 'package:ecashapp/extensions/build_context_l10n.dart';
 import 'package:ecashapp/lib.dart';
+import 'package:ecashapp/widgets/secure_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'dart:async';
@@ -81,131 +82,133 @@ class _MnemonicState extends State<Mnemonic>
     final Color baseColor = theme.colorScheme.primary;
     final Color fillColor = Color(0xFF001F3F);
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        if (!widget.hasAck) ...[
-          Container(
-            margin: const EdgeInsets.only(bottom: 16),
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: Colors.orange.shade100,
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: Row(
-              children: [
-                const Icon(Icons.warning, color: Colors.orange),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: Text(
-                    context.l10n.seedPhraseAckWarning,
-                    style: const TextStyle(color: Colors.orange),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
-        const SizedBox(height: 16),
-        Text(
-          context.l10n.yourRecoveryPhrase,
-          style: theme.textTheme.titleLarge,
-          textAlign: TextAlign.center,
-        ),
-        const SizedBox(height: 24),
-        GridView.builder(
-          shrinkWrap: true,
-          physics: const NeverScrollableScrollPhysics(),
-          itemCount: 12,
-          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-            crossAxisCount: 2,
-            childAspectRatio: 5,
-            crossAxisSpacing: 16,
-            mainAxisSpacing: 8,
-          ),
-          itemBuilder: (context, index) {
-            return Row(
-              children: [
-                Text("${index + 1}. ", style: theme.textTheme.bodyMedium),
-                Expanded(
-                  child: Text(
-                    widget.words[index],
-                    style: theme.textTheme.bodyLarge,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                ),
-              ],
-            );
-          },
-        ),
-        if (!widget.hasAck) ...[
-          const SizedBox(height: 32),
-          GestureDetector(
-            onTap: _onTap,
-            onLongPressStart: (_) => _startHold(),
-            onLongPressEnd: (_) => _cancelHold(),
-            onLongPressCancel: _cancelHold,
-            child: AnimatedBuilder(
-              animation: _shakeController,
-              builder: (context, child) {
-                final offset =
-                    sin(_shakeController.value * pi * 4) *
-                    4 *
-                    (1 - _shakeController.value);
-                return Transform.translate(
-                  offset: Offset(offset, 0),
-                  child: child,
-                );
-              },
-              child: LayoutBuilder(
-                builder: (context, constraints) {
-                  final fillWidth = constraints.maxWidth * _progress;
-                  return Container(
-                    decoration: BoxDecoration(
-                      color: baseColor,
-                      borderRadius: BorderRadius.circular(12),
+    return SecureScreen(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          if (!widget.hasAck) ...[
+            Container(
+              margin: const EdgeInsets.only(bottom: 16),
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: Colors.orange.shade100,
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Row(
+                children: [
+                  const Icon(Icons.warning, color: Colors.orange),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      context.l10n.seedPhraseAckWarning,
+                      style: const TextStyle(color: Colors.orange),
                     ),
-                    padding: const EdgeInsets.symmetric(vertical: 14),
-                    child: Stack(
-                      children: [
-                        // Fill progress bar container:
-                        AnimatedContainer(
-                          duration: const Duration(milliseconds: 50),
-                          width: fillWidth,
-                          decoration: BoxDecoration(
-                            color: fillColor,
-                            borderRadius: BorderRadius.horizontal(
-                              left: Radius.circular(12),
-                              right: Radius.circular(_progress == 1 ? 12 : 0),
+                  ),
+                ],
+              ),
+            ),
+          ],
+          const SizedBox(height: 16),
+          Text(
+            context.l10n.yourRecoveryPhrase,
+            style: theme.textTheme.titleLarge,
+            textAlign: TextAlign.center,
+          ),
+          const SizedBox(height: 24),
+          GridView.builder(
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            itemCount: 12,
+            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+              crossAxisCount: 2,
+              childAspectRatio: 5,
+              crossAxisSpacing: 16,
+              mainAxisSpacing: 8,
+            ),
+            itemBuilder: (context, index) {
+              return Row(
+                children: [
+                  Text("${index + 1}. ", style: theme.textTheme.bodyMedium),
+                  Expanded(
+                    child: Text(
+                      widget.words[index],
+                      style: theme.textTheme.bodyLarge,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                ],
+              );
+            },
+          ),
+          if (!widget.hasAck) ...[
+            const SizedBox(height: 32),
+            GestureDetector(
+              onTap: _onTap,
+              onLongPressStart: (_) => _startHold(),
+              onLongPressEnd: (_) => _cancelHold(),
+              onLongPressCancel: _cancelHold,
+              child: AnimatedBuilder(
+                animation: _shakeController,
+                builder: (context, child) {
+                  final offset =
+                      sin(_shakeController.value * pi * 4) *
+                      4 *
+                      (1 - _shakeController.value);
+                  return Transform.translate(
+                    offset: Offset(offset, 0),
+                    child: child,
+                  );
+                },
+                child: LayoutBuilder(
+                  builder: (context, constraints) {
+                    final fillWidth = constraints.maxWidth * _progress;
+                    return Container(
+                      decoration: BoxDecoration(
+                        color: baseColor,
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                      child: Stack(
+                        children: [
+                          // Fill progress bar container:
+                          AnimatedContainer(
+                            duration: const Duration(milliseconds: 50),
+                            width: fillWidth,
+                            decoration: BoxDecoration(
+                              color: fillColor,
+                              borderRadius: BorderRadius.horizontal(
+                                left: Radius.circular(12),
+                                right: Radius.circular(_progress == 1 ? 12 : 0),
+                              ),
                             ),
+                            height:
+                                48, // matches button height padding + line height
                           ),
-                          height:
-                              48, // matches button height padding + line height
-                        ),
 
-                        // Centered text:
-                        SizedBox(
-                          height: 48,
-                          child: Center(
-                            child: Text(
-                              context.l10n.seedPhraseAckButton,
-                              style: theme.textTheme.bodyLarge?.copyWith(
-                                color: Colors.black,
-                                fontWeight: FontWeight.bold,
+                          // Centered text:
+                          SizedBox(
+                            height: 48,
+                            child: Center(
+                              child: Text(
+                                context.l10n.seedPhraseAckButton,
+                                style: theme.textTheme.bodyLarge?.copyWith(
+                                  color: Colors.black,
+                                  fontWeight: FontWeight.bold,
+                                ),
                               ),
                             ),
                           ),
-                        ),
-                      ],
-                    ),
-                  );
-                },
+                        ],
+                      ),
+                    );
+                  },
+                ),
               ),
             ),
-          ),
-          const SizedBox(height: 24),
+            const SizedBox(height: 24),
+          ],
         ],
-      ],
+      ),
     );
   }
 }

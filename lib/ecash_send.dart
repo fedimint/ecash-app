@@ -13,6 +13,7 @@ import 'package:ecashapp/toast.dart';
 import 'package:ecashapp/utils.dart';
 import 'package:ecashapp/utils/pin_guard.dart';
 import 'package:ecashapp/extensions/build_context_l10n.dart';
+import 'package:ecashapp/widgets/secure_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
@@ -283,193 +284,198 @@ class _EcashSendState extends State<EcashSend> {
 
     final abbreviatedEcash = getAbbreviatedText(_notes!.toString());
 
-    return Padding(
-      padding: const EdgeInsets.all(20),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          const Icon(Icons.lock_outline, size: 48),
-          const SizedBox(height: 12),
-          Text(
-            context.l10n.ecashWithdrawn,
-            style: theme.textTheme.headlineSmall?.copyWith(
-              color: theme.colorScheme.primary,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-          const SizedBox(height: 24),
-          Stack(
-            alignment: Alignment.topRight,
-            children: [
-              AspectRatio(
-                aspectRatio: 1,
-                child: StreamBuilder<String>(
-                  stream: _fragmentStream,
-                  builder: (context, snapshot) {
-                    if (!snapshot.hasData) {
-                      return const Center(child: CircularProgressIndicator());
-                    }
-                    return QrImageView(
-                      data: snapshot.data!,
-                      version: QrVersions.auto,
-                      backgroundColor: Colors.white,
-                    );
-                  },
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 16),
-          SegmentedButton<_QrMode>(
-            segments: [
-              ButtonSegment<_QrMode>(
-                value: _QrMode.legacy,
-                label: Text('Legacy'), // i18n-ignore
-                icon: const Icon(Icons.qr_code),
-              ),
-              ButtonSegment<_QrMode>(
-                value: _QrMode.fountain,
-                label: Text('Optimized'), // i18n-ignore
-                icon: const Icon(Icons.waves),
-              ),
-            ],
-            selected: {_mode},
-            onSelectionChanged: (selection) {
-              setState(() => _mode = selection.first);
-            },
-          ),
-          const SizedBox(height: 24),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-            decoration: BoxDecoration(
-              color: theme.colorScheme.surfaceContainerHighest,
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(
-                color: theme.colorScheme.primary.withOpacity(0.4),
+    // From here the screen shows the token itself, as text and as a QR. Whoever
+    // redeems it first owns it, so it must not reach a screenshot, a screen
+    // recording, or the app-switcher thumbnail.
+    return SecureScreen(
+      child: Padding(
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Icon(Icons.lock_outline, size: 48),
+            const SizedBox(height: 12),
+            Text(
+              context.l10n.ecashWithdrawn,
+              style: theme.textTheme.headlineSmall?.copyWith(
+                color: theme.colorScheme.primary,
+                fontWeight: FontWeight.bold,
               ),
             ),
-            child: Row(
+            const SizedBox(height: 24),
+            Stack(
+              alignment: Alignment.topRight,
               children: [
-                Expanded(
-                  child: Text(
-                    abbreviatedEcash,
-                    style: theme.textTheme.bodyLarge?.copyWith(
-                      color: theme.colorScheme.onSurface,
-                      fontWeight: FontWeight.w500,
-                    ),
-                    overflow: TextOverflow.ellipsis,
+                AspectRatio(
+                  aspectRatio: 1,
+                  child: StreamBuilder<String>(
+                    stream: _fragmentStream,
+                    builder: (context, snapshot) {
+                      if (!snapshot.hasData) {
+                        return const Center(child: CircularProgressIndicator());
+                      }
+                      return QrImageView(
+                        data: snapshot.data!,
+                        version: QrVersions.auto,
+                        backgroundColor: Colors.white,
+                      );
+                    },
                   ),
-                ),
-                IconButton(
-                  icon: AnimatedSwitcher(
-                    duration: const Duration(milliseconds: 300),
-                    transitionBuilder:
-                        (child, anim) =>
-                            ScaleTransition(scale: anim, child: child),
-                    child:
-                        _copied
-                            ? Icon(
-                              Icons.check,
-                              key: const ValueKey('copied'),
-                              color: theme.colorScheme.primary,
-                            )
-                            : Icon(
-                              Icons.copy,
-                              key: const ValueKey('copy'),
-                              color: theme.colorScheme.primary,
-                            ),
-                  ),
-                  onPressed: _copyEcash,
                 ),
               ],
             ),
-          ),
-          const SizedBox(height: 16),
-          Container(
-            width: double.infinity,
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: theme.colorScheme.surfaceContainer,
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(
-                color: theme.colorScheme.primary.withOpacity(0.25),
-              ),
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                CopyableDetailRow(
-                  label: TransactionDetailKeys.amount,
-                  // The actual amount of the generated ecash (the requested
-                  // amount rounded up to representable denominations), not the
-                  // raw requested value.
-                  value: formatBalance(
-                    _notes!.amountMsats(),
-                    showMsats,
-                    bitcoinDisplay,
-                  ),
+            const SizedBox(height: 16),
+            SegmentedButton<_QrMode>(
+              segments: [
+                ButtonSegment<_QrMode>(
+                  value: _QrMode.legacy,
+                  label: Text('Legacy'), // i18n-ignore
+                  icon: const Icon(Icons.qr_code),
                 ),
-                // Show the federation fee and total spent only when a fee was
-                // actually paid (exact-change sends are free), matching the
-                // review screen and the transaction details.
-                if (_fees != null && _fees!.feeMsats > BigInt.zero) ...[
-                  CopyableDetailRow(
-                    label: TransactionDetailKeys.federationFee,
-                    value: formatBalance(
-                      _fees!.feeMsats,
-                      showMsats,
-                      bitcoinDisplay,
+                ButtonSegment<_QrMode>(
+                  value: _QrMode.fountain,
+                  label: Text('Optimized'), // i18n-ignore
+                  icon: const Icon(Icons.waves),
+                ),
+              ],
+              selected: {_mode},
+              onSelectionChanged: (selection) {
+                setState(() => _mode = selection.first);
+              },
+            ),
+            const SizedBox(height: 24),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+              decoration: BoxDecoration(
+                color: theme.colorScheme.surfaceContainerHighest,
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(
+                  color: theme.colorScheme.primary.withOpacity(0.4),
+                ),
+              ),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      abbreviatedEcash,
+                      style: theme.textTheme.bodyLarge?.copyWith(
+                        color: theme.colorScheme.onSurface,
+                        fontWeight: FontWeight.w500,
+                      ),
+                      overflow: TextOverflow.ellipsis,
                     ),
                   ),
-                  CopyableDetailRow(
-                    label: TransactionDetailKeys.total,
-                    value: formatBalance(
-                      _notes!.amountMsats() + _fees!.feeMsats,
-                      showMsats,
-                      bitcoinDisplay,
+                  IconButton(
+                    icon: AnimatedSwitcher(
+                      duration: const Duration(milliseconds: 300),
+                      transitionBuilder:
+                          (child, anim) =>
+                              ScaleTransition(scale: anim, child: child),
+                      child:
+                          _copied
+                              ? Icon(
+                                Icons.check,
+                                key: const ValueKey('copied'),
+                                color: theme.colorScheme.primary,
+                              )
+                              : Icon(
+                                Icons.copy,
+                                key: const ValueKey('copy'),
+                                color: theme.colorScheme.primary,
+                              ),
                     ),
+                    onPressed: _copyEcash,
                   ),
                 ],
-                CopyableDetailRow(
-                  label: context.l10n.federationLabel,
-                  value: widget.fed.federationName,
-                ),
-              ],
+              ),
             ),
-          ),
-          const SizedBox(height: 20),
-          SizedBox(
-            width: double.infinity,
-            child: ElevatedButton(
-              onPressed: () {
-                if (mounted) {
-                  Navigator.of(context).popUntil((route) => route.isFirst);
-                  ToastService().show(
-                    message: context.l10n.amountSpent(
-                      formatBalance(
-                        _notes!.amountMsats(),
+            const SizedBox(height: 16),
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: theme.colorScheme.surfaceContainer,
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(
+                  color: theme.colorScheme.primary.withOpacity(0.25),
+                ),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  CopyableDetailRow(
+                    label: TransactionDetailKeys.amount,
+                    // The actual amount of the generated ecash (the requested
+                    // amount rounded up to representable denominations), not the
+                    // raw requested value.
+                    value: formatBalance(
+                      _notes!.amountMsats(),
+                      showMsats,
+                      bitcoinDisplay,
+                    ),
+                  ),
+                  // Show the federation fee and total spent only when a fee was
+                  // actually paid (exact-change sends are free), matching the
+                  // review screen and the transaction details.
+                  if (_fees != null && _fees!.feeMsats > BigInt.zero) ...[
+                    CopyableDetailRow(
+                      label: TransactionDetailKeys.federationFee,
+                      value: formatBalance(
+                        _fees!.feeMsats,
                         showMsats,
                         bitcoinDisplay,
                       ),
                     ),
-                    duration: const Duration(seconds: 5),
-                    onTap: () {},
-                    icon: Icon(Icons.currency_bitcoin),
-                  );
-                }
-              },
-              style: ElevatedButton.styleFrom(
-                backgroundColor: theme.colorScheme.primary,
-                foregroundColor: Colors.black,
-                padding: const EdgeInsets.symmetric(vertical: 16),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
+                    CopyableDetailRow(
+                      label: TransactionDetailKeys.total,
+                      value: formatBalance(
+                        _notes!.amountMsats() + _fees!.feeMsats,
+                        showMsats,
+                        bitcoinDisplay,
+                      ),
+                    ),
+                  ],
+                  CopyableDetailRow(
+                    label: context.l10n.federationLabel,
+                    value: widget.fed.federationName,
+                  ),
+                ],
               ),
-              child: Text(context.l10n.confirmPayment),
             ),
-          ),
-        ],
+            const SizedBox(height: 20),
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton(
+                onPressed: () {
+                  if (mounted) {
+                    Navigator.of(context).popUntil((route) => route.isFirst);
+                    ToastService().show(
+                      message: context.l10n.amountSpent(
+                        formatBalance(
+                          _notes!.amountMsats(),
+                          showMsats,
+                          bitcoinDisplay,
+                        ),
+                      ),
+                      duration: const Duration(seconds: 5),
+                      onTap: () {},
+                      icon: Icon(Icons.currency_bitcoin),
+                    );
+                  }
+                },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: theme.colorScheme.primary,
+                  foregroundColor: Colors.black,
+                  padding: const EdgeInsets.symmetric(vertical: 16),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
+                child: Text(context.l10n.confirmPayment),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

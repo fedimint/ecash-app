@@ -1,6 +1,7 @@
 import 'package:ecashapp/extensions/build_context_l10n.dart';
 import 'package:ecashapp/lib.dart';
 import 'package:ecashapp/utils.dart';
+import 'package:ecashapp/widgets/secure_screen.dart';
 import 'package:flutter/material.dart';
 
 class SeedPhraseInput extends StatefulWidget {
@@ -216,180 +217,197 @@ class _SeedPhraseInputState extends State<SeedPhraseInput>
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
 
-    return Scaffold(
-      appBar: AppBar(title: Text(context.l10n.enterSeedPhrase)),
-      body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.all(24),
-          child: Column(
-            children: [
-              const SizedBox(height: 16),
-              Text(
-                context.l10n.enter12WordRecoveryPhrase,
-                style: theme.textTheme.titleLarge?.copyWith(
-                  fontWeight: FontWeight.bold,
-                  color: theme.colorScheme.primary,
-                ),
-                textAlign: TextAlign.center,
-              ),
-              const SizedBox(height: 24),
-              Expanded(
-                child: GridView.builder(
-                  itemCount: 12,
-                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                    crossAxisCount: 2,
-                    crossAxisSpacing: 12,
-                    mainAxisSpacing: 12,
-                    childAspectRatio: 3.5,
+    // The words being typed here are the wallet. Shield the screen for the same
+    // reason the seed display is shielded.
+    return SecureScreen(
+      child: Scaffold(
+        appBar: AppBar(title: Text(context.l10n.enterSeedPhrase)),
+        body: SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.all(24),
+            child: Column(
+              children: [
+                const SizedBox(height: 16),
+                Text(
+                  context.l10n.enter12WordRecoveryPhrase,
+                  style: theme.textTheme.titleLarge?.copyWith(
+                    fontWeight: FontWeight.bold,
+                    color: theme.colorScheme.primary,
                   ),
-                  itemBuilder: (context, index) {
-                    final controller = controllers[index];
-                    final focusNode = focusNodes[index];
-
-                    return Container(
-                      decoration: BoxDecoration(
-                        color: theme.colorScheme.surface,
-                        borderRadius: BorderRadius.circular(12),
-                        border: Border.all(
-                          color: getBorderColor(index, theme),
-                          width: getBorderWidth(index),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 24),
+                Expanded(
+                  child: GridView.builder(
+                    itemCount: 12,
+                    gridDelegate:
+                        const SliverGridDelegateWithFixedCrossAxisCount(
+                          crossAxisCount: 2,
+                          crossAxisSpacing: 12,
+                          mainAxisSpacing: 12,
+                          childAspectRatio: 3.5,
                         ),
-                      ),
-                      padding: const EdgeInsets.symmetric(horizontal: 12),
-                      child: Row(
-                        children: [
-                          Text(
-                            '${index + 1}.',
-                            style: theme.textTheme.bodyMedium?.copyWith(
-                              color: theme.colorScheme.primary,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                          const SizedBox(width: 8),
-                          Expanded(
-                            child: RawAutocomplete<String>(
-                              textEditingController: controller,
-                              focusNode: focusNode,
-                              optionsBuilder: (TextEditingValue value) {
-                                if (value.text.isEmpty) {
-                                  return const Iterable<String>.empty();
-                                }
-                                return widget.validWords.where(
-                                  (word) =>
-                                      word.startsWith(value.text.toLowerCase()),
-                                );
-                              },
-                              fieldViewBuilder: (
-                                context,
-                                textFieldController,
-                                focusNode,
-                                onFieldSubmitted,
-                              ) {
-                                return TextFormField(
-                                  controller: textFieldController,
-                                  focusNode: focusNode,
-                                  onFieldSubmitted: (_) => onFieldSubmitted(),
-                                  style: theme.textTheme.bodyMedium?.copyWith(
-                                    color: Colors.white,
-                                  ),
-                                  decoration: InputDecoration(
-                                    border: InputBorder.none,
-                                    isDense: true,
-                                    hintText: context.l10n.word,
-                                    hintStyle: const TextStyle(
-                                      color: Colors.white38,
-                                    ),
-                                  ),
-                                );
-                              },
-                              optionsViewBuilder: (
-                                context,
-                                onSelected,
-                                options,
-                              ) {
-                                return Align(
-                                  alignment: Alignment.topLeft,
-                                  child: Material(
-                                    color: theme.colorScheme.surface,
-                                    elevation: 4,
-                                    child: ListView(
-                                      padding: EdgeInsets.zero,
-                                      shrinkWrap: true,
-                                      children:
-                                          options.map((option) {
-                                            return ListTile(
-                                              title: Text(
-                                                option,
-                                                style: const TextStyle(
-                                                  color: Colors.white,
-                                                ),
-                                              ),
-                                              onTap: () => onSelected(option),
-                                            );
-                                          }).toList(),
-                                    ),
-                                  ),
-                                );
-                              },
-                            ),
-                          ),
-                        ],
-                      ),
-                    );
-                  },
-                ),
-              ),
-              const SizedBox(height: 24),
-              SizedBox(
-                width: double.infinity,
-                child: ElevatedButton.icon(
-                  icon: const Icon(Icons.check_circle_outline),
-                  label: Text(context.l10n.recover),
-                  style: ElevatedButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(vertical: 16),
-                    backgroundColor:
-                        isValidSeed
-                            ? theme.colorScheme.primary
-                            : theme.colorScheme.primary.withOpacity(0.3),
-                    foregroundColor:
-                        isValidSeed ? Colors.black : Colors.black45,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(16),
-                    ),
-                  ),
-                  onPressed:
-                      isValidSeed
-                          ? () {
-                            final words =
-                                controllers.map((c) => c.text.trim()).toList();
-                            widget.onConfirm(words);
-                          }
-                          : null,
-                ),
-              ),
+                    itemBuilder: (context, index) {
+                      final controller = controllers[index];
+                      final focusNode = focusNodes[index];
 
-              const SizedBox(height: 16),
-              GestureDetector(
-                onTap: () {
-                  setState(() {
-                    _showAdvanced = !_showAdvanced;
-                  });
-                  if (!_showAdvanced) return;
-                },
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Text(context.l10n.advanced),
-                    Icon(
-                      _showAdvanced
-                          ? Icons.keyboard_arrow_up
-                          : Icons.keyboard_arrow_down,
-                    ),
-                  ],
+                      return Container(
+                        decoration: BoxDecoration(
+                          color: theme.colorScheme.surface,
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(
+                            color: getBorderColor(index, theme),
+                            width: getBorderWidth(index),
+                          ),
+                        ),
+                        padding: const EdgeInsets.symmetric(horizontal: 12),
+                        child: Row(
+                          children: [
+                            Text(
+                              '${index + 1}.',
+                              style: theme.textTheme.bodyMedium?.copyWith(
+                                color: theme.colorScheme.primary,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: RawAutocomplete<String>(
+                                textEditingController: controller,
+                                focusNode: focusNode,
+                                optionsBuilder: (TextEditingValue value) {
+                                  if (value.text.isEmpty) {
+                                    return const Iterable<String>.empty();
+                                  }
+                                  return widget.validWords.where(
+                                    (word) => word.startsWith(
+                                      value.text.toLowerCase(),
+                                    ),
+                                  );
+                                },
+                                fieldViewBuilder: (
+                                  context,
+                                  textFieldController,
+                                  focusNode,
+                                  onFieldSubmitted,
+                                ) {
+                                  return TextFormField(
+                                    controller: textFieldController,
+                                    focusNode: focusNode,
+                                    onFieldSubmitted: (_) => onFieldSubmitted(),
+                                    // Keep the recovery words out of the keyboard's
+                                    // learned dictionary. Gboard and SwiftKey add
+                                    // typed words to a personal dictionary that may
+                                    // be synced to the cloud; these three settings
+                                    // are what tells them not to. The app's own
+                                    // autocomplete below still suggests BIP39 words.
+                                    autocorrect: false,
+                                    enableSuggestions: false,
+                                    keyboardType: TextInputType.visiblePassword,
+                                    style: theme.textTheme.bodyMedium?.copyWith(
+                                      color: Colors.white,
+                                    ),
+                                    decoration: InputDecoration(
+                                      border: InputBorder.none,
+                                      isDense: true,
+                                      hintText: context.l10n.word,
+                                      hintStyle: const TextStyle(
+                                        color: Colors.white38,
+                                      ),
+                                    ),
+                                  );
+                                },
+                                optionsViewBuilder: (
+                                  context,
+                                  onSelected,
+                                  options,
+                                ) {
+                                  return Align(
+                                    alignment: Alignment.topLeft,
+                                    child: Material(
+                                      color: theme.colorScheme.surface,
+                                      elevation: 4,
+                                      child: ListView(
+                                        padding: EdgeInsets.zero,
+                                        shrinkWrap: true,
+                                        children:
+                                            options.map((option) {
+                                              return ListTile(
+                                                title: Text(
+                                                  option,
+                                                  style: const TextStyle(
+                                                    color: Colors.white,
+                                                  ),
+                                                ),
+                                                onTap: () => onSelected(option),
+                                              );
+                                            }).toList(),
+                                      ),
+                                    ),
+                                  );
+                                },
+                              ),
+                            ),
+                          ],
+                        ),
+                      );
+                    },
+                  ),
                 ),
-              ),
-              if (_showAdvanced) _buildAdvancedSection(),
-            ],
+                const SizedBox(height: 24),
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton.icon(
+                    icon: const Icon(Icons.check_circle_outline),
+                    label: Text(context.l10n.recover),
+                    style: ElevatedButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(vertical: 16),
+                      backgroundColor:
+                          isValidSeed
+                              ? theme.colorScheme.primary
+                              : theme.colorScheme.primary.withOpacity(0.3),
+                      foregroundColor:
+                          isValidSeed ? Colors.black : Colors.black45,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(16),
+                      ),
+                    ),
+                    onPressed:
+                        isValidSeed
+                            ? () {
+                              final words =
+                                  controllers
+                                      .map((c) => c.text.trim())
+                                      .toList();
+                              widget.onConfirm(words);
+                            }
+                            : null,
+                  ),
+                ),
+
+                const SizedBox(height: 16),
+                GestureDetector(
+                  onTap: () {
+                    setState(() {
+                      _showAdvanced = !_showAdvanced;
+                    });
+                    if (!_showAdvanced) return;
+                  },
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Text(context.l10n.advanced),
+                      Icon(
+                        _showAdvanced
+                            ? Icons.keyboard_arrow_up
+                            : Icons.keyboard_arrow_down,
+                      ),
+                    ],
+                  ),
+                ),
+                if (_showAdvanced) _buildAdvancedSection(),
+              ],
+            ),
           ),
         ),
       ),

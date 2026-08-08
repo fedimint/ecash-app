@@ -10,6 +10,7 @@ import 'package:ecashapp/screens/access_control.dart';
 import 'package:ecashapp/screens/btcmap_screen.dart';
 import 'package:ecashapp/screens/display_settings.dart';
 import 'package:ecashapp/theme.dart';
+import 'package:ecashapp/utils/pin_guard.dart';
 import 'package:flutter/material.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 
@@ -180,6 +181,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
             subtitle: context.l10n.mnemonicSubtitle,
             warning: hasAck == false,
             onTap: () async {
+              // The seed is the whole wallet, so it is gated even when the
+              // spending PIN is switched off. Without this, brief access to an
+              // unlocked phone is enough to photograph the recovery words.
+              final authorized = await checkPinForSensitiveAction(context);
+              if (!authorized || !context.mounted) return;
               await showAppModalBottomSheet(
                 context: context,
                 childBuilder: () async {
