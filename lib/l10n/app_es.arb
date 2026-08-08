@@ -24,6 +24,8 @@
   "recoveryNoBackupFound": "No se encontró respaldo de federaciones",
   "recoveryNoBackupFoundDetail": "No se pudo restaurar nada desde los relés Nostr. Este respaldo es de mejor esfuerzo: los relés no garantizan conservarlo. Tu billetera se recupera igualmente con tu frase semilla, pero para volver a unirte a una federación necesitarás su código de invitación.",
   "continueLabel": "Continuar",
+  "redeemUnavailable": "Este ecash no se puede canjear ahora",
+  "redeemUnavailableDetail": "No se pudo preparar el canje. No se ha gastado nada y el ecash no ha cambiado, así que puedes intentarlo de nuevo más tarde.",
   "tryingToRejoin": "Intentando volver a unirte a {host} usando el peer {peer}...",
   "peerMightBeOffline": "El peer podría estar desconectado, intentando por {seconds} segundos más...",
   "joinedFederationRecovering": "Se unió a {federationName}. Recuperando...",

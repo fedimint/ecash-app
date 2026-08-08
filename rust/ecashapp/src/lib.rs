@@ -682,15 +682,26 @@ pub async fn reissue_ecash(
     multimint.reissue_ecash(federation_id, ecash, fees).await
 }
 
+/// Returns `(succeeded, amount_msats)`.
+///
+/// The bool is the outcome. `ReissueExternalNotesState` is a fedimint type that
+/// FRB can only hand across as an opaque handle with no readable variants, so
+/// returning it left Dart unable to tell success from failure — which is why the
+/// redeem screen fell back to inferring the outcome from whether an amount came
+/// back. The amount is `None` for reasons that have nothing to do with failure
+/// (an internal reissue, or meta this build cannot read), so that inference
+/// reported completed reissues as failures. Translating here keeps the typed
+/// state on the Rust side, where the rest of the code still matches on it.
 #[frb]
 pub async fn await_ecash_reissue(
     federation_id: &FederationId,
     operation_id: OperationId,
-) -> anyhow::Result<(ReissueExternalNotesState, Option<u64>)> {
+) -> anyhow::Result<(bool, Option<u64>)> {
     let multimint = get_multimint();
-    multimint
+    let (state, amount) = multimint
         .await_ecash_reissue(federation_id, operation_id)
-        .await
+        .await?;
+    Ok((matches!(state, ReissueExternalNotesState::Done), amount))
 }
 
 #[frb]

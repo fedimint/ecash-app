@@ -34,6 +34,16 @@ class _EcashRedeemPromptState extends State<EcashRedeemPrompt> {
   BigInt? _dustMsats;
   bool _showFeeDetails = false;
 
+  /// The fee quote could not be produced.
+  ///
+  /// Worth surfacing rather than shrugging off, because the quote is computed
+  /// locally and needs the same things the reissue does — the federation client,
+  /// a decodable token, a mint module. `reissue_ecash` then validates the notes
+  /// on top of that. So a failed quote is not a missing cosmetic detail; it says
+  /// this token cannot be redeemed here, and it says so before the user commits
+  /// rather than after, with a specific reason instead of "could not claim".
+  bool _feeQuoteFailed = false;
+
   @override
   void initState() {
     super.initState();
@@ -57,10 +67,21 @@ class _EcashRedeemPromptState extends State<EcashRedeemPrompt> {
       }
     } catch (e) {
       AppLogger.instance.error("Could not calculate reissue fees: $e");
+      if (mounted) {
+        setState(() {
+          _feeQuoteFailed = true;
+        });
+      }
     }
   }
 
   Future<void> _handleRedeem() async {
+    // Both buttons are disabled without a quote, so this is a belt-and-braces
+    // guard rather than a live path — but it removes the null-force that used to
+    // throw a TypeError and surface as a generic "could not claim".
+    final fees = _fees;
+    if (fees == null) return;
+
     setState(() {
       _isLoading = true;
     });
@@ -93,15 +114,40 @@ class _EcashRedeemPromptState extends State<EcashRedeemPrompt> {
       final operationId = await reissueEcash(
         federationId: widget.fed.federationId,
         ecash: widget.ecash,
-        fees: _fees!,
+        fees: fees,
       );
 
-      final result = await awaitEcashReissue(
-        federationId: widget.fed.federationId,
-        operationId: operationId,
-      );
+      // Past this point the reissue is submitted and persisted against
+      // `operationId`, and the mint module will carry it to completion whether
+      // or not this screen is still watching. A failure to *observe* the
+      // outcome is therefore not a failure to redeem.
+      final (bool, BigInt?) result;
+      try {
+        result = await awaitEcashReissue(
+          federationId: widget.fed.federationId,
+          operationId: operationId,
+        );
+      } catch (e) {
+        AppLogger.instance.warn(
+          "Reissue submitted but could not be observed: $e",
+        );
+        if (mounted) {
+          ToastService().show(
+            message: l10n.ecashRedeemStarted,
+            duration: const Duration(seconds: 3),
+            onTap: () {},
+            icon: Icon(Icons.check),
+          );
+          Navigator.of(context).pop();
+        }
+        return;
+      }
 
-      if (result.$2 == null || result.$2 == BigInt.zero) {
+      // Judge the outcome on the reported result, not on whether an amount came
+      // back. The amount is null for reasons unrelated to failure — an internal
+      // reissue, or meta this build cannot read — so testing it reported
+      // completed reissues as failures.
+      if (!result.$1) {
         if (mounted) {
           ToastService().show(
             message: failureMessage,
@@ -155,6 +201,9 @@ class _EcashRedeemPromptState extends State<EcashRedeemPrompt> {
   }
 
   Future<void> _handleAsyncRedeem() async {
+    final fees = _fees;
+    if (fees == null) return;
+
     final l10n = context.l10n;
     try {
       final isSpent = await checkEcashSpent(
@@ -175,7 +224,7 @@ class _EcashRedeemPromptState extends State<EcashRedeemPrompt> {
       await reissueEcash(
         federationId: widget.fed.federationId,
         ecash: widget.ecash,
-        fees: _fees!,
+        fees: fees,
       );
 
       if (!mounted) return;
@@ -257,9 +306,50 @@ class _EcashRedeemPromptState extends State<EcashRedeemPrompt> {
             ),
           ),
         ],
+        if (_feeQuoteFailed) ...[
+          const SizedBox(height: 24),
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: theme.colorScheme.surfaceContainer,
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: theme.colorScheme.error),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Icon(
+                      Icons.error_outline,
+                      color: theme.colorScheme.error,
+                      size: 20,
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        context.l10n.redeemUnavailable,
+                        style: theme.textTheme.titleMedium?.copyWith(
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  context.l10n.redeemUnavailableDetail,
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: theme.colorScheme.onSurfaceVariant,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
         const SizedBox(height: 32),
         ElevatedButton(
-          onPressed: _isLoading ? null : _handleRedeem,
+          onPressed: (_isLoading || _fees == null) ? null : _handleRedeem,
           style: ElevatedButton.styleFrom(
             backgroundColor: theme.colorScheme.primary,
             foregroundColor: Colors.black,
@@ -282,7 +372,7 @@ class _EcashRedeemPromptState extends State<EcashRedeemPrompt> {
         ),
         const SizedBox(height: 16),
         OutlinedButton(
-          onPressed: _isLoading ? null : _handleAsyncRedeem,
+          onPressed: (_isLoading || _fees == null) ? null : _handleAsyncRedeem,
           style: OutlinedButton.styleFrom(
             foregroundColor: theme.colorScheme.primary,
             side: BorderSide(color: theme.colorScheme.primary),

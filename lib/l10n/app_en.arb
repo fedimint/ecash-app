@@ -75,6 +75,12 @@
   "continueLabel": "Continue",
   "@continueLabel": {},
 
+  "redeemUnavailable": "This ecash can't be redeemed right now",
+  "@redeemUnavailable": {},
+
+  "redeemUnavailableDetail": "The redemption couldn't be prepared. Nothing has been spent and the ecash is unchanged, so you can try again later.",
+  "@redeemUnavailableDetail": {},
+
   "tryingToRejoin": "Trying to re-join {host} using peer {peer}...",
   "@tryingToRejoin": {
     "placeholders": {
