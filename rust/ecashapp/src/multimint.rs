@@ -4803,40 +4803,55 @@ impl Multimint {
     }
 
     /// Removes an existing LN Address
-    async fn remove_existing_ln_address(
+    /// Give up a registered address on the LN-address server, and drop the local
+    /// record once the server confirms it is gone.
+    ///
+    /// The local removal belongs here rather than at the caller: the moment the
+    /// server confirms the delete, the address genuinely no longer exists, and
+    /// the stored config describes something that is not there. Leaving it for a
+    /// later overwrite would mean a crash in between leaves the wallet pointing
+    /// at a deleted address.
+    ///
+    /// Takes the config rather than reading it, so the caller controls *when*
+    /// the address is given up — see `register_ln_address`, which only releases
+    /// the old address after a replacement has been confirmed.
+    async fn release_ln_address(
         &self,
         federation_id: &FederationId,
-        ln_address_api: String,
+        config: &LightningAddressConfig,
+        ln_address_api: &str,
     ) -> anyhow::Result<()> {
-        let mut dbtx = self.db.begin_transaction().await;
-        let existing_config = dbtx
-            .remove_entry(&LightningAddressKey {
-                federation_id: *federation_id,
-            })
-            .await;
-        if let Some(config) = existing_config {
-            let safe_ln_address_api = SafeUrl::parse(&ln_address_api)?;
-            let remove_request = LNAddressRemoveRequest {
-                username: config.username,
-                domain: config.domain,
-                authentication_token: config.authentication_token,
-            };
+        let safe_ln_address_api = SafeUrl::parse(ln_address_api)?;
+        let remove_request = LNAddressRemoveRequest {
+            username: config.username.clone(),
+            domain: config.domain.clone(),
+            authentication_token: config.authentication_token.clone(),
+        };
 
-            let http_client = crate::net::http_client();
-            let remove_endpoint = safe_ln_address_api.join("lnaddress/remove")?;
-            let result = http_client
-                .delete(remove_endpoint.to_unsafe())
-                .json(&remove_request)
-                .send()
-                .await
-                .context("Failed to send remove request")?;
+        let http_client = crate::net::http_client();
+        let remove_endpoint = safe_ln_address_api.join("lnaddress/remove")?;
+        let result = http_client
+            .delete(remove_endpoint.to_unsafe())
+            .json(&remove_request)
+            .send()
+            .await
+            .context("Failed to send remove request")?;
 
-            if !result.status().is_success() {
-                let status = result.status();
-                let body = result.text().await.unwrap_or_default();
-                bail!("Failed to remove LN address: {} - {}", status, body);
-            }
+        if !result.status().is_success() {
+            let status = result.status();
+            let body = result.text().await.unwrap_or_default();
+            bail!("Failed to remove LN address: {} - {}", status, body);
         }
+
+        // Confirmed gone on the server, so the local record goes now. This used
+        // to be a `remove_entry` on a transaction that was never committed, so
+        // the local removal silently never happened.
+        let mut dbtx = self.db.begin_transaction().await;
+        dbtx.remove_entry(&LightningAddressKey {
+            federation_id: *federation_id,
+        })
+        .await;
+        dbtx.commit_tx().await;
 
         Ok(())
     }
@@ -4850,8 +4865,21 @@ impl Multimint {
         username: String,
         domain: String,
     ) -> anyhow::Result<()> {
-        self.remove_existing_ln_address(federation_id, ln_address_api.clone())
-            .await?;
+        // Give up the current address before claiming a new one. The local
+        // record is dropped by `release_ln_address` at the point the server
+        // confirms the delete, so the two stay in step rather than relying on a
+        // later overwrite.
+        let existing_config = {
+            let mut dbtx = self.db.begin_transaction_nc().await;
+            dbtx.get_value(&LightningAddressKey {
+                federation_id: *federation_id,
+            })
+            .await
+        };
+        if let Some(config) = existing_config {
+            self.release_ln_address(federation_id, &config, &ln_address_api)
+                .await?;
+        }
 
         let client = self
             .clients
@@ -4926,11 +4954,14 @@ impl Multimint {
         }
 
         let registration_result = result.json::<serde_json::Value>().await?;
+        // Server-controlled JSON, so a non-string here is a badly behaved or
+        // hostile server rather than a bug on our side — an error, not a panic.
         let authentication_token = registration_result
             .get("authentication_token")
-            .ok_or(anyhow!("No authentication token"))?
-            .as_str()
-            .expect("Authentication token is not a String");
+            .and_then(|token| token.as_str())
+            .ok_or(anyhow!(
+                "Registration response has no usable authentication token"
+            ))?;
         // Never the raw response: it carries `authentication_token`, which is
         // the bearer credential for this lightning address. Log access would
         // otherwise be enough to hijack the address.
