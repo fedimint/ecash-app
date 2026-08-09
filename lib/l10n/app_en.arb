@@ -366,6 +366,9 @@
   "setUpPin": "Set Up PIN",
   "@setUpPin": {},
 
+  "changePin": "Change PIN",
+  "@changePin": {},
+
   "requirePinForSpending": "Require PIN for Spending",
   "@requirePinForSpending": {},
 
@@ -377,6 +380,9 @@
 
   "pinRemoved": "PIN removed",
   "@pinRemoved": {},
+
+  "pinChangedSuccessfully": "PIN changed successfully",
+  "@pinChangedSuccessfully": {},
 
   "displaySettings": "Display Settings",
   "@displaySettings": {},
@@ -1785,6 +1791,15 @@
 
   "incorrectPin": "Incorrect PIN",
   "@incorrectPin": {},
+
+  "tooManyPinAttempts": "Too many incorrect attempts. Try again in {time}",
+  "@tooManyPinAttempts": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
 
   "continueButton": "Continue",
   "@continueButton": {},

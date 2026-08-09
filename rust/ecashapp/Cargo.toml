@@ -8,6 +8,7 @@ crate-type = ["cdylib"]
 
 [dependencies]
 anyhow = "1.0.98"
+argon2 = "0.5.3"
 async-stream = "0.3.6"
 async-trait = "0.1.88"
 bitcoin = { version = "0.32.5", features = ["serde"] }
@@ -49,6 +50,7 @@ reqwest = { version = "0.12.18", features = [
 semver = "1.0.27"
 serde = { version = "1.0.219", features = ["derive"] }
 serde_json = "1.0.140"
+subtle = "2.6.1"
 thiserror = "1.0"
 tokio = "1.45.1"
 
@@ -66,6 +68,10 @@ ndk-context = "0.1"
 librocksdb-sys = { opt-level = 3 }
 secp256k1 = { opt-level = 3}
 secp256k1-sys = { opt-level = 3}
+# Argon2 hashes the PIN on every unlock. Unoptimized it takes seconds, not
+# milliseconds, and the cost is paid on the user's critical path.
+argon2 = { opt-level = 3 }
+blake2 = { opt-level = 3 }
 
 [profile.release]
 opt-level = "z"
@@ -78,6 +84,10 @@ debug = "line-tables-only"
 librocksdb-sys = { opt-level = 3 }
 secp256k1 = { opt-level = 3}
 secp256k1-sys = { opt-level = 3}
+# The release profile optimizes for size (`opt-level = "z"`), which is the wrong
+# trade for a KDF that runs while the user waits at the lock screen.
+argon2 = { opt-level = 3 }
+blake2 = { opt-level = 3 }
 
 # Fast development builds that are still usable (crypto code needs optimization)
 # Use via: cargo build --profile release-dev
@@ -92,3 +102,5 @@ incremental = true
 librocksdb-sys = { opt-level = 3 }
 secp256k1 = { opt-level = 3 }
 secp256k1-sys = { opt-level = 3 }
+argon2 = { opt-level = 3 }
+blake2 = { opt-level = 3 }

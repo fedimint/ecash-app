@@ -1313,10 +1313,25 @@ pub async fn has_pin_code() -> bool {
     multimint.has_pin_code().await
 }
 
+/// Enroll a PIN for the first time.
+///
+/// Refuses to overwrite an existing one: changing a PIN has to prove knowledge
+/// of the current one, which is what [`change_pin_code`] is for. Without this
+/// check, anyone holding an unlocked phone could quietly replace the PIN.
 #[frb]
 pub async fn set_pin_code(pin: String) -> anyhow::Result<()> {
     let multimint = get_multimint();
-    multimint.set_pin_hash(pin).await
+    if multimint.has_pin_code().await {
+        bail!("A PIN is already set");
+    }
+    multimint.set_pin(pin).await
+}
+
+#[frb]
+pub async fn change_pin_code(current_pin: String, new_pin: String) -> anyhow::Result<()> {
+    let multimint = get_multimint();
+    verify_current_pin(&multimint, current_pin).await?;
+    multimint.set_pin(new_pin).await
 }
 
 #[frb]
@@ -1325,13 +1340,20 @@ pub async fn verify_pin(pin: String) -> bool {
     multimint.verify_pin(pin).await
 }
 
+/// Seconds until PIN entry reopens after too many wrong guesses; `0` when it is
+/// open. [`verify_pin`] returns `false` either way, so the UI reads this to tell
+/// "wrong PIN" apart from "locked out" and to render the countdown.
+#[frb]
+pub async fn pin_lockout_seconds() -> u64 {
+    let multimint = get_multimint();
+    multimint.pin_lockout_secs().await
+}
+
 #[frb]
 pub async fn clear_pin_code(pin: String) -> anyhow::Result<()> {
     let multimint = get_multimint();
-    if !multimint.verify_pin(pin).await {
-        anyhow::bail!("Incorrect PIN");
-    }
-    multimint.clear_pin_hash().await;
+    verify_current_pin(&multimint, pin).await?;
+    multimint.clear_pin().await;
     Ok(())
 }
 
@@ -1341,10 +1363,40 @@ pub async fn get_require_pin_for_spending() -> bool {
     multimint.get_require_pin_for_spending().await
 }
 
+/// Toggle the spending PIN prompt.
+///
+/// Turning it *off* removes a protection, so it needs `current_pin`; turning it
+/// on only adds one and does not. Otherwise brief access to an unlocked phone
+/// would be enough to disable the prompt and then spend freely.
 #[frb]
-pub async fn set_require_pin_for_spending(require: bool) {
+pub async fn set_require_pin_for_spending(
+    require: bool,
+    current_pin: Option<String>,
+) -> anyhow::Result<()> {
     let multimint = get_multimint();
+
+    if !require && multimint.has_pin_code().await {
+        let Some(current_pin) = current_pin else {
+            bail!("Disabling the spending PIN requires the current PIN");
+        };
+        verify_current_pin(&multimint, current_pin).await?;
+    }
+
     multimint.set_require_pin_for_spending(require).await;
+    Ok(())
+}
+
+/// Check the current PIN, reporting a lockout distinctly from a wrong PIN so the
+/// user is not left retrying against a timer they cannot see.
+async fn verify_current_pin(multimint: &Multimint, pin: String) -> anyhow::Result<()> {
+    if multimint.verify_pin(pin).await {
+        return Ok(());
+    }
+
+    match multimint.pin_lockout_secs().await {
+        0 => bail!("Incorrect PIN"),
+        secs => bail!("Too many incorrect attempts. Try again in {secs}s"),
+    }
 }
 
 #[frb]
