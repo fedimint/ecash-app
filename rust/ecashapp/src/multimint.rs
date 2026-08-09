@@ -6357,10 +6357,9 @@ impl Multimint {
 
     async fn record_pin_failure(&self) {
         let mut dbtx = self.db.begin_transaction().await;
-        let consecutive_failures = dbtx
-            .get_value(&PinAttemptsKey)
-            .await
-            .map_or(1, |attempts| attempts.consecutive_failures.saturating_add(1));
+        let consecutive_failures = dbtx.get_value(&PinAttemptsKey).await.map_or(1, |attempts| {
+            attempts.consecutive_failures.saturating_add(1)
+        });
 
         let locked_until_ms = pin_locked_until_ms(consecutive_failures, unix_now_millis());
 
@@ -6775,7 +6774,10 @@ mod tests {
         );
         // Untouched by the swap.
         assert!(dbtx.get_value(&RequirePinForSpendingKey).await.is_some());
-        let attempts = dbtx.get_value(&PinAttemptsKey).await.expect("attempts kept");
+        let attempts = dbtx
+            .get_value(&PinAttemptsKey)
+            .await
+            .expect("attempts kept");
         assert_eq!(attempts.consecutive_failures, 7);
         assert_eq!(attempts.locked_until_ms, 1_700_000_060_000);
     }
