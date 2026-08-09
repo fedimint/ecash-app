@@ -168,8 +168,28 @@ void main() {
       // At $50,000/BTC, 10,000,000 sats = $5,000
       expect(
         calculateFiatValue(50000.0, 10000000, FiatCurrency.usd),
-        '\$5000.00',
+        '\$5,000.00',
       );
+    });
+
+    test('groups thousands with commas', () {
+      // At $50,000/BTC, 1 BTC = $50,000
+      expect(
+        calculateFiatValue(50000.0, 100000000, FiatCurrency.usd),
+        '\$50,000.00',
+      );
+      // At $50,000/BTC, 2,000 BTC = $100,000,000
+      expect(
+        calculateFiatValue(50000.0, 200000000000, FiatCurrency.usd),
+        '\$100,000,000.00',
+      );
+      // Grouping also applies when the symbol trails the amount
+      expect(
+        calculateFiatValue(45000.0, 100000000, FiatCurrency.eur),
+        '45,000.00€',
+      );
+      // Below 1000 stays ungrouped
+      expect(calculateFiatValue(50000.0, 1000000, FiatCurrency.usd), '\$500.00');
     });
 
     test('calculates EUR correctly with symbol after', () {
@@ -199,7 +219,7 @@ void main() {
     test('calculates JPY correctly with ¥ prefix', () {
       expect(
         calculateFiatValue(7000000.0, 100000, FiatCurrency.jpy),
-        '¥7000.00',
+        '¥7,000.00',
       );
     });
 
@@ -251,6 +271,18 @@ void main() {
       expect(formatFiatInput('12.', FiatCurrency.usd), '\$12.');
       expect(formatFiatInput('12.5', FiatCurrency.usd), '\$12.5');
       expect(formatFiatInput('12.50', FiatCurrency.usd), '\$12.50');
+    });
+
+    test('groups thousands with commas while typing', () {
+      expect(formatFiatInput('1000', FiatCurrency.usd), '\$1,000');
+      expect(formatFiatInput('12345', FiatCurrency.usd), '\$12,345');
+      expect(formatFiatInput('1234567', FiatCurrency.usd), '\$1,234,567');
+      expect(formatFiatInput('1234567', FiatCurrency.eur), '1,234,567€');
+      // Only the integer part is grouped; decimals are left as typed
+      expect(formatFiatInput('1234.5', FiatCurrency.usd), '\$1,234.5');
+      expect(formatFiatInput('1234.', FiatCurrency.usd), '\$1,234.');
+      // No separator below 1000
+      expect(formatFiatInput('999', FiatCurrency.usd), '\$999');
     });
 
     test('handles leading decimal', () {

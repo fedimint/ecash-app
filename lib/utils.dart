@@ -220,10 +220,21 @@ String calculateFiatValue(
     FiatCurrency.jpy => ('¥', 'before'),
   };
 
-  final formattedValue = fiatValue.toStringAsFixed(2);
+  final formattedValue = NumberFormat('#,##0.00', 'en_US').format(fiatValue);
   return symbolPosition == 'before'
       ? '$symbol$formattedValue'
       : '$formattedValue$symbol';
+}
+
+/// Groups a run of digits with a comma every three places, so fiat amounts
+/// read as easily as the space-grouped sats amounts from [formatBalance].
+String _groupDigits(String digits) {
+  final buffer = StringBuffer();
+  for (var i = 0; i < digits.length; i++) {
+    if (i > 0 && (digits.length - i) % 3 == 0) buffer.write(',');
+    buffer.write(digits[i]);
+  }
+  return buffer.toString();
 }
 
 /// Converts a fiat amount to satoshis based on the current BTC price.
@@ -256,10 +267,10 @@ String formatFiatInput(String rawFiatInput, FiatCurrency fiatCurrency) {
     final parts = rawFiatInput.split('.');
     final intPart = parts[0].isEmpty ? '0' : parts[0];
     final decPart = parts.length > 1 ? parts[1] : '';
-    // Show as-is during typing, don't pad decimals
-    formattedValue = '$intPart.$decPart';
+    // Group the integer part, but show decimals as-is during typing
+    formattedValue = '${_groupDigits(intPart)}.$decPart';
   } else {
-    formattedValue = rawFiatInput;
+    formattedValue = _groupDigits(rawFiatInput);
   }
 
   return symbolPosition == 'before'
