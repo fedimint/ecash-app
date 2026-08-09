@@ -1,4 +1,9 @@
-use std::{collections::BTreeMap, str::FromStr, sync::Arc, time::Duration};
+use std::{
+    collections::{BTreeMap, BTreeSet},
+    str::FromStr,
+    sync::Arc,
+    time::Duration,
+};
 
 use anyhow::anyhow;
 use fedimint_client::{ClientHandleArc, OperationId};
@@ -47,6 +52,14 @@ pub(crate) struct WalletHandler {
     /// (see [`WalletV2PendingDepositKey`]) so the poller can be restarted on app
     /// launch.
     db: Database,
+    /// walletv2 addresses with a deposit poller already running.
+    ///
+    /// walletv2 hands out the same address until it receives a deposit, and the
+    /// receive screen allocates on every open, so without this each visit
+    /// stacked another poller onto the same address — every one of them hitting
+    /// the block explorer independently and indefinitely. The startup rehydrate
+    /// can overlap with a live poller for the same reason.
+    watched_v2_addresses: Arc<RwLock<BTreeSet<(FederationId, String)>>>,
     task_group: TaskGroup,
 }
 
@@ -60,6 +73,7 @@ impl WalletHandler {
             pegin_address_monitor_tx: monitor_tx,
             allocated_bitcoin_addresses: Arc::new(RwLock::new(BTreeMap::new())),
             db,
+            watched_v2_addresses: Arc::new(RwLock::new(BTreeSet::new())),
             task_group,
         }
     }
@@ -309,7 +323,8 @@ impl WalletHandler {
             // from). The entry is removed once the deposit is claimed.
             self.persist_pending_v2_deposit(federation_id, &address)
                 .await;
-            self.spawn_v2_deposit_poller(federation_id, address, client);
+            self.spawn_v2_deposit_poller(federation_id, address, client)
+                .await;
             return Ok(None);
         }
 
@@ -520,19 +535,36 @@ impl WalletHandler {
                 "resume_pending_v2_deposits: resuming deposit poller for {address} on fed {federation_id}"
             ))
             .await;
-            self.spawn_v2_deposit_poller(federation_id, address, client.clone());
+            self.spawn_v2_deposit_poller(federation_id, address, client.clone())
+                .await;
         }
     }
 
     /// Spawns a background task that watches the chain for a deposit to a
     /// walletv2 receive `address`, surfacing mempool and confirmation progress.
-    fn spawn_v2_deposit_poller(
+    /// Starts watching `address` for a deposit, unless something already is.
+    ///
+    /// Polling a walletv2 address indefinitely is correct — the federation has
+    /// no mempool visibility, so this is the only way to surface progress, and
+    /// there is no point at which it becomes safe to stop. What is not correct
+    /// is doing it more than once per address, which is what this guards.
+    async fn spawn_v2_deposit_poller(
         &self,
         federation_id: FederationId,
         address: String,
         client: ClientHandleArc,
     ) {
+        let key = (federation_id, address.clone());
+        if !self.watched_v2_addresses.write().await.insert(key.clone()) {
+            info_to_flutter(format!(
+                "Already watching {address} for a deposit; not starting a second poller"
+            ))
+            .await;
+            return;
+        }
+
         let event_bus = get_event_bus();
+        let watched = self.watched_v2_addresses.clone();
         self.task_group
             .spawn_cancellable("walletv2 deposit poller", async move {
                 if let Err(e) =
@@ -542,6 +574,9 @@ impl WalletHandler {
                     info_to_flutter(format!("watch_v2_pegin_address({address}) failed: {e:?}"))
                         .await;
                 }
+                // Released on the way out so an address whose watcher ended
+                // without finding a deposit can be picked up again later.
+                watched.write().await.remove(&key);
             });
     }
 
@@ -1046,14 +1081,17 @@ impl WalletHandler {
 }
 
 /// Resolves the esplora/mempool.space API base URL for the given network.
+///
+/// Panicking is the intent for anything not listed: regtest has no public
+/// explorer and has to be pointed at a local instance by hand, and the remaining
+/// networks are not supported. Both are configuration errors rather than
+/// conditions the app can recover from at runtime.
 fn mempool_api_url(network: bitcoin::Network) -> String {
     match network {
         bitcoin::Network::Bitcoin => "https://mempool.space/api".to_string(),
         bitcoin::Network::Signet => "https://mutinynet.com/api".to_string(),
         bitcoin::Network::Regtest => {
-            // referencing devimint, uncomment for regtest
-            "http://localhost:25392".to_string()
-            //panic!("Regtest requires manually setting the connection params")
+            panic!("Regtest requires manually setting the connection params")
         }
         network => {
             panic!("{network} is not a supported network")
