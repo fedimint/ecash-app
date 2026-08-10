@@ -10,6 +10,7 @@ import 'package:ecashapp/multimint.dart';
 import 'package:ecashapp/number_pad.dart';
 import 'package:ecashapp/onchain_send.dart';
 import 'package:ecashapp/pay_preview.dart';
+import 'package:ecashapp/qr_loop_session.dart';
 import 'package:ecashapp/redeem_ecash.dart';
 import 'package:ecashapp/theme.dart';
 import 'package:ecashapp/toast.dart';
@@ -44,14 +45,39 @@ class _ScanQRPageState extends State<ScanQRPage> {
   bool _scanned = false;
   bool _isPasting = false;
   bool _permissionDenied = false;
-  _QrLoopSession? _currentSession;
+  QrLoopSession? _currentSession;
 
   final GlobalKey qrKey = GlobalKey(debugLabel: 'QR');
   QRViewController? _qrController;
 
-  final List<_FountainFramePending> _pendingFountains = [];
+  final List<FountainFramePending> _pendingFountains = [];
   final Set<String> _exploredFountains = {};
   static const int FOUNTAIN_V1_CONST = 100;
+
+  // Everything below arrives from a camera, and nothing in this app produces
+  // the legacy frame format — the only writer is some other wallet, or someone
+  // holding up a hostile code. So the frame header is treated as untrusted
+  // input: bounded, validated, and never trusted to describe itself honestly.
+
+  /// Largest frame count a session will accept.
+  ///
+  /// The wire format allows 65535, which at realistic chunk sizes would let one
+  /// crafted header reserve hundreds of megabytes. A real transfer is a QR loop
+  /// someone physically holds up to a camera; 4096 frames is already far longer
+  /// than anyone would stand there for.
+  static const int _maxTotalFrames = 4096;
+
+  /// Caps on the dedup set and the queue of fountain frames held for a session
+  /// that has not started yet. Both are fed directly by frames on screen, so
+  /// without a ceiling a loop of distinct frames grows them until the app dies.
+  static const int _maxExploredFountains = 512;
+  static const int _maxPendingFountains = 128;
+
+  /// How long a session must go without a frame before a different nonce is
+  /// allowed to replace it. Short enough that scanning a second code after
+  /// glancing away still works; long enough that a code flashed at the camera
+  /// mid-transfer cannot discard what has been collected.
+  static const Duration _sessionTakeoverIdle = Duration(seconds: 5);
 
   static const String _fedimintFountainPrefix = 'fedimint';
   OobNotesDecoder _fountainDecoder = OobNotesDecoder();
@@ -177,16 +203,27 @@ class _ScanQRPageState extends State<ScanQRPage> {
           AppLogger.instance.info("Duplicate fountain frame ignored");
           return;
         }
+        // Oldest first: the set exists to suppress the repeats of a looping
+        // animation, and those repeat close together, so the recent entries are
+        // the ones still worth remembering.
+        if (_exploredFountains.length >= _maxExploredFountains) {
+          _exploredFountains.remove(_exploredFountains.first);
+        }
         _exploredFountains.add(base64Str);
 
+        // A truncated frame would otherwise index past the end of the buffer and
+        // throw, which the outer catch turns into a bare-QR parse attempt on
+        // binary junk.
+        if (bytes.length < 3) return;
         final k = (bytes[1] << 8) | bytes[2];
+        if (bytes.length < 3 + 2 * k) return;
         final indexes = <int>[];
         for (int j = 0; j < k; j++) {
           final idx = (bytes[3 + 2 * j] << 8) | bytes[4 + 2 * j];
           indexes.add(idx);
         }
         final data = bytes.sublist(3 + 2 * k);
-        final fountainPending = _FountainFramePending(
+        final fountainPending = FountainFramePending(
           base64Str,
           firstByte,
           indexes,
@@ -198,6 +235,9 @@ class _ScanQRPageState extends State<ScanQRPage> {
           AppLogger.instance.info(
             "Queueing fountain frame (no active session yet)",
           );
+          if (_pendingFountains.length >= _maxPendingFountains) {
+            _pendingFountains.removeAt(0);
+          }
           _pendingFountains.add(fountainPending);
         } else {
           AppLogger.instance.info(
@@ -214,11 +254,35 @@ class _ScanQRPageState extends State<ScanQRPage> {
         final frameIndex = (bytes[3] << 8) + bytes[4];
         final chunkData = bytes.sublist(5);
 
-        if (_currentSession == null || _currentSession!.nonce != nonce) {
+        // A zero count completes the session on its first frame and merges to
+        // nothing; an enormous one is a memory reservation, not a transfer.
+        if (totalFrames < 1 || totalFrames > _maxTotalFrames) {
+          AppLogger.instance.warn(
+            "Ignoring frame with implausible totalFrames=$totalFrames",
+          );
+          return;
+        }
+
+        final existing = _currentSession;
+        if (existing == null || existing.nonce != nonce) {
+          // Switching sessions throws away everything collected so far, so a
+          // code flashed at the camera mid-transfer would otherwise be enough to
+          // destroy a nearly-complete scan. Let the running session finish, and
+          // only hand over once it has stopped receiving frames.
+          if (existing != null &&
+              existing.chunks.isNotEmpty &&
+              !existing.isIdleFor(_sessionTakeoverIdle)) {
+            AppLogger.instance.warn(
+              "Ignoring nonce $nonce: nonce ${existing.nonce} still in progress "
+              "(${existing.chunks.length}/${existing.totalFrames})",
+            );
+            return;
+          }
+
           AppLogger.instance.info(
             "Starting new session! Nonce: $nonce TotalFrames: $totalFrames",
           );
-          _currentSession = _QrLoopSession(
+          _currentSession = QrLoopSession(
             nonce: nonce,
             totalFrames: totalFrames,
           );
@@ -249,7 +313,21 @@ class _ScanQRPageState extends State<ScanQRPage> {
           setState(() {
             _scanned = true;
           });
-          final merged = session.mergeChunks();
+          final Uint8List merged;
+          try {
+            merged = session.mergeChunks();
+          } catch (e) {
+            // Index validation should make this unreachable. It is caught anyway
+            // because the alternative is worse than a dropped transfer: the
+            // throw would skip _resetScannedAfterDelay below, leaving _scanned
+            // set forever and the scanner ignoring every subsequent frame.
+            AppLogger.instance.warn("Discarding unmergeable session: $e");
+            setState(() {
+              _currentSession = null;
+            });
+            _resetScannedAfterDelay();
+            return;
+          }
           await _processMerged(merged);
           _resetScannedAfterDelay();
         }
@@ -803,140 +881,5 @@ class _ScanQRPageState extends State<ScanQRPage> {
         ),
       ),
     );
-  }
-}
-
-class _FountainFramePending {
-  final String idBase64; // used for dedupe
-  final int version;
-  final List<int> indexes;
-  final Uint8List data;
-
-  _FountainFramePending(this.idBase64, this.version, this.indexes, this.data);
-
-  _FountainFrame toFountainFrame() => _FountainFrame(version, indexes, data);
-}
-
-class _FountainFrame {
-  final int version;
-  final List<int> indexes;
-  final Uint8List data;
-
-  _FountainFrame(this.version, this.indexes, this.data);
-}
-
-class _QrLoopSession {
-  final int nonce;
-  final int totalFrames;
-  final Map<int, Uint8List> chunks = {};
-  final List<_FountainFrame> fountains = [];
-
-  _QrLoopSession({required this.nonce, required this.totalFrames});
-
-  bool get isComplete => chunks.length >= totalFrames;
-
-  bool addDataFrame(int frameIndex, Uint8List data) {
-    if (!chunks.containsKey(frameIndex)) {
-      chunks[frameIndex] = data;
-      _tryRecover();
-      return true;
-    }
-    return false;
-  }
-
-  void addFountainFrame(_FountainFrame f) {
-    fountains.add(f);
-    _tryRecover();
-  }
-
-  void _tryRecover() {
-    bool progress = true;
-    while (progress) {
-      progress = false;
-
-      for (int i = 0; i < fountains.length;) {
-        final f = fountains[i];
-
-        // which indexes are missing
-        final missing =
-            f.indexes.where((idx) => !chunks.containsKey(idx)).toList();
-
-        // collect known frames' data for the indexes present
-        final existingFramesData = <Uint8List>[];
-        for (final idx in f.indexes) {
-          final known = chunks[idx];
-          if (known != null) existingFramesData.add(known);
-        }
-
-        if (existingFramesData.isNotEmpty) {
-          // compute min length among known frames
-          final minKnownLen = existingFramesData
-              .map((d) => d.length)
-              .reduce((a, b) => a < b ? a : b);
-
-          // If fountain length does not match min known length, drop the fountain (incompatible).
-          if (f.data.length != minKnownLen) {
-            AppLogger.instance.info(
-              "Dropping fountain: incompatible length (f.len=${f.data.length} minKnownLen=$minKnownLen)",
-            );
-            fountains.removeAt(i);
-            continue;
-          }
-        }
-
-        if (missing.isEmpty) {
-          // fountain is useless now, remove it
-          fountains.removeAt(i);
-          continue;
-        } else if (missing.length == 1) {
-          // we can recover that missing chunk
-          final int missingIndex = missing.first;
-
-          // start with fountain data as Uint8List; we will XOR known frames into it
-          // produce result length = f.data.length (should equal min known length per above)
-          Uint8List recovered = Uint8List.fromList(f.data);
-
-          // XOR existing frames (only up to recovered.length, because we've validated lengths)
-          for (final idx in f.indexes) {
-            if (idx == missingIndex) continue;
-            final known = chunks[idx]!;
-            // XOR only up to recovered.length
-            for (int j = 0; j < recovered.length; j++) {
-              recovered[j] = recovered[j] ^ known[j];
-            }
-          }
-
-          // store recovered chunk
-          chunks[missingIndex] = recovered;
-          AppLogger.instance.info(
-            "Recovered missing chunk $missingIndex from fountain (now have ${chunks.length}/$totalFrames)",
-          );
-
-          // remove fountain and restart loop (some fountains may now be usable)
-          fountains.removeAt(i);
-          progress = true;
-          // restart scanning fountains from beginning
-          i = 0;
-          continue;
-        } else {
-          // cannot do anything for this fountain yet
-          i++;
-        }
-      } // end for fountains
-    } // end while progress
-  }
-
-  Uint8List mergeChunks() {
-    final List<int> fullData = [];
-    for (int i = 0; i < totalFrames; i++) {
-      final c = chunks[i];
-      if (c == null) {
-        throw Exception(
-          "Missing chunk $i during merge (have ${chunks.keys.toList()})",
-        );
-      }
-      fullData.addAll(c);
-    }
-    return Uint8List.fromList(fullData);
   }
 }

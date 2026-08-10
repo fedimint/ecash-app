@@ -27,7 +27,11 @@ String redactUriForLog(Uri uri) {
 }
 
 class AppLogger {
-  static late final File _logFile;
+  /// Null until [init] runs — before that (and under `flutter test`, which has
+  /// no app directories) logging degrades to console only. A diagnostic must
+  /// never be the reason a caller dies, and a `late final` here meant any pure
+  /// logic that logged could not be unit tested at all.
+  static File? _logFile;
   static final AppLogger instance = AppLogger._internal();
 
   AppLogger._internal();
@@ -46,13 +50,14 @@ class AppLogger {
     } else {
       dir = await getApplicationDocumentsDirectory();
     }
-    _logFile = File('${dir!.path}/ecashapp/ecashapp.txt');
+    final logFile = File('${dir!.path}/ecashapp/ecashapp.txt');
 
-    if (!(await _logFile.exists())) {
-      await _logFile.create(recursive: true);
+    if (!(await logFile.exists())) {
+      await logFile.create(recursive: true);
     }
+    _logFile = logFile;
 
-    instance.info("Logger initialized. Log file: ${_logFile.path}");
+    instance.info("Logger initialized. Log file: ${logFile.path}");
   }
 
   /// Roll over once the log passes this size, keeping one previous generation.
@@ -68,8 +73,10 @@ class AppLogger {
     debugPrint(formatted);
 
     // Write to file
+    final logFile = _logFile;
+    if (logFile == null) return;
     _rotateIfOversized();
-    _logFile.writeAsStringSync(
+    logFile.writeAsStringSync(
       "$formatted\n",
       mode: FileMode.append,
       flush: true,
@@ -77,16 +84,18 @@ class AppLogger {
   }
 
   void _rotateIfOversized() {
+    final logFile = _logFile;
+    if (logFile == null) return;
     try {
-      if (!_logFile.existsSync() || _logFile.lengthSync() < _maxLogBytes) {
+      if (!logFile.existsSync() || logFile.lengthSync() < _maxLogBytes) {
         return;
       }
-      final previous = File('${_logFile.path}.1');
+      final previous = File('${logFile.path}.1');
       if (previous.existsSync()) {
         previous.deleteSync();
       }
-      _logFile.renameSync(previous.path);
-      _logFile.createSync(recursive: true);
+      logFile.renameSync(previous.path);
+      logFile.createSync(recursive: true);
     } catch (_) {
       // Rotation is best-effort; never let it break logging itself.
     }
@@ -95,15 +104,17 @@ class AppLogger {
   /// Delete the log and its rotated generation. Exposed so the user can clear
   /// history without hunting for the file on disk.
   Future<void> clear() async {
+    final logFile = _logFile;
+    if (logFile == null) return;
     try {
-      final previous = File('${_logFile.path}.1');
+      final previous = File('${logFile.path}.1');
       if (await previous.exists()) {
         await previous.delete();
       }
-      if (await _logFile.exists()) {
-        await _logFile.delete();
+      if (await logFile.exists()) {
+        await logFile.delete();
       }
-      await _logFile.create(recursive: true);
+      await logFile.create(recursive: true);
     } catch (e) {
       debugPrint('Could not clear log file: $e');
     }
@@ -136,7 +147,9 @@ class AppLogger {
     debugPrint(formatted);
 
     // Write to file
-    _logFile.writeAsStringSync(
+    final logFile = _logFile;
+    if (logFile == null) return;
+    logFile.writeAsStringSync(
       "$formatted\n",
       mode: FileMode.append,
       flush: true,
