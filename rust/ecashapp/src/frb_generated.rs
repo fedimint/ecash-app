@@ -15769,11 +15769,13 @@ impl SseDecode for crate::multimint::AwaitingConfsEvent {
         let mut var_outpoint = <String>::sse_decode(deserializer);
         let mut var_blockHeight = <u64>::sse_decode(deserializer);
         let mut var_needed = <u64>::sse_decode(deserializer);
+        let mut var_txid = <Option<String>>::sse_decode(deserializer);
         return crate::multimint::AwaitingConfsEvent {
             amount: var_amount,
             outpoint: var_outpoint,
             block_height: var_blockHeight,
             needed: var_needed,
+            txid: var_txid,
         };
     }
 }
@@ -15804,9 +15806,11 @@ impl SseDecode for crate::multimint::ClaimedEvent {
     fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
         let mut var_amount = <u64>::sse_decode(deserializer);
         let mut var_outpoint = <String>::sse_decode(deserializer);
+        let mut var_txid = <Option<String>>::sse_decode(deserializer);
         return crate::multimint::ClaimedEvent {
             amount: var_amount,
             outpoint: var_outpoint,
+            txid: var_txid,
         };
     }
 }
@@ -15816,9 +15820,11 @@ impl SseDecode for crate::multimint::ConfirmedEvent {
     fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
         let mut var_amount = <u64>::sse_decode(deserializer);
         let mut var_outpoint = <String>::sse_decode(deserializer);
+        let mut var_txid = <Option<String>>::sse_decode(deserializer);
         return crate::multimint::ConfirmedEvent {
             amount: var_amount,
             outpoint: var_outpoint,
+            txid: var_txid,
         };
     }
 }
@@ -16656,9 +16662,11 @@ impl SseDecode for crate::multimint::MempoolEvent {
     fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
         let mut var_amount = <u64>::sse_decode(deserializer);
         let mut var_outpoint = <String>::sse_decode(deserializer);
+        let mut var_txid = <Option<String>>::sse_decode(deserializer);
         return crate::multimint::MempoolEvent {
             amount: var_amount,
             outpoint: var_outpoint,
+            txid: var_txid,
         };
     }
 }
@@ -18961,6 +18969,7 @@ impl flutter_rust_bridge::IntoDart for crate::multimint::AwaitingConfsEvent {
             self.outpoint.into_into_dart().into_dart(),
             self.block_height.into_into_dart().into_dart(),
             self.needed.into_into_dart().into_dart(),
+            self.txid.into_into_dart().into_dart(),
         ]
         .into_dart()
     }
@@ -19000,6 +19009,7 @@ impl flutter_rust_bridge::IntoDart for crate::multimint::ClaimedEvent {
         [
             self.amount.into_into_dart().into_dart(),
             self.outpoint.into_into_dart().into_dart(),
+            self.txid.into_into_dart().into_dart(),
         ]
         .into_dart()
     }
@@ -19021,6 +19031,7 @@ impl flutter_rust_bridge::IntoDart for crate::multimint::ConfirmedEvent {
         [
             self.amount.into_into_dart().into_dart(),
             self.outpoint.into_into_dart().into_dart(),
+            self.txid.into_into_dart().into_dart(),
         ]
         .into_dart()
     }
@@ -19692,6 +19703,7 @@ impl flutter_rust_bridge::IntoDart for crate::multimint::MempoolEvent {
         [
             self.amount.into_into_dart().into_dart(),
             self.outpoint.into_into_dart().into_dart(),
+            self.txid.into_into_dart().into_dart(),
         ]
         .into_dart()
     }
@@ -20913,6 +20925,7 @@ impl SseEncode for crate::multimint::AwaitingConfsEvent {
         <String>::sse_encode(self.outpoint, serializer);
         <u64>::sse_encode(self.block_height, serializer);
         <u64>::sse_encode(self.needed, serializer);
+        <Option<String>>::sse_encode(self.txid, serializer);
     }
 }
 
@@ -20946,6 +20959,7 @@ impl SseEncode for crate::multimint::ClaimedEvent {
     fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
         <u64>::sse_encode(self.amount, serializer);
         <String>::sse_encode(self.outpoint, serializer);
+        <Option<String>>::sse_encode(self.txid, serializer);
     }
 }
 
@@ -20954,6 +20968,7 @@ impl SseEncode for crate::multimint::ConfirmedEvent {
     fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
         <u64>::sse_encode(self.amount, serializer);
         <String>::sse_encode(self.outpoint, serializer);
+        <Option<String>>::sse_encode(self.txid, serializer);
     }
 }
 
@@ -21628,6 +21643,7 @@ impl SseEncode for crate::multimint::MempoolEvent {
     fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
         <u64>::sse_encode(self.amount, serializer);
         <String>::sse_encode(self.outpoint, serializer);
+        <Option<String>>::sse_encode(self.txid, serializer);
     }
 }
 

@@ -538,12 +538,14 @@ class AwaitingConfsEvent {
   final String outpoint;
   final BigInt blockHeight;
   final BigInt needed;
+  final String? txid;
 
   const AwaitingConfsEvent({
     required this.amount,
     required this.outpoint,
     required this.blockHeight,
     required this.needed,
+    this.txid,
   });
 
   @override
@@ -551,7 +553,8 @@ class AwaitingConfsEvent {
       amount.hashCode ^
       outpoint.hashCode ^
       blockHeight.hashCode ^
-      needed.hashCode;
+      needed.hashCode ^
+      txid.hashCode;
 
   @override
   bool operator ==(Object other) =>
@@ -561,17 +564,19 @@ class AwaitingConfsEvent {
           amount == other.amount &&
           outpoint == other.outpoint &&
           blockHeight == other.blockHeight &&
-          needed == other.needed;
+          needed == other.needed &&
+          txid == other.txid;
 }
 
 class ClaimedEvent {
   final BigInt amount;
   final String outpoint;
+  final String? txid;
 
-  const ClaimedEvent({required this.amount, required this.outpoint});
+  const ClaimedEvent({required this.amount, required this.outpoint, this.txid});
 
   @override
-  int get hashCode => amount.hashCode ^ outpoint.hashCode;
+  int get hashCode => amount.hashCode ^ outpoint.hashCode ^ txid.hashCode;
 
   @override
   bool operator ==(Object other) =>
@@ -579,17 +584,23 @@ class ClaimedEvent {
       other is ClaimedEvent &&
           runtimeType == other.runtimeType &&
           amount == other.amount &&
-          outpoint == other.outpoint;
+          outpoint == other.outpoint &&
+          txid == other.txid;
 }
 
 class ConfirmedEvent {
   final BigInt amount;
   final String outpoint;
+  final String? txid;
 
-  const ConfirmedEvent({required this.amount, required this.outpoint});
+  const ConfirmedEvent({
+    required this.amount,
+    required this.outpoint,
+    this.txid,
+  });
 
   @override
-  int get hashCode => amount.hashCode ^ outpoint.hashCode;
+  int get hashCode => amount.hashCode ^ outpoint.hashCode ^ txid.hashCode;
 
   @override
   bool operator ==(Object other) =>
@@ -597,7 +608,8 @@ class ConfirmedEvent {
       other is ConfirmedEvent &&
           runtimeType == other.runtimeType &&
           amount == other.amount &&
-          outpoint == other.outpoint;
+          outpoint == other.outpoint &&
+          txid == other.txid;
 }
 
 @freezed
@@ -1132,10 +1144,16 @@ class MempoolEvent {
   final BigInt amount;
   final String outpoint;
 
-  const MempoolEvent({required this.amount, required this.outpoint});
+  /// The on-chain transaction id. `outpoint` is a correlation key that, for
+  /// walletv2, is actually the receive address rather than `txid:vout`
+  /// (see `track_pegin_confirmation`), so this field is the only reliable
+  /// source of the txid for display purposes.
+  final String? txid;
+
+  const MempoolEvent({required this.amount, required this.outpoint, this.txid});
 
   @override
-  int get hashCode => amount.hashCode ^ outpoint.hashCode;
+  int get hashCode => amount.hashCode ^ outpoint.hashCode ^ txid.hashCode;
 
   @override
   bool operator ==(Object other) =>
@@ -1143,7 +1161,8 @@ class MempoolEvent {
       other is MempoolEvent &&
           runtimeType == other.runtimeType &&
           amount == other.amount &&
-          outpoint == other.outpoint;
+          outpoint == other.outpoint &&
+          txid == other.txid;
 }
 
 @freezed
