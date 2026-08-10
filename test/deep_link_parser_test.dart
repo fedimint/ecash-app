@@ -195,6 +195,40 @@ void main() {
         expect(result!.data, contains('k1=deadbeef'));
         expect(result.data, contains('foo=bar'));
       });
+
+      test('rejects a link with no host', () {
+        // Without a host there is nothing to name in the confirmation prompt,
+        // and nothing meaningful to fetch either.
+        expect(parseDeepLinkUri(Uri.parse('lnurlw:///withdraw?k1=abc')), isNull);
+        expect(parseDeepLinkUri(Uri.parse('lnurlw://')), isNull);
+      });
+    });
+
+    group('lnurlWithdrawHost', () {
+      test('returns the host the request would reach', () {
+        expect(
+          lnurlWithdrawHost('https://pay.example.com/withdraw?k1=abc'),
+          'pay.example.com',
+        );
+      });
+
+      test('reports the real host when the link tries to disguise it', () {
+        // Userinfo before the @ is the classic disguise: everything left of it
+        // is ignored by the fetch, so the prompt must show what is right of it.
+        expect(
+          lnurlWithdrawHost('https://pay.trusted.com@evil.example/withdraw'),
+          'evil.example',
+        );
+      });
+
+      test('ignores the port so the host stands alone', () {
+        expect(lnurlWithdrawHost('http://localhost:8080/withdraw'), 'localhost');
+      });
+
+      test('returns null when there is no host to show', () {
+        expect(lnurlWithdrawHost('https:///withdraw'), isNull);
+        expect(lnurlWithdrawHost('not a url at all'), isNull);
+      });
     });
 
     group('unsupported schemes', () {

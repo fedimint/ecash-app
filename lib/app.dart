@@ -424,6 +424,20 @@ class _MyAppState extends State<MyApp> {
       // we skip the Rust parse pipeline and open the number pad in withdraw mode.
       if (deepLink.type == DeepLinkType.lnurlWithdraw) {
         if (!mounted) return;
+        // The host comes from the link, and any app or web page can fire one
+        // without the user asking for it — so confirm before the fetch, which is
+        // itself the disclosure (it hands the host our IP and the fact that this
+        // wallet exists). The scanner path is not gated: aiming the camera at a
+        // code is already the user choosing that server.
+        final host = lnurlWithdrawHost(deepLink.data);
+        if (host == null) return;
+        final approved = await confirmExternalRequest(
+          context,
+          title: l10n.lnurlWithdrawHostTitle,
+          body: l10n.lnurlWithdrawHostBody(host),
+          confirmLabel: l10n.lnurlWithdrawHostContinue,
+        );
+        if (!approved || !mounted) return;
         await openLnurlWithdraw(context: context, url: deepLink.data, fed: fed);
         return;
       }

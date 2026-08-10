@@ -15,6 +15,18 @@ class DeepLinkData {
   String toString() => 'DeepLinkData(type: $type, data: $data)';
 }
 
+/// The host a `lnurlw` deep link would contact, for display in the prompt that
+/// asks the user to approve it.
+///
+/// Returns null when there is no usable host. `parseDeepLinkUri` already
+/// rejects that case, so a null here means something went wrong between parsing
+/// and display — callers must treat it as "do not proceed" rather than
+/// confirming against a blank.
+String? lnurlWithdrawHost(String url) {
+  final host = Uri.tryParse(url)?.host;
+  return (host == null || host.isEmpty) ? null : host;
+}
+
 /// Parses a URI into DeepLinkData.
 /// Returns null if the URI scheme is unsupported or the data is empty.
 DeepLinkData? parseDeepLinkUri(Uri uri) {
@@ -57,6 +69,15 @@ DeepLinkData? parseDeepLinkUri(Uri uri) {
     // Boltcards use this raw scheme because k1 is generated fresh per NFC scan
     // and cannot be wrapped in a static bech32 LNURL string.
     // .onion and localhost use plain http; all other hosts use https.
+    //
+    // The host here is entirely attacker-chosen: any app or web page can fire
+    // this scheme, and acting on it means issuing a request to whatever host it
+    // names. Reject anything that isn't a syntactically usable host so the
+    // caller is never handed a URL it cannot show the user, and see
+    // `lnurlWithdrawHost` for the confirmation that gates the request itself.
+    if (uri.host.isEmpty) {
+      return null;
+    }
     const localHosts = {'localhost', '127.0.0.1', '10.0.2.2'};
     final targetScheme =
         (uri.host.endsWith('.onion') || localHosts.contains(uri.host))

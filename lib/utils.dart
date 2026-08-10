@@ -320,13 +320,23 @@ String? explorerUrlForNetwork(String txid, String? network) {
   }
 }
 
-Future<void> showExplorerConfirmation(BuildContext context, Uri url) async {
+/// Asks the user to approve an action that reaches a third party, returning
+/// whether they agreed.
+///
+/// Dismissing the dialog returns false, so the caller only proceeds on an
+/// explicit yes — never on a back gesture or a tap outside.
+Future<bool> confirmExternalRequest(
+  BuildContext context, {
+  required String title,
+  required String body,
+  required String confirmLabel,
+}) async {
   final confirmed = await showDialog<bool>(
     context: context,
     builder:
         (context) => AlertDialog(
-          title: Text(context.l10n.externalLinkWarning),
-          content: Text(context.l10n.externalLinkBody),
+          title: Text(title),
+          content: Text(body),
           actions: [
             TextButton(
               onPressed: () => Navigator.of(context).pop(false),
@@ -334,13 +344,24 @@ Future<void> showExplorerConfirmation(BuildContext context, Uri url) async {
             ),
             TextButton(
               onPressed: () => Navigator.of(context).pop(true),
-              child: Text(context.l10n.confirm),
+              child: Text(confirmLabel),
             ),
           ],
         ),
   );
 
-  if (confirmed == true && await canLaunchUrl(url)) {
+  return confirmed == true;
+}
+
+Future<void> showExplorerConfirmation(BuildContext context, Uri url) async {
+  final confirmed = await confirmExternalRequest(
+    context,
+    title: context.l10n.externalLinkWarning,
+    body: context.l10n.externalLinkBody,
+    confirmLabel: context.l10n.confirm,
+  );
+
+  if (confirmed && await canLaunchUrl(url)) {
     await launchUrl(url, mode: LaunchMode.externalApplication);
   }
 }
