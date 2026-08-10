@@ -573,5 +573,11 @@
   "lnurlWithdrawFailed": "Retiro fallido",
   "lnurlWithdrawCallbackError": "El servicio rechazó la solicitud: {reason}",
   "lnurlWithdrawFixedAmount": "Recibirás {amount}",
-  "lnurlWithdrawAmountRange": "Elige el monto ({min} – {max})"
+  "lnurlWithdrawAmountRange": "Elige el monto ({min} – {max})",
+
+  "lnurlWithdrawHostTitle": "¿Contactar este servidor?",
+
+  "lnurlWithdrawHostBody": "Un enlace abrió esta billetera y le pide contactar a {host} para preparar un retiro.\n\nContinúa solo si tú iniciaste esto — por ejemplo, al acercar tu propia tarjeta. Al continuar, ese servidor conocerá tu dirección IP y que usas esta billetera.",
+
+  "lnurlWithdrawHostContinue": "Contactar servidor"
 }

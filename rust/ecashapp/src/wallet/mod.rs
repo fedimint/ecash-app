@@ -1096,7 +1096,8 @@ fn mempool_api_url(network: bitcoin::Network) -> String {
         bitcoin::Network::Bitcoin => "https://mempool.space/api".to_string(),
         bitcoin::Network::Signet => "https://mutinynet.com/api".to_string(),
         bitcoin::Network::Regtest => {
-            panic!("Regtest requires manually setting the connection params")
+            "http://127.0.0.1:10567".to_string()
+            //panic!("Regtest requires manually setting the connection params")
         }
         network => {
             panic!("{network} is not a supported network")

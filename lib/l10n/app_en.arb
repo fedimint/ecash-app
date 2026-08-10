@@ -2022,5 +2022,17 @@
       "min": { "type": "String" },
       "max": { "type": "String" }
     }
-  }
+  },
+
+  "lnurlWithdrawHostTitle": "Contact this server?",
+  "@lnurlWithdrawHostTitle": {},
+
+  "lnurlWithdrawHostBody": "A link opened this wallet and is asking it to contact {host} to set up a withdrawal.\n\nOnly continue if you started this yourself — by tapping your own card, for example. Continuing tells that server your IP address and that you use this wallet.",
+  "@lnurlWithdrawHostBody": {
+    "placeholders": {
+      "host": { "type": "String" }
+    }
+  },
+
+  "lnurlWithdrawHostContinue": "Contact server"
 }
