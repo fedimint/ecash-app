@@ -9,6 +9,7 @@ import 'package:qr_flutter/qr_flutter.dart';
 import 'package:ecashapp/lib.dart';
 import 'package:ecashapp/multimint.dart';
 import 'package:ecashapp/nostr.dart';
+import 'package:ecashapp/toast.dart';
 import 'package:ecashapp/utils/pin_guard.dart';
 import 'package:flutter_foreground_task/flutter_foreground_task.dart';
 import 'package:permission_handler/permission_handler.dart';
@@ -78,6 +79,10 @@ class _NostrWalletConnectState extends State<NostrWalletConnect> {
   bool _secretRevealed = false;
 
   List<(String, bool)> _relays = [];
+
+  /// Ceiling on a single wallet-connect payment, in sats. Null only while the
+  /// screen is still loading.
+  int? _maxPaymentSats;
 
   bool _serviceRunning = false;
   FederationSelector? _connectedFederation;
@@ -209,6 +214,48 @@ class _NostrWalletConnectState extends State<NostrWalletConnect> {
     });
   }
 
+  /// Change the per-payment ceiling.
+  ///
+  /// Raising it is gated behind the PIN, lowering it is not — the same rule the
+  /// PIN screen uses for the spending prompt. Weakening a protection is the act
+  /// worth authenticating; tightening one should never be harder than leaving it
+  /// alone, or people will leave it alone.
+  Future<void> _editMaxPayment() async {
+    final current = _maxPaymentSats;
+    if (current == null) return;
+
+    final entered = await showDialog<int>(
+      context: context,
+      builder: (ctx) => _MaxPaymentDialog(initialSats: current),
+    );
+    if (entered == null || entered == current) return;
+
+    if (entered > current) {
+      if (!mounted) return;
+      if (!await checkPinForSensitiveAction(context)) {
+        AppLogger.instance.info('[NWC] Limit increase cancelled: PIN not confirmed');
+        return;
+      }
+    }
+
+    try {
+      await setNwcMaxPaymentSats(sats: BigInt.from(entered));
+      if (!mounted) return;
+      setState(() {
+        _maxPaymentSats = entered;
+      });
+    } catch (e) {
+      AppLogger.instance.error('[NWC] Could not set max payment: $e');
+      if (!mounted) return;
+      ToastService().show(
+        message: context.l10n.nwcMaxPaymentFailed,
+        duration: const Duration(seconds: 5),
+        onTap: () {},
+        icon: const Icon(Icons.error),
+      );
+    }
+  }
+
   /// Reveal the pairing secret, behind the PIN when one is configured.
   ///
   /// Uses the sensitive-action gate rather than the spending one: turning off
@@ -229,6 +276,7 @@ class _NostrWalletConnectState extends State<NostrWalletConnect> {
     AppLogger.instance.debug('[NWC] Initializing...');
     final relays = await getRelays();
     final currentConfigs = await getNwcConnectionInfo();
+    final maxPaymentSats = (await getNwcMaxPaymentSats()).toInt();
 
     FederationSelector? connectedFed;
     String? connectedRelay;
@@ -254,6 +302,7 @@ class _NostrWalletConnectState extends State<NostrWalletConnect> {
 
     setState(() {
       _relays = relays;
+      _maxPaymentSats = maxPaymentSats;
       _selectedFederation =
           connectedFed ??
           (widget.federations.isNotEmpty ? widget.federations.first.$1 : null);
@@ -537,6 +586,20 @@ class _NostrWalletConnectState extends State<NostrWalletConnect> {
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
               _buildSelectionForm(),
+              if (_maxPaymentSats != null) ...[
+                const SizedBox(height: 24),
+                ListTile(
+                  contentPadding: EdgeInsets.zero,
+                  title: Text(context.l10n.nwcMaxPaymentTitle),
+                  subtitle: Text(
+                    context.l10n.nwcMaxPaymentSubtitle(
+                      _maxPaymentSats.toString(),
+                    ),
+                  ),
+                  trailing: const Icon(Icons.chevron_right),
+                  onTap: _editMaxPayment,
+                ),
+              ],
               // An existing pairing is loaded into `_nwc` on entry, so without
               // this the secret would already be on screen before anyone asked
               // for it — and gating only the connect button would protect new
@@ -597,6 +660,75 @@ class _NostrWalletConnectState extends State<NostrWalletConnect> {
           ),
         ),
       ),
+    );
+  }
+}
+
+/// Amount entry for the wallet-connect per-payment ceiling.
+///
+/// Validates before popping so the caller only ever receives a usable figure:
+/// zero is refused in the core too, but catching it here explains why instead of
+/// surfacing a failure after the fact.
+class _MaxPaymentDialog extends StatefulWidget {
+  final int initialSats;
+
+  const _MaxPaymentDialog({required this.initialSats});
+
+  @override
+  State<_MaxPaymentDialog> createState() => _MaxPaymentDialogState();
+}
+
+class _MaxPaymentDialogState extends State<_MaxPaymentDialog> {
+  late final TextEditingController _controller = TextEditingController(
+    text: widget.initialSats.toString(),
+  );
+  String? _error;
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  void _submit() {
+    final parsed = int.tryParse(_controller.text.trim());
+    if (parsed == null || parsed < 1) {
+      setState(() => _error = context.l10n.nwcMaxPaymentInvalid);
+      return;
+    }
+    Navigator.of(context).pop(parsed);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      title: Text(context.l10n.nwcMaxPaymentTitle),
+      content: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(context.l10n.nwcMaxPaymentDialogBody),
+          const SizedBox(height: 16),
+          TextField(
+            controller: _controller,
+            autofocus: true,
+            keyboardType: TextInputType.number,
+            inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+            decoration: InputDecoration(
+              labelText: context.l10n.nwcMaxPaymentField,
+              errorText: _error,
+            ),
+            onSubmitted: (_) => _submit(),
+          ),
+        ],
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.of(context).pop(),
+          child: Text(context.l10n.cancel),
+        ),
+        TextButton(onPressed: _submit, child: Text(context.l10n.save)),
+      ],
     );
   }
 }

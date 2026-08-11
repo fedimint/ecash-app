@@ -13,7 +13,7 @@ import 'package:flutter_rust_bridge/flutter_rust_bridge_for_generated.dart';
 import 'package:freezed_annotation/freezed_annotation.dart' hide protected;
 part 'lib.freezed.dart';
 
-// These functions are ignored because they are not marked as `pub`: `build_lnurlw_callback_url`, `create_event_bus`, `create_nostr_client`, `error_to_flutter`, `get_database`, `get_multimint`, `get_nostr_client`, `get_recovery_relays`, `info_to_flutter`, `parse_ecash`, `parse_lnurl_withdraw_response`, `payment_error_to_flutter`, `verify_current_pin`, `verify_lnurl_invoice`
+// These functions are ignored because they are not marked as `pub`: `build_lnurlw_callback_url`, `create_event_bus`, `create_nostr_client`, `error_to_flutter`, `get_database`, `get_db`, `get_multimint`, `get_nostr_client`, `get_pin_manager`, `get_recovery_relays`, `info_to_flutter`, `parse_ecash`, `parse_lnurl_withdraw_response`, `payment_error_to_flutter`, `verify_current_pin`, `verify_lnurl_invoice`
 // These functions are ignored because they have generic arguments: `balance`, `federations`, `get_invoice_network`, `log_error`, `parse_ecash`
 // These types are ignored because they are neither used by any `pub` functions nor (for structs and enums) marked `#[frb(unignore)]`: `MultimintParseContext`
 // These function are ignored because they are on traits that is not defined in current crate (put an empty `#[frb]` on it to unignore): `assert_receiver_is_total_eq`, `clone`, `eq`, `fmt`, `fmt`
@@ -649,6 +649,21 @@ Future<BigInt> pinLockoutSeconds() =>
 
 Future<void> clearPinCode({required String pin}) =>
     RustLib.instance.api.crateClearPinCode(pin: pin);
+
+/// The ceiling on a single wallet-connect payment, in sats.
+///
+/// Returns the built-in default until the user changes it, so the UI shows what
+/// is actually enforced rather than a blank.
+Future<BigInt> getNwcMaxPaymentSats() =>
+    RustLib.instance.api.crateGetNwcMaxPaymentSats();
+
+/// Set the ceiling on a single wallet-connect payment, in sats.
+///
+/// Rejects zero: a limit that refuses everything is indistinguishable from a
+/// broken pairing from the client's side, and disconnecting is the way to stop
+/// payments entirely.
+Future<void> setNwcMaxPaymentSats({required BigInt sats}) =>
+    RustLib.instance.api.crateSetNwcMaxPaymentSats(sats: sats);
 
 Future<bool> getRequirePinForSpending() =>
     RustLib.instance.api.crateGetRequirePinForSpending();

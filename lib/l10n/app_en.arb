@@ -2052,5 +2052,30 @@
   "lnurlWithdrawHostContinue": "Contact server",
 
   "nwcSecretHiddenBody": "The connection string lets a paired app spend from this wallet without asking again. It stays hidden until you choose to show it.",
-  "@nwcSecretHiddenBody": {}
+  "@nwcSecretHiddenBody": {},
+
+  "save": "Save",
+  "@save": {},
+
+  "nwcMaxPaymentTitle": "Maximum payment",
+  "@nwcMaxPaymentTitle": {},
+
+  "nwcMaxPaymentSubtitle": "{sats} sats per payment",
+  "@nwcMaxPaymentSubtitle": {
+    "placeholders": {
+      "sats": { "type": "String" }
+    }
+  },
+
+  "nwcMaxPaymentDialogBody": "The largest single payment a paired app may make without asking you. It cannot pay an invoice above this amount.",
+  "@nwcMaxPaymentDialogBody": {},
+
+  "nwcMaxPaymentField": "Sats",
+  "@nwcMaxPaymentField": {},
+
+  "nwcMaxPaymentInvalid": "Enter an amount of at least 1 sat",
+  "@nwcMaxPaymentInvalid": {},
+
+  "nwcMaxPaymentFailed": "Could not save the maximum payment",
+  "@nwcMaxPaymentFailed": {}
 }

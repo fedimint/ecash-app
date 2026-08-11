@@ -584,5 +584,19 @@
 
   "lnurlWithdrawHostContinue": "Contactar servidor",
 
-  "nwcSecretHiddenBody": "La cadena de conexión permite que una app vinculada gaste desde esta billetera sin volver a preguntar. Permanece oculta hasta que elijas mostrarla."
+  "nwcSecretHiddenBody": "La cadena de conexión permite que una app vinculada gaste desde esta billetera sin volver a preguntar. Permanece oculta hasta que elijas mostrarla.",
+
+  "save": "Guardar",
+
+  "nwcMaxPaymentTitle": "Pago máximo",
+
+  "nwcMaxPaymentSubtitle": "{sats} sats por pago",
+
+  "nwcMaxPaymentDialogBody": "El pago individual más grande que una app vinculada puede hacer sin preguntarte. No podrá pagar una factura por encima de este monto.",
+
+  "nwcMaxPaymentField": "Sats",
+
+  "nwcMaxPaymentInvalid": "Introduce un monto de al menos 1 sat",
+
+  "nwcMaxPaymentFailed": "No se pudo guardar el pago máximo"
 }

@@ -12,6 +12,7 @@ use crate::{
         Contact, ContactCursor, ContactKey, ContactKeyPrefix, ContactSyncConfig,
         ContactSyncConfigKey, NostrRelaysKey, NostrRelaysKeyPrefix, NostrWalletConnectKeyPrefix,
         NostrWalletConnectV2Config, NostrWalletConnectV2Key, NostrWalletConnectV2KeyPrefix,
+        NwcLimitsKey,
     },
     error_to_flutter, federations, get_event_bus, info_to_flutter,
     multimint::{
@@ -78,20 +79,37 @@ pub const NWC_SUPPORTED_METHODS: &[&str] = &["get_info", "get_balance", "pay_inv
 ///
 /// The paired client can spend without any on-screen confirmation — the Android
 /// listener runs in a background isolate with no UI — so this caps what a
-/// compromised or buggy client can move in one request. It is deliberately not
-/// user-configurable yet; the point is that some bound exists.
-pub const NWC_MAX_PAYMENT_MSATS: u64 = 1_000_000 * 1_000;
+/// compromised or buggy client can move in one request. The user can raise or
+/// lower it (see [`NwcLimits`]); this is only what applies until they do.
+pub const NWC_DEFAULT_MAX_PAYMENT_MSATS: u64 = 1_000_000 * 1_000;
+
+/// The configured single-payment ceiling, or [`NWC_DEFAULT_MAX_PAYMENT_MSATS`]
+/// if the user has never changed it.
+///
+/// Read per request rather than captured when the listener starts, so lowering
+/// the limit takes effect on the next payment instead of after a reconnect.
+pub(crate) async fn nwc_max_payment_msats(db: &Database) -> u64 {
+    db.begin_transaction_nc()
+        .await
+        .get_value(&NwcLimitsKey)
+        .await
+        .map(|limits| limits.max_payment_msats)
+        .unwrap_or(NWC_DEFAULT_MAX_PAYMENT_MSATS)
+}
 
 /// How long to wait for the wallet-connect relay before giving up on this
 /// listener run.
 const NWC_RELAY_CONNECT_TIMEOUT: Duration = Duration::from_secs(30);
 
-/// Enforce [`NWC_MAX_PAYMENT_MSATS`] on an incoming wallet-connect payment.
-fn check_nwc_payment_limit(bolt11: &Bolt11Invoice) -> anyhow::Result<()> {
+/// Enforce the single-payment ceiling on an incoming wallet-connect payment.
+///
+/// Takes the limit rather than reading it so the rule stays a pure function of
+/// its inputs, and so the caller decides when the value is read.
+fn check_nwc_payment_limit(bolt11: &Bolt11Invoice, max_msats: u64) -> anyhow::Result<()> {
     match bolt11.amount_milli_satoshis() {
-        Some(msats) if msats > NWC_MAX_PAYMENT_MSATS => bail!(
+        Some(msats) if msats > max_msats => bail!(
             "NWC pay_invoice: invoice is for {msats} msat, over the \
-             {NWC_MAX_PAYMENT_MSATS} msat limit for wallet-connect payments"
+             {max_msats} msat limit for wallet-connect payments"
         ),
         Some(_) => Ok(()),
         // An amountless invoice carries no ceiling of its own — the gateway
@@ -660,7 +678,7 @@ impl NostrClient {
                 // would otherwise perform on the caller's behalf.
                 let bolt11 = Bolt11Invoice::from_str(&invoice)
                     .map_err(|e| anyhow!("NWC pay_invoice: could not parse invoice: {e}"))?;
-                check_nwc_payment_limit(&bolt11)?;
+                check_nwc_payment_limit(&bolt11, nwc_max_payment_msats(&crate::get_db()).await)?;
 
                 let payment_preview =
                     payment_preview_with_gateways(federation_id, invoice.clone()).await?;
@@ -1874,7 +1892,7 @@ impl TryFrom<nostr_sdk::Event> for NostrProfile {
 
 #[cfg(test)]
 mod tests {
-    use super::{check_nwc_payment_limit, NWC_MAX_PAYMENT_MSATS};
+    use super::{check_nwc_payment_limit, NWC_DEFAULT_MAX_PAYMENT_MSATS};
     use lightning_invoice::Bolt11Invoice;
 
     fn signed_invoice(amount_msats: Option<u64>) -> Bolt11Invoice {
@@ -1900,24 +1918,48 @@ mod tests {
 
     #[test]
     fn test_nwc_limit_allows_payment_at_the_cap() {
-        let invoice = signed_invoice(Some(NWC_MAX_PAYMENT_MSATS));
+        let invoice = signed_invoice(Some(NWC_DEFAULT_MAX_PAYMENT_MSATS));
         assert!(
-            check_nwc_payment_limit(&invoice).is_ok(),
+            check_nwc_payment_limit(&invoice, NWC_DEFAULT_MAX_PAYMENT_MSATS).is_ok(),
             "the cap itself must be payable"
         );
     }
 
     #[test]
     fn test_nwc_limit_rejects_payment_over_the_cap() {
-        let invoice = signed_invoice(Some(NWC_MAX_PAYMENT_MSATS + 1));
-        let err = check_nwc_payment_limit(&invoice).unwrap_err();
+        let invoice = signed_invoice(Some(NWC_DEFAULT_MAX_PAYMENT_MSATS + 1));
+        let err = check_nwc_payment_limit(&invoice, NWC_DEFAULT_MAX_PAYMENT_MSATS).unwrap_err();
         assert!(err.to_string().contains("over the"), "got: {err}");
+    }
+
+    #[test]
+    fn test_nwc_limit_follows_a_lowered_setting() {
+        // The invoice is fine against the default and must still be refused once
+        // the user has chosen a smaller ceiling.
+        let invoice = signed_invoice(Some(50_000_000));
+        assert!(check_nwc_payment_limit(&invoice, NWC_DEFAULT_MAX_PAYMENT_MSATS).is_ok());
+
+        let err = check_nwc_payment_limit(&invoice, 10_000_000).unwrap_err();
+        assert!(err.to_string().contains("over the"), "got: {err}");
+    }
+
+    #[test]
+    fn test_nwc_limit_rejects_amountless_invoice_at_any_setting() {
+        // An amountless invoice has no ceiling of its own, so raising the limit
+        // must not turn it into something acceptable.
+        let invoice = signed_invoice(None);
+        for limit in [1, NWC_DEFAULT_MAX_PAYMENT_MSATS, u64::MAX] {
+            assert!(
+                check_nwc_payment_limit(&invoice, limit).is_err(),
+                "amountless invoice accepted at limit {limit}"
+            );
+        }
     }
 
     #[test]
     fn test_nwc_limit_rejects_amountless_invoice() {
         let invoice = signed_invoice(None);
-        let err = check_nwc_payment_limit(&invoice).unwrap_err();
+        let err = check_nwc_payment_limit(&invoice, NWC_DEFAULT_MAX_PAYMENT_MSATS).unwrap_err();
         assert!(err.to_string().contains("no amount"), "got: {err}");
     }
 }

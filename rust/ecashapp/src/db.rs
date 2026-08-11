@@ -53,6 +53,7 @@ pub(crate) enum DbKeyPrefix {
     NwcV2 = 0x16,
     PinCredential = 0x17,
     PinAttempts = 0x18,
+    NwcLimits = 0x19,
 }
 
 #[derive(Debug, Clone, Encodable, Decodable, Eq, PartialEq, Hash, Ord, PartialOrd)]
@@ -453,6 +454,27 @@ impl_db_record!(
     key = RequirePinForSpendingKey,
     value = (),
     db_prefix = DbKeyPrefix::RequirePinForSpending,
+);
+
+/// The single record holding every user-set bound on wallet-connect spending.
+///
+/// Absent means nothing has been changed from the built-in defaults. Readers
+/// fall back to those defaults rather than to "no limit", so a missing record
+/// can never widen what a paired app may spend.
+#[derive(Debug, Encodable, Decodable)]
+pub(crate) struct NwcLimitsKey;
+
+/// Bounds on what a paired wallet-connect client may spend.
+#[derive(Debug, Clone, Encodable, Decodable)]
+pub(crate) struct NwcLimits {
+    /// Ceiling on a single payment, in millisatoshis.
+    pub(crate) max_payment_msats: u64,
+}
+
+impl_db_record!(
+    key = NwcLimitsKey,
+    value = NwcLimits,
+    db_prefix = DbKeyPrefix::NwcLimits,
 );
 
 #[derive(Debug, Encodable, Decodable)]
