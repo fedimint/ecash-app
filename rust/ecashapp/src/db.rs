@@ -51,6 +51,8 @@ pub(crate) enum DbKeyPrefix {
     ShowMsats = 0x14,
     WalletV2PendingDeposit = 0x15,
     NwcV2 = 0x16,
+    PinCredential = 0x17,
+    PinAttempts = 0x18,
 }
 
 #[derive(Debug, Clone, Encodable, Decodable, Eq, PartialEq, Hash, Ord, PartialOrd)]
@@ -379,6 +381,18 @@ impl_db_record!(
     db_prefix = DbKeyPrefix::SchemaVersion,
 );
 
+/// Legacy PIN storage: a bare, unsalted, single-round SHA-256 of the PIN.
+///
+/// A PIN is 4-6 digits, so there are at most 1.1M candidates — anyone who could
+/// read the database file recovered the PIN by table lookup. Superseded by
+/// [`PinCredentialKey`].
+///
+/// This is deliberately still defined and still read. A SHA-256 digest cannot be
+/// turned into an Argon2 hash without the plaintext PIN, and the plaintext only
+/// exists at unlock time, so there is nothing a startup migration could do here
+/// except delete the record and lock users out of their own wallets. Instead
+/// `Multimint::verify_pin` verifies against this record when it is the only one
+/// present and rewrites it as a [`PinCredentialKey`] in the same transaction.
 #[derive(Debug, Encodable, Decodable)]
 pub(crate) struct PinCodeHashKey;
 
@@ -386,6 +400,50 @@ impl_db_record!(
     key = PinCodeHashKey,
     value = sha256::Hash,
     db_prefix = DbKeyPrefix::PinCodeHash,
+);
+
+/// The PIN as an Argon2id PHC string, e.g.
+/// `$argon2id$v=19$m=19456,t=2,p=1$<b64 salt>$<b64 hash>`.
+///
+/// The PHC string carries its own parameters and salt, so raising the Argon2
+/// cost later needs no schema change: existing records keep verifying under the
+/// parameters they were written with.
+///
+/// Argon2 does not make a 6-digit PIN a strong secret. At the current
+/// parameters one guess costs ~12 ms on a 2026 laptop, so the full 10^6
+/// keyspace is a few CPU-hours — hours instead of milliseconds, and the 19 MiB
+/// working set is what keeps that from collapsing on a GPU, but it is not a
+/// wall. Only encrypting the database keeps a stolen copy of it out of reach;
+/// that is tracked separately. What actually stops guessing *on the device* is
+/// the backoff in [`PinAttempts`].
+#[derive(Debug, Encodable, Decodable)]
+pub(crate) struct PinCredentialKey;
+
+impl_db_record!(
+    key = PinCredentialKey,
+    value = String,
+    db_prefix = DbKeyPrefix::PinCredential,
+);
+
+/// Consecutive failed PIN entries, and when entry reopens.
+///
+/// Persisted rather than held in memory so that force-quitting the app does not
+/// reset the backoff — otherwise the throttle would be worth nothing against
+/// someone holding the device.
+#[derive(Debug, Clone, Encodable, Decodable)]
+pub(crate) struct PinAttempts {
+    pub(crate) consecutive_failures: u32,
+    /// Unix epoch milliseconds; `0` means "not currently locked out".
+    pub(crate) locked_until_ms: u64,
+}
+
+#[derive(Debug, Encodable, Decodable)]
+pub(crate) struct PinAttemptsKey;
+
+impl_db_record!(
+    key = PinAttemptsKey,
+    value = PinAttempts,
+    db_prefix = DbKeyPrefix::PinAttempts,
 );
 
 #[derive(Debug, Encodable, Decodable)]

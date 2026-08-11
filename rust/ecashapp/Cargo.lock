@@ -1590,6 +1590,7 @@ name = "ecashapp"
 version = "0.10.0-alpha"
 dependencies = [
  "anyhow",
+ "argon2",
  "async-stream",
  "async-trait",
  "bitcoin",
@@ -1630,6 +1631,7 @@ dependencies = [
  "semver",
  "serde",
  "serde_json",
+ "subtle",
  "thiserror 1.0.69",
  "tokio",
 ]

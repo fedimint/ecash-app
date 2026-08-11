@@ -11,6 +11,7 @@ mod multimint;
 mod net;
 mod nostr;
 mod parse;
+mod pin;
 mod wallet;
 mod words;
 use bitcoin::key::rand::rngs::OsRng;
@@ -56,6 +57,7 @@ use crate::db::{
 };
 use crate::frb_generated::StreamSink;
 use crate::multimint::{DepositEventKind, FedimintGateway, LNAddressStatus, PeerStatus};
+use crate::pin::PinManager;
 use crate::words::{ADJECTIVES, NOUNS};
 
 static MULTIMINT: OnceCell<Multimint> = OnceCell::const_new();
@@ -86,6 +88,15 @@ async fn get_database(path: String) -> Database {
 
 pub(crate) fn get_nostr_client() -> Arc<RwLock<NostrClient>> {
     NOSTR.get().expect("NostrClient not initialized").clone()
+}
+
+/// The PIN lives in the app database and has nothing to do with federations, so
+/// this deliberately does not go through [`get_multimint`]. The lock screen
+/// gates the whole app, including the paths that run before — or instead of — a
+/// wallet being loaded; hanging it off `Multimint` would make it panic there for
+/// no reason. `Database` is an `Arc` handle, so building one per call is cheap.
+fn get_pin_manager() -> PinManager {
+    PinManager::new(DATABASE.get().expect("Database not initialized").clone())
 }
 
 async fn get_recovery_relays() -> &'static Mutex<Vec<String>> {
@@ -1309,42 +1320,90 @@ pub async fn set_show_msats(show_msats: bool) {
 
 #[frb]
 pub async fn has_pin_code() -> bool {
-    let multimint = get_multimint();
-    multimint.has_pin_code().await
+    get_pin_manager().has_pin_code().await
+}
+
+/// Enroll a PIN for the first time.
+///
+/// Refuses to overwrite an existing one: changing a PIN has to prove knowledge
+/// of the current one, which is what [`change_pin_code`] is for. Without this
+/// check, anyone holding an unlocked phone could quietly replace the PIN.
+#[frb]
+pub async fn set_pin_code(pin: String) -> anyhow::Result<()> {
+    let pins = get_pin_manager();
+    if pins.has_pin_code().await {
+        bail!("A PIN is already set");
+    }
+    pins.set_pin(pin).await
 }
 
 #[frb]
-pub async fn set_pin_code(pin: String) -> anyhow::Result<()> {
-    let multimint = get_multimint();
-    multimint.set_pin_hash(pin).await
+pub async fn change_pin_code(current_pin: String, new_pin: String) -> anyhow::Result<()> {
+    let pins = get_pin_manager();
+    verify_current_pin(&pins, current_pin).await?;
+    pins.set_pin(new_pin).await
 }
 
 #[frb]
 pub async fn verify_pin(pin: String) -> bool {
-    let multimint = get_multimint();
-    multimint.verify_pin(pin).await
+    get_pin_manager().verify_pin(pin).await
+}
+
+/// Seconds until PIN entry reopens after too many wrong guesses; `0` when it is
+/// open. [`verify_pin`] returns `false` either way, so the UI reads this to tell
+/// "wrong PIN" apart from "locked out" and to render the countdown.
+#[frb]
+pub async fn pin_lockout_seconds() -> u64 {
+    get_pin_manager().lockout_secs().await
 }
 
 #[frb]
 pub async fn clear_pin_code(pin: String) -> anyhow::Result<()> {
-    let multimint = get_multimint();
-    if !multimint.verify_pin(pin).await {
-        anyhow::bail!("Incorrect PIN");
-    }
-    multimint.clear_pin_hash().await;
+    let pins = get_pin_manager();
+    verify_current_pin(&pins, pin).await?;
+    pins.clear_pin().await;
     Ok(())
 }
 
 #[frb]
 pub async fn get_require_pin_for_spending() -> bool {
-    let multimint = get_multimint();
-    multimint.get_require_pin_for_spending().await
+    get_pin_manager().get_require_pin_for_spending().await
 }
 
+/// Toggle the spending PIN prompt.
+///
+/// Turning it *off* removes a protection, so it needs `current_pin`; turning it
+/// on only adds one and does not. Otherwise brief access to an unlocked phone
+/// would be enough to disable the prompt and then spend freely.
 #[frb]
-pub async fn set_require_pin_for_spending(require: bool) {
-    let multimint = get_multimint();
-    multimint.set_require_pin_for_spending(require).await;
+pub async fn set_require_pin_for_spending(
+    require: bool,
+    current_pin: Option<String>,
+) -> anyhow::Result<()> {
+    let pins = get_pin_manager();
+
+    if !require && pins.has_pin_code().await {
+        let Some(current_pin) = current_pin else {
+            bail!("Disabling the spending PIN requires the current PIN");
+        };
+        verify_current_pin(&pins, current_pin).await?;
+    }
+
+    pins.set_require_pin_for_spending(require).await;
+    Ok(())
+}
+
+/// Check the current PIN, reporting a lockout distinctly from a wrong PIN so the
+/// user is not left retrying against a timer they cannot see.
+async fn verify_current_pin(pins: &PinManager, pin: String) -> anyhow::Result<()> {
+    if pins.verify_pin(pin).await {
+        return Ok(());
+    }
+
+    match pins.lockout_secs().await {
+        0 => bail!("Incorrect PIN"),
+        secs => bail!("Too many incorrect attempts. Try again in {secs}s"),
+    }
 }
 
 #[frb]

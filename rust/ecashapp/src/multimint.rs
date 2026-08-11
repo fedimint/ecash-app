@@ -11,7 +11,6 @@ use std::{
 
 use anyhow::bail;
 use anyhow::Context;
-use bitcoin::hashes::{sha256, Hash};
 use bitcoin::key::rand::thread_rng;
 use fedimint_api_client::api::{DynGlobalApi, DynModuleApi, FederationApiExt, FederationError};
 use fedimint_bip39::{Bip39RootSecretStrategy, Language, Mnemonic};
@@ -105,8 +104,7 @@ use crate::{
         BitcoinDisplay, BitcoinDisplayKey, BtcPrice, BtcPriceKey, BtcPrices, BtcPricesKey,
         Connector, ContactSyncConfigKey, FederationBackupKey, FederationMetaKey,
         FederationMetaKeyPrefix, FiatCurrency, FiatCurrencyKey, LightningAddressConfig,
-        LightningAddressKey, LightningAddressKeyPrefix, PinCodeHashKey, RequirePinForSpendingKey,
-        SchemaVersionKey,
+        LightningAddressKey, LightningAddressKeyPrefix, SchemaVersionKey,
     },
     error_to_flutter, get_nostr_client, info_to_flutter, payment_error_to_flutter,
     wallet::WalletHandler,
@@ -138,7 +136,6 @@ const MAX_GATEWAY_PPM: u64 = 1_000_000;
 const MAX_FEE_WALK_STEPS: u32 = 1_000;
 const GITHUB_LATEST_RELEASE_URL: &str =
     "https://api.github.com/repos/fedimint/ecash-app/releases/latest";
-
 /// fedimintd rejects a wrong (or unconfigured) admin password with JSON-RPC
 /// code 401 / "Invalid authorization". The client surfaces that as an opaque
 /// server error inside [`FederationError`], so matching the message is the
@@ -6219,54 +6216,6 @@ impl Multimint {
             &crate::db::FederationOrder { order },
         )
         .await;
-        dbtx.commit_tx().await;
-    }
-
-    pub async fn has_pin_code(&self) -> bool {
-        let mut dbtx = self.db.begin_transaction_nc().await;
-        dbtx.get_value(&PinCodeHashKey).await.is_some()
-    }
-
-    pub async fn set_pin_hash(&self, pin: String) -> anyhow::Result<()> {
-        if pin.len() < 4 || pin.len() > 6 || !pin.chars().all(|c| c.is_ascii_digit()) {
-            bail!("PIN must be 4-6 digits");
-        }
-        let hash = sha256::Hash::hash(pin.as_bytes());
-        let mut dbtx = self.db.begin_transaction().await;
-        dbtx.insert_entry(&PinCodeHashKey, &hash).await;
-        dbtx.commit_tx().await;
-        Ok(())
-    }
-
-    pub async fn verify_pin(&self, pin: String) -> bool {
-        let mut dbtx = self.db.begin_transaction_nc().await;
-        if let Some(stored_hash) = dbtx.get_value(&PinCodeHashKey).await {
-            let input_hash = sha256::Hash::hash(pin.as_bytes());
-            stored_hash == input_hash
-        } else {
-            false
-        }
-    }
-
-    pub async fn clear_pin_hash(&self) {
-        let mut dbtx = self.db.begin_transaction().await;
-        dbtx.remove_entry(&PinCodeHashKey).await;
-        dbtx.remove_entry(&RequirePinForSpendingKey).await;
-        dbtx.commit_tx().await;
-    }
-
-    pub async fn get_require_pin_for_spending(&self) -> bool {
-        let mut dbtx = self.db.begin_transaction_nc().await;
-        dbtx.get_value(&RequirePinForSpendingKey).await.is_some()
-    }
-
-    pub async fn set_require_pin_for_spending(&self, require: bool) {
-        let mut dbtx = self.db.begin_transaction().await;
-        if require {
-            dbtx.insert_entry(&RequirePinForSpendingKey, &()).await;
-        } else {
-            dbtx.remove_entry(&RequirePinForSpendingKey).await;
-        }
         dbtx.commit_tx().await;
     }
 }

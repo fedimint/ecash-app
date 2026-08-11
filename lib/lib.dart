@@ -13,7 +13,7 @@ import 'package:flutter_rust_bridge/flutter_rust_bridge_for_generated.dart';
 import 'package:freezed_annotation/freezed_annotation.dart' hide protected;
 part 'lib.freezed.dart';
 
-// These functions are ignored because they are not marked as `pub`: `build_lnurlw_callback_url`, `create_event_bus`, `create_nostr_client`, `error_to_flutter`, `get_database`, `get_multimint`, `get_nostr_client`, `get_recovery_relays`, `info_to_flutter`, `parse_ecash`, `parse_lnurl_withdraw_response`, `payment_error_to_flutter`, `verify_lnurl_invoice`
+// These functions are ignored because they are not marked as `pub`: `build_lnurlw_callback_url`, `create_event_bus`, `create_nostr_client`, `error_to_flutter`, `get_database`, `get_multimint`, `get_nostr_client`, `get_recovery_relays`, `info_to_flutter`, `parse_ecash`, `parse_lnurl_withdraw_response`, `payment_error_to_flutter`, `verify_current_pin`, `verify_lnurl_invoice`
 // These functions are ignored because they have generic arguments: `balance`, `federations`, `get_invoice_network`, `log_error`, `parse_ecash`
 // These types are ignored because they are neither used by any `pub` functions nor (for structs and enums) marked `#[frb(unignore)]`: `MultimintParseContext`
 // These function are ignored because they are on traits that is not defined in current crate (put an empty `#[frb]` on it to unignore): `assert_receiver_is_total_eq`, `clone`, `eq`, `fmt`, `fmt`
@@ -622,11 +622,30 @@ Future<void> setShowMsats({required bool showMsats}) =>
 
 Future<bool> hasPinCode() => RustLib.instance.api.crateHasPinCode();
 
+/// Enroll a PIN for the first time.
+///
+/// Refuses to overwrite an existing one: changing a PIN has to prove knowledge
+/// of the current one, which is what [`change_pin_code`] is for. Without this
+/// check, anyone holding an unlocked phone could quietly replace the PIN.
 Future<void> setPinCode({required String pin}) =>
     RustLib.instance.api.crateSetPinCode(pin: pin);
 
+Future<void> changePinCode({
+  required String currentPin,
+  required String newPin,
+}) => RustLib.instance.api.crateChangePinCode(
+  currentPin: currentPin,
+  newPin: newPin,
+);
+
 Future<bool> verifyPin({required String pin}) =>
     RustLib.instance.api.crateVerifyPin(pin: pin);
+
+/// Seconds until PIN entry reopens after too many wrong guesses; `0` when it is
+/// open. [`verify_pin`] returns `false` either way, so the UI reads this to tell
+/// "wrong PIN" apart from "locked out" and to render the countdown.
+Future<BigInt> pinLockoutSeconds() =>
+    RustLib.instance.api.cratePinLockoutSeconds();
 
 Future<void> clearPinCode({required String pin}) =>
     RustLib.instance.api.crateClearPinCode(pin: pin);
@@ -634,8 +653,18 @@ Future<void> clearPinCode({required String pin}) =>
 Future<bool> getRequirePinForSpending() =>
     RustLib.instance.api.crateGetRequirePinForSpending();
 
-Future<void> setRequirePinForSpending({required bool require}) =>
-    RustLib.instance.api.crateSetRequirePinForSpending(require: require);
+/// Toggle the spending PIN prompt.
+///
+/// Turning it *off* removes a protection, so it needs `current_pin`; turning it
+/// on only adds one and does not. Otherwise brief access to an unlocked phone
+/// would be enough to disable the prompt and then spend freely.
+Future<void> setRequirePinForSpending({
+  required bool require,
+  String? currentPin,
+}) => RustLib.instance.api.crateSetRequirePinForSpending(
+  require: require,
+  currentPin: currentPin,
+);
 
 Future<List<(FiatCurrency, BigInt)>?> getAllBtcPrices() =>
     RustLib.instance.api.crateGetAllBtcPrices();
