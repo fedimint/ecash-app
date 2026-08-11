@@ -9,6 +9,7 @@ import 'package:qr_flutter/qr_flutter.dart';
 import 'package:ecashapp/lib.dart';
 import 'package:ecashapp/multimint.dart';
 import 'package:ecashapp/nostr.dart';
+import 'package:ecashapp/utils/pin_guard.dart';
 import 'package:flutter_foreground_task/flutter_foreground_task.dart';
 import 'package:permission_handler/permission_handler.dart';
 
@@ -66,6 +67,16 @@ class _NostrWalletConnectState extends State<NostrWalletConnect> {
   bool _loading = true;
 
   NWCConnectionInfo? _nwc;
+
+  /// Whether the pairing secret is currently on screen.
+  ///
+  /// The connection string grants full remote `pay_invoice` capability, so it is
+  /// treated like the recovery seed rather than like a setting: never rendered
+  /// straight from stored config, only after the user asks for it and clears
+  /// [checkPinForSensitiveAction]. Reset whenever the pairing goes away, so
+  /// re-connecting cannot inherit an earlier reveal.
+  bool _secretRevealed = false;
+
   List<(String, bool)> _relays = [];
 
   bool _serviceRunning = false;
@@ -194,6 +205,23 @@ class _NostrWalletConnectState extends State<NostrWalletConnect> {
 
     setState(() {
       _nwc = null;
+      _secretRevealed = false;
+    });
+  }
+
+  /// Reveal the pairing secret, behind the PIN when one is configured.
+  ///
+  /// Uses the sensitive-action gate rather than the spending one: turning off
+  /// the spending prompt is a statement about payments the user makes, not
+  /// consent to hand a remote-spending credential to whoever picks up the phone.
+  Future<void> _revealSecret() async {
+    if (!await checkPinForSensitiveAction(context)) {
+      AppLogger.instance.info('[NWC] Reveal cancelled: PIN not confirmed');
+      return;
+    }
+    if (!mounted) return;
+    setState(() {
+      _secretRevealed = true;
     });
   }
 
@@ -412,6 +440,18 @@ class _NostrWalletConnectState extends State<NostrWalletConnect> {
                       );
                       await _disconnect();
                     } else {
+                      // Creating a pairing hands out remote spending authority,
+                      // so it is gated exactly like revealing an existing one.
+                      // Asked before the disconnect below, so cancelling here
+                      // cannot leave the user unpaired from the federation they
+                      // were connected to with nothing to replace it.
+                      if (!await checkPinForSensitiveAction(context)) {
+                        AppLogger.instance.info(
+                          '[NWC] Connect cancelled: PIN not confirmed',
+                        );
+                        return;
+                      }
+
                       // If connected to a different federation, disconnect first
                       if (isConnected) {
                         AppLogger.instance.info(
@@ -432,6 +472,9 @@ class _NostrWalletConnectState extends State<NostrWalletConnect> {
 
                       setState(() {
                         _nwc = result;
+                        // The PIN was just confirmed above, so showing what was
+                        // created needs no second prompt.
+                        _secretRevealed = true;
                       });
 
                       // Start the foreground service which will call the Rust listener on Android
@@ -494,7 +537,27 @@ class _NostrWalletConnectState extends State<NostrWalletConnect> {
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
               _buildSelectionForm(),
-              if (_nwc != null) ...[
+              // An existing pairing is loaded into `_nwc` on entry, so without
+              // this the secret would already be on screen before anyone asked
+              // for it — and gating only the connect button would protect new
+              // pairings while leaving every existing one exposed.
+              if (_nwc != null && !_secretRevealed) ...[
+                const SizedBox(height: 32),
+                Text(
+                  context.l10n.nwcSecretHiddenBody,
+                  style: theme.textTheme.bodyMedium?.copyWith(
+                    color: theme.colorScheme.onSurface.withOpacity(0.8),
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 16),
+                OutlinedButton.icon(
+                  onPressed: _revealSecret,
+                  icon: const Icon(Icons.visibility_outlined),
+                  label: Text(context.l10n.showConnectionInfo),
+                ),
+              ],
+              if (_nwc != null && _secretRevealed) ...[
                 const SizedBox(height: 32),
                 AspectRatio(
                   aspectRatio: 1,

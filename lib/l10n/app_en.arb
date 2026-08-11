@@ -2049,5 +2049,8 @@
     }
   },
 
-  "lnurlWithdrawHostContinue": "Contact server"
+  "lnurlWithdrawHostContinue": "Contact server",
+
+  "nwcSecretHiddenBody": "The connection string lets a paired app spend from this wallet without asking again. It stays hidden until you choose to show it.",
+  "@nwcSecretHiddenBody": {}
 }
