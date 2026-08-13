@@ -41,7 +41,11 @@ use fedimint_bip39::Language;
 use fedimint_client::OperationId;
 use fedimint_core::rustls::install_crypto_provider;
 use fedimint_core::{
-    config::FederationId, db::Database, encoding::Encodable, util::SafeUrl, Amount,
+    config::FederationId,
+    db::{Database, IDatabaseTransactionOpsCoreTyped},
+    encoding::Encodable,
+    util::SafeUrl,
+    Amount,
 };
 use fedimint_lnv2_client::FinalReceiveOperationState;
 use fedimint_mint_client::{OOBNotes, ReissueExternalNotesState, SpendOOBState};
@@ -96,7 +100,16 @@ pub(crate) fn get_nostr_client() -> Arc<RwLock<NostrClient>> {
 /// wallet being loaded; hanging it off `Multimint` would make it panic there for
 /// no reason. `Database` is an `Arc` handle, so building one per call is cheap.
 fn get_pin_manager() -> PinManager {
-    PinManager::new(DATABASE.get().expect("Database not initialized").clone())
+    PinManager::new(get_db())
+}
+
+/// The app database, once initialized.
+///
+/// Mirrors [`get_multimint`] and [`get_nostr_client`]: callers that run after
+/// startup can rely on it, and a panic here means the app reached them without
+/// opening its own database. `Database` is an `Arc` handle, so cloning is cheap.
+pub(crate) fn get_db() -> Database {
+    DATABASE.get().expect("Database not initialized").clone()
 }
 
 async fn get_recovery_relays() -> &'static Mutex<Vec<String>> {
@@ -1363,6 +1376,63 @@ pub async fn clear_pin_code(pin: String) -> anyhow::Result<()> {
     verify_current_pin(&pins, pin).await?;
     pins.clear_pin().await;
     Ok(())
+}
+
+/// The ceiling on a single wallet-connect payment, in sats.
+///
+/// Returns the built-in default until the user changes it, so the UI shows what
+/// is actually enforced rather than a blank.
+#[frb]
+pub async fn get_nwc_max_payment_sats() -> u64 {
+    nostr::nwc_limits(&get_db()).await.max_payment_msats / 1000
+}
+
+/// The ceiling on everything wallet-connect spends in a day, in sats.
+#[frb]
+pub async fn get_nwc_daily_budget_sats() -> u64 {
+    nostr::nwc_limits(&get_db()).await.daily_budget_msats / 1000
+}
+
+/// Set the ceiling on a single wallet-connect payment, in sats.
+///
+/// Rejects zero: a limit that refuses everything is indistinguishable from a
+/// broken pairing from the client's side, and disconnecting is the way to stop
+/// payments entirely.
+#[frb]
+pub async fn set_nwc_max_payment_sats(sats: u64) -> anyhow::Result<()> {
+    let msats = nwc_limit_msats(sats, "Maximum payment")?;
+    write_nwc_limits(|limits| limits.max_payment_msats = msats).await;
+    Ok(())
+}
+
+/// Set the ceiling on everything wallet-connect spends in a day, in sats.
+#[frb]
+pub async fn set_nwc_daily_budget_sats(sats: u64) -> anyhow::Result<()> {
+    let msats = nwc_limit_msats(sats, "Daily budget")?;
+    write_nwc_limits(|limits| limits.daily_budget_msats = msats).await;
+    Ok(())
+}
+
+fn nwc_limit_msats(sats: u64, label: &str) -> anyhow::Result<u64> {
+    if sats == 0 {
+        bail!("{label} must be at least 1 sat");
+    }
+    sats.checked_mul(1000)
+        .ok_or_else(|| anyhow!("{label} is too large"))
+}
+
+/// Update one limit without disturbing the others.
+///
+/// The limits share a record, so writing a whole fresh value would silently
+/// reset every field the caller did not mean to touch.
+async fn write_nwc_limits(edit: impl FnOnce(&mut crate::db::NwcLimits)) {
+    let db = get_db();
+    let mut limits = nostr::nwc_limits(&db).await;
+    edit(&mut limits);
+
+    let mut dbtx = db.begin_transaction().await;
+    dbtx.insert_entry(&crate::db::NwcLimitsKey, &limits).await;
+    dbtx.commit_tx().await;
 }
 
 #[frb]

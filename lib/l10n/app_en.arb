@@ -2049,5 +2049,45 @@
     }
   },
 
-  "lnurlWithdrawHostContinue": "Contact server"
+  "lnurlWithdrawHostContinue": "Contact server",
+
+  "nwcSecretHiddenBody": "The connection string lets a paired app spend from this wallet without asking again. It stays hidden until you choose to show it.",
+  "@nwcSecretHiddenBody": {},
+
+  "save": "Save",
+  "@save": {},
+
+  "nwcMaxPaymentTitle": "Maximum payment",
+  "@nwcMaxPaymentTitle": {},
+
+  "nwcMaxPaymentSubtitle": "{sats} sats per payment",
+  "@nwcMaxPaymentSubtitle": {
+    "placeholders": {
+      "sats": { "type": "String" }
+    }
+  },
+
+  "nwcMaxPaymentDialogBody": "The largest single payment a paired app may make without asking you. It cannot pay an invoice above this amount.",
+  "@nwcMaxPaymentDialogBody": {},
+
+  "nwcLimitField": "Sats",
+  "@nwcLimitField": {},
+
+  "nwcLimitInvalid": "Enter an amount of at least 1 sat",
+  "@nwcLimitInvalid": {},
+
+  "nwcLimitFailed": "Could not save the limit",
+  "@nwcLimitFailed": {},
+
+  "nwcDailyBudgetTitle": "Daily budget",
+  "@nwcDailyBudgetTitle": {},
+
+  "nwcDailyBudgetSubtitle": "{sats} sats per day",
+  "@nwcDailyBudgetSubtitle": {
+    "placeholders": {
+      "sats": { "type": "String" }
+    }
+  },
+
+  "nwcDailyBudgetDialogBody": "The most a paired app may spend in total over 24 hours. The count starts with its first payment and resets 24 hours later."
 }

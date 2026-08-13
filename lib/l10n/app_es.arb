@@ -582,5 +582,27 @@
 
   "lnurlWithdrawHostBody": "Un enlace abrió esta billetera y le pide contactar a {host} para preparar un retiro.\n\nContinúa solo si tú iniciaste esto — por ejemplo, al acercar tu propia tarjeta. Al continuar, ese servidor conocerá tu dirección IP y que usas esta billetera.",
 
-  "lnurlWithdrawHostContinue": "Contactar servidor"
+  "lnurlWithdrawHostContinue": "Contactar servidor",
+
+  "nwcSecretHiddenBody": "La cadena de conexión permite que una app vinculada gaste desde esta billetera sin volver a preguntar. Permanece oculta hasta que elijas mostrarla.",
+
+  "save": "Guardar",
+
+  "nwcMaxPaymentTitle": "Pago máximo",
+
+  "nwcMaxPaymentSubtitle": "{sats} sats por pago",
+
+  "nwcMaxPaymentDialogBody": "El pago individual más grande que una app vinculada puede hacer sin preguntarte. No podrá pagar una factura por encima de este monto.",
+
+  "nwcLimitField": "Sats",
+
+  "nwcLimitInvalid": "Introduce un monto de al menos 1 sat",
+
+  "nwcLimitFailed": "No se pudo guardar el límite",
+
+  "nwcDailyBudgetTitle": "Presupuesto diario",
+
+  "nwcDailyBudgetSubtitle": "{sats} sats por día",
+
+  "nwcDailyBudgetDialogBody": "Lo máximo que una app vinculada puede gastar en total durante 24 horas. El conteo empieza con su primer pago y se reinicia 24 horas después."
 }
