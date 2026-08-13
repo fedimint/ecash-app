@@ -80,9 +80,10 @@ class _NostrWalletConnectState extends State<NostrWalletConnect> {
 
   List<(String, bool)> _relays = [];
 
-  /// Ceiling on a single wallet-connect payment, in sats. Null only while the
-  /// screen is still loading.
+  /// Ceilings on wallet-connect spending, in sats. Null only while the screen is
+  /// still loading.
   int? _maxPaymentSats;
+  int? _dailyBudgetSats;
 
   bool _serviceRunning = false;
   FederationSelector? _connectedFederation;
@@ -214,41 +215,47 @@ class _NostrWalletConnectState extends State<NostrWalletConnect> {
     });
   }
 
-  /// Change the per-payment ceiling.
+  /// Change one of the spending ceilings.
   ///
   /// Raising it is gated behind the PIN, lowering it is not — the same rule the
   /// PIN screen uses for the spending prompt. Weakening a protection is the act
   /// worth authenticating; tightening one should never be harder than leaving it
   /// alone, or people will leave it alone.
-  Future<void> _editMaxPayment() async {
-    final current = _maxPaymentSats;
+  Future<void> _editLimit({
+    required int? current,
+    required String title,
+    required String body,
+    required Future<void> Function(BigInt) save,
+    required void Function(int) apply,
+  }) async {
     if (current == null) return;
 
     final entered = await showDialog<int>(
       context: context,
-      builder: (ctx) => _MaxPaymentDialog(initialSats: current),
+      builder:
+          (ctx) => _LimitDialog(initialSats: current, title: title, body: body),
     );
     if (entered == null || entered == current) return;
 
     if (entered > current) {
       if (!mounted) return;
       if (!await checkPinForSensitiveAction(context)) {
-        AppLogger.instance.info('[NWC] Limit increase cancelled: PIN not confirmed');
+        AppLogger.instance.info(
+          '[NWC] Limit increase cancelled: PIN not confirmed',
+        );
         return;
       }
     }
 
     try {
-      await setNwcMaxPaymentSats(sats: BigInt.from(entered));
+      await save(BigInt.from(entered));
       if (!mounted) return;
-      setState(() {
-        _maxPaymentSats = entered;
-      });
+      setState(() => apply(entered));
     } catch (e) {
-      AppLogger.instance.error('[NWC] Could not set max payment: $e');
+      AppLogger.instance.error('[NWC] Could not set limit: $e');
       if (!mounted) return;
       ToastService().show(
-        message: context.l10n.nwcMaxPaymentFailed,
+        message: context.l10n.nwcLimitFailed,
         duration: const Duration(seconds: 5),
         onTap: () {},
         icon: const Icon(Icons.error),
@@ -277,6 +284,7 @@ class _NostrWalletConnectState extends State<NostrWalletConnect> {
     final relays = await getRelays();
     final currentConfigs = await getNwcConnectionInfo();
     final maxPaymentSats = (await getNwcMaxPaymentSats()).toInt();
+    final dailyBudgetSats = (await getNwcDailyBudgetSats()).toInt();
 
     FederationSelector? connectedFed;
     String? connectedRelay;
@@ -303,6 +311,7 @@ class _NostrWalletConnectState extends State<NostrWalletConnect> {
     setState(() {
       _relays = relays;
       _maxPaymentSats = maxPaymentSats;
+      _dailyBudgetSats = dailyBudgetSats;
       _selectedFederation =
           connectedFed ??
           (widget.federations.isNotEmpty ? widget.federations.first.$1 : null);
@@ -586,7 +595,7 @@ class _NostrWalletConnectState extends State<NostrWalletConnect> {
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
               _buildSelectionForm(),
-              if (_maxPaymentSats != null) ...[
+              if (_maxPaymentSats != null && _dailyBudgetSats != null) ...[
                 const SizedBox(height: 24),
                 ListTile(
                   contentPadding: EdgeInsets.zero,
@@ -597,7 +606,32 @@ class _NostrWalletConnectState extends State<NostrWalletConnect> {
                     ),
                   ),
                   trailing: const Icon(Icons.chevron_right),
-                  onTap: _editMaxPayment,
+                  onTap:
+                      () => _editLimit(
+                        current: _maxPaymentSats,
+                        title: context.l10n.nwcMaxPaymentTitle,
+                        body: context.l10n.nwcMaxPaymentDialogBody,
+                        save: (sats) => setNwcMaxPaymentSats(sats: sats),
+                        apply: (v) => _maxPaymentSats = v,
+                      ),
+                ),
+                ListTile(
+                  contentPadding: EdgeInsets.zero,
+                  title: Text(context.l10n.nwcDailyBudgetTitle),
+                  subtitle: Text(
+                    context.l10n.nwcDailyBudgetSubtitle(
+                      _dailyBudgetSats.toString(),
+                    ),
+                  ),
+                  trailing: const Icon(Icons.chevron_right),
+                  onTap:
+                      () => _editLimit(
+                        current: _dailyBudgetSats,
+                        title: context.l10n.nwcDailyBudgetTitle,
+                        body: context.l10n.nwcDailyBudgetDialogBody,
+                        save: (sats) => setNwcDailyBudgetSats(sats: sats),
+                        apply: (v) => _dailyBudgetSats = v,
+                      ),
                 ),
               ],
               // An existing pairing is loaded into `_nwc` on entry, so without
@@ -664,21 +698,27 @@ class _NostrWalletConnectState extends State<NostrWalletConnect> {
   }
 }
 
-/// Amount entry for the wallet-connect per-payment ceiling.
+/// Amount entry for a wallet-connect spending ceiling.
 ///
 /// Validates before popping so the caller only ever receives a usable figure:
 /// zero is refused in the core too, but catching it here explains why instead of
 /// surfacing a failure after the fact.
-class _MaxPaymentDialog extends StatefulWidget {
+class _LimitDialog extends StatefulWidget {
   final int initialSats;
+  final String title;
+  final String body;
 
-  const _MaxPaymentDialog({required this.initialSats});
+  const _LimitDialog({
+    required this.initialSats,
+    required this.title,
+    required this.body,
+  });
 
   @override
-  State<_MaxPaymentDialog> createState() => _MaxPaymentDialogState();
+  State<_LimitDialog> createState() => _LimitDialogState();
 }
 
-class _MaxPaymentDialogState extends State<_MaxPaymentDialog> {
+class _LimitDialogState extends State<_LimitDialog> {
   late final TextEditingController _controller = TextEditingController(
     text: widget.initialSats.toString(),
   );
@@ -693,7 +733,7 @@ class _MaxPaymentDialogState extends State<_MaxPaymentDialog> {
   void _submit() {
     final parsed = int.tryParse(_controller.text.trim());
     if (parsed == null || parsed < 1) {
-      setState(() => _error = context.l10n.nwcMaxPaymentInvalid);
+      setState(() => _error = context.l10n.nwcLimitInvalid);
       return;
     }
     Navigator.of(context).pop(parsed);
@@ -702,12 +742,12 @@ class _MaxPaymentDialogState extends State<_MaxPaymentDialog> {
   @override
   Widget build(BuildContext context) {
     return AlertDialog(
-      title: Text(context.l10n.nwcMaxPaymentTitle),
+      title: Text(widget.title),
       content: Column(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(context.l10n.nwcMaxPaymentDialogBody),
+          Text(widget.body),
           const SizedBox(height: 16),
           TextField(
             controller: _controller,
@@ -715,7 +755,7 @@ class _MaxPaymentDialogState extends State<_MaxPaymentDialog> {
             keyboardType: TextInputType.number,
             inputFormatters: [FilteringTextInputFormatter.digitsOnly],
             decoration: InputDecoration(
-              labelText: context.l10n.nwcMaxPaymentField,
+              labelText: context.l10n.nwcLimitField,
               errorText: _error,
             ),
             onSubmitted: (_) => _submit(),

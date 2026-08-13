@@ -12,7 +12,7 @@ use crate::{
         Contact, ContactCursor, ContactKey, ContactKeyPrefix, ContactSyncConfig,
         ContactSyncConfigKey, NostrRelaysKey, NostrRelaysKeyPrefix, NostrWalletConnectKeyPrefix,
         NostrWalletConnectV2Config, NostrWalletConnectV2Key, NostrWalletConnectV2KeyPrefix,
-        NwcLimitsKey,
+        NwcLimits, NwcLimitsKey, NwcSpendWindow, NwcSpendWindowKey,
     },
     error_to_flutter, federations, get_event_bus, info_to_flutter,
     multimint::{
@@ -75,26 +75,109 @@ const FEDERATION_OBSERVER_URL: &str = "https://observer.fedimint.org";
 
 pub const NWC_SUPPORTED_METHODS: &[&str] = &["get_info", "get_balance", "pay_invoice"];
 
-/// Ceiling on a single wallet-connect payment, in msats (1,000,000 sats).
+/// Ceiling on a single wallet-connect payment, in msats (5,000 sats).
 ///
 /// The paired client can spend without any on-screen confirmation — the Android
 /// listener runs in a background isolate with no UI — so this caps what a
-/// compromised or buggy client can move in one request. The user can raise or
-/// lower it (see [`NwcLimits`]); this is only what applies until they do.
-pub const NWC_DEFAULT_MAX_PAYMENT_MSATS: u64 = 1_000_000 * 1_000;
+/// compromised or buggy client can move in one request. Sized for the payments
+/// wallet-connect actually carries, zaps and other small automated sends, on the
+/// principle that the default should cover ordinary use and nothing more. The
+/// user can raise or lower it (see [`NwcLimits`]); this is only what applies
+/// until they do.
+pub const NWC_DEFAULT_MAX_PAYMENT_MSATS: u64 = 5_000 * 1_000;
 
-/// The configured single-payment ceiling, or [`NWC_DEFAULT_MAX_PAYMENT_MSATS`]
-/// if the user has never changed it.
+/// Ceiling on everything wallet-connect spends in one window, in msats
+/// (25,000 sats per day).
+///
+/// The per-payment cap bounds a single request; this bounds the relationship.
+/// Without it a client sitting at the per-payment ceiling can simply ask again,
+/// so the two together are what make an automated pairing survivable. Set at a
+/// few times the per-payment cap so a normal day of small payments fits while a
+/// client that starts draining is stopped within a handful of requests.
+pub const NWC_DEFAULT_DAILY_BUDGET_MSATS: u64 = 25_000 * 1_000;
+
+/// How much wallet-connect spending is counted against one budget.
+const NWC_BUDGET_WINDOW: Duration = Duration::from_secs(24 * 60 * 60);
+
+/// The user's limits, or the built-in defaults where they have not set any.
 ///
 /// Read per request rather than captured when the listener starts, so lowering
-/// the limit takes effect on the next payment instead of after a reconnect.
-pub(crate) async fn nwc_max_payment_msats(db: &Database) -> u64 {
+/// a limit takes effect on the next payment instead of after a reconnect. The
+/// defaults apply from the very first payment — an unconfigured wallet is
+/// bounded, not unbounded.
+pub(crate) async fn nwc_limits(db: &Database) -> NwcLimits {
     db.begin_transaction_nc()
         .await
         .get_value(&NwcLimitsKey)
         .await
-        .map(|limits| limits.max_payment_msats)
-        .unwrap_or(NWC_DEFAULT_MAX_PAYMENT_MSATS)
+        .unwrap_or(NwcLimits {
+            max_payment_msats: NWC_DEFAULT_MAX_PAYMENT_MSATS,
+            daily_budget_msats: NWC_DEFAULT_DAILY_BUDGET_MSATS,
+        })
+}
+
+/// What the current window has already spent, and when it started.
+///
+/// A window older than [`NWC_BUDGET_WINDOW`] is reported as a fresh empty one.
+/// So is a window that claims to start in the future: that means the clock moved
+/// backwards, and refusing to age it would freeze wallet-connect spending until
+/// the clock caught up. Both cases return `None` for the start, meaning "the
+/// next payment begins the window".
+fn window_state(stored: Option<NwcSpendWindow>, now: SystemTime) -> (Option<SystemTime>, u64) {
+    match stored {
+        Some(window) => match now.duration_since(window.started_at) {
+            Ok(elapsed) if elapsed < NWC_BUDGET_WINDOW => {
+                (Some(window.started_at), window.spent_msats)
+            }
+            _ => (None, 0),
+        },
+        None => (None, 0),
+    }
+}
+
+/// Refuse a payment that would take the current window over budget.
+async fn check_nwc_budget(
+    db: &Database,
+    amount_msats: u64,
+    budget_msats: u64,
+) -> anyhow::Result<()> {
+    let stored = db
+        .begin_transaction_nc()
+        .await
+        .get_value(&NwcSpendWindowKey)
+        .await;
+    let (_, spent) = window_state(stored, SystemTime::now());
+
+    let would_total = spent.saturating_add(amount_msats);
+    if would_total > budget_msats {
+        bail!(
+            "NWC pay_invoice: {amount_msats} msat would put this wallet at {would_total} msat \
+             against a {budget_msats} msat daily budget ({spent} msat already spent)"
+        );
+    }
+    Ok(())
+}
+
+/// Count a completed payment against the current window.
+///
+/// Recorded only after the payment succeeds, so a failed attempt does not
+/// consume budget. The amount is what actually left the wallet, fees included —
+/// the check beforehand uses the invoice amount, so a window can finish fees
+/// over budget, which simply means the next payment is refused sooner.
+async fn record_nwc_spend(db: &Database, amount_msats: u64) {
+    let mut dbtx = db.begin_transaction().await;
+    let now = SystemTime::now();
+    let (started_at, spent) = window_state(dbtx.get_value(&NwcSpendWindowKey).await, now);
+
+    dbtx.insert_entry(
+        &NwcSpendWindowKey,
+        &NwcSpendWindow {
+            started_at: started_at.unwrap_or(now),
+            spent_msats: spent.saturating_add(amount_msats),
+        },
+    )
+    .await;
+    dbtx.commit_tx().await;
 }
 
 /// How long to wait for the wallet-connect relay before giving up on this
@@ -678,7 +761,18 @@ impl NostrClient {
                 // would otherwise perform on the caller's behalf.
                 let bolt11 = Bolt11Invoice::from_str(&invoice)
                     .map_err(|e| anyhow!("NWC pay_invoice: could not parse invoice: {e}"))?;
-                check_nwc_payment_limit(&bolt11, nwc_max_payment_msats(&crate::get_db()).await)?;
+                let db = crate::get_db();
+                let limits = nwc_limits(&db).await;
+                check_nwc_payment_limit(&bolt11, limits.max_payment_msats)?;
+                // Checked against the invoice amount so an over-budget request is
+                // turned away before the gateway round trips below, same as the
+                // per-payment cap above.
+                check_nwc_budget(
+                    &db,
+                    bolt11.amount_milli_satoshis().unwrap_or_default(),
+                    limits.daily_budget_msats,
+                )
+                .await?;
 
                 let payment_preview =
                     payment_preview_with_gateways(federation_id, invoice.clone()).await?;
@@ -706,6 +800,7 @@ impl NostrClient {
                 let final_state = await_send(federation_id, operation_id).await;
                 match final_state {
                     LightningSendOutcome::Success(preimage) => {
+                        record_nwc_spend(&db, preview.amount_with_fees).await;
                         let response = WalletConnectResponse::PayInvoice { preimage };
                         Self::broadcast_response(
                             response,
@@ -1892,8 +1987,12 @@ impl TryFrom<nostr_sdk::Event> for NostrProfile {
 
 #[cfg(test)]
 mod tests {
-    use super::{check_nwc_payment_limit, NWC_DEFAULT_MAX_PAYMENT_MSATS};
+    use super::{
+        check_nwc_payment_limit, window_state, NwcSpendWindow, NWC_BUDGET_WINDOW,
+        NWC_DEFAULT_MAX_PAYMENT_MSATS,
+    };
     use lightning_invoice::Bolt11Invoice;
+    use std::time::{Duration, SystemTime};
 
     fn signed_invoice(amount_msats: Option<u64>) -> Bolt11Invoice {
         use bitcoin::hashes::{sha256, Hash as _};
@@ -1917,6 +2016,59 @@ mod tests {
     }
 
     #[test]
+    fn test_budget_window_starts_empty_when_nothing_is_stored() {
+        let (started, spent) = window_state(None, SystemTime::now());
+        assert!(started.is_none(), "no window until the first payment");
+        assert_eq!(spent, 0);
+    }
+
+    #[test]
+    fn test_budget_window_keeps_spend_inside_the_window() {
+        let now = SystemTime::now();
+        let started_at = now - Duration::from_secs(60 * 60);
+        let (kept, spent) = window_state(
+            Some(NwcSpendWindow {
+                started_at,
+                spent_msats: 7_000,
+            }),
+            now,
+        );
+        assert_eq!(kept, Some(started_at), "an open window must not be reset");
+        assert_eq!(spent, 7_000);
+    }
+
+    #[test]
+    fn test_budget_window_resets_once_it_has_aged_out() {
+        let now = SystemTime::now();
+        let (kept, spent) = window_state(
+            Some(NwcSpendWindow {
+                started_at: now - NWC_BUDGET_WINDOW,
+                spent_msats: 999_000,
+            }),
+            now,
+        );
+        assert!(kept.is_none(), "an expired window starts over");
+        assert_eq!(spent, 0);
+    }
+
+    #[test]
+    fn test_budget_window_resets_when_the_clock_moved_backwards() {
+        // A start time in the future means the clock changed under us. Ageing it
+        // out costs one window of budget; trusting it would freeze wallet-connect
+        // spending until the clock caught up.
+        let now = SystemTime::now();
+        let (kept, spent) = window_state(
+            Some(NwcSpendWindow {
+                started_at: now + Duration::from_secs(60 * 60),
+                spent_msats: 999_000,
+            }),
+            now,
+        );
+        assert!(kept.is_none());
+        assert_eq!(spent, 0);
+    }
+
+    #[test]
     fn test_nwc_limit_allows_payment_at_the_cap() {
         let invoice = signed_invoice(Some(NWC_DEFAULT_MAX_PAYMENT_MSATS));
         assert!(
@@ -1935,11 +2087,12 @@ mod tests {
     #[test]
     fn test_nwc_limit_follows_a_lowered_setting() {
         // The invoice is fine against the default and must still be refused once
-        // the user has chosen a smaller ceiling.
-        let invoice = signed_invoice(Some(50_000_000));
+        // the user has chosen a smaller ceiling. Expressed relative to the
+        // default so changing that value cannot quietly invalidate the case.
+        let invoice = signed_invoice(Some(NWC_DEFAULT_MAX_PAYMENT_MSATS));
         assert!(check_nwc_payment_limit(&invoice, NWC_DEFAULT_MAX_PAYMENT_MSATS).is_ok());
 
-        let err = check_nwc_payment_limit(&invoice, 10_000_000).unwrap_err();
+        let err = check_nwc_payment_limit(&invoice, NWC_DEFAULT_MAX_PAYMENT_MSATS - 1).unwrap_err();
         assert!(err.to_string().contains("over the"), "got: {err}");
     }
 

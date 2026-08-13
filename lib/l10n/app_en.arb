@@ -2070,12 +2070,24 @@
   "nwcMaxPaymentDialogBody": "The largest single payment a paired app may make without asking you. It cannot pay an invoice above this amount.",
   "@nwcMaxPaymentDialogBody": {},
 
-  "nwcMaxPaymentField": "Sats",
-  "@nwcMaxPaymentField": {},
+  "nwcLimitField": "Sats",
+  "@nwcLimitField": {},
 
-  "nwcMaxPaymentInvalid": "Enter an amount of at least 1 sat",
-  "@nwcMaxPaymentInvalid": {},
+  "nwcLimitInvalid": "Enter an amount of at least 1 sat",
+  "@nwcLimitInvalid": {},
 
-  "nwcMaxPaymentFailed": "Could not save the maximum payment",
-  "@nwcMaxPaymentFailed": {}
+  "nwcLimitFailed": "Could not save the limit",
+  "@nwcLimitFailed": {},
+
+  "nwcDailyBudgetTitle": "Daily budget",
+  "@nwcDailyBudgetTitle": {},
+
+  "nwcDailyBudgetSubtitle": "{sats} sats per day",
+  "@nwcDailyBudgetSubtitle": {
+    "placeholders": {
+      "sats": { "type": "String" }
+    }
+  },
+
+  "nwcDailyBudgetDialogBody": "The most a paired app may spend in total over 24 hours. The count starts with its first payment and resets 24 hours later."
 }

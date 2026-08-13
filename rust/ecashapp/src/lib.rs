@@ -1384,7 +1384,13 @@ pub async fn clear_pin_code(pin: String) -> anyhow::Result<()> {
 /// is actually enforced rather than a blank.
 #[frb]
 pub async fn get_nwc_max_payment_sats() -> u64 {
-    nostr::nwc_max_payment_msats(&get_db()).await / 1000
+    nostr::nwc_limits(&get_db()).await.max_payment_msats / 1000
+}
+
+/// The ceiling on everything wallet-connect spends in a day, in sats.
+#[frb]
+pub async fn get_nwc_daily_budget_sats() -> u64 {
+    nostr::nwc_limits(&get_db()).await.daily_budget_msats / 1000
 }
 
 /// Set the ceiling on a single wallet-connect payment, in sats.
@@ -1394,23 +1400,39 @@ pub async fn get_nwc_max_payment_sats() -> u64 {
 /// payments entirely.
 #[frb]
 pub async fn set_nwc_max_payment_sats(sats: u64) -> anyhow::Result<()> {
-    if sats == 0 {
-        bail!("Maximum payment must be at least 1 sat");
-    }
-    let msats = sats
-        .checked_mul(1000)
-        .ok_or_else(|| anyhow!("Maximum payment is too large"))?;
-    let db = get_db();
-    let mut dbtx = db.begin_transaction().await;
-    dbtx.insert_entry(
-        &crate::db::NwcLimitsKey,
-        &crate::db::NwcLimits {
-            max_payment_msats: msats,
-        },
-    )
-    .await;
-    dbtx.commit_tx().await;
+    let msats = nwc_limit_msats(sats, "Maximum payment")?;
+    write_nwc_limits(|limits| limits.max_payment_msats = msats).await;
     Ok(())
+}
+
+/// Set the ceiling on everything wallet-connect spends in a day, in sats.
+#[frb]
+pub async fn set_nwc_daily_budget_sats(sats: u64) -> anyhow::Result<()> {
+    let msats = nwc_limit_msats(sats, "Daily budget")?;
+    write_nwc_limits(|limits| limits.daily_budget_msats = msats).await;
+    Ok(())
+}
+
+fn nwc_limit_msats(sats: u64, label: &str) -> anyhow::Result<u64> {
+    if sats == 0 {
+        bail!("{label} must be at least 1 sat");
+    }
+    sats.checked_mul(1000)
+        .ok_or_else(|| anyhow!("{label} is too large"))
+}
+
+/// Update one limit without disturbing the others.
+///
+/// The limits share a record, so writing a whole fresh value would silently
+/// reset every field the caller did not mean to touch.
+async fn write_nwc_limits(edit: impl FnOnce(&mut crate::db::NwcLimits)) {
+    let db = get_db();
+    let mut limits = nostr::nwc_limits(&db).await;
+    edit(&mut limits);
+
+    let mut dbtx = db.begin_transaction().await;
+    dbtx.insert_entry(&crate::db::NwcLimitsKey, &limits).await;
+    dbtx.commit_tx().await;
 }
 
 #[frb]

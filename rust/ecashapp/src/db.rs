@@ -54,6 +54,7 @@ pub(crate) enum DbKeyPrefix {
     PinCredential = 0x17,
     PinAttempts = 0x18,
     NwcLimits = 0x19,
+    NwcSpendWindow = 0x1A,
 }
 
 #[derive(Debug, Clone, Encodable, Decodable, Eq, PartialEq, Hash, Ord, PartialOrd)]
@@ -469,12 +470,36 @@ pub(crate) struct NwcLimitsKey;
 pub(crate) struct NwcLimits {
     /// Ceiling on a single payment, in millisatoshis.
     pub(crate) max_payment_msats: u64,
+    /// Ceiling on everything spent within one budget window, in millisatoshis.
+    /// Bounds the relationship rather than the request: without it a client can
+    /// repeat a payment at the per-payment ceiling indefinitely.
+    pub(crate) daily_budget_msats: u64,
 }
 
 impl_db_record!(
     key = NwcLimitsKey,
     value = NwcLimits,
     db_prefix = DbKeyPrefix::NwcLimits,
+);
+
+#[derive(Debug, Encodable, Decodable)]
+pub(crate) struct NwcSpendWindowKey;
+
+/// How much wallet-connect has spent in the window that began at `started_at`.
+///
+/// Runtime state rather than user config, so it is kept apart from
+/// [`NwcLimits`] — changing a limit must not disturb the running tally, and
+/// clearing the tally must not touch the user's settings.
+#[derive(Debug, Clone, Encodable, Decodable)]
+pub(crate) struct NwcSpendWindow {
+    pub(crate) started_at: SystemTime,
+    pub(crate) spent_msats: u64,
+}
+
+impl_db_record!(
+    key = NwcSpendWindowKey,
+    value = NwcSpendWindow,
+    db_prefix = DbKeyPrefix::NwcSpendWindow,
 );
 
 #[derive(Debug, Encodable, Decodable)]

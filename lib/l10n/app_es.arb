@@ -594,9 +594,15 @@
 
   "nwcMaxPaymentDialogBody": "El pago individual más grande que una app vinculada puede hacer sin preguntarte. No podrá pagar una factura por encima de este monto.",
 
-  "nwcMaxPaymentField": "Sats",
+  "nwcLimitField": "Sats",
 
-  "nwcMaxPaymentInvalid": "Introduce un monto de al menos 1 sat",
+  "nwcLimitInvalid": "Introduce un monto de al menos 1 sat",
 
-  "nwcMaxPaymentFailed": "No se pudo guardar el pago máximo"
+  "nwcLimitFailed": "No se pudo guardar el límite",
+
+  "nwcDailyBudgetTitle": "Presupuesto diario",
+
+  "nwcDailyBudgetSubtitle": "{sats} sats por día",
+
+  "nwcDailyBudgetDialogBody": "Lo máximo que una app vinculada puede gastar en total durante 24 horas. El conteo empieza con su primer pago y se reinicia 24 horas después."
 }
