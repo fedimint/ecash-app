@@ -817,8 +817,17 @@ class _NumberPadState extends State<NumberPad> {
     return FederationCard(
       federation: _selectedFed,
       pictureUrl: _federationMeta?.picture,
-      balanceMsats: _getRemainingBalance(),
-      isOverBalance: _isAmountOverBalance(),
+      // A Max quote probes the recipient over the network before it can size
+      // the amount, so the remaining balance it is about to rewrite reads as
+      // loading meanwhile — the card already spins on a null balance, so this
+      // reuses that rather than introducing a second kind of indicator. The
+      // MAX key spins too, but it is small and easy to miss now that the quote
+      // takes a round trip.
+      balanceMsats: _loadingMax ? null : _getRemainingBalance(),
+      // Whatever the old amount was relative to the old balance, it says
+      // nothing about the figure being fetched — don't flag red under a
+      // spinner.
+      isOverBalance: !_loadingMax && _isAmountOverBalance(),
       onTap: hasMultipleFeds ? _onFederationCardTapped : null,
     );
   }
