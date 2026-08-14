@@ -1,4 +1,4 @@
-package org.fedimint.app.master
+package org.fedimint.app
 
 import android.nfc.cardemulation.HostApduService
 import android.os.Bundle
