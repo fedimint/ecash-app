@@ -13,7 +13,7 @@ import 'package:flutter_rust_bridge/flutter_rust_bridge_for_generated.dart';
 import 'package:freezed_annotation/freezed_annotation.dart' hide protected;
 part 'lib.freezed.dart';
 
-// These functions are ignored because they are not marked as `pub`: `build_lnurlw_callback_url`, `create_event_bus`, `create_nostr_client`, `error_to_flutter`, `get_database`, `get_db`, `get_multimint`, `get_nostr_client`, `get_pin_manager`, `get_recovery_relays`, `info_to_flutter`, `nwc_limit_msats`, `parse_ecash`, `parse_lnurl_withdraw_response`, `payment_error_to_flutter`, `verify_current_pin`, `verify_lnurl_invoice`, `write_nwc_limits`
+// These functions are ignored because they are not marked as `pub`: `build_lnurlw_callback_url`, `create_event_bus`, `create_nostr_client`, `error_to_flutter`, `get_database`, `get_db`, `get_multimint`, `get_nostr_client`, `get_pin_manager`, `get_recovery_relays`, `info_to_flutter`, `lnurl_pay_response`, `nwc_limit_msats`, `parse_ecash`, `parse_lnurl_withdraw_response`, `payment_error_to_flutter`, `verify_current_pin`, `verify_lnurl_invoice`, `write_nwc_limits`
 // These functions are ignored because they have generic arguments: `balance`, `federations`, `get_invoice_network`, `log_error`, `parse_ecash`
 // These types are ignored because they are neither used by any `pub` functions nor (for structs and enums) marked `#[frb(unignore)]`: `MultimintParseContext`
 // These function are ignored because they are on traits that is not defined in current crate (put an empty `#[frb]` on it to unignore): `assert_receiver_is_total_eq`, `clone`, `eq`, `fmt`, `fmt`
@@ -69,6 +69,39 @@ Future<void> refreshConnections() =>
 
 Future<BigInt> balance({required FederationId federationId}) =>
     RustLib.instance.api.crateBalance(federationId: federationId);
+
+/// Largest amount (in msats) the user can pay to `lnaddress_or_lnurl` out of
+/// this federation's balance through `gateway`, including that gateway's
+/// routing fee and the federation fee. `is_lnv2` selects the module to quote
+/// against, so this matches the gateway the user picked on the number pad.
+/// Backs the "Max" button when paying a Lightning Address / LNURL. Errors if
+/// the balance is too low to send any amount after fees.
+///
+/// The routing fee depends on whether the payment needs a Lightning hop at all,
+/// which is a property of the *invoice* — and the amount has to be chosen
+/// before the real invoice can be requested. So this first fetches a throwaway
+/// invoice at the recipient's `minSendable`, purely to read who the payee is,
+/// and quotes against the fee schedule that answer implies. Without the probe
+/// the quote would have to assume the expensive Lightning-swap fee and would
+/// silently strand the difference whenever the recipient is on this federation.
+///
+/// The probe invoice is never paid; it simply expires. `parse` already does the
+/// same thing to learn an address's network, so this is the second such
+/// throwaway on the path, not the first.
+///
+/// The result is also clamped to the recipient's `maxSendable` — offering a
+/// "max" the destination would reject is worse than offering a smaller one.
+Future<BigInt> maxLightningSend({
+  required FederationId federationId,
+  required String lnaddressOrLnurl,
+  required String gateway,
+  required bool isLnv2,
+}) => RustLib.instance.api.crateMaxLightningSend(
+  federationId: federationId,
+  lnaddressOrLnurl: lnaddressOrLnurl,
+  gateway: gateway,
+  isLnv2: isLnv2,
+);
 
 Future<(String, OperationId, String, String, BigInt)> receive({
   required FederationId federationId,

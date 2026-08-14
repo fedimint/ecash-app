@@ -22,7 +22,7 @@ use fedimint_client::{
     },
     module_init::ClientModuleInitRegistry,
     secret::RootSecretStrategy,
-    transaction::FeeQuote,
+    transaction::{max_affordable_send_amount, FeeQuote},
     Client, ClientHandleArc, OperationId,
 };
 use fedimint_connectors::{Connectivity, ConnectorRegistry, PeerStatus as FedimintPeerStatus};
@@ -104,7 +104,7 @@ use crate::{
         BitcoinDisplay, BitcoinDisplayKey, BtcPrice, BtcPriceKey, BtcPrices, BtcPricesKey,
         Connector, ContactSyncConfigKey, FederationBackupKey, FederationMetaKey,
         FederationMetaKeyPrefix, FiatCurrency, FiatCurrencyKey, LightningAddressConfig,
-        LightningAddressKey, LightningAddressKeyPrefix, SchemaVersionKey,
+        LightningAddressKey, LightningAddressKeyPrefix, SchemaVersionKey, Timestamp,
     },
     error_to_flutter, get_nostr_client, info_to_flutter, payment_error_to_flutter,
     wallet::WalletHandler,
@@ -1282,7 +1282,7 @@ impl Multimint {
                         .expect("Cannot be negative");
                     let cached_price = dbtx.get_value(&BtcPriceKey).await;
                     let price_due = match cached_price {
-                        Some(cached_price) => cached_price.last_updated < threshold,
+                        Some(cached_price) => cached_price.last_updated.0 < threshold,
                         None => true,
                     };
                     if price_due {
@@ -1303,7 +1303,7 @@ impl Multimint {
                         let backup_time =
                             dbtx.get_value(&FederationBackupKey { federation_id }).await;
                         let backup_due = match backup_time {
-                            Some(backup) => backup < threshold,
+                            Some(backup) => backup.0 < threshold,
                             None => true,
                         };
                         if backup_due {
@@ -1410,7 +1410,7 @@ impl Multimint {
                     &FederationBackupKey {
                         federation_id: *federation_id,
                     },
-                    &now,
+                    &Timestamp(now),
                 )
                 .await;
                 dbtx.commit_tx().await;
@@ -1476,7 +1476,7 @@ impl Multimint {
                             chf,
                             aud,
                             jpy,
-                            last_updated: now,
+                            last_updated: Timestamp(now),
                         },
                     )
                     .await;
@@ -1486,7 +1486,7 @@ impl Multimint {
                         &BtcPriceKey,
                         &BtcPrice {
                             price: usd,
-                            last_updated: now,
+                            last_updated: Timestamp(now),
                         },
                     )
                     .await;
@@ -2269,6 +2269,112 @@ impl Multimint {
         Ok(client.get_balance_for_btc().await?.msats)
     }
 
+    /// Computes the largest amount (in msats) the user can pay over Lightning
+    /// out of this federation's balance through `gateway`, accounting for that
+    /// gateway's routing fee (added on top of the invoice) and the
+    /// on-federation send fee. This is the amount to request an invoice for in
+    /// order to spend (close to) the whole balance, and backs the "Max" button
+    /// when paying a Lightning Address / LNURL where the user chooses the amount
+    /// and the gateway.
+    ///
+    /// `is_lnv2` selects which module to quote against — the same gateway the
+    /// user picked on the number pad and will pay through — so the result is
+    /// deterministic instead of relying on auto-selection. Pinning the gateway
+    /// also avoids the guardian gateway-list lookup: LNv2 makes a single
+    /// `routing_info` call to that gateway, and LNv1 quotes entirely locally
+    /// against its cached announcement. The quote is point-in-time (it moves
+    /// with the balance); the eventual send remains the source of truth and may
+    /// still fail if the balance or gateway state changes in between.
+    ///
+    /// `loopback` picks the fee schedule: `false` charges the gateway's default
+    /// send fee for a payment routed over Lightning, `true` the cheap
+    /// no-Lightning-hop fee — `send_fee_minimum` for LNv2, and for LNv1 no
+    /// routing fee at all, since an internal payment has no gateway in the
+    /// path. It is a caller's decision because it is a property of the invoice,
+    /// not of the balance: see [`Self::probe_invoice_is_loopback`], which
+    /// answers it from a throwaway invoice before the real amount is chosen.
+    pub async fn max_lightning_send(
+        &self,
+        federation_id: &FederationId,
+        gateway: SafeUrl,
+        is_lnv2: bool,
+        loopback: bool,
+    ) -> anyhow::Result<u64> {
+        let client = self
+            .clients
+            .read()
+            .await
+            .get(federation_id)
+            .ok_or_else(|| anyhow!("No federation exists"))?
+            .clone();
+        let balance = client.get_balance_for_btc().await?;
+        let too_low = || anyhow!("Balance is too low to send any amount after fees");
+
+        let amount = if is_lnv2 {
+            let lnv2 = client
+                .get_first_module::<fedimint_lnv2_client::LightningClientModule>()
+                .map_err(|e| anyhow!("LNv2 module unavailable: {e:#}"))?;
+            if loopback {
+                // `spendable_amount` hardcodes the default send fee, so the
+                // direct-swap quote drives the same solver directly against the
+                // gateway's minimum fee.
+                let routing_info = lnv2
+                    .routing_info(&gateway)
+                    .await?
+                    .ok_or_else(|| anyhow!("Federation not supported by gateway"))?;
+                if !routing_info
+                    .send_fee_minimum
+                    .is_within(&PaymentFee::SEND_FEE_LIMIT)
+                {
+                    bail!("Gateway's minimum send fee exceeds the limit");
+                }
+                max_affordable_send_amount(
+                    balance,
+                    Amount::from_msats(1),
+                    balance,
+                    |amount: Amount| routing_info.send_fee_minimum.add_to(amount.msats),
+                    |contract: Amount| lnv2.send_fee_quote(contract),
+                )
+                .await
+                .ok_or_else(too_low)?
+            } else {
+                lnv2.spendable_amount(balance, Some(gateway)).await?
+            }
+        } else {
+            let lnv1 = client
+                .get_first_module::<LightningClientModule>()
+                .map_err(|e| anyhow!("LNv1 module unavailable: {e:#}"))?;
+            if loopback {
+                // An LNv1 internal payment funds an incoming contract directly:
+                // no gateway in the path, so no routing fee at all. The
+                // federation fee is unchanged — both paths fund one contract
+                // output, which is what `send_fee_quote` prices — so the whole
+                // gross-up disappears.
+                max_affordable_send_amount(
+                    balance,
+                    Amount::from_msats(1),
+                    balance,
+                    |amount: Amount| amount,
+                    |contract: Amount| lnv1.send_fee_quote(contract),
+                )
+                .await
+                .ok_or_else(too_low)?
+            } else {
+                // Quote against the picked gateway's announcement. If it isn't
+                // in the module's cache (e.g. a transient view mismatch), fall
+                // back to auto-selection rather than failing the Max estimate.
+                let announcement = lnv1
+                    .list_gateways()
+                    .await
+                    .into_iter()
+                    .find(|g| g.info.api == gateway)
+                    .map(|g| g.info);
+                lnv1.spendable_amount(balance, announcement).await?
+            }
+        };
+        Ok(amount.msats)
+    }
+
     #[allow(clippy::too_many_arguments)]
     pub async fn receive(
         &self,
@@ -2597,6 +2703,57 @@ impl Multimint {
         0
     }
 
+    /// Whether paying `invoice` through `gw` reaches the recipient without a
+    /// Lightning hop, so the cheap fee schedule applies.
+    ///
+    /// LNv2 receives are invoiced by the gateway itself, so the gateway being
+    /// the payee means the recipient is a fedimint client behind this same
+    /// gateway — a direct swap at `send_fee_minimum`. This mirrors fedimint's
+    /// own `RoutingInfo::send_parameters`, which decides the fee the same way.
+    ///
+    /// LNv1 marks a federation-internal invoice with a route hint whose last
+    /// hop is the gateway's node and *this* federation's short channel id.
+    /// `pay_bolt11_invoice` spots the same marker and takes `PayType::Internal`,
+    /// which funds an incoming contract directly — no gateway, no routing fee.
+    fn invoice_is_loopback(gw: &FedimintGateway, invoice: &Bolt11Invoice) -> bool {
+        if gw.is_lnv2 {
+            gw.lightning_node == Some(invoice.get_payee_pub_key().to_string())
+        } else {
+            let last_hop = invoice
+                .route_hints()
+                .first()
+                .and_then(|rh| rh.0.last())
+                .map(|hop| (hop.src_node_id.to_string(), hop.short_channel_id));
+            match (last_hop, gw.federation_index) {
+                (Some((src, scid)), Some(index)) => gw.lightning_node == Some(src) && scid == index,
+                _ => false,
+            }
+        }
+    }
+
+    /// Whether an invoice would be paid without a Lightning hop through the
+    /// single gateway the user picked, without pricing every other gateway the
+    /// way [`Self::compute_all_gateway_previews`] does.
+    ///
+    /// Backs the "Max" button's probe: the amount has to be chosen before the
+    /// real invoice is requested, so a throwaway invoice is fetched first just
+    /// to answer this question and pick the right fee schedule.
+    pub async fn probe_invoice_is_loopback(
+        &self,
+        federation_id: &FederationId,
+        gateway: &SafeUrl,
+        is_lnv2: bool,
+        invoice: &Bolt11Invoice,
+    ) -> anyhow::Result<bool> {
+        let gw = self
+            .list_gateways(None, Some(*federation_id), Duration::from_secs(5))
+            .await?
+            .into_iter()
+            .find(|g| g.is_lnv2 == is_lnv2 && g.endpoint == gateway.to_string())
+            .ok_or_else(|| anyhow!("Gateway is not available for this federation"))?;
+        Ok(Self::invoice_is_loopback(&gw, invoice))
+    }
+
     pub async fn compute_all_gateway_previews(
         &self,
         federation_id: &FederationId,
@@ -2615,48 +2772,26 @@ impl Multimint {
             .ok_or(anyhow!("No federation exists"))?
             .clone();
 
-        let last_route_hint_hop = bolt11
-            .route_hints()
-            .first()
-            .and_then(|rh| rh.0.last())
-            .map(|hop| (hop.src_node_id.to_string(), hop.short_channel_id));
-        let payee_pubkey = bolt11.get_payee_pub_key().to_string();
-
         // The federation fee is quoted per gateway (the contract amount, and thus
         // the mint funding fee, depends on the gateway's routing fee), so this is
         // an async loop rather than a map.
         let mut previews: Vec<GatewayPaymentPreview> = Vec::with_capacity(gateways.len());
         for gw in gateways {
-            let send_fee = if gw.is_lnv2 {
-                let is_loopback = gw.lightning_node.as_deref() == Some(payee_pubkey.as_str());
-                let (send_base, send_ppm) = if is_loopback {
-                    (
-                        gw.min_base_routing_fee.unwrap_or(gw.base_routing_fee),
-                        gw.min_ppm_routing_fee.unwrap_or(gw.ppm_routing_fee),
-                    )
-                } else {
-                    (gw.base_routing_fee, gw.ppm_routing_fee)
-                };
-                PaymentFee {
-                    base: Amount::from_msats(send_base),
-                    parts_per_million: send_ppm,
-                }
+            let loopback = Self::invoice_is_loopback(&gw, bolt11);
+            let (send_base, send_ppm) = if !loopback {
+                (gw.base_routing_fee, gw.ppm_routing_fee)
+            } else if gw.is_lnv2 {
+                (
+                    gw.min_base_routing_fee.unwrap_or(gw.base_routing_fee),
+                    gw.min_ppm_routing_fee.unwrap_or(gw.ppm_routing_fee),
+                )
             } else {
-                let routes_back = match (last_route_hint_hop.as_ref(), gw.federation_index) {
-                    (Some((src, scid)), Some(fi)) => {
-                        gw.lightning_node.as_deref() == Some(src.as_str()) && *scid == fi
-                    }
-                    _ => false,
-                };
-                let (send_base, send_ppm) = if routes_back {
-                    (0, 0)
-                } else {
-                    (gw.base_routing_fee, gw.ppm_routing_fee)
-                };
-                PaymentFee {
-                    base: Amount::from_msats(send_base),
-                    parts_per_million: send_ppm,
-                }
+                // LNv1 settles this internally, with no gateway in the path.
+                (0, 0)
+            };
+            let send_fee = PaymentFee {
+                base: Amount::from_msats(send_base),
+                parts_per_million: send_ppm,
             };
 
             let (gateway_fee, federation_fee, amount_with_fees) =
