@@ -15,6 +15,29 @@ jobs:
       HAS_SIGNING_CERT: ${{ secrets.MACOS_CERTIFICATE_BASE64 != '' }}
       IS_TAGGED_RELEASE: ${{ startsWith(github.ref, 'refs/tags/') }}
     steps:
+      # First, before the ~25 minute build: a tagged release with no signing
+      # secrets configured used to build, skip signing, and publish an unsigned
+      # DMG to the release page with a green check. macOS then tells whoever
+      # downloads it that the app cannot be trusted.
+      - name: Require signing secrets for tagged releases
+        if: ${{ env.IS_TAGGED_RELEASE == 'true' }}
+        env:
+          MACOS_CERTIFICATE_BASE64: ${{ secrets.MACOS_CERTIFICATE_BASE64 }}
+          MACOS_CERTIFICATE_PASSWORD: ${{ secrets.MACOS_CERTIFICATE_PASSWORD }}
+          MACOS_APPLE_ID: ${{ secrets.MACOS_APPLE_ID }}
+          MACOS_TEAM_ID: ${{ secrets.MACOS_TEAM_ID }}
+          MACOS_APP_SPECIFIC_PASSWORD: ${{ secrets.MACOS_APP_SPECIFIC_PASSWORD }}
+        run: |
+          missing=()
+          for name in MACOS_CERTIFICATE_BASE64 MACOS_CERTIFICATE_PASSWORD \
+                      MACOS_APPLE_ID MACOS_TEAM_ID MACOS_APP_SPECIFIC_PASSWORD; do
+            [ -n "${!name}" ] || missing+=("$name")
+          done
+          if [ ${#missing[@]} -gt 0 ]; then
+            echo "::error::Missing macOS signing secrets: ${missing[*]}"
+            exit 1
+          fi
+          echo "All macOS signing secrets present"
       - uses: actions/checkout@v4
       - name: Read Flutter version
         id: flutter-version

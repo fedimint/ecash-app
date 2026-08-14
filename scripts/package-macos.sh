@@ -45,9 +45,55 @@ APP_PATH="build/macos/Build/Products/Release/ecashapp.app"
 # Code signing (if MACOS_SIGN_IDENTITY is set)
 if [ -n "$MACOS_SIGN_IDENTITY" ]; then
   echo "Signing app with: $MACOS_SIGN_IDENTITY"
-  codesign --deep --force --options runtime \
+
+  # Sign inside-out: nested code first, the outer bundle last.
+  #
+  # `codesign --deep` is documented as a convenience for *verification*, not a
+  # signing strategy. Used to sign, it applies the outer bundle's entitlements
+  # (app-sandbox included) to every nested binary and seals them in an order
+  # Apple does not guarantee, which yields bundles that codesign reports as
+  # signed and Gatekeeper still rejects.
+  FRAMEWORKS_DIR="$APP_PATH/Contents/Frameworks"
+  if [ -d "$FRAMEWORKS_DIR" ]; then
+    # Loose dylibs first — libecashapp.dylib lands here via the Xcode "Embed
+    # Rust Library" build phase — along with any dylib vendored inside a
+    # framework, so the framework seal below covers an already-signed payload.
+    while IFS= read -r -d '' dylib; do
+      echo "  signing $(basename "$dylib")"
+      codesign --force --timestamp --options runtime \
+        --sign "$MACOS_SIGN_IDENTITY" "$dylib"
+    done < <(find "$FRAMEWORKS_DIR" -type f -name '*.dylib' -print0)
+
+    # `-depth` gives post-order traversal, so a framework nested inside another
+    # framework is signed before its parent.
+    while IFS= read -r -d '' framework; do
+      # Versioned bundles must be signed at the version directory, not the
+      # framework root.
+      target="$framework"
+      [ -d "$framework/Versions/A" ] && target="$framework/Versions/A"
+      echo "  signing $(basename "$framework")"
+      codesign --force --timestamp --options runtime \
+        --sign "$MACOS_SIGN_IDENTITY" "$target"
+    done < <(find "$FRAMEWORKS_DIR" -depth -type d -name '*.framework' -print0)
+  fi
+
+  # Outer bundle last. This is the only signature that carries entitlements.
+  codesign --force --timestamp --options runtime \
     --entitlements macos/Runner/Release.entitlements \
     --sign "$MACOS_SIGN_IDENTITY" "$APP_PATH"
+
+  # Verify immediately rather than at the end: a bad nested signature is far
+  # easier to read here than as a Gatekeeper rejection on a user's machine.
+  echo "Verifying app signature"
+  codesign --verify --deep --strict --verbose=2 "$APP_PATH"
+
+  # `codesign --verify` is satisfied by an ad-hoc or self-signed signature, and
+  # neither gets a user past Gatekeeper. Confirm the signer is the real thing.
+  if ! codesign --display --verbose=4 "$APP_PATH" 2>&1 \
+      | grep -q '^Authority=Developer ID Application'; then
+    echo "Error: $APP_PATH is not signed by a Developer ID Application certificate" >&2
+    exit 1
+  fi
 fi
 
 # Create DMG with drag-to-install layout using create-dmg
@@ -66,7 +112,8 @@ create-dmg \
 # Sign DMG (if MACOS_SIGN_IDENTITY is set)
 if [ -n "$MACOS_SIGN_IDENTITY" ]; then
   echo "Signing DMG"
-  codesign --force --sign "$MACOS_SIGN_IDENTITY" "$DMG_NAME"
+  codesign --force --timestamp --sign "$MACOS_SIGN_IDENTITY" "$DMG_NAME"
+  codesign --verify --strict --verbose=2 "$DMG_NAME"
 fi
 
 # Notarize (if MACOS_NOTARIZE_APPLE_ID is set)
@@ -78,6 +125,32 @@ if [ -n "$MACOS_NOTARIZE_APPLE_ID" ]; then
     --password "$MACOS_NOTARIZE_PASSWORD" \
     --wait
   xcrun stapler staple "$DMG_NAME"
+
+  # Everything below needs a notarization ticket to pass, which is why it runs
+  # only here and not on pull requests. Pull requests still get the codesign
+  # verification above, so a broken signing path is caught before a tag depends
+  # on it.
+  echo "Validating notarization ticket"
+  xcrun stapler validate "$DMG_NAME"
+
+  echo "Checking Gatekeeper acceptance of the DMG"
+  spctl --assess --type open --context context:primary-signature \
+    --verbose=2 "$DMG_NAME"
+
+  # The check that mirrors what a user actually does: mount the DMG and assess
+  # the app inside it. The stapled ticket means this resolves offline, exactly
+  # as it will on first launch on their machine.
+  echo "Checking Gatekeeper acceptance of the app inside the DMG"
+  MOUNT_POINT=$(mktemp -d)
+  hdiutil attach "$DMG_NAME" -nobrowse -readonly -mountpoint "$MOUNT_POINT"
+  trap 'hdiutil detach "$MOUNT_POINT" -quiet || true; rmdir "$MOUNT_POINT" 2>/dev/null || true' EXIT
+  codesign --verify --deep --strict --verbose=2 "$MOUNT_POINT/ecashapp.app"
+  spctl --assess --type execute --verbose=2 "$MOUNT_POINT/ecashapp.app"
+  hdiutil detach "$MOUNT_POINT" -quiet
+  trap - EXIT
+  rmdir "$MOUNT_POINT" 2>/dev/null || true
+
+  echo "Signature and notarization verified"
 fi
 
 echo "Created: $DMG_NAME"
