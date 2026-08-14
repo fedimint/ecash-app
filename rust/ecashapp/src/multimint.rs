@@ -3806,9 +3806,13 @@ impl Multimint {
                                                 .map(|m| m.fee_rate_sats_per_vb),
                                             tx_size_vb: meta.as_ref().map(|m| m.tx_size_vb),
                                             fee_sats: meta.as_ref().map(|m| m.fee_sats),
-                                            total_sats: meta
-                                                .as_ref()
-                                                .map(|m| m.fee_sats + amount.to_sat()),
+                                            // Reading history: a stored fee that
+                                            // overflows the total drops the
+                                            // "total" row rather than failing
+                                            // the whole transaction list.
+                                            total_sats: meta.as_ref().and_then(|m| {
+                                                m.fee_sats.checked_add(amount.to_sat())
+                                            }),
                                             federation_fee_msats: meta
                                                 .as_ref()
                                                 .map(|m| m.federation_fee_msats),
@@ -3910,7 +3914,9 @@ impl Multimint {
                                             fee_rate_sats_per_vb,
                                             tx_size_vb,
                                             fee_sats: Some(fee_sats),
-                                            total_sats: Some(send.value.to_sat() + fee_sats),
+                                            // As above: drop the "total" row
+                                            // rather than fail the whole list.
+                                            total_sats: send.value.to_sat().checked_add(fee_sats),
                                             federation_fee_msats,
                                         },
                                         amount,
