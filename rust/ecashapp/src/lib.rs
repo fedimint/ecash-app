@@ -270,6 +270,72 @@ pub async fn balance(federation_id: &FederationId) -> anyhow::Result<u64> {
     multimint.balance(federation_id).await
 }
 
+/// Largest amount (in msats) the user can pay to `lnaddress_or_lnurl` out of
+/// this federation's balance through `gateway`, including that gateway's
+/// routing fee and the federation fee. `is_lnv2` selects the module to quote
+/// against, so this matches the gateway the user picked on the number pad.
+/// Backs the "Max" button when paying a Lightning Address / LNURL. Errors if
+/// the balance is too low to send any amount after fees.
+///
+/// The routing fee depends on whether the payment needs a Lightning hop at all,
+/// which is a property of the *invoice* — and the amount has to be chosen
+/// before the real invoice can be requested. So this first fetches a throwaway
+/// invoice at the recipient's `minSendable`, purely to read who the payee is,
+/// and quotes against the fee schedule that answer implies. Without the probe
+/// the quote would have to assume the expensive Lightning-swap fee and would
+/// silently strand the difference whenever the recipient is on this federation.
+///
+/// The probe invoice is never paid; it simply expires. `parse` already does the
+/// same thing to learn an address's network, so this is the second such
+/// throwaway on the path, not the first.
+///
+/// The result is also clamped to the recipient's `maxSendable` — offering a
+/// "max" the destination would reject is worse than offering a smaller one.
+#[frb]
+pub async fn max_lightning_send(
+    federation_id: &FederationId,
+    lnaddress_or_lnurl: String,
+    gateway: String,
+    is_lnv2: bool,
+) -> anyhow::Result<u64> {
+    let gateway = SafeUrl::parse(&gateway)?;
+    let multimint = get_multimint();
+
+    let (async_client, pay_response) = lnurl_pay_response(&lnaddress_or_lnurl).await?;
+    let probe = async_client
+        .get_invoice(&pay_response, pay_response.min_sendable, None, None)
+        .await?;
+    let probe = Bolt11Invoice::from_str(probe.invoice())?;
+
+    let loopback = multimint
+        .probe_invoice_is_loopback(federation_id, &gateway, is_lnv2, &probe)
+        .await?;
+
+    let max = multimint
+        .max_lightning_send(federation_id, gateway, is_lnv2, loopback)
+        .await?;
+    Ok(max.min(pay_response.max_sendable))
+}
+
+/// Resolves a Lightning Address or raw LNURL to its LNURL-pay parameters,
+/// together with the client that fetched them so an invoice can be requested on
+/// the same connection.
+async fn lnurl_pay_response(
+    lnurl_or_address: &str,
+) -> anyhow::Result<(lnurl::AsyncClient, lnurl::pay::PayResponse)> {
+    let lnurl = match lnurl::lightning_address::LightningAddress::from_str(lnurl_or_address) {
+        Ok(lightning_address) => lightning_address.lnurl(),
+        _ => lnurl::lnurl::LnUrl::from_str(lnurl_or_address)?,
+    };
+
+    let async_client = lnurl::AsyncClient::from_client(crate::net::http_client());
+    let response = async_client.make_request(&lnurl.url).await?;
+    match response {
+        lnurl::LnUrlResponse::LnUrlPayResponse(pay_response) => Ok((async_client, pay_response)),
+        other => bail!("Unexpected response from lnurl: {other:?}"),
+    }
+}
+
 #[frb]
 pub async fn receive(
     federation_id: &FederationId,
@@ -996,17 +1062,7 @@ impl parse::ParseContext for MultimintParseContext {
         &self,
         lnurl_or_address: &str,
     ) -> anyhow::Result<bitcoin::Network> {
-        let lnurl = match lnurl::lightning_address::LightningAddress::from_str(lnurl_or_address) {
-            Ok(lightning_address) => lightning_address.lnurl(),
-            _ => lnurl::lnurl::LnUrl::from_str(lnurl_or_address)?,
-        };
-
-        let async_client = lnurl::AsyncClient::from_client(crate::net::http_client());
-        let response = async_client.make_request(&lnurl.url).await?;
-        let pay_response = match response {
-            lnurl::LnUrlResponse::LnUrlPayResponse(r) => r,
-            other => bail!("Unexpected response from lnurl: {other:?}"),
-        };
+        let (async_client, pay_response) = lnurl_pay_response(lnurl_or_address).await?;
 
         // The smallest invoice the server will mint for us. Most LNURL-pay
         // servers reject anything below `minSendable`, so probing at 1 msat

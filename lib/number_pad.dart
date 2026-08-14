@@ -122,7 +122,7 @@ class _NumberPadState extends State<NumberPad> {
   String? _displayedFiatInput;
   String? _preservedSatsBeforeFiatEdit;
 
-  List<FedimintGateway>? _receiveGateways;
+  List<FedimintGateway>? _gateways;
   String? _selectedGatewayEndpoint;
   bool? _selectedGatewayIsLnv2;
 
@@ -176,37 +176,37 @@ class _NumberPadState extends State<NumberPad> {
     _fetchBalance();
     _fetchFederationMeta();
     _fetchAllFederations();
-    if (_isGeneratingLnInvoice()) {
-      _fetchReceiveGateways();
+    if (_needsGateways) {
+      _fetchGateways();
     }
   }
 
-  Future<void> _fetchReceiveGateways() async {
+  Future<void> _fetchGateways() async {
     try {
       final gateways = await listGateways(
         federationId: _selectedFed.federationId,
       );
       if (!mounted) return;
       setState(() {
-        _receiveGateways = gateways;
+        _gateways = gateways;
         _selectedGatewayEndpoint =
             gateways.isNotEmpty ? gateways.first.endpoint : null;
         _selectedGatewayIsLnv2 =
             gateways.isNotEmpty ? gateways.first.isLnv2 : null;
       });
     } catch (e) {
-      AppLogger.instance.error('Failed to fetch receive gateways: $e');
+      AppLogger.instance.error('Failed to fetch gateways: $e');
       if (!mounted) return;
       setState(() {
-        _receiveGateways = const [];
+        _gateways = const [];
         _selectedGatewayEndpoint = null;
         _selectedGatewayIsLnv2 = null;
       });
     }
   }
 
-  FedimintGateway? get _selectedReceiveGateway {
-    final list = _receiveGateways;
+  FedimintGateway? get _selectedGateway {
+    final list = _gateways;
     if (list == null || list.isEmpty) return null;
     final endpoint = _selectedGatewayEndpoint;
     final isLnv2 = _selectedGatewayIsLnv2;
@@ -277,14 +277,14 @@ class _NumberPadState extends State<NumberPad> {
         _loadingBalance = true;
         _federationMeta = null;
         _withdrawalMode = WithdrawalMode.specificAmount;
-        _receiveGateways = null;
+        _gateways = null;
         _selectedGatewayEndpoint = null;
         _selectedGatewayIsLnv2 = null;
       });
       _fetchBalance();
       _fetchFederationMeta();
-      if (_isGeneratingLnInvoice()) {
-        _fetchReceiveGateways();
+      if (_needsGateways) {
+        _fetchGateways();
       }
     }
   }
@@ -317,6 +317,18 @@ class _NumberPadState extends State<NumberPad> {
   bool _isGeneratingLnInvoice() =>
       widget.paymentType == PaymentType.lightning &&
       widget.lightningAddressOrLnurl == null;
+
+  // Paying a Lightning Address / LNURL: the user picks the amount (and now the
+  // gateway), as opposed to generating an invoice to receive or an LNURLw
+  // withdraw.
+  bool get _isLnAddressSend =>
+      widget.paymentType == PaymentType.lightning &&
+      widget.lightningAddressOrLnurl != null;
+
+  // Every Lightning flow selects a gateway — generating an invoice to receive,
+  // an LNURLw withdraw, and (now) paying a Lightning Address / LNURL — so all of
+  // them prefetch the gateway list on open and show the gateway card.
+  bool get _needsGateways => _isGeneratingLnInvoice() || _isLnAddressSend;
 
   bool _isValidAmount() => isValidAmount(
     rawAmount: _rawAmount,
@@ -386,31 +398,83 @@ class _NumberPadState extends State<NumberPad> {
     });
   }
 
+  // The MAX button fills the largest amount the user can send. Shown for
+  // on-chain and ecash sends (the full balance), and for Lightning Address /
+  // LNURL sends (the fee-adjusted max spendable). Hidden when generating a
+  // Lightning invoice to receive and for LNURLw withdraws, which prefill their
+  // own amount.
+  bool get _canUseMax {
+    if (widget.paymentType == PaymentType.onchain ||
+        widget.paymentType == PaymentType.ecash) {
+      return true;
+    }
+    return _isLnAddressSend;
+  }
+
   Future<void> _onMaxPressed() async {
-    if (widget.paymentType == PaymentType.lightning) return;
+    // For a Lightning Address / LNURL send the max is quoted against the picked
+    // gateway; without one we can't compute it. Bail before showing the spinner.
+    if (_isLnAddressSend && _selectedGateway == null) {
+      ToastService().show(
+        message: context.l10n.noGatewaysAvailable,
+        duration: const Duration(seconds: 5),
+        onTap: () {},
+        icon: const Icon(Icons.error),
+      );
+      return;
+    }
 
     setState(() => _loadingMax = true);
 
     try {
-      final balanceMsats = await balance(
-        federationId: _selectedFed.federationId,
-      );
-      final balanceSats = balanceMsats.toSats;
-
-      setState(() {
-        _rawAmount = balanceSats.toString();
-        _withdrawalMode = WithdrawalMode.maxBalance;
-      });
+      if (widget.paymentType == PaymentType.lightning) {
+        // Paying a Lightning Address / LNURL: the max is the balance minus the
+        // selected gateway's routing fee and the federation fee, computed by the
+        // Rust core. Fill it as a concrete amount — an invoice is fetched for it
+        // on confirm — so it stays in specificAmount mode, unlike the
+        // ecash/on-chain max below.
+        //
+        // The destination goes along because which routing fee applies depends
+        // on the recipient: the core probes them for a throwaway invoice first,
+        // so a payment that never leaves the federation isn't quoted as though
+        // it takes a Lightning hop. That probe is a network round trip, which
+        // is why the button shows a spinner.
+        final gateway = _selectedGateway!;
+        final maxMsats = await maxLightningSend(
+          federationId: _selectedFed.federationId,
+          lnaddressOrLnurl: widget.lightningAddressOrLnurl!,
+          gateway: gateway.endpoint,
+          isLnv2: gateway.isLnv2,
+        );
+        if (!mounted) return;
+        setState(() {
+          _rawAmount = maxMsats.toSats.toString();
+          _withdrawalMode = WithdrawalMode.specificAmount;
+        });
+      } else {
+        final balanceMsats = await balance(
+          federationId: _selectedFed.federationId,
+        );
+        if (!mounted) return;
+        setState(() {
+          _rawAmount = balanceMsats.toSats.toString();
+          _withdrawalMode = WithdrawalMode.maxBalance;
+        });
+      }
     } catch (e) {
-      AppLogger.instance.error('Failed to get balance: $e');
+      AppLogger.instance.error('Failed to get max amount: $e');
+      if (!mounted) return;
       ToastService().show(
-        message: context.l10n.failedToGetBalance,
+        message:
+            widget.paymentType == PaymentType.lightning
+                ? context.l10n.couldNotComputeMax
+                : context.l10n.failedToGetBalance,
         duration: const Duration(seconds: 5),
         onTap: () {},
         icon: Icon(Icons.error),
       );
     } finally {
-      setState(() => _loadingMax = false);
+      if (mounted) setState(() => _loadingMax = false);
     }
   }
 
@@ -418,7 +482,7 @@ class _NumberPadState extends State<NumberPad> {
     try {
       final requestedAmountMsats = amountSats * BigInt.from(1000);
 
-      final selected = _selectedReceiveGateway;
+      final selected = _selectedGateway;
       if (selected == null) {
         throw Exception('No available gateways');
       }
@@ -484,7 +548,7 @@ class _NumberPadState extends State<NumberPad> {
 
   Future<void> _handleLnurlWithdraw(BigInt amountSats) async {
     final params = widget.lnurlWithdrawParams!;
-    final selected = _selectedReceiveGateway;
+    final selected = _selectedGateway;
     if (selected == null) {
       ToastService().show(
         message: context.l10n.noGatewaysAvailable,
@@ -578,6 +642,9 @@ class _NumberPadState extends State<NumberPad> {
                 // Record the destination (a Lightning Address or a raw LNURL)
                 // so it shows in the transaction details.
                 lnAddress: widget.lightningAddressOrLnurl,
+                // Pre-select the gateway the user picked on the number pad so
+                // the preview opens on the same gateway the Max was quoted for.
+                preferredGateway: _selectedGateway,
               );
             },
           );
@@ -750,26 +817,35 @@ class _NumberPadState extends State<NumberPad> {
     return FederationCard(
       federation: _selectedFed,
       pictureUrl: _federationMeta?.picture,
-      balanceMsats: _getRemainingBalance(),
-      isOverBalance: _isAmountOverBalance(),
+      // A Max quote probes the recipient over the network before it can size
+      // the amount, so the remaining balance it is about to rewrite reads as
+      // loading meanwhile — the card already spins on a null balance, so this
+      // reuses that rather than introducing a second kind of indicator. The
+      // MAX key spins too, but it is small and easy to miss now that the quote
+      // takes a round trip.
+      balanceMsats: _loadingMax ? null : _getRemainingBalance(),
+      // Whatever the old amount was relative to the old balance, it says
+      // nothing about the figure being fetched — don't flag red under a
+      // spinner.
+      isOverBalance: !_loadingMax && _isAmountOverBalance(),
       onTap: hasMultipleFeds ? _onFederationCardTapped : null,
     );
   }
 
   Widget _buildGatewayCard() {
-    if (!_isGeneratingLnInvoice()) {
+    if (!_needsGateways) {
       return const SizedBox.shrink();
     }
 
     return GatewayCard(
-      gateways: _receiveGateways,
-      selectedGateway: _selectedReceiveGateway,
+      gateways: _gateways,
+      selectedGateway: _selectedGateway,
       onTap: _onGatewayCardTapped,
     );
   }
 
   Future<void> _onGatewayCardTapped() async {
-    final gateways = _receiveGateways;
+    final gateways = _gateways;
     if (gateways == null || gateways.isEmpty) return;
 
     final currentIndex = gateways.indexWhere(
@@ -1089,9 +1165,7 @@ class _NumberPadState extends State<NumberPad> {
                           )
                           : null,
                   onLeftAction:
-                      !_isFiatInputMode &&
-                              (widget.paymentType == PaymentType.onchain ||
-                                  widget.paymentType == PaymentType.ecash)
+                      !_isFiatInputMode && _canUseMax
                           ? (_loadingMax ? null : _onMaxPressed)
                           : null,
                   leftActionLoading: _loadingMax,

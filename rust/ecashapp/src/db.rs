@@ -3,13 +3,61 @@ use std::time::SystemTime;
 use bitcoin::hashes::sha256;
 use fedimint_core::{
     config::{ClientConfig, FederationId},
-    encoding::{Decodable, Encodable},
+    encoding::{
+        decode_legacy_system_time_from_finite_reader, encode_legacy_system_time, Decodable,
+        DecodeError, Encodable,
+    },
     impl_db_lookup, impl_db_record,
+    module::registry::ModuleDecoderRegistry,
     util::SafeUrl,
 };
 use serde::{Deserialize, Serialize};
 
 use crate::multimint::FederationMeta;
+
+/// A `SystemTime` persisted in our database.
+///
+/// fedimint used to supply blanket `Encodable`/`Decodable` impls for
+/// `SystemTime` and removed them in `b975ac4d`, because the blanket impls let
+/// any derived type silently pick up a codec whose precision and range are
+/// platform-dependent (Unix keeps nanoseconds, Windows truncates to 100ns
+/// ticks). Wallets in the field already have timestamps on disk written that
+/// way, so this re-supplies the encoding through the legacy
+/// `(seconds, nanoseconds)` helpers upstream kept for exactly this case. The
+/// bytes are unchanged and existing databases keep reading.
+///
+/// The portability argument that motivated the removal upstream does not really
+/// reach these records — they are local RocksDB state on a single device, not
+/// consensus or wire data — so preserving the stored format is the priority.
+///
+/// This is a newtype rather than hand-written impls on each record so that
+/// adding a field to one of those records cannot silently drift from its
+/// encoding: the derive keeps working.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
+pub(crate) struct Timestamp(pub(crate) SystemTime);
+
+impl Encodable for Timestamp {
+    fn consensus_encode<W: std::io::Write>(&self, writer: &mut W) -> Result<(), std::io::Error> {
+        encode_legacy_system_time(&self.0, writer)
+    }
+}
+
+impl Decodable for Timestamp {
+    fn consensus_decode_partial_from_finite_reader<D: std::io::Read>(
+        decoder: &mut D,
+        modules: &ModuleDecoderRegistry,
+    ) -> Result<Self, DecodeError> {
+        Ok(Self(decode_legacy_system_time_from_finite_reader(
+            decoder, modules,
+        )?))
+    }
+}
+
+impl From<SystemTime> for Timestamp {
+    fn from(time: SystemTime) -> Self {
+        Self(time)
+    }
+}
 
 /// Local enum for DB backward compatibility after migration from fedimint 0.9.0 to 0.10.0.
 /// Previously imported from fedimint_api_client::api::net::Connector.
@@ -181,7 +229,7 @@ pub(crate) struct BtcPriceKey;
 #[derive(Debug, Encodable, Decodable)]
 pub(crate) struct BtcPrice {
     pub(crate) price: u64,
-    pub(crate) last_updated: SystemTime,
+    pub(crate) last_updated: Timestamp,
 }
 
 impl_db_record!(
@@ -202,7 +250,7 @@ pub(crate) struct BtcPrices {
     pub(crate) chf: u64,
     pub(crate) aud: u64,
     pub(crate) jpy: u64,
-    pub(crate) last_updated: SystemTime,
+    pub(crate) last_updated: Timestamp,
 }
 
 impl_db_record!(
@@ -221,7 +269,7 @@ pub(crate) struct NostrRelaysKeyPrefix;
 
 impl_db_record!(
     key = NostrRelaysKey,
-    value = SystemTime,
+    value = Timestamp,
     db_prefix = DbKeyPrefix::NostrRelays,
 );
 
@@ -300,7 +348,7 @@ pub(crate) struct FederationBackupKey {
 
 impl_db_record!(
     key = FederationBackupKey,
-    value = SystemTime,
+    value = Timestamp,
     db_prefix = DbKeyPrefix::FederationBackup,
 );
 
@@ -492,7 +540,7 @@ pub(crate) struct NwcSpendWindowKey;
 /// clearing the tally must not touch the user's settings.
 #[derive(Debug, Clone, Encodable, Decodable)]
 pub(crate) struct NwcSpendWindow {
-    pub(crate) started_at: SystemTime,
+    pub(crate) started_at: Timestamp,
     pub(crate) spent_msats: u64,
 }
 
@@ -547,3 +595,46 @@ impl_db_lookup!(
     key = WalletV2PendingDepositKey,
     query_prefix = WalletV2PendingDepositFederationPrefix,
 );
+
+#[cfg(test)]
+mod tests {
+    use std::time::{Duration, UNIX_EPOCH};
+
+    use fedimint_core::{
+        encoding::{Decodable, Encodable},
+        module::registry::ModuleDecoderRegistry,
+    };
+
+    use super::Timestamp;
+
+    /// The blanket `Encodable for SystemTime` that fedimint removed in
+    /// `b975ac4d` encoded `self.duration_since(UNIX_EPOCH)`, i.e. exactly a
+    /// `Duration`. Wallets in the field have timestamps on disk in that form, so
+    /// [`Timestamp`] must keep producing the identical bytes — if this ever
+    /// diverges, every stored price cache, relay entry, backup time and NWC
+    /// spend window becomes unreadable.
+    #[test]
+    fn timestamp_encodes_exactly_like_the_removed_system_time_codec() {
+        for duration in [
+            Duration::ZERO,
+            Duration::from_secs(1),
+            Duration::new(1_764_000_000, 123_456_789),
+            Duration::new(u32::MAX as u64, 999_999_999),
+        ] {
+            assert_eq!(
+                Timestamp(UNIX_EPOCH + duration).consensus_encode_to_vec(),
+                duration.consensus_encode_to_vec(),
+                "Timestamp must serialize as the bare duration since the epoch",
+            );
+        }
+    }
+
+    #[test]
+    fn timestamp_round_trips() {
+        let time = Timestamp(UNIX_EPOCH + Duration::new(1_764_000_000, 123_456_789));
+        let bytes = time.consensus_encode_to_vec();
+        let decoded =
+            Timestamp::consensus_decode_whole(&bytes, &ModuleDecoderRegistry::default()).unwrap();
+        assert_eq!(decoded, time);
+    }
+}

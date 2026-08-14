@@ -23,12 +23,18 @@ class PaymentPreviewWidget extends StatefulWidget {
   /// it can be recorded and shown in the transaction details.
   final String? lnAddress;
 
+  /// Gateway the user already picked upstream (e.g. on the number pad when
+  /// computing the Max), if any. The preview opens on the matching gateway
+  /// instead of the default first one; it can still be changed here.
+  final FedimintGateway? preferredGateway;
+
   const PaymentPreviewWidget({
     super.key,
     required this.fed,
     required this.previewData,
     required this.federations,
     this.lnAddress,
+    this.preferredGateway,
   });
 
   @override
@@ -53,6 +59,21 @@ class _PaymentPreviewWidgetState extends State<PaymentPreviewWidget> {
     _previewData = widget.previewData;
     _invoice = widget.previewData.invoice;
     _selectedIndex = widget.previewData.selectedIndex.toInt();
+
+    // If an upstream screen already picked a gateway, open on that one (matched
+    // by endpoint + protocol). Falls back to the default index if it isn't among
+    // the previews for this invoice.
+    final preferred = widget.preferredGateway;
+    if (preferred != null) {
+      final idx = _previewData.gatewayPreviews.indexWhere(
+        (p) =>
+            p.gateway.endpoint == preferred.endpoint &&
+            p.gateway.isLnv2 == preferred.isLnv2,
+      );
+      if (idx >= 0) {
+        _selectedIndex = idx;
+      }
+    }
   }
 
   GatewayPaymentPreview get _selectedPreview =>

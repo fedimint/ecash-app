@@ -1396,6 +1396,9 @@
   "failedToGetBalance": "Failed to get balance",
   "@failedToGetBalance": {},
 
+  "couldNotComputeMax": "Could not compute the maximum amount",
+  "@couldNotComputeMax": {},
+
   "enterSeedPhrase": "Enter Seed Phrase",
   "@enterSeedPhrase": {},
 

@@ -394,6 +394,7 @@
   "noGatewaysAvailable": "No hay pasarelas Lightning disponibles para esta federación",
   "couldNotReachLnAddress": "No se pudo contactar esa dirección lightning. Por favor verifícala e intenta de nuevo.",
   "failedToGetBalance": "Error al obtener el saldo",
+  "couldNotComputeMax": "No se pudo calcular el importe máximo",
   "enterSeedPhrase": "Ingresar frase semilla",
   "enter12WordRecoveryPhrase": "Ingrese su frase de recuperación de 12 palabras",
   "word": "palabra",

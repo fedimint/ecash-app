@@ -12,7 +12,7 @@ use crate::{
         Contact, ContactCursor, ContactKey, ContactKeyPrefix, ContactSyncConfig,
         ContactSyncConfigKey, NostrRelaysKey, NostrRelaysKeyPrefix, NostrWalletConnectKeyPrefix,
         NostrWalletConnectV2Config, NostrWalletConnectV2Key, NostrWalletConnectV2KeyPrefix,
-        NwcLimits, NwcLimitsKey, NwcSpendWindow, NwcSpendWindowKey,
+        NwcLimits, NwcLimitsKey, NwcSpendWindow, NwcSpendWindowKey, Timestamp,
     },
     error_to_flutter, federations, get_event_bus, info_to_flutter,
     multimint::{
@@ -125,9 +125,9 @@ pub(crate) async fn nwc_limits(db: &Database) -> NwcLimits {
 /// next payment begins the window".
 fn window_state(stored: Option<NwcSpendWindow>, now: SystemTime) -> (Option<SystemTime>, u64) {
     match stored {
-        Some(window) => match now.duration_since(window.started_at) {
+        Some(window) => match now.duration_since(window.started_at.0) {
             Ok(elapsed) if elapsed < NWC_BUDGET_WINDOW => {
-                (Some(window.started_at), window.spent_msats)
+                (Some(window.started_at.0), window.spent_msats)
             }
             _ => (None, 0),
         },
@@ -172,7 +172,7 @@ async fn record_nwc_spend(db: &Database, amount_msats: u64) {
     dbtx.insert_entry(
         &NwcSpendWindowKey,
         &NwcSpendWindow {
-            started_at: started_at.unwrap_or(now),
+            started_at: Timestamp(started_at.unwrap_or(now)),
             spent_msats: spent.saturating_add(amount_msats),
         },
     )
@@ -410,8 +410,11 @@ impl NostrClient {
                 info_to_flutter(format!("Connected to relay {}", relay_uri.clone())).await;
 
                 let mut dbtx = self.db.begin_transaction().await;
-                dbtx.insert_entry(&NostrRelaysKey { uri: relay_uri }, &SystemTime::now())
-                    .await;
+                dbtx.insert_entry(
+                    &NostrRelaysKey { uri: relay_uri },
+                    &Timestamp(SystemTime::now()),
+                )
+                .await;
                 dbtx.commit_tx().await;
 
                 Ok(())
@@ -462,7 +465,7 @@ impl NostrClient {
                     &NostrRelaysKey {
                         uri: relay.to_string(),
                     },
-                    &SystemTime::now(),
+                    &Timestamp(SystemTime::now()),
                 )
                 .await;
                 relays.push(relay.to_string());
@@ -1988,7 +1991,7 @@ impl TryFrom<nostr_sdk::Event> for NostrProfile {
 #[cfg(test)]
 mod tests {
     use super::{
-        check_nwc_payment_limit, window_state, NwcSpendWindow, NWC_BUDGET_WINDOW,
+        check_nwc_payment_limit, window_state, NwcSpendWindow, Timestamp, NWC_BUDGET_WINDOW,
         NWC_DEFAULT_MAX_PAYMENT_MSATS,
     };
     use lightning_invoice::Bolt11Invoice;
@@ -2028,7 +2031,7 @@ mod tests {
         let started_at = now - Duration::from_secs(60 * 60);
         let (kept, spent) = window_state(
             Some(NwcSpendWindow {
-                started_at,
+                started_at: Timestamp(started_at),
                 spent_msats: 7_000,
             }),
             now,
@@ -2042,7 +2045,7 @@ mod tests {
         let now = SystemTime::now();
         let (kept, spent) = window_state(
             Some(NwcSpendWindow {
-                started_at: now - NWC_BUDGET_WINDOW,
+                started_at: Timestamp(now - NWC_BUDGET_WINDOW),
                 spent_msats: 999_000,
             }),
             now,
@@ -2059,7 +2062,7 @@ mod tests {
         let now = SystemTime::now();
         let (kept, spent) = window_state(
             Some(NwcSpendWindow {
-                started_at: now + Duration::from_secs(60 * 60),
+                started_at: Timestamp(now + Duration::from_secs(60 * 60)),
                 spent_msats: 999_000,
             }),
             now,

@@ -11,7 +11,7 @@ import 'package:flutter_rust_bridge/flutter_rust_bridge_for_generated.dart';
 import 'package:freezed_annotation/freezed_annotation.dart' hide protected;
 part 'multimint.freezed.dart';
 
-// These functions are ignored because they are not marked as `pub`: `await_receive_lnv1`, `await_receive_lnv2`, `await_send_lnv1`, `await_send_lnv2`, `backup`, `build_client`, `cache_btc_price`, `cache_federation_meta`, `check_for_update`, `compute_send_fees`, `extract_recipient_pk_from_lnv2_lnurl`, `finish_active_subscriptions`, `from_peg_out_fees`, `get_client_database`, `get_client`, `get_ecash_amount_from_meta`, `get_lnv1_amount_from_meta`, `get_lnv1_receive_tx`, `get_lnv1_send_tx`, `get_lnv2_amount_from_meta`, `get_mintv2_receive_amount`, `get_or_build_temp_client`, `get_recurringd_federations`, `get_url`, `gross_invoice_for_contract`, `guardian_admin_api`, `guardian_bitcoin_status`, `guardian_lnv2_module_api`, `guardian_meta_consensus`, `guardian_meta_module_api`, `guardian_meta_submit`, `init_recovery_progress_cache`, `is_invalid_guardian_auth`, `is_newer_version`, `list_gateways`, `lnv1_update_gateway_cache`, `lnv2_gateways`, `load_clients`, `pay_lnv1`, `pay_lnv2`, `read_meta_msats`, `read_meta_string`, `read_meta_u64`, `read_meta_url`, `receive_lnv1`, `receive_lnv2`, `release_ln_address`, `remove_recovery_progress_cache`, `run_cache_stage`, `run_migrations`, `send_federation_fee`, `sign_challenge`, `skip_unrenderable`, `solve_gross_for_net`, `spawn_await_ecash_reissue`, `spawn_await_ecash_send`, `spawn_await_mintv2_receive`, `spawn_await_receive`, `spawn_await_recurringd_receive`, `spawn_await_send`, `spawn_await_withdraw`, `spawn_backfill_recipient_pk`, `spawn_cache_task`, `spawn_lnv2_event_listener`, `spawn_recovery_progress`, `spawn_recurring_invoice_listener`, `update_recovery_progress_cache`, `validate_receive_fee`, `wait_for_recovery`, `wallet_network`
+// These functions are ignored because they are not marked as `pub`: `await_receive_lnv1`, `await_receive_lnv2`, `await_send_lnv1`, `await_send_lnv2`, `backup`, `build_client`, `cache_btc_price`, `cache_federation_meta`, `check_for_update`, `compute_send_fees`, `extract_recipient_pk_from_lnv2_lnurl`, `finish_active_subscriptions`, `from_peg_out_fees`, `get_client_database`, `get_client`, `get_ecash_amount_from_meta`, `get_lnv1_amount_from_meta`, `get_lnv1_receive_tx`, `get_lnv1_send_tx`, `get_lnv2_amount_from_meta`, `get_mintv2_receive_amount`, `get_or_build_temp_client`, `get_recurringd_federations`, `get_url`, `gross_invoice_for_contract`, `guardian_admin_api`, `guardian_bitcoin_status`, `guardian_lnv2_module_api`, `guardian_meta_consensus`, `guardian_meta_module_api`, `guardian_meta_submit`, `init_recovery_progress_cache`, `invoice_is_loopback`, `is_invalid_guardian_auth`, `is_newer_version`, `list_gateways`, `lnv1_update_gateway_cache`, `lnv2_gateways`, `load_clients`, `pay_lnv1`, `pay_lnv2`, `read_meta_msats`, `read_meta_string`, `read_meta_u64`, `read_meta_url`, `receive_lnv1`, `receive_lnv2`, `release_ln_address`, `remove_recovery_progress_cache`, `run_cache_stage`, `run_migrations`, `send_federation_fee`, `sign_challenge`, `skip_unrenderable`, `solve_gross_for_net`, `spawn_await_ecash_reissue`, `spawn_await_ecash_send`, `spawn_await_mintv2_receive`, `spawn_await_receive`, `spawn_await_recurringd_receive`, `spawn_await_send`, `spawn_await_withdraw`, `spawn_backfill_recipient_pk`, `spawn_cache_task`, `spawn_lnv2_event_listener`, `spawn_recovery_progress`, `spawn_recurring_invoice_listener`, `update_recovery_progress_cache`, `validate_receive_fee`, `wait_for_recovery`, `wallet_network`
 // These types are ignored because they are neither used by any `pub` functions nor (for structs and enums) marked `#[frb(unignore)]`: `ClientType`, `LNAddressRegisterRequest`, `LNAddressRemoveRequest`, `OnChainWithdrawalMeta`, `WrappedEcash`
 // These function are ignored because they are on traits that is not defined in current crate (put an empty `#[frb]` on it to unignore): `assert_receiver_is_total_eq`, `assert_receiver_is_total_eq`, `assert_receiver_is_total_eq`, `assert_receiver_is_total_eq`, `assert_receiver_is_total_eq`, `assert_receiver_is_total_eq`, `assert_receiver_is_total_eq`, `assert_receiver_is_total_eq`, `assert_receiver_is_total_eq`, `assert_receiver_is_total_eq`, `assert_receiver_is_total_eq`, `assert_receiver_is_total_eq`, `assert_receiver_is_total_eq`, `assert_receiver_is_total_eq`, `assert_receiver_is_total_eq`, `assert_receiver_is_total_eq`, `assert_receiver_is_total_eq`, `assert_receiver_is_total_eq`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `consensus_decode_partial_from_finite_reader`, `consensus_decode_partial_from_finite_reader`, `consensus_decode_partial_from_finite_reader`, `consensus_encode`, `consensus_encode`, `consensus_encode`, `eq`, `eq`, `eq`, `eq`, `eq`, `eq`, `eq`, `eq`, `eq`, `eq`, `eq`, `eq`, `eq`, `eq`, `eq`, `eq`, `eq`, `eq`, `eq`, `eq`, `eq`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `from`, `from`
 // These functions are ignored (category: IgnoreBecauseExplicitAttribute): `federation_network`
@@ -357,6 +357,37 @@ abstract class Multimint implements RustOpaqueInterface {
 
   Future<void> leaveFederation({required FederationId federationId});
 
+  /// Computes the largest amount (in msats) the user can pay over Lightning
+  /// out of this federation's balance through `gateway`, accounting for that
+  /// gateway's routing fee (added on top of the invoice) and the
+  /// on-federation send fee. This is the amount to request an invoice for in
+  /// order to spend (close to) the whole balance, and backs the "Max" button
+  /// when paying a Lightning Address / LNURL where the user chooses the amount
+  /// and the gateway.
+  ///
+  /// `is_lnv2` selects which module to quote against — the same gateway the
+  /// user picked on the number pad and will pay through — so the result is
+  /// deterministic instead of relying on auto-selection. Pinning the gateway
+  /// also avoids the guardian gateway-list lookup: LNv2 makes a single
+  /// `routing_info` call to that gateway, and LNv1 quotes entirely locally
+  /// against its cached announcement. The quote is point-in-time (it moves
+  /// with the balance); the eventual send remains the source of truth and may
+  /// still fail if the balance or gateway state changes in between.
+  ///
+  /// `loopback` picks the fee schedule: `false` charges the gateway's default
+  /// send fee for a payment routed over Lightning, `true` the cheap
+  /// no-Lightning-hop fee — `send_fee_minimum` for LNv2, and for LNv1 no
+  /// routing fee at all, since an internal payment has no gateway in the
+  /// path. It is a caller's decision because it is a property of the invoice,
+  /// not of the balance: see [`Self::probe_invoice_is_loopback`], which
+  /// answers it from a throwaway invoice before the real amount is chosen.
+  Future<BigInt> maxLightningSend({
+    required FederationId federationId,
+    required SafeUrl gateway,
+    required bool isLnv2,
+    required bool loopback,
+  });
+
   // HINT: Make it `#[frb(sync)]` to let it become the default constructor of Dart class.
   static Future<Multimint> newInstance({
     required Database db,
@@ -369,6 +400,20 @@ abstract class Multimint implements RustOpaqueInterface {
   Future<BigInt> parseEcash({
     required FederationId federationId,
     required OobNotes notes,
+  });
+
+  /// Whether an invoice would be paid without a Lightning hop through the
+  /// single gateway the user picked, without pricing every other gateway the
+  /// way [`Self::compute_all_gateway_previews`] does.
+  ///
+  /// Backs the "Max" button's probe: the amount has to be chosen before the
+  /// real invoice is requested, so a throwaway invoice is fetched first just
+  /// to answer this question and pick the right fee schedule.
+  Future<bool> probeInvoiceIsLoopback({
+    required FederationId federationId,
+    required SafeUrl gateway,
+    required bool isLnv2,
+    required Bolt11Invoice invoice,
   });
 
   Future<(Bolt11Invoice, OperationId)> receive({
