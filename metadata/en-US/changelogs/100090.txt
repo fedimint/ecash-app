@@ -1,0 +1,14 @@
+- Guardian dashboard - federation health, audit, backup, and Lightning Gateway membership
+- Federation meta module support
+- Max button when sending over Lightning and LNURL
+- Nostr Wallet Connect hardening - client authorization gate, daily budget, and max invoice cap
+- PIN hardening - PIN is now salted and key-derived, attempts are throttled, and the PIN is required to view your mnemonic
+- Confirmation prompt before contacting an LNURL-withdraw server
+- Validation of scanned QR code input
+- Transaction id and fee shown for pending on-chain receives
+- Balance is shown when leaving a federation
+- Recovery now tells you when no backup was found on Nostr
+- Invoice expiration picker
+- Thousands separator for fiat amounts
+- Timeouts on network calls
+- Ecash from a Mint V2 federation you have not joined now offers to join and redeem
