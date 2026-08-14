@@ -815,12 +815,25 @@ impl WalletHandler {
     /// Quotes the fee to send `amount_sats` on-chain to `address`. The returned
     /// [`WithdrawFees`] is round-tripped back into [`Self::withdraw_to_address`]
     /// so the user pays exactly the quoted fee.
+    ///
+    /// Rejects amounts above the bitcoin supply cap: such a withdrawal can never
+    /// succeed, and quoting one anyway would show the user a plausible fee for
+    /// an impossible payment.
     pub(crate) async fn calculate_withdraw_fees(
         &self,
         client: &ClientHandleArc,
         address: String,
         amount_sats: u64,
     ) -> EcashAppResult<WithdrawFeesResponse> {
+        // `bitcoin::Amount::from_sat` does not range-check, and the
+        // `amount + fee` sums below would wrap near `u64::MAX`, so bound the
+        // amount once here for both the walletv1 and walletv2 paths.
+        if amount_sats > bitcoin::Amount::MAX_MONEY.to_sat() {
+            return Err(EcashAppError::other(format!(
+                "withdrawal amount {amount_sats} sats exceeds the total bitcoin supply"
+            )));
+        }
+
         if let Ok(walletv2) = client.get_first_module::<WalletV2Module>() {
             // walletv2 charges a flat send fee; the on-chain tx is always
             // 1-in/1-out, so its vbytes are a per-federation constant taken from
@@ -843,10 +856,18 @@ impl WalletHandler {
                 0.0
             };
 
+            // The amount is bounded above, but `fee_sats` is federation-reported
+            // and could still push the sum past `u64::MAX`.
+            let funded_sats = amount_sats.checked_add(fee_sats).ok_or_else(|| {
+                EcashAppError::other(format!(
+                    "withdrawal amount {amount_sats} sats plus network fee {fee_sats} sats is out of range"
+                ))
+            })?;
+
             // Federation fee for funding the on-chain output (withdrawal amount
             // plus the miner fee) from ecash. Display-only, so degrade to 0.
             let federation_fee_msats = walletv2
-                .send_fee_quote(bitcoin::Amount::from_sat(amount_sats + fee_sats))
+                .send_fee_quote(bitcoin::Amount::from_sat(funded_sats))
                 .await
                 .map(|q| q.total().get_bitcoin().msats)
                 .unwrap_or(0);
@@ -875,10 +896,19 @@ impl WalletHandler {
             .map_err(EcashAppError::from_display)?;
         let meta = OnChainWithdrawalMeta::from_peg_out_fees(&fees);
 
+        // The amount is bounded above, but `fee_sats` is federation-reported and
+        // could still push the sum past `u64::MAX`.
+        let funded_sats = amount_sats.checked_add(meta.fee_sats).ok_or_else(|| {
+            EcashAppError::other(format!(
+                "withdrawal amount {amount_sats} sats plus network fee {} sats is out of range",
+                meta.fee_sats
+            ))
+        })?;
+
         // Federation fee for funding the on-chain output (withdrawal amount plus
         // the miner fee) from ecash. Display-only, so degrade to 0.
         let federation_fee_msats = wallet_module
-            .send_fee_quote(bitcoin::Amount::from_sat(amount_sats + meta.fee_sats))
+            .send_fee_quote(bitcoin::Amount::from_sat(funded_sats))
             .await
             .map(|q| q.total().get_bitcoin().msats)
             .unwrap_or(0);
