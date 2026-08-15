@@ -598,14 +598,32 @@ impl_db_lookup!(
 
 #[cfg(test)]
 mod tests {
-    use std::time::{Duration, UNIX_EPOCH};
-
-    use fedimint_core::{
-        encoding::{Decodable, Encodable},
-        module::registry::ModuleDecoderRegistry,
+    use std::{
+        collections::BTreeMap,
+        str::FromStr,
+        time::{Duration, UNIX_EPOCH},
     };
 
-    use super::Timestamp;
+    use fedimint_core::{
+        config::FederationId,
+        db::{mem_impl::MemDatabase, Database, IDatabaseTransactionOpsCoreTyped as _},
+        encoding::{Decodable, Encodable},
+        module::registry::ModuleDecoderRegistry,
+        util::SafeUrl,
+    };
+    use futures_util::StreamExt as _;
+
+    use super::{
+        BtcPrices, BtcPricesKey, Contact, ContactKey, DbKeyPrefix, FederationMetaKey,
+        LightningAddressConfig, LightningAddressKey, NwcLimits, NwcLimitsKey, NwcSpendWindow,
+        NwcSpendWindowKey, Timestamp, WalletV2PendingDepositFederationPrefix,
+        WalletV2PendingDepositKey,
+    };
+    use crate::multimint::{FederationMeta, FederationSelector, Guardian};
+
+    fn federation_id(byte: u8) -> FederationId {
+        FederationId::from_str(&format!("{byte:02x}").repeat(32)).expect("valid federation id")
+    }
 
     /// The blanket `Encodable for SystemTime` that fedimint removed in
     /// `b975ac4d` encoded `self.duration_since(UNIX_EPOCH)`, i.e. exactly a
@@ -636,5 +654,486 @@ mod tests {
         let decoded =
             Timestamp::consensus_decode_whole(&bytes, &ModuleDecoderRegistry::default()).unwrap();
         assert_eq!(decoded, time);
+    }
+
+    const DB_KEY_PREFIX_COUNT: usize = 25;
+
+    /// Every [`DbKeyPrefix`] variant, in declaration order. Kept complete by the
+    /// exhaustive match in `db_key_prefix_bytes_are_unique_and_pinned`.
+    const ALL_DB_KEY_PREFIXES: [DbKeyPrefix; DB_KEY_PREFIX_COUNT] = [
+        DbKeyPrefix::FederationConfig,
+        DbKeyPrefix::ClientDatabase,
+        DbKeyPrefix::SeedPhraseAck,
+        DbKeyPrefix::Nwc,
+        DbKeyPrefix::FederationMeta,
+        DbKeyPrefix::BtcPrice,
+        DbKeyPrefix::NostrRelays,
+        DbKeyPrefix::LightningAddress,
+        DbKeyPrefix::Display,
+        DbKeyPrefix::FederationBackup,
+        DbKeyPrefix::FederationOrder,
+        DbKeyPrefix::FiatCurrency,
+        DbKeyPrefix::BtcPrices,
+        DbKeyPrefix::Contact,
+        DbKeyPrefix::ContactSyncConfig,
+        DbKeyPrefix::SchemaVersion,
+        DbKeyPrefix::PinCodeHash,
+        DbKeyPrefix::RequirePinForSpending,
+        DbKeyPrefix::ShowMsats,
+        DbKeyPrefix::WalletV2PendingDeposit,
+        DbKeyPrefix::NwcV2,
+        DbKeyPrefix::PinCredential,
+        DbKeyPrefix::PinAttempts,
+        DbKeyPrefix::NwcLimits,
+        DbKeyPrefix::NwcSpendWindow,
+    ];
+
+    /// Every record in the wallet lives in one flat keyspace, and the leading
+    /// prefix byte is the only thing separating them.
+    ///
+    /// Two variants written with the *same* literal is the one case the compiler
+    /// already rejects (E0081). What it does not catch is a variant declared
+    /// without a discriminant: it silently takes `previous + 1`, which can
+    /// renumber a record type that already has data on disk. Dropping the `=
+    /// 0x10` from `ContactSyncConfig` moves it to `0x0E` and every stored sync
+    /// config is orphaned, with nothing failing to build — the same silent
+    /// storage drift the [`Timestamp`] newtype above exists to prevent. So this
+    /// pins each variant's byte rather than only checking they differ.
+    #[test]
+    fn db_key_prefix_bytes_are_unique_and_pinned() {
+        // Exhaustive by construction: adding a variant to `DbKeyPrefix` stops
+        // this file compiling until the variant is listed here, and what it must
+        // supply is its slot in `ALL_DB_KEY_PREFIXES`, so it cannot be
+        // acknowledged here and then quietly left out of the checks below.
+        fn slot_and_byte(prefix: &DbKeyPrefix) -> (usize, u8) {
+            match prefix {
+                DbKeyPrefix::FederationConfig => (0, 0x00),
+                DbKeyPrefix::ClientDatabase => (1, 0x01),
+                DbKeyPrefix::SeedPhraseAck => (2, 0x02),
+                DbKeyPrefix::Nwc => (3, 0x03),
+                DbKeyPrefix::FederationMeta => (4, 0x04),
+                DbKeyPrefix::BtcPrice => (5, 0x05),
+                DbKeyPrefix::NostrRelays => (6, 0x06),
+                DbKeyPrefix::LightningAddress => (7, 0x07),
+                DbKeyPrefix::Display => (8, 0x08),
+                DbKeyPrefix::FederationBackup => (9, 0x09),
+                DbKeyPrefix::FederationOrder => (10, 0x0A),
+                DbKeyPrefix::FiatCurrency => (11, 0x0B),
+                DbKeyPrefix::BtcPrices => (12, 0x0C),
+                DbKeyPrefix::Contact => (13, 0x0D),
+                DbKeyPrefix::ContactSyncConfig => (14, 0x10),
+                DbKeyPrefix::SchemaVersion => (15, 0x11),
+                DbKeyPrefix::PinCodeHash => (16, 0x12),
+                DbKeyPrefix::RequirePinForSpending => (17, 0x13),
+                DbKeyPrefix::ShowMsats => (18, 0x14),
+                DbKeyPrefix::WalletV2PendingDeposit => (19, 0x15),
+                DbKeyPrefix::NwcV2 => (20, 0x16),
+                DbKeyPrefix::PinCredential => (21, 0x17),
+                DbKeyPrefix::PinAttempts => (22, 0x18),
+                DbKeyPrefix::NwcLimits => (23, 0x19),
+                DbKeyPrefix::NwcSpendWindow => (24, 0x1A),
+            }
+        }
+
+        let mut filled = [false; DB_KEY_PREFIX_COUNT];
+        let mut by_byte: BTreeMap<u8, DbKeyPrefix> = BTreeMap::new();
+
+        for prefix in ALL_DB_KEY_PREFIXES {
+            let byte = prefix.clone() as u8;
+            let (slot, expected_byte) = slot_and_byte(&prefix);
+
+            assert_eq!(
+                byte, expected_byte,
+                "{prefix:?} changed prefix byte; every record already stored under \
+                 {expected_byte:#04x} would be orphaned"
+            );
+            assert!(
+                slot < DB_KEY_PREFIX_COUNT,
+                "{prefix:?} claims slot {slot}, past the end of ALL_DB_KEY_PREFIXES"
+            );
+            assert!(
+                !filled[slot],
+                "{prefix:?} claims slot {slot}, which another variant already holds"
+            );
+            filled[slot] = true;
+
+            if let Some(other) = by_byte.insert(byte, prefix.clone()) {
+                panic!("{prefix:?} and {other:?} both use prefix byte {byte:#04x}");
+            }
+        }
+
+        assert!(
+            filled.iter().all(|filled| *filled),
+            "a DbKeyPrefix variant has a slot but is missing from ALL_DB_KEY_PREFIXES"
+        );
+    }
+
+    /// [`WalletV2PendingDepositKey`] encodes `federation_id` before `address`
+    /// precisely so that [`WalletV2PendingDepositFederationPrefix`] is a real key
+    /// prefix. That invariant lives entirely in the field order of a derive:
+    /// swapping the two fields still compiles, and the deposit list for a
+    /// federation would silently come back empty — losing the app's only record
+    /// of which addresses it has handed out, since walletv2 creates no client
+    /// operation to rebuild them from.
+    #[tokio::test]
+    async fn walletv2_pending_deposits_are_scannable_by_federation() {
+        let db: Database = MemDatabase::new().into();
+        let scanned = federation_id(0x11);
+        let other = federation_id(0x22);
+
+        let mut dbtx = db.begin_transaction().await;
+        // Both states the record can be in: funded, and still awaiting coins.
+        dbtx.insert_entry(
+            &WalletV2PendingDepositKey {
+                federation_id: scanned,
+                address: "bcrt1qfunded".to_string(),
+            },
+            &Some(50_000),
+        )
+        .await;
+        dbtx.insert_entry(
+            &WalletV2PendingDepositKey {
+                federation_id: scanned,
+                address: "bcrt1qunfunded".to_string(),
+            },
+            &None,
+        )
+        .await;
+        dbtx.insert_entry(
+            &WalletV2PendingDepositKey {
+                federation_id: other,
+                address: "bcrt1qelsewhere".to_string(),
+            },
+            &Some(1),
+        )
+        .await;
+        dbtx.commit_tx().await;
+
+        let mut dbtx = db.begin_transaction_nc().await;
+        let found = dbtx
+            .find_by_prefix(&WalletV2PendingDepositFederationPrefix {
+                federation_id: scanned,
+            })
+            .await
+            .collect::<BTreeMap<_, _>>()
+            .await;
+
+        assert_eq!(
+            found,
+            BTreeMap::from([
+                (
+                    WalletV2PendingDepositKey {
+                        federation_id: scanned,
+                        address: "bcrt1qfunded".to_string(),
+                    },
+                    Some(50_000),
+                ),
+                (
+                    WalletV2PendingDepositKey {
+                        federation_id: scanned,
+                        address: "bcrt1qunfunded".to_string(),
+                    },
+                    None,
+                ),
+            ]),
+            "the scan must return exactly this federation's addresses"
+        );
+
+        // The other federation is reachable too, so an empty result above would
+        // be a real failure rather than the prefix matching nothing at all.
+        let found = dbtx
+            .find_by_prefix(&WalletV2PendingDepositFederationPrefix {
+                federation_id: other,
+            })
+            .await
+            .collect::<Vec<_>>()
+            .await;
+        assert_eq!(found.len(), 1);
+        assert_eq!(found[0].0.address, "bcrt1qelsewhere");
+    }
+
+    /// Federation metadata is cached across restarts and re-rendered from disk,
+    /// so a drift in its encoding shows up as a wallet whose federations lose
+    /// their names, guardians and welcome screens. `Option` fields are exercised
+    /// in both states because an absent value is what most encodings get wrong.
+    #[tokio::test]
+    async fn federation_meta_round_trips() {
+        let db: Database = MemDatabase::new().into();
+        let populated_id = federation_id(0x33);
+        let sparse_id = federation_id(0x44);
+
+        let populated = FederationMeta {
+            picture: Some("https://example.com/fed.png".to_string()),
+            welcome: Some("welcome to the federation".to_string()),
+            guardians: vec![
+                Guardian {
+                    peer_id: 0,
+                    name: "guardian-zero".to_string(),
+                    version: Some("0.9.0".to_string()),
+                },
+                Guardian {
+                    peer_id: 3,
+                    name: "guardian-three".to_string(),
+                    version: None,
+                },
+            ],
+            selector: FederationSelector {
+                federation_name: "Test Federation".to_string(),
+                federation_id: populated_id,
+                network: Some("signet".to_string()),
+            },
+            last_updated: 1_764_000_000_789,
+            recurringd_api: Some("https://recurringd.example.com".to_string()),
+            lnaddress_api: Some("https://lnaddress.example.com".to_string()),
+        };
+        let sparse = FederationMeta {
+            picture: None,
+            welcome: None,
+            guardians: Vec::new(),
+            selector: FederationSelector {
+                federation_name: "Sparse Federation".to_string(),
+                federation_id: sparse_id,
+                network: None,
+            },
+            last_updated: 0,
+            recurringd_api: None,
+            lnaddress_api: None,
+        };
+
+        let mut dbtx = db.begin_transaction().await;
+        dbtx.insert_entry(
+            &FederationMetaKey {
+                federation_id: populated_id,
+            },
+            &populated,
+        )
+        .await;
+        dbtx.insert_entry(
+            &FederationMetaKey {
+                federation_id: sparse_id,
+            },
+            &sparse,
+        )
+        .await;
+        dbtx.commit_tx().await;
+
+        // `FederationMeta` has no `PartialEq`, so compare field by field rather
+        // than deriving one just for the test.
+        let mut dbtx = db.begin_transaction_nc().await;
+        for expected in [populated, sparse] {
+            let loaded = dbtx
+                .get_value(&FederationMetaKey {
+                    federation_id: expected.selector.federation_id,
+                })
+                .await
+                .expect("meta was stored");
+            assert_eq!(loaded.picture, expected.picture);
+            assert_eq!(loaded.welcome, expected.welcome);
+            assert_eq!(loaded.guardians, expected.guardians);
+            assert_eq!(loaded.selector, expected.selector);
+            assert_eq!(loaded.last_updated, expected.last_updated);
+            assert_eq!(loaded.recurringd_api, expected.recurringd_api);
+            assert_eq!(loaded.lnaddress_api, expected.lnaddress_api);
+        }
+    }
+
+    /// The address book is stored only here — contacts are not recoverable from
+    /// the seed phrase — so an encoding change loses them outright. `npub` is
+    /// both the key and a value field, which the round trip also covers.
+    #[tokio::test]
+    async fn contacts_round_trip() {
+        let db: Database = MemDatabase::new().into();
+
+        let populated = Contact {
+            npub: "npub1populated".to_string(),
+            name: Some("satoshi".to_string()),
+            display_name: Some("Satoshi Nakamoto".to_string()),
+            picture: Some("https://example.com/avatar.png".to_string()),
+            lud16: Some("satoshi@example.com".to_string()),
+            nip05: Some("_@example.com".to_string()),
+            nip05_verified: true,
+            about: Some("likes timestamps".to_string()),
+            created_at: 1_700_000_000_123,
+            last_paid_at: Some(1_764_000_000_456),
+        };
+        let sparse = Contact {
+            npub: "npub1sparse".to_string(),
+            name: None,
+            display_name: None,
+            picture: None,
+            lud16: None,
+            nip05: None,
+            nip05_verified: false,
+            about: None,
+            created_at: 1_700_000_000_999,
+            last_paid_at: None,
+        };
+
+        let mut dbtx = db.begin_transaction().await;
+        for contact in [&populated, &sparse] {
+            dbtx.insert_entry(
+                &ContactKey {
+                    npub: contact.npub.clone(),
+                },
+                contact,
+            )
+            .await;
+        }
+        dbtx.commit_tx().await;
+
+        let mut dbtx = db.begin_transaction_nc().await;
+        for expected in [populated, sparse] {
+            let loaded = dbtx
+                .get_value(&ContactKey {
+                    npub: expected.npub.clone(),
+                })
+                .await
+                .expect("contact was stored");
+            assert_eq!(loaded.npub, expected.npub);
+            assert_eq!(loaded.name, expected.name);
+            assert_eq!(loaded.display_name, expected.display_name);
+            assert_eq!(loaded.picture, expected.picture);
+            assert_eq!(loaded.lud16, expected.lud16);
+            assert_eq!(loaded.nip05, expected.nip05);
+            assert_eq!(loaded.nip05_verified, expected.nip05_verified);
+            assert_eq!(loaded.about, expected.about);
+            assert_eq!(loaded.created_at, expected.created_at);
+            assert_eq!(loaded.last_paid_at, expected.last_paid_at);
+        }
+    }
+
+    /// The spend limits and the running tally are deliberately separate records,
+    /// as their doc comments explain: editing a limit must not disturb the tally,
+    /// and resetting the tally must not rewrite the user's settings. A prefix
+    /// collision between them would break both directions at once — and since a
+    /// misread limit is a limit that no longer bounds a paired app, this is the
+    /// one round trip here with money on the other end of it.
+    #[tokio::test]
+    async fn nwc_limits_and_spend_window_are_independent() {
+        let db: Database = MemDatabase::new().into();
+
+        let limits = NwcLimits {
+            max_payment_msats: 21_000_000,
+            daily_budget_msats: 100_000_000,
+        };
+        let window = NwcSpendWindow {
+            started_at: Timestamp(UNIX_EPOCH + Duration::new(1_764_000_000, 123_456_789)),
+            spent_msats: 42_000,
+        };
+
+        let mut dbtx = db.begin_transaction().await;
+        dbtx.insert_entry(&NwcLimitsKey, &limits).await;
+        dbtx.insert_entry(&NwcSpendWindowKey, &window).await;
+        dbtx.commit_tx().await;
+
+        let mut dbtx = db.begin_transaction_nc().await;
+        let loaded_limits = dbtx.get_value(&NwcLimitsKey).await.expect("limits stored");
+        assert_eq!(loaded_limits.max_payment_msats, limits.max_payment_msats);
+        assert_eq!(loaded_limits.daily_budget_msats, limits.daily_budget_msats);
+        let loaded_window = dbtx
+            .get_value(&NwcSpendWindowKey)
+            .await
+            .expect("window stored");
+        assert_eq!(loaded_window.started_at, window.started_at);
+        assert_eq!(loaded_window.spent_msats, window.spent_msats);
+        drop(dbtx);
+
+        // Rolling the window over must leave the limits exactly as the user set
+        // them.
+        let mut dbtx = db.begin_transaction().await;
+        dbtx.insert_entry(
+            &NwcSpendWindowKey,
+            &NwcSpendWindow {
+                started_at: Timestamp(UNIX_EPOCH + Duration::from_secs(1_764_086_400)),
+                spent_msats: 0,
+            },
+        )
+        .await;
+        dbtx.commit_tx().await;
+
+        let mut dbtx = db.begin_transaction_nc().await;
+        let loaded_limits = dbtx.get_value(&NwcLimitsKey).await.expect("limits stored");
+        assert_eq!(loaded_limits.max_payment_msats, limits.max_payment_msats);
+        assert_eq!(loaded_limits.daily_budget_msats, limits.daily_budget_msats);
+        assert_eq!(
+            dbtx.get_value(&NwcSpendWindowKey)
+                .await
+                .expect("window stored")
+                .spent_msats,
+            0
+        );
+    }
+
+    /// The Lightning Address record holds the only copy of the authentication
+    /// token the wallet needs to keep claiming its address; if this stops
+    /// decoding, the user's address is not re-registrable from the seed and is
+    /// simply gone. The two [`SafeUrl`] fields are the interesting part, since
+    /// they encode through a wrapper rather than as plain strings.
+    #[tokio::test]
+    async fn lightning_address_config_round_trips() {
+        let db: Database = MemDatabase::new().into();
+        let id = federation_id(0x55);
+
+        let config = LightningAddressConfig {
+            username: "satoshi".to_string(),
+            domain: "example.com".to_string(),
+            recurringd_api: SafeUrl::parse("https://recurringd.example.com/api")
+                .expect("valid url"),
+            ln_address_api: SafeUrl::parse("https://lnaddress.example.com/v1").expect("valid url"),
+            lnurl: "LNURL1DP68GURN8GHJ7CTSDYH8GETNW3HKZ".to_string(),
+            authentication_token: "token-9f3c".to_string(),
+        };
+
+        let mut dbtx = db.begin_transaction().await;
+        dbtx.insert_entry(&LightningAddressKey { federation_id: id }, &config)
+            .await;
+        dbtx.commit_tx().await;
+
+        let mut dbtx = db.begin_transaction_nc().await;
+        let loaded = dbtx
+            .get_value(&LightningAddressKey { federation_id: id })
+            .await
+            .expect("config was stored");
+        assert_eq!(loaded.username, config.username);
+        assert_eq!(loaded.domain, config.domain);
+        assert_eq!(loaded.recurringd_api, config.recurringd_api);
+        assert_eq!(loaded.ln_address_api, config.ln_address_api);
+        assert_eq!(loaded.lnurl, config.lnurl);
+        assert_eq!(loaded.authentication_token, config.authentication_token);
+    }
+
+    /// Seven same-typed fields in a fixed order, which is exactly the shape that
+    /// survives a reordering without complaint: swap `eur` and `gbp` and every
+    /// cached price silently reads back as the wrong currency. Distinct values
+    /// per field are the whole point of this test.
+    #[tokio::test]
+    async fn btc_prices_round_trip() {
+        let db: Database = MemDatabase::new().into();
+
+        let prices = BtcPrices {
+            usd: 100_001,
+            eur: 100_002,
+            gbp: 100_003,
+            cad: 100_004,
+            chf: 100_005,
+            aud: 100_006,
+            jpy: 100_007,
+            last_updated: Timestamp(UNIX_EPOCH + Duration::new(1_764_000_000, 123_456_789)),
+        };
+
+        let mut dbtx = db.begin_transaction().await;
+        dbtx.insert_entry(&BtcPricesKey, &prices).await;
+        dbtx.commit_tx().await;
+
+        let mut dbtx = db.begin_transaction_nc().await;
+        let loaded = dbtx.get_value(&BtcPricesKey).await.expect("prices stored");
+        assert_eq!(loaded.usd, prices.usd);
+        assert_eq!(loaded.eur, prices.eur);
+        assert_eq!(loaded.gbp, prices.gbp);
+        assert_eq!(loaded.cad, prices.cad);
+        assert_eq!(loaded.chf, prices.chf);
+        assert_eq!(loaded.aud, prices.aud);
+        assert_eq!(loaded.jpy, prices.jpy);
+        assert_eq!(loaded.last_updated, prices.last_updated);
     }
 }
