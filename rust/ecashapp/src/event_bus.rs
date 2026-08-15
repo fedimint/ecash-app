@@ -186,6 +186,27 @@ mod tests {
         }
     }
 
+    /// `subscribe` takes its broadcast receiver immediately but only snapshots
+    /// history when the stream is first polled, so an event published in
+    /// between lands in both and is delivered twice. Pinned as current
+    /// behavior — duplicates are harmless for the UI, which treats events as
+    /// idempotent refreshes.
+    #[tokio::test]
+    async fn events_published_before_the_first_poll_arrive_twice() {
+        let bus = EventBus::new(16, 16);
+        let mut stream = bus.subscribe();
+
+        bus.publish(1).await;
+
+        assert_eq!(next_event(&mut stream).await, 1, "from history");
+        assert_eq!(
+            next_event(&mut stream).await,
+            1,
+            "and again from the channel"
+        );
+        assert_idle(&mut stream).await;
+    }
+
     /// A subscriber that falls further behind than the channel capacity makes
     /// the broadcast receiver report `Lagged`. Dropping events is acceptable
     /// for a UI; silently ending the stream is not, so the invariant is that
