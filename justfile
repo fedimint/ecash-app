@@ -36,6 +36,11 @@ run: build-linux
 test:
   flutter test
 
+test-rust:
+  cd $ROOT/rust/ecashapp && cargo test
+
+test-all: test test-rust
+
 # Check translations/i18n for issues (missing keys, placeholders, hardcoded strings)
 lint-translations:
   $ROOT/scripts/check-translations.sh
