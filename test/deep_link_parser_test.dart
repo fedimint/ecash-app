@@ -199,7 +199,10 @@ void main() {
       test('rejects a link with no host', () {
         // Without a host there is nothing to name in the confirmation prompt,
         // and nothing meaningful to fetch either.
-        expect(parseDeepLinkUri(Uri.parse('lnurlw:///withdraw?k1=abc')), isNull);
+        expect(
+          parseDeepLinkUri(Uri.parse('lnurlw:///withdraw?k1=abc')),
+          isNull,
+        );
         expect(parseDeepLinkUri(Uri.parse('lnurlw://')), isNull);
       });
     });
@@ -222,7 +225,10 @@ void main() {
       });
 
       test('ignores the port so the host stands alone', () {
-        expect(lnurlWithdrawHost('http://localhost:8080/withdraw'), 'localhost');
+        expect(
+          lnurlWithdrawHost('http://localhost:8080/withdraw'),
+          'localhost',
+        );
       });
 
       test('returns null when there is no host to show', () {
