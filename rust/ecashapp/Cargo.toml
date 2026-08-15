@@ -54,6 +54,12 @@ subtle = "2.6.1"
 thiserror = "1.0"
 tokio = "1.45.1"
 
+# The tokio features the tests need (`#[tokio::test]`, `tokio::time::timeout`).
+# They happen to be enabled today by feature unification with fedimint-core;
+# declaring them here keeps the test suite from depending on that accident.
+[dev-dependencies]
+tokio = { version = "1", features = ["macros", "rt-multi-thread", "time"] }
+
 # Android-only. `iroh` (fedimint's guardian transport) pulls in native
 # networking crates — `hickory-resolver` (DNS) and `netdev` — that, since the
 # hickory 0.26 / netdev 0.44 upgrade, read the device network config through
