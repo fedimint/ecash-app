@@ -1043,11 +1043,7 @@ impl Multimint {
                 .await;
 
                 // Start cursor at the end of the existing log so we only process new events
-                let existing = client.get_event_log(None, u64::MAX).await;
-                let mut position = existing
-                    .last()
-                    .map(|e| e.id().saturating_add(1))
-                    .unwrap_or(fedimint_eventlog::EventLogId::LOG_START);
+                let mut position = client.get_next_event_log_id().await;
 
                 loop {
                     // Block until new events are added to the persistent log
