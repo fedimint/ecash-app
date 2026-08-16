@@ -20,7 +20,7 @@
 #   - cmake (`brew install cmake`) and bindgen-cli (`cargo install --locked bindgen-cli`)
 #   - A connected, unlocked iOS device, trusted, with Developer Mode enabled
 #     (Settings > Privacy & Security > Developer Mode)
-#   - A signing team on the Runner Debug config (Xcode > Runner > Signing & Capabilities)
+#   - A signing team in ios/Flutter/Local.xcconfig (gitignored; see Debug.xcconfig)
 
 set -euo pipefail
 
