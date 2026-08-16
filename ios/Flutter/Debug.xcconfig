@@ -1,3 +1,6 @@
 #include? "Pods/Target Support Files/Pods-Runner/Pods-Runner.debug.xcconfig"
 #include "Generated.xcconfig"
 #include "Rust.xcconfig"
+
+// Fast Rust builds for iteration; see Rust.xcconfig.
+RUST_PROFILE = release-dev

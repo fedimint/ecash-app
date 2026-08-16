@@ -1,19 +1,40 @@
 // Links the prebuilt Rust static library (libecashapp.a) into the Runner target.
-// The library must be built before `flutter build ios` runs — use `just build-ios-device`.
-//
-// Simulator builds are intentionally not supported: aws-lc-sys (transitive dep via rustls)
-// has a known bindgen bug for the aarch64-apple-ios-sim target triple. Test on a physical
-// device, or use the macOS build for local iteration.
+// The library must be built before `flutter build ios` runs — use `just build-ios-device`
+// or scripts/build-rust-ios.sh directly.
 
+// Kept at 16.0 deliberately — the test device runs iOS 16.6.
 IPHONEOS_DEPLOYMENT_TARGET = 16.0
 
-RUST_TARGET[sdk=iphoneos*] = aarch64-apple-ios
+// Simulator builds are intentionally not supported: aws-lc-sys (transitive dep via rustls)
+// has a known bindgen bug for the aarch64-apple-ios-sim target triple. Test on a physical
+// device, or use the macOS build for local iteration. The simulator value below is a
+// deliberately bogus triple so such a build fails on a self-explaining missing path
+// rather than on an empty RUST_TARGET silently collapsing the path to target//release.
+RUST_TARGET = aarch64-apple-ios
+RUST_TARGET[sdk=iphonesimulator*] = SIMULATOR-BUILDS-ARE-NOT-SUPPORTED
 
-LIBRARY_SEARCH_PATHS = $(inherited) $(SRCROOT)/../rust/ecashapp/target/$(RUST_TARGET)/release
+// Cargo profile whose output we link. Debug.xcconfig overrides this to release-dev
+// so iteration doesn't pay for LTO + opt-level="z" over RocksDB and the fedimint tree;
+// Release.xcconfig pins it back to release. Keep in sync with scripts/build-rust-ios.sh.
+RUST_PROFILE = release
+
+RUST_LIB_DIR = $(SRCROOT)/../rust/ecashapp/target/$(RUST_TARGET)/$(RUST_PROFILE)
+
+// These stay unconditional: a conditional assignment would make $(inherited) resolve
+// against the condition rather than the include chain, dropping the CocoaPods flags
+// that Pods-Runner.*.xcconfig contributes above.
+LIBRARY_SEARCH_PATHS = $(inherited) $(RUST_LIB_DIR)
 
 // -force_load keeps every symbol from libecashapp.a in the final binary.
 // Without it the linker dead-strips the whole static lib because nothing in
 // Swift/ObjC references it directly — Flutter Rust Bridge looks up symbols at
 // runtime via DynamicLibrary.process().
 // -lc++ is required because fedimint-rocksdb pulls in RocksDB (C++).
-OTHER_LDFLAGS = $(inherited) -lc++ -force_load $(SRCROOT)/../rust/ecashapp/target/$(RUST_TARGET)/release/libecashapp.a
+//
+// SystemConfiguration and Network are needed by the native networking crates
+// under iroh (fedimint's guardian transport) — netdev reads interface config
+// through SC*, hickory-resolver reads DNS config through nw_path_*. Cargo can
+// emit these link directives for its own targets, but nothing carries them into
+// an Xcode link of the .a, so they have to be named here. Without them the link
+// fails with ~70 undefined _SC*/_nw_* symbols.
+OTHER_LDFLAGS = $(inherited) -lc++ -framework SystemConfiguration -framework Network -force_load $(RUST_LIB_DIR)/libecashapp.a

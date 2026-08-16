@@ -1,3 +1,8 @@
+# Recipes reference $ROOT. The Nix shellHook exports it, but that makes every
+# recipe depend on being inside `nix develop` — a problem for the iOS targets,
+# which must run outside it. Defining it here works in both shells.
+export ROOT := justfile_directory()
+
 generate:
   flutter_rust_bridge_codegen generate --rust-input=crate --rust-root=$ROOT/rust/ecashapp --dart-output=$ROOT/lib/
   # `freezed_annotation` requires this build step, which gives us rust-like pattern matching in dart's codegen
@@ -21,11 +26,12 @@ run-appimage-nixos path:
   # This is needed in NixOS, if you are on another OS you can simply open the AppImage
   appimage-run {{path}}
 
-build-ios-device:
-  $ROOT/scripts/build-rust-ios.sh device
+# profile: release-dev (default, fast) or release (shipping)
+build-ios-device profile="release-dev":
+  $ROOT/scripts/build-rust-ios.sh device {{profile}}
 
-run-ios-device:
-  $ROOT/scripts/run-ios-device.sh
+run-ios-device *args:
+  $ROOT/scripts/run-ios-device.sh {{args}}
 
 build-macos:
   $ROOT/scripts/build-macos.sh

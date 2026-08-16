@@ -40,6 +40,20 @@ post_install do |installer|
     flutter_additional_ios_build_settings(target)
     target.build_configurations.each do |config|
       config.build_settings['IPHONEOS_DEPLOYMENT_TARGET'] = '16.0'
+
+      # permission_handler_apple compiles each permission behind a macro that
+      # defaults to 0 (see its PermissionHandlerEnums.h). Undefined means the
+      # strategy is stubbed out and returns PermissionStatusDenied without ever
+      # prompting — Permission.camera.request() fails silently. Enable exactly
+      # the permissions the app asks for: camera (lib/scan.dart) and
+      # notifications (lib/nwc.dart). Location goes through geolocator, which
+      # does not use these macros.
+      defs = config.build_settings['GCC_PREPROCESSOR_DEFINITIONS'] || ['$(inherited)']
+      defs = [defs] unless defs.is_a?(Array)
+      config.build_settings['GCC_PREPROCESSOR_DEFINITIONS'] = defs + [
+        'PERMISSION_CAMERA=1',
+        'PERMISSION_NOTIFICATIONS=1',
+      ]
     end
   end
 end
