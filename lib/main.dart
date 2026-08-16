@@ -46,7 +46,9 @@ void main() async {
   // On iOS the Rust code is statically linked into the Runner binary, so
   // there's no separate dylib to dlopen — load symbols from the current process.
   if (Platform.isIOS) {
-    await RustLib.init(externalLibrary: ExternalLibrary.process(iKnowHowToUseIt: true));
+    await RustLib.init(
+      externalLibrary: ExternalLibrary.process(iKnowHowToUseIt: true),
+    );
   } else {
     await RustLib.init();
   }
