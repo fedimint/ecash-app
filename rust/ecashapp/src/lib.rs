@@ -7,6 +7,8 @@ mod db;
 mod event_bus;
 mod fountain;
 mod frb_generated;
+#[cfg(target_os = "ios")]
+mod ios_compat;
 mod multimint;
 mod net;
 mod nostr;
