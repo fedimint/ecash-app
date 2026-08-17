@@ -47,6 +47,22 @@ jobs:
         with:
           components: rustfmt, clippy
 
+      # This is the gate every pull request waits on, and it had no cache at
+      # all: fmt, clippy and test each ran against a cold target directory, so
+      # the job rebuilt all ~500 dependencies — RocksDB and aws-lc-sys from
+      # source included — for the 21-23 minutes it took.
+      #
+      # `workspaces` has to name the crate directory. There is no workspace at
+      # the repo root, and the steps below `cd rust/ecashapp` with no
+      # --target-dir, so Cargo writes to `rust/ecashapp/target`.
+      #
+      # After the toolchain install on purpose: the cache key includes the rustc
+      # version.
+      - name: Cache Rust build
+        uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: rust/ecashapp
+
       - name: Check Rust formatting
         working-directory: rust/ecashapp
         run: cargo fmt --check
