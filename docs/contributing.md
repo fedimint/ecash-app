@@ -27,3 +27,21 @@ just run
 ```
 
 Done! This will launch Ecash App on Linux.
+
+## Testing
+
+Both suites run on every pull request via `.github/workflows/test.yml` and
+`.github/workflows/checks.yml`. Run them locally before opening one:
+
+```bash
+just test                          # Flutter/Dart tests in test/
+cd rust/ecashapp && cargo test     # Rust tests, in #[cfg(test)] modules
+```
+
+The same workflows also gate `cargo fmt --check`, `cargo clippy -- -D warnings`,
+`dart format --set-exit-if-changed lib/`, and `./scripts/check-translations.sh`.
+Together these are much faster than a platform build, so prefer them for
+verifying a change.
+
+- [LNURLw testing guide](lnurlw-testing.md) — automated coverage plus manual end-to-end steps
+- [QA checklist](qa-checklist.md) — manual pre-release test matrix
