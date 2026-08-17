@@ -373,6 +373,7 @@
   "failedToLoadEcash": "Error al cargar Ecash",
   "ecashWithdrawn": "Ecash retirado",
   "ecashCopiedToClipboard": "Ecash copiado al portapapeles",
+  "ecashClipboardWarning": "Cualquiera que lea este token puede gastarlo. Otras aplicaciones pueden leer tu portapapeles, así que pégalo solo donde quieras enviar los fondos.",
   "federationLabel": "Federación",
   "confirmPayment": "Confirmar pago",
   "amountSpent": "{amount} gastado",

@@ -288,7 +288,7 @@ class _EcashSendState extends State<EcashSend> {
     // redeems it first owns it, so it must not reach a screenshot, a screen
     // recording, or the app-switcher thumbnail.
     return SecureScreen(
-      child: Padding(
+      child: SingleChildScrollView(
         padding: const EdgeInsets.all(20),
         child: Column(
           mainAxisSize: MainAxisSize.min,
@@ -344,6 +344,31 @@ class _EcashSendState extends State<EcashSend> {
               },
             ),
             const SizedBox(height: 24),
+            // The token below is a bearer instrument, and the copy button hands
+            // it to a clipboard that other apps, input methods and sync services
+            // can read. State that plainly next to the control rather than after
+            // the fact, so the user knows before they tap.
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: Colors.orange.shade100,
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Icon(Icons.warning, color: Colors.orange, size: 20),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      context.l10n.ecashClipboardWarning,
+                      style: const TextStyle(color: Colors.orange),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 12),
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
               decoration: BoxDecoration(
