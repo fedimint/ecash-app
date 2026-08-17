@@ -1,0 +1,127 @@
+name: ADI Verification APK
+
+# Manual only, for proving to Google that we hold the private key for the
+# org.fedimint.app package name.
+#
+# Run it once with the defaults to print the release keystore's SHA-256
+# certificate fingerprint, then again with "Build and sign the APK" checked to
+# produce the artifact to upload to Google. The APK is deliberately never
+# published to a GitHub Release: its only destination is Google's verification
+# page.
+on:
+  workflow_dispatch:
+    inputs:
+      expected_fingerprint:
+        description: "SHA-256 fingerprint Google showed you (fails the run on mismatch)"
+        type: string
+        required: false
+      build_apk:
+        description: "Build and sign the APK (leave unchecked to only print the fingerprint)"
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+jobs:
+  # Cheap gate: the whole exercise is pointless unless ANDROID_KEYSTORE holds
+  # the certificate Google is expecting, so check that before spending ~30
+  # minutes on a release build.
+  check-key:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Print release keystore fingerprint
+        env:
+          ANDROID_KEYSTORE: ${{ secrets.ANDROID_KEYSTORE }}
+          KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
+          EXPECTED: ${{ inputs.expected_fingerprint }}
+        run: |
+          set -euo pipefail
+          KEYTOOL=$(command -v keytool || echo "$JAVA_HOME/bin/keytool")
+          echo "$ANDROID_KEYSTORE" | base64 -d > keystore.p12
+          trap 'rm -f keystore.p12' EXIT
+
+          echo "::group::keytool -list -v"
+          "$KEYTOOL" -list -v -storetype pkcs12 -keystore keystore.p12 \
+            -storepass "$KEYSTORE_PASSWORD" -alias "$KEY_ALIAS"
+          echo "::endgroup::"
+
+          ACTUAL=$("$KEYTOOL" -list -v -storetype pkcs12 -keystore keystore.p12 \
+            -storepass "$KEYSTORE_PASSWORD" -alias "$KEY_ALIAS" \
+            | grep -m1 -oiE 'SHA256: [0-9A-Fa-f:]+' | cut -d' ' -f2)
+          echo "Release key SHA-256: $ACTUAL"
+
+          if [[ -z "$EXPECTED" ]]; then
+            echo "No expected_fingerprint given; compare the value above by hand."
+            exit 0
+          fi
+
+          # Compare colon- and case-insensitively so the value can be pasted
+          # from Google's page in whatever form it appears there.
+          norm() { printf '%s' "$1" | tr -d ': \t\r\n' | tr '[:lower:]' '[:upper:]'; }
+          if [[ "$(norm "$ACTUAL")" == "$(norm "$EXPECTED")" ]]; then
+            echo "Match: ANDROID_KEYSTORE holds the key Google is expecting."
+          else
+            echo "MISMATCH"
+            echo "  expected: $EXPECTED"
+            echo "  actual:   $ACTUAL"
+            echo "The registered fingerprint is probably the Play App Signing"
+            echo "certificate, whose private key Google holds. If so, re-register"
+            echo "using the fingerprint printed above instead."
+            exit 1
+          fi
+
+  build:
+    needs: check-key
+    if: ${{ inputs.build_apk }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      # Goes in the Android source set, not pubspec's `assets:` — Flutter assets
+      # are packaged under assets/flutter_assets/, but Google looks for
+      # assets/adi-registration.properties at the root of the APK.
+      - name: Write adi-registration.properties
+        env:
+          ADI_TOKEN: ${{ secrets.ADI_REGISTRATION_TOKEN }}
+        run: |
+          if [[ -z "$ADI_TOKEN" ]]; then
+            echo "ADI_REGISTRATION_TOKEN secret is not set"
+            exit 1
+          fi
+          mkdir -p android/app/src/main/assets
+          printf '%s\n' "$ADI_TOKEN" > android/app/src/main/assets/adi-registration.properties
+
+      - uses: ./.github/actions/android-build
+        with:
+          mode: release
+          # Required: without this the APK is org.fedimint.app.master.
+          use-production-package-id: 'true'
+          with-signing: true
+          android-keystore: ${{ secrets.ANDROID_KEYSTORE }}
+          keystore-password: ${{ secrets.KEYSTORE_PASSWORD }}
+          key-password: ${{ secrets.KEY_PASSWORD }}
+          key-alias: ${{ secrets.KEY_ALIAS }}
+
+      # Check the package name, the registration file and the signing cert here
+      # so a mismatch shows up in the logs rather than as a rejected upload.
+      - name: Inspect the signed APK
+        run: |
+          set -euo pipefail
+          APK=$(ls build/app/outputs/flutter-apk/*.apk | head -1)
+          BUILD_TOOLS=$(ls -d "$ANDROID_HOME"/build-tools/* | sort -V | tail -1)
+          echo "::group::package name"
+          "$BUILD_TOOLS/aapt2" dump packagename "$APK"
+          echo "::endgroup::"
+          echo "::group::assets/adi-registration.properties"
+          unzip -p "$APK" assets/adi-registration.properties
+          echo "::endgroup::"
+          echo "::group::signing certificate"
+          "$BUILD_TOOLS/apksigner" verify --print-certs "$APK"
+          echo "::endgroup::"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: adi-verification-apk
+          path: build/app/outputs/flutter-apk/*.apk
