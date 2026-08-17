@@ -14,7 +14,7 @@ use fedimint_core::{
     task::TaskGroup,
     Amount,
 };
-use fedimint_eventlog::{Event, EventLogId};
+use fedimint_eventlog::Event;
 use fedimint_wallet_client::{
     api::WalletFederationApi, client_db::TweakIdx, DepositStateV2, WalletClientModule,
     WalletOperationMeta, WalletOperationMetaVariant, WithdrawState,
@@ -41,6 +41,13 @@ use crate::{
     },
     payment_error_to_flutter,
 };
+
+/// Trailing event-log entries scanned by
+/// [`WalletHandler::v2_recorded_deposits`] at startup. Reading the whole log
+/// costs memory and startup time that grow without bound; the event looked for
+/// was written in an earlier session and the reconcile re-runs every launch, so
+/// overshooting this window takes hundreds of payments in one session.
+const V2_DEPOSIT_LOG_SCAN_LIMIT: u64 = 1_000;
 
 #[allow(clippy::type_complexity)]
 #[derive(Clone)]
@@ -466,9 +473,17 @@ impl WalletHandler {
     /// `ReceivePaymentEvent` in the client's event log, mapped to the deposited
     /// amount in sats — i.e. the federation has recorded the deposit, so the
     /// mempool/awaiting-confs poller has nothing left to do for them.
+    ///
+    /// Only the log's tail is scanned (see [`V2_DEPOSIT_LOG_SCAN_LIMIT`]); an
+    /// older deposit is treated as still pending, re-spawning a poller that
+    /// rediscovers it on-chain.
     async fn v2_recorded_deposits(client: &ClientHandleArc) -> BTreeMap<String, u64> {
         let mut deposits = BTreeMap::new();
-        let log = client.get_event_log(None, u64::MAX).await;
+        let end = client.get_next_event_log_id().await;
+        let start = end.saturating_sub(V2_DEPOSIT_LOG_SCAN_LIMIT);
+        let log = client
+            .get_event_log(Some(start), V2_DEPOSIT_LOG_SCAN_LIMIT)
+            .await;
         for event in &log {
             if event.module_kind() != Some(&fedimint_walletv2_client::common::KIND)
                 || event.kind != V2ReceivePaymentEvent::KIND
@@ -658,11 +673,7 @@ impl WalletHandler {
         self.task_group
             .spawn_cancellable("walletv2 deposit event listener", async move {
                 // Start at the end of the log so we only react to new events.
-                let existing = client.get_event_log(None, u64::MAX).await;
-                let mut position = existing
-                    .last()
-                    .map(|e| e.id().saturating_add(1))
-                    .unwrap_or(EventLogId::LOG_START);
+                let mut position = client.get_next_event_log_id().await;
 
                 info_to_flutter(format!(
                     "spawn_v2_deposit_event_listener: started for fed {federation_id}, listening from log position {position:?}"
