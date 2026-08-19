@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:ecashapp/deep_link_handler.dart';
 import 'package:ecashapp/frb_generated.dart';
+import 'package:flutter_rust_bridge/flutter_rust_bridge_for_generated.dart';
 import 'package:ecashapp/generated/app_localizations.dart';
 import 'package:ecashapp/splash.dart';
 import 'package:ecashapp/theme.dart';
@@ -42,7 +43,15 @@ void main() async {
   // Initialize deep link handler early to catch cold start links
   await DeepLinkHandler().init();
 
-  await RustLib.init();
+  // On iOS the Rust code is statically linked into the Runner binary, so
+  // there's no separate dylib to dlopen — load symbols from the current process.
+  if (Platform.isIOS) {
+    await RustLib.init(
+      externalLibrary: ExternalLibrary.process(iKnowHowToUseIt: true),
+    );
+  } else {
+    await RustLib.init();
+  }
   final packageInfo = await PackageInfo.fromPlatform();
   AppLogger.instance.info(
     "Starting ecashapp. Version ${packageInfo.version} Build Number: ${packageInfo.buildNumber}",
