@@ -184,6 +184,34 @@ async fn record_nwc_spend(db: &Database, amount_msats: u64) {
 /// listener run.
 const NWC_RELAY_CONNECT_TIMEOUT: Duration = Duration::from_secs(30);
 
+/// How far back a (re)subscribing listener will accept requests.
+///
+/// Relays replay stored events to a new subscription, so without a lower bound
+/// every listener restart — app relaunch on desktop, foreground service restart
+/// on Android — re-delivers all the requests that queued up while nothing was
+/// listening, and `handle_request` pays them. The window is not zero so that a
+/// request sent while the relay connection was still being established is not
+/// dropped.
+const NWC_MAX_REQUEST_AGE: Duration = Duration::from_secs(60);
+
+/// Whether a wallet-connect request is too old to act on.
+///
+/// Two independent reasons to refuse one: it predates the window this listener
+/// subscribed for, or it carries a NIP-40 `expiration` that has passed. Kept a
+/// pure function of its inputs so the rule is testable without a relay, like
+/// the payment-limit and budget checks below.
+fn nwc_request_is_stale(
+    created_at: nostr_sdk::Timestamp,
+    expiration: Option<nostr_sdk::Timestamp>,
+    accept_from: nostr_sdk::Timestamp,
+    now: nostr_sdk::Timestamp,
+) -> bool {
+    if created_at < accept_from {
+        return true;
+    }
+    matches!(expiration, Some(expires_at) if expires_at <= now)
+}
+
 /// Enforce the single-payment ceiling on an incoming wallet-connect payment.
 ///
 /// Takes the limit rather than reading it so the rule stays a pure function of
@@ -591,10 +619,17 @@ impl NostrClient {
         // addressed *to* this wallet service. Without the author bound we would
         // receive (and try to decrypt) every NWC request on the relay, and
         // without the p-tag bound we would receive other wallets' traffic.
+        //
+        // The `since` bound is what stops the relay replaying its backlog to
+        // us: these are payment instructions, and one that has been sitting on
+        // a relay since the last time this wallet was open is not something the
+        // user is still asking for.
+        let accept_from = nostr_sdk::Timestamp::now() - NWC_MAX_REQUEST_AGE;
         let filter = nostr_sdk::Filter::new()
             .kind(nostr_sdk::Kind::WalletConnectRequest)
             .author(authorized_client)
-            .pubkey(keys.public_key);
+            .pubkey(keys.public_key)
+            .since(accept_from);
         let Ok(subscription_id) = nostr_client.subscribe(filter, None).await else {
             info_to_flutter("Error subscribing to WalletConnectRequest").await;
             return;
@@ -623,6 +658,18 @@ impl NostrClient {
                 if sender_pubkey != authorized_client {
                     info_to_flutter("Dropping NWC request from an unauthorized sender".to_string())
                         .await;
+                    continue;
+                }
+                // Same reasoning as the author re-check above: a relay is free
+                // to ignore the `since` bound, and everything past this point
+                // can move money.
+                if nwc_request_is_stale(
+                    event.created_at,
+                    event.tags.expiration().copied(),
+                    accept_from,
+                    nostr_sdk::Timestamp::now(),
+                ) {
+                    info_to_flutter("Dropping a stale NWC request".to_string()).await;
                     continue;
                 }
                 let Ok(decrypted) =
@@ -1991,8 +2038,8 @@ impl TryFrom<nostr_sdk::Event> for NostrProfile {
 #[cfg(test)]
 mod tests {
     use super::{
-        check_nwc_payment_limit, window_state, NwcSpendWindow, Timestamp, NWC_BUDGET_WINDOW,
-        NWC_DEFAULT_MAX_PAYMENT_MSATS,
+        check_nwc_payment_limit, nwc_request_is_stale, window_state, NwcSpendWindow, Timestamp,
+        NWC_BUDGET_WINDOW, NWC_DEFAULT_MAX_PAYMENT_MSATS, NWC_MAX_REQUEST_AGE,
     };
     use lightning_invoice::Bolt11Invoice;
     use std::time::{Duration, SystemTime};
@@ -2117,5 +2164,66 @@ mod tests {
         let invoice = signed_invoice(None);
         let err = check_nwc_payment_limit(&invoice, NWC_DEFAULT_MAX_PAYMENT_MSATS).unwrap_err();
         assert!(err.to_string().contains("no amount"), "got: {err}");
+    }
+
+    /// The replay case: a listener that restarts subscribes with a fresh
+    /// window, so a request the relay stored while nothing was listening is
+    /// refused rather than paid late.
+    #[test]
+    fn stale_request_from_before_the_subscription_window_is_refused() {
+        let now = nostr_sdk::Timestamp::now();
+        let accept_from = now - NWC_MAX_REQUEST_AGE;
+        let queued_an_hour_ago = now - Duration::from_secs(60 * 60);
+
+        assert!(nwc_request_is_stale(
+            queued_an_hour_ago,
+            None,
+            accept_from,
+            now
+        ));
+    }
+
+    #[test]
+    fn request_inside_the_subscription_window_is_accepted() {
+        let now = nostr_sdk::Timestamp::now();
+        let accept_from = now - NWC_MAX_REQUEST_AGE;
+
+        // Just now, and just inside the window: both are live requests.
+        assert!(!nwc_request_is_stale(now, None, accept_from, now));
+        assert!(!nwc_request_is_stale(accept_from, None, accept_from, now));
+    }
+
+    #[test]
+    fn expired_request_is_refused_even_inside_the_window() {
+        let now = nostr_sdk::Timestamp::now();
+        let accept_from = now - NWC_MAX_REQUEST_AGE;
+        let sent_recently = now - Duration::from_secs(5);
+
+        // Expiry in the past, and expiry exactly now: both have elapsed.
+        assert!(nwc_request_is_stale(
+            sent_recently,
+            Some(now - Duration::from_secs(1)),
+            accept_from,
+            now,
+        ));
+        assert!(nwc_request_is_stale(
+            sent_recently,
+            Some(now),
+            accept_from,
+            now
+        ));
+    }
+
+    #[test]
+    fn unexpired_request_is_accepted() {
+        let now = nostr_sdk::Timestamp::now();
+        let accept_from = now - NWC_MAX_REQUEST_AGE;
+
+        assert!(!nwc_request_is_stale(
+            now,
+            Some(now + Duration::from_secs(30)),
+            accept_from,
+            now,
+        ));
     }
 }
