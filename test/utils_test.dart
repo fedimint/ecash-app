@@ -1,4 +1,5 @@
 import 'package:ecashapp/db.dart';
+import 'package:ecashapp/models.dart';
 import 'package:ecashapp/utils.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -189,7 +190,10 @@ void main() {
         '45,000.00€',
       );
       // Below 1000 stays ungrouped
-      expect(calculateFiatValue(50000.0, 1000000, FiatCurrency.usd), '\$500.00');
+      expect(
+        calculateFiatValue(50000.0, 1000000, FiatCurrency.usd),
+        '\$500.00',
+      );
     });
 
     test('calculates EUR correctly with symbol after', () {
@@ -297,6 +301,120 @@ void main() {
       expect(formatFiatInput('100', FiatCurrency.chf), 'CHF 100');
       expect(formatFiatInput('100', FiatCurrency.aud), 'A\$100');
       expect(formatFiatInput('100', FiatCurrency.jpy), '¥100');
+    });
+  });
+
+  group('formatFiatInput thousands grouping', () {
+    test('adds a separator only once the integer part reaches four digits', () {
+      expect(formatFiatInput('99', FiatCurrency.usd), '\$99');
+      expect(formatFiatInput('999', FiatCurrency.usd), '\$999');
+      expect(formatFiatInput('1000', FiatCurrency.usd), '\$1,000');
+      expect(formatFiatInput('9999', FiatCurrency.usd), '\$9,999');
+    });
+
+    test('adds the second separator at seven digits', () {
+      expect(formatFiatInput('999999', FiatCurrency.usd), '\$999,999');
+      expect(formatFiatInput('1000000', FiatCurrency.usd), '\$1,000,000');
+      expect(formatFiatInput('9999999', FiatCurrency.usd), '\$9,999,999');
+      expect(
+        formatFiatInput('1000000000', FiatCurrency.usd),
+        '\$1,000,000,000',
+      );
+    });
+
+    test('groups the integer part only, never the decimals', () {
+      expect(formatFiatInput('1234567.89', FiatCurrency.usd), '\$1,234,567.89');
+      expect(formatFiatInput('1000000.', FiatCurrency.usd), '\$1,000,000.');
+      // A long fraction stays as typed — grouping it would be nonsense.
+      expect(formatFiatInput('1.123456', FiatCurrency.usd), '\$1.123456');
+      expect(formatFiatInput('.123456', FiatCurrency.usd), '\$0.123456');
+    });
+
+    test('groups the same way whichever side the symbol sits on', () {
+      expect(formatFiatInput('1234567', FiatCurrency.eur), '1,234,567€');
+      expect(formatFiatInput('1234567', FiatCurrency.gbp), '£1,234,567');
+      expect(formatFiatInput('1234567', FiatCurrency.cad), 'C\$1,234,567');
+      expect(formatFiatInput('1234567', FiatCurrency.chf), 'CHF 1,234,567');
+      expect(formatFiatInput('1234567', FiatCurrency.aud), 'A\$1,234,567');
+      expect(formatFiatInput('1234567', FiatCurrency.jpy), '¥1,234,567');
+      expect(formatFiatInput('1234.56', FiatCurrency.eur), '1,234.56€');
+    });
+  });
+
+  group('redactUriForLog', () {
+    test('keeps the scheme and host but drops path and query', () {
+      final uri = Uri.parse(
+        'lnurlw://service.example.com/withdraw?k1=deadbeefsecret&tag=withdrawRequest',
+      );
+
+      final redacted = redactUriForLog(uri);
+
+      expect(redacted, startsWith('lnurlw://service.example.com<redacted '));
+      expect(redacted, endsWith(' chars>'));
+      // The k1 alone is enough to claim the withdrawal.
+      expect(redacted, isNot(contains('k1')));
+      expect(redacted, isNot(contains('deadbeefsecret')));
+      expect(redacted, isNot(contains('withdraw')));
+    });
+
+    test('reports the length of the original URI', () {
+      // 'lightning:abc' is 13 characters.
+      expect(
+        redactUriForLog(Uri.parse('lightning:abc')),
+        'lightning:<redacted 13 chars>',
+      );
+    });
+
+    test('omits the host marker when there is no host', () {
+      // A bolt11 link is scheme + opaque payload, so there is nothing to keep.
+      final uri = Uri.parse('lightning:lnbc10u1pjq8s2spp5abcdef');
+
+      final redacted = redactUriForLog(uri);
+
+      expect(redacted, startsWith('lightning:<redacted '));
+      expect(redacted, isNot(contains('//')));
+      expect(redacted, isNot(contains('lnbc')));
+    });
+
+    test('handles a scheme with nothing after it', () {
+      expect(
+        redactUriForLog(Uri.parse('lightning:')),
+        'lightning:<redacted 10 chars>',
+      );
+    });
+
+    test('normalizes the scheme to lower case', () {
+      expect(
+        redactUriForLog(Uri.parse('LIGHTNING:abc')),
+        startsWith('lightning:'),
+      );
+    });
+
+    test('drops userinfo, port and fragment along with the rest', () {
+      final uri = Uri.parse('https://user:pw@host.example.com:8443/p?q=1#frag');
+
+      final redacted = redactUriForLog(uri);
+
+      expect(redacted, startsWith('https://host.example.com<redacted '));
+      expect(redacted, isNot(contains('user')));
+      expect(redacted, isNot(contains('pw')));
+      expect(redacted, isNot(contains('8443')));
+      expect(redacted, isNot(contains('frag')));
+    });
+  });
+
+  group('getModuleIdForPaymentType', () {
+    test('maps each payment type to its Fedimint module id', () {
+      expect(getModuleIdForPaymentType(PaymentType.lightning), 0);
+      expect(getModuleIdForPaymentType(PaymentType.ecash), 1);
+      expect(getModuleIdForPaymentType(PaymentType.onchain), 2);
+    });
+
+    test('gives every payment type a distinct id', () {
+      final ids = PaymentType.values.map(getModuleIdForPaymentType).toList();
+
+      expect(ids.length, PaymentType.values.length);
+      expect(ids.toSet().length, ids.length);
     });
   });
 
