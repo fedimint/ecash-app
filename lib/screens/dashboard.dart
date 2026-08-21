@@ -45,7 +45,11 @@ class _DashboardState extends State<Dashboard> {
   BigInt? balanceMsats;
   bool isLoadingBalance = true;
   late bool recovering;
-  double _recoveryProgress = 0.0;
+
+  /// Recovery progress per payment type. Keeping one entry per tab stops a
+  /// tab whose modules report nothing from showing the previously selected
+  /// tab's bar.
+  final Map<PaymentType, double> _recoveryProgress = {};
   PaymentType _selectedPaymentType = PaymentType.lightning;
   Map<FiatCurrency, double> _btcPrices = {};
   bool _isLoadingPrices = false;
@@ -374,16 +378,18 @@ class _DashboardState extends State<Dashboard> {
     if (recovering) {
       final progress = await getModuleRecoveryProgress(
         federationId: widget.fed.federationId,
-        moduleId: getModuleIdForPaymentType(paymentType),
+        recoveryModule: paymentType.recoveryModule,
       );
 
       if (progress.$2 > 0) {
         double rawProgress = progress.$1.toDouble() / progress.$2.toDouble();
-        setState(() => _recoveryProgress = rawProgress.clamp(0.0, 1.0));
+        setState(
+          () => _recoveryProgress[paymentType] = rawProgress.clamp(0.0, 1.0),
+        );
       }
 
       AppLogger.instance.info(
-        "$_selectedPaymentType progress: $_recoveryProgress complete: ${progress.$1} total: ${progress.$2}",
+        "$paymentType progress: ${_recoveryProgress[paymentType] ?? 0.0} complete: ${progress.$1} total: ${progress.$2}",
       );
     }
   }
@@ -462,7 +468,8 @@ class _DashboardState extends State<Dashboard> {
                       key: ValueKey(_selectedPaymentType),
                       paymentType: _selectedPaymentType,
                       fed: widget.fed,
-                      initialProgress: _recoveryProgress,
+                      initialProgress:
+                          _recoveryProgress[_selectedPaymentType] ?? 0.0,
                     ),
                     const Spacer(),
                   ],

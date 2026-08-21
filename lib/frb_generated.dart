@@ -440,7 +440,7 @@ abstract class RustLibApi extends BaseApi {
   Future<RecoveryProgress> crateMultimintMultimintGetRecoveryProgress({
     required Multimint that,
     required FederationId federationId,
-    required int moduleId,
+    required RecoveryModule recoveryModule,
   });
 
   Future<bool> crateMultimintMultimintGetShowMsats({required Multimint that});
@@ -1084,7 +1084,7 @@ abstract class RustLibApi extends BaseApi {
 
   Future<(int, int)> crateGetModuleRecoveryProgress({
     required FederationId federationId,
-    required int moduleId,
+    required RecoveryModule recoveryModule,
   });
 
   Future<List<(BigInt, BigInt)>> crateGetNoteSummary({
@@ -1353,7 +1353,7 @@ abstract class RustLibApi extends BaseApi {
 
   Stream<(int, int)> crateSubscribeRecoveryProgress({
     required FederationId federationId,
-    required int moduleId,
+    required RecoveryModule recoveryModule,
   });
 
   Future<void> crateSyncContacts({required String npub});
@@ -4443,7 +4443,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   Future<RecoveryProgress> crateMultimintMultimintGetRecoveryProgress({
     required Multimint that,
     required FederationId federationId,
-    required int moduleId,
+    required RecoveryModule recoveryModule,
   }) {
     return handler.executeNormal(
       NormalTask(
@@ -4457,7 +4457,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
             federationId,
             serializer,
           );
-          sse_encode_u_16(moduleId, serializer);
+          sse_encode_recovery_module(recoveryModule, serializer);
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
@@ -4471,7 +4471,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           decodeErrorData: null,
         ),
         constMeta: kCrateMultimintMultimintGetRecoveryProgressConstMeta,
-        argValues: [that, federationId, moduleId],
+        argValues: [that, federationId, recoveryModule],
         apiImpl: this,
       ),
     );
@@ -4480,7 +4480,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   TaskConstMeta get kCrateMultimintMultimintGetRecoveryProgressConstMeta =>
       const TaskConstMeta(
         debugName: "Multimint_get_recovery_progress",
-        argNames: ["that", "federationId", "moduleId"],
+        argNames: ["that", "federationId", "recoveryModule"],
       );
 
   @override
@@ -9531,7 +9531,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   @override
   Future<(int, int)> crateGetModuleRecoveryProgress({
     required FederationId federationId,
-    required int moduleId,
+    required RecoveryModule recoveryModule,
   }) {
     return handler.executeNormal(
       NormalTask(
@@ -9541,7 +9541,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
             federationId,
             serializer,
           );
-          sse_encode_u_16(moduleId, serializer);
+          sse_encode_recovery_module(recoveryModule, serializer);
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
@@ -9554,7 +9554,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           decodeErrorData: null,
         ),
         constMeta: kCrateGetModuleRecoveryProgressConstMeta,
-        argValues: [federationId, moduleId],
+        argValues: [federationId, recoveryModule],
         apiImpl: this,
       ),
     );
@@ -9563,7 +9563,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   TaskConstMeta get kCrateGetModuleRecoveryProgressConstMeta =>
       const TaskConstMeta(
         debugName: "get_module_recovery_progress",
-        argNames: ["federationId", "moduleId"],
+        argNames: ["federationId", "recoveryModule"],
       );
 
   @override
@@ -11774,7 +11774,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   @override
   Stream<(int, int)> crateSubscribeRecoveryProgress({
     required FederationId federationId,
-    required int moduleId,
+    required RecoveryModule recoveryModule,
   }) {
     final sink = RustStreamSink<(int, int)>();
     unawaited(
@@ -11787,7 +11787,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
               federationId,
               serializer,
             );
-            sse_encode_u_16(moduleId, serializer);
+            sse_encode_recovery_module(recoveryModule, serializer);
             pdeCallFfi(
               generalizedFrbRustBinding,
               serializer,
@@ -11800,7 +11800,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
             decodeErrorData: null,
           ),
           constMeta: kCrateSubscribeRecoveryProgressConstMeta,
-          argValues: [sink, federationId, moduleId],
+          argValues: [sink, federationId, recoveryModule],
           apiImpl: this,
         ),
       ),
@@ -11811,7 +11811,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   TaskConstMeta get kCrateSubscribeRecoveryProgressConstMeta =>
       const TaskConstMeta(
         debugName: "subscribe_recovery_progress",
-        argNames: ["sink", "federationId", "moduleId"],
+        argNames: ["sink", "federationId", "recoveryModule"],
       );
 
   @override
@@ -14057,7 +14057,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
       case 4:
         return MultimintEvent_RecoveryProgress(
           dco_decode_String(raw[1]),
-          dco_decode_u_16(raw[2]),
+          dco_decode_recovery_module(raw[2]),
           dco_decode_u_32(raw[3]),
           dco_decode_u_32(raw[4]),
         );
@@ -14688,6 +14688,12 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
       throw Exception('Expected 2 elements, got ${arr.length}');
     }
     return (dco_decode_u_64(arr[0]), dco_decode_usize(arr[1]));
+  }
+
+  @protected
+  RecoveryModule dco_decode_recovery_module(dynamic raw) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    return RecoveryModule.values[raw as int];
   }
 
   @protected
@@ -17051,7 +17057,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
         return MultimintEvent_RecoveryDone(var_field0);
       case 4:
         var var_field0 = sse_decode_String(deserializer);
-        var var_field1 = sse_decode_u_16(deserializer);
+        var var_field1 = sse_decode_recovery_module(deserializer);
         var var_field2 = sse_decode_u_32(deserializer);
         var var_field3 = sse_decode_u_32(deserializer);
         return MultimintEvent_RecoveryProgress(
@@ -17722,6 +17728,13 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
     var var_field0 = sse_decode_u_64(deserializer);
     var var_field1 = sse_decode_usize(deserializer);
     return (var_field0, var_field1);
+  }
+
+  @protected
+  RecoveryModule sse_decode_recovery_module(SseDeserializer deserializer) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    var inner = sse_decode_i_32(deserializer);
+    return RecoveryModule.values[inner];
   }
 
   @protected
@@ -20135,7 +20148,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
       ):
         sse_encode_i_32(4, serializer);
         sse_encode_String(field0, serializer);
-        sse_encode_u_16(field1, serializer);
+        sse_encode_recovery_module(field1, serializer);
         sse_encode_u_32(field2, serializer);
         sse_encode_u_32(field3, serializer);
       case MultimintEvent_Ecash(field0: final field0):
@@ -20772,6 +20785,15 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
     // Codec=Sse (Serialization based), see doc to use other codecs
     sse_encode_u_64(self.$1, serializer);
     sse_encode_usize(self.$2, serializer);
+  }
+
+  @protected
+  void sse_encode_recovery_module(
+    RecoveryModule self,
+    SseSerializer serializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    sse_encode_i_32(self.index, serializer);
   }
 
   @protected
@@ -21897,11 +21919,11 @@ class MultimintImpl extends RustOpaque implements Multimint {
 
   Future<RecoveryProgress> getRecoveryProgress({
     required FederationId federationId,
-    required int moduleId,
+    required RecoveryModule recoveryModule,
   }) => RustLib.instance.api.crateMultimintMultimintGetRecoveryProgress(
     that: this,
     federationId: federationId,
-    moduleId: moduleId,
+    recoveryModule: recoveryModule,
   );
 
   Future<bool> getShowMsats() =>

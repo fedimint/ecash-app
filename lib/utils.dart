@@ -3,7 +3,6 @@ import 'dart:io';
 import 'package:ecashapp/db.dart';
 import 'package:ecashapp/extensions/build_context_l10n.dart';
 import 'package:ecashapp/lib.dart';
-import 'package:ecashapp/models.dart';
 import 'package:ecashapp/multimint.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -289,17 +288,6 @@ String formatFiatInput(String rawFiatInput, FiatCurrency fiatCurrency) {
   return symbolPosition == 'before'
       ? '$symbol$formattedValue'
       : '$formattedValue$symbol';
-}
-
-int getModuleIdForPaymentType(PaymentType paymentType) {
-  switch (paymentType) {
-    case PaymentType.lightning:
-      return 0;
-    case PaymentType.ecash:
-      return 1;
-    case PaymentType.onchain:
-      return 2;
-  }
 }
 
 Future<Map<FiatCurrency, double>> fetchAllBtcPrices() async {

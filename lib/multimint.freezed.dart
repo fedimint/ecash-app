@@ -1563,7 +1563,7 @@ class MultimintEvent_RecoveryProgress extends MultimintEvent {
   
 
 @override final  String field0;
- final  int field1;
+ final  RecoveryModule field1;
  final  int field2;
  final  int field3;
 
@@ -1597,7 +1597,7 @@ abstract mixin class $MultimintEvent_RecoveryProgressCopyWith<$Res> implements $
   factory $MultimintEvent_RecoveryProgressCopyWith(MultimintEvent_RecoveryProgress value, $Res Function(MultimintEvent_RecoveryProgress) _then) = _$MultimintEvent_RecoveryProgressCopyWithImpl;
 @useResult
 $Res call({
- String field0, int field1, int field2, int field3
+ String field0, RecoveryModule field1, int field2, int field3
 });
 
 
@@ -1618,7 +1618,7 @@ class _$MultimintEvent_RecoveryProgressCopyWithImpl<$Res>
   return _then(MultimintEvent_RecoveryProgress(
 null == field0 ? _self.field0 : field0 // ignore: cast_nullable_to_non_nullable
 as String,null == field1 ? _self.field1 : field1 // ignore: cast_nullable_to_non_nullable
-as int,null == field2 ? _self.field2 : field2 // ignore: cast_nullable_to_non_nullable
+as RecoveryModule,null == field2 ? _self.field2 : field2 // ignore: cast_nullable_to_non_nullable
 as int,null == field3 ? _self.field3 : field3 // ignore: cast_nullable_to_non_nullable
 as int,
   ));
