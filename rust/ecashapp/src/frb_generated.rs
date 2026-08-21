@@ -4322,7 +4322,8 @@ fn wire__crate__multimint__Multimint_get_recovery_progress_impl(
             let api_federation_id = <RustOpaqueMoi<
                 flutter_rust_bridge::for_generated::RustAutoOpaqueInner<FederationId>,
             >>::sse_decode(&mut deserializer);
-            let api_module_id = <u16>::sse_decode(&mut deserializer);
+            let api_recovery_module =
+                <crate::multimint::RecoveryModule>::sse_decode(&mut deserializer);
             deserializer.end();
             move |context| async move {
                 transform_result_sse::<_, ()>(
@@ -4361,7 +4362,7 @@ fn wire__crate__multimint__Multimint_get_recovery_progress_impl(
                             crate::multimint::Multimint::get_recovery_progress(
                                 &*api_that_guard,
                                 &*api_federation_id_guard,
-                                api_module_id,
+                                api_recovery_module,
                             )
                             .await,
                         )?;
@@ -11758,7 +11759,8 @@ fn wire__crate__get_module_recovery_progress_impl(
             let api_federation_id = <RustOpaqueMoi<
                 flutter_rust_bridge::for_generated::RustAutoOpaqueInner<FederationId>,
             >>::sse_decode(&mut deserializer);
-            let api_module_id = <u16>::sse_decode(&mut deserializer);
+            let api_recovery_module =
+                <crate::multimint::RecoveryModule>::sse_decode(&mut deserializer);
             deserializer.end();
             move |context| async move {
                 transform_result_sse::<_, ()>(
@@ -11785,7 +11787,7 @@ fn wire__crate__get_module_recovery_progress_impl(
                         let output_ok = Result::<_, ()>::Ok(
                             crate::get_module_recovery_progress(
                                 &*api_federation_id_guard,
-                                api_module_id,
+                                api_recovery_module,
                             )
                             .await,
                         )?;
@@ -14758,7 +14760,8 @@ fn wire__crate__subscribe_recovery_progress_impl(
                     &mut deserializer,
                 );
             let api_federation_id = <FederationId>::sse_decode(&mut deserializer);
-            let api_module_id = <u16>::sse_decode(&mut deserializer);
+            let api_recovery_module =
+                <crate::multimint::RecoveryModule>::sse_decode(&mut deserializer);
             deserializer.end();
             move |context| async move {
                 transform_result_sse::<_, ()>(
@@ -14767,7 +14770,7 @@ fn wire__crate__subscribe_recovery_progress_impl(
                             crate::subscribe_recovery_progress(
                                 api_sink,
                                 api_federation_id,
-                                api_module_id,
+                                api_recovery_module,
                             )
                             .await;
                         })?;
@@ -16840,7 +16843,7 @@ impl SseDecode for crate::multimint::MultimintEvent {
             }
             4 => {
                 let mut var_field0 = <String>::sse_decode(deserializer);
-                let mut var_field1 = <u16>::sse_decode(deserializer);
+                let mut var_field1 = <crate::multimint::RecoveryModule>::sse_decode(deserializer);
                 let mut var_field2 = <u32>::sse_decode(deserializer);
                 let mut var_field3 = <u32>::sse_decode(deserializer);
                 return crate::multimint::MultimintEvent::RecoveryProgress(
@@ -17437,6 +17440,19 @@ impl SseDecode for (u64, usize) {
         let mut var_field0 = <u64>::sse_decode(deserializer);
         let mut var_field1 = <usize>::sse_decode(deserializer);
         return (var_field0, var_field1);
+    }
+}
+
+impl SseDecode for crate::multimint::RecoveryModule {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
+        let mut inner = <i32>::sse_decode(deserializer);
+        return match inner {
+            0 => crate::multimint::RecoveryModule::Lightning,
+            1 => crate::multimint::RecoveryModule::Ecash,
+            2 => crate::multimint::RecoveryModule::Onchain,
+            _ => unreachable!("Invalid variant for RecoveryModule: {}", inner),
+        };
     }
 }
 
@@ -20167,6 +20183,28 @@ impl flutter_rust_bridge::IntoIntoDart<crate::multimint::ReceiveAmount>
     }
 }
 // Codec=Dco (DartCObject based), see doc to use other codecs
+impl flutter_rust_bridge::IntoDart for crate::multimint::RecoveryModule {
+    fn into_dart(self) -> flutter_rust_bridge::for_generated::DartAbi {
+        match self {
+            Self::Lightning => 0.into_dart(),
+            Self::Ecash => 1.into_dart(),
+            Self::Onchain => 2.into_dart(),
+            _ => unreachable!(),
+        }
+    }
+}
+impl flutter_rust_bridge::for_generated::IntoDartExceptPrimitive
+    for crate::multimint::RecoveryModule
+{
+}
+impl flutter_rust_bridge::IntoIntoDart<crate::multimint::RecoveryModule>
+    for crate::multimint::RecoveryModule
+{
+    fn into_into_dart(self) -> crate::multimint::RecoveryModule {
+        self
+    }
+}
+// Codec=Dco (DartCObject based), see doc to use other codecs
 impl flutter_rust_bridge::IntoDart for crate::multimint::ReissueFees {
     fn into_dart(self) -> flutter_rust_bridge::for_generated::DartAbi {
         [
@@ -21812,7 +21850,7 @@ impl SseEncode for crate::multimint::MultimintEvent {
             crate::multimint::MultimintEvent::RecoveryProgress(field0, field1, field2, field3) => {
                 <i32>::sse_encode(4, serializer);
                 <String>::sse_encode(field0, serializer);
-                <u16>::sse_encode(field1, serializer);
+                <crate::multimint::RecoveryModule>::sse_encode(field1, serializer);
                 <u32>::sse_encode(field2, serializer);
                 <u32>::sse_encode(field3, serializer);
             }
@@ -22326,6 +22364,23 @@ impl SseEncode for (u64, usize) {
     fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
         <u64>::sse_encode(self.0, serializer);
         <usize>::sse_encode(self.1, serializer);
+    }
+}
+
+impl SseEncode for crate::multimint::RecoveryModule {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
+        <i32>::sse_encode(
+            match self {
+                crate::multimint::RecoveryModule::Lightning => 0,
+                crate::multimint::RecoveryModule::Ecash => 1,
+                crate::multimint::RecoveryModule::Onchain => 2,
+                _ => {
+                    unimplemented!("");
+                }
+            },
+            serializer,
+        );
     }
 }
 

@@ -39,7 +39,7 @@ class _RecoveryStatusState extends State<RecoveryStatus> {
     final progressEvents =
         subscribeRecoveryProgress(
           federationId: widget.fed.federationId,
-          moduleId: getModuleIdForPaymentType(widget.paymentType),
+          recoveryModule: widget.paymentType.recoveryModule,
         ).asBroadcastStream();
     _progressSubscription = progressEvents.listen((e) {
       if (e.$2 > 0) {

@@ -29,8 +29,8 @@ use multimint::{
     EcashSendFees, FederationMeta, FederationSelector, GuardianAuditSummary,
     GuardianBackupStatistics, GuardianMetaState, GuardianStatusSummary, LightningSendOutcome,
     LogLevel, Multimint, MultimintCreation, MultimintEvent, OOBNotesWrapper,
-    PaymentPreviewWithGateways, PeginFeeQuote, ReceiveAmount, ReissueFees, Transaction, Utxo,
-    WithdrawFees, WithdrawFeesResponse,
+    PaymentPreviewWithGateways, PeginFeeQuote, ReceiveAmount, RecoveryModule, ReissueFees,
+    Transaction, Utxo, WithdrawFees, WithdrawFeesResponse,
 };
 use nostr::{NWCConnectionInfo, NostrClient, PublicFederation};
 use serde::Serialize;
@@ -991,11 +991,11 @@ pub async fn get_max_withdrawable_amount(
 #[frb]
 pub async fn get_module_recovery_progress(
     federation_id: &FederationId,
-    module_id: u16,
+    recovery_module: RecoveryModule,
 ) -> (u32, u32) {
     let multimint = get_multimint();
     let progress = multimint
-        .get_recovery_progress(federation_id, module_id)
+        .get_recovery_progress(federation_id, recovery_module)
         .await;
     (progress.complete, progress.total)
 }
@@ -1004,16 +1004,16 @@ pub async fn get_module_recovery_progress(
 pub async fn subscribe_recovery_progress(
     sink: StreamSink<(u32, u32)>,
     federation_id: FederationId,
-    module_id: u16,
+    recovery_module: RecoveryModule,
 ) {
     let event_bus = get_event_bus();
     let mut stream = event_bus.subscribe();
 
     while let Some(evt) = stream.next().await {
-        if let MultimintEvent::RecoveryProgress(evt_fed_id, evt_module_id, complete, total) = evt {
+        if let MultimintEvent::RecoveryProgress(evt_fed_id, evt_module, complete, total) = evt {
             let event_federation_id =
                 FederationId::from_str(&evt_fed_id).expect("Could not parse FederationId");
-            if event_federation_id == federation_id && evt_module_id == module_id {
+            if event_federation_id == federation_id && evt_module == recovery_module {
                 if sink.add((complete, total)).is_err() {
                     break;
                 }

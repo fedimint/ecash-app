@@ -30,6 +30,7 @@ use fedimint_core::{
     admin_client::ServerStatusLegacy,
     base32::{decode_prefixed, encode_prefixed, FEDIMINT_PREFIX},
     config::{FederationId, META_FEDERATION_NAME_KEY},
+    core::{ModuleInstanceId, ModuleKind},
     db::{mem_impl::MemDatabase, Database, IDatabaseTransactionOpsCoreTyped},
     encoding::{Decodable, Encodable},
     endpoint_constants::CONSENSUS_ORD_LATENCY_ENDPOINT,
@@ -299,7 +300,14 @@ pub struct Multimint {
     modules: ClientModuleInitRegistry,
     clients: Arc<RwLock<BTreeMap<FederationId, ClientHandleArc>>>,
     task_group: TaskGroup,
-    recovery_progress: Arc<RwLock<BTreeMap<FederationId, BTreeMap<u16, RecoveryProgress>>>>,
+    /// Per-federation recovery progress, keyed by module instance id so each
+    /// module's updates overwrite only its own entry, and tagged with the bar
+    /// it feeds so reads can aggregate across the modules sharing one.
+    recovery_progress: Arc<
+        RwLock<
+            BTreeMap<FederationId, BTreeMap<ModuleInstanceId, (RecoveryModule, RecoveryProgress)>>,
+        >,
+    >,
     internal_ecash_spends: Arc<RwLock<BTreeSet<OperationId>>>,
     recurringd_invoices: Arc<RwLock<BTreeSet<OperationId>>>,
     update_notified: Arc<AtomicBool>,
@@ -687,13 +695,67 @@ pub enum NostrRecoveryPhase {
     NoBackupFound,
 }
 
+/// The wallet-facing grouping a recovering Fedimint module belongs to.
+///
+/// The dashboard shows one recovery bar per payment type, but a federation can
+/// run more than one module behind a single bar (`mint` and `mintv2` both back
+/// Ecash), and the module instance ids themselves are not stable: guardians
+/// assign them by enumerating the *enabled* modules in alphabetical order of
+/// kind, so a v2-only federation numbers them lnv2=0, meta=1, mintv2=2,
+/// walletv2=3 while a legacy one numbers them ln=0, mint=1, wallet=2. Resolving
+/// the kind here and keying progress on this enum keeps the instance ids on the
+/// Rust side, where the client config can be consulted, instead of hardcoding a
+/// layout in the UI.
+#[derive(Clone, Copy, Eq, PartialEq, Ord, PartialOrd, Serialize, Debug)]
+pub enum RecoveryModule {
+    Lightning,
+    Ecash,
+    Onchain,
+}
+
+/// Maps a module kind to the recovery bar it feeds, or `None` for kinds with no
+/// bar of their own (`meta`, and anything a future federation adds).
+fn recovery_module_for_kind(kind: &ModuleKind) -> Option<RecoveryModule> {
+    if *kind == fedimint_ln_common::KIND || *kind == fedimint_lnv2_common::KIND {
+        Some(RecoveryModule::Lightning)
+    } else if *kind == fedimint_mint_common::KIND || *kind == fedimint_mintv2_common::KIND {
+        Some(RecoveryModule::Ecash)
+    } else if *kind == fedimint_wallet_common::KIND || *kind == fedimint_walletv2_common::KIND {
+        Some(RecoveryModule::Onchain)
+    } else {
+        None
+    }
+}
+
+/// Sums the progress of every module feeding one recovery bar.
+///
+/// A federation can run both the v1 and v2 module of a kind, and each recovers
+/// independently. Reporting only one of them would stall the bar partway;
+/// summing gives a single monotonic ratio. Modules that don't implement
+/// recovery report 0/0 and so contribute nothing, which is what leaves the
+/// Lightning bar empty — neither `ln` nor `lnv2` has a recovery routine.
+fn aggregate_recovery_progress(
+    module_progress: &BTreeMap<ModuleInstanceId, (RecoveryModule, RecoveryProgress)>,
+    recovery_module: RecoveryModule,
+) -> RecoveryProgress {
+    module_progress
+        .values()
+        .filter(|(module, _)| *module == recovery_module)
+        .fold(RecoveryProgress::none(), |acc, (_, progress)| {
+            RecoveryProgress {
+                complete: acc.complete.saturating_add(progress.complete),
+                total: acc.total.saturating_add(progress.total),
+            }
+        })
+}
+
 #[derive(Clone, Eq, PartialEq, Serialize, Debug)]
 pub enum MultimintEvent {
     Deposit((FederationId, DepositEventKind)),
     Lightning((FederationId, LightningEventKind)),
     Log(LogLevel, String),
     RecoveryDone(String),
-    RecoveryProgress(String, u16, u32, u32),
+    RecoveryProgress(String, RecoveryModule, u32, u32),
     Ecash((FederationId, u64)),
     NostrRecovery(String, u16, Option<FederationSelector>),
     NostrRelayStatus(String, RelayStatusKind),
@@ -2054,12 +2116,31 @@ impl Multimint {
                     .init_recovery_progress_cache(client.federation_id())
                     .await;
 
+                // Instance ids are assigned per federation, so the mapping has
+                // to come from this client's config rather than a fixed layout.
+                let recovery_modules: BTreeMap<ModuleInstanceId, RecoveryModule> = client
+                    .config()
+                    .await
+                    .modules
+                    .iter()
+                    .filter_map(|(id, module)| {
+                        recovery_module_for_kind(&module.kind).map(|m| (*id, m))
+                    })
+                    .collect();
+
                 let mut stream = client.subscribe_to_recovery_progress();
                 while let Some((module_id, progress)) = stream.next().await {
+                    // Kinds with no bar of their own (`meta`) still recover and
+                    // still report; they just have nowhere to be shown.
+                    let Some(recovery_module) = recovery_modules.get(&module_id).copied() else {
+                        continue;
+                    };
+
                     progress_copy
                         .update_recovery_progress_cache(
                             &client.federation_id(),
                             module_id,
+                            recovery_module,
                             progress,
                         )
                         .await;
@@ -2084,19 +2165,29 @@ impl Multimint {
     async fn update_recovery_progress_cache(
         &self,
         federation_id: &FederationId,
-        module_id: u16,
+        module_id: ModuleInstanceId,
+        recovery_module: RecoveryModule,
         module_progress: RecoveryProgress,
     ) {
-        let mut progress = self.recovery_progress.write().await;
-        if let Some(module_progress_cache) = progress.get_mut(federation_id) {
-            module_progress_cache.insert(module_id, module_progress);
-        }
+        let aggregated = {
+            let mut progress = self.recovery_progress.write().await;
+            let Some(module_progress_cache) = progress.get_mut(federation_id) else {
+                // The federation was removed while its recovery was running.
+                return;
+            };
+            module_progress_cache.insert(module_id, (recovery_module, module_progress));
+            aggregate_recovery_progress(module_progress_cache, recovery_module)
+        };
+
+        // Publish the aggregate rather than this one module's slice, so the
+        // stream and `get_recovery_progress` never disagree on a federation
+        // running both `mint` and `mintv2` behind the same bar.
         get_event_bus()
             .publish(MultimintEvent::RecoveryProgress(
                 federation_id.to_string(),
-                module_id,
-                module_progress.complete,
-                module_progress.total,
+                recovery_module,
+                aggregated.complete,
+                aggregated.total,
             ))
             .await;
     }
@@ -2104,20 +2195,13 @@ impl Multimint {
     pub async fn get_recovery_progress(
         &self,
         federation_id: &FederationId,
-        module_id: u16,
+        recovery_module: RecoveryModule,
     ) -> RecoveryProgress {
         let progress = self.recovery_progress.read().await;
-        let module_progress = progress.get(federation_id);
-        if let Some(module_progress) = module_progress {
-            if let Some(progress) = module_progress.get(&module_id) {
-                return *progress;
-            }
-        }
-
-        RecoveryProgress {
-            complete: 0,
-            total: 0,
-        }
+        progress
+            .get(federation_id)
+            .map(|module_progress| aggregate_recovery_progress(module_progress, recovery_module))
+            .unwrap_or_else(RecoveryProgress::none)
     }
 
     async fn wait_for_recovery(
@@ -6504,9 +6588,16 @@ fn validate_receive_fee(receive_fee: &PaymentFee) -> anyhow::Result<()> {
 
 #[cfg(test)]
 mod tests {
+    use std::collections::BTreeMap;
+
+    use fedimint_client::module::module::recovery::RecoveryProgress;
+    use fedimint_core::core::ModuleKind;
     use fedimint_lnv2_common::gateway_api::PaymentFee;
 
-    use crate::multimint::{gross_invoice_for_contract, MAX_GATEWAY_PPM};
+    use crate::multimint::{
+        aggregate_recovery_progress, gross_invoice_for_contract, recovery_module_for_kind,
+        RecoveryModule, MAX_GATEWAY_PPM,
+    };
 
     fn payment_fee(base_msats: u64, ppm: u64) -> PaymentFee {
         PaymentFee {
@@ -6573,5 +6664,103 @@ mod tests {
             err.to_string().contains("overflows") || err.to_string().contains("too large"),
             "got: {err}"
         );
+    }
+
+    /// The bug this replaced: the UI hardcoded lightning=0, ecash=1, onchain=2,
+    /// which is only the *legacy* layout. Guardians number modules by
+    /// enumerating the enabled ones alphabetically by kind, so this table is
+    /// what has to be consulted instead of a fixed id.
+    #[test]
+    fn maps_both_module_generations_to_one_bar() {
+        let cases = [
+            ("ln", Some(RecoveryModule::Lightning)),
+            ("lnv2", Some(RecoveryModule::Lightning)),
+            ("mint", Some(RecoveryModule::Ecash)),
+            ("mintv2", Some(RecoveryModule::Ecash)),
+            ("wallet", Some(RecoveryModule::Onchain)),
+            ("walletv2", Some(RecoveryModule::Onchain)),
+            // `meta` recovers alongside the rest but has no bar; on a v2-only
+            // federation it lands on instance id 1, exactly where the old code
+            // looked for ecash.
+            ("meta", None),
+            ("unknown", None),
+        ];
+
+        for (kind, expected) in cases {
+            assert_eq!(
+                recovery_module_for_kind(&ModuleKind::clone_from_str(kind)),
+                expected,
+                "kind {kind}"
+            );
+        }
+    }
+
+    fn progress(complete: u32, total: u32) -> RecoveryProgress {
+        RecoveryProgress { complete, total }
+    }
+
+    /// `RecoveryProgress` is a foreign type with no `PartialEq`.
+    fn assert_progress(actual: RecoveryProgress, complete: u32, total: u32) {
+        assert_eq!(
+            (actual.complete, actual.total),
+            (complete, total),
+            "recovery progress"
+        );
+    }
+
+    /// Instance ids here are the alphabetical layout a v2-only federation gets:
+    /// lnv2=0, meta=1, mintv2=2, walletv2=3.
+    #[test]
+    fn aggregates_only_the_modules_behind_the_requested_bar() {
+        let cache = BTreeMap::from([
+            (0, (RecoveryModule::Lightning, progress(0, 0))),
+            (2, (RecoveryModule::Ecash, progress(30, 100))),
+            (3, (RecoveryModule::Onchain, progress(0, 0))),
+        ]);
+
+        assert_progress(
+            aggregate_recovery_progress(&cache, RecoveryModule::Ecash),
+            30,
+            100,
+        );
+        // Reading id 2 as "onchain", as the old hardcoded map did, is what
+        // showed ecash progress under the On-chain tab.
+        assert_progress(
+            aggregate_recovery_progress(&cache, RecoveryModule::Onchain),
+            0,
+            0,
+        );
+        assert_progress(
+            aggregate_recovery_progress(&cache, RecoveryModule::Lightning),
+            0,
+            0,
+        );
+    }
+
+    #[test]
+    fn sums_a_federation_running_both_mint_generations() {
+        let cache = BTreeMap::from([
+            (0, (RecoveryModule::Ecash, progress(40, 100))),
+            (1, (RecoveryModule::Ecash, progress(10, 50))),
+        ]);
+
+        // One bar, both modules: 50/150 rather than whichever reported last.
+        assert_progress(
+            aggregate_recovery_progress(&cache, RecoveryModule::Ecash),
+            50,
+            150,
+        );
+    }
+
+    #[test]
+    fn a_bar_with_no_modules_reports_nothing_rather_than_complete() {
+        // total == 0 is what the UI keys on to leave the bar alone, so an empty
+        // cache must not come back looking like a finished recovery.
+        let empty = BTreeMap::new();
+        let result = aggregate_recovery_progress(&empty, RecoveryModule::Ecash);
+
+        assert_progress(result, 0, 0);
+        assert!(result.is_none());
+        assert!(!result.is_done());
     }
 }

@@ -411,18 +411,18 @@ Future<BigInt> getMaxWithdrawableAmount({
 
 Future<(int, int)> getModuleRecoveryProgress({
   required FederationId federationId,
-  required int moduleId,
+  required RecoveryModule recoveryModule,
 }) => RustLib.instance.api.crateGetModuleRecoveryProgress(
   federationId: federationId,
-  moduleId: moduleId,
+  recoveryModule: recoveryModule,
 );
 
 Stream<(int, int)> subscribeRecoveryProgress({
   required FederationId federationId,
-  required int moduleId,
+  required RecoveryModule recoveryModule,
 }) => RustLib.instance.api.crateSubscribeRecoveryProgress(
   federationId: federationId,
-  moduleId: moduleId,
+  recoveryModule: recoveryModule,
 );
 
 Future<(ParsedText, FederationSelector)> parseScannedTextForFederation({
