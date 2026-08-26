@@ -1,7 +1,9 @@
 import 'package:ecashapp/db.dart';
 import 'package:ecashapp/extensions/build_context_l10n.dart';
 import 'package:ecashapp/providers/preferences_provider.dart';
+import 'package:ecashapp/tap_transfer/tap_transfer_dev_screen.dart';
 import 'package:ecashapp/toast.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
@@ -501,6 +503,32 @@ class _DisplaySettingsScreenState extends State<DisplaySettingsScreen> {
               ],
             ),
           ),
+          // Debug-only harness for the NFC + BLE tap-to-send feature (Phase 2).
+          if (kDebugMode) ...[
+            const SizedBox(height: 24),
+            Card(
+              elevation: 2,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(16),
+              ),
+              child: ListTile(
+                leading: Icon(
+                  Icons.wifi_tethering,
+                  color: theme.colorScheme.primary,
+                ),
+                title: const Text('Tap transfer (dev)'), // i18n-ignore
+                subtitle: const Text('BLE ecash transfer test'), // i18n-ignore
+                trailing: const Icon(Icons.chevron_right),
+                onTap:
+                    () => Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => const TapTransferDevScreen(),
+                      ),
+                    ),
+              ),
+            ),
+          ],
         ],
       ),
     );
