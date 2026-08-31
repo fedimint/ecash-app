@@ -7,6 +7,7 @@ import 'package:ecashapp/extensions/build_context_l10n.dart';
 import 'package:ecashapp/lib.dart';
 import 'package:ecashapp/multimint.dart';
 import 'package:ecashapp/nfc_hce.dart';
+import 'package:ecashapp/tap_transfer/tap_receive.dart';
 import 'package:ecashapp/providers/preferences_provider.dart';
 import 'package:ecashapp/success.dart';
 import 'package:ecashapp/toast.dart';
@@ -63,6 +64,9 @@ class _RequestState extends State<Request>
     _startCountdown();
     _waitForPayment();
     WidgetsBinding.instance.addObserver(this);
+    // The Lightning-invoice HCE and the passive receiver both drive the single
+    // HCE service, so pause the receiver while this screen owns the tag.
+    TapReceive.instance.pause();
     _startNfcBroadcast();
   }
 
@@ -71,6 +75,7 @@ class _RequestState extends State<Request>
     _timer?.cancel();
     WidgetsBinding.instance.removeObserver(this);
     InvoiceNfcBroadcaster.stop();
+    TapReceive.instance.resume();
     super.dispose();
   }
 

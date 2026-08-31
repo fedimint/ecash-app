@@ -103,6 +103,7 @@ pub(crate) enum DbKeyPrefix {
     PinAttempts = 0x18,
     NwcLimits = 0x19,
     NwcSpendWindow = 0x1A,
+    TapReceiveEnabled = 0x1B,
 }
 
 #[derive(Debug, Clone, Encodable, Decodable, Eq, PartialEq, Hash, Ord, PartialOrd)]
@@ -557,6 +558,15 @@ impl_db_record!(
     key = ShowMsatsKey,
     value = (),
     db_prefix = DbKeyPrefix::ShowMsats,
+);
+
+#[derive(Debug, Encodable, Decodable)]
+pub(crate) struct TapReceiveEnabledKey;
+
+impl_db_record!(
+    key = TapReceiveEnabledKey,
+    value = (),
+    db_prefix = DbKeyPrefix::TapReceiveEnabled,
 );
 
 /// Tracks every walletv2 receive (peg-in) address we have handed out, which is

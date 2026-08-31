@@ -27,6 +27,15 @@ class EcashHceService : HostApduService() {
         @Volatile
         var ndefMessage: ByteArray? = null
 
+        /**
+         * Invoked when a reader has actually read the NDEF payload, i.e. a tap
+         * just happened. MainActivity forwards it to Dart so the receiver can
+         * start scanning for the sender's advertisement. Fires once per read, so
+         * the Dart side must be idempotent.
+         */
+        @Volatile
+        var onTagRead: (() -> Unit)? = null
+
         private val SW_OK = byteArrayOf(0x90.toByte(), 0x00.toByte())
         private val SW_NOT_FOUND = byteArrayOf(0x6A.toByte(), 0x82.toByte())
 
@@ -124,6 +133,8 @@ class EcashHceService : HostApduService() {
                 Selected.CC -> CC_CONTENT
                 Selected.NDEF -> {
                     val msg = ndefMessage ?: return reply("READ no NDEF message", SW_NOT_FOUND)
+                    // A reader is pulling the rendezvous: the tap is happening now.
+                    if (offset >= 2) onTagRead?.invoke()
                     // The NDEF file is NLEN (2 bytes, big-endian) followed by the message.
                     val nlen = msg.size
                     byteArrayOf(((nlen ushr 8) and 0xFF).toByte(), (nlen and 0xFF).toByte()) + msg
