@@ -128,12 +128,20 @@ When modifying the Rust API:
 
 ### Fedimint Integration
 
-The app uses Fedimint SDK v0.12.0 with these modules:
+The app uses the Fedimint SDK with these modules:
 - **fedimint-mint-client** - Ecash mint operations
 - **fedimint-ln-client** - Lightning v1 (legacy)
 - **fedimint-lnv2-client** - Lightning v2 (preferred for new gateways)
 - **fedimint-wallet-client** - On-chain Bitcoin operations
+- **fedimint-walletv2-client** - On-chain Bitcoin, v2
 - **fedimint-meta-client** - Federation metadata
+
+The fedimint crates are currently pinned to a git rev rather than a crates.io
+release, because the app depends on the walletv2 peg-in progress API added in
+[fedimint#9093](https://github.com/fedimint/fedimint/pull/9093). They all move
+together — the crates only interoperate at a matching version — so bumping one
+means bumping the `rev` on all of them in `rust/ecashapp/Cargo.toml`. Switch
+back to version requirements once that PR lands in a published release.
 
 Key concepts:
 - **Federation:** A mint (set of guardians) users join via invite codes

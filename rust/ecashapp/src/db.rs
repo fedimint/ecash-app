@@ -568,9 +568,15 @@ impl_db_record!(
 ///
 /// The value is the deposited amount in sats once the federation has recorded
 /// the deposit, or `None` while the address is still unfunded. A `None` entry
-/// also tells the startup rescan to re-spawn the esplora poller that surfaces
-/// the mempool/awaiting-confirmation UI; entries are never deleted, so funded
-/// addresses keep showing in the list.
+/// also tells the startup rescan to re-spawn the deposit poller that surfaces
+/// the mempool/awaiting-confirmation UI, and a `Some` one tells that poller it
+/// has nothing left to report; entries are never deleted, so funded addresses
+/// keep showing in the list.
+///
+/// One row per address, so it stays lossy for an address paid more than once:
+/// it answers "has this address been funded, and for how much", which is what
+/// the address list asks. Per-deposit progress is keyed by outpoint and lives in
+/// the deposit events instead.
 ///
 /// `federation_id` is encoded first so `WalletV2PendingDepositFederationPrefix`
 /// is a valid key prefix for per-federation lookups.

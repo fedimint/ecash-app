@@ -6,7 +6,7 @@ use std::{
 };
 
 use anyhow::anyhow;
-use fedimint_client::{ClientHandleArc, OperationId};
+use fedimint_client::{ClientHandleArc, ClientModuleInstance, OperationId};
 use fedimint_core::{
     config::FederationId,
     db::{Database, IDatabaseTransactionOpsCoreTyped},
@@ -21,13 +21,16 @@ use fedimint_wallet_client::{
 };
 use fedimint_walletv2_client::{
     events::ReceivePaymentEvent as V2ReceivePaymentEvent, FinalReceiveOperationState,
-    FinalSendOperationState, WalletClientModule as WalletV2Module,
+    FinalSendOperationState, ReceiveProgress, WalletClientModule as WalletV2Module,
     WalletOperationMeta as WalletV2OperationMeta,
 };
 use futures_util::StreamExt;
-use tokio::sync::{
-    mpsc::{UnboundedReceiver, UnboundedSender},
-    RwLock,
+use tokio::{
+    sync::{
+        mpsc::{UnboundedReceiver, UnboundedSender},
+        RwLock,
+    },
+    time::sleep,
 };
 
 use crate::{
@@ -49,6 +52,14 @@ use crate::{
 /// overshooting this window takes hundreds of payments in one session.
 const V2_DEPOSIT_LOG_SCAN_LIMIT: u64 = 1_000;
 
+/// How often the walletv2 deposit poller asks the guardians for their view of
+/// pending peg-ins.
+///
+/// Each guardian refreshes that view on its own bitcoin backend's cadence and
+/// serves it from a cached value, so a request is cheap — cheap enough to poll
+/// well inside a block interval and have a new confirmation show up promptly.
+const V2_DEPOSIT_POLL_INTERVAL: Duration = Duration::from_secs(10);
+
 #[allow(clippy::type_complexity)]
 #[derive(Clone)]
 pub(crate) struct WalletHandler {
@@ -63,9 +74,9 @@ pub(crate) struct WalletHandler {
     ///
     /// walletv2 hands out the same address until it receives a deposit, and the
     /// receive screen allocates on every open, so without this each visit
-    /// stacked another poller onto the same address — every one of them hitting
-    /// the block explorer independently and indefinitely. The startup rehydrate
-    /// can overlap with a live poller for the same reason.
+    /// stacked another poller onto the same address — every one of them querying
+    /// the guardians and publishing the same deposit events. The startup
+    /// rehydrate can overlap with a live poller for the same reason.
     watched_v2_addresses: Arc<RwLock<BTreeSet<(FederationId, String)>>>,
     /// App-wide task group, for the dispatchers that outlive any one
     /// federation.
@@ -195,12 +206,11 @@ impl WalletHandler {
                 } => {
                     track_pegin_confirmation(
                         federation_id,
-                        wallet_module.get_network(),
+                        &wallet_module,
                         btc_deposited,
                         btc_out_point.txid,
                         btc_out_point.to_string(),
                         event_bus.clone(),
-                        || async { Ok(wallet_module.api.fetch_consensus_block_count().await?) },
                     )
                     .await?;
 
@@ -263,7 +273,7 @@ impl WalletHandler {
     ///   handed-out address, so we scan tweak indices and re-subscribe to the
     ///   v1 deposit stream for unclaimed ones.
     /// - **walletv2**: there is no client operation to rediscover, so we
-    ///   re-spawn the esplora poller from our own persisted addresses (see
+    ///   re-spawn the deposit poller from our own persisted addresses (see
     ///   [`Self::resume_pending_v2_deposits`]).
     pub(crate) fn monitor_all_pending_deposits(
         &self,
@@ -350,11 +360,10 @@ impl WalletHandler {
         client: ClientHandleArc,
     ) -> anyhow::Result<Option<u64>> {
         // walletv2 has no tweak index: addresses are derived locally and the
-        // module's background scanner detects and claims confirmed deposits. The
-        // federation has no mempool visibility for walletv2, so we poll esplora
-        // ourselves to surface mempool/confirmation progress, and the event-log
-        // listener (see `spawn_v2_deposit_event_listener`) surfaces confirmed and
-        // claimed. There is no tweak index to return.
+        // module's background scanner detects and claims confirmed deposits. We
+        // poll the guardians for mempool/confirmation progress on the way there,
+        // and the event-log listener (see `spawn_v2_deposit_event_listener`)
+        // surfaces confirmed and claimed. There is no tweak index to return.
         if client.get_first_module::<WalletV2Module>().is_ok() {
             info_to_flutter(format!(
                 "monitor_deposit_address: walletv2 detected for fed {federation_id}, spawning deposit poller for address {address}"
@@ -592,14 +601,13 @@ impl WalletHandler {
         }
     }
 
-    /// Spawns a background task that watches the chain for a deposit to a
-    /// walletv2 receive `address`, surfacing mempool and confirmation progress.
-    /// Starts watching `address` for a deposit, unless something already is.
+    /// Starts watching a walletv2 receive `address` for deposits, unless
+    /// something already is.
     ///
-    /// Polling a walletv2 address indefinitely is correct — the federation has
-    /// no mempool visibility, so this is the only way to surface progress, and
-    /// there is no point at which it becomes safe to stop. What is not correct
-    /// is doing it more than once per address, which is what this guards.
+    /// Running two watchers for one address would double every published
+    /// event, and both the receive screen (which allocates on every open) and
+    /// the startup rehydrate can ask for the same address, so the guard is what
+    /// this exists for.
     async fn spawn_v2_deposit_poller(
         &self,
         tasks: &TaskGroup,
@@ -618,9 +626,10 @@ impl WalletHandler {
 
         let event_bus = get_event_bus();
         let watched = self.watched_v2_addresses.clone();
+        let db = self.db.clone();
         tasks.spawn_cancellable("walletv2 deposit poller", async move {
             if let Err(e) =
-                Self::watch_v2_pegin_address(federation_id, address.clone(), client, event_bus)
+                Self::watch_v2_pegin_address(federation_id, address.clone(), client, event_bus, db)
                     .await
             {
                 info_to_flutter(format!("watch_v2_pegin_address({address}) failed: {e:?}")).await;
@@ -631,65 +640,214 @@ impl WalletHandler {
         });
     }
 
-    /// Polls esplora for an incoming deposit to a walletv2 receive address and
-    /// then tracks it through consensus confirmation.
+    /// Follows every deposit to a walletv2 receive `address` through the
+    /// guardians' own view of pending peg-ins, publishing `Mempool` and
+    /// `AwaitingConfs` for each one.
     ///
-    /// walletv2 deposits are claimed by the module's background scanner once
-    /// confirmed, and the confirmed/claimed states are surfaced by the event-log
-    /// listener (see `spawn_v2_deposit_event_listener`); this only drives the
-    /// mempool and awaiting-confirmation states, which the federation cannot
-    /// report itself.
+    /// The guardians report the outputs they have seen paying the module's
+    /// receive filter but have not yet acted on — mined ones always, and unmined
+    /// ones from any guardian whose bitcoin backend can enumerate a mempool — so
+    /// no block explorer is involved and the address never leaves the app.
+    ///
+    /// Each deposit is keyed by its real `txid:vout`, so two payments to the
+    /// same address are two independent rows in the UI. That is only possible
+    /// because the federation reports outpoints; the esplora polling this
+    /// replaced could only ever describe an address as a whole.
+    ///
+    /// `Confirmed` and `Claimed` come from the event-log listener (see
+    /// [`Self::spawn_v2_deposit_event_listener`]), so this stops once every
+    /// deposit it has seen is deep enough for the federation to claim it.
     async fn watch_v2_pegin_address(
         federation_id: FederationId,
         address: String,
         client: ClientHandleArc,
         event_bus: EventBus<MultimintEvent>,
+        db: Database,
     ) -> anyhow::Result<()> {
         let wallet_module = client.get_first_module::<WalletV2Module>()?;
         let network = wallet_module.get_network();
-        let api_url = mempool_api_url(network);
-        let http = crate::net::http_client();
+        let parsed = bitcoin::Address::from_str(&address)?.require_network(network)?;
 
         info_to_flutter(format!(
-            "watch_v2_pegin_address: polling {api_url} for deposit to {address} (network {network})"
+            "watch_v2_pegin_address: polling the guardians of fed {federation_id} for deposits to {address} (network {network})"
         ))
         .await;
 
-        let (txid, value) = fedimint_core::util::retry(
-            "discover walletv2 deposit",
-            fedimint_core::util::backoff_util::background_backoff(),
-            || async { discover_deposit(&http, &api_url, &address).await },
-        )
-        .await
-        .expect("Never gives up");
+        // The last state published per outpoint, so a poll that changes nothing
+        // publishes nothing. The event bus keeps a bounded history that repeated
+        // identical `AwaitingConfs` events would churn straight through, and
+        // every publish costs the dashboard a rebuild.
+        let mut published: BTreeMap<bitcoin::OutPoint, ReceiveProgress> = BTreeMap::new();
+        // Every deposit this watcher has ever been told about. Unlike
+        // `published` it only grows, so a deposit that drops back out of the
+        // federation's view cannot make the loop forget it had work to do.
+        let mut seen: BTreeSet<bitcoin::OutPoint> = BTreeSet::new();
 
-        info_to_flutter(format!(
-            "watch_v2_pegin_address: discovered deposit txid={txid} value={} sats to {address}, tracking confirmation",
-            value.to_sat()
-        ))
-        .await;
+        loop {
+            // The address only resolves once the module's background scanner has
+            // derived its index, which right after a restore it may not have done
+            // yet, so treat a failure as transient rather than giving up on the
+            // address.
+            let deposits = match wallet_module.address_receive_progress(&parsed).await {
+                Ok(deposits) => deposits,
+                Err(e) => {
+                    info_to_flutter(format!(
+                        "watch_v2_pegin_address({address}): progress lookup failed, retrying: {e:#}"
+                    ))
+                    .await;
+                    sleep(V2_DEPOSIT_POLL_INTERVAL).await;
+                    continue;
+                }
+            };
 
-        track_pegin_confirmation(
-            federation_id,
-            network,
-            value,
-            txid,
-            address,
-            event_bus,
-            || async { Ok(wallet_module.block_count().await?) },
-        )
-        .await?;
+            for (outpoint, progress) in &deposits {
+                seen.insert(*outpoint);
 
-        Ok(())
+                if published.get(outpoint).is_some_and(|last| last == progress) {
+                    continue;
+                }
+
+                Self::publish_v2_deposit_progress(federation_id, *outpoint, progress, &event_bus)
+                    .await;
+
+                published.insert(*outpoint, progress.clone());
+            }
+
+            // A deposit can leave the federation's view without being claimed: a
+            // reorg or a mempool eviction takes it back to unseen. The UI has no
+            // state for a deposit that un-happens, so leave the row standing —
+            // the same way an esplora-discovered deposit was never withdrawn —
+            // and only drop our record of what it last showed, so that a deposit
+            // which comes back is published afresh rather than deduped away.
+            let vanished: Vec<bitcoin::OutPoint> = published
+                .keys()
+                .filter(|outpoint| !deposits.iter().any(|(seen, _)| seen == *outpoint))
+                .copied()
+                .collect();
+
+            for outpoint in vanished {
+                published.remove(&outpoint);
+
+                info_to_flutter(format!(
+                    "watch_v2_pegin_address({address}): deposit {outpoint} is no longer reported by the federation"
+                ))
+                .await;
+            }
+
+            // Stop once nothing is still gaining confirmations. A deposit
+            // sitting at the depth the federation claims at belongs to the
+            // event-log listener from here on, and so does one that has already
+            // dropped out of the pending window — which is what the funded check
+            // catches, including on a federation too old to serve the pending
+            // view at all.
+            let advancing = deposits.iter().any(|(_, progress)| match progress {
+                ReceiveProgress::Mempool { .. } => true,
+                ReceiveProgress::Confirming {
+                    confirmations,
+                    required,
+                    ..
+                } => confirmations < required,
+                ReceiveProgress::Claimed => false,
+            });
+
+            if !advancing
+                && (!seen.is_empty() || Self::v2_deposit_funded(&db, federation_id, &address).await)
+            {
+                info_to_flutter(format!(
+                    "watch_v2_pegin_address({address}): nothing left to report, handing off to the event-log listener"
+                ))
+                .await;
+                return Ok(());
+            }
+
+            sleep(V2_DEPOSIT_POLL_INTERVAL).await;
+        }
+    }
+
+    /// Publishes one walletv2 deposit's progress as the matching deposit event.
+    ///
+    /// [`ReceiveProgress::Claimed`] is unreachable here — the guardians' pending
+    /// view cannot report it, and the event-log listener owns that state — so it
+    /// is deliberately not published rather than mapped to a `Claimed` event
+    /// that would clear the row before the ecash exists.
+    async fn publish_v2_deposit_progress(
+        federation_id: FederationId,
+        outpoint: bitcoin::OutPoint,
+        progress: &ReceiveProgress,
+        event_bus: &EventBus<MultimintEvent>,
+    ) {
+        let label = outpoint.to_string();
+        let txid = Some(outpoint.txid.to_string());
+
+        let kind = match progress {
+            ReceiveProgress::Mempool { value } => {
+                info_to_flutter(format!(
+                    "walletv2 deposit {label} for fed {federation_id} is in the mempool ({} sats)",
+                    value.to_sat()
+                ))
+                .await;
+
+                DepositEventKind::Mempool(MempoolEvent {
+                    amount: Amount::from_sats(value.to_sat()).msats,
+                    outpoint: label,
+                    txid,
+                })
+            }
+            ReceiveProgress::Confirming {
+                value,
+                height,
+                confirmations,
+                required,
+            } => {
+                let needed = required.saturating_sub(*confirmations);
+
+                info_to_flutter(format!(
+                    "walletv2 deposit {label} for fed {federation_id} was mined at height {height} and has {confirmations}/{required} confirmations ({needed} needed)"
+                ))
+                .await;
+
+                DepositEventKind::AwaitingConfs(AwaitingConfsEvent {
+                    amount: Amount::from_sats(value.to_sat()).msats,
+                    outpoint: label,
+                    block_height: *height,
+                    needed,
+                    txid,
+                })
+            }
+            ReceiveProgress::Claimed => return,
+        };
+
+        event_bus
+            .publish(MultimintEvent::Deposit((federation_id, kind)))
+            .await;
+    }
+
+    /// Whether the federation has already recorded a deposit to `address`.
+    ///
+    /// That is the point at which the event-log listener takes over, so it is
+    /// also the point at which the poller has nothing left to report.
+    async fn v2_deposit_funded(db: &Database, federation_id: FederationId, address: &str) -> bool {
+        db.begin_transaction_nc()
+            .await
+            .get_value(&WalletV2PendingDepositKey {
+                federation_id,
+                address: address.to_string(),
+            })
+            .await
+            .flatten()
+            .is_some()
     }
 
     /// Watches the walletv2 event log for receive (peg-in) operations, surfacing
     /// `Confirmed` once the federation claims a confirmed deposit and `Claimed`
     /// once the claim finalizes. Mirrors `spawn_lnv2_event_listener`.
     ///
-    /// Deposits are identified by their receive address (the correlation key
-    /// also used by `watch_v2_pegin_address`), since the walletv2 event log
-    /// carries the address rather than the on-chain outpoint.
+    /// Deposits are keyed by their on-chain outpoint, matching the key
+    /// [`Self::watch_v2_pegin_address`] publishes, so the two halves of one
+    /// deposit's progress land on the same row and two payments to the same
+    /// address stay apart. The walletv2 event log only carries an outpoint from
+    /// a federation new enough to record one; without it the address is the best
+    /// key available, which collapses such a pair back into a single row.
     pub(crate) fn spawn_v2_deposit_event_listener(
         &self,
         tasks: &TaskGroup,
@@ -746,9 +904,15 @@ impl WalletHandler {
                     let amount_msats = Amount::from_sats(deposited_sats).msats;
                     let operation_id = receive_event.operation_id;
                     let txid = receive_event.outpoint.map(|op| op.txid.to_string());
+                    // Falling back to the address keeps a deposit the federation
+                    // reported without an outpoint on a row of its own rather
+                    // than dropping it; see this listener's doc comment.
+                    let label = receive_event
+                        .outpoint
+                        .map_or_else(|| address.clone(), |op| op.to_string());
 
                     info_to_flutter(format!(
-                        "spawn_v2_deposit_event_listener: ReceivePaymentEvent for fed {federation_id} address={address} amount={amount_msats} msats op={operation_id:?}, publishing Confirmed"
+                        "spawn_v2_deposit_event_listener: ReceivePaymentEvent for fed {federation_id} address={address} outpoint={label} amount={amount_msats} msats op={operation_id:?}, publishing Confirmed"
                     ))
                     .await;
 
@@ -765,7 +929,7 @@ impl WalletHandler {
                             federation_id,
                             DepositEventKind::Confirmed(ConfirmedEvent {
                                 amount: amount_msats,
-                                outpoint: address.clone(),
+                                outpoint: label.clone(),
                                 txid: txid.clone(),
                             }),
                         )))
@@ -819,7 +983,7 @@ impl WalletHandler {
                                 }
 
                                 info_to_flutter(format!(
-                                    "spawn_v2_deposit_event_listener: receive op {operation_id:?} succeeded for fed {federation_id} address={address}, publishing Claimed"
+                                    "spawn_v2_deposit_event_listener: receive op {operation_id:?} succeeded for fed {federation_id} outpoint={label}, publishing Claimed"
                                 ))
                                 .await;
                                 event_bus
@@ -827,7 +991,7 @@ impl WalletHandler {
                                         federation_id,
                                         DepositEventKind::Claimed(ClaimedEvent {
                                             amount: amount_msats,
-                                            outpoint: address,
+                                            outpoint: label,
                                             txid,
                                         }),
                                     )))
@@ -1182,77 +1346,26 @@ fn mempool_api_url(network: bitcoin::Network) -> String {
     }
 }
 
-/// Queries esplora for the first transaction paying `address` and returns its
-/// txid together with the total value sent to that address. Returns an error
-/// (intended to be retried) while no such transaction exists yet.
-async fn discover_deposit(
-    http: &reqwest::Client,
-    api_url: &str,
-    address: &str,
-) -> anyhow::Result<(bitcoin::Txid, bitcoin::Amount)> {
-    let txs: serde_json::Value = http
-        .get(format!("{}/address/{}/txs", api_url, address))
-        .send()
-        .await?
-        .error_for_status()?
-        .json()
-        .await?;
-
-    let txs = txs
-        .as_array()
-        .ok_or_else(|| anyhow::anyhow!("unexpected esplora response for {address}"))?;
-
-    for tx in txs {
-        let Some(txid) = tx.get("txid").and_then(|t| t.as_str()) else {
-            continue;
-        };
-        let Some(vouts) = tx.get("vout").and_then(|v| v.as_array()) else {
-            continue;
-        };
-
-        // Sum the value of every output in this tx that pays our address.
-        let sats: u64 = vouts
-            .iter()
-            .filter(|o| o.get("scriptpubkey_address").and_then(|a| a.as_str()) == Some(address))
-            .filter_map(|o| o.get("value").and_then(|v| v.as_u64()))
-            .sum();
-
-        if sats > 0 {
-            return Ok((
-                bitcoin::Txid::from_str(txid)?,
-                bitcoin::Amount::from_sat(sats),
-            ));
-        }
-    }
-
-    Err(anyhow::anyhow!("no deposit to {address} found yet"))
-}
-
-/// Tracks a peg-in deposit from mempool detection through consensus
+/// Tracks a walletv1 peg-in deposit from mempool detection through consensus
 /// confirmation, publishing `Mempool` and `AwaitingConfs` deposit events.
 ///
-/// This is shared by walletv1 and walletv2. The deposit's amount and on-chain
-/// txid are surfaced differently by each module (the v1 deposit stream vs.
-/// esplora polling for v2), and consensus block height is fetched differently
-/// as well, so the caller supplies a `consensus_block_count` fetcher.
+/// walletv1 has no federation-side view of an unclaimed deposit, so the only
+/// way to describe one before the federation records it is to ask a block
+/// explorer, at the cost of showing that explorer the address. walletv2 gets
+/// the same states from its guardians instead (see
+/// [`WalletHandler::watch_v2_pegin_address`]) and never comes through here.
 ///
-/// `outpoint_label` is the correlation key carried on every emitted deposit
-/// event so the UI can group the states of a single deposit together. v1 uses
-/// the full `txid:vout` string; v2 uses the receive address (the walletv2 event
-/// log identifies deposits by address, not outpoint).
-pub(crate) async fn track_pegin_confirmation<F, Fut>(
+/// `outpoint_label` is the `txid:vout` correlation key carried on every emitted
+/// deposit event, so the UI can group the states of a single deposit together.
+pub(crate) async fn track_pegin_confirmation(
     federation_id: FederationId,
-    network: bitcoin::Network,
+    wallet_module: &ClientModuleInstance<'_, WalletClientModule>,
     btc_deposited: bitcoin::Amount,
     txid: bitcoin::Txid,
     outpoint_label: String,
     event_bus: EventBus<MultimintEvent>,
-    consensus_block_count: F,
-) -> anyhow::Result<()>
-where
-    F: Fn() -> Fut,
-    Fut: std::future::Future<Output = anyhow::Result<u64>>,
-{
+) -> anyhow::Result<()> {
+    let network = wallet_module.get_network();
     let amount_msats = Amount::from_sats(btc_deposited.to_sat()).msats;
 
     info_to_flutter(format!(
@@ -1307,7 +1420,11 @@ where
         None,
     );
     fedimint_core::util::retry("consensus confirmation", every_10_secs, || async {
-        let consensus_height = consensus_block_count().await?.saturating_sub(1);
+        let consensus_height = wallet_module
+            .api
+            .fetch_consensus_block_count()
+            .await?
+            .saturating_sub(1);
 
         let needed = tx_height.saturating_sub(consensus_height);
 

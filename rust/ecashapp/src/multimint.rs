@@ -643,11 +643,13 @@ impl fmt::Display for ClientType {
 #[derive(Clone, Eq, PartialEq, Serialize, Debug)]
 pub struct MempoolEvent {
     pub amount: u64,
+    /// The `txid:vout` of the deposit, used by the UI to group every event
+    /// describing it onto one row.
+    ///
+    /// walletv2 falls back to the receive address for a deposit a federation
+    /// reported without an outpoint (see `spawn_v2_deposit_event_listener`), so
+    /// `txid` rather than this field is the source for display purposes.
     pub outpoint: String,
-    /// The on-chain transaction id. `outpoint` is a correlation key that, for
-    /// walletv2, is actually the receive address rather than `txid:vout`
-    /// (see `track_pegin_confirmation`), so this field is the only reliable
-    /// source of the txid for display purposes.
     pub txid: Option<String>,
 }
 

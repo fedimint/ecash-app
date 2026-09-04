@@ -22085,6 +22085,20 @@ class MultimintImpl extends RustOpaque implements Multimint {
     recover: recover,
   );
 
+  /// Leaves a federation.
+  ///
+  /// Returns as soon as the federation is gone from the app's point of view:
+  /// its config row is deleted, its client is out of the map, and its task
+  /// group has been detached, so nothing can route to it or spawn onto it any
+  /// more. The teardown that actually takes time — cancelling the
+  /// federation's background tasks, waiting for them to release their client
+  /// references, and shutting the client down so its own executor stops —
+  /// runs on a detached task afterwards. Leaving should never make the user
+  /// watch a spinner.
+  ///
+  /// Every other persisted row is deliberately kept. The client database, the
+  /// Lightning Address registration, the NWC pairing and the cached metadata
+  /// are all reused if the user joins this federation again.
   Future<void> leaveFederation({required FederationId federationId}) =>
       RustLib.instance.api.crateMultimintMultimintLeaveFederation(
         that: this,

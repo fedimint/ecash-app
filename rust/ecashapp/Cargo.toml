@@ -13,28 +13,34 @@ async-stream = "0.3.6"
 async-trait = "0.1.88"
 bitcoin = { version = "0.32.5", features = ["serde"] }
 bitcoin-payment-instructions = { version = "0.4.0", features = [ "http" ]}
-fedimint-api-client = "0.12.0"
-fedimint-bip39 = "0.12.0"
-fedimint-core = "0.12.0"
-fedimint-fountain = "0.12.0"
-fedimint-client = "0.12.0"
-fedimint-eventlog = "0.12.0"
-fedimint-connectors = "0.12.0"
-fedimint-derive-secret = "0.12.0"
-fedimint-rocksdb = "0.12.0"
-fedimint-ln-client = "0.12.0"
-fedimint-lnv2-client = "0.12.0"
-fedimint-lnv2-common = "0.12.0"
-fedimint-ln-common = "0.12.0"
-fedimint-meta-client = "0.12.0"
-fedimint-mint-client = "0.12.0"
-fedimint-mint-common = "0.12.0"
-fedimint-mintv2-client = "0.12.0"
-fedimint-mintv2-common = "0.12.0"
-fedimint-wallet-client = "0.12.0"
-fedimint-wallet-common = "0.12.0"
-fedimint-walletv2-client = "0.12.0"
-fedimint-walletv2-common = "0.12.0"
+# Fedimint is pinned to the branch of fedimint#9093, which adds the walletv2
+# `pending_outputs` API the guardians use to report mempool and confirmation
+# progress for peg-ins. Until that PR lands (and 0.13 is published) these come
+# from the PR branch rather than crates.io; the whole set moves together
+# because the fedimint crates only interoperate at a matching version.
+# Branch: m1sterc001guy/fedimint@walletv2_confirmations
+fedimint-api-client = { git = "https://github.com/m1sterc001guy/fedimint", rev = "9e159fd31b59b8d1b7dd844d753fe935ceb18114" }
+fedimint-bip39 = { git = "https://github.com/m1sterc001guy/fedimint", rev = "9e159fd31b59b8d1b7dd844d753fe935ceb18114" }
+fedimint-core = { git = "https://github.com/m1sterc001guy/fedimint", rev = "9e159fd31b59b8d1b7dd844d753fe935ceb18114" }
+fedimint-fountain = { git = "https://github.com/m1sterc001guy/fedimint", rev = "9e159fd31b59b8d1b7dd844d753fe935ceb18114" }
+fedimint-client = { git = "https://github.com/m1sterc001guy/fedimint", rev = "9e159fd31b59b8d1b7dd844d753fe935ceb18114" }
+fedimint-eventlog = { git = "https://github.com/m1sterc001guy/fedimint", rev = "9e159fd31b59b8d1b7dd844d753fe935ceb18114" }
+fedimint-connectors = { git = "https://github.com/m1sterc001guy/fedimint", rev = "9e159fd31b59b8d1b7dd844d753fe935ceb18114" }
+fedimint-derive-secret = { git = "https://github.com/m1sterc001guy/fedimint", rev = "9e159fd31b59b8d1b7dd844d753fe935ceb18114" }
+fedimint-rocksdb = { git = "https://github.com/m1sterc001guy/fedimint", rev = "9e159fd31b59b8d1b7dd844d753fe935ceb18114" }
+fedimint-ln-client = { git = "https://github.com/m1sterc001guy/fedimint", rev = "9e159fd31b59b8d1b7dd844d753fe935ceb18114" }
+fedimint-lnv2-client = { git = "https://github.com/m1sterc001guy/fedimint", rev = "9e159fd31b59b8d1b7dd844d753fe935ceb18114" }
+fedimint-lnv2-common = { git = "https://github.com/m1sterc001guy/fedimint", rev = "9e159fd31b59b8d1b7dd844d753fe935ceb18114" }
+fedimint-ln-common = { git = "https://github.com/m1sterc001guy/fedimint", rev = "9e159fd31b59b8d1b7dd844d753fe935ceb18114" }
+fedimint-meta-client = { git = "https://github.com/m1sterc001guy/fedimint", rev = "9e159fd31b59b8d1b7dd844d753fe935ceb18114" }
+fedimint-mint-client = { git = "https://github.com/m1sterc001guy/fedimint", rev = "9e159fd31b59b8d1b7dd844d753fe935ceb18114" }
+fedimint-mint-common = { git = "https://github.com/m1sterc001guy/fedimint", rev = "9e159fd31b59b8d1b7dd844d753fe935ceb18114" }
+fedimint-mintv2-client = { git = "https://github.com/m1sterc001guy/fedimint", rev = "9e159fd31b59b8d1b7dd844d753fe935ceb18114" }
+fedimint-mintv2-common = { git = "https://github.com/m1sterc001guy/fedimint", rev = "9e159fd31b59b8d1b7dd844d753fe935ceb18114" }
+fedimint-wallet-client = { git = "https://github.com/m1sterc001guy/fedimint", rev = "9e159fd31b59b8d1b7dd844d753fe935ceb18114" }
+fedimint-wallet-common = { git = "https://github.com/m1sterc001guy/fedimint", rev = "9e159fd31b59b8d1b7dd844d753fe935ceb18114" }
+fedimint-walletv2-client = { git = "https://github.com/m1sterc001guy/fedimint", rev = "9e159fd31b59b8d1b7dd844d753fe935ceb18114" }
+fedimint-walletv2-common = { git = "https://github.com/m1sterc001guy/fedimint", rev = "9e159fd31b59b8d1b7dd844d753fe935ceb18114" }
 hex = "0.4"
 flutter_rust_bridge = "=2.9.0"
 futures-timer = "3.0.3"
