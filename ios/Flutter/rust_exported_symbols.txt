@@ -1,0 +1,21 @@
+# Symbols that must stay in the Runner executable's dynamic export trie.
+#
+# lib/main.dart loads Rust with ExternalLibrary.process(), i.e. dlsym against
+# the running process, because libecashapp.a is linked statically rather than
+# opened as a dylib. dlsym can only see symbols in the export trie.
+#
+# In Debug the Runner target's product is Runner.debug.dylib, and a dylib
+# exports every global by default, so this never came up. In Release the product
+# is a plain executable, which exports nothing by default and therefore also
+# dead-strips the whole Rust graph — nothing in Swift/ObjC/Dart-AOT references
+# it, and -force_load only guarantees the archive members are loaded, not kept.
+# Listing them here makes them both exported and dead-strip roots.
+#
+# Keep in sync with the symbols flutter_rust_bridge looks up:
+#   _frbgen_ecashapp_*  the generated wire functions (lib/frb_generated.io.dart)
+#   _frb_*              the runtime helpers the flutter_rust_bridge package
+#                       resolves itself (frb_get_rust_content_hash,
+#                       frb_init_frb_dart_api_dl, frb_pde_ffi_dispatcher_*, ...)
+# _frb_* does not match _frbgen_*, so both globs are required.
+_frb_*
+_frbgen_ecashapp_*

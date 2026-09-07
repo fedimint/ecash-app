@@ -39,36 +39,52 @@ void main() async {
     FlutterForegroundTask.initCommunicationPort();
   }
 
-  await AppLogger.init();
-
-  // Initialize deep link handler early to catch cold start links
-  await DeepLinkHandler().init();
-
-  // On iOS the Rust code is statically linked into the Runner binary, so
-  // there's no separate dylib to dlopen — load symbols from the current process.
-  if (Platform.isIOS) {
-    await RustLib.init(
-      externalLibrary: ExternalLibrary.process(iKnowHowToUseIt: true),
-    );
-  } else {
-    await RustLib.init();
+  // Best effort, and deliberately outside the guard below: AppLogger degrades
+  // to console-only when this fails, and losing the log must not be the reason
+  // the app does not start.
+  try {
+    await AppLogger.init();
+  } catch (e, stack) {
+    debugPrint("Logger initialization failed: $e\n$stack");
   }
-  final packageInfo = await PackageInfo.fromPlatform();
-  AppLogger.instance.info(
-    "Starting ecashapp. Version ${packageInfo.version} Build Number: ${packageInfo.buildNumber}",
-  );
-  final Directory dir;
-  if (Platform.isLinux) {
-    final appName = kDebugMode ? 'ecash-app-dev' : 'ecash-app';
-    final homeDir = Platform.environment['HOME']!;
-    dir = Directory('$homeDir/.local/share/$appName');
-    if (!await dir.exists()) {
-      await dir.create(recursive: true);
+
+  // Everything from here to runApp happens before the first frame. An uncaught
+  // exception in it leaves the FlutterViewController's own view on screen — a
+  // blank white screen, with no crash and therefore no crash report. Draw the
+  // failure instead of nothing.
+  try {
+    // Initialize deep link handler early to catch cold start links
+    await DeepLinkHandler().init();
+
+    // On iOS the Rust code is statically linked into the Runner binary, so
+    // there's no separate dylib to dlopen — load symbols from the current process.
+    if (Platform.isIOS) {
+      await RustLib.init(
+        externalLibrary: ExternalLibrary.process(iKnowHowToUseIt: true),
+      );
+    } else {
+      await RustLib.init();
     }
-  } else {
-    dir = await getApplicationDocumentsDirectory();
+    final packageInfo = await PackageInfo.fromPlatform();
+    AppLogger.instance.info(
+      "Starting ecashapp. Version ${packageInfo.version} Build Number: ${packageInfo.buildNumber}",
+    );
+    final Directory dir;
+    if (Platform.isLinux) {
+      final appName = kDebugMode ? 'ecash-app-dev' : 'ecash-app';
+      final homeDir = Platform.environment['HOME']!;
+      dir = Directory('$homeDir/.local/share/$appName');
+      if (!await dir.exists()) {
+        await dir.create(recursive: true);
+      }
+    } else {
+      dir = await getApplicationDocumentsDirectory();
+    }
+    runApp(ecashapp(dir: dir));
+  } catch (e, stack) {
+    AppLogger.instance.error("Startup failed before runApp: $e\n$stack");
+    runApp(StartupFailureApp(error: e, stackTrace: stack));
   }
-  runApp(ecashapp(dir: dir));
 }
 
 class ecashapp extends StatelessWidget {
@@ -89,6 +105,60 @@ class ecashapp extends StatelessWidget {
       ],
       supportedLocales: const [Locale('en'), Locale('es')],
       home: Splash(dir: dir),
+    );
+  }
+}
+
+/// Shown when startup throws before `runApp`. Deliberately dependency-free —
+/// no localization, no Rust, no plugins — because anything it touched could be
+/// the thing that just failed. The error is selectable so it can be copied out
+/// of a TestFlight build, where there is no console.
+class StartupFailureApp extends StatelessWidget {
+  final Object error;
+  final StackTrace stackTrace;
+
+  const StartupFailureApp({
+    super.key,
+    required this.error,
+    required this.stackTrace,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return MaterialApp(
+      title: "ecashapp",
+      debugShowCheckedModeBanner: false,
+      theme: cypherpunkNinjaTheme,
+      home: Scaffold(
+        body: SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.all(24),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Icon(Icons.error_outline, color: Colors.redAccent),
+                const SizedBox(height: 16),
+                const Text(
+                  "Ecash App failed to start",
+                  style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                ),
+                const SizedBox(height: 16),
+                Expanded(
+                  child: SingleChildScrollView(
+                    child: SelectableText(
+                      "$error\n\n$stackTrace",
+                      style: const TextStyle(
+                        fontFamily: 'monospace',
+                        fontSize: 12,
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
     );
   }
 }
