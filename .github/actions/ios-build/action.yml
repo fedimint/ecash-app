@@ -337,15 +337,12 @@ runs:
           --export-options-plist "$RUNNER_TEMP/ExportOptions.plist"
         ls -lh build/ios/ipa/
 
-    # The Release configuration links Runner as a plain executable, which exports
-    # nothing by default and therefore also dead-strips the Rust graph, since
-    # nothing in Swift/ObjC/Dart-AOT references it and -force_load only keeps the
-    # archive members loaded, not alive. Debug never shows this: there the product
-    # is Runner.debug.dylib, and a dylib exports every global. That difference
-    # shipped v0.11.0-rc.2 to TestFlight with zero frbgen_* exports, where
-    # RustLib.init()'s first dlsym threw before runApp and the app showed a white
-    # screen with no crash report. CI links the app but never launches it, so
-    # assert on the export trie instead. See ios/Flutter/rust_exported_symbols.txt.
+    # Release links Runner as an executable, which exports nothing by default and
+    # so also dead-strips the Rust graph; Debug's dylib hides this because it
+    # exports every global. That shipped v0.11.0-rc.2 with zero frbgen_* exports,
+    # where RustLib.init()'s first dlsym threw before runApp and the app showed a
+    # white screen with no crash report. CI links the app but never launches it,
+    # so assert on the export trie. See ios/Flutter/rust_exported_symbols.txt.
     - name: Verify Rust FFI symbols are exported
       if: inputs.mode == 'release'
       shell: bash
@@ -375,17 +372,17 @@ runs:
           exit 1
         fi
 
-        # The first symbol RustLib.init() looks up, and part of the flutter_rust_bridge
-        # runtime rather than the generated code, so it needs its own glob.
+        # The first symbol RustLib.init() looks up, and part of the FRB runtime
+        # rather than the generated code, so it needs its own glob.
         if ! grep -q ' _frb_get_rust_content_hash$' <<< "$exports"; then
           echo "::error::_frb_get_rust_content_hash is not exported; RustLib.init() throws at launch."
           exit 1
         fi
 
-        # netdev calls nw_path_is_ultra_constrained unconditionally and Apple only
-        # ships it in the iOS 26 SDK, so rust/ecashapp/src/ios_compat.rs defines it
-        # to keep the reference resolving locally. If it appears as an import, the
-        # shim lost the link and dyld aborts at launch below iOS 26.
+        # netdev calls nw_path_is_ultra_constrained unconditionally and Apple ships
+        # it only in the iOS 26 SDK, so rust/ecashapp/src/ios_compat.rs defines it.
+        # If it appears as an import the shim lost the link and dyld aborts at
+        # launch below iOS 26.
         if nm -u "$BIN" | grep -q nw_path_is_ultra_constrained; then
           echo "::error::nw_path_is_ultra_constrained is an undefined import; the ios_compat.rs shim lost the link and the app will not launch below iOS 26."
           exit 1

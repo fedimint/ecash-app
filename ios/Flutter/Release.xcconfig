@@ -4,15 +4,13 @@
 
 RUST_PROFILE = release
 
-// Release and Profile link the Runner target into a plain executable, unlike
-// Debug which produces Runner.debug.dylib. An executable exports nothing by
-// default, so without this list the Rust FFI entry points are invisible to the
-// dlsym in ExternalLibrary.process() (lib/main.dart) *and* get dead-stripped,
-// because nothing in Swift/ObjC/Dart-AOT references them. That shipped a
-// TestFlight build whose Runner was 4.7 MB with zero frbgen_* exports and a
-// white screen on launch. Set here rather than in Rust.xcconfig so it never
-// applies to Debug, where restricting exports would hide the debug-dylib
-// trampolines the Runner stub links against.
+// Release and Profile link Runner as a plain executable, unlike Debug's
+// Runner.debug.dylib. An executable exports nothing by default, so without this
+// list the Rust FFI entry points are both invisible to the dlsym in
+// ExternalLibrary.process() (lib/main.dart) and dead-stripped — that shipped a
+// 4.7 MB Runner with zero frbgen_* exports and a white screen. Set here rather
+// than Rust.xcconfig so it never applies to Debug, where restricting exports
+// would hide the debug-dylib trampolines the Runner stub links against.
 EXPORTED_SYMBOLS_FILE = $(SRCROOT)/Flutter/rust_exported_symbols.txt
 
 // Same signing hook as Debug.xcconfig — see the comment there. Without it,

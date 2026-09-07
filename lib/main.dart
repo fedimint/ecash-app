@@ -39,19 +39,17 @@ void main() async {
     FlutterForegroundTask.initCommunicationPort();
   }
 
-  // Best effort, and deliberately outside the guard below: AppLogger degrades
-  // to console-only when this fails, and losing the log must not be the reason
-  // the app does not start.
+  // Best effort and outside the guard below: AppLogger degrades to console-only
+  // when this fails, and losing the log must not stop the app starting.
   try {
     await AppLogger.init();
   } catch (e, stack) {
     debugPrint("Logger initialization failed: $e\n$stack");
   }
 
-  // Everything from here to runApp happens before the first frame. An uncaught
-  // exception in it leaves the FlutterViewController's own view on screen — a
-  // blank white screen, with no crash and therefore no crash report. Draw the
-  // failure instead of nothing.
+  // Everything up to runApp runs before the first frame, so an uncaught
+  // exception there leaves the FlutterViewController's white view on screen
+  // with no crash report. Draw the failure instead.
   try {
     // Initialize deep link handler early to catch cold start links
     await DeepLinkHandler().init();
@@ -82,8 +80,15 @@ void main() async {
     }
     runApp(ecashapp(dir: dir));
   } catch (e, stack) {
-    AppLogger.instance.error("Startup failed before runApp: $e\n$stack");
+    // Render before logging: AppLogger._log writes synchronously and unguarded,
+    // so an unwritable log file would throw here and leave exactly the blank
+    // screen this fallback exists to replace.
     runApp(StartupFailureApp(error: e, stackTrace: stack));
+    try {
+      AppLogger.instance.error("Startup failed before runApp: $e\n$stack");
+    } catch (_) {
+      debugPrint("Startup failed before runApp: $e\n$stack");
+    }
   }
 }
 
@@ -109,10 +114,9 @@ class ecashapp extends StatelessWidget {
   }
 }
 
-/// Shown when startup throws before `runApp`. Deliberately dependency-free —
-/// no localization, no Rust, no plugins — because anything it touched could be
-/// the thing that just failed. The error is selectable so it can be copied out
-/// of a TestFlight build, where there is no console.
+/// Shown when startup throws before `runApp`. Dependency-free — no
+/// localization, Rust or plugins — since anything it touched could be what just
+/// failed. Selectable so the error can be copied out of a TestFlight build.
 class StartupFailureApp extends StatelessWidget {
   final Object error;
   final StackTrace stackTrace;
@@ -138,8 +142,10 @@ class StartupFailureApp extends StatelessWidget {
               children: [
                 const Icon(Icons.error_outline, color: Colors.redAccent),
                 const SizedBox(height: 16),
+                // Intentionally English-only: this screen must not depend on
+                // localization, which may be part of what failed.
                 const Text(
-                  "Ecash App failed to start",
+                  "Ecash App failed to start", // i18n-ignore
                   style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
                 ),
                 const SizedBox(height: 16),
