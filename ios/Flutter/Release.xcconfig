@@ -13,6 +13,19 @@ RUST_PROFILE = release
 // would hide the debug-dylib trampolines the Runner stub links against.
 EXPORTED_SYMBOLS_FILE = $(SRCROOT)/Flutter/rust_exported_symbols.txt
 
+// Exporting the symbols is not enough on its own: an archive is an install
+// build, so DEPLOYMENT_POSTPROCESSING turns on and STRIP_INSTALLED_PRODUCT
+// (YES by default) runs strip over Runner afterwards. The default STRIP_STYLE
+// of "all" takes ordinary global symbols back out of the export trie, keeping
+// only weak definitions — which fits v0.11.0-rc.2 shipping with exactly the 200
+// rocksdb weak-defs and nothing else. `flutter build ios --release` is a plain
+// build rather than an install and never strips, so it cannot reproduce this:
+// the tree that linked to a 46 MB binary with 75 exports locally shipped
+// v0.11.0-rc.3 as a 25 MB .ipa binary with none. "non-global" is strip -x, which
+// drops local and debug symbols but leaves the trie intact. dSYMs are written
+// before the strip, so crash symbolication is unaffected.
+STRIP_STYLE = non-global
+
 // Same signing hook as Debug.xcconfig — see the comment there. Without it,
 // Release and Profile have no DEVELOPMENT_TEAM and cannot sign at all, so
 // `flutter run --release` has never been runnable on a device. CI writes this
