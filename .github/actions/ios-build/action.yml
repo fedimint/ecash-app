@@ -314,8 +314,14 @@ runs:
           </dict>
           <key>uploadSymbols</key>
           <true/>
+          <!-- False because the export's strip pass is the second place the
+               Rust FFI exports can be lost, after STRIP_INSTALLED_PRODUCT on the
+               archive itself (see STRIP_STYLE in ios/Flutter/Release.xcconfig).
+               It costs some upload size. The verify step below reports the
+               archive and .ipa export counts separately, so if the archive is
+               the only stage that ever loses them this can go back to true. -->
           <key>stripSwiftSymbols</key>
-          <true/>
+          <false/>
           <key>destination</key>
           <string>export</string>
         </dict>
@@ -347,47 +353,64 @@ runs:
       if: inputs.mode == 'release'
       shell: bash
       run: |
+        # Records failures instead of exiting on the first one, so a bad build
+        # names every stage that lost the symbols rather than just the earliest.
+        failed=0
+
+        check() {
+          local label="$1" bin="$2" exports generated
+
+          if [ -z "$bin" ] || [ ! -f "$bin" ]; then
+            echo "::error::$label: no Runner binary at ${bin:-<empty>}"
+            failed=1
+            return
+          fi
+
+          if ! exports=$(xcrun dyld_info -exports "$bin"); then
+            echo "::error::$label: dyld_info failed on $bin"
+            failed=1
+            return
+          fi
+
+          generated=$(grep -c ' _frbgen_ecashapp_' <<< "$exports" || true)
+          echo "$label: $(du -h "$bin" | cut -f1)B, $generated frbgen_ecashapp_* exports"
+
+          if [ "$generated" -eq 0 ]; then
+            echo "::error::$label: no frbgen_ecashapp_* symbols in the export trie. flutter_rust_bridge resolves these with dlsym via ExternalLibrary.process(), so the app will white-screen at RustLib.init(). Check EXPORTED_SYMBOLS_FILE and STRIP_STYLE in ios/Flutter/Release.xcconfig."
+            failed=1
+          # The first symbol RustLib.init() looks up, and part of the FRB runtime
+          # rather than the generated code, so it needs its own glob.
+          elif ! grep -q ' _frb_get_rust_content_hash$' <<< "$exports"; then
+            echo "::error::$label: _frb_get_rust_content_hash is not exported; RustLib.init() throws at launch."
+            failed=1
+          fi
+
+          # netdev calls nw_path_is_ultra_constrained unconditionally and Apple
+          # ships it only in the iOS 26 SDK, so rust/ecashapp/src/ios_compat.rs
+          # defines it. If it appears as an import the shim lost the link and
+          # dyld aborts at launch below iOS 26.
+          if nm -u "$bin" | grep -q nw_path_is_ultra_constrained; then
+            echo "::error::$label: nw_path_is_ultra_constrained is an undefined import; the ios_compat.rs shim lost the link and the app will not launch below iOS 26."
+            failed=1
+          fi
+        }
+
         if [[ "${{ inputs.with-signing }}" == "true" ]]; then
-          # Check what actually ships: export re-signs and strips the archive.
-          IPA=$(ls build/ios/ipa/*.ipa | head -1)
+          # Both stages, because two different steps can drop the symbols and the
+          # counts say which one did. The archive is what the link plus
+          # STRIP_INSTALLED_PRODUCT left; the .ipa is what export re-signing and
+          # stripSwiftSymbols left of that, and is what actually ships. v0.11.0-rc.3
+          # failed here with the symbols exported at link time and gone by the .ipa.
+          check "archive" "build/ios/archive/Runner.xcarchive/Products/Applications/Runner.app/Runner"
+
           rm -rf "$RUNNER_TEMP/ipa-verify"
-          unzip -q -o "$IPA" -d "$RUNNER_TEMP/ipa-verify"
-          BIN=$(find "$RUNNER_TEMP/ipa-verify/Payload" -maxdepth 2 -type f -name Runner | head -1)
+          unzip -q -o "$(ls build/ios/ipa/*.ipa | head -1)" -d "$RUNNER_TEMP/ipa-verify"
+          check "ipa" "$(find "$RUNNER_TEMP/ipa-verify/Payload" -maxdepth 2 -type f -name Runner | head -1)"
         else
-          BIN="build/ios/iphoneos/Runner.app/Runner"
+          check "app" "build/ios/iphoneos/Runner.app/Runner"
         fi
 
-        if [ -z "$BIN" ] || [ ! -f "$BIN" ]; then
-          echo "::error::No Runner binary found to verify"
-          exit 1
-        fi
-        ls -lh "$BIN"
-
-        exports=$(xcrun dyld_info -exports "$BIN")
-
-        generated=$(grep -c ' _frbgen_ecashapp_' <<< "$exports" || true)
-        echo "frbgen_ecashapp_* exports: $generated"
-        if [ "$generated" -eq 0 ]; then
-          echo "::error::No frbgen_ecashapp_* symbols in the export trie. flutter_rust_bridge resolves these with dlsym via ExternalLibrary.process(), so the app will white-screen at RustLib.init(). Check EXPORTED_SYMBOLS_FILE in ios/Flutter/Release.xcconfig."
-          exit 1
-        fi
-
-        # The first symbol RustLib.init() looks up, and part of the FRB runtime
-        # rather than the generated code, so it needs its own glob.
-        if ! grep -q ' _frb_get_rust_content_hash$' <<< "$exports"; then
-          echo "::error::_frb_get_rust_content_hash is not exported; RustLib.init() throws at launch."
-          exit 1
-        fi
-
-        # netdev calls nw_path_is_ultra_constrained unconditionally and Apple ships
-        # it only in the iOS 26 SDK, so rust/ecashapp/src/ios_compat.rs defines it.
-        # If it appears as an import the shim lost the link and dyld aborts at
-        # launch below iOS 26.
-        if nm -u "$BIN" | grep -q nw_path_is_ultra_constrained; then
-          echo "::error::nw_path_is_ultra_constrained is an undefined import; the ios_compat.rs shim lost the link and the app will not launch below iOS 26."
-          exit 1
-        fi
-
+        [ "$failed" -eq 0 ] || exit 1
         echo "Rust FFI symbols are exported and the netdev shim holds."
 
     - name: Clean up signing material
