@@ -372,18 +372,26 @@ runs:
             return
           fi
 
+          # Exact, not non-zero: "> 0" would pass on 1 of 62.
           generated=$(grep -c ' _frbgen_ecashapp_' <<< "$exports" || true)
-          echo "$label: $(du -h "$bin" | cut -f1)B, $generated frbgen_ecashapp_* exports"
+          expected=$(grep -ohE 'frbgen_ecashapp_[A-Za-z0-9_]+' lib/frb_generated.io.dart | sort -u | wc -l | tr -d ' ')
+          echo "$label: $(du -h "$bin" | cut -f1)B, $generated/$expected frbgen_ecashapp_* exports"
 
-          if [ "$generated" -eq 0 ]; then
-            echo "::error::$label: no frbgen_ecashapp_* symbols in the export trie. flutter_rust_bridge resolves these with dlsym via ExternalLibrary.process(), so the app will white-screen at RustLib.init(). Check EXPORTED_SYMBOLS_FILE and STRIP_STYLE in ios/Flutter/Release.xcconfig."
-            failed=1
-          # The first symbol RustLib.init() looks up, and part of the FRB runtime
-          # rather than the generated code, so it needs its own glob.
-          elif ! grep -q ' _frb_get_rust_content_hash$' <<< "$exports"; then
-            echo "::error::$label: _frb_get_rust_content_hash is not exported; RustLib.init() throws at launch."
+          if [ "$generated" -ne "$expected" ]; then
+            echo "::error::$label: $generated of $expected frbgen_ecashapp_* symbols in the export trie. flutter_rust_bridge resolves these with dlsym via ExternalLibrary.process(), so the app will white-screen at RustLib.init(). Check EXPORTED_SYMBOLS_FILE and STRIP_STYLE in ios/Flutter/Release.xcconfig."
             failed=1
           fi
+
+          # Resolved by dlsym, so nothing references them and a glob covering
+          # nothing fails silently. Re-check multi_package.dart on an FRB bump.
+          for sym in _frb_get_rust_content_hash _frb_init_frb_dart_api_dl \
+                     _frb_pde_ffi_dispatcher_primary _frb_pde_ffi_dispatcher_sync \
+                     _store_dart_post_cobject; do
+            if ! grep -q " ${sym}\$" <<< "$exports"; then
+              echo "::error::$label: $sym is not exported; RustLib.init() throws at launch and the app shows a blank screen with no crash report."
+              failed=1
+            fi
+          done
 
           # netdev calls nw_path_is_ultra_constrained unconditionally and Apple
           # ships it only in the iOS 26 SDK, so rust/ecashapp/src/ios_compat.rs

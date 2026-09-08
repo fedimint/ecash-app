@@ -13,3 +13,7 @@
 # _frb_* does not match _frbgen_*, so both globs are required.
 _frb_*
 _frbgen_ecashapp_*
+
+# Resolved by dlsym in RustLib.init(), but defined by allo-isolate, so neither
+# glob above covers it. Re-check multi_package.dart when bumping FRB.
+_store_dart_post_cobject
