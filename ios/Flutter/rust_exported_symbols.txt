@@ -1,0 +1,15 @@
+# Symbols that must stay in the Runner executable's dynamic export trie.
+#
+# lib/main.dart loads Rust with ExternalLibrary.process() — dlsym against the
+# running process — because libecashapp.a is linked statically, and dlsym only
+# sees the export trie. Debug builds Runner.debug.dylib, which exports every
+# global; Release builds an executable, which exports nothing by default and so
+# also dead-strips the whole Rust graph (-force_load keeps archive members
+# loaded, not alive). Listing them here makes them exported and dead-strip roots.
+#
+#   _frbgen_ecashapp_*  generated wire functions (lib/frb_generated.io.dart)
+#   _frb_*              runtime helpers flutter_rust_bridge resolves itself
+#
+# _frb_* does not match _frbgen_*, so both globs are required.
+_frb_*
+_frbgen_ecashapp_*
