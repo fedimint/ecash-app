@@ -338,6 +338,7 @@
   "inviteCodesExplanation": "Tu frase semilla restaura tus fondos, pero no registra a qué federaciones te uniste. Guarda estos códigos junto con tu frase semilla para poder encontrar tu dinero de nuevo.",
   "copyAllInviteCodes": "Copiar todo",
   "allInviteCodesCopied": "Todos los códigos de invitación copiados al portapapeles",
+  "couldNotCopyInviteCodes": "No se pudieron copiar los códigos de invitación",
   "noFederationsToExport": "Todavía no te has unido a ninguna federación",
   "couldNotLoadInviteCodes": "No se pudieron cargar los códigos de invitación",
   "couldNotGetInviteCode": "No se pudo obtener el código de invitación",

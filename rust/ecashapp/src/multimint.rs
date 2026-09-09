@@ -6286,10 +6286,10 @@ impl Multimint {
     /// but useless for a list the user reads, where duplicates per federation
     /// are noise and the federation name is the point.
     ///
-    /// Any peer's invite code is sufficient to rejoin, so this takes the first
-    /// one that resolves, mirroring the peer-fallback in `wait_for_recovery`
-    /// rather than assuming peer 0 exists. A federation whose code cannot be
-    /// built is omitted rather than failing the whole list.
+    /// Each code carries several guardians rather than one, so the export
+    /// still works when a guardian is down at restore time — see the body. A
+    /// federation with no known API endpoints is omitted rather than failing
+    /// the whole list.
     pub async fn get_federation_invite_codes(&self) -> Vec<(FederationSelector, String)> {
         let mut dbtx = self.db.begin_transaction_nc().await;
         let configs = dbtx
@@ -6297,29 +6297,51 @@ impl Multimint {
             .await
             .collect::<Vec<_>>()
             .await;
-        // Snapshot the clients and drop the lock before the per-peer network
-        // calls below, so joins are not blocked while codes are fetched.
-        let clients: BTreeMap<FederationId, ClientHandleArc> = {
+        // Only used to skip configs whose client is gone, matching
+        // `federations()`. The codes themselves are built from the stored
+        // config, so no network call is made and the lock is held only briefly.
+        let joined: BTreeSet<FederationId> = {
             let guard = self.clients.read().await;
-            guard.iter().map(|(k, v)| (*k, v.client.clone())).collect()
+            guard.keys().copied().collect()
         };
 
         let mut invite_codes = Vec::new();
         for (key, config) in configs {
-            let Some(client) = clients.get(&key.id) else {
+            if !joined.contains(&key.id) {
                 continue;
-            };
+            }
             let selector = FederationSelector {
                 federation_name: config.federation_name,
                 federation_id: key.id,
                 network: config.network,
             };
-            for peer in config.client_config.global.api_endpoints.keys() {
-                if let Some(invite_code) = client.invite_code(*peer).await {
-                    invite_codes.push((selector, invite_code.to_string()));
-                    break;
-                }
+
+            // Build a multi-guardian code rather than taking one peer's.
+            // `client.invite_code(peer)` encodes a single guardian's URL, so a
+            // backup made from it is worthless if that one guardian is
+            // unreachable at restore time, even while the rest of the
+            // federation is healthy. `new_with_essential_num_guardians` packs
+            // `max_evil() + 1` guardians into one code, which is enough to
+            // always reach a working federation.
+            //
+            // One code per federation, rather than one per peer as the Nostr
+            // backup stores, because this list is read by a person: the
+            // redundancy lives inside the single code instead of across a
+            // column of near-identical strings nobody could transcribe.
+            let peer_urls = config
+                .client_config
+                .global
+                .api_endpoints
+                .iter()
+                .map(|(peer, peer_url)| (*peer, peer_url.url.clone()))
+                .collect::<BTreeMap<_, _>>();
+            if peer_urls.is_empty() {
+                continue;
             }
+
+            let invite_code =
+                InviteCode::new_with_essential_num_guardians(&peer_urls, key.id).to_string();
+            invite_codes.push((selector, invite_code));
         }
 
         invite_codes

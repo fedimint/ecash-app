@@ -240,10 +240,10 @@ abstract class Multimint implements RustOpaqueInterface {
   /// but useless for a list the user reads, where duplicates per federation
   /// are noise and the federation name is the point.
   ///
-  /// Any peer's invite code is sufficient to rejoin, so this takes the first
-  /// one that resolves, mirroring the peer-fallback in `wait_for_recovery`
-  /// rather than assuming peer 0 exists. A federation whose code cannot be
-  /// built is omitted rather than failing the whole list.
+  /// Each code carries several guardians rather than one, so the export
+  /// still works when a guardian is down at restore time — see the body. A
+  /// federation with no known API endpoints is omitted rather than failing
+  /// the whole list.
   Future<List<(FederationSelector, String)>> getFederationInviteCodes();
 
   Future<List<FederationId>?> getFederationOrder();

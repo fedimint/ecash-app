@@ -63,14 +63,31 @@ class _InviteCodesScreenState extends State<InviteCodesScreen> {
         .join('\n\n');
   }
 
-  void _copyAll(List<(FederationSelector, String)> codes) {
-    Clipboard.setData(ClipboardData(text: _asExportText(codes)));
-    ToastService().show(
-      message: context.l10n.allInviteCodesCopied,
-      duration: const Duration(seconds: 5),
-      onTap: () {},
-      icon: const Icon(Icons.check),
-    );
+  /// Awaits the clipboard write before claiming success. The platform call can
+  /// reject — an unavailable channel, or a browser denying clipboard access —
+  /// and reporting "copied" for a write that never happened would leave the
+  /// user believing they hold a backup they do not.
+  Future<void> _copyAll(List<(FederationSelector, String)> codes) async {
+    final messenger = ToastService();
+    final copied = context.l10n.allInviteCodesCopied;
+    final failed = context.l10n.couldNotCopyInviteCodes;
+    try {
+      await Clipboard.setData(ClipboardData(text: _asExportText(codes)));
+      messenger.show(
+        message: copied,
+        duration: const Duration(seconds: 5),
+        onTap: () {},
+        icon: const Icon(Icons.check),
+      );
+    } catch (e) {
+      AppLogger.instance.error('Could not copy invite codes: $e');
+      messenger.show(
+        message: failed,
+        duration: const Duration(seconds: 5),
+        onTap: () {},
+        icon: const Icon(Icons.error),
+      );
+    }
   }
 
   @override
