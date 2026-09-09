@@ -508,6 +508,7 @@ class _BtcMapScreenState extends State<BtcMapScreen> {
               ),
             ),
           ),
+        const _AttributionBar(),
       ],
     );
   }
@@ -568,6 +569,42 @@ class _HintBanner extends StatelessWidget {
               const SizedBox(width: 8),
               Flexible(child: Text(text, style: theme.textTheme.bodyMedium)),
             ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// Attribution for the OpenStreetMap-derived tiles and place data. ODbL
+/// requires this wherever the data is displayed, not just in the source, so it
+/// sits on the map rather than in an about screen.
+class _AttributionBar extends StatelessWidget {
+  const _AttributionBar();
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Positioned(
+      left: 8,
+      bottom: 8,
+      child: GestureDetector(
+        onTap:
+            () => launchUrl(
+              Uri.parse('https://www.openstreetmap.org/copyright'),
+              mode: LaunchMode.externalApplication,
+            ),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+          decoration: BoxDecoration(
+            color: theme.colorScheme.surface.withValues(alpha: 0.85),
+            borderRadius: BorderRadius.circular(4),
+          ),
+          child: Text(
+            '© OpenStreetMap contributors', // i18n-ignore
+            style: theme.textTheme.labelSmall?.copyWith(
+              color: theme.colorScheme.onSurface,
+            ),
           ),
         ),
       ),
