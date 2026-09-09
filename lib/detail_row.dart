@@ -1,3 +1,5 @@
+import 'package:ecashapp/extensions/build_context_l10n.dart';
+import 'package:ecashapp/toast.dart';
 import 'package:ecashapp/utils.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -27,10 +29,27 @@ class CopyableDetailRow extends StatefulWidget {
 class _CopyableDetailRowState extends State<CopyableDetailRow> {
   bool _isCopied = false;
 
-  void _copyToClipboard() {
-    Clipboard.setData(
-      ClipboardData(text: widget.value),
-    ); // always copy full text
+  /// Awaits the clipboard write before showing the copied tick. The platform
+  /// call can reject — an unavailable channel, or a browser denying clipboard
+  /// access — and the tick is the only signal the user gets, so showing it for
+  /// a write that never happened tells them they hold something they do not.
+  Future<void> _copyToClipboard() async {
+    final failed = context.l10n.couldNotCopy;
+    try {
+      // always copy full text
+      await Clipboard.setData(ClipboardData(text: widget.value));
+    } catch (e) {
+      AppLogger.instance.error('Could not copy to clipboard: $e');
+      ToastService().show(
+        message: failed,
+        duration: const Duration(seconds: 5),
+        onTap: () {},
+        icon: const Icon(Icons.error),
+      );
+      return;
+    }
+
+    if (!mounted) return;
     setState(() => _isCopied = true);
     Future.delayed(const Duration(seconds: 2), () {
       if (mounted) setState(() => _isCopied = false);

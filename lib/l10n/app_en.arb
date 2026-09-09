@@ -1207,6 +1207,9 @@
   "couldNotCopyInviteCodes": "Could not copy invite codes",
   "@couldNotCopyInviteCodes": {},
 
+  "couldNotCopy": "Could not copy to clipboard",
+  "@couldNotCopy": {},
+
   "noFederationsToExport": "You have not joined any federations yet",
   "@noFederationsToExport": {},
 

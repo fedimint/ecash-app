@@ -22042,10 +22042,11 @@ class MultimintImpl extends RustOpaque implements Multimint {
   /// but useless for a list the user reads, where duplicates per federation
   /// are noise and the federation name is the point.
   ///
-  /// Each code carries several guardians rather than one, so the export
-  /// still works when a guardian is down at restore time — see the body. A
-  /// federation with no known API endpoints is omitted rather than failing
-  /// the whole list.
+  /// Each code carries several guardians and the federation's api secret, so
+  /// the export still works when a guardian is down at restore time and can
+  /// still authenticate to a private federation — see the body. A federation
+  /// with no known API endpoints is omitted rather than failing the whole
+  /// list.
   Future<List<(FederationSelector, String)>> getFederationInviteCodes() =>
       RustLib.instance.api.crateMultimintMultimintGetFederationInviteCodes(
         that: this,

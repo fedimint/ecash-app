@@ -339,6 +339,7 @@
   "copyAllInviteCodes": "Copiar todo",
   "allInviteCodesCopied": "Todos los códigos de invitación copiados al portapapeles",
   "couldNotCopyInviteCodes": "No se pudieron copiar los códigos de invitación",
+  "couldNotCopy": "No se pudo copiar al portapapeles",
   "noFederationsToExport": "Todavía no te has unido a ninguna federación",
   "couldNotLoadInviteCodes": "No se pudieron cargar los códigos de invitación",
   "couldNotGetInviteCode": "No se pudo obtener el código de invitación",
