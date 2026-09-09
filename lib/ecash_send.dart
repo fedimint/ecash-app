@@ -357,12 +357,18 @@ class _EcashSendState extends State<EcashSend> {
               child: Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Icon(Icons.warning, color: Colors.orange, size: 20),
+                  // Foreground is brown.shade900 rather than an orange: on this
+                  // orange.shade100 background `Colors.orange` gives a contrast
+                  // ratio of 1.7:1, far below the 4.5:1 WCAG AA needs for body
+                  // text, and a warning nobody can comfortably read defeats the
+                  // point. Darker oranges are not enough either — shade900 only
+                  // reaches 3.0:1 — whereas this keeps the warm tone at 10.9:1.
+                  Icon(Icons.warning, color: Colors.brown.shade900, size: 20),
                   const SizedBox(width: 8),
                   Expanded(
                     child: Text(
                       context.l10n.ecashClipboardWarning,
-                      style: const TextStyle(color: Colors.orange),
+                      style: TextStyle(color: Colors.brown.shade900),
                     ),
                   ),
                 ],
