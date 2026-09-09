@@ -1189,6 +1189,27 @@
     }
   },
 
+  "inviteCodesTitle": "Federation Invite Codes",
+  "@inviteCodesTitle": {},
+
+  "inviteCodesSubtitle": "View and back up the federations you have joined",
+  "@inviteCodesSubtitle": {},
+
+  "inviteCodesExplanation": "Your seed phrase restores your funds, but it does not record which federations you joined. Save these codes with your seed phrase so you can find your money again.",
+  "@inviteCodesExplanation": {},
+
+  "copyAllInviteCodes": "Copy all",
+  "@copyAllInviteCodes": {},
+
+  "allInviteCodesCopied": "All invite codes copied to clipboard",
+  "@allInviteCodesCopied": {},
+
+  "noFederationsToExport": "You have not joined any federations yet",
+  "@noFederationsToExport": {},
+
+  "couldNotLoadInviteCodes": "Could not load invite codes",
+  "@couldNotLoadInviteCodes": {},
+
   "couldNotGetInviteCode": "Could not get invite code",
   "@couldNotGetInviteCode": {},
 
@@ -1719,6 +1740,9 @@
 
   "yourRecoveryPhrase": "Your Recovery Phrase",
   "@yourRecoveryPhrase": {},
+
+  "seedBackupInviteCodesNudge": "Write these down too: your seed phrase alone will not tell you which federations you joined. Find your federation invite codes in Settings.",
+  "@seedBackupInviteCodesNudge": {},
 
   "seedPhraseAckWarning": "Please acknowledge that you have written your seed phrase down by holding the button below",
   "@seedPhraseAckWarning": {},

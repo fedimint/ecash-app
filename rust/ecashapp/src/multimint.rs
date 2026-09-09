@@ -6276,6 +6276,55 @@ impl Multimint {
             });
     }
 
+    /// One invite code per joined federation, paired with the federation it
+    /// belongs to, for display and export in the UI.
+    ///
+    /// Distinct from [`Self::get_all_invite_codes`], which returns a flat list
+    /// containing a code for *every* peer with no indication of which
+    /// federation each belongs to. That shape is right for the Nostr backup
+    /// (more codes means more chances to rejoin if a guardian is unreachable)
+    /// but useless for a list the user reads, where duplicates per federation
+    /// are noise and the federation name is the point.
+    ///
+    /// Any peer's invite code is sufficient to rejoin, so this takes the first
+    /// one that resolves, mirroring the peer-fallback in `wait_for_recovery`
+    /// rather than assuming peer 0 exists. A federation whose code cannot be
+    /// built is omitted rather than failing the whole list.
+    pub async fn get_federation_invite_codes(&self) -> Vec<(FederationSelector, String)> {
+        let mut dbtx = self.db.begin_transaction_nc().await;
+        let configs = dbtx
+            .find_by_prefix(&FederationConfigKeyPrefix)
+            .await
+            .collect::<Vec<_>>()
+            .await;
+        // Snapshot the clients and drop the lock before the per-peer network
+        // calls below, so joins are not blocked while codes are fetched.
+        let clients: BTreeMap<FederationId, ClientHandleArc> = {
+            let guard = self.clients.read().await;
+            guard.iter().map(|(k, v)| (*k, v.client.clone())).collect()
+        };
+
+        let mut invite_codes = Vec::new();
+        for (key, config) in configs {
+            let Some(client) = clients.get(&key.id) else {
+                continue;
+            };
+            let selector = FederationSelector {
+                federation_name: config.federation_name,
+                federation_id: key.id,
+                network: config.network,
+            };
+            for peer in config.client_config.global.api_endpoints.keys() {
+                if let Some(invite_code) = client.invite_code(*peer).await {
+                    invite_codes.push((selector, invite_code.to_string()));
+                    break;
+                }
+            }
+        }
+
+        invite_codes
+    }
+
     pub async fn get_all_invite_codes(&self) -> Vec<String> {
         let mut dbtx = self.db.begin_transaction_nc().await;
         let configs = dbtx
