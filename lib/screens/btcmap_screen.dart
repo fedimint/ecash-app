@@ -4,6 +4,7 @@ import 'dart:convert';
 import 'package:ecashapp/detail_row.dart';
 import 'package:ecashapp/extensions/build_context_l10n.dart';
 import 'package:ecashapp/toast.dart';
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:geolocator/geolocator.dart';
@@ -508,6 +509,7 @@ class _BtcMapScreenState extends State<BtcMapScreen> {
               ),
             ),
           ),
+        const _AttributionBar(),
       ],
     );
   }
@@ -568,6 +570,105 @@ class _HintBanner extends StatelessWidget {
               const SizedBox(width: 8),
               Flexible(child: Text(text, style: theme.textTheme.bodyMedium)),
             ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// Map attribution. OpenFreeMap's TileJSON asks for OpenFreeMap, OpenMapTiles
+/// and OpenStreetMap to be credited together, and ODbL requires the credit to
+/// be visible wherever the data is shown — so all three sit on the map itself
+/// rather than in an about screen.
+class _AttributionBar extends StatefulWidget {
+  const _AttributionBar();
+
+  @override
+  State<_AttributionBar> createState() => _AttributionBarState();
+}
+
+class _AttributionBarState extends State<_AttributionBar> {
+  /// Credits and their canonical links, in the order OpenFreeMap publishes
+  /// them. Attribution is not translated, hence the literals.
+  static const _credits = <(String, String)>[
+    ('OpenFreeMap', 'https://openfreemap.org'), // i18n-ignore
+    ('© OpenMapTiles', 'https://www.openmaptiles.org/'), // i18n-ignore
+    ('OpenStreetMap', 'https://www.openstreetmap.org/copyright'), // i18n-ignore
+  ];
+
+  late final List<TapGestureRecognizer> _recognizers;
+
+  @override
+  void initState() {
+    super.initState();
+    _recognizers = [
+      for (final (_, url) in _credits)
+        TapGestureRecognizer()
+          ..onTap =
+              () => launchUrl(
+                Uri.parse(url),
+                mode: LaunchMode.externalApplication,
+              ),
+    ];
+  }
+
+  @override
+  void dispose() {
+    for (final recognizer in _recognizers) {
+      recognizer.dispose();
+    }
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final base = theme.textTheme.labelSmall?.copyWith(
+      color: theme.colorScheme.onSurface,
+    );
+    final link = base?.copyWith(decoration: TextDecoration.underline);
+
+    // The map fills the Scaffold body, which is not inset for the home
+    // indicator or edge-to-edge navigation bar, so the required credit would
+    // otherwise sit under system UI and be hard to tap.
+    final insets = MediaQuery.paddingOf(context);
+
+    return Positioned(
+      left: 8 + insets.left,
+      right: 8 + insets.right,
+      bottom: 8 + insets.bottom,
+      child: Align(
+        alignment: Alignment.bottomLeft,
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+          decoration: BoxDecoration(
+            color: theme.colorScheme.surface.withValues(alpha: 0.85),
+            borderRadius: BorderRadius.circular(4),
+          ),
+          child: Text.rich(
+            TextSpan(
+              children: [
+                TextSpan(
+                  text: _credits[0].$1,
+                  style: link,
+                  recognizer: _recognizers[0],
+                ),
+                const TextSpan(text: ' '), // i18n-ignore
+                TextSpan(
+                  text: _credits[1].$1,
+                  style: link,
+                  recognizer: _recognizers[1],
+                ),
+                const TextSpan(text: ' Data from '), // i18n-ignore
+                TextSpan(
+                  text: _credits[2].$1,
+                  style: link,
+                  recognizer: _recognizers[2],
+                ),
+              ],
+            ),
+            style: base,
           ),
         ),
       ),
