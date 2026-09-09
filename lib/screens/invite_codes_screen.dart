@@ -132,10 +132,16 @@ class _InviteCodesScreenState extends State<InviteCodesScreen> {
                       horizontal: 16,
                       vertical: 8,
                     ),
+                    // Shown in full, wrapping, rather than abbreviated. This
+                    // screen exists so the codes can be recorded next to a
+                    // written seed phrase, and `abbreviate` renders anything
+                    // over 14 characters as `first7...last7`, which cannot be
+                    // transcribed or checked against a copy made earlier. The
+                    // row already uses a monospace face, which is what makes
+                    // reading a long code back character by character workable.
                     child: CopyableDetailRow(
                       label: entry.$1.federationName,
                       value: entry.$2,
-                      abbreviate: true,
                     ),
                   ),
                 ),
