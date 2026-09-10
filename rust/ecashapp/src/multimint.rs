@@ -6276,6 +6276,94 @@ impl Multimint {
             });
     }
 
+    /// One invite code per joined federation, paired with the federation it
+    /// belongs to, for display and export in the UI.
+    ///
+    /// Distinct from [`Self::get_all_invite_codes`], which returns a flat list
+    /// containing a code for *every* peer with no indication of which
+    /// federation each belongs to. That shape is right for the Nostr backup
+    /// (more codes means more chances to rejoin if a guardian is unreachable)
+    /// but useless for a list the user reads, where duplicates per federation
+    /// are noise and the federation name is the point.
+    ///
+    /// Each code carries several guardians and the federation's api secret, so
+    /// the export still works when a guardian is down at restore time and can
+    /// still authenticate to a private federation — see the body. A federation
+    /// with no known API endpoints is omitted rather than failing the whole
+    /// list.
+    pub async fn get_federation_invite_codes(&self) -> Vec<(FederationSelector, String)> {
+        let mut dbtx = self.db.begin_transaction_nc().await;
+        let configs = dbtx
+            .find_by_prefix(&FederationConfigKeyPrefix)
+            .await
+            .collect::<Vec<_>>()
+            .await;
+        // Snapshotted only to read each federation's api secret below, never to
+        // decide what to list: `leave_federation` deletes the config before it
+        // removes the client, so every remaining config is a federation the
+        // user is still in. Filtering on the client map would instead drop a
+        // federation from the backup in states where the config outlives its
+        // client — `retire_recovery_client` leaves exactly that gap when
+        // reopening the replacement client fails.
+        let clients: BTreeMap<FederationId, ClientHandleArc> = {
+            let guard = self.clients.read().await;
+            guard.iter().map(|(k, v)| (*k, v.client.clone())).collect()
+        };
+
+        let mut invite_codes = Vec::new();
+        for (key, config) in configs {
+            let selector = FederationSelector {
+                federation_name: config.federation_name,
+                federation_id: key.id,
+                network: config.network,
+            };
+
+            // Build a multi-guardian code rather than taking one peer's.
+            // `client.invite_code(peer)` encodes a single guardian's URL, so a
+            // backup made from it is worthless if that one guardian is
+            // unreachable at restore time, even while the rest of the
+            // federation is healthy. `from_map` packs `max_evil() + 1`
+            // guardians into one code, which is enough to always reach a
+            // working federation.
+            //
+            // One code per federation, rather than one per peer as the Nostr
+            // backup stores, because this list is read by a person: the
+            // redundancy lives inside the single code instead of across a
+            // column of near-identical strings nobody could transcribe.
+            let peer_urls = config
+                .client_config
+                .global
+                .api_endpoints
+                .iter()
+                .map(|(peer, peer_url)| (*peer, peer_url.url.clone()))
+                .collect::<BTreeMap<_, _>>();
+            if peer_urls.is_empty() {
+                continue;
+            }
+
+            // A private federation's invite carries an api secret, and a code
+            // rebuilt without it cannot authenticate on restore. It is not in
+            // the persisted config, only on the client's own invite code, so
+            // take it from there when a client is open. When one is not, the
+            // federation is still exported — a code missing only the secret
+            // beats omitting the federation from the backup entirely.
+            let mut api_secret = None;
+            if let Some(client) = clients.get(&key.id) {
+                for peer in peer_urls.keys() {
+                    if let Some(invite) = client.invite_code(*peer).await {
+                        api_secret = invite.api_secret();
+                        break;
+                    }
+                }
+            }
+
+            let invite_code = InviteCode::from_map(&peer_urls, key.id, api_secret).to_string();
+            invite_codes.push((selector, invite_code));
+        }
+
+        invite_codes
+    }
+
     pub async fn get_all_invite_codes(&self) -> Vec<String> {
         let mut dbtx = self.db.begin_transaction_nc().await;
         let configs = dbtx
