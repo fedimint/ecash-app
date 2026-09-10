@@ -4,6 +4,7 @@ import 'package:ecashapp/lib.dart';
 import 'package:ecashapp/multimint.dart';
 import 'package:ecashapp/toast.dart';
 import 'package:ecashapp/utils.dart';
+import 'package:ecashapp/widgets/secure_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
@@ -15,9 +16,20 @@ import 'package:flutter/services.dart';
 /// by design (relays may prune). Without this screen the user has no
 /// self-custodied copy of their federation membership.
 ///
-/// Invite codes are not secrets — they are the same strings handed out to
-/// invite people to a federation, and hold no spending authority — so unlike
-/// the seed phrase this screen is deliberately not behind the PIN gate.
+/// A public federation's invite code is not a secret — it is the same string
+/// handed out to invite people, and holds no spending authority. A private
+/// federation's is different: the code carries that federation's api secret,
+/// which authenticates whoever holds it, so this screen can render a bearer
+/// credential and is wrapped in [SecureScreen] accordingly. Screenshotting a
+/// list of backup credentials into a cloud-synced camera roll is the leak
+/// worth closing, and it costs the user nothing.
+///
+/// It is deliberately *not* behind the PIN gate. None of these codes can spend
+/// funds — that needs the seed phrase, which is gated separately — and this is
+/// a screen the user should be encouraged to visit and act on. Friction here
+/// works against the backup it exists to promote.
+///
+/// Note [SecureScreen] is Android-only; FLAG_SECURE has no desktop equivalent.
 class InviteCodesScreen extends StatefulWidget {
   const InviteCodesScreen({super.key});
 
@@ -94,95 +106,97 @@ class _InviteCodesScreenState extends State<InviteCodesScreen> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
 
-    return Scaffold(
-      appBar: AppBar(title: Text(context.l10n.inviteCodesTitle)),
-      body: Builder(
-        builder: (context) {
-          if (_loading) {
-            return const Center(child: CircularProgressIndicator());
-          }
+    return SecureScreen(
+      child: Scaffold(
+        appBar: AppBar(title: Text(context.l10n.inviteCodesTitle)),
+        body: Builder(
+          builder: (context) {
+            if (_loading) {
+              return const Center(child: CircularProgressIndicator());
+            }
 
-          if (_failed) {
-            return Center(
-              child: Padding(
-                padding: const EdgeInsets.all(24),
-                child: Text(
-                  context.l10n.couldNotLoadInviteCodes,
-                  textAlign: TextAlign.center,
-                  style: theme.textTheme.bodyMedium,
+            if (_failed) {
+              return Center(
+                child: Padding(
+                  padding: const EdgeInsets.all(24),
+                  child: Text(
+                    context.l10n.couldNotLoadInviteCodes,
+                    textAlign: TextAlign.center,
+                    style: theme.textTheme.bodyMedium,
+                  ),
                 ),
-              ),
-            );
-          }
+              );
+            }
 
-          final codes = _inviteCodes ?? const [];
-          if (codes.isEmpty) {
-            return Center(
-              child: Padding(
-                padding: const EdgeInsets.all(24),
-                child: Text(
-                  context.l10n.noFederationsToExport,
-                  textAlign: TextAlign.center,
-                  style: theme.textTheme.bodyMedium,
+            final codes = _inviteCodes ?? const [];
+            if (codes.isEmpty) {
+              return Center(
+                child: Padding(
+                  padding: const EdgeInsets.all(24),
+                  child: Text(
+                    context.l10n.noFederationsToExport,
+                    textAlign: TextAlign.center,
+                    style: theme.textTheme.bodyMedium,
+                  ),
                 ),
-              ),
-            );
-          }
+              );
+            }
 
-          return ListView(
-            padding: const EdgeInsets.all(16),
-            children: [
-              Text(
-                context.l10n.inviteCodesExplanation,
-                style: theme.textTheme.bodyMedium?.copyWith(
-                  color: theme.colorScheme.onSurfaceVariant,
+            return ListView(
+              padding: const EdgeInsets.all(16),
+              children: [
+                Text(
+                  context.l10n.inviteCodesExplanation,
+                  style: theme.textTheme.bodyMedium?.copyWith(
+                    color: theme.colorScheme.onSurfaceVariant,
+                  ),
                 ),
-              ),
-              const SizedBox(height: 20),
-              ...codes.map(
-                (entry) => Card(
-                  elevation: 2,
-                  margin: const EdgeInsets.only(bottom: 12),
-                  color: theme.colorScheme.surface,
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 16,
-                      vertical: 8,
-                    ),
-                    // Shown in full, wrapping, rather than abbreviated. This
-                    // screen exists so the codes can be recorded next to a
-                    // written seed phrase, and `abbreviate` renders anything
-                    // over 14 characters as `first7...last7`, which cannot be
-                    // transcribed or checked against a copy made earlier. The
-                    // row already uses a monospace face, which is what makes
-                    // reading a long code back character by character workable.
-                    child: CopyableDetailRow(
-                      label: entry.$1.federationName,
-                      value: entry.$2,
+                const SizedBox(height: 20),
+                ...codes.map(
+                  (entry) => Card(
+                    elevation: 2,
+                    margin: const EdgeInsets.only(bottom: 12),
+                    color: theme.colorScheme.surface,
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 8,
+                      ),
+                      // Shown in full, wrapping, rather than abbreviated. This
+                      // screen exists so the codes can be recorded next to a
+                      // written seed phrase, and `abbreviate` renders anything
+                      // over 14 characters as `first7...last7`, which cannot be
+                      // transcribed or checked against a copy made earlier. The
+                      // row already uses a monospace face, which is what makes
+                      // reading a long code back character by character workable.
+                      child: CopyableDetailRow(
+                        label: entry.$1.federationName,
+                        value: entry.$2,
+                      ),
                     ),
                   ),
                 ),
-              ),
-              const SizedBox(height: 12),
-              SizedBox(
-                width: double.infinity,
-                child: OutlinedButton.icon(
-                  onPressed: () => _copyAll(codes),
-                  icon: const Icon(Icons.copy_all),
-                  label: Text(context.l10n.copyAllInviteCodes),
-                  style: OutlinedButton.styleFrom(
-                    foregroundColor: theme.colorScheme.primary,
-                    side: BorderSide(color: theme.colorScheme.primary),
-                    padding: const EdgeInsets.symmetric(vertical: 16),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
+                const SizedBox(height: 12),
+                SizedBox(
+                  width: double.infinity,
+                  child: OutlinedButton.icon(
+                    onPressed: () => _copyAll(codes),
+                    icon: const Icon(Icons.copy_all),
+                    label: Text(context.l10n.copyAllInviteCodes),
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: theme.colorScheme.primary,
+                      side: BorderSide(color: theme.colorScheme.primary),
+                      padding: const EdgeInsets.symmetric(vertical: 16),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
                     ),
                   ),
                 ),
-              ),
-            ],
-          );
-        },
+              ],
+            );
+          },
+        ),
       ),
     );
   }
