@@ -786,7 +786,12 @@ class _MyAppState extends State<MyApp> {
                     },
                   ),
                 ),
-                body: SafeArea(child: bodyContent),
+                // The dashboard floats its nav bar over the bottom inset
+                // itself, so content can scroll to the screen edge behind it.
+                body: SafeArea(
+                  bottom: _selectedFederation == null,
+                  child: bodyContent,
+                ),
               ),
         ),
       ),
