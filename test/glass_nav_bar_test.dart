@@ -4,6 +4,7 @@
 
 import 'package:ecashapp/widgets/glass_nav_bar.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 Widget _harness({double textScale = 1.0}) {
@@ -49,6 +50,36 @@ void main() {
         tester.getSize(find.byType(GlassNavBar)).height,
         greaterThan(base),
       );
+    });
+
+    testWidgets('renders labels at full size when they fit', (tester) async {
+      await tester.pumpWidget(_harness());
+      final paragraph = tester.renderObject<RenderParagraph>(
+        find.text('Lightning'),
+      );
+      // Global rect reflects the FittedBox transform; equal means no shrink.
+      expect(tester.getRect(find.text('Lightning')).size, paragraph.size);
+    });
+
+    testWidgets('keeps scaled labels whole on a narrow screen', (tester) async {
+      tester.view.physicalSize = const Size(360, 800);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.reset);
+
+      for (final scale in [2.0, 3.0]) {
+        await tester.pumpWidget(_harness(textScale: scale));
+        expect(tester.takeException(), isNull);
+        for (final label in ['Lightning', 'Onchain', 'Ecash']) {
+          final paragraph = tester.renderObject<RenderParagraph>(
+            find.text(label),
+          );
+          expect(
+            paragraph.didExceedMaxLines,
+            isFalse,
+            reason: '"$label" was truncated at ${scale}x',
+          );
+        }
+      }
     });
 
     testWidgets('announces each tab label once', (tester) async {

@@ -174,16 +174,20 @@ class _GlassNavBarTab extends StatelessWidget {
               children: [
                 Icon(item.icon, size: GlassNavBar._iconSize, color: color),
                 const SizedBox(height: GlassNavBar._labelGap),
-                Text(
-                  item.label,
-                  style: TextStyle(
-                    fontSize: GlassNavBar._labelFontSize,
-                    height: GlassNavBar._labelLineHeight,
-                    fontWeight: FontWeight.w600,
-                    color: color,
+                // A scaled label grows until the tab runs out of width, then
+                // shrinks to fit rather than being ellipsized.
+                FittedBox(
+                  fit: BoxFit.scaleDown,
+                  child: Text(
+                    item.label,
+                    maxLines: 1,
+                    style: TextStyle(
+                      fontSize: GlassNavBar._labelFontSize,
+                      height: GlassNavBar._labelLineHeight,
+                      fontWeight: FontWeight.w600,
+                      color: color,
+                    ),
                   ),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
                 ),
               ],
             ),
