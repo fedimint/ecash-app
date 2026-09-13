@@ -1,3 +1,7 @@
+// containsSemantics is deprecated from Flutter 3.41 in favour of isSemantics,
+// which doesn't exist on the pinned 3.38.3 (.flutter-version).
+// ignore_for_file: deprecated_member_use
+
 import 'package:ecashapp/widgets/glass_nav_bar.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -53,7 +57,7 @@ void main() {
 
       expect(
         tester.getSemantics(find.text('Lightning')),
-        isSemantics(
+        containsSemantics(
           label: 'Lightning',
           isButton: true,
           isSelected: true,
@@ -62,7 +66,7 @@ void main() {
       );
       expect(
         tester.getSemantics(find.text('Onchain')),
-        isSemantics(
+        containsSemantics(
           label: 'Onchain',
           isButton: true,
           isSelected: false,
