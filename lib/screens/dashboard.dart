@@ -26,6 +26,7 @@ import 'package:ecashapp/screens/my_wallet_screen.dart';
 import 'package:ecashapp/widgets/dashboard_balance.dart';
 import 'package:ecashapp/widgets/empty_transactions.dart';
 import 'package:ecashapp/widgets/federation_expiry_banner.dart';
+import 'package:ecashapp/widgets/glass_nav_bar.dart';
 import 'package:ecashapp/widgets/leave_federation_dialog.dart';
 import 'package:ecashapp/widgets/pending_deposit_item.dart';
 import 'package:ecashapp/widgets/transaction_item.dart';
@@ -566,7 +567,11 @@ class _DashboardState extends State<Dashboard> {
     // Zero when nothing is announced, so the header lays out exactly as before.
     final bannerExtent =
         _isShuttingDown ? federationExpiryBannerExtent(context) : 0.0;
+    // The nav bar floats over the body, so scrollable content reserves room
+    // to clear it.
+    final bottomInset = GlassNavBar.bodyInset(context);
     return Scaffold(
+      extendBody: true,
       floatingActionButton:
           recovering
               ? null
@@ -632,6 +637,7 @@ class _DashboardState extends State<Dashboard> {
                           _recoveryProgress[_selectedPaymentType] ?? 0.0,
                     ),
                     const Spacer(),
+                    SizedBox(height: bottomInset),
                   ],
                 )
                 : NotificationListener<ScrollNotification>(
@@ -759,10 +765,13 @@ class _DashboardState extends State<Dashboard> {
                         )
                       else if (_recentTransactions.isEmpty &&
                           _pendingDeposits.isEmpty)
-                        SliverToBoxAdapter(
-                          child: EmptyTransactionsState(
-                            paymentType: _selectedPaymentType,
-                            onReceivePressed: _onReceivePressed,
+                        SliverPadding(
+                          padding: EdgeInsets.only(bottom: bottomInset),
+                          sliver: SliverToBoxAdapter(
+                            child: EmptyTransactionsState(
+                              paymentType: _selectedPaymentType,
+                              onReceivePressed: _onReceivePressed,
+                            ),
                           ),
                         )
                       else
@@ -785,12 +794,14 @@ class _DashboardState extends State<Dashboard> {
                                 _recentTransactions.length,
                           ),
                         ),
-                      const SliverToBoxAdapter(child: SizedBox(height: 8)),
+                      SliverToBoxAdapter(
+                        child: SizedBox(height: bottomInset + 8),
+                      ),
                     ],
                   ),
                 ),
       ),
-      bottomNavigationBar: BottomNavigationBar(
+      bottomNavigationBar: GlassNavBar(
         currentIndex: _selectedPaymentType.index,
         onTap: (index) async {
           await _loadProgress(PaymentType.values[index]);
@@ -801,19 +812,11 @@ class _DashboardState extends State<Dashboard> {
           });
           _loadRecentTransactions();
         },
-        selectedItemColor: Theme.of(context).colorScheme.primary,
-        unselectedItemColor: Colors.grey,
         items: [
-          BottomNavigationBarItem(
-            icon: const Icon(Icons.flash_on),
-            label: context.l10n.lightning,
-          ),
-          BottomNavigationBarItem(
-            icon: const Icon(Icons.link),
-            label: context.l10n.onchain,
-          ),
-          BottomNavigationBarItem(
-            icon: const Icon(Icons.currency_bitcoin),
+          GlassNavBarItem(icon: Icons.flash_on, label: context.l10n.lightning),
+          GlassNavBarItem(icon: Icons.link, label: context.l10n.onchain),
+          GlassNavBarItem(
+            icon: Icons.currency_bitcoin,
             label: context.l10n.ecash,
           ),
         ],
