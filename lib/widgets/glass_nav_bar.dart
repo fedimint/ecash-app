@@ -1,3 +1,4 @@
+import 'dart:math' as math;
 import 'dart:ui';
 
 import 'package:flutter/material.dart';
@@ -13,9 +14,21 @@ class GlassNavBarItem {
 /// tabs rather than spanning the screen. Pair with `Scaffold(extendBody:
 /// true)` so the content scrolls behind it; the blur is what sells the effect.
 class GlassNavBar extends StatelessWidget {
-  static const double height = 64;
+  static const double minHeight = 64;
   static const double bottomMargin = 12;
   static const double horizontalMargin = 16;
+
+  // Shared by heightOf() and _GlassNavBarTab so the height math can't drift
+  // from what the tab actually lays out.
+  static const double _iconSize = 24;
+  static const double _labelGap = 2;
+  static const double _labelFontSize = 11;
+  static const double _labelLineHeight = 1.2;
+  static const EdgeInsets _tabPadding = EdgeInsets.all(6);
+  static const EdgeInsets _pillPadding = EdgeInsets.symmetric(
+    horizontal: 16,
+    vertical: 4,
+  );
 
   final int currentIndex;
   final ValueChanged<int> onTap;
@@ -28,13 +41,32 @@ class GlassNavBar extends StatelessWidget {
     required this.items,
   });
 
+  /// Pill height. Grows with the platform text scale so a large-text label
+  /// doesn't overflow the tab.
+  static double heightOf(BuildContext context) {
+    // Text layout rounds the line box up to a whole pixel; match it.
+    final label =
+        (MediaQuery.textScalerOf(context).scale(_labelFontSize) *
+                _labelLineHeight)
+            .ceilToDouble();
+    return math.max(
+      minHeight,
+      _tabPadding.vertical +
+          _pillPadding.vertical +
+          _iconSize +
+          _labelGap +
+          label,
+    );
+  }
+
   /// Space a scrollable body needs to reserve so its last row can clear the
   /// bar. Includes the bottom safe-area inset the bar floats above.
   static double bodyInset(BuildContext context) =>
-      height + bottomMargin + MediaQuery.paddingOf(context).bottom;
+      heightOf(context) + bottomMargin + MediaQuery.paddingOf(context).bottom;
 
   @override
   Widget build(BuildContext context) {
+    final height = heightOf(context);
     final radius = BorderRadius.circular(height / 2);
     return Padding(
       padding: EdgeInsets.fromLTRB(
@@ -115,19 +147,20 @@ class _GlassNavBarTab extends StatelessWidget {
   Widget build(BuildContext context) {
     final primary = Theme.of(context).colorScheme.primary;
     final color = selected ? primary : Colors.grey;
+    // The label comes from the Text below; setting it here too would make
+    // screen readers announce it twice.
     return Semantics(
       button: true,
       selected: selected,
-      label: item.label,
       child: InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(GlassNavBar.height / 2),
+        borderRadius: BorderRadius.circular(GlassNavBar.heightOf(context) / 2),
         child: Padding(
-          padding: const EdgeInsets.all(6),
+          padding: GlassNavBar._tabPadding,
           child: AnimatedContainer(
             duration: const Duration(milliseconds: 180),
             curve: Curves.easeOut,
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+            padding: GlassNavBar._pillPadding,
             decoration: BoxDecoration(
               color:
                   selected
@@ -139,12 +172,13 @@ class _GlassNavBarTab extends StatelessWidget {
               mainAxisAlignment: MainAxisAlignment.center,
               mainAxisSize: MainAxisSize.min,
               children: [
-                Icon(item.icon, size: 24, color: color),
-                const SizedBox(height: 2),
+                Icon(item.icon, size: GlassNavBar._iconSize, color: color),
+                const SizedBox(height: GlassNavBar._labelGap),
                 Text(
                   item.label,
                   style: TextStyle(
-                    fontSize: 11,
+                    fontSize: GlassNavBar._labelFontSize,
+                    height: GlassNavBar._labelLineHeight,
                     fontWeight: FontWeight.w600,
                     color: color,
                   ),
