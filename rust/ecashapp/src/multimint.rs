@@ -120,6 +120,13 @@ use crate::{
 /// `MAX_INVOICE_EXPIRY_SECS` (`60 * 60 * 24`). Raising this breaks LNv2
 /// receives.
 const DEFAULT_EXPIRY_TIME_SECS: u32 = 86400;
+/// Well-known meta field: unix timestamp (seconds) after which the guardians
+/// will shut the federation down. See fedimint
+/// `docs/meta_fields/federation_expiry_timestamp.md`.
+const META_FEDERATION_EXPIRY_TIMESTAMP_KEY: &str = "federation_expiry_timestamp";
+/// Well-known meta field: invite code of the federation users should migrate
+/// to before the shutdown. See fedimint `docs/meta_fields/federation_successor.md`.
+const META_FEDERATION_SUCCESSOR_KEY: &str = "federation_successor";
 const CACHE_UPDATE_INTERVAL_SECS: u64 = 30;
 const PRICE_CACHE_UPDATE_INTERVAL_SECS: u64 = 60 * 5;
 const FEDERATION_BACKUP_CACHE_UPDATE_INTERVAL_SECS: u64 = 60 * 60 * 24;
@@ -367,6 +374,14 @@ pub struct FederationMeta {
     pub last_updated: u64,
     pub recurringd_api: Option<String>,
     pub lnaddress_api: Option<String>,
+    /// Unix timestamp in seconds after which the guardians will shut the
+    /// federation down (`federation_expiry_timestamp` meta field). `None` when
+    /// no shutdown has been announced.
+    pub expiry_timestamp: Option<u64>,
+    /// Invite code of the federation users should migrate to before the
+    /// shutdown (`federation_successor` meta field). Already validated to parse
+    /// as an [`InviteCode`]; `None` when the guardians have not set one.
+    pub successor_invite: Option<String>,
 }
 
 #[derive(Debug, Serialize, Clone, Eq, PartialEq, Encodable, Decodable)]
@@ -1001,7 +1016,16 @@ impl Multimint {
             info_to_flutter("Purged FederationMeta cache for schema migration v1").await;
         }
 
-        let target_version: u64 = 1;
+        if current_version < 2 {
+            // Migration v2: FederationMeta gained expiry_timestamp and
+            // successor_invite. Entries persisted in the old layout fail to
+            // decode (which panics on read), so purge them; the cache task
+            // rebuilds each one on its next pass.
+            dbtx.remove_by_prefix(&FederationMetaKeyPrefix).await;
+            info_to_flutter("Purged FederationMeta cache for schema migration v2").await;
+        }
+
+        let target_version: u64 = 2;
         if current_version < target_version {
             dbtx.insert_entry(&SchemaVersionKey, &target_version).await;
             dbtx.commit_tx().await;
@@ -1758,6 +1782,30 @@ impl Multimint {
         Some(SafeUrl::parse(url_str).ok()?.to_string())
     }
 
+    /// Reads `federation_expiry_timestamp` from the meta JSON.
+    ///
+    /// The fedimint docs specify a base-10 integer of unix seconds, but the
+    /// guardian dashboard writes it as a JSON *string* (`"1767225600"`) while
+    /// `Client::get_meta_expiration_timestamp` reads a JSON *number*, so both
+    /// spellings are accepted. Anything else (negative, fractional,
+    /// non-numeric) is treated as unset rather than surfacing a bogus date.
+    fn get_expiry_timestamp(meta: &serde_json::Value) -> Option<u64> {
+        match meta.get(META_FEDERATION_EXPIRY_TIMESTAMP_KEY)? {
+            serde_json::Value::Number(n) => n.as_u64(),
+            serde_json::Value::String(s) => s.trim().parse::<u64>().ok(),
+            _ => None,
+        }
+    }
+
+    /// Reads `federation_successor` from the meta JSON, keeping it only when it
+    /// parses as an invite code so the UI never offers a join it cannot
+    /// complete.
+    fn get_successor_invite(meta: &serde_json::Value) -> Option<String> {
+        let invite = meta.get(META_FEDERATION_SUCCESSOR_KEY)?.as_str()?.trim();
+        InviteCode::from_str(invite).ok()?;
+        Some(invite.to_string())
+    }
+
     /// Resolves the Bitcoin network for a federation from whichever wallet
     /// module it has. walletv1 and walletv2 both expose `get_network()`, but a
     /// federation only has one of them, so we try both. Returns `None` for a
@@ -1867,6 +1915,8 @@ impl Multimint {
                 let picture = Self::get_url("fedi:federation_icon_url", &meta);
                 let recurringd_api = Self::get_url("recurringd_api", &meta);
                 let lnaddress_api = Self::get_url("lnaddress_api", &meta);
+                let expiry_timestamp = Self::get_expiry_timestamp(&meta);
+                let successor_invite = Self::get_successor_invite(&meta);
 
                 FederationMeta {
                     picture,
@@ -1876,6 +1926,8 @@ impl Multimint {
                     last_updated,
                     recurringd_api,
                     lnaddress_api,
+                    expiry_timestamp,
+                    successor_invite,
                 }
             }
             None => FederationMeta {
@@ -1886,6 +1938,8 @@ impl Multimint {
                 last_updated,
                 recurringd_api: None,
                 lnaddress_api: None,
+                expiry_timestamp: None,
+                successor_invite: None,
             },
         };
 
@@ -1920,6 +1974,8 @@ impl Multimint {
                     || old.welcome != federation_meta.welcome
                     || old.selector.federation_name != federation_meta.selector.federation_name
                     || old.guardians != federation_meta.guardians
+                    || old.expiry_timestamp != federation_meta.expiry_timestamp
+                    || old.successor_invite != federation_meta.successor_invite
             }
             None => true,
         };
@@ -7076,13 +7132,69 @@ mod tests {
     use std::collections::BTreeMap;
 
     use fedimint_client::module::module::recovery::RecoveryProgress;
+    use fedimint_core::config::FederationId;
     use fedimint_core::core::ModuleKind;
+    use fedimint_core::invite_code::InviteCode;
+    use fedimint_core::PeerId;
     use fedimint_lnv2_common::gateway_api::PaymentFee;
+    use serde_json::json;
 
     use crate::multimint::{
         aggregate_recovery_progress, gross_invoice_for_contract, recovery_module_for_kind,
-        RecoveryModule, MAX_GATEWAY_PPM,
+        Multimint, RecoveryModule, MAX_GATEWAY_PPM,
     };
+
+    #[test]
+    fn expiry_timestamp_accepts_number_and_string() {
+        // The guardian dashboard writes the timestamp as a string while the
+        // fedimint client helper reads a number; both spellings must parse.
+        let as_string = json!({ "federation_expiry_timestamp": "1767225600" });
+        assert_eq!(
+            Multimint::get_expiry_timestamp(&as_string),
+            Some(1_767_225_600)
+        );
+        let as_number = json!({ "federation_expiry_timestamp": 1767225600 });
+        assert_eq!(
+            Multimint::get_expiry_timestamp(&as_number),
+            Some(1_767_225_600)
+        );
+    }
+
+    #[test]
+    fn expiry_timestamp_rejects_garbage() {
+        for value in [
+            json!("soon"),
+            json!(-1),
+            json!(1.5),
+            json!(true),
+            json!(null),
+        ] {
+            let meta = json!({ "federation_expiry_timestamp": value });
+            assert_eq!(Multimint::get_expiry_timestamp(&meta), None, "{meta}");
+        }
+        assert_eq!(Multimint::get_expiry_timestamp(&json!({})), None);
+    }
+
+    #[test]
+    fn successor_invite_requires_valid_invite_code() {
+        let invite = InviteCode::new(
+            "wss://foo.bar".parse().unwrap(),
+            PeerId::from(0),
+            FederationId::dummy(),
+            None,
+        )
+        .to_string();
+        let meta = json!({ "federation_successor": invite });
+        assert_eq!(Multimint::get_successor_invite(&meta), Some(invite));
+
+        let bogus = json!({ "federation_successor": "fed11notaninvite" });
+        assert_eq!(Multimint::get_successor_invite(&bogus), None);
+        assert_eq!(
+            Multimint::get_successor_invite(&json!({ "federation_successor": 42 })),
+            None
+        );
+        assert_eq!(Multimint::get_successor_invite(&json!({})), None);
+    }
 
     fn payment_fee(base_msats: u64, ppm: u64) -> PaymentFee {
         PaymentFee {
