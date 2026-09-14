@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:io';
 
+import 'package:ecashapp/db.dart';
 import 'package:ecashapp/extensions/build_context_l10n.dart';
 import 'package:ecashapp/lib.dart';
 import 'package:ecashapp/multimint.dart';
@@ -10,13 +11,16 @@ import 'package:flutter/material.dart';
 
 class LightningAddressScreen extends StatefulWidget {
   final List<(FederationSelector, bool)> federations;
+
+  /// Called once the address for [fed] has been registered or removed, so the
+  /// app refreshes what it shows for that federation.
   final void Function(FederationSelector fed, bool recovering)
-  onLnAddressRegistered;
+  onLnAddressChanged;
 
   const LightningAddressScreen({
     super.key,
     required this.federations,
-    required this.onLnAddressRegistered,
+    required this.onLnAddressChanged,
   });
 
   @override
@@ -46,6 +50,11 @@ class _LightningAddressScreenState extends State<LightningAddressScreen> {
   final _lnApiController = TextEditingController();
   final _recurringdApiController = TextEditingController();
   bool _registering = false;
+  bool _removing = false;
+
+  /// The address currently registered for the selected federation, if any.
+  /// Only then is there something to remove.
+  LightningAddressConfig? _existingConfig;
 
   @override
   void initState() {
@@ -156,7 +165,7 @@ class _LightningAddressScreenState extends State<LightningAddressScreen> {
         domain: _selectedDomain!,
       );
 
-      widget.onLnAddressRegistered(_selectedFederation!, false);
+      widget.onLnAddressChanged(_selectedFederation!, false);
       Navigator.of(context).pop();
       ToastService().show(
         message: context.l10n.claimedAddress("$username@$_selectedDomain"),
@@ -177,6 +186,51 @@ class _LightningAddressScreenState extends State<LightningAddressScreen> {
     }
   }
 
+  /// Gives up the selected federation's address after an explicit
+  /// confirmation: the name stops working at once and anyone may claim it.
+  Future<void> _onRemovePressed() async {
+    final fed = _selectedFederation;
+    final config = _existingConfig;
+    if (fed == null || config == null) return;
+    final address = '${config.username}@${config.domain}';
+
+    final confirmed = await confirmExternalRequest(
+      context,
+      title: context.l10n.removeLnAddressConfirmTitle,
+      body: context.l10n.removeLnAddressConfirmBody(address),
+      confirmLabel: context.l10n.remove,
+    );
+    if (!confirmed || !mounted) return;
+
+    setState(() => _removing = true);
+    try {
+      await removeLnAddress(
+        federationId: fed.federationId,
+        lnAddressApi: _lnAddressApi,
+      );
+      if (!mounted) return;
+      widget.onLnAddressChanged(fed, false);
+      Navigator.of(context).pop();
+      ToastService().show(
+        message: context.l10n.removedAddress(address),
+        duration: const Duration(seconds: 5),
+        onTap: () {},
+        icon: const Icon(Icons.check),
+      );
+    } catch (e) {
+      AppLogger.instance.error("Could not remove Lightning Address: $e");
+      if (!mounted) return;
+      ToastService().show(
+        message: context.l10n.couldNotRemoveLnAddress,
+        duration: const Duration(seconds: 5),
+        onTap: () {},
+        icon: const Icon(Icons.error),
+      );
+    } finally {
+      if (mounted) setState(() => _removing = false);
+    }
+  }
+
   Future<bool> _onFederationSet(FederationSelector? fed) async {
     if (fed == null) return false;
 
@@ -185,12 +239,17 @@ class _LightningAddressScreenState extends State<LightningAddressScreen> {
 
     setState(() {
       _selectedFederation = fed;
+      _existingConfig = null;
     });
 
     try {
       final config = await getLnAddressConfig(federationId: fed.federationId);
+      // The user may have picked another federation while this one loaded;
+      // its result must not land on the one now selected.
+      if (!mounted || _selectedFederation != fed) return false;
       if (config != null) {
         setState(() {
+          _existingConfig = config;
           _selectedDomain = config.domain;
           _usernameController.text = config.username;
         });
@@ -364,6 +423,26 @@ class _LightningAddressScreenState extends State<LightningAddressScreen> {
                       : Text(context.l10n.register),
             ),
           ),
+          if (_existingConfig != null) ...[
+            const SizedBox(height: 12),
+            Center(
+              child: TextButton.icon(
+                onPressed: _removing ? null : _onRemovePressed,
+                icon: const Icon(Icons.delete_outline),
+                label:
+                    _removing
+                        ? const SizedBox(
+                          width: 20,
+                          height: 20,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        )
+                        : Text(context.l10n.removeLnAddress),
+                style: TextButton.styleFrom(
+                  foregroundColor: Theme.of(context).colorScheme.error,
+                ),
+              ),
+            ),
+          ],
           const SizedBox(height: 16),
         ] else ...[
           Padding(

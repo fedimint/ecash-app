@@ -1046,6 +1046,17 @@ pub async fn register_ln_address(
 }
 
 #[frb]
+pub async fn remove_ln_address(
+    federation_id: &FederationId,
+    ln_address_api: String,
+) -> anyhow::Result<()> {
+    let multimint = get_multimint();
+    multimint
+        .remove_ln_address(federation_id, ln_address_api)
+        .await
+}
+
+#[frb]
 pub async fn get_invite_code(federation_id: &FederationId, peer: u16) -> anyhow::Result<String> {
     let multimint = get_multimint();
     multimint.get_invite_code(federation_id, peer).await

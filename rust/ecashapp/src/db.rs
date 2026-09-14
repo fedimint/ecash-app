@@ -13,7 +13,7 @@ use fedimint_core::{
 };
 use serde::{Deserialize, Serialize};
 
-use crate::multimint::FederationMeta;
+use crate::multimint::{FederationMeta, FederationSelector, Guardian};
 
 /// A `SystemTime` persisted in our database.
 ///
@@ -222,6 +222,20 @@ impl_db_lookup!(
     key = FederationMetaKey,
     query_prefix = FederationMetaKeyPrefix,
 );
+
+/// `FederationMeta` as persisted before schema v3, without `expiry_timestamp`
+/// and `successor_invite`. Kept only so the v3 migration can decode entries
+/// written by earlier builds and re-encode them in the current layout.
+#[derive(Debug, Encodable, Decodable)]
+pub(crate) struct FederationMetaV1 {
+    pub(crate) picture: Option<String>,
+    pub(crate) welcome: Option<String>,
+    pub(crate) guardians: Vec<Guardian>,
+    pub(crate) selector: FederationSelector,
+    pub(crate) last_updated: u64,
+    pub(crate) recurringd_api: Option<String>,
+    pub(crate) lnaddress_api: Option<String>,
+}
 
 #[derive(Debug, Encodable, Decodable)]
 pub(crate) struct BtcPriceKey;

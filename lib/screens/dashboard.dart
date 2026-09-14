@@ -19,9 +19,11 @@ import 'package:ecashapp/scan.dart';
 import 'package:ecashapp/theme.dart';
 import 'package:ecashapp/models.dart';
 
+import 'package:ecashapp/screens/federation_expiry_screen.dart';
 import 'package:ecashapp/screens/my_wallet_screen.dart';
 import 'package:ecashapp/widgets/dashboard_balance.dart';
 import 'package:ecashapp/widgets/empty_transactions.dart';
+import 'package:ecashapp/widgets/federation_expiry_banner.dart';
 import 'package:ecashapp/widgets/pending_deposit_item.dart';
 import 'package:ecashapp/widgets/transaction_item.dart';
 
@@ -30,11 +32,16 @@ class Dashboard extends StatefulWidget {
   final bool recovering;
   final VoidCallback onLeaveFederation;
 
+  /// Selects a freshly joined federation. Needed here because the shutdown
+  /// details screen lets the user join the announced successor.
+  final void Function(FederationSelector fed, bool recovering) onJoin;
+
   const Dashboard({
     super.key,
     required this.fed,
     required this.recovering,
     required this.onLeaveFederation,
+    required this.onJoin,
   });
 
   @override
@@ -57,6 +64,13 @@ class _DashboardState extends State<Dashboard> {
   VoidCallback? _pendingAction;
   LightningAddressConfig? _lnAddressConfig;
 
+  /// Guardian-announced shutdown, read from the cached federation meta. Either
+  /// being set puts the warning banner under the balance.
+  BigInt? _expiryTimestamp;
+  String? _successorInvite;
+  bool get _isShuttingDown =>
+      _expiryTimestamp != null || _successorInvite != null;
+
   List<Transaction> _recentTransactions = [];
   bool _isLoadingTransactions = true;
 
@@ -78,6 +92,7 @@ class _DashboardState extends State<Dashboard> {
     _loadBalance();
     _loadBtcPrices();
     _loadLightningAddress();
+    _loadFederationMeta();
     _loadRecentTransactions();
 
     final depositEvents =
@@ -161,6 +176,13 @@ class _DashboardState extends State<Dashboard> {
         if (federationIdString == selectorIdString) {
           _loadBalance();
           _loadRecentTransactions();
+        }
+      } else if (event is MultimintEvent_MetaUpdated) {
+        final selectorIdString = await federationIdToString(
+          federationId: widget.fed.federationId,
+        );
+        if (event.field0 == selectorIdString) {
+          _loadFederationMeta();
         }
       }
     });
@@ -247,6 +269,48 @@ class _DashboardState extends State<Dashboard> {
     setState(() {
       _lnAddressConfig = config;
     });
+  }
+
+  /// Reads the shutdown announcement off the cached meta. The background cache
+  /// task keeps that fresh and publishes MetaUpdated when the guardians change
+  /// it, so this is a local read that never waits on a guardian.
+  Future<void> _loadFederationMeta() async {
+    final FederationMeta meta;
+    try {
+      meta = await getFederationMeta(federationId: widget.fed.federationId);
+    } catch (e) {
+      // Expected when the federation was left while this screen is still up.
+      AppLogger.instance.warn('Could not load federation meta: $e');
+      return;
+    }
+    if (!mounted) return;
+    setState(() {
+      _expiryTimestamp = meta.expiryTimestamp;
+      _successorInvite = meta.successorInvite;
+    });
+  }
+
+  void _openShutdownDetails() {
+    final lnAddress = _lnAddressConfig;
+    final hasBalance = balanceMsats != null && balanceMsats! > BigInt.zero;
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder:
+            (_) => FederationExpiryScreen(
+              federationName: widget.fed.federationName,
+              expiryTimestamp: _expiryTimestamp,
+              successorInvite: _successorInvite,
+              balanceMsats: balanceMsats,
+              onJoin: widget.onJoin,
+              onMoveFunds: hasBalance ? _onSendPressed : null,
+              lightningAddress:
+                  lnAddress != null
+                      ? '${lnAddress.username}@${lnAddress.domain}'
+                      : null,
+            ),
+      ),
+    );
   }
 
   List<String> _getModulesForPaymentType() {
@@ -413,6 +477,9 @@ class _DashboardState extends State<Dashboard> {
 
   @override
   Widget build(BuildContext context) {
+    // Zero when nothing is announced, so the header lays out exactly as before.
+    final bannerExtent =
+        _isShuttingDown ? federationExpiryBannerExtent(context) : 0.0;
     return Scaffold(
       floatingActionButton:
           recovering
@@ -463,6 +530,11 @@ class _DashboardState extends State<Dashboard> {
                       isLoadingPrices: _isLoadingPrices,
                       pricesFailed: _pricesFailed,
                     ),
+                    if (_isShuttingDown)
+                      FederationExpiryBanner(
+                        expiryTimestamp: _expiryTimestamp,
+                        onTap: _openShutdownDetails,
+                      ),
                     const SizedBox(height: 24),
                     RecoveryStatus(
                       key: ValueKey(_selectedPaymentType),
@@ -482,8 +554,12 @@ class _DashboardState extends State<Dashboard> {
                       SliverPersistentHeader(
                         pinned: true,
                         delegate: _DashboardBalanceHeader(
-                          minExtent: _headerMinExtent,
-                          maxExtent: _headerMaxExtent,
+                          minExtent: _headerMinExtent + bannerExtent,
+                          maxExtent: _headerMaxExtent + bannerExtent,
+                          expiryTimestamp: _expiryTimestamp,
+                          successorInvite: _successorInvite,
+                          bannerExtent: bannerExtent,
+                          onShutdownTap: _openShutdownDetails,
                           balanceMsats: balanceMsats,
                           isLoading: isLoadingBalance,
                           recovering: recovering,
@@ -674,9 +750,23 @@ class _DashboardBalanceHeader extends SliverPersistentHeaderDelegate {
   final VoidCallback? onWalletTap;
   final Color backgroundColor;
 
+  /// Guardian-announced shutdown. The banner shows when either is set.
+  final BigInt? expiryTimestamp;
+  final String? successorInvite;
+
+  /// Vertical space reserved under the balance for the banner; both extents
+  /// already include it, so the collapse range is unchanged. Zero without an
+  /// announcement.
+  final double bannerExtent;
+  final VoidCallback onShutdownTap;
+
   _DashboardBalanceHeader({
     required this.minExtent,
     required this.maxExtent,
+    required this.expiryTimestamp,
+    required this.successorInvite,
+    required this.bannerExtent,
+    required this.onShutdownTap,
     required this.balanceMsats,
     required this.isLoading,
     required this.recovering,
@@ -697,24 +787,45 @@ class _DashboardBalanceHeader extends SliverPersistentHeaderDelegate {
   ) {
     final range = maxExtent - minExtent;
     final t = (shrinkOffset / range).clamp(0.0, 1.0);
+    final showBanner = expiryTimestamp != null || successorInvite != null;
     return ClipRect(
       child: SizedBox.expand(
         child: ColoredBox(
           color: backgroundColor,
-          child: Padding(
-            padding: EdgeInsets.only(top: lerpDouble(48.0, 8.0, t)!),
-            child: DashboardBalance(
-              balanceMsats: balanceMsats,
-              isLoading: isLoading,
-              recovering: recovering,
-              btcPrices: btcPrices,
-              isLoadingPrices: isLoadingPrices,
-              pricesFailed: pricesFailed,
-              lnAddressConfig: lnAddressConfig,
-              onLnAddressTap: onLnAddressTap,
-              onWalletTap: onWalletTap,
-              collapseProgress: t,
-            ),
+          child: Stack(
+            children: [
+              // The balance keeps the space it had before; the banner is
+              // anchored below it so it stays fully visible while the balance
+              // collapses.
+              Positioned.fill(
+                bottom: bannerExtent,
+                child: Padding(
+                  padding: EdgeInsets.only(top: lerpDouble(48.0, 8.0, t)!),
+                  child: DashboardBalance(
+                    balanceMsats: balanceMsats,
+                    isLoading: isLoading,
+                    recovering: recovering,
+                    btcPrices: btcPrices,
+                    isLoadingPrices: isLoadingPrices,
+                    pricesFailed: pricesFailed,
+                    lnAddressConfig: lnAddressConfig,
+                    onLnAddressTap: onLnAddressTap,
+                    onWalletTap: onWalletTap,
+                    collapseProgress: t,
+                  ),
+                ),
+              ),
+              if (showBanner)
+                Positioned(
+                  left: 0,
+                  right: 0,
+                  bottom: 0,
+                  child: FederationExpiryBanner(
+                    expiryTimestamp: expiryTimestamp,
+                    onTap: onShutdownTap,
+                  ),
+                ),
+            ],
           ),
         ),
       ),
@@ -730,6 +841,9 @@ class _DashboardBalanceHeader extends SliverPersistentHeaderDelegate {
         isLoadingPrices != oldDelegate.isLoadingPrices ||
         pricesFailed != oldDelegate.pricesFailed ||
         lnAddressConfig != oldDelegate.lnAddressConfig ||
+        expiryTimestamp != oldDelegate.expiryTimestamp ||
+        successorInvite != oldDelegate.successorInvite ||
+        bannerExtent != oldDelegate.bannerExtent ||
         minExtent != oldDelegate.minExtent ||
         maxExtent != oldDelegate.maxExtent;
   }

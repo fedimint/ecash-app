@@ -31,12 +31,15 @@ use fedimint_core::{
     base32::{decode_prefixed, encode_prefixed, FEDIMINT_PREFIX},
     config::{FederationId, META_FEDERATION_NAME_KEY},
     core::{ModuleInstanceId, ModuleKind},
-    db::{mem_impl::MemDatabase, Database, IDatabaseTransactionOpsCoreTyped},
+    db::{
+        mem_impl::MemDatabase, Database, DatabaseKeyPrefix, DatabaseTransaction,
+        IDatabaseTransactionOpsCore, IDatabaseTransactionOpsCoreTyped,
+    },
     encoding::{Decodable, Encodable},
     endpoint_constants::CONSENSUS_ORD_LATENCY_ENDPOINT,
     envs::BitcoinRpcConfig,
     invite_code::InviteCode,
-    module::{ApiAuth, ApiRequestErased},
+    module::{registry::ModuleDecoderRegistry, ApiAuth, ApiRequestErased},
     task::TaskGroup,
     util::SafeUrl,
     Amount, NumPeers,
@@ -107,8 +110,9 @@ use crate::{
     db::{
         BitcoinDisplay, BitcoinDisplayKey, BtcPrice, BtcPriceKey, BtcPrices, BtcPricesKey,
         Connector, ContactSyncConfigKey, FederationBackupKey, FederationMetaKey,
-        FederationMetaKeyPrefix, FiatCurrency, FiatCurrencyKey, LightningAddressConfig,
-        LightningAddressKey, LightningAddressKeyPrefix, SchemaVersionKey, Timestamp,
+        FederationMetaKeyPrefix, FederationMetaV1, FiatCurrency, FiatCurrencyKey,
+        LightningAddressConfig, LightningAddressKey, LightningAddressKeyPrefix, SchemaVersionKey,
+        Timestamp,
     },
     error_to_flutter, get_nostr_client, info_to_flutter, payment_error_to_flutter,
     wallet::WalletHandler,
@@ -933,6 +937,56 @@ impl OnChainWithdrawalMeta {
     }
 }
 
+/// Schema v3: re-encodes every cached `FederationMeta` written in the layout
+/// before `expiry_timestamp` and `successor_invite` existed, with both unset.
+/// Entries already in the current layout are left alone; anything else is
+/// dropped for the cache task to rebuild. Returns how many were re-encoded and
+/// how many dropped.
+async fn migrate_federation_meta_v3<Cap: Send>(
+    dbtx: &mut DatabaseTransaction<'_, Cap>,
+) -> (usize, usize) {
+    let decoders = ModuleDecoderRegistry::default();
+    let entries: Vec<(Vec<u8>, Vec<u8>)> = dbtx
+        .raw_find_by_prefix(&FederationMetaKeyPrefix.to_bytes())
+        .await
+        .expect("Unrecoverable error reading the FederationMeta cache")
+        .collect()
+        .await;
+
+    let (mut migrated, mut dropped) = (0, 0);
+    for (key, value) in entries {
+        if FederationMeta::consensus_decode_whole(&value, &decoders).is_ok() {
+            continue;
+        }
+        match FederationMetaV1::consensus_decode_whole(&value, &decoders) {
+            Ok(old) => {
+                let current = FederationMeta {
+                    picture: old.picture,
+                    welcome: old.welcome,
+                    guardians: old.guardians,
+                    selector: old.selector,
+                    last_updated: old.last_updated,
+                    recurringd_api: old.recurringd_api,
+                    lnaddress_api: old.lnaddress_api,
+                    expiry_timestamp: None,
+                    successor_invite: None,
+                };
+                dbtx.raw_insert_bytes(&key, &current.consensus_encode_to_vec())
+                    .await
+                    .expect("Unrecoverable error writing the FederationMeta cache");
+                migrated += 1;
+            }
+            Err(_) => {
+                dbtx.raw_remove_entry(&key)
+                    .await
+                    .expect("Unrecoverable error removing a FederationMeta cache entry");
+                dropped += 1;
+            }
+        }
+    }
+    (migrated, dropped)
+}
+
 impl Multimint {
     pub async fn new(db: Database, creation_type: MultimintCreation) -> anyhow::Result<Self> {
         let start = Instant::now();
@@ -1016,16 +1070,21 @@ impl Multimint {
             info_to_flutter("Purged FederationMeta cache for schema migration v1").await;
         }
 
-        if current_version < 2 {
-            // Migration v2: FederationMeta gained expiry_timestamp and
-            // successor_invite. Entries persisted in the old layout fail to
-            // decode (which panics on read), so purge them; the cache task
-            // rebuilds each one on its next pass.
-            dbtx.remove_by_prefix(&FederationMetaKeyPrefix).await;
-            info_to_flutter("Purged FederationMeta cache for schema migration v2").await;
+        if current_version < 3 {
+            // Migration v3: FederationMeta gained expiry_timestamp and
+            // successor_invite. Re-encode each cached entry with both unset so
+            // it decodes again; the cache task fills in the real values on its
+            // next pass. (v2 purged the cache instead, but a database can be
+            // at v2 through a build that never shipped, so the step is redone
+            // as v3 in a form that copes with whatever it finds.)
+            let (migrated, dropped) = migrate_federation_meta_v3(&mut dbtx).await;
+            info_to_flutter(format!(
+                "Schema migration v3: re-encoded {migrated} cached FederationMeta entries, dropped {dropped}"
+            ))
+            .await;
         }
 
-        let target_version: u64 = 2;
+        let target_version: u64 = 3;
         if current_version < target_version {
             dbtx.insert_entry(&SchemaVersionKey, &target_version).await;
             dbtx.commit_tx().await;
@@ -5605,6 +5664,21 @@ impl Multimint {
         Ok(())
     }
 
+    /// Gives up the Lightning Address registered for a federation, on the
+    /// server and locally. Errors when none is registered.
+    pub async fn remove_ln_address(
+        &self,
+        federation_id: &FederationId,
+        ln_address_api: String,
+    ) -> anyhow::Result<()> {
+        let config = self
+            .get_ln_address_config(federation_id)
+            .await
+            .context("No Lightning Address is registered for this federation")?;
+        self.release_ln_address(federation_id, &config, &ln_address_api)
+            .await
+    }
+
     /// Register LNURL/LN Address
     pub async fn register_ln_address(
         &self,
@@ -7134,15 +7208,84 @@ mod tests {
     use fedimint_client::module::module::recovery::RecoveryProgress;
     use fedimint_core::config::FederationId;
     use fedimint_core::core::ModuleKind;
+    use fedimint_core::db::mem_impl::MemDatabase;
+    use fedimint_core::db::{
+        Database, DatabaseKeyPrefix, IDatabaseTransactionOpsCore, IDatabaseTransactionOpsCoreTyped,
+    };
+    use fedimint_core::encoding::Encodable;
     use fedimint_core::invite_code::InviteCode;
+    use fedimint_core::module::registry::ModuleDecoderRegistry;
     use fedimint_core::PeerId;
     use fedimint_lnv2_common::gateway_api::PaymentFee;
     use serde_json::json;
 
+    use crate::db::{FederationMetaKey, FederationMetaKeyPrefix, FederationMetaV1};
     use crate::multimint::{
-        aggregate_recovery_progress, gross_invoice_for_contract, recovery_module_for_kind,
-        Multimint, RecoveryModule, MAX_GATEWAY_PPM,
+        aggregate_recovery_progress, gross_invoice_for_contract, migrate_federation_meta_v3,
+        recovery_module_for_kind, FederationSelector, Guardian, Multimint, RecoveryModule,
+        MAX_GATEWAY_PPM,
     };
+
+    #[tokio::test]
+    async fn migration_v3_re_encodes_old_entries_and_drops_the_rest() {
+        let db = Database::new(MemDatabase::new(), ModuleDecoderRegistry::default());
+        let key = FederationMetaKey {
+            federation_id: FederationId::dummy(),
+        };
+        let old = FederationMetaV1 {
+            picture: Some("https://example.com/icon.png".to_string()),
+            welcome: Some("welcome".to_string()),
+            guardians: vec![Guardian {
+                peer_id: 0,
+                name: "alpha".to_string(),
+                version: Some("0.12.0".to_string()),
+            }],
+            selector: FederationSelector {
+                federation_name: "Old Fed".to_string(),
+                federation_id: FederationId::dummy(),
+                network: Some("bitcoin".to_string()),
+            },
+            last_updated: 42,
+            recurringd_api: Some("https://recurringd.example.com/".to_string()),
+            lnaddress_api: None,
+        };
+        // An entry in no known layout, under the same prefix.
+        let mut junk_key = FederationMetaKeyPrefix.to_bytes();
+        junk_key.push(0xff);
+
+        let mut dbtx = db.begin_transaction().await;
+        dbtx.raw_insert_bytes(&key.to_bytes(), &old.consensus_encode_to_vec())
+            .await
+            .expect("insert");
+        dbtx.raw_insert_bytes(&junk_key, b"not a federation meta")
+            .await
+            .expect("insert");
+        dbtx.commit_tx().await;
+
+        let mut dbtx = db.begin_transaction().await;
+        assert_eq!(migrate_federation_meta_v3(&mut dbtx).await, (1, 1));
+        dbtx.commit_tx().await;
+
+        let mut dbtx = db.begin_transaction_nc().await;
+        let meta = dbtx
+            .get_value(&key)
+            .await
+            .expect("the re-encoded entry reads with the derived decoder");
+        assert_eq!(meta.picture, old.picture);
+        assert_eq!(meta.welcome, old.welcome);
+        assert_eq!(meta.guardians, old.guardians);
+        assert_eq!(meta.selector, old.selector);
+        assert_eq!(meta.last_updated, old.last_updated);
+        assert_eq!(meta.recurringd_api, old.recurringd_api);
+        assert_eq!(meta.lnaddress_api, old.lnaddress_api);
+        assert_eq!(meta.expiry_timestamp, None);
+        assert_eq!(meta.successor_invite, None);
+        assert!(dbtx.raw_get_bytes(&junk_key).await.expect("read").is_none());
+
+        // Entries already in the current layout are left as they are.
+        let mut dbtx = db.begin_transaction().await;
+        assert_eq!(migrate_federation_meta_v3(&mut dbtx).await, (0, 0));
+    }
 
     #[test]
     fn expiry_timestamp_accepts_number_and_string() {

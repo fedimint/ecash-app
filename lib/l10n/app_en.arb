@@ -751,6 +751,36 @@
   "couldNotRegisterLnAddress": "Could not register Lightning Address",
   "@couldNotRegisterLnAddress": {},
 
+  "removeLnAddress": "Remove Lightning Address",
+  "@removeLnAddress": {},
+
+  "removeLnAddressConfirmTitle": "Remove Lightning Address?",
+  "@removeLnAddressConfirmTitle": {},
+
+  "removeLnAddressConfirmBody": "{address} will stop working right away. Payments sent to it will fail, and the name becomes free for anyone to claim.",
+  "@removeLnAddressConfirmBody": {
+    "placeholders": {
+      "address": {
+        "type": "String"
+      }
+    }
+  },
+
+  "remove": "Remove",
+  "@remove": {},
+
+  "removedAddress": "Removed {address}",
+  "@removedAddress": {
+    "placeholders": {
+      "address": {
+        "type": "String"
+      }
+    }
+  },
+
+  "couldNotRemoveLnAddress": "Could not remove Lightning Address",
+  "@couldNotRemoveLnAddress": {},
+
   "leaveFederation": "Leave Federation",
   "@leaveFederation": {},
 
@@ -2092,5 +2122,128 @@
     }
   },
 
-  "nwcDailyBudgetDialogBody": "The most a paired app may spend in total over 24 hours. The count starts with its first payment and resets 24 hours later."
+  "nwcDailyBudgetDialogBody": "The most a paired app may spend in total over 24 hours. The count starts with its first payment and resets 24 hours later.",
+
+  "federationExpiryBannerTitle": "This federation is shutting down",
+  "@federationExpiryBannerTitle": {},
+
+  "federationExpiryBannerSubtitle": "Closes on {date}. Tap for details.",
+  "@federationExpiryBannerSubtitle": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+
+  "federationExpiryBannerSubtitlePast": "Closed on {date}. Tap for details.",
+  "@federationExpiryBannerSubtitlePast": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+
+  "federationExpiryBannerSubtitleSuccessor": "The guardians named a successor federation. Tap for details.",
+  "@federationExpiryBannerSubtitleSuccessor": {},
+
+  "federationExpiryTitle": "Federation shutdown",
+  "@federationExpiryTitle": {},
+
+  "federationExpiryHeadline": "{federationName} is shutting down",
+  "@federationExpiryHeadline": {
+    "placeholders": {
+      "federationName": {
+        "type": "String"
+      }
+    }
+  },
+
+  "federationExpiryHeadlinePast": "{federationName} has shut down",
+  "@federationExpiryHeadlinePast": {
+    "placeholders": {
+      "federationName": {
+        "type": "String"
+      }
+    }
+  },
+
+  "federationExpiryClosesOn": "Closes on",
+  "@federationExpiryClosesOn": {},
+
+  "federationExpiryClosedOn": "Closed on",
+  "@federationExpiryClosedOn": {},
+
+  "federationExpiryTimeRemaining": "Time remaining",
+  "@federationExpiryTimeRemaining": {},
+
+  "federationExpiryYourBalance": "Your balance",
+  "@federationExpiryYourBalance": {},
+
+  "federationExpiryPassed": "Deadline passed",
+  "@federationExpiryPassed": {},
+
+  "federationExpiryInDays": "{count, plural, =1{1 day} other{{count} days}}",
+  "@federationExpiryInDays": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+
+  "federationExpiryInHours": "{count, plural, =1{1 hour} other{{count} hours}}",
+  "@federationExpiryInHours": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+
+  "federationExpiryInMinutes": "{count, plural, =1{1 minute} other{{count} minutes}}",
+  "@federationExpiryInMinutes": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+
+  "federationExpiryExplanation": "The guardians who run this federation have announced its shutdown. Once it closes, ecash issued by it can no longer be redeemed, and any balance still held here is lost.",
+  "@federationExpiryExplanation": {},
+
+  "federationExpiryWhatToDo": "What to do",
+  "@federationExpiryWhatToDo": {},
+
+  "federationExpiryStepReceivesOff": "Stop receiving into this federation. Share invoices and addresses from another federation instead.",
+  "@federationExpiryStepReceivesOff": {},
+
+  "federationExpiryStepRemoveLightningAddress": "Remove your Lightning Address {address}. It is registered with this federation alone, so it keeps paying in here until it is removed. Setting one up on another federation does not replace it.",
+  "@federationExpiryStepRemoveLightningAddress": {
+    "placeholders": {
+      "address": {
+        "type": "String"
+      }
+    }
+  },
+
+  "federationExpiryStepMoveFunds": "Move your balance out, for example with a Lightning payment to another wallet or federation.",
+  "@federationExpiryStepMoveFunds": {},
+
+  "federationExpiryStepJoinAnother": "Join another federation so you can keep using the app.",
+  "@federationExpiryStepJoinAnother": {},
+
+  "federationExpiryStepJoinSuccessor": "Join the successor federation the guardians recommend, then move your balance there.",
+  "@federationExpiryStepJoinSuccessor": {},
+
+  "federationExpiryMoveFunds": "Move funds",
+  "@federationExpiryMoveFunds": {},
+
+  "federationExpiryFindFederation": "Find a federation",
+  "@federationExpiryFindFederation": {},
+
+  "federationExpiryJoinSuccessor": "Join successor federation",
+  "@federationExpiryJoinSuccessor": {}
 }

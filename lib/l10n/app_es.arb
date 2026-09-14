@@ -215,6 +215,12 @@
   "unableToCheckAvailability": "No se pudo verificar la disponibilidad de Dirección Lightning",
   "claimedAddress": "Se reclamó {address}",
   "couldNotRegisterLnAddress": "No se pudo registrar la Dirección Lightning",
+  "removeLnAddress": "Eliminar Dirección Lightning",
+  "removeLnAddressConfirmTitle": "¿Eliminar Dirección Lightning?",
+  "removeLnAddressConfirmBody": "{address} dejará de funcionar de inmediato. Los pagos enviados a ella fallarán y el nombre quedará libre para que cualquiera lo reclame.",
+  "remove": "Eliminar",
+  "removedAddress": "Se eliminó {address}",
+  "couldNotRemoveLnAddress": "No se pudo eliminar la Dirección Lightning",
   "leaveFederation": "Abandonar Federación",
   "leaveFederationConfirm": "¿Estás seguro de que quieres abandonar esta federación? Necesitarás volver a unirte para acceder a los fondos restantes.",
   "currentBalance": "Saldo actual",
@@ -605,5 +611,55 @@
 
   "nwcDailyBudgetSubtitle": "{sats} sats por día",
 
-  "nwcDailyBudgetDialogBody": "Lo máximo que una app vinculada puede gastar en total durante 24 horas. El conteo empieza con su primer pago y se reinicia 24 horas después."
+  "nwcDailyBudgetDialogBody": "Lo máximo que una app vinculada puede gastar en total durante 24 horas. El conteo empieza con su primer pago y se reinicia 24 horas después.",
+
+  "federationExpiryBannerTitle": "Esta federación va a cerrar",
+
+  "federationExpiryBannerSubtitle": "Cierra el {date}. Toca para ver detalles.",
+
+  "federationExpiryBannerSubtitlePast": "Cerró el {date}. Toca para ver detalles.",
+
+  "federationExpiryBannerSubtitleSuccessor": "Los guardianes nombraron una federación sucesora. Toca para ver detalles.",
+
+  "federationExpiryTitle": "Cierre de la federación",
+
+  "federationExpiryHeadline": "{federationName} va a cerrar",
+
+  "federationExpiryHeadlinePast": "{federationName} ha cerrado",
+
+  "federationExpiryClosesOn": "Cierra el",
+
+  "federationExpiryClosedOn": "Cerró el",
+
+  "federationExpiryTimeRemaining": "Tiempo restante",
+
+  "federationExpiryYourBalance": "Tu saldo",
+
+  "federationExpiryPassed": "Plazo vencido",
+
+  "federationExpiryInDays": "{count, plural, =1{1 día} other{{count} días}}",
+
+  "federationExpiryInHours": "{count, plural, =1{1 hora} other{{count} horas}}",
+
+  "federationExpiryInMinutes": "{count, plural, =1{1 minuto} other{{count} minutos}}",
+
+  "federationExpiryExplanation": "Los guardianes que operan esta federación han anunciado su cierre. Una vez cerrada, el ecash que emitió ya no podrá canjearse y cualquier saldo que quede aquí se perderá.",
+
+  "federationExpiryWhatToDo": "Qué hacer",
+
+  "federationExpiryStepReceivesOff": "Deja de recibir en esta federación. Comparte facturas y direcciones de otra federación en su lugar.",
+
+  "federationExpiryStepRemoveLightningAddress": "Elimina tu Lightning Address {address}. Está registrada solo en esta federación, así que seguirá pagando aquí hasta que la elimines. Configurar una en otra federación no la reemplaza.",
+
+  "federationExpiryStepMoveFunds": "Saca tu saldo, por ejemplo con un pago Lightning a otra billetera o federación.",
+
+  "federationExpiryStepJoinAnother": "Únete a otra federación para seguir usando la app.",
+
+  "federationExpiryStepJoinSuccessor": "Únete a la federación sucesora que recomiendan los guardianes y luego mueve tu saldo allí.",
+
+  "federationExpiryMoveFunds": "Mover fondos",
+
+  "federationExpiryFindFederation": "Buscar una federación",
+
+  "federationExpiryJoinSuccessor": "Unirse a la federación sucesora"
 }
