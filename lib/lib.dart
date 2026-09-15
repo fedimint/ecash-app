@@ -402,7 +402,7 @@ Future<String> awaitWithdraw({
   operationId: operationId,
 );
 
-Future<BigInt> getMaxWithdrawableAmount({
+Future<MaxWithdrawQuote> getMaxWithdrawableAmount({
   required FederationId federationId,
   required String address,
 }) => RustLib.instance.api.crateGetMaxWithdrawableAmount(

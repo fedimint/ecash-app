@@ -92,19 +92,16 @@ class _OnchainSendState extends State<OnchainSend> {
 
     try {
       if (widget.withdrawalMode == WithdrawalMode.maxBalance) {
-        final maxAmount = await getMaxWithdrawableAmount(
+        // Sized and priced in one quote, so the send pays exactly the miner
+        // fee the amount was sized against.
+        final quote = await getMaxWithdrawableAmount(
           federationId: widget.fed.federationId,
           address: _addressController.text.trim(),
         );
-
-        final feesResponse = await calculateWithdrawFees(
-          federationId: widget.fed.federationId,
-          address: _addressController.text.trim(),
-          amountSats: maxAmount,
-        );
+        final feesResponse = quote.fees;
 
         setState(() {
-          _actualWithdrawalAmount = maxAmount;
+          _actualWithdrawalAmount = quote.amountSats;
           _feeAmountSats = feesResponse.feeAmount;
           _federationFeeMsats = feesResponse.federationFeeMsats;
           _feeRateSatsPerVbyte = feesResponse.feeRateSatsPerVb;

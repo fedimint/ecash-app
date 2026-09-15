@@ -32,7 +32,7 @@ use lnurl_client::LnurlWithdrawParams;
 use multimint::{
     EcashSendFees, FederationMeta, FederationSelector, GuardianAuditSummary,
     GuardianBackupStatistics, GuardianMetaState, GuardianStatusSummary, LightningSendOutcome,
-    LogLevel, Multimint, MultimintCreation, MultimintEvent, OOBNotesWrapper,
+    LogLevel, MaxWithdrawQuote, Multimint, MultimintCreation, MultimintEvent, OOBNotesWrapper,
     PaymentPreviewWithGateways, PeginFeeQuote, ReceiveAmount, RecoveryModule, ReissueFees,
     Transaction, Utxo, WithdrawFees, WithdrawFeesResponse,
 };
@@ -818,7 +818,7 @@ pub async fn await_withdraw(
 pub async fn get_max_withdrawable_amount(
     federation_id: &FederationId,
     address: String,
-) -> Result<u64, EcashAppError> {
+) -> Result<MaxWithdrawQuote, EcashAppError> {
     let multimint = get_multimint();
     multimint
         .get_max_withdrawable_amount(federation_id, address)

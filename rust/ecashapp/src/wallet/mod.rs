@@ -37,7 +37,8 @@ use crate::{
     get_event_bus, info_to_flutter,
     multimint::{
         AwaitingConfsEvent, ClaimedEvent, ConfirmedEvent, DepositEventKind, JoinedFederation,
-        MempoolEvent, MultimintEvent, OnChainWithdrawalMeta, WithdrawFees, WithdrawFeesResponse,
+        MaxWithdrawQuote, MempoolEvent, MultimintEvent, OnChainWithdrawalMeta, WithdrawFees,
+        WithdrawFeesResponse,
     },
     payment_error_to_flutter,
 };
@@ -882,50 +883,12 @@ impl WalletHandler {
         }
 
         if let Ok(walletv2) = client.get_first_module::<WalletV2Module>() {
-            // walletv2 charges a flat send fee; the on-chain tx is always
-            // 1-in/1-out, so its vbytes are a per-federation constant taken from
-            // the wallet config.
-            let address = bitcoin::Address::from_str(&address)
-                .map_err(|e| EcashAppError::InvalidBitcoinAddress(e.to_string()))?;
-            address
-                .require_network(walletv2.get_network())
-                .map_err(|e| EcashAppError::InvalidBitcoinAddress(e.to_string()))?;
-
-            let fee_sats = walletv2
+            Self::require_walletv2_address(client, &address)?;
+            let fee = walletv2
                 .send_fee()
                 .await
-                .map_err(EcashAppError::from_display)?
-                .to_sat();
-            let tx_size_vbytes = Self::walletv2_send_tx_vbytes(client).await?;
-            let fee_rate_sats_per_vb = if tx_size_vbytes > 0 {
-                fee_sats as f64 / f64::from(tx_size_vbytes)
-            } else {
-                0.0
-            };
-
-            // The amount is bounded above, but `fee_sats` is federation-reported
-            // and could still push the sum past `u64::MAX`.
-            let funded_sats = amount_sats.checked_add(fee_sats).ok_or_else(|| {
-                EcashAppError::other(format!(
-                    "withdrawal amount {amount_sats} sats plus network fee {fee_sats} sats is out of range"
-                ))
-            })?;
-
-            // Federation fee for funding the on-chain output (withdrawal amount
-            // plus the miner fee) from ecash. Display-only, so degrade to 0.
-            let federation_fee_msats = walletv2
-                .send_fee_quote(bitcoin::Amount::from_sat(funded_sats))
-                .await
-                .map(|q| q.total().get_bitcoin().msats)
-                .unwrap_or(0);
-
-            return Ok(WithdrawFeesResponse {
-                fee_amount: fee_sats,
-                fee_rate_sats_per_vb,
-                tx_size_vbytes,
-                federation_fee_msats,
-                fees: WithdrawFees::V2 { fee_sats },
-            });
+                .map_err(EcashAppError::from_display)?;
+            return Self::walletv2_withdraw_fees(client, amount_sats, fee).await;
         }
 
         let wallet_module = client
@@ -966,6 +929,69 @@ impl WalletHandler {
             tx_size_vbytes: meta.tx_size_vb,
             federation_fee_msats,
             fees: WithdrawFees::V1(fees),
+        })
+    }
+
+    /// Parses `address` and checks it belongs to the walletv2 federation's
+    /// network.
+    fn require_walletv2_address(
+        client: &ClientHandleArc,
+        address: &str,
+    ) -> EcashAppResult<bitcoin::Address> {
+        let walletv2 = client
+            .get_first_module::<WalletV2Module>()
+            .map_err(|e| EcashAppError::other(format!("walletv2 module unavailable: {e:#}")))?;
+        let address = bitcoin::Address::from_str(address)
+            .map_err(|e| EcashAppError::InvalidBitcoinAddress(e.to_string()))?;
+        address
+            .require_network(walletv2.get_network())
+            .map_err(|e| EcashAppError::InvalidBitcoinAddress(e.to_string()))
+    }
+
+    /// Prices a walletv2 send of `amount_sats` at the given miner `fee`.
+    ///
+    /// walletv2 charges a flat send fee; the on-chain tx is always 1-in/1-out,
+    /// so its vbytes are a per-federation constant taken from the wallet
+    /// config. Takes the fee rather than fetching it so that a sweep is priced
+    /// at the very fee it was sized against.
+    async fn walletv2_withdraw_fees(
+        client: &ClientHandleArc,
+        amount_sats: u64,
+        fee: bitcoin::Amount,
+    ) -> EcashAppResult<WithdrawFeesResponse> {
+        let walletv2 = client
+            .get_first_module::<WalletV2Module>()
+            .map_err(|e| EcashAppError::other(format!("walletv2 module unavailable: {e:#}")))?;
+        let fee_sats = fee.to_sat();
+        let tx_size_vbytes = Self::walletv2_send_tx_vbytes(client).await?;
+        let fee_rate_sats_per_vb = if tx_size_vbytes > 0 {
+            fee_sats as f64 / f64::from(tx_size_vbytes)
+        } else {
+            0.0
+        };
+
+        // The amount is bounded above by the caller, but `fee_sats` is
+        // federation-reported and could still push the sum past `u64::MAX`.
+        let funded_sats = amount_sats.checked_add(fee_sats).ok_or_else(|| {
+            EcashAppError::other(format!(
+                "withdrawal amount {amount_sats} sats plus network fee {fee_sats} sats is out of range"
+            ))
+        })?;
+
+        // Federation fee for funding the on-chain output (withdrawal amount
+        // plus the miner fee) from ecash. Display-only, so degrade to 0.
+        let federation_fee_msats = walletv2
+            .send_fee_quote(bitcoin::Amount::from_sat(funded_sats))
+            .await
+            .map(|q| q.total().get_bitcoin().msats)
+            .unwrap_or(0);
+
+        Ok(WithdrawFeesResponse {
+            fee_amount: fee_sats,
+            fee_rate_sats_per_vb,
+            tx_size_vbytes,
+            federation_fee_msats,
+            fees: WithdrawFees::V2 { fee_sats },
         })
     }
 
@@ -1104,42 +1130,55 @@ impl WalletHandler {
         Ok(txid)
     }
 
-    /// Returns the largest amount that can be sent to `address` after fees.
+    /// Sizes a sweep of the whole balance to `address` and prices it, in one
+    /// quote. The amount and its fees go to [`Self::withdraw_to_address`]
+    /// together, so the send pays exactly the miner fee the amount assumed.
     pub(crate) async fn get_max_withdrawable_amount(
         &self,
         client: &ClientHandleArc,
         address: String,
-    ) -> EcashAppResult<u64> {
+    ) -> EcashAppResult<MaxWithdrawQuote> {
         if let Ok(walletv2) = client.get_first_module::<WalletV2Module>() {
-            let address = bitcoin::Address::from_str(&address)
-                .map_err(|e| EcashAppError::InvalidBitcoinAddress(e.to_string()))?;
-            address
-                .require_network(walletv2.get_network())
-                .map_err(|e| EcashAppError::InvalidBitcoinAddress(e.to_string()))?;
+            Self::require_walletv2_address(client, &address)?;
 
-            let balance_sats = client
+            let balance = client
                 .get_balance_for_btc()
                 .await
-                .map_err(EcashAppError::from_display)?
-                .msats
-                / 1000;
-            let fee_sats = walletv2
+                .map_err(EcashAppError::from_display)?;
+            let fee = walletv2
                 .send_fee()
                 .await
-                .map_err(EcashAppError::from_display)?
-                .to_sat();
-            let max = balance_sats
-                .checked_sub(fee_sats)
-                .ok_or_else(|| EcashAppError::other("Not enough funds to pay fees"))?;
-            return Ok(max);
+                .map_err(EcashAppError::from_display)?;
+
+            // Sending `value` funds an output of `value + fee` from ecash, and
+            // the federation charges its own fees on top of that: the wallet
+            // output fee, the mint's input and change fees, dust. Subtracting
+            // the miner fee alone therefore sized a sweep the client could
+            // never fund. fedimint finds the largest value that still funds by
+            // searching its real fee quote, since those fees move in steps
+            // with note selection and change rather than linearly.
+            //
+            // The quote below is priced at this same `fee` on purpose: the
+            // required feerate rises with each pending federation
+            // transaction, and a value sized against a stale one is rejected.
+            let amount = walletv2
+                .max_sendable_amount(balance, fee)
+                .await
+                .map_err(EcashAppError::from_display)?;
+            let fees = Self::walletv2_withdraw_fees(client, amount.to_sat(), fee).await?;
+            return Ok(MaxWithdrawQuote {
+                amount_sats: amount.to_sat(),
+                fees,
+            });
         }
 
+        // walletv1 still sizes against the miner fee alone.
         let wallet_module = client
             .get_first_module::<WalletClientModule>()
             .map_err(|e| EcashAppError::other(format!("wallet module unavailable: {e:#}")))?;
-        let address = bitcoin::Address::from_str(&address)
+        let parsed = bitcoin::Address::from_str(&address)
             .map_err(|e| EcashAppError::InvalidBitcoinAddress(e.to_string()))?;
-        let address = address
+        let parsed = parsed
             .require_network(wallet_module.get_network())
             .map_err(|e| EcashAppError::InvalidBitcoinAddress(e.to_string()))?;
         let balance = bitcoin::Amount::from_sat(
@@ -1151,14 +1190,18 @@ impl WalletHandler {
                 / 1000,
         );
         let fees = wallet_module
-            .get_withdraw_fees(&address, balance)
+            .get_withdraw_fees(&parsed, balance)
             .await
             .map_err(EcashAppError::from_display)?;
         let max_withdrawable = balance
             .checked_sub(fees.amount())
             .ok_or_else(|| EcashAppError::other("Not enough funds to pay fees"))?;
 
-        Ok(max_withdrawable.to_sat())
+        let amount_sats = max_withdrawable.to_sat();
+        let fees = self
+            .calculate_withdraw_fees(client, address, amount_sats)
+            .await?;
+        Ok(MaxWithdrawQuote { amount_sats, fees })
     }
 }
 

@@ -145,12 +145,20 @@ void main() {
         lessThan(top(tester, en.federationExpiryManageLightningAddress)),
       );
 
+      // Anything under a whole sat cannot go on-chain, so it is not offered.
       await pumpScreen(
         tester,
         expiryTimestamp: inAMonth,
-        balanceMsats: BigInt.zero,
+        balanceMsats: BigInt.from(999),
       );
       expect(find.text(en.federationExpirySendOnchain), findsNothing);
+
+      await pumpScreen(
+        tester,
+        expiryTimestamp: inAMonth,
+        balanceMsats: BigInt.from(1000),
+      );
+      expect(find.text(en.federationExpirySendOnchain), findsOneWidget);
     });
 
     testWidgets(

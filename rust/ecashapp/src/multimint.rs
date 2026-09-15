@@ -224,6 +224,16 @@ pub enum WithdrawFees {
     V2 { fee_sats: u64 },
 }
 
+/// A "send everything" on-chain sweep: the largest amount that still funds
+/// once every fee is paid, with the quote it was sized against. The two go to
+/// `withdraw_to_address` as a pair, so the send pays exactly the miner fee the
+/// amount assumed.
+#[derive(Clone, PartialEq, Serialize, Debug)]
+pub struct MaxWithdrawQuote {
+    pub amount_sats: u64,
+    pub fees: WithdrawFeesResponse,
+}
+
 pub struct ReissueFees {
     pub total_msats: u64,
     pub input_msats: u64,
@@ -5257,7 +5267,7 @@ impl Multimint {
         &self,
         federation_id: &FederationId,
         address: String,
-    ) -> EcashAppResult<u64> {
+    ) -> EcashAppResult<MaxWithdrawQuote> {
         let client = self.get_client(federation_id).await?;
         self.wallet_handler
             .get_max_withdrawable_amount(&client, address)

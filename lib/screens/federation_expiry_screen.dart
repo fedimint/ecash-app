@@ -97,6 +97,8 @@ class FederationExpiryScreen extends StatefulWidget {
   State<FederationExpiryScreen> createState() => _FederationExpiryScreenState();
 }
 
+final _oneSatMsats = BigInt.from(1000);
+
 class _FederationExpiryScreenState extends State<FederationExpiryScreen> {
   late BigInt? _balanceMsats = widget.balanceMsats;
   late String? _lightningAddress = widget.lightningAddress;
@@ -183,7 +185,8 @@ class _FederationExpiryScreenState extends State<FederationExpiryScreen> {
         expiryTimestamp != null ? expiryDateTime(expiryTimestamp) : null;
     final hasExpired = expiry != null && expiry.isBefore(DateTime.now());
     final hasSuccessor = widget.successorInvite != null;
-    final hasBalance = _balanceMsats != null && _balanceMsats! > BigInt.zero;
+    // Below one sat there is nothing an on-chain send can carry.
+    final hasBalance = _balanceMsats != null && _balanceMsats! >= _oneSatMsats;
     final lightningAddress = _lightningAddress;
     final bitcoinDisplay = context.select<PreferencesProvider, BitcoinDisplay>(
       (prefs) => prefs.bitcoinDisplay,
