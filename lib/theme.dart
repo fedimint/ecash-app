@@ -28,11 +28,6 @@ final ThemeData cypherpunkNinjaTheme = ThemeData(
       fontWeight: FontWeight.bold,
     ),
   ),
-  bottomNavigationBarTheme: const BottomNavigationBarThemeData(
-    backgroundColor: Colors.black,
-    selectedItemColor: vibrantBlue,
-    unselectedItemColor: Colors.grey,
-  ),
   textTheme: const TextTheme(
     bodyLarge: TextStyle(color: Colors.white),
     bodyMedium: TextStyle(color: Colors.white70),
