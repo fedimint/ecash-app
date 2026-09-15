@@ -2244,6 +2244,15 @@
   "federationExpiryManageLightningAddress": "Manage Lightning Address",
   "@federationExpiryManageLightningAddress": {},
 
+  "federationExpiryReceiveDisabled": "This federation is shutting down, so it can no longer receive funds.",
+  "@federationExpiryReceiveDisabled": {},
+
+  "lnAddressRegistrationClosed": "This federation is shutting down, so new Lightning Addresses can't be registered on it.",
+  "@lnAddressRegistrationClosed": {},
+
+  "lnAddressRemoveCurrent": "This federation is shutting down. Please remove the current one.",
+  "@lnAddressRemoveCurrent": {},
+
   "federationExpiryFindFederation": "Find a federation",
   "@federationExpiryFindFederation": {},
 

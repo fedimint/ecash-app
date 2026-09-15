@@ -61,6 +61,21 @@ class _LightningAddressScreenState extends State<LightningAddressScreen> {
   /// Only then is there something to remove.
   LightningAddressConfig? _existingConfig;
 
+  /// Federations whose guardians have set a shutdown date, read for every
+  /// federation before the form can show, so the registration lock never
+  /// depends on which federation was selected last or by whom. Keyed by the
+  /// same instances the dropdown offers.
+  final Set<FederationSelector> _expiringFederations = {};
+
+  /// True while the selected federation is shutting down: new registrations
+  /// are closed and only removal stays available.
+  bool get _selectedFederationExpiring =>
+      _expiringFederations.contains(_selectedFederation);
+
+  /// Set once the user picks a federation, so the initializer's sweep through
+  /// the list stops overriding that choice.
+  bool _userPickedFederation = false;
+
   @override
   void initState() {
     super.initState();
@@ -99,15 +114,41 @@ class _LightningAddressScreenState extends State<LightningAddressScreen> {
     }
   }
 
+  /// Whether [fed]'s guardians have set a shutdown date. Unreadable meta
+  /// counts as not shutting down, which is how the screen behaved before.
+  Future<bool> _isExpiring(FederationSelector fed) async {
+    try {
+      final meta = await getFederationMeta(federationId: fed.federationId);
+      return meta.expiryTimestamp != null;
+    } catch (e) {
+      AppLogger.instance.warn("Could not read federation meta: $e");
+      return false;
+    }
+  }
+
   Future<void> _initialize() async {
     _usernameController.addListener(_onUsernameChanged);
+
+    // Before the form can show: which federations are shutting down.
+    final candidates = [
+      for (final (fed, recovering) in widget.federations)
+        if (!recovering) fed,
+    ];
+    final expiring = await Future.wait(candidates.map(_isExpiring));
+    if (!mounted) return;
+    setState(() {
+      for (final (index, fed) in candidates.indexed) {
+        if (expiring[index]) _expiringFederations.add(fed);
+      }
+    });
+
     await _updateDomains();
 
     // The caller's federation, if it named one the dropdown can show.
     final wanted = widget.initialFederationId;
     if (wanted != null) {
       for (final (fed, recovering) in widget.federations) {
-        if (recovering) continue;
+        if (recovering || _userPickedFederation) continue;
         final id = await federationIdToString(federationId: fed.federationId);
         if (id == wanted) {
           await _onFederationSet(fed);
@@ -119,6 +160,8 @@ class _LightningAddressScreenState extends State<LightningAddressScreen> {
     // Otherwise the first federation that already has an address.
     if (widget.federations.isNotEmpty) {
       for (final fed in widget.federations) {
+        // A choice the user made meanwhile wins over this sweep.
+        if (_userPickedFederation) break;
         if (await _onFederationSet(fed.$1)) {
           break;
         }
@@ -172,6 +215,7 @@ class _LightningAddressScreenState extends State<LightningAddressScreen> {
   }
 
   Future<void> _onRegisteredPressed() async {
+    if (_selectedFederationExpiring) return;
     setState(() => _registering = true);
     try {
       final username = _usernameController.text.trim();
@@ -275,6 +319,7 @@ class _LightningAddressScreenState extends State<LightningAddressScreen> {
       }
 
       final meta = await getFederationMeta(federationId: fed.federationId);
+      if (!mounted || _selectedFederation != fed) return hasConfig;
       if (meta.recurringdApi != null) {
         setState(() {
           _recurringdApi = meta.recurringdApi!;
@@ -306,6 +351,10 @@ class _LightningAddressScreenState extends State<LightningAddressScreen> {
       children: [
         if (_domains.isNotEmpty) ...[
           DropdownButtonFormField<FederationSelector>(
+            // A form field reads initialValue once, so it is recreated when
+            // the selection changes under it; otherwise the initializer's
+            // pick was never shown and the field looked unset.
+            key: ValueKey(_selectedFederation),
             decoration: InputDecoration(
               labelText: context.l10n.selectAFederation,
             ),
@@ -320,6 +369,7 @@ class _LightningAddressScreenState extends State<LightningAddressScreen> {
                     )
                     .toList(),
             onChanged: (value) {
+              _userPickedFederation = true;
               _onFederationSet(value);
               _onUsernameChanged();
             },
@@ -331,6 +381,7 @@ class _LightningAddressScreenState extends State<LightningAddressScreen> {
                 flex: 3,
                 child: TextFormField(
                   controller: _usernameController,
+                  enabled: !_selectedFederationExpiring,
                   decoration: InputDecoration(labelText: context.l10n.username),
                 ),
               ),
@@ -353,11 +404,14 @@ class _LightningAddressScreenState extends State<LightningAddressScreen> {
                             ),
                           )
                           .toList(),
-                  onChanged: (value) {
-                    setState(() {
-                      _selectedDomain = value;
-                    });
-                  },
+                  onChanged:
+                      _selectedFederationExpiring
+                          ? null
+                          : (value) {
+                            setState(() {
+                              _selectedDomain = value;
+                            });
+                          },
                 ),
               ),
             ],
@@ -417,12 +471,24 @@ class _LightningAddressScreenState extends State<LightningAddressScreen> {
                 ),
               ),
             ),
+          if (_selectedFederationExpiring)
+            Padding(
+              padding: const EdgeInsets.only(top: 16),
+              child: Text(
+                _existingConfig != null
+                    ? context.l10n.lnAddressRemoveCurrent
+                    : context.l10n.lnAddressRegistrationClosed,
+                textAlign: TextAlign.center,
+                style: TextStyle(color: Theme.of(context).colorScheme.error),
+              ),
+            ),
           const SizedBox(height: 32),
           Center(
             child: ElevatedButton(
               onPressed:
                   (_selectedFederation != null &&
                           _status is LNAddressStatus_Available &&
+                          !_selectedFederationExpiring &&
                           !_registering)
                       ? () {
                         _onRegisteredPressed();

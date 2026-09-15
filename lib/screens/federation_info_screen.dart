@@ -63,6 +63,11 @@ class _FederationInfoScreenState extends State<FederationInfoScreen> {
   String? _welcomeMessage;
   String? _imageUrl;
 
+  /// Shutdown date the guardians published, if any. A federation with one
+  /// takes no new Lightning Address registrations, so the automatic claim
+  /// after joining is skipped.
+  BigInt? _expiryTimestamp;
+
   // Joinable preview loading state.
   bool _isLoadingMeta = false;
   Object? _loadError;
@@ -111,6 +116,7 @@ class _FederationInfoScreenState extends State<FederationInfoScreen> {
           _fed = meta.selector;
           _welcomeMessage = meta.welcome;
           _imageUrl = meta.picture;
+          _expiryTimestamp = meta.expiryTimestamp;
         });
       } catch (e) {
         AppLogger.instance.warn("Could not reload federation meta: $e");
@@ -130,6 +136,7 @@ class _FederationInfoScreenState extends State<FederationInfoScreen> {
         _fed = meta.selector;
         _welcomeMessage = meta.welcome;
         _imageUrl = meta.picture;
+        _expiryTimestamp = meta.expiryTimestamp;
         _isLoadingMeta = false;
       });
       _subscribePeers();
@@ -303,7 +310,9 @@ class _FederationInfoScreenState extends State<FederationInfoScreen> {
         AppLogger.instance.error("Could not backup Nostr invite codes: $e");
       }
 
-      await _claimLnAddress(fed);
+      if (_expiryTimestamp == null) {
+        await _claimLnAddress(fed);
+      }
 
       if (widget.ecash != null) {
         _redeemEcash(widget.ecash!);

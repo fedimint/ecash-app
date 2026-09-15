@@ -659,6 +659,9 @@
   "federationExpiryStepLeave": "Abandona esta federación cuando hayas sacado tu saldo y eliminado tu Dirección Lightning.",
   "federationExpirySendOnchain": "Enviar on-chain",
   "federationExpiryManageLightningAddress": "Gestionar Dirección Lightning",
+  "federationExpiryReceiveDisabled": "Esta federación va a cerrar, así que ya no puede recibir fondos.",
+  "lnAddressRegistrationClosed": "Esta federación va a cerrar, así que no se pueden registrar nuevas Direcciones Lightning en ella.",
+  "lnAddressRemoveCurrent": "Esta federación va a cerrar. Por favor, elimina la actual.",
 
   "federationExpiryFindFederation": "Buscar una federación",
 

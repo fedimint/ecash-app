@@ -18,6 +18,7 @@ import 'package:ecashapp/screens/transactions_screen.dart';
 import 'package:ecashapp/onchain_receive.dart';
 import 'package:ecashapp/scan.dart';
 import 'package:ecashapp/theme.dart';
+import 'package:ecashapp/toast.dart';
 import 'package:ecashapp/models.dart';
 
 import 'package:ecashapp/screens/federation_expiry_screen.dart';
@@ -72,6 +73,10 @@ class _DashboardState extends State<Dashboard> {
   String? _successorInvite;
   bool get _isShuttingDown =>
       _expiryTimestamp != null || _successorInvite != null;
+
+  /// Once the guardians have set a shutdown date, taking in more funds only
+  /// deepens the hole the user has to dig out of; receiving is closed.
+  bool get _receiveDisabled => _expiryTimestamp != null;
 
   List<Transaction> _recentTransactions = [];
   bool _isLoadingTransactions = true;
@@ -426,6 +431,15 @@ class _DashboardState extends State<Dashboard> {
   }
 
   void _onReceivePressed() async {
+    if (_receiveDisabled) {
+      ToastService().show(
+        message: context.l10n.federationExpiryReceiveDisabled,
+        duration: const Duration(seconds: 5),
+        onTap: () {},
+        icon: const Icon(Icons.error),
+      );
+      return;
+    }
     if (_selectedPaymentType == PaymentType.lightning) {
       await Navigator.push(
         context,
@@ -562,7 +576,9 @@ class _DashboardState extends State<Dashboard> {
                   SpeedDialChild(
                     child: const Icon(Icons.download),
                     label: context.l10n.receive,
-                    backgroundColor: Colors.green,
+                    // Greyed rather than hidden: the tap explains why.
+                    backgroundColor:
+                        _receiveDisabled ? Colors.grey : Colors.green,
                     onTap: () => _scheduleAction(_onReceivePressed),
                   ),
                   if (balanceMsats != null && balanceMsats! > BigInt.zero) ...[
