@@ -10,6 +10,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_speed_dial/flutter_speed_dial.dart';
 
 import 'package:ecashapp/lib.dart';
+import 'package:ecashapp/ln_address.dart';
 import 'package:ecashapp/multimint.dart';
 import 'package:ecashapp/number_pad.dart';
 import 'package:ecashapp/screens/lightning_send/recipient_entry.dart';
@@ -24,6 +25,7 @@ import 'package:ecashapp/screens/my_wallet_screen.dart';
 import 'package:ecashapp/widgets/dashboard_balance.dart';
 import 'package:ecashapp/widgets/empty_transactions.dart';
 import 'package:ecashapp/widgets/federation_expiry_banner.dart';
+import 'package:ecashapp/widgets/leave_federation_dialog.dart';
 import 'package:ecashapp/widgets/pending_deposit_item.dart';
 import 'package:ecashapp/widgets/transaction_item.dart';
 
@@ -292,7 +294,6 @@ class _DashboardState extends State<Dashboard> {
 
   void _openShutdownDetails() {
     final lnAddress = _lnAddressConfig;
-    final hasBalance = balanceMsats != null && balanceMsats! > BigInt.zero;
     Navigator.push(
       context,
       MaterialPageRoute(
@@ -302,16 +303,75 @@ class _DashboardState extends State<Dashboard> {
               expiryTimestamp: _expiryTimestamp,
               successorInvite: _successorInvite,
               balanceMsats: balanceMsats,
-              onJoin: widget.onJoin,
-              onMoveFunds: hasBalance ? _onSendPressed : null,
               lightningAddress:
                   lnAddress != null
                       ? '${lnAddress.username}@${lnAddress.domain}'
                       : null,
+              loadBalance: () => balance(federationId: widget.fed.federationId),
+              loadLightningAddress: _lightningAddressString,
+              onSendOnchain: _openOnchainSend,
+              onOpenLightningAddress: _openLightningAddressScreen,
+              onJoin: widget.onJoin,
+              onLeaveFederation: _confirmLeaveFederation,
+            ),
+      ),
+    ).then((_) {
+      // The checklist may have moved the balance or dropped the address.
+      _loadBalance();
+      _loadLightningAddress();
+      _loadRecentTransactions();
+    });
+  }
+
+  Future<String?> _lightningAddressString() async {
+    final config = await getLnAddressConfig(
+      federationId: widget.fed.federationId,
+    );
+    return config == null ? null : '${config.username}@${config.domain}';
+  }
+
+  /// The on-chain send flow, pushed above whatever is showing so the user
+  /// returns to where they started once it is done.
+  Future<void> _openOnchainSend() => Navigator.push(
+    context,
+    MaterialPageRoute(
+      builder:
+          (_) => NumberPad(
+            fed: widget.fed,
+            paymentType: PaymentType.onchain,
+            btcPrices: _btcPrices,
+            onWithdrawCompleted: null,
+          ),
+    ),
+  );
+
+  /// The Lightning Address screen with this federation already selected. The
+  /// screen pops itself after a change, and the caller re-reads the address
+  /// then, so no app-level refresh is needed here.
+  Future<void> _openLightningAddressScreen() async {
+    final feds = await federations();
+    final federationId = await federationIdToString(
+      federationId: widget.fed.federationId,
+    );
+    if (!mounted) return;
+    await Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder:
+            (_) => LightningAddressScreen(
+              federations: feds,
+              initialFederationId: federationId,
+              onLnAddressChanged: (_, _) {},
             ),
       ),
     );
   }
+
+  Future<void> _confirmLeaveFederation() => showLeaveFederationDialog(
+    context,
+    fed: widget.fed,
+    onLeaveFederation: widget.onLeaveFederation,
+  );
 
   List<String> _getModulesForPaymentType() {
     switch (_selectedPaymentType) {

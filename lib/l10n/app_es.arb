@@ -647,17 +647,18 @@
 
   "federationExpiryWhatToDo": "Qué hacer",
 
-  "federationExpiryStepReceivesOff": "Deja de recibir en esta federación. Comparte facturas y direcciones de otra federación en su lugar.",
 
-  "federationExpiryStepRemoveLightningAddress": "Elimina tu Lightning Address {address}. Está registrada solo en esta federación, así que seguirá pagando aquí hasta que la elimines. Configurar una en otra federación no la reemplaza.",
+  "federationExpiryStepRemoveLightningAddress": "Elimina tu Dirección Lightning {address}. Está registrada solo en esta federación, así que seguirá pagando aquí hasta que la elimines. Configurar una en otra federación no la reemplaza.",
 
-  "federationExpiryStepMoveFunds": "Saca tu saldo, por ejemplo con un pago Lightning a otra billetera o federación.",
+  "federationExpiryStepMoveFunds": "Saca tu saldo de esta federación. Enviarlo on-chain a una billetera que controles lo mantiene a salvo pase lo que pase aquí.",
 
-  "federationExpiryStepJoinAnother": "Únete a otra federación para seguir usando la app.",
+  "federationExpiryStepJoinAnother": "Opcionalmente, únete a otra federación para seguir usando la app.",
 
-  "federationExpiryStepJoinSuccessor": "Únete a la federación sucesora que recomiendan los guardianes y luego mueve tu saldo allí.",
+  "federationExpiryStepJoinSuccessor": "Opcionalmente, únete a la federación sucesora que recomiendan los guardianes y mueve tu saldo allí.",
 
-  "federationExpiryMoveFunds": "Mover fondos",
+  "federationExpiryStepLeave": "Abandona esta federación cuando hayas sacado tu saldo y eliminado tu Dirección Lightning.",
+  "federationExpirySendOnchain": "Enviar on-chain",
+  "federationExpiryManageLightningAddress": "Gestionar Dirección Lightning",
 
   "federationExpiryFindFederation": "Buscar una federación",
 

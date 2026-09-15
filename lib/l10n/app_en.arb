@@ -2217,9 +2217,6 @@
   "federationExpiryWhatToDo": "What to do",
   "@federationExpiryWhatToDo": {},
 
-  "federationExpiryStepReceivesOff": "Stop receiving into this federation. Share invoices and addresses from another federation instead.",
-  "@federationExpiryStepReceivesOff": {},
-
   "federationExpiryStepRemoveLightningAddress": "Remove your Lightning Address {address}. It is registered with this federation alone, so it keeps paying in here until it is removed. Setting one up on another federation does not replace it.",
   "@federationExpiryStepRemoveLightningAddress": {
     "placeholders": {
@@ -2229,17 +2226,23 @@
     }
   },
 
-  "federationExpiryStepMoveFunds": "Move your balance out, for example with a Lightning payment to another wallet or federation.",
+  "federationExpiryStepMoveFunds": "Move your balance out of this federation. Sending it on-chain to a wallet you control keeps it safe whatever happens here.",
   "@federationExpiryStepMoveFunds": {},
 
-  "federationExpiryStepJoinAnother": "Join another federation so you can keep using the app.",
+  "federationExpiryStepJoinAnother": "Optionally, join another federation so you can keep using the app.",
   "@federationExpiryStepJoinAnother": {},
 
-  "federationExpiryStepJoinSuccessor": "Join the successor federation the guardians recommend, then move your balance there.",
+  "federationExpiryStepJoinSuccessor": "Optionally, join the successor federation the guardians recommend and move your balance there.",
   "@federationExpiryStepJoinSuccessor": {},
 
-  "federationExpiryMoveFunds": "Move funds",
-  "@federationExpiryMoveFunds": {},
+  "federationExpiryStepLeave": "Leave this federation once your balance is out and your Lightning Address is removed.",
+  "@federationExpiryStepLeave": {},
+
+  "federationExpirySendOnchain": "Send on-chain",
+  "@federationExpirySendOnchain": {},
+
+  "federationExpiryManageLightningAddress": "Manage Lightning Address",
+  "@federationExpiryManageLightningAddress": {},
 
   "federationExpiryFindFederation": "Find a federation",
   "@federationExpiryFindFederation": {},

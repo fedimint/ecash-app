@@ -35,12 +35,14 @@ String formatTimeUntilExpiry(
   return l10n.federationExpiryInMinutes(remaining.inMinutes);
 }
 
-/// Explains a guardian-announced shutdown and what the user has to do about it.
+/// Explains a guardian-announced shutdown and walks the user out of the
+/// federation: move the balance, drop the Lightning Address, optionally join
+/// the successor, leave. Each step links to the flow that does it, and steps
+/// that no longer apply fall off the list.
 ///
-/// Reached from the dashboard's expiry banner. Everything here is read from the
-/// federation meta the caller already has, so the screen never blocks on a
-/// network call: a user opening it because their money is at stake should not
-/// meet a spinner.
+/// Reached from the dashboard's expiry banner. The facts shown come from the
+/// caller, so the screen opens without a network call; once a step's flow
+/// returns, the balance and address are re-read through the loaders.
 class FederationExpiryScreen extends StatefulWidget {
   final String federationName;
 
@@ -52,24 +54,29 @@ class FederationExpiryScreen extends StatefulWidget {
   /// when they only published a date.
   final String? successorInvite;
 
-  /// Current balance, so the user can see what still has to be moved without
-  /// navigating back. Null while the dashboard is still loading it.
+  /// Balance and Lightning Address (`user@domain`) as the dashboard last saw
+  /// them. The screen starts from these and refreshes through [loadBalance]
+  /// and [loadLightningAddress] after each step.
   final BigInt? balanceMsats;
+  final String? lightningAddress;
+  final Future<BigInt?> Function() loadBalance;
+  final Future<String?> Function() loadLightningAddress;
 
-  /// Selects a freshly joined federation. Threaded down from the app root
-  /// because only the root can change which federation is selected.
+  /// Opens the on-chain send flow for this federation, completing once the
+  /// user is back here.
+  final Future<void> Function() onSendOnchain;
+
+  /// Opens the Lightning Address screen with this federation selected,
+  /// completing once the user is back here.
+  final Future<void> Function() onOpenLightningAddress;
+
+  /// Selects a freshly joined federation. Threaded from the app root because
+  /// only the root can change which federation is selected.
   final void Function(FederationSelector fed, bool recovering) onJoin;
 
-  /// Pops back to the dashboard and starts a send. Null when there is nothing
-  /// to move.
-  final VoidCallback? onMoveFunds;
-
-  /// The Lightning Address registered against this federation, if any, as
-  /// `user@domain`. Registrations are per federation and live on the address
-  /// server, so it keeps paying in here after the shutdown is announced and
-  /// setting one up elsewhere does not retire it. Removing it gets its own
-  /// step.
-  final String? lightningAddress;
+  /// Confirms and leaves this federation. Supplied by the dashboard, which
+  /// has the federation id and the app root's callback this needs.
+  final Future<void> Function() onLeaveFederation;
 
   const FederationExpiryScreen({
     super.key,
@@ -77,9 +84,13 @@ class FederationExpiryScreen extends StatefulWidget {
     required this.expiryTimestamp,
     required this.successorInvite,
     required this.balanceMsats,
+    required this.lightningAddress,
+    required this.loadBalance,
+    required this.loadLightningAddress,
+    required this.onSendOnchain,
+    required this.onOpenLightningAddress,
     required this.onJoin,
-    this.onMoveFunds,
-    this.lightningAddress,
+    required this.onLeaveFederation,
   });
 
   @override
@@ -87,25 +98,49 @@ class FederationExpiryScreen extends StatefulWidget {
 }
 
 class _FederationExpiryScreenState extends State<FederationExpiryScreen> {
-  // Guards against pushing the preview route twice while one is already opening.
-  bool _isOpeningPreview = false;
+  late BigInt? _balanceMsats = widget.balanceMsats;
+  late String? _lightningAddress = widget.lightningAddress;
 
-  void _onFindFederation() {
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (_) => Discover(onJoin: widget.onJoin, showAppBar: true),
-      ),
-    );
+  /// One step's flow at a time; every link is disabled while one runs.
+  bool _busy = false;
+
+  /// Runs a step's flow, then re-reads what it may have changed so the list
+  /// reflects the new state when the user lands back here.
+  Future<void> _run(Future<void> Function() flow) async {
+    if (_busy) return;
+    setState(() => _busy = true);
+    try {
+      await flow();
+    } finally {
+      if (mounted) setState(() => _busy = false);
+    }
+    if (mounted) await _refresh();
   }
 
-  /// Opens the successor's preview so the user sees its guardians before
-  /// committing, then hands the joined federation to the app root and returns
-  /// to the dashboard, which by then shows the successor.
-  Future<void> _onJoinSuccessor() async {
-    if (_isOpeningPreview) return;
-    setState(() => _isOpeningPreview = true);
+  Future<void> _refresh() async {
+    var balance = _balanceMsats;
+    var address = _lightningAddress;
+    try {
+      balance = await widget.loadBalance();
+    } catch (e) {
+      AppLogger.instance.warn('Could not refresh balance: $e');
+    }
+    try {
+      address = await widget.loadLightningAddress();
+    } catch (e) {
+      AppLogger.instance.warn('Could not refresh Lightning Address: $e');
+    }
+    if (!mounted) return;
+    setState(() {
+      _balanceMsats = balance;
+      _lightningAddress = address;
+    });
+  }
 
+  /// Previews the successor so the user sees its guardians before committing,
+  /// then hands the joined federation to the app root and returns to the
+  /// dashboard, which by then shows the successor.
+  Future<void> _joinSuccessor() async {
     final joined = await Navigator.push<(FederationSelector, bool)>(
       context,
       MaterialPageRoute(
@@ -117,10 +152,7 @@ class _FederationExpiryScreenState extends State<FederationExpiryScreen> {
             ),
       ),
     );
-
-    if (!mounted) return;
-    setState(() => _isOpeningPreview = false);
-    if (joined == null) return;
+    if (!mounted || joined == null) return;
 
     final (fed, recovering) = joined;
     final message = context.l10n.joinedFederation(fed.federationName);
@@ -134,6 +166,13 @@ class _FederationExpiryScreenState extends State<FederationExpiryScreen> {
     );
   }
 
+  Future<void> _findFederation() => Navigator.push(
+    context,
+    MaterialPageRoute(
+      builder: (_) => Discover(onJoin: widget.onJoin, showAppBar: true),
+    ),
+  );
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -144,20 +183,50 @@ class _FederationExpiryScreenState extends State<FederationExpiryScreen> {
         expiryTimestamp != null ? expiryDateTime(expiryTimestamp) : null;
     final hasExpired = expiry != null && expiry.isBefore(DateTime.now());
     final hasSuccessor = widget.successorInvite != null;
+    final hasBalance = _balanceMsats != null && _balanceMsats! > BigInt.zero;
+    final lightningAddress = _lightningAddress;
     final bitcoinDisplay = context.select<PreferencesProvider, BitcoinDisplay>(
       (prefs) => prefs.bitcoinDisplay,
     );
 
-    final steps = <String>[
-      l10n.federationExpiryStepReceivesOff,
-      if (widget.lightningAddress != null)
-        l10n.federationExpiryStepRemoveLightningAddress(
-          widget.lightningAddress!,
+    final steps = <_StepSpec>[
+      if (hasBalance)
+        _StepSpec(
+          text: l10n.federationExpiryStepMoveFunds,
+          action: l10n.federationExpirySendOnchain,
+          icon: Icons.upload,
+          onTap: () => _run(widget.onSendOnchain),
         ),
-      l10n.federationExpiryStepMoveFunds,
-      hasSuccessor
-          ? l10n.federationExpiryStepJoinSuccessor
-          : l10n.federationExpiryStepJoinAnother,
+      if (lightningAddress != null)
+        _StepSpec(
+          text: l10n.federationExpiryStepRemoveLightningAddress(
+            lightningAddress,
+          ),
+          action: l10n.federationExpiryManageLightningAddress,
+          icon: Icons.flash_on,
+          onTap: () => _run(widget.onOpenLightningAddress),
+        ),
+      if (hasSuccessor)
+        _StepSpec(
+          text: l10n.federationExpiryStepJoinSuccessor,
+          action: l10n.federationExpiryJoinSuccessor,
+          icon: Icons.login,
+          onTap: () => _run(_joinSuccessor),
+        )
+      else
+        _StepSpec(
+          text: l10n.federationExpiryStepJoinAnother,
+          action: l10n.federationExpiryFindFederation,
+          icon: Icons.search,
+          onTap: () => _run(_findFederation),
+        ),
+      _StepSpec(
+        text: l10n.federationExpiryStepLeave,
+        action: l10n.leaveFederation,
+        icon: Icons.logout,
+        onTap: () => _run(widget.onLeaveFederation),
+        destructive: true,
+      ),
     ];
 
     final facts = <(String, String)>[
@@ -175,7 +244,7 @@ class _FederationExpiryScreenState extends State<FederationExpiryScreen> {
         ),
       (
         l10n.federationExpiryYourBalance,
-        formatBalance(widget.balanceMsats, false, bitcoinDisplay),
+        formatBalance(_balanceMsats, false, bitcoinDisplay),
       ),
     ];
 
@@ -225,46 +294,39 @@ class _FederationExpiryScreenState extends State<FederationExpiryScreen> {
               ),
             ),
             const SizedBox(height: 12),
-            for (final (index, text) in steps.indexed)
-              _Step(number: index + 1, text: text),
-            const SizedBox(height: 28),
-            if (widget.onMoveFunds != null) ...[
-              OutlinedButton.icon(
-                onPressed: () {
-                  Navigator.of(context).pop();
-                  widget.onMoveFunds!();
-                },
-                icon: const Icon(Icons.upload),
-                label: Text(l10n.federationExpiryMoveFunds),
-                style: OutlinedButton.styleFrom(
-                  minimumSize: const Size.fromHeight(48),
-                ),
-              ),
-              const SizedBox(height: 12),
-            ],
-            if (hasSuccessor)
-              FilledButton.icon(
-                onPressed: _isOpeningPreview ? null : _onJoinSuccessor,
-                icon: const Icon(Icons.login),
-                label: Text(l10n.federationExpiryJoinSuccessor),
-                style: FilledButton.styleFrom(
-                  minimumSize: const Size.fromHeight(48),
-                ),
-              )
-            else
-              FilledButton.icon(
-                onPressed: _onFindFederation,
-                icon: const Icon(Icons.search),
-                label: Text(l10n.federationExpiryFindFederation),
-                style: FilledButton.styleFrom(
-                  minimumSize: const Size.fromHeight(48),
-                ),
+            for (final (index, step) in steps.indexed)
+              _Step(
+                number: index + 1,
+                text: step.text,
+                actionLabel: step.action,
+                icon: step.icon,
+                destructive: step.destructive,
+                onPressed: _busy ? null : step.onTap,
               ),
           ],
         ),
       ),
     );
   }
+}
+
+/// One checklist entry: what to do, and the link that does it.
+class _StepSpec {
+  final String text;
+  final String action;
+  final IconData icon;
+  final Future<void> Function() onTap;
+
+  /// Rendered in the error colour, for the step that cannot be undone.
+  final bool destructive;
+
+  const _StepSpec({
+    required this.text,
+    required this.action,
+    required this.icon,
+    required this.onTap,
+    this.destructive = false,
+  });
 }
 
 /// The headline facts, as label/value rows on one surface.
@@ -321,12 +383,26 @@ class _FactsCard extends StatelessWidget {
 class _Step extends StatelessWidget {
   final int number;
   final String text;
+  final String actionLabel;
+  final IconData icon;
+  final bool destructive;
 
-  const _Step({required this.number, required this.text});
+  /// Null while another step's flow is running, which disables the link.
+  final VoidCallback? onPressed;
+
+  const _Step({
+    required this.number,
+    required this.text,
+    required this.actionLabel,
+    required this.icon,
+    required this.destructive,
+    required this.onPressed,
+  });
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final accent = destructive ? theme.colorScheme.error : null;
     return Padding(
       padding: const EdgeInsets.only(bottom: 14),
       child: Row(
@@ -350,9 +426,28 @@ class _Step extends StatelessWidget {
           ),
           const SizedBox(width: 12),
           Expanded(
-            child: Text(
-              text,
-              style: theme.textTheme.bodyMedium?.copyWith(height: 1.4),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  text,
+                  style: theme.textTheme.bodyMedium?.copyWith(height: 1.4),
+                ),
+                const SizedBox(height: 4),
+                Align(
+                  alignment: Alignment.centerLeft,
+                  child: TextButton.icon(
+                    onPressed: onPressed,
+                    icon: Icon(icon, size: 18),
+                    label: Text(actionLabel),
+                    style: TextButton.styleFrom(
+                      foregroundColor: accent,
+                      padding: const EdgeInsets.symmetric(horizontal: 8),
+                      visualDensity: VisualDensity.compact,
+                    ),
+                  ),
+                ),
+              ],
             ),
           ),
         ],

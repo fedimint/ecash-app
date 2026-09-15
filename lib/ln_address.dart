@@ -17,10 +17,15 @@ class LightningAddressScreen extends StatefulWidget {
   final void Function(FederationSelector fed, bool recovering)
   onLnAddressChanged;
 
+  /// Federation to open on, as its id string, when the caller has one in
+  /// mind. Otherwise the first federation with an address is selected.
+  final String? initialFederationId;
+
   const LightningAddressScreen({
     super.key,
     required this.federations,
     required this.onLnAddressChanged,
+    this.initialFederationId,
   });
 
   @override
@@ -98,7 +103,20 @@ class _LightningAddressScreenState extends State<LightningAddressScreen> {
     _usernameController.addListener(_onUsernameChanged);
     await _updateDomains();
 
-    // Set the selected federation to the first federation
+    // The caller's federation, if it named one the dropdown can show.
+    final wanted = widget.initialFederationId;
+    if (wanted != null) {
+      for (final (fed, recovering) in widget.federations) {
+        if (recovering) continue;
+        final id = await federationIdToString(federationId: fed.federationId);
+        if (id == wanted) {
+          await _onFederationSet(fed);
+          return;
+        }
+      }
+    }
+
+    // Otherwise the first federation that already has an address.
     if (widget.federations.isNotEmpty) {
       for (final fed in widget.federations) {
         if (await _onFederationSet(fed.$1)) {
