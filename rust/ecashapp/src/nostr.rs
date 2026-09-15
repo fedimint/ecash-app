@@ -1916,9 +1916,8 @@ impl PublicFederation {
     }
 
     fn parse_content(content: String) -> anyhow::Result<(String, Option<String>, Option<String>)> {
-        let json: Result<serde_json::Value, serde_json::Error> = serde_json::from_str(&content);
-        match json {
-            Ok(json) => {
+        match serde_json::from_str::<serde_json::Value>(&content) {
+            Ok(json @ serde_json::Value::Object(_)) => {
                 let federation_name = Self::parse_federation_name(&json)?;
                 let about = json
                     .get("about")
@@ -1928,10 +1927,10 @@ impl PublicFederation {
                 let picture = Self::parse_picture(&json);
                 Ok((federation_name, about, picture))
             }
-            Err(_) => {
-                // Just interpret the entire content as the federation name
-                Ok((content, None, None))
-            }
+            // Not a JSON object: either not JSON at all, or a scalar such as
+            // `2024`, `null` or `"Quoted Fed"`. Interpret the entire content as
+            // the federation name.
+            _ => Ok((content, None, None)),
         }
     }
 
@@ -2575,15 +2574,24 @@ mod tests {
     }
 
     #[test]
-    fn test_parse_content_drops_a_bare_name_that_happens_to_be_valid_json() {
-        // The fallback keys off "did serde_json fail", not "is this an object",
-        // so a bare name that parses as a JSON scalar takes the object path,
-        // finds no `name` key, and errors instead of falling back. Pinned rather
-        // than endorsed: it is why a federation calling itself `2024` or `null`
-        // cannot appear in Discover.
-        assert!(PublicFederation::parse_content("2024".to_string()).is_err());
-        assert!(PublicFederation::parse_content("null".to_string()).is_err());
-        assert!(PublicFederation::parse_content(r#""Quoted Fed""#.to_string()).is_err());
+    fn test_parse_content_treats_a_bare_name_that_happens_to_be_valid_json_as_a_name() {
+        // Only a JSON object is read as metadata. A bare name that also parses as
+        // a JSON scalar must still take the bare-name fallback, otherwise a
+        // federation calling itself `2024` or `null` never appears in Discover.
+        for content in ["2024", "null", "true", r#""Quoted Fed""#] {
+            let (name, about, picture) = PublicFederation::parse_content(content.to_string())
+                .unwrap_or_else(|e| panic!("{content:?} should parse as a bare name: {e}"));
+            assert_eq!(name, content);
+            assert!(about.is_none());
+            assert!(picture.is_none());
+        }
+    }
+
+    #[test]
+    fn test_parse_content_rejects_a_json_object_without_a_name() {
+        // The fallback is only for non-objects: an object that is missing its
+        // name is malformed metadata, not a bare name.
+        assert!(PublicFederation::parse_content(r#"{"about":"no name"}"#.to_string()).is_err());
     }
 
     #[test]
