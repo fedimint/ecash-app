@@ -1962,7 +1962,7 @@ impl PublicFederation {
             if let Some(pic_url) = picture.as_str() {
                 // Verify that the picture is a URL
                 let safe_url = SafeUrl::parse(pic_url).ok()?;
-                return Some(safe_url.to_string());
+                return Some(safe_url.without_auth().ok()?.as_str().to_string());
             }
         }
 
@@ -2650,18 +2650,16 @@ mod tests {
     }
 
     #[test]
-    fn test_parse_picture_drops_the_query_string() {
-        // `SafeUrl`'s `Display` renders scheme, host, port and path only, so a
-        // picture URL loses its query and fragment on the way through. Avatars
-        // served with CDN sizing or a signature in the query therefore resolve to
-        // a different URL than the one announced. Pinned so the behaviour is
-        // visible rather than discovered through a blank avatar.
+    fn test_parse_picture_preserves_query_string() {
+        // The full URL (including query/fragment) is needed to fetch the
+        // correct image — e.g. CDN sizing params or a signed query. Using
+        // `SafeUrl`'s `Display` here previously truncated these away.
         let json: serde_json::Value =
             serde_json::from_str(r#"{"picture":"https://example.com/pic.png?w=64#frag"}"#)
                 .expect("valid json");
         assert_eq!(
             PublicFederation::parse_picture(&json).as_deref(),
-            Some("https://example.com/pic.png")
+            Some("https://example.com/pic.png?w=64#frag")
         );
     }
 
