@@ -2127,7 +2127,7 @@
   "federationExpiryBannerTitle": "This federation is shutting down",
   "@federationExpiryBannerTitle": {},
 
-  "federationExpiryBannerSubtitle": "Closes on {date}. Tap for details.",
+  "federationExpiryBannerSubtitle": "Closes on {date}.",
   "@federationExpiryBannerSubtitle": {
     "placeholders": {
       "date": {
@@ -2136,7 +2136,7 @@
     }
   },
 
-  "federationExpiryBannerSubtitlePast": "Closed on {date}. Tap for details.",
+  "federationExpiryBannerSubtitlePast": "Closed on {date}.",
   "@federationExpiryBannerSubtitlePast": {
     "placeholders": {
       "date": {
@@ -2145,8 +2145,14 @@
     }
   },
 
-  "federationExpiryBannerSubtitleSuccessor": "The guardians named a successor federation. Tap for details.",
+  "federationExpiryBannerSubtitleSuccessor": "The guardians named a successor federation.",
   "@federationExpiryBannerSubtitleSuccessor": {},
+
+  "federationExpiryBannerTap": "Tap for details.",
+  "@federationExpiryBannerTap": {},
+
+  "federationExpiryBannerJoinHint": "Join only to recover funds you already hold here.",
+  "@federationExpiryBannerJoinHint": {},
 
   "federationExpiryTitle": "Federation shutdown",
   "@federationExpiryTitle": {},

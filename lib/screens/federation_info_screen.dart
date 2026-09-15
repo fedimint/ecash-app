@@ -8,6 +8,7 @@ import 'package:ecashapp/multimint.dart';
 import 'package:ecashapp/nwc.dart';
 import 'package:ecashapp/toast.dart';
 import 'package:ecashapp/utils.dart';
+import 'package:ecashapp/widgets/federation_expiry_banner.dart';
 import 'package:ecashapp/widgets/gateways.dart';
 import 'package:ecashapp/widgets/leave_federation_dialog.dart';
 import 'package:flutter/material.dart';
@@ -63,10 +64,10 @@ class _FederationInfoScreenState extends State<FederationInfoScreen> {
   String? _welcomeMessage;
   String? _imageUrl;
 
-  /// Shutdown date the guardians published, if any. A federation with one
-  /// takes no new Lightning Address registrations, so the automatic claim
-  /// after joining is skipped.
+  /// Shutdown announcement the guardians published, if any, for the banner
+  /// on a joinable preview.
   BigInt? _expiryTimestamp;
+  String? _successorInvite;
 
   // Joinable preview loading state.
   bool _isLoadingMeta = false;
@@ -86,6 +87,27 @@ class _FederationInfoScreenState extends State<FederationInfoScreen> {
       _imageUrl = widget.imageUrl;
       _subscribePeers();
       _subscribeMetaUpdates();
+      // A preview opened from a scanned or pasted invite arrives with the
+      // federation already resolved and skips _loadMeta, so the shutdown
+      // notice has to be read here or it is never shown.
+      if (widget.joinable) _loadShutdownNotice();
+    }
+  }
+
+  /// Reads the guardians' shutdown announcement for a joinable preview whose
+  /// caller supplied the federation itself. Same cached meta the caller used.
+  Future<void> _loadShutdownNotice() async {
+    final inviteCode = widget.inviteCode;
+    if (inviteCode == null) return;
+    try {
+      final meta = await getFederationMeta(inviteCode: inviteCode);
+      if (!mounted) return;
+      setState(() {
+        _expiryTimestamp = meta.expiryTimestamp;
+        _successorInvite = meta.successorInvite;
+      });
+    } catch (e) {
+      AppLogger.instance.warn("Could not read federation meta: $e");
     }
   }
 
@@ -117,6 +139,7 @@ class _FederationInfoScreenState extends State<FederationInfoScreen> {
           _welcomeMessage = meta.welcome;
           _imageUrl = meta.picture;
           _expiryTimestamp = meta.expiryTimestamp;
+          _successorInvite = meta.successorInvite;
         });
       } catch (e) {
         AppLogger.instance.warn("Could not reload federation meta: $e");
@@ -137,6 +160,7 @@ class _FederationInfoScreenState extends State<FederationInfoScreen> {
         _welcomeMessage = meta.welcome;
         _imageUrl = meta.picture;
         _expiryTimestamp = meta.expiryTimestamp;
+        _successorInvite = meta.successorInvite;
         _isLoadingMeta = false;
       });
       _subscribePeers();
@@ -310,7 +334,11 @@ class _FederationInfoScreenState extends State<FederationInfoScreen> {
         AppLogger.instance.error("Could not backup Nostr invite codes: $e");
       }
 
-      if (_expiryTimestamp == null) {
+      // A federation with a shutdown date takes no new Lightning Address
+      // registrations. Decided from a fresh read of the joined federation's
+      // meta rather than from preview state, which depends on how the preview
+      // was opened and on whether its load had finished.
+      if (!await _isShuttingDown(fed)) {
         await _claimLnAddress(fed);
       }
 
@@ -337,6 +365,19 @@ class _FederationInfoScreenState extends State<FederationInfoScreen> {
           _isJoining = false;
         });
       }
+    }
+  }
+
+  /// Whether [fed]'s guardians have set a shutdown date. When the meta cannot
+  /// be read this errs on the side of not claiming: an address registered on a
+  /// federation that is closing is worse than one the user claims by hand.
+  Future<bool> _isShuttingDown(FederationSelector fed) async {
+    try {
+      final meta = await getFederationMeta(federationId: fed.federationId);
+      return meta.expiryTimestamp != null;
+    } catch (e) {
+      AppLogger.instance.warn("Could not read federation meta: $e");
+      return true;
     }
   }
 
@@ -971,6 +1012,17 @@ class _FederationInfoScreenState extends State<FederationInfoScreen> {
                               ),
                     ),
                   ),
+                  // Someone about to join should see this before anything
+                  // else. Joining stays possible: they may hold funds here
+                  // that they need to recover or move out.
+                  if (widget.joinable &&
+                      (_expiryTimestamp != null || _successorInvite != null))
+                    FederationExpiryBanner(
+                      expiryTimestamp: _expiryTimestamp,
+                      onTap: null,
+                      compact: false,
+                      note: context.l10n.federationExpiryBannerJoinHint,
+                    ),
                   if (_welcomeMessage != null) ...[
                     const SizedBox(height: 8),
                     Text(

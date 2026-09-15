@@ -615,11 +615,13 @@
 
   "federationExpiryBannerTitle": "Esta federación va a cerrar",
 
-  "federationExpiryBannerSubtitle": "Cierra el {date}. Toca para ver detalles.",
+  "federationExpiryBannerSubtitle": "Cierra el {date}.",
 
-  "federationExpiryBannerSubtitlePast": "Cerró el {date}. Toca para ver detalles.",
+  "federationExpiryBannerSubtitlePast": "Cerró el {date}.",
 
-  "federationExpiryBannerSubtitleSuccessor": "Los guardianes nombraron una federación sucesora. Toca para ver detalles.",
+  "federationExpiryBannerSubtitleSuccessor": "Los guardianes nombraron una federación sucesora.",
+  "federationExpiryBannerTap": "Toca para ver detalles.",
+  "federationExpiryBannerJoinHint": "Únete solo para recuperar fondos que ya tengas aquí.",
 
   "federationExpiryTitle": "Cierre de la federación",
 

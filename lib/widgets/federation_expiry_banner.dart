@@ -45,34 +45,58 @@ double _lineHeight(BuildContext context, TextStyle? style) {
   return height;
 }
 
-/// Loud, tappable warning that the guardians have announced this federation's
-/// shutdown, by publishing a date, naming a successor, or both.
+/// Loud warning that the guardians have announced this federation's shutdown,
+/// by publishing a date, naming a successor, or both.
 ///
-/// Sits directly under the balance on the dashboard, in the error colour, and
-/// stays put while the transaction list scrolls: the point is that it cannot
-/// be missed by someone who only ever glances at their balance.
+/// On the dashboard it sits directly under the balance, in the error colour,
+/// stays put while the transaction list scrolls and opens the details on tap:
+/// the point is that it cannot be missed by someone who only ever glances at
+/// their balance. On a join preview it is informational ([onTap] null), lays
+/// out at its natural height ([compact] false) and carries a [note] telling
+/// the reader why they might still want to join.
 class FederationExpiryBanner extends StatelessWidget {
   /// Unix seconds the guardians published as the shutdown time. Null when they
   /// only named a successor, which changes the wording but not the urgency.
   final BigInt? expiryTimestamp;
-  final VoidCallback onTap;
+
+  /// Opens the details. Null makes the banner informational: no chevron, no
+  /// "tap for details".
+  final VoidCallback? onTap;
+
+  /// True for the fixed, single-line layout the pinned dashboard header needs
+  /// (see [federationExpiryBannerExtent]); false lets the second line wrap.
+  final bool compact;
+
+  /// Extra sentence appended to the second line.
+  final String? note;
 
   const FederationExpiryBanner({
     super.key,
     required this.expiryTimestamp,
     required this.onTap,
+    this.compact = true,
+    this.note,
   });
 
   String _subtitle(BuildContext context) {
+    final l10n = context.l10n;
     final expiryTimestamp = this.expiryTimestamp;
+    final String base;
     if (expiryTimestamp == null) {
-      return context.l10n.federationExpiryBannerSubtitleSuccessor;
+      base = l10n.federationExpiryBannerSubtitleSuccessor;
+    } else {
+      final expiry = expiryDateTime(expiryTimestamp);
+      final date = DateFormat.yMMMd().format(expiry);
+      base =
+          expiry.isBefore(DateTime.now())
+              ? l10n.federationExpiryBannerSubtitlePast(date)
+              : l10n.federationExpiryBannerSubtitle(date);
     }
-    final expiry = expiryDateTime(expiryTimestamp);
-    final date = DateFormat.yMMMd().format(expiry);
-    return expiry.isBefore(DateTime.now())
-        ? context.l10n.federationExpiryBannerSubtitlePast(date)
-        : context.l10n.federationExpiryBannerSubtitle(date);
+    return [
+      base,
+      if (onTap != null) l10n.federationExpiryBannerTap,
+      if (note != null) note!,
+    ].join(' ');
   }
 
   @override
@@ -80,56 +104,62 @@ class FederationExpiryBanner extends StatelessWidget {
     final theme = Theme.of(context);
     final warning = theme.colorScheme.error;
 
-    return Padding(
-      padding: const EdgeInsets.only(top: 8),
-      child: SizedBox(
-        height: federationExpiryBannerExtent(context) - 8,
-        child: Material(
-          color: warning.withValues(alpha: 0.12),
-          borderRadius: BorderRadius.circular(12),
-          child: InkWell(
-            onTap: onTap,
+    final card = Material(
+      color: warning.withValues(alpha: 0.12),
+      borderRadius: BorderRadius.circular(12),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(12),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+          decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(12),
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: warning.withValues(alpha: 0.5)),
-              ),
-              child: Row(
-                children: [
-                  Icon(Icons.warning_amber_rounded, color: warning, size: 24),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Text(
-                          context.l10n.federationExpiryBannerTitle,
-                          style: _titleStyle(
-                            theme.textTheme,
-                          )?.copyWith(color: warning),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                        const SizedBox(height: 2),
-                        Text(
-                          _subtitle(context),
-                          style: _subtitleStyle(theme.textTheme),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ],
+            border: Border.all(color: warning.withValues(alpha: 0.5)),
+          ),
+          child: Row(
+            children: [
+              Icon(Icons.warning_amber_rounded, color: warning, size: 24),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Text(
+                      context.l10n.federationExpiryBannerTitle,
+                      style: _titleStyle(
+                        theme.textTheme,
+                      )?.copyWith(color: warning),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
                     ),
-                  ),
-                  Icon(Icons.chevron_right, color: warning, size: 20),
-                ],
+                    const SizedBox(height: 2),
+                    Text(
+                      _subtitle(context),
+                      style: _subtitleStyle(theme.textTheme),
+                      maxLines: compact ? 1 : 3,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ],
+                ),
               ),
-            ),
+              if (onTap != null)
+                Icon(Icons.chevron_right, color: warning, size: 20),
+            ],
           ),
         ),
       ),
+    );
+
+    return Padding(
+      padding: const EdgeInsets.only(top: 8),
+      child:
+          compact
+              ? SizedBox(
+                height: federationExpiryBannerExtent(context) - 8,
+                child: card,
+              )
+              : card,
     );
   }
 }

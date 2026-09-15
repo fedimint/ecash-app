@@ -100,7 +100,10 @@ void main() {
         tester.element(find.byType(FederationExpiryBanner)),
       );
       expect(
-        find.text(l10n.federationExpiryBannerSubtitle(bannerDate(inAMonth))),
+        find.text(
+          '${l10n.federationExpiryBannerSubtitle(bannerDate(inAMonth))} '
+          '${l10n.federationExpiryBannerTap}',
+        ),
         findsOneWidget,
       );
     });
@@ -118,7 +121,8 @@ void main() {
       );
       expect(
         find.text(
-          l10n.federationExpiryBannerSubtitlePast(bannerDate(lastWeek)),
+          '${l10n.federationExpiryBannerSubtitlePast(bannerDate(lastWeek))} '
+          '${l10n.federationExpiryBannerTap}',
         ),
         findsOneWidget,
       );
@@ -132,9 +136,39 @@ void main() {
         tester.element(find.byType(FederationExpiryBanner)),
       );
       expect(
-        find.text(l10n.federationExpiryBannerSubtitleSuccessor),
+        find.text(
+          '${l10n.federationExpiryBannerSubtitleSuccessor} '
+          '${l10n.federationExpiryBannerTap}',
+        ),
         findsOneWidget,
       );
+    });
+
+    testWidgets('reads as information on a join preview', (tester) async {
+      await tester.pumpWidget(
+        harness(
+          FederationExpiryBanner(
+            expiryTimestamp: inAMonth,
+            onTap: null,
+            compact: false,
+            note: 'Join only to recover funds you already hold here.',
+          ),
+          textScale: 1.3,
+        ),
+      );
+      expect(tester.takeException(), isNull);
+      final l10n = AppLocalizations.of(
+        tester.element(find.byType(FederationExpiryBanner)),
+      );
+      // No promise of details that a tap cannot deliver, and no chevron.
+      expect(find.textContaining(l10n.federationExpiryBannerTap), findsNothing);
+      expect(find.byIcon(Icons.chevron_right), findsNothing);
+      // The note is there and the line was allowed to wrap rather than clip.
+      final subtitle = tester.renderObject<RenderParagraph>(
+        find.textContaining('recover funds'),
+      );
+      expect(subtitle.size.height, greaterThan(subtitle.textSize.height / 2));
+      expect(subtitle.textSize.height, greaterThan(20 * 1.3));
     });
 
     testWidgets('is tappable across its whole surface', (tester) async {
