@@ -348,31 +348,33 @@ class _LightningAddressScreenState extends State<LightningAddressScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        if (_domains.isNotEmpty) ...[
-          DropdownButtonFormField<FederationSelector>(
-            // A form field reads initialValue once, so it is recreated when
-            // the selection changes under it; otherwise the initializer's
-            // pick was never shown and the field looked unset.
-            key: ValueKey(_selectedFederation),
-            decoration: InputDecoration(
-              labelText: context.l10n.selectAFederation,
-            ),
-            initialValue: _selectedFederation,
-            items:
-                feds
-                    .map(
-                      (f) => DropdownMenuItem(
-                        value: f,
-                        child: Text(f.federationName),
-                      ),
-                    )
-                    .toList(),
-            onChanged: (value) {
-              _userPickedFederation = true;
-              _onFederationSet(value);
-              _onUsernameChanged();
-            },
+        DropdownButtonFormField<FederationSelector>(
+          // A form field reads initialValue once, so it is recreated when
+          // the selection changes under it; otherwise the initializer's
+          // pick was never shown and the field looked unset.
+          key: ValueKey(_selectedFederation),
+          decoration: InputDecoration(
+            labelText: context.l10n.selectAFederation,
           ),
+          initialValue: _selectedFederation,
+          items:
+              feds
+                  .map(
+                    (f) => DropdownMenuItem(
+                      value: f,
+                      child: Text(f.federationName),
+                    ),
+                  )
+                  .toList(),
+          onChanged: (value) {
+            _userPickedFederation = true;
+            _onFederationSet(value);
+            _onUsernameChanged();
+          },
+        ),
+        // Registering needs the server's domain list; removing an address
+        // does not, so only the fields below depend on it.
+        if (_domains.isNotEmpty) ...[
           const SizedBox(height: 24),
           Row(
             children: [
@@ -470,20 +472,36 @@ class _LightningAddressScreenState extends State<LightningAddressScreen> {
                 ),
               ),
             ),
-          if (_selectedFederationExpiring)
-            Padding(
-              padding: const EdgeInsets.only(top: 16),
+        ] else
+          Padding(
+            padding: const EdgeInsets.only(top: 24),
+            child: Center(
               child: Text(
-                _existingConfig != null
-                    ? context.l10n.lnAddressRemoveCurrent
-                    : context.l10n.lnAddressRegistrationClosed,
+                context.l10n.couldNotContactServer,
                 textAlign: TextAlign.center,
-                style: TextStyle(color: Theme.of(context).colorScheme.error),
+                style: TextStyle(
+                  color: Theme.of(context).colorScheme.error,
+                  fontSize: 16,
+                ),
               ),
             ),
-          const SizedBox(height: 32),
-          Center(
-            child: ElevatedButton(
+          ),
+        if (_selectedFederationExpiring)
+          Padding(
+            padding: const EdgeInsets.only(top: 16),
+            child: Text(
+              _existingConfig != null
+                  ? context.l10n.lnAddressRemoveCurrent
+                  : context.l10n.lnAddressRegistrationClosed,
+              textAlign: TextAlign.center,
+              style: TextStyle(color: Theme.of(context).colorScheme.error),
+            ),
+          ),
+        const SizedBox(height: 32),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            ElevatedButton(
               onPressed:
                   (_selectedFederation != null &&
                           _status is LNAddressStatus_Available &&
@@ -505,11 +523,9 @@ class _LightningAddressScreenState extends State<LightningAddressScreen> {
                       )
                       : Text(context.l10n.register),
             ),
-          ),
-          if (_existingConfig != null) ...[
-            const SizedBox(height: 12),
-            Center(
-              child: TextButton.icon(
+            if (_existingConfig != null) ...[
+              const SizedBox(width: 12),
+              TextButton.icon(
                 onPressed: _removing ? null : _onRemovePressed,
                 icon: const Icon(Icons.delete_outline),
                 label:
@@ -524,24 +540,10 @@ class _LightningAddressScreenState extends State<LightningAddressScreen> {
                   foregroundColor: Theme.of(context).colorScheme.error,
                 ),
               ),
-            ),
+            ],
           ],
-          const SizedBox(height: 16),
-        ] else ...[
-          Padding(
-            padding: const EdgeInsets.only(bottom: 24),
-            child: Center(
-              child: Text(
-                context.l10n.couldNotContactServer,
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                  color: Theme.of(context).colorScheme.error,
-                  fontSize: 16,
-                ),
-              ),
-            ),
-          ),
-        ],
+        ),
+        const SizedBox(height: 16),
         GestureDetector(
           onTap: () {
             setState(() {
