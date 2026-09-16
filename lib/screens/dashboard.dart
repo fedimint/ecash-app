@@ -322,6 +322,9 @@ class _DashboardState extends State<Dashboard> {
       ),
     ).then((_) {
       // The checklist may have moved the balance or dropped the address.
+      // It may also have left the federation, in which case this dashboard
+      // is on its way out and there is nothing left to reload for.
+      if (!mounted) return;
       _loadBalance();
       _loadLightningAddress();
       _loadRecentTransactions();
@@ -391,10 +394,19 @@ class _DashboardState extends State<Dashboard> {
 
   Future<void> _loadRecentTransactions() async {
     if (recovering) return;
-    final txs = await transactions(
-      federationId: widget.fed.federationId,
-      modules: _getModulesForPaymentType(),
-    );
+    final List<Transaction> txs;
+    try {
+      txs = await transactions(
+        federationId: widget.fed.federationId,
+        modules: _getModulesForPaymentType(),
+      );
+    } catch (e) {
+      // Expected when the federation was left while this screen is still up:
+      // the leave dialog pops its routes before the app root has swapped the
+      // dashboard out, so a reload can still land here. Keep the last list.
+      AppLogger.instance.warn('Could not load transactions: $e');
+      return;
+    }
     if (!mounted) return;
     setState(() {
       _recentTransactions = txs.take(20).toList();
