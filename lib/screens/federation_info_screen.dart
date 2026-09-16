@@ -368,15 +368,22 @@ class _FederationInfoScreenState extends State<FederationInfoScreen> {
     }
   }
 
-  /// Whether [fed]'s guardians have set a shutdown date. When the meta cannot
-  /// be read this errs on the side of not claiming: an address registered on a
-  /// federation that is closing is worse than one the user claims by hand.
+  /// Whether [fed]'s guardians have set a shutdown date, asked of them
+  /// directly in one round trip rather than read from the cache, which can be
+  /// weeks old for a federation previewed long before it was joined. When
+  /// they cannot be asked this errs on the side of not claiming: an address
+  /// registered on a federation that is closing is worse than one the user
+  /// claims by hand.
   Future<bool> _isShuttingDown(FederationSelector fed) async {
     try {
-      final meta = await getFederationMeta(federationId: fed.federationId);
-      return meta.expiryTimestamp != null;
+      final expiry = await fetchFederationExpiry(
+        federationId: fed.federationId,
+      );
+      return expiry != null;
     } catch (e) {
-      AppLogger.instance.warn("Could not read federation meta: $e");
+      AppLogger.instance.warn(
+        "Could not ask the federation for its expiry: $e",
+      );
       return true;
     }
   }

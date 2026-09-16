@@ -540,6 +540,12 @@ pub async fn get_federation_meta(
 }
 
 #[frb]
+pub async fn fetch_federation_expiry(federation_id: &FederationId) -> anyhow::Result<Option<u64>> {
+    let multimint = get_multimint();
+    multimint.fetch_federation_expiry(federation_id).await
+}
+
+#[frb]
 pub async fn refresh_federation_meta(
     federation_id: &FederationId,
 ) -> anyhow::Result<FederationMeta> {

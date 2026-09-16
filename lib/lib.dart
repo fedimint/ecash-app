@@ -235,6 +235,9 @@ Future<FederationMeta> getFederationMeta({
   federationId: federationId,
 );
 
+Future<BigInt?> fetchFederationExpiry({required FederationId federationId}) =>
+    RustLib.instance.api.crateFetchFederationExpiry(federationId: federationId);
+
 Future<FederationMeta> refreshFederationMeta({
   required FederationId federationId,
 }) =>

@@ -1906,6 +1906,32 @@ impl Multimint {
             .await)
     }
 
+    /// Asks a joined federation's guardians for the shutdown date they have
+    /// set right now, as a single consensus query. `Ok(None)` means none is
+    /// set.
+    ///
+    /// For a one-off decision this beats the alternatives: the cached meta can
+    /// be weeks stale for a federation that was previewed long ago and only
+    /// now joined (previews never refresh a cached row), while a full
+    /// `refresh_federation_meta` also probes every guardian for its version,
+    /// one after another and unbounded, which is slowest exactly when a
+    /// federation is winding down.
+    pub async fn fetch_federation_expiry(
+        &self,
+        federation_id: &FederationId,
+    ) -> anyhow::Result<Option<u64>> {
+        let client = self.get_client(federation_id).await?;
+        let meta = client.get_first_module::<MetaClientModule>()?;
+        let Some(value) = meta.get_consensus_value(DEFAULT_META_KEY).await? else {
+            return Ok(None);
+        };
+        let json = value
+            .value
+            .to_json()
+            .context("federation meta is not valid JSON")?;
+        Ok(Self::get_expiry_timestamp(&json))
+    }
+
     /// Refetch and re-cache a federation's meta immediately, bypassing both the
     /// cached value and the periodic refresh task. Used after a guardian action
     /// changes meta consensus, so the app reflects it without waiting out the

@@ -233,6 +233,18 @@ abstract class Multimint implements RustOpaqueInterface {
 
   Future<List<(FederationSelector, bool)>> federations();
 
+  /// Asks a joined federation's guardians for the shutdown date they have
+  /// set right now, as a single consensus query. `Ok(None)` means none is
+  /// set.
+  ///
+  /// For a one-off decision this beats the alternatives: the cached meta can
+  /// be weeks stale for a federation that was previewed long ago and only
+  /// now joined (previews never refresh a cached row), while a full
+  /// `refresh_federation_meta` also probes every guardian for its version,
+  /// one after another and unbounded, which is slowest exactly when a
+  /// federation is winding down.
+  Future<BigInt?> fetchFederationExpiry({required FederationId federationId});
+
   Future<List<(String, BigInt?, BigInt?)>> getAddresses({
     required FederationId federationId,
   });
