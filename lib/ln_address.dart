@@ -266,10 +266,9 @@ class _LightningAddressScreenState extends State<LightningAddressScreen> {
 
     setState(() => _removing = true);
     try {
-      await removeLnAddress(
-        federationId: fed.federationId,
-        lnAddressApi: _lnAddressApi,
-      );
+      // The endpoint the address lives on is stored with it; the screen's
+      // current API may point somewhere else.
+      await removeLnAddress(federationId: fed.federationId);
       if (!mounted) return;
       widget.onLnAddressChanged(fed, false);
       Navigator.of(context).pop();

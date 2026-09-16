@@ -1052,14 +1052,9 @@ pub async fn register_ln_address(
 }
 
 #[frb]
-pub async fn remove_ln_address(
-    federation_id: &FederationId,
-    ln_address_api: String,
-) -> anyhow::Result<()> {
+pub async fn remove_ln_address(federation_id: &FederationId) -> anyhow::Result<()> {
     let multimint = get_multimint();
-    multimint
-        .remove_ln_address(federation_id, ln_address_api)
-        .await
+    multimint.remove_ln_address(federation_id).await
 }
 
 #[frb]

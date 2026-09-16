@@ -521,11 +521,9 @@ abstract class Multimint implements RustOpaqueInterface {
   });
 
   /// Gives up the Lightning Address registered for a federation, on the
-  /// server and locally. Errors when none is registered.
-  Future<void> removeLnAddress({
-    required FederationId federationId,
-    required String lnAddressApi,
-  });
+  /// server it was registered with and locally. Errors when none is
+  /// registered.
+  Future<void> removeLnAddress({required FederationId federationId});
 
   Future<EcashAppResultOperationId> send({
     required FederationId federationId,

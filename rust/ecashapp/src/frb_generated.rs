@@ -6913,7 +6913,6 @@ fn wire__crate__multimint__Multimint_remove_ln_address_impl(
             let api_federation_id = <RustOpaqueMoi<
                 flutter_rust_bridge::for_generated::RustAutoOpaqueInner<FederationId>,
             >>::sse_decode(&mut deserializer);
-            let api_ln_address_api = <String>::sse_decode(&mut deserializer);
             deserializer.end();
             move |context| async move {
                 transform_result_sse::<_, flutter_rust_bridge::for_generated::anyhow::Error>(
@@ -6951,7 +6950,6 @@ fn wire__crate__multimint__Multimint_remove_ln_address_impl(
                         let output_ok = crate::multimint::Multimint::remove_ln_address(
                             &*api_that_guard,
                             &*api_federation_id_guard,
-                            api_ln_address_api,
                         )
                         .await?;
                         Ok(output_ok)
@@ -14674,7 +14672,6 @@ fn wire__crate__remove_ln_address_impl(
             let api_federation_id = <RustOpaqueMoi<
                 flutter_rust_bridge::for_generated::RustAutoOpaqueInner<FederationId>,
             >>::sse_decode(&mut deserializer);
-            let api_ln_address_api = <String>::sse_decode(&mut deserializer);
             deserializer.end();
             move |context| async move {
                 transform_result_sse::<_, flutter_rust_bridge::for_generated::anyhow::Error>(
@@ -14698,9 +14695,7 @@ fn wire__crate__remove_ln_address_impl(
                             }
                         }
                         let api_federation_id_guard = api_federation_id_guard.unwrap();
-                        let output_ok =
-                            crate::remove_ln_address(&*api_federation_id_guard, api_ln_address_api)
-                                .await?;
+                        let output_ok = crate::remove_ln_address(&*api_federation_id_guard).await?;
                         Ok(output_ok)
                     })()
                     .await,

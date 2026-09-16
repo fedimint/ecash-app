@@ -514,13 +514,8 @@ Future<void> registerLnAddress({
   domain: domain,
 );
 
-Future<void> removeLnAddress({
-  required FederationId federationId,
-  required String lnAddressApi,
-}) => RustLib.instance.api.crateRemoveLnAddress(
-  federationId: federationId,
-  lnAddressApi: lnAddressApi,
-);
+Future<void> removeLnAddress({required FederationId federationId}) =>
+    RustLib.instance.api.crateRemoveLnAddress(federationId: federationId);
 
 Future<String> getInviteCode({
   required FederationId federationId,

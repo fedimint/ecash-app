@@ -5738,9 +5738,13 @@ impl Multimint {
         &self,
         federation_id: &FederationId,
         config: &LightningAddressConfig,
-        ln_address_api: &str,
     ) -> anyhow::Result<()> {
-        let safe_ln_address_api = SafeUrl::parse(ln_address_api)?;
+        // The address, and the token that authorises deleting it, belong to
+        // the server it was registered with, which the config records. The
+        // screen's current endpoint can be a different server entirely (a
+        // custom one from the Advanced form, or a federation that has since
+        // changed its `lnaddress_api`), where the delete would be refused.
+        let safe_ln_address_api = config.ln_address_api.clone();
         let remove_request = LNAddressRemoveRequest {
             username: config.username.clone(),
             domain: config.domain.clone(),
@@ -5776,18 +5780,14 @@ impl Multimint {
     }
 
     /// Gives up the Lightning Address registered for a federation, on the
-    /// server and locally. Errors when none is registered.
-    pub async fn remove_ln_address(
-        &self,
-        federation_id: &FederationId,
-        ln_address_api: String,
-    ) -> anyhow::Result<()> {
+    /// server it was registered with and locally. Errors when none is
+    /// registered.
+    pub async fn remove_ln_address(&self, federation_id: &FederationId) -> anyhow::Result<()> {
         let config = self
             .get_ln_address_config(federation_id)
             .await
             .context("No Lightning Address is registered for this federation")?;
-        self.release_ln_address(federation_id, &config, &ln_address_api)
-            .await
+        self.release_ln_address(federation_id, &config).await
     }
 
     /// Register LNURL/LN Address
@@ -5811,8 +5811,7 @@ impl Multimint {
             .await
         };
         if let Some(config) = existing_config {
-            self.release_ln_address(federation_id, &config, &ln_address_api)
-                .await?;
+            self.release_ln_address(federation_id, &config).await?;
         }
 
         let client = self

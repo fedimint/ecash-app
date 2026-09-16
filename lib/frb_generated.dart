@@ -669,7 +669,6 @@ abstract class RustLibApi extends BaseApi {
   Future<void> crateMultimintMultimintRemoveLnAddress({
     required Multimint that,
     required FederationId federationId,
-    required String lnAddressApi,
   });
 
   Future<EcashAppResultOperationId> crateMultimintMultimintSend({
@@ -1345,10 +1344,7 @@ abstract class RustLibApi extends BaseApi {
 
   Future<void> crateRejoinFromBackupInvites();
 
-  Future<void> crateRemoveLnAddress({
-    required FederationId federationId,
-    required String lnAddressApi,
-  });
+  Future<void> crateRemoveLnAddress({required FederationId federationId});
 
   Future<void> crateRemoveNwcConnectionInfo({
     required FederationId federationId,
@@ -6108,7 +6104,6 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   Future<void> crateMultimintMultimintRemoveLnAddress({
     required Multimint that,
     required FederationId federationId,
-    required String lnAddressApi,
   }) {
     return handler.executeNormal(
       NormalTask(
@@ -6122,7 +6117,6 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
             federationId,
             serializer,
           );
-          sse_encode_String(lnAddressApi, serializer);
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
@@ -6135,7 +6129,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           decodeErrorData: sse_decode_AnyhowException,
         ),
         constMeta: kCrateMultimintMultimintRemoveLnAddressConstMeta,
-        argValues: [that, federationId, lnAddressApi],
+        argValues: [that, federationId],
         apiImpl: this,
       ),
     );
@@ -6144,7 +6138,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   TaskConstMeta get kCrateMultimintMultimintRemoveLnAddressConstMeta =>
       const TaskConstMeta(
         debugName: "Multimint_remove_ln_address",
-        argNames: ["that", "federationId", "lnAddressApi"],
+        argNames: ["that", "federationId"],
       );
 
   @override
@@ -11660,10 +11654,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
       );
 
   @override
-  Future<void> crateRemoveLnAddress({
-    required FederationId federationId,
-    required String lnAddressApi,
-  }) {
+  Future<void> crateRemoveLnAddress({required FederationId federationId}) {
     return handler.executeNormal(
       NormalTask(
         callFfi: (port_) {
@@ -11672,7 +11663,6 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
             federationId,
             serializer,
           );
-          sse_encode_String(lnAddressApi, serializer);
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
@@ -11685,7 +11675,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           decodeErrorData: sse_decode_AnyhowException,
         ),
         constMeta: kCrateRemoveLnAddressConstMeta,
-        argValues: [federationId, lnAddressApi],
+        argValues: [federationId],
         apiImpl: this,
       ),
     );
@@ -11693,7 +11683,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
 
   TaskConstMeta get kCrateRemoveLnAddressConstMeta => const TaskConstMeta(
     debugName: "remove_ln_address",
-    argNames: ["federationId", "lnAddressApi"],
+    argNames: ["federationId"],
   );
 
   @override
@@ -23001,15 +22991,13 @@ class MultimintImpl extends RustOpaque implements Multimint {
   );
 
   /// Gives up the Lightning Address registered for a federation, on the
-  /// server and locally. Errors when none is registered.
-  Future<void> removeLnAddress({
-    required FederationId federationId,
-    required String lnAddressApi,
-  }) => RustLib.instance.api.crateMultimintMultimintRemoveLnAddress(
-    that: this,
-    federationId: federationId,
-    lnAddressApi: lnAddressApi,
-  );
+  /// server it was registered with and locally. Errors when none is
+  /// registered.
+  Future<void> removeLnAddress({required FederationId federationId}) =>
+      RustLib.instance.api.crateMultimintMultimintRemoveLnAddress(
+        that: this,
+        federationId: federationId,
+      );
 
   Future<EcashAppResultOperationId> send({
     required FederationId federationId,
