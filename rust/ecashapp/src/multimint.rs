@@ -1921,6 +1921,16 @@ impl Multimint {
         federation_id: &FederationId,
     ) -> anyhow::Result<Option<u64>> {
         let client = self.get_client(federation_id).await?;
+        // An older federation without a meta module cannot have set a date.
+        // Checked up front, because the lookup below reports an absent module
+        // as an error indistinguishable from a real failure, and the caller
+        // treats errors as "do not claim".
+        if client
+            .get_first_instance(&fedimint_meta_client::common::KIND)
+            .is_none()
+        {
+            return Ok(None);
+        }
         let meta = client.get_first_module::<MetaClientModule>()?;
         let Some(value) = meta.get_consensus_value(DEFAULT_META_KEY).await? else {
             return Ok(None);
@@ -2057,16 +2067,26 @@ impl Multimint {
         // over the static config below. A failed or unparseable fetch is kept
         // apart from "no value set": only the latter means nothing is
         // announced.
-        let meta_fetch = match client.get_first_module::<fedimint_meta_client::MetaClientModule>() {
-            Ok(meta) => match meta.get_consensus_value(DEFAULT_META_KEY).await {
-                Ok(Some(value)) => match value.value.to_json() {
-                    Ok(json) => MetaFetch::Value(json),
+        let meta_fetch = if client
+            .get_first_instance(&fedimint_meta_client::common::KIND)
+            .is_none()
+        {
+            // No meta module means nothing can be announced.
+            MetaFetch::Unset
+        } else {
+            match client.get_first_module::<MetaClientModule>() {
+                Ok(meta) => match meta.get_consensus_value(DEFAULT_META_KEY).await {
+                    Ok(Some(value)) => match value.value.to_json() {
+                        Ok(json) => MetaFetch::Value(json),
+                        Err(_) => MetaFetch::Unavailable,
+                    },
+                    Ok(None) => MetaFetch::Unset,
                     Err(_) => MetaFetch::Unavailable,
                 },
-                Ok(None) => MetaFetch::Unset,
+                // The module is there but could not be resolved, which says
+                // nothing about the guardians' value.
                 Err(_) => MetaFetch::Unavailable,
-            },
-            Err(_) => MetaFetch::Unset,
+            }
         };
         let fields = meta_fields_after_fetch(&meta_fetch, cached_meta.as_ref());
 
