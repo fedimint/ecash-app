@@ -262,6 +262,13 @@ pub async fn federations() -> Vec<(FederationSelector, bool)> {
     multimint.federations().await
 }
 
+/// One invite code per joined federation, for the user to view and export.
+#[frb]
+pub async fn federation_invite_codes() -> Vec<(FederationSelector, String)> {
+    let multimint = get_multimint();
+    multimint.get_federation_invite_codes().await
+}
+
 #[frb]
 pub async fn refresh_connections() {
     let multimint = get_multimint();

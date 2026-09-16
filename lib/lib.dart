@@ -17,7 +17,7 @@ part 'lib.freezed.dart';
 // These functions are ignored because they are not marked as `pub`: `create_event_bus`, `create_nostr_client`, `error_to_flutter`, `get_database`, `get_db`, `get_multimint`, `get_nostr_client`, `get_pin_manager`, `get_recovery_relays`, `info_to_flutter`, `nwc_limit_msats`, `parse_ecash`, `payment_error_to_flutter`, `verify_current_pin`, `write_nwc_limits`
 // These functions are ignored because they have generic arguments: `balance`, `federations`, `get_invoice_network`, `log_error`, `parse_ecash`
 // These types are ignored because they are neither used by any `pub` functions nor (for structs and enums) marked `#[frb(unignore)]`: `MultimintParseContext`
-// These function are ignored because they are on traits that is not defined in current crate (put an empty `#[frb]` on it to unignore): `assert_receiver_is_total_eq`, `clone`, `eq`, `fmt`
+// These function are ignored because they are on traits that is not defined in current crate (put an empty `#[frb]` on it to unignore): `assert_fields_are_eq`, `clone`, `eq`, `fmt`
 
 Future<EventBusMultimintEvent> getEventBus() =>
     RustLib.instance.api.crateGetEventBus();
@@ -64,6 +64,10 @@ Future<void> rejoinFromBackupInvites() =>
 
 Future<List<(FederationSelector, bool)>> federations() =>
     RustLib.instance.api.crateFederations();
+
+/// One invite code per joined federation, for the user to view and export.
+Future<List<(FederationSelector, String)>> federationInviteCodes() =>
+    RustLib.instance.api.crateFederationInviteCodes();
 
 Future<void> refreshConnections() =>
     RustLib.instance.api.crateRefreshConnections();

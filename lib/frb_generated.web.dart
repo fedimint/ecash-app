@@ -948,6 +948,12 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   );
 
   @protected
+  List<(FederationSelector, String)>
+  dco_decode_list_record_auto_owned_rust_opaque_flutter_rust_bridgefor_generated_rust_auto_opaque_inner_federation_selector_string(
+    dynamic raw,
+  );
+
+  @protected
   List<(FiatCurrency, BigInt)> dco_decode_list_record_fiat_currency_u_64(
     dynamic raw,
   );
@@ -1122,6 +1128,12 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   @protected
   (FederationSelector, NWCConnectionInfo)
   dco_decode_record_auto_owned_rust_opaque_flutter_rust_bridgefor_generated_rust_auto_opaque_inner_federation_selector_nwc_connection_info(
+    dynamic raw,
+  );
+
+  @protected
+  (FederationSelector, String)
+  dco_decode_record_auto_owned_rust_opaque_flutter_rust_bridgefor_generated_rust_auto_opaque_inner_federation_selector_string(
     dynamic raw,
   );
 
@@ -2070,6 +2082,12 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   );
 
   @protected
+  List<(FederationSelector, String)>
+  sse_decode_list_record_auto_owned_rust_opaque_flutter_rust_bridgefor_generated_rust_auto_opaque_inner_federation_selector_string(
+    SseDeserializer deserializer,
+  );
+
+  @protected
   List<(FiatCurrency, BigInt)> sse_decode_list_record_fiat_currency_u_64(
     SseDeserializer deserializer,
   );
@@ -2256,6 +2274,12 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   @protected
   (FederationSelector, NWCConnectionInfo)
   sse_decode_record_auto_owned_rust_opaque_flutter_rust_bridgefor_generated_rust_auto_opaque_inner_federation_selector_nwc_connection_info(
+    SseDeserializer deserializer,
+  );
+
+  @protected
+  (FederationSelector, String)
+  sse_decode_record_auto_owned_rust_opaque_flutter_rust_bridgefor_generated_rust_auto_opaque_inner_federation_selector_string(
     SseDeserializer deserializer,
   );
 
@@ -3377,6 +3401,13 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   );
 
   @protected
+  void
+  sse_encode_list_record_auto_owned_rust_opaque_flutter_rust_bridgefor_generated_rust_auto_opaque_inner_federation_selector_string(
+    List<(FederationSelector, String)> self,
+    SseSerializer serializer,
+  );
+
+  @protected
   void sse_encode_list_record_fiat_currency_u_64(
     List<(FiatCurrency, BigInt)> self,
     SseSerializer serializer,
@@ -3607,6 +3638,13 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   void
   sse_encode_record_auto_owned_rust_opaque_flutter_rust_bridgefor_generated_rust_auto_opaque_inner_federation_selector_nwc_connection_info(
     (FederationSelector, NWCConnectionInfo) self,
+    SseSerializer serializer,
+  );
+
+  @protected
+  void
+  sse_encode_record_auto_owned_rust_opaque_flutter_rust_bridgefor_generated_rust_auto_opaque_inner_federation_selector_string(
+    (FederationSelector, String) self,
     SseSerializer serializer,
   );
 

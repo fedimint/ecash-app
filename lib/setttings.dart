@@ -9,6 +9,7 @@ import 'package:ecashapp/relays.dart';
 import 'package:ecashapp/screens/access_control.dart';
 import 'package:ecashapp/screens/btcmap_screen.dart';
 import 'package:ecashapp/screens/display_settings.dart';
+import 'package:ecashapp/screens/invite_codes_screen.dart';
 import 'package:ecashapp/theme.dart';
 import 'package:ecashapp/utils/pin_guard.dart';
 import 'package:flutter/material.dart';
@@ -199,6 +200,25 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 },
               );
               _checkSeedAck();
+            },
+          ),
+          // Sits next to the seed phrase because the two are halves of one
+          // backup: the seed restores the funds, these codes say which
+          // federations hold them.
+          _SettingsOption(
+            icon: Icon(
+              Icons.groups,
+              color: Theme.of(context).colorScheme.primary,
+            ),
+            title: context.l10n.inviteCodesTitle,
+            subtitle: context.l10n.inviteCodesSubtitle,
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => const InviteCodesScreen(),
+                ),
+              );
             },
           ),
           const SizedBox(height: 24),
