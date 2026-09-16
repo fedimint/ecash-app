@@ -124,6 +124,39 @@ void main() {
       return flows;
     }
 
+    testWidgets('does not settle the checklist on a failed read', (
+      tester,
+    ) async {
+      tallView(tester);
+      await tester.pumpWidget(
+        harness(
+          FederationExpiryScreen(
+            key: UniqueKey(),
+            federationName: 'Old Fed',
+            expiryTimestamp: inAMonth,
+            successorInvite: null,
+            balanceMsats: null,
+            lightningAddress: null,
+            loadBalance: () async => throw Exception('federation unreachable'),
+            loadLightningAddress: () async => address_,
+            onSendOnchain: () async {},
+            onOpenLightningAddress: () async {},
+            onJoin: (_, _) {},
+            onLeaveFederation: () async {},
+          ),
+        ),
+      );
+      // The spinner never settles, so pump a few frames instead.
+      for (var i = 0; i < 5; i++) {
+        await tester.pump(const Duration(milliseconds: 100));
+      }
+
+      // A failed read is not "nothing to move": still loading, no Leave.
+      expect(find.byType(CircularProgressIndicator), findsOneWidget);
+      expect(find.text(en.federationExpirySendOnchain), findsNothing);
+      expect(find.text(en.leaveFederation), findsNothing);
+    });
+
     testWidgets('reads its inputs on entry rather than trusting the snapshot', (
       tester,
     ) async {

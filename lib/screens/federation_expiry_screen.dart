@@ -103,9 +103,10 @@ class _FederationExpiryScreenState extends State<FederationExpiryScreen> {
   late BigInt? _balanceMsats = widget.balanceMsats;
   late String? _lightningAddress = widget.lightningAddress;
 
-  /// False until the loaders have answered once. The dashboard hands over
+  /// False until both loaders have succeeded once. The dashboard hands over
   /// whatever it had loaded when the banner was tapped, which can be nothing
-  /// yet, and a missing balance or address must not read as "nothing to do".
+  /// yet, and neither a missing value nor a failed read may pass for
+  /// "nothing to do" while Leave sits below.
   bool _loaded = false;
 
   /// One step's flow at a time; every link is disabled while one runs.
@@ -133,21 +134,26 @@ class _FederationExpiryScreenState extends State<FederationExpiryScreen> {
   Future<void> _refresh() async {
     var balance = _balanceMsats;
     var address = _lightningAddress;
+    var complete = true;
     try {
       balance = await widget.loadBalance();
     } catch (e) {
+      complete = false;
       AppLogger.instance.warn('Could not refresh balance: $e');
     }
     try {
       address = await widget.loadLightningAddress();
     } catch (e) {
+      complete = false;
       AppLogger.instance.warn('Could not refresh Lightning Address: $e');
     }
     if (!mounted) return;
     setState(() {
       _balanceMsats = balance;
       _lightningAddress = address;
-      _loaded = true;
+      // Only a pair of successful reads settles which steps apply. Once
+      // settled, a later failed refresh keeps the last known values.
+      if (complete) _loaded = true;
     });
   }
 
