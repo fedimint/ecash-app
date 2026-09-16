@@ -131,6 +131,13 @@ const META_FEDERATION_EXPIRY_TIMESTAMP_KEY: &str = "federation_expiry_timestamp"
 /// Well-known meta field: invite code of the federation users should migrate
 /// to before the shutdown. See fedimint `docs/meta_fields/federation_successor.md`.
 const META_FEDERATION_SUCCESSOR_KEY: &str = "federation_successor";
+/// Largest expiry (unix seconds) the UI can render. Dart's `DateTime` spans
+/// 100,000,000 days either side of the epoch, i.e. 8.64e15 milliseconds, and
+/// the Dart side multiplies the seconds by 1000 before building one; a larger
+/// value throws while the dashboard is being built and takes the wallet
+/// screen down with it. Such a value is a malformed guardian entry, so it is
+/// dropped here rather than passed on.
+const MAX_RENDERABLE_EXPIRY_SECS: u64 = 8_640_000_000_000;
 const CACHE_UPDATE_INTERVAL_SECS: u64 = 30;
 const PRICE_CACHE_UPDATE_INTERVAL_SECS: u64 = 60 * 5;
 const FEDERATION_BACKUP_CACHE_UPDATE_INTERVAL_SECS: u64 = 60 * 60 * 24;
@@ -1932,13 +1939,15 @@ impl Multimint {
     /// guardian dashboard writes it as a JSON *string* (`"1767225600"`) while
     /// `Client::get_meta_expiration_timestamp` reads a JSON *number*, so both
     /// spellings are accepted. Anything else (negative, fractional,
-    /// non-numeric) is treated as unset rather than surfacing a bogus date.
+    /// non-numeric, or past [`MAX_RENDERABLE_EXPIRY_SECS`]) is treated as
+    /// unset rather than surfacing a bogus date.
     fn get_expiry_timestamp(meta: &serde_json::Value) -> Option<u64> {
-        match meta.get(META_FEDERATION_EXPIRY_TIMESTAMP_KEY)? {
-            serde_json::Value::Number(n) => n.as_u64(),
-            serde_json::Value::String(s) => s.trim().parse::<u64>().ok(),
-            _ => None,
-        }
+        let secs = match meta.get(META_FEDERATION_EXPIRY_TIMESTAMP_KEY)? {
+            serde_json::Value::Number(n) => n.as_u64()?,
+            serde_json::Value::String(s) => s.trim().parse::<u64>().ok()?,
+            _ => return None,
+        };
+        (secs <= MAX_RENDERABLE_EXPIRY_SECS).then_some(secs)
     }
 
     /// Reads `federation_successor` from the meta JSON, keeping it only when it
@@ -7435,6 +7444,25 @@ mod tests {
             Multimint::get_expiry_timestamp(&as_number),
             Some(1_767_225_600)
         );
+    }
+
+    #[test]
+    fn expiry_timestamp_rejects_dates_the_ui_cannot_render() {
+        // The boundary is Dart's DateTime limit, in seconds; one past it would
+        // throw in the dashboard header.
+        let at_limit = json!({ "federation_expiry_timestamp": 8_640_000_000_000_u64 });
+        assert_eq!(
+            Multimint::get_expiry_timestamp(&at_limit),
+            Some(8_640_000_000_000)
+        );
+        for value in [
+            json!(8_640_000_000_001_u64),
+            json!("18446744073709551615"),
+            json!(u64::MAX),
+        ] {
+            let meta = json!({ "federation_expiry_timestamp": value });
+            assert_eq!(Multimint::get_expiry_timestamp(&meta), None, "{meta}");
+        }
     }
 
     #[test]
