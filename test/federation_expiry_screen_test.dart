@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:ecashapp/generated/app_localizations.dart';
 import 'package:ecashapp/providers/preferences_provider.dart';
 import 'package:ecashapp/screens/federation_expiry_screen.dart';
@@ -73,7 +75,16 @@ void main() {
     final lastWeek = unixSeconds(
       DateTime.now().subtract(const Duration(days: 7)),
     );
-    const address = 'alice@example.com';
+    const address_ = 'alice@example.com';
+    const address = address_;
+
+    /// Tall enough that the whole list, links included, is laid out.
+    void tallView(WidgetTester tester) {
+      tester.view.physicalSize = const Size(800, 3000);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+    }
 
     Future<Flows> pumpScreen(
       WidgetTester tester, {
@@ -82,11 +93,7 @@ void main() {
       BigInt? balanceMsats,
       String? lightningAddress,
     }) async {
-      // Tall enough that the whole list, links included, is laid out.
-      tester.view.physicalSize = const Size(800, 3000);
-      tester.view.devicePixelRatio = 1.0;
-      addTearDown(tester.view.resetPhysicalSize);
-      addTearDown(tester.view.resetDevicePixelRatio);
+      tallView(tester);
 
       final flows =
           Flows()
@@ -112,9 +119,55 @@ void main() {
           ),
         ),
       );
-      await tester.pump();
+      // Lets the loaders answer on entry, so the checklist is showing.
+      await tester.pumpAndSettle();
       return flows;
     }
+
+    testWidgets('reads its inputs on entry rather than trusting the snapshot', (
+      tester,
+    ) async {
+      tallView(tester);
+      final balance = Completer<BigInt?>();
+      final address = Completer<String?>();
+      await tester.pumpWidget(
+        harness(
+          FederationExpiryScreen(
+            key: UniqueKey(),
+            federationName: 'Old Fed',
+            expiryTimestamp: inAMonth,
+            successorInvite: null,
+            // The dashboard had loaded neither yet when the banner was tapped.
+            balanceMsats: null,
+            lightningAddress: null,
+            loadBalance: () => balance.future,
+            loadLightningAddress: () => address.future,
+            onSendOnchain: () async {},
+            onOpenLightningAddress: () async {},
+            onJoin: (_, _) {},
+            onLeaveFederation: () async {},
+          ),
+        ),
+      );
+      await tester.pump();
+
+      // Nothing is concluded from the empty snapshot: no steps yet, a spinner.
+      expect(find.byType(CircularProgressIndicator), findsOneWidget);
+      expect(find.text(en.leaveFederation), findsNothing);
+      expect(find.text(en.federationExpirySendOnchain), findsNothing);
+
+      balance.complete(BigInt.from(21_000));
+      address.complete(address_);
+      await tester.pumpAndSettle();
+
+      expect(find.byType(CircularProgressIndicator), findsNothing);
+      expect(find.text(en.federationExpirySendOnchain), findsOneWidget);
+      expect(
+        find.text(en.federationExpiryManageLightningAddress),
+        findsOneWidget,
+      );
+      expect(find.text(en.leaveFederation), findsOneWidget);
+    });
 
     double top(WidgetTester tester, String text) =>
         tester.getTopLeft(find.text(text)).dy;

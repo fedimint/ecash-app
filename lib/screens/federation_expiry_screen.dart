@@ -103,8 +103,19 @@ class _FederationExpiryScreenState extends State<FederationExpiryScreen> {
   late BigInt? _balanceMsats = widget.balanceMsats;
   late String? _lightningAddress = widget.lightningAddress;
 
+  /// False until the loaders have answered once. The dashboard hands over
+  /// whatever it had loaded when the banner was tapped, which can be nothing
+  /// yet, and a missing balance or address must not read as "nothing to do".
+  bool _loaded = false;
+
   /// One step's flow at a time; every link is disabled while one runs.
   bool _busy = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _refresh();
+  }
 
   /// Runs a step's flow, then re-reads what it may have changed so the list
   /// reflects the new state when the user lands back here.
@@ -136,6 +147,7 @@ class _FederationExpiryScreenState extends State<FederationExpiryScreen> {
     setState(() {
       _balanceMsats = balance;
       _lightningAddress = address;
+      _loaded = true;
     });
   }
 
@@ -297,15 +309,21 @@ class _FederationExpiryScreenState extends State<FederationExpiryScreen> {
               ),
             ),
             const SizedBox(height: 12),
-            for (final (index, step) in steps.indexed)
-              _Step(
-                number: index + 1,
-                text: step.text,
-                actionLabel: step.action,
-                icon: step.icon,
-                destructive: step.destructive,
-                onPressed: _busy ? null : step.onTap,
-              ),
+            if (!_loaded)
+              const Padding(
+                padding: EdgeInsets.symmetric(vertical: 24),
+                child: Center(child: CircularProgressIndicator()),
+              )
+            else
+              for (final (index, step) in steps.indexed)
+                _Step(
+                  number: index + 1,
+                  text: step.text,
+                  actionLabel: step.action,
+                  icon: step.icon,
+                  destructive: step.destructive,
+                  onPressed: _busy ? null : step.onTap,
+                ),
           ],
         ),
       ),
