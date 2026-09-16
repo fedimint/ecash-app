@@ -2127,6 +2127,9 @@
   "federationExpiryBannerTitle": "This federation is shutting down",
   "@federationExpiryBannerTitle": {},
 
+  "federationExpiryBannerTitleSuccessor": "This federation has a successor",
+  "@federationExpiryBannerTitleSuccessor": {},
+
   "federationExpiryBannerSubtitle": "Closes on {date}.",
   "@federationExpiryBannerSubtitle": {
     "placeholders": {
@@ -2153,6 +2156,9 @@
 
   "federationExpiryBannerJoinHint": "Join only to recover funds you already hold here.",
   "@federationExpiryBannerJoinHint": {},
+
+  "federationExpiryBannerSuccessorJoinHint": "Unless you hold funds here, consider joining the successor instead.",
+  "@federationExpiryBannerSuccessorJoinHint": {},
 
   "federationExpiryTitle": "Federation shutdown",
   "@federationExpiryTitle": {},

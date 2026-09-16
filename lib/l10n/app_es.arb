@@ -614,6 +614,7 @@
   "nwcDailyBudgetDialogBody": "Lo máximo que una app vinculada puede gastar en total durante 24 horas. El conteo empieza con su primer pago y se reinicia 24 horas después.",
 
   "federationExpiryBannerTitle": "Esta federación va a cerrar",
+  "federationExpiryBannerTitleSuccessor": "Esta federación tiene una sucesora",
 
   "federationExpiryBannerSubtitle": "Cierra el {date}.",
 
@@ -622,6 +623,7 @@
   "federationExpiryBannerSubtitleSuccessor": "Los guardianes nombraron una federación sucesora.",
   "federationExpiryBannerTap": "Toca para ver detalles.",
   "federationExpiryBannerJoinHint": "Únete solo para recuperar fondos que ya tengas aquí.",
+  "federationExpiryBannerSuccessorJoinHint": "A menos que tengas fondos aquí, considera unirte a la sucesora.",
 
   "federationExpiryTitle": "Cierre de la federación",
 

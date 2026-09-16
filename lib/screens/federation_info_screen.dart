@@ -1028,7 +1028,12 @@ class _FederationInfoScreenState extends State<FederationInfoScreen> {
                       expiryTimestamp: _expiryTimestamp,
                       onTap: null,
                       compact: false,
-                      note: context.l10n.federationExpiryBannerJoinHint,
+                      note:
+                          _expiryTimestamp != null
+                              ? context.l10n.federationExpiryBannerJoinHint
+                              : context
+                                  .l10n
+                                  .federationExpiryBannerSuccessorJoinHint,
                     ),
                   if (_welcomeMessage != null) ...[
                     const SizedBox(height: 8),

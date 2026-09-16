@@ -126,7 +126,11 @@ class FederationExpiryBanner extends StatelessWidget {
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     Text(
-                      context.l10n.federationExpiryBannerTitle,
+                      // A successor with no date is a recommendation to move,
+                      // not a shutdown; the locks treat it that way too.
+                      expiryTimestamp == null
+                          ? context.l10n.federationExpiryBannerTitleSuccessor
+                          : context.l10n.federationExpiryBannerTitle,
                       style: _titleStyle(
                         theme.textTheme,
                       )?.copyWith(color: warning),

@@ -135,6 +135,12 @@ void main() {
       final l10n = AppLocalizations.of(
         tester.element(find.byType(FederationExpiryBanner)),
       );
+      // A successor alone is not a shutdown, and the title must not say so.
+      expect(
+        find.text(l10n.federationExpiryBannerTitleSuccessor),
+        findsOneWidget,
+      );
+      expect(find.text(l10n.federationExpiryBannerTitle), findsNothing);
       expect(
         find.text(
           '${l10n.federationExpiryBannerSubtitleSuccessor} '
