@@ -31,12 +31,15 @@ use fedimint_core::{
     base32::{decode_prefixed, encode_prefixed, FEDIMINT_PREFIX},
     config::{FederationId, META_FEDERATION_NAME_KEY},
     core::{ModuleInstanceId, ModuleKind},
-    db::{mem_impl::MemDatabase, Database, IDatabaseTransactionOpsCoreTyped},
+    db::{
+        mem_impl::MemDatabase, Database, DatabaseKeyPrefix, DatabaseTransaction,
+        IDatabaseTransactionOpsCore, IDatabaseTransactionOpsCoreTyped,
+    },
     encoding::{Decodable, Encodable},
     endpoint_constants::CONSENSUS_ORD_LATENCY_ENDPOINT,
     envs::BitcoinRpcConfig,
     invite_code::InviteCode,
-    module::{ApiAuth, ApiRequestErased},
+    module::{registry::ModuleDecoderRegistry, ApiAuth, ApiRequestErased},
     task::TaskGroup,
     util::SafeUrl,
     Amount, NumPeers,
@@ -107,8 +110,9 @@ use crate::{
     db::{
         BitcoinDisplay, BitcoinDisplayKey, BtcPrice, BtcPriceKey, BtcPrices, BtcPricesKey,
         Connector, ContactSyncConfigKey, FederationBackupKey, FederationMetaKey,
-        FederationMetaKeyPrefix, FiatCurrency, FiatCurrencyKey, LightningAddressConfig,
-        LightningAddressKey, LightningAddressKeyPrefix, SchemaVersionKey, Timestamp,
+        FederationMetaKeyPrefix, FederationMetaV1, FiatCurrency, FiatCurrencyKey,
+        LightningAddressConfig, LightningAddressKey, LightningAddressKeyPrefix, SchemaVersionKey,
+        Timestamp,
     },
     error_to_flutter, get_nostr_client, info_to_flutter, payment_error_to_flutter,
     wallet::WalletHandler,
@@ -120,6 +124,20 @@ use crate::{
 /// `MAX_INVOICE_EXPIRY_SECS` (`60 * 60 * 24`). Raising this breaks LNv2
 /// receives.
 const DEFAULT_EXPIRY_TIME_SECS: u32 = 86400;
+/// Well-known meta field: unix timestamp (seconds) after which the guardians
+/// will shut the federation down. See fedimint
+/// `docs/meta_fields/federation_expiry_timestamp.md`.
+const META_FEDERATION_EXPIRY_TIMESTAMP_KEY: &str = "federation_expiry_timestamp";
+/// Well-known meta field: invite code of the federation users should migrate
+/// to before the shutdown. See fedimint `docs/meta_fields/federation_successor.md`.
+const META_FEDERATION_SUCCESSOR_KEY: &str = "federation_successor";
+/// Largest expiry (unix seconds) the UI can render. Dart's `DateTime` spans
+/// 100,000,000 days either side of the epoch, i.e. 8.64e15 milliseconds, and
+/// the Dart side multiplies the seconds by 1000 before building one; a larger
+/// value throws while the dashboard is being built and takes the wallet
+/// screen down with it. Such a value is a malformed guardian entry, so it is
+/// dropped here rather than passed on.
+const MAX_RENDERABLE_EXPIRY_SECS: u64 = 8_640_000_000_000;
 const CACHE_UPDATE_INTERVAL_SECS: u64 = 30;
 const PRICE_CACHE_UPDATE_INTERVAL_SECS: u64 = 60 * 5;
 const FEDERATION_BACKUP_CACHE_UPDATE_INTERVAL_SECS: u64 = 60 * 60 * 24;
@@ -211,6 +229,16 @@ pub enum WithdrawFees {
     V1(PegOutFees),
     /// walletv2 flat send fee, in sats.
     V2 { fee_sats: u64 },
+}
+
+/// A "send everything" on-chain sweep: the largest amount that still funds
+/// once every fee is paid, with the quote it was sized against. The two go to
+/// `withdraw_to_address` as a pair, so the send pays exactly the miner fee the
+/// amount assumed.
+#[derive(Clone, PartialEq, Serialize, Debug)]
+pub struct MaxWithdrawQuote {
+    pub amount_sats: u64,
+    pub fees: WithdrawFeesResponse,
 }
 
 pub struct ReissueFees {
@@ -367,6 +395,14 @@ pub struct FederationMeta {
     pub last_updated: u64,
     pub recurringd_api: Option<String>,
     pub lnaddress_api: Option<String>,
+    /// Unix timestamp in seconds after which the guardians will shut the
+    /// federation down (`federation_expiry_timestamp` meta field). `None` when
+    /// no shutdown has been announced.
+    pub expiry_timestamp: Option<u64>,
+    /// Invite code of the federation users should migrate to before the
+    /// shutdown (`federation_successor` meta field). Already validated to parse
+    /// as an [`InviteCode`]; `None` when the guardians have not set one.
+    pub successor_invite: Option<String>,
 }
 
 #[derive(Debug, Serialize, Clone, Eq, PartialEq, Encodable, Decodable)]
@@ -918,6 +954,131 @@ impl OnChainWithdrawalMeta {
     }
 }
 
+/// What a refresh learned about a federation's meta-module value.
+#[flutter_rust_bridge::frb(ignore)]
+enum MetaFetch {
+    /// The guardians have a consensus value; these are its fields.
+    Value(serde_json::Value),
+    /// The federation has no meta module, or its guardians have set no value:
+    /// there genuinely is nothing announced.
+    Unset,
+    /// The guardians could not be asked, or answered with something that does
+    /// not parse. What they last announced is still the best information.
+    Unavailable,
+}
+
+/// The meta-derived part of a [`FederationMeta`], apart from the guardian list
+/// and timestamps that every refresh recomputes on its own.
+#[derive(Debug, Default, PartialEq)]
+#[flutter_rust_bridge::frb(ignore)]
+struct MetaFields {
+    /// Name the guardians set, when the meta names one.
+    federation_name: Option<String>,
+    picture: Option<String>,
+    welcome: Option<String>,
+    recurringd_api: Option<String>,
+    lnaddress_api: Option<String>,
+    expiry_timestamp: Option<u64>,
+    successor_invite: Option<String>,
+}
+
+#[flutter_rust_bridge::frb(ignore)]
+impl MetaFields {
+    fn from_json(meta: &serde_json::Value) -> Self {
+        Self {
+            federation_name: meta
+                .get(META_FEDERATION_NAME_KEY)
+                .and_then(serde_json::Value::as_str)
+                .filter(|name| !name.is_empty())
+                .map(ToString::to_string),
+            picture: Multimint::get_url("fedi:federation_icon_url", meta),
+            welcome: meta
+                .get("welcome_message")
+                .and_then(serde_json::Value::as_str)
+                .map(ToString::to_string),
+            recurringd_api: Multimint::get_url("recurringd_api", meta),
+            lnaddress_api: Multimint::get_url("lnaddress_api", meta),
+            expiry_timestamp: Multimint::get_expiry_timestamp(meta),
+            successor_invite: Multimint::get_successor_invite(meta),
+        }
+    }
+
+    fn from_cached(cached: &FederationMeta) -> Self {
+        Self {
+            federation_name: Some(cached.selector.federation_name.clone()),
+            picture: cached.picture.clone(),
+            welcome: cached.welcome.clone(),
+            recurringd_api: cached.recurringd_api.clone(),
+            lnaddress_api: cached.lnaddress_api.clone(),
+            expiry_timestamp: cached.expiry_timestamp,
+            successor_invite: cached.successor_invite.clone(),
+        }
+    }
+}
+
+/// Which meta fields a refresh should persist: what the guardians say now,
+/// nothing when they say nothing, and what they last said when they cannot be
+/// asked. The last case matters most during a shutdown, when guardians go
+/// offline: a blank record there would drop the announcement, take the
+/// banner down and reopen receiving on the strength of a failed request.
+fn meta_fields_after_fetch(fetch: &MetaFetch, cached: Option<&FederationMeta>) -> MetaFields {
+    match fetch {
+        MetaFetch::Value(meta) => MetaFields::from_json(meta),
+        MetaFetch::Unset => MetaFields::default(),
+        MetaFetch::Unavailable => cached.map(MetaFields::from_cached).unwrap_or_default(),
+    }
+}
+
+/// Schema v3: re-encodes every cached `FederationMeta` written in the layout
+/// before `expiry_timestamp` and `successor_invite` existed, with both unset.
+/// Entries already in the current layout are left alone; anything else is
+/// dropped for the cache task to rebuild. Returns how many were re-encoded and
+/// how many dropped.
+async fn migrate_federation_meta_v3<Cap: Send>(
+    dbtx: &mut DatabaseTransaction<'_, Cap>,
+) -> (usize, usize) {
+    let decoders = ModuleDecoderRegistry::default();
+    let entries: Vec<(Vec<u8>, Vec<u8>)> = dbtx
+        .raw_find_by_prefix(&FederationMetaKeyPrefix.to_bytes())
+        .await
+        .expect("Unrecoverable error reading the FederationMeta cache")
+        .collect()
+        .await;
+
+    let (mut migrated, mut dropped) = (0, 0);
+    for (key, value) in entries {
+        if FederationMeta::consensus_decode_whole(&value, &decoders).is_ok() {
+            continue;
+        }
+        match FederationMetaV1::consensus_decode_whole(&value, &decoders) {
+            Ok(old) => {
+                let current = FederationMeta {
+                    picture: old.picture,
+                    welcome: old.welcome,
+                    guardians: old.guardians,
+                    selector: old.selector,
+                    last_updated: old.last_updated,
+                    recurringd_api: old.recurringd_api,
+                    lnaddress_api: old.lnaddress_api,
+                    expiry_timestamp: None,
+                    successor_invite: None,
+                };
+                dbtx.raw_insert_bytes(&key, &current.consensus_encode_to_vec())
+                    .await
+                    .expect("Unrecoverable error writing the FederationMeta cache");
+                migrated += 1;
+            }
+            Err(_) => {
+                dbtx.raw_remove_entry(&key)
+                    .await
+                    .expect("Unrecoverable error removing a FederationMeta cache entry");
+                dropped += 1;
+            }
+        }
+    }
+    (migrated, dropped)
+}
+
 impl Multimint {
     pub async fn new(db: Database, creation_type: MultimintCreation) -> anyhow::Result<Self> {
         let start = Instant::now();
@@ -1001,7 +1162,21 @@ impl Multimint {
             info_to_flutter("Purged FederationMeta cache for schema migration v1").await;
         }
 
-        let target_version: u64 = 1;
+        if current_version < 3 {
+            // Migration v3: FederationMeta gained expiry_timestamp and
+            // successor_invite. Re-encode each cached entry with both unset so
+            // it decodes again; the cache task fills in the real values on its
+            // next pass. (v2 purged the cache instead, but a database can be
+            // at v2 through a build that never shipped, so the step is redone
+            // as v3 in a form that copes with whatever it finds.)
+            let (migrated, dropped) = migrate_federation_meta_v3(&mut dbtx).await;
+            info_to_flutter(format!(
+                "Schema migration v3: re-encoded {migrated} cached FederationMeta entries, dropped {dropped}"
+            ))
+            .await;
+        }
+
+        let target_version: u64 = 3;
         if current_version < target_version {
             dbtx.insert_entry(&SchemaVersionKey, &target_version).await;
             dbtx.commit_tx().await;
@@ -1731,6 +1906,42 @@ impl Multimint {
             .await)
     }
 
+    /// Asks a joined federation's guardians for the shutdown date they have
+    /// set right now, as a single consensus query. `Ok(None)` means none is
+    /// set.
+    ///
+    /// For a one-off decision this beats the alternatives: the cached meta can
+    /// be weeks stale for a federation that was previewed long ago and only
+    /// now joined (previews never refresh a cached row), while a full
+    /// `refresh_federation_meta` also probes every guardian for its version,
+    /// one after another and unbounded, which is slowest exactly when a
+    /// federation is winding down.
+    pub async fn fetch_federation_expiry(
+        &self,
+        federation_id: &FederationId,
+    ) -> anyhow::Result<Option<u64>> {
+        let client = self.get_client(federation_id).await?;
+        // An older federation without a meta module cannot have set a date.
+        // Checked up front, because the lookup below reports an absent module
+        // as an error indistinguishable from a real failure, and the caller
+        // treats errors as "do not claim".
+        if client
+            .get_first_instance(&fedimint_meta_client::common::KIND)
+            .is_none()
+        {
+            return Ok(None);
+        }
+        let meta = client.get_first_module::<MetaClientModule>()?;
+        let Some(value) = meta.get_consensus_value(DEFAULT_META_KEY).await? else {
+            return Ok(None);
+        };
+        let json = value
+            .value
+            .to_json()
+            .context("federation meta is not valid JSON")?;
+        Ok(Self::get_expiry_timestamp(&json))
+    }
+
     /// Refetch and re-cache a federation's meta immediately, bypassing both the
     /// cached value and the periodic refresh task. Used after a guardian action
     /// changes meta consensus, so the app reflects it without waiting out the
@@ -1756,6 +1967,32 @@ impl Multimint {
         let value = meta.get(key)?;
         let url_str = value.as_str()?;
         Some(SafeUrl::parse(url_str).ok()?.to_string())
+    }
+
+    /// Reads `federation_expiry_timestamp` from the meta JSON.
+    ///
+    /// The fedimint docs specify a base-10 integer of unix seconds, but the
+    /// guardian dashboard writes it as a JSON *string* (`"1767225600"`) while
+    /// `Client::get_meta_expiration_timestamp` reads a JSON *number*, so both
+    /// spellings are accepted. Anything else (negative, fractional,
+    /// non-numeric, or past [`MAX_RENDERABLE_EXPIRY_SECS`]) is treated as
+    /// unset rather than surfacing a bogus date.
+    fn get_expiry_timestamp(meta: &serde_json::Value) -> Option<u64> {
+        let secs = match meta.get(META_FEDERATION_EXPIRY_TIMESTAMP_KEY)? {
+            serde_json::Value::Number(n) => n.as_u64()?,
+            serde_json::Value::String(s) => s.trim().parse::<u64>().ok()?,
+            _ => return None,
+        };
+        (secs <= MAX_RENDERABLE_EXPIRY_SECS).then_some(secs)
+    }
+
+    /// Reads `federation_successor` from the meta JSON, keeping it only when it
+    /// parses as an invite code so the UI never offers a join it cannot
+    /// complete.
+    fn get_successor_invite(meta: &serde_json::Value) -> Option<String> {
+        let invite = meta.get(META_FEDERATION_SUCCESSOR_KEY)?.as_str()?.trim();
+        InviteCode::from_str(invite).ok()?;
+        Some(invite.to_string())
     }
 
     /// Resolves the Bitcoin network for a federation from whichever wallet
@@ -1825,26 +2062,40 @@ impl Multimint {
             });
         }
 
-        // Fetch the federation's meta-module consensus value (when the module
-        // exists and a value has been set). Guardians can change fields like the
-        // federation name here, so we prefer it over the static config below.
-        let meta_json = match client.get_first_module::<fedimint_meta_client::MetaClientModule>() {
-            Ok(meta) => match meta.get_consensus_value(DEFAULT_META_KEY).await {
-                Ok(Some(value)) => value.value.to_json().ok(),
-                _ => None,
-            },
-            Err(_) => None,
+        // Fetch the federation's meta-module consensus value. Guardians can
+        // change fields like the federation name here, so it is preferred
+        // over the static config below. A failed or unparseable fetch is kept
+        // apart from "no value set": only the latter means nothing is
+        // announced.
+        let meta_fetch = if client
+            .get_first_instance(&fedimint_meta_client::common::KIND)
+            .is_none()
+        {
+            // No meta module means nothing can be announced.
+            MetaFetch::Unset
+        } else {
+            match client.get_first_module::<MetaClientModule>() {
+                Ok(meta) => match meta.get_consensus_value(DEFAULT_META_KEY).await {
+                    Ok(Some(value)) => match value.value.to_json() {
+                        Ok(json) => MetaFetch::Value(json),
+                        Err(_) => MetaFetch::Unavailable,
+                    },
+                    Ok(None) => MetaFetch::Unset,
+                    Err(_) => MetaFetch::Unavailable,
+                },
+                // The module is there but could not be resolved, which says
+                // nothing about the guardians' value.
+                Err(_) => MetaFetch::Unavailable,
+            }
         };
+        let fields = meta_fields_after_fetch(&meta_fetch, cached_meta.as_ref());
 
         // Prefer the federation name set in the meta module so guardian-driven
         // name changes are reflected, falling back to the name baked into the
         // config when the meta module is absent or has no name set.
-        let federation_name = meta_json
-            .as_ref()
-            .and_then(|meta| meta.get(META_FEDERATION_NAME_KEY))
-            .and_then(serde_json::Value::as_str)
-            .filter(|name| !name.is_empty())
-            .map(ToString::to_string)
+        let federation_name = fields
+            .federation_name
+            .clone()
             .unwrap_or_else(|| config.global.federation_name().unwrap_or("").to_string());
 
         let selector = FederationSelector {
@@ -1858,35 +2109,16 @@ impl Multimint {
             .expect("Cannot be before epoch")
             .as_millis() as u64;
 
-        let federation_meta = match meta_json {
-            Some(meta) => {
-                let welcome = meta
-                    .get("welcome_message")
-                    .and_then(serde_json::Value::as_str)
-                    .map(ToString::to_string);
-                let picture = Self::get_url("fedi:federation_icon_url", &meta);
-                let recurringd_api = Self::get_url("recurringd_api", &meta);
-                let lnaddress_api = Self::get_url("lnaddress_api", &meta);
-
-                FederationMeta {
-                    picture,
-                    welcome,
-                    guardians,
-                    selector,
-                    last_updated,
-                    recurringd_api,
-                    lnaddress_api,
-                }
-            }
-            None => FederationMeta {
-                picture: None,
-                welcome: None,
-                guardians,
-                selector,
-                last_updated,
-                recurringd_api: None,
-                lnaddress_api: None,
-            },
+        let federation_meta = FederationMeta {
+            picture: fields.picture,
+            welcome: fields.welcome,
+            guardians,
+            selector,
+            last_updated,
+            recurringd_api: fields.recurringd_api,
+            lnaddress_api: fields.lnaddress_api,
+            expiry_timestamp: fields.expiry_timestamp,
+            successor_invite: fields.successor_invite,
         };
 
         let mut dbtx = self.db.begin_transaction().await;
@@ -1905,11 +2137,6 @@ impl Multimint {
         dbtx.insert_entry(&FederationMetaKey { federation_id }, &federation_meta)
             .await;
         dbtx.commit_tx().await;
-        info_to_flutter(format!(
-            "Updated meta for {}",
-            federation_meta.selector.federation_name
-        ))
-        .await;
 
         // Notify the UI only when something it renders actually changed. This
         // runs on a timer, and `last_updated` differs on every pass, so
@@ -1920,9 +2147,28 @@ impl Multimint {
                     || old.welcome != federation_meta.welcome
                     || old.selector.federation_name != federation_meta.selector.federation_name
                     || old.guardians != federation_meta.guardians
+                    || old.expiry_timestamp != federation_meta.expiry_timestamp
+                    || old.successor_invite != federation_meta.successor_invite
             }
             None => true,
         };
+
+        // The same rule for the log: a refresh that found nothing new is the
+        // common case on this timer and not worth a line.
+        if matches!(meta_fetch, MetaFetch::Unavailable) {
+            info_to_flutter(format!(
+                "Could not refresh meta for {}; keeping what the guardians last announced",
+                federation_meta.selector.federation_name
+            ))
+            .await;
+        } else if changed {
+            info_to_flutter(format!(
+                "Updated meta for {}",
+                federation_meta.selector.federation_name
+            ))
+            .await;
+        }
+
         if changed {
             get_event_bus()
                 .publish(MultimintEvent::MetaUpdated(federation_id.to_string()))
@@ -5142,7 +5388,7 @@ impl Multimint {
         &self,
         federation_id: &FederationId,
         address: String,
-    ) -> EcashAppResult<u64> {
+    ) -> EcashAppResult<MaxWithdrawQuote> {
         let client = self.get_client(federation_id).await?;
         self.wallet_handler
             .get_max_withdrawable_amount(&client, address)
@@ -5512,9 +5758,13 @@ impl Multimint {
         &self,
         federation_id: &FederationId,
         config: &LightningAddressConfig,
-        ln_address_api: &str,
     ) -> anyhow::Result<()> {
-        let safe_ln_address_api = SafeUrl::parse(ln_address_api)?;
+        // The address, and the token that authorises deleting it, belong to
+        // the server it was registered with, which the config records. The
+        // screen's current endpoint can be a different server entirely (a
+        // custom one from the Advanced form, or a federation that has since
+        // changed its `lnaddress_api`), where the delete would be refused.
+        let safe_ln_address_api = config.ln_address_api.clone();
         let remove_request = LNAddressRemoveRequest {
             username: config.username.clone(),
             domain: config.domain.clone(),
@@ -5549,6 +5799,17 @@ impl Multimint {
         Ok(())
     }
 
+    /// Gives up the Lightning Address registered for a federation, on the
+    /// server it was registered with and locally. Errors when none is
+    /// registered.
+    pub async fn remove_ln_address(&self, federation_id: &FederationId) -> anyhow::Result<()> {
+        let config = self
+            .get_ln_address_config(federation_id)
+            .await
+            .context("No Lightning Address is registered for this federation")?;
+        self.release_ln_address(federation_id, &config).await
+    }
+
     /// Register LNURL/LN Address
     pub async fn register_ln_address(
         &self,
@@ -5570,8 +5831,7 @@ impl Multimint {
             .await
         };
         if let Some(config) = existing_config {
-            self.release_ln_address(federation_id, &config, &ln_address_api)
-                .await?;
+            self.release_ln_address(federation_id, &config).await?;
         }
 
         let client = self
@@ -7076,13 +7336,215 @@ mod tests {
     use std::collections::BTreeMap;
 
     use fedimint_client::module::module::recovery::RecoveryProgress;
+    use fedimint_core::config::FederationId;
     use fedimint_core::core::ModuleKind;
-    use fedimint_lnv2_common::gateway_api::PaymentFee;
-
-    use crate::multimint::{
-        aggregate_recovery_progress, gross_invoice_for_contract, recovery_module_for_kind,
-        RecoveryModule, MAX_GATEWAY_PPM,
+    use fedimint_core::db::mem_impl::MemDatabase;
+    use fedimint_core::db::{
+        Database, DatabaseKeyPrefix, IDatabaseTransactionOpsCore, IDatabaseTransactionOpsCoreTyped,
     };
+    use fedimint_core::encoding::Encodable;
+    use fedimint_core::invite_code::InviteCode;
+    use fedimint_core::module::registry::ModuleDecoderRegistry;
+    use fedimint_core::PeerId;
+    use fedimint_lnv2_common::gateway_api::PaymentFee;
+    use serde_json::json;
+
+    use crate::db::{FederationMetaKey, FederationMetaKeyPrefix, FederationMetaV1};
+    use crate::multimint::{
+        aggregate_recovery_progress, gross_invoice_for_contract, meta_fields_after_fetch,
+        migrate_federation_meta_v3, recovery_module_for_kind, FederationMeta, FederationSelector,
+        Guardian, MetaFetch, MetaFields, Multimint, RecoveryModule, MAX_GATEWAY_PPM,
+    };
+
+    /// A cached entry from before the guardians went quiet: shutdown announced.
+    fn announced_meta() -> FederationMeta {
+        FederationMeta {
+            picture: Some("https://example.com/icon.png".to_string()),
+            welcome: Some("closing soon".to_string()),
+            guardians: vec![],
+            selector: FederationSelector {
+                federation_name: "Old Fed".to_string(),
+                federation_id: FederationId::dummy(),
+                network: Some("bitcoin".to_string()),
+            },
+            last_updated: 42,
+            recurringd_api: Some("https://recurringd.example.com/".to_string()),
+            lnaddress_api: None,
+            expiry_timestamp: Some(1_767_225_600),
+            successor_invite: Some("fed11successor".to_string()),
+        }
+    }
+
+    #[test]
+    fn meta_refresh_keeps_the_announcement_while_guardians_are_unreachable() {
+        let cached = announced_meta();
+        let fields = meta_fields_after_fetch(&MetaFetch::Unavailable, Some(&cached));
+        assert_eq!(fields.expiry_timestamp, cached.expiry_timestamp);
+        assert_eq!(fields.successor_invite, cached.successor_invite);
+        assert_eq!(fields.welcome, cached.welcome);
+        assert_eq!(fields.picture, cached.picture);
+        assert_eq!(fields.recurringd_api, cached.recurringd_api);
+        assert_eq!(
+            fields.federation_name.as_deref(),
+            Some(cached.selector.federation_name.as_str())
+        );
+
+        // With nothing cached there is nothing to keep.
+        assert_eq!(
+            meta_fields_after_fetch(&MetaFetch::Unavailable, None),
+            MetaFields::default()
+        );
+    }
+
+    #[test]
+    fn meta_refresh_clears_the_announcement_only_when_the_guardians_say_so() {
+        let cached = announced_meta();
+
+        // The guardians answered and have no meta at all.
+        assert_eq!(
+            meta_fields_after_fetch(&MetaFetch::Unset, Some(&cached)),
+            MetaFields::default()
+        );
+
+        // The guardians answered with a value that no longer announces one.
+        let fetch = MetaFetch::Value(json!({ "welcome_message": "back to normal" }));
+        let fields = meta_fields_after_fetch(&fetch, Some(&cached));
+        assert_eq!(fields.expiry_timestamp, None);
+        assert_eq!(fields.successor_invite, None);
+        assert_eq!(fields.welcome.as_deref(), Some("back to normal"));
+    }
+
+    #[tokio::test]
+    async fn migration_v3_re_encodes_old_entries_and_drops_the_rest() {
+        let db = Database::new(MemDatabase::new(), ModuleDecoderRegistry::default());
+        let key = FederationMetaKey {
+            federation_id: FederationId::dummy(),
+        };
+        let old = FederationMetaV1 {
+            picture: Some("https://example.com/icon.png".to_string()),
+            welcome: Some("welcome".to_string()),
+            guardians: vec![Guardian {
+                peer_id: 0,
+                name: "alpha".to_string(),
+                version: Some("0.12.0".to_string()),
+            }],
+            selector: FederationSelector {
+                federation_name: "Old Fed".to_string(),
+                federation_id: FederationId::dummy(),
+                network: Some("bitcoin".to_string()),
+            },
+            last_updated: 42,
+            recurringd_api: Some("https://recurringd.example.com/".to_string()),
+            lnaddress_api: None,
+        };
+        // An entry in no known layout, under the same prefix.
+        let mut junk_key = FederationMetaKeyPrefix.to_bytes();
+        junk_key.push(0xff);
+
+        let mut dbtx = db.begin_transaction().await;
+        dbtx.raw_insert_bytes(&key.to_bytes(), &old.consensus_encode_to_vec())
+            .await
+            .expect("insert");
+        dbtx.raw_insert_bytes(&junk_key, b"not a federation meta")
+            .await
+            .expect("insert");
+        dbtx.commit_tx().await;
+
+        let mut dbtx = db.begin_transaction().await;
+        assert_eq!(migrate_federation_meta_v3(&mut dbtx).await, (1, 1));
+        dbtx.commit_tx().await;
+
+        let mut dbtx = db.begin_transaction_nc().await;
+        let meta = dbtx
+            .get_value(&key)
+            .await
+            .expect("the re-encoded entry reads with the derived decoder");
+        assert_eq!(meta.picture, old.picture);
+        assert_eq!(meta.welcome, old.welcome);
+        assert_eq!(meta.guardians, old.guardians);
+        assert_eq!(meta.selector, old.selector);
+        assert_eq!(meta.last_updated, old.last_updated);
+        assert_eq!(meta.recurringd_api, old.recurringd_api);
+        assert_eq!(meta.lnaddress_api, old.lnaddress_api);
+        assert_eq!(meta.expiry_timestamp, None);
+        assert_eq!(meta.successor_invite, None);
+        assert!(dbtx.raw_get_bytes(&junk_key).await.expect("read").is_none());
+
+        // Entries already in the current layout are left as they are.
+        let mut dbtx = db.begin_transaction().await;
+        assert_eq!(migrate_federation_meta_v3(&mut dbtx).await, (0, 0));
+    }
+
+    #[test]
+    fn expiry_timestamp_accepts_number_and_string() {
+        // The guardian dashboard writes the timestamp as a string while the
+        // fedimint client helper reads a number; both spellings must parse.
+        let as_string = json!({ "federation_expiry_timestamp": "1767225600" });
+        assert_eq!(
+            Multimint::get_expiry_timestamp(&as_string),
+            Some(1_767_225_600)
+        );
+        let as_number = json!({ "federation_expiry_timestamp": 1767225600 });
+        assert_eq!(
+            Multimint::get_expiry_timestamp(&as_number),
+            Some(1_767_225_600)
+        );
+    }
+
+    #[test]
+    fn expiry_timestamp_rejects_dates_the_ui_cannot_render() {
+        // The boundary is Dart's DateTime limit, in seconds; one past it would
+        // throw in the dashboard header.
+        let at_limit = json!({ "federation_expiry_timestamp": 8_640_000_000_000_u64 });
+        assert_eq!(
+            Multimint::get_expiry_timestamp(&at_limit),
+            Some(8_640_000_000_000)
+        );
+        for value in [
+            json!(8_640_000_000_001_u64),
+            json!("18446744073709551615"),
+            json!(u64::MAX),
+        ] {
+            let meta = json!({ "federation_expiry_timestamp": value });
+            assert_eq!(Multimint::get_expiry_timestamp(&meta), None, "{meta}");
+        }
+    }
+
+    #[test]
+    fn expiry_timestamp_rejects_garbage() {
+        for value in [
+            json!("soon"),
+            json!(-1),
+            json!(1.5),
+            json!(true),
+            json!(null),
+        ] {
+            let meta = json!({ "federation_expiry_timestamp": value });
+            assert_eq!(Multimint::get_expiry_timestamp(&meta), None, "{meta}");
+        }
+        assert_eq!(Multimint::get_expiry_timestamp(&json!({})), None);
+    }
+
+    #[test]
+    fn successor_invite_requires_valid_invite_code() {
+        let invite = InviteCode::new(
+            "wss://foo.bar".parse().unwrap(),
+            PeerId::from(0),
+            FederationId::dummy(),
+            None,
+        )
+        .to_string();
+        let meta = json!({ "federation_successor": invite });
+        assert_eq!(Multimint::get_successor_invite(&meta), Some(invite));
+
+        let bogus = json!({ "federation_successor": "fed11notaninvite" });
+        assert_eq!(Multimint::get_successor_invite(&bogus), None);
+        assert_eq!(
+            Multimint::get_successor_invite(&json!({ "federation_successor": 42 })),
+            None
+        );
+        assert_eq!(Multimint::get_successor_invite(&json!({})), None);
+    }
 
     fn payment_fee(base_msats: u64, ppm: u64) -> PaymentFee {
         PaymentFee {

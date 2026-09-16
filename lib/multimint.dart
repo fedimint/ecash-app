@@ -11,10 +11,11 @@ import 'package:flutter_rust_bridge/flutter_rust_bridge_for_generated.dart';
 import 'package:freezed_annotation/freezed_annotation.dart' hide protected;
 part 'multimint.freezed.dart';
 
-// These functions are ignored because they are not marked as `pub`: `aggregate_recovery_progress`, `await_receive_lnv1`, `await_receive_lnv2`, `await_send_lnv1`, `await_send_lnv2`, `backup`, `build_client`, `cache_btc_price`, `cache_federation_meta`, `check_for_update`, `compute_send_fees`, `extract_recipient_pk_from_lnv2_lnurl`, `finish_active_subscriptions`, `from_peg_out_fees`, `get_client_database`, `get_client`, `get_ecash_amount_from_meta`, `get_lnv1_amount_from_meta`, `get_lnv1_receive_tx`, `get_lnv1_send_tx`, `get_lnv2_amount_from_meta`, `get_mintv2_receive_amount`, `get_or_build_temp_client`, `get_recurringd_federations`, `get_url`, `gross_invoice_for_contract`, `guardian_admin_api`, `guardian_bitcoin_status`, `guardian_lnv2_module_api`, `guardian_meta_consensus`, `guardian_meta_module_api`, `guardian_meta_submit`, `init_recovery_progress_cache`, `invoice_is_loopback`, `is_invalid_guardian_auth`, `is_newer_version`, `list_gateways`, `lnv1_update_gateway_cache`, `lnv2_gateways`, `load_clients`, `pay_lnv1`, `pay_lnv2`, `read_meta_msats`, `read_meta_string`, `read_meta_u64`, `read_meta_url`, `receive_lnv1`, `receive_lnv2`, `recovery_module_for_kind`, `release_ln_address`, `remove_recovery_progress_cache`, `run_cache_stage`, `run_migrations`, `send_federation_fee`, `sign_challenge`, `skip_unrenderable`, `solve_gross_for_net`, `spawn_await_ecash_reissue`, `spawn_await_ecash_send`, `spawn_await_mintv2_receive`, `spawn_await_receive`, `spawn_await_recurringd_receive`, `spawn_await_send`, `spawn_await_withdraw`, `spawn_backfill_recipient_pk`, `spawn_cache_task`, `spawn_lnv2_event_listener`, `spawn_recovery_progress`, `spawn_recurring_invoice_listener`, `update_recovery_progress_cache`, `validate_receive_fee`, `wait_for_recovery`, `wallet_network`
-// These types are ignored because they are neither used by any `pub` functions nor (for structs and enums) marked `#[frb(unignore)]`: `ClientType`, `LNAddressRegisterRequest`, `LNAddressRemoveRequest`, `OnChainWithdrawalMeta`, `WrappedEcash`
-// These function are ignored because they are on traits that is not defined in current crate (put an empty `#[frb]` on it to unignore): `assert_receiver_is_total_eq`, `assert_receiver_is_total_eq`, `assert_receiver_is_total_eq`, `assert_receiver_is_total_eq`, `assert_receiver_is_total_eq`, `assert_receiver_is_total_eq`, `assert_receiver_is_total_eq`, `assert_receiver_is_total_eq`, `assert_receiver_is_total_eq`, `assert_receiver_is_total_eq`, `assert_receiver_is_total_eq`, `assert_receiver_is_total_eq`, `assert_receiver_is_total_eq`, `assert_receiver_is_total_eq`, `assert_receiver_is_total_eq`, `assert_receiver_is_total_eq`, `assert_receiver_is_total_eq`, `assert_receiver_is_total_eq`, `assert_receiver_is_total_eq`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `cmp`, `consensus_decode_partial_from_finite_reader`, `consensus_decode_partial_from_finite_reader`, `consensus_decode_partial_from_finite_reader`, `consensus_encode`, `consensus_encode`, `consensus_encode`, `eq`, `eq`, `eq`, `eq`, `eq`, `eq`, `eq`, `eq`, `eq`, `eq`, `eq`, `eq`, `eq`, `eq`, `eq`, `eq`, `eq`, `eq`, `eq`, `eq`, `eq`, `eq`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `from`, `from`, `partial_cmp`
+// These functions are ignored because they are not marked as `pub`: `aggregate_recovery_progress`, `await_receive_lnv1`, `await_receive_lnv2`, `await_send_lnv1`, `await_send_lnv2`, `backup`, `build_client`, `cache_btc_price`, `cache_federation_meta`, `check_for_update`, `compute_send_fees`, `extract_recipient_pk_from_lnv2_lnurl`, `finish_active_subscriptions`, `from_cached`, `from_json`, `from_peg_out_fees`, `get_client_database`, `get_client`, `get_ecash_amount_from_meta`, `get_expiry_timestamp`, `get_federation`, `get_lnv1_amount_from_meta`, `get_lnv1_receive_tx`, `get_lnv1_send_tx`, `get_lnv2_amount_from_meta`, `get_mintv2_receive_amount`, `get_or_build_temp_client`, `get_recurringd_federations`, `get_successor_invite`, `get_url`, `gross_invoice_for_contract`, `guardian_admin_api`, `guardian_bitcoin_status`, `guardian_lnv2_module_api`, `guardian_meta_consensus`, `guardian_meta_module_api`, `guardian_meta_submit`, `init_recovery_progress_cache`, `invoice_is_loopback`, `is_invalid_guardian_auth`, `is_newer_version`, `join_federation_inner`, `join_federation_on`, `list_gateways`, `lnv1_update_gateway_cache`, `lnv2_gateways`, `load_clients`, `meta_fields_after_fetch`, `migrate_federation_meta_v3`, `pay_lnv1`, `pay_lnv2`, `read_meta_msats`, `read_meta_string`, `read_meta_u64`, `read_meta_url`, `receive_lnv1`, `receive_lnv2`, `recovery_module_for_kind`, `register_federation`, `release_ln_address`, `remove_recovery_progress_cache`, `retire_recovery_client`, `run_cache_stage`, `run_migrations`, `send_federation_fee`, `shutdown_client`, `sign_challenge`, `skip_unrenderable`, `solve_gross_for_net`, `spawn_await_ecash_reissue`, `spawn_await_ecash_send`, `spawn_await_mintv2_receive`, `spawn_await_receive`, `spawn_await_recurringd_receive`, `spawn_await_send`, `spawn_await_withdraw`, `spawn_backfill_recipient_pk`, `spawn_cache_task`, `spawn_federation_teardown`, `spawn_lnv2_event_listener`, `spawn_recovery_progress`, `spawn_recurring_invoice_listener`, `update_recovery_progress_cache`, `validate_receive_fee`, `wait_for_recovery`, `wallet_network`
+// These types are ignored because they are neither used by any `pub` functions nor (for structs and enums) marked `#[frb(unignore)]`: `ClientType`, `JoinedFederation`, `LNAddressRegisterRequest`, `LNAddressRemoveRequest`, `MetaFetch`, `MetaFields`, `OnChainWithdrawalMeta`, `WrappedEcash`
+// These function are ignored because they are on traits that is not defined in current crate (put an empty `#[frb]` on it to unignore): `assert_receiver_is_total_eq`, `assert_receiver_is_total_eq`, `assert_receiver_is_total_eq`, `assert_receiver_is_total_eq`, `assert_receiver_is_total_eq`, `assert_receiver_is_total_eq`, `assert_receiver_is_total_eq`, `assert_receiver_is_total_eq`, `assert_receiver_is_total_eq`, `assert_receiver_is_total_eq`, `assert_receiver_is_total_eq`, `assert_receiver_is_total_eq`, `assert_receiver_is_total_eq`, `assert_receiver_is_total_eq`, `assert_receiver_is_total_eq`, `assert_receiver_is_total_eq`, `assert_receiver_is_total_eq`, `assert_receiver_is_total_eq`, `assert_receiver_is_total_eq`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `cmp`, `consensus_decode_partial_from_finite_reader`, `consensus_decode_partial_from_finite_reader`, `consensus_decode_partial_from_finite_reader`, `consensus_encode`, `consensus_encode`, `consensus_encode`, `eq`, `eq`, `eq`, `eq`, `eq`, `eq`, `eq`, `eq`, `eq`, `eq`, `eq`, `eq`, `eq`, `eq`, `eq`, `eq`, `eq`, `eq`, `eq`, `eq`, `eq`, `eq`, `eq`, `eq`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `from`, `from`, `partial_cmp`
 // These functions are ignored (category: IgnoreBecauseExplicitAttribute): `federation_network`
+// These functions are ignored (category: IgnoreBecauseOwnerTyShouldIgnore): `default`
 // These functions have error during generation (see debug logs or enable `stop_on_error: true` for more details): `subscribe_peer_status`
 
 OobNotesWrapper? parseOobNotes({required String notes}) =>
@@ -32,6 +33,9 @@ abstract class Amount implements RustOpaqueInterface {}
 // Rust type: RustOpaqueMoi<flutter_rust_bridge::for_generated::RustAutoOpaqueInner<Bolt11Invoice>>
 abstract class Bolt11Invoice implements RustOpaqueInterface {}
 
+// Rust type: RustOpaqueMoi<flutter_rust_bridge::for_generated::RustAutoOpaqueInner<EcashAppResult < MaxWithdrawQuote >>>
+abstract class EcashAppResultMaxWithdrawQuote implements RustOpaqueInterface {}
+
 // Rust type: RustOpaqueMoi<flutter_rust_bridge::for_generated::RustAutoOpaqueInner<EcashAppResult < OOBNotesWrapper >>>
 abstract class EcashAppResultOobNotesWrapper implements RustOpaqueInterface {}
 
@@ -48,11 +52,10 @@ abstract class EcashAppResultString implements RustOpaqueInterface {}
 abstract class EcashAppResultWithdrawFeesResponse
     implements RustOpaqueInterface {}
 
-// Rust type: RustOpaqueMoi<flutter_rust_bridge::for_generated::RustAutoOpaqueInner<EcashAppResult < u64 >>>
-abstract class EcashAppResultU64 implements RustOpaqueInterface {}
-
 // Rust type: RustOpaqueMoi<flutter_rust_bridge::for_generated::RustAutoOpaqueInner<FederationMeta>>
 abstract class FederationMeta implements RustOpaqueInterface {
+  BigInt? get expiryTimestamp;
+
   List<Guardian> get guardians;
 
   BigInt get lastUpdated;
@@ -65,7 +68,11 @@ abstract class FederationMeta implements RustOpaqueInterface {
 
   FederationSelector get selector;
 
+  String? get successorInvite;
+
   String? get welcome;
+
+  set expiryTimestamp(BigInt? expiryTimestamp);
 
   set guardians(List<Guardian> guardians);
 
@@ -78,6 +85,8 @@ abstract class FederationMeta implements RustOpaqueInterface {
   set recurringdApi(String? recurringdApi);
 
   set selector(FederationSelector selector);
+
+  set successorInvite(String? successorInvite);
 
   set welcome(String? welcome);
 }
@@ -99,6 +108,17 @@ abstract class FederationSelector implements RustOpaqueInterface {
 
 // Rust type: RustOpaqueMoi<flutter_rust_bridge::for_generated::RustAutoOpaqueInner<FinalReceiveOperationState>>
 abstract class FinalReceiveOperationState implements RustOpaqueInterface {}
+
+// Rust type: RustOpaqueMoi<flutter_rust_bridge::for_generated::RustAutoOpaqueInner<MaxWithdrawQuote>>
+abstract class MaxWithdrawQuote implements RustOpaqueInterface {
+  BigInt get amountSats;
+
+  WithdrawFeesResponse get fees;
+
+  set amountSats(BigInt amountSats);
+
+  set fees(WithdrawFeesResponse fees);
+}
 
 // Rust type: RustOpaqueMoi<flutter_rust_bridge::for_generated::RustAutoOpaqueInner<Multimint>>
 abstract class Multimint implements RustOpaqueInterface {
@@ -213,6 +233,18 @@ abstract class Multimint implements RustOpaqueInterface {
 
   Future<List<(FederationSelector, bool)>> federations();
 
+  /// Asks a joined federation's guardians for the shutdown date they have
+  /// set right now, as a single consensus query. `Ok(None)` means none is
+  /// set.
+  ///
+  /// For a one-off decision this beats the alternatives: the cached meta can
+  /// be weeks stale for a federation that was previewed long ago and only
+  /// now joined (previews never refresh a cached row), while a full
+  /// `refresh_federation_meta` also probes every guardian for its version,
+  /// one after another and unbounded, which is slowest exactly when a
+  /// federation is winding down.
+  Future<BigInt?> fetchFederationExpiry({required FederationId federationId});
+
   Future<List<(String, BigInt?, BigInt?)>> getAddresses({
     required FederationId federationId,
   });
@@ -244,7 +276,7 @@ abstract class Multimint implements RustOpaqueInterface {
     required FederationId federationId,
   });
 
-  Future<EcashAppResultU64> getMaxWithdrawableAmount({
+  Future<EcashAppResultMaxWithdrawQuote> getMaxWithdrawableAmount({
     required FederationId federationId,
     required String address,
   });
@@ -355,6 +387,20 @@ abstract class Multimint implements RustOpaqueInterface {
     required bool recover,
   });
 
+  /// Leaves a federation.
+  ///
+  /// Returns as soon as the federation is gone from the app's point of view:
+  /// its config row is deleted, its client is out of the map, and its task
+  /// group has been detached, so nothing can route to it or spawn onto it any
+  /// more. The teardown that actually takes time — cancelling the
+  /// federation's background tasks, waiting for them to release their client
+  /// references, and shutting the client down so its own executor stops —
+  /// runs on a detached task afterwards. Leaving should never make the user
+  /// watch a spinner.
+  ///
+  /// Every other persisted row is deliberately kept. The client database, the
+  /// Lightning Address registration, the NWC pairing and the cached metadata
+  /// are all reused if the user joins this federation again.
   Future<void> leaveFederation({required FederationId federationId});
 
   /// Computes the largest amount (in msats) the user can pay over Lightning
@@ -473,6 +519,11 @@ abstract class Multimint implements RustOpaqueInterface {
   Future<void> rejoinFromBackupInvites({
     required List<String> backupInviteCodes,
   });
+
+  /// Gives up the Lightning Address registered for a federation, on the
+  /// server it was registered with and locally. Errors when none is
+  /// registered.
+  Future<void> removeLnAddress({required FederationId federationId});
 
   Future<EcashAppResultOperationId> send({
     required FederationId federationId,

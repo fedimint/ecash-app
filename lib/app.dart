@@ -653,6 +653,7 @@ class _MyAppState extends State<MyApp> {
         fed: _selectedFederation!,
         recovering: _isRecovering!,
         onLeaveFederation: _leaveFederation,
+        onJoin: _onJoinPressed,
       );
     } else {
       if (recoverFederations) {

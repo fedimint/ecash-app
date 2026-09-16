@@ -32,7 +32,7 @@ use lnurl_client::LnurlWithdrawParams;
 use multimint::{
     EcashSendFees, FederationMeta, FederationSelector, GuardianAuditSummary,
     GuardianBackupStatistics, GuardianMetaState, GuardianStatusSummary, LightningSendOutcome,
-    LogLevel, Multimint, MultimintCreation, MultimintEvent, OOBNotesWrapper,
+    LogLevel, MaxWithdrawQuote, Multimint, MultimintCreation, MultimintEvent, OOBNotesWrapper,
     PaymentPreviewWithGateways, PeginFeeQuote, ReceiveAmount, RecoveryModule, ReissueFees,
     Transaction, Utxo, WithdrawFees, WithdrawFeesResponse,
 };
@@ -540,6 +540,12 @@ pub async fn get_federation_meta(
 }
 
 #[frb]
+pub async fn fetch_federation_expiry(federation_id: &FederationId) -> anyhow::Result<Option<u64>> {
+    let multimint = get_multimint();
+    multimint.fetch_federation_expiry(federation_id).await
+}
+
+#[frb]
 pub async fn refresh_federation_meta(
     federation_id: &FederationId,
 ) -> anyhow::Result<FederationMeta> {
@@ -818,7 +824,7 @@ pub async fn await_withdraw(
 pub async fn get_max_withdrawable_amount(
     federation_id: &FederationId,
     address: String,
-) -> Result<u64, EcashAppError> {
+) -> Result<MaxWithdrawQuote, EcashAppError> {
     let multimint = get_multimint();
     multimint
         .get_max_withdrawable_amount(federation_id, address)
@@ -1043,6 +1049,12 @@ pub async fn register_ln_address(
             domain,
         )
         .await
+}
+
+#[frb]
+pub async fn remove_ln_address(federation_id: &FederationId) -> anyhow::Result<()> {
+    let multimint = get_multimint();
+    multimint.remove_ln_address(federation_id).await
 }
 
 #[frb]

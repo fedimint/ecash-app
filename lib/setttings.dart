@@ -103,7 +103,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   builder:
                       (context) => LightningAddressScreen(
                         federations: feds,
-                        onLnAddressRegistered: widget.onJoin,
+                        onLnAddressChanged: widget.onJoin,
                       ),
                 ),
               );

@@ -215,6 +215,12 @@
   "unableToCheckAvailability": "No se pudo verificar la disponibilidad de Dirección Lightning",
   "claimedAddress": "Se reclamó {address}",
   "couldNotRegisterLnAddress": "No se pudo registrar la Dirección Lightning",
+  "removeLnAddress": "Eliminar Dirección Lightning",
+  "removeLnAddressConfirmTitle": "¿Eliminar Dirección Lightning?",
+  "removeLnAddressConfirmBody": "{address} dejará de funcionar de inmediato. Los pagos enviados a ella fallarán y el nombre quedará libre para que cualquiera lo reclame.",
+  "remove": "Eliminar",
+  "removedAddress": "Se eliminó {address}",
+  "couldNotRemoveLnAddress": "No se pudo eliminar la Dirección Lightning",
   "leaveFederation": "Abandonar Federación",
   "leaveFederationConfirm": "¿Estás seguro de que quieres abandonar esta federación? Necesitarás volver a unirte para acceder a los fondos restantes.",
   "currentBalance": "Saldo actual",
@@ -605,5 +611,63 @@
 
   "nwcDailyBudgetSubtitle": "{sats} sats por día",
 
-  "nwcDailyBudgetDialogBody": "Lo máximo que una app vinculada puede gastar en total durante 24 horas. El conteo empieza con su primer pago y se reinicia 24 horas después."
+  "nwcDailyBudgetDialogBody": "Lo máximo que una app vinculada puede gastar en total durante 24 horas. El conteo empieza con su primer pago y se reinicia 24 horas después.",
+
+  "federationExpiryBannerTitle": "Esta federación va a cerrar",
+  "federationExpiryBannerTitleSuccessor": "Esta federación tiene una sucesora",
+
+  "federationExpiryBannerSubtitle": "Cierra el {date}.",
+
+  "federationExpiryBannerSubtitlePast": "Cerró el {date}.",
+
+  "federationExpiryBannerSubtitleSuccessor": "Los guardianes nombraron una federación sucesora.",
+  "federationExpiryBannerTap": "Toca para ver detalles.",
+  "federationExpiryBannerJoinHint": "Únete solo para recuperar fondos que ya tengas aquí.",
+  "federationExpiryBannerSuccessorJoinHint": "A menos que tengas fondos aquí, considera unirte a la sucesora.",
+
+  "federationExpiryTitle": "Cierre de la federación",
+
+  "federationExpiryHeadline": "{federationName} va a cerrar",
+
+  "federationExpiryHeadlinePast": "{federationName} ha cerrado",
+
+  "federationExpiryClosesOn": "Cierra el",
+
+  "federationExpiryClosedOn": "Cerró el",
+
+  "federationExpiryTimeRemaining": "Tiempo restante",
+
+  "federationExpiryYourBalance": "Tu saldo",
+
+  "federationExpiryPassed": "Plazo vencido",
+
+  "federationExpiryInDays": "{count, plural, =1{1 día} other{{count} días}}",
+
+  "federationExpiryInHours": "{count, plural, =1{1 hora} other{{count} horas}}",
+
+  "federationExpiryInMinutes": "{count, plural, =1{1 minuto} other{{count} minutos}}",
+
+  "federationExpiryExplanation": "Los guardianes que operan esta federación han anunciado su cierre. Una vez cerrada, el ecash que emitió ya no podrá canjearse y cualquier saldo que quede aquí se perderá.",
+
+  "federationExpiryWhatToDo": "Qué hacer",
+
+
+  "federationExpiryStepRemoveLightningAddress": "Elimina tu Dirección Lightning {address}. Está registrada solo en esta federación, así que seguirá pagando aquí hasta que la elimines. Configurar una en otra federación no la reemplaza.",
+
+  "federationExpiryStepMoveFunds": "Saca tu saldo de esta federación. Enviarlo on-chain a una billetera que controles lo mantiene a salvo pase lo que pase aquí.",
+
+  "federationExpiryStepJoinAnother": "Opcionalmente, únete a otra federación para seguir usando la app.",
+
+  "federationExpiryStepJoinSuccessor": "Opcionalmente, únete a la federación sucesora que recomiendan los guardianes y mueve tu saldo allí.",
+
+  "federationExpiryStepLeave": "Abandona esta federación cuando hayas sacado tu saldo y eliminado tu Dirección Lightning.",
+  "federationExpirySendOnchain": "Enviar on-chain",
+  "federationExpiryManageLightningAddress": "Gestionar Dirección Lightning",
+  "federationExpiryReceiveDisabled": "Esta federación va a cerrar, así que ya no puede recibir fondos.",
+  "lnAddressRegistrationClosed": "Esta federación va a cerrar, así que no se pueden registrar nuevas Direcciones Lightning en ella.",
+  "lnAddressRemoveCurrent": "Esta federación va a cerrar. Por favor, elimina la actual.",
+
+  "federationExpiryFindFederation": "Buscar una federación",
+
+  "federationExpiryJoinSuccessor": "Unirse a la federación sucesora"
 }

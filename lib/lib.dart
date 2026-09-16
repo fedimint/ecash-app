@@ -235,6 +235,9 @@ Future<FederationMeta> getFederationMeta({
   federationId: federationId,
 );
 
+Future<BigInt?> fetchFederationExpiry({required FederationId federationId}) =>
+    RustLib.instance.api.crateFetchFederationExpiry(federationId: federationId);
+
 Future<FederationMeta> refreshFederationMeta({
   required FederationId federationId,
 }) =>
@@ -402,7 +405,7 @@ Future<String> awaitWithdraw({
   operationId: operationId,
 );
 
-Future<BigInt> getMaxWithdrawableAmount({
+Future<MaxWithdrawQuote> getMaxWithdrawableAmount({
   required FederationId federationId,
   required String address,
 }) => RustLib.instance.api.crateGetMaxWithdrawableAmount(
@@ -510,6 +513,9 @@ Future<void> registerLnAddress({
   username: username,
   domain: domain,
 );
+
+Future<void> removeLnAddress({required FederationId federationId}) =>
+    RustLib.instance.api.crateRemoveLnAddress(federationId: federationId);
 
 Future<String> getInviteCode({
   required FederationId federationId,

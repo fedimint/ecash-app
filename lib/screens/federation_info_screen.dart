@@ -6,13 +6,13 @@ import 'package:ecashapp/widgets/federation_utxo_list.dart';
 import 'package:ecashapp/lib.dart';
 import 'package:ecashapp/multimint.dart';
 import 'package:ecashapp/nwc.dart';
-import 'package:ecashapp/providers/preferences_provider.dart';
 import 'package:ecashapp/toast.dart';
 import 'package:ecashapp/utils.dart';
+import 'package:ecashapp/widgets/federation_expiry_banner.dart';
 import 'package:ecashapp/widgets/gateways.dart';
+import 'package:ecashapp/widgets/leave_federation_dialog.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:provider/provider.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 
 enum _InfoSection { guardians, utxos, gateways }
@@ -64,6 +64,11 @@ class _FederationInfoScreenState extends State<FederationInfoScreen> {
   String? _welcomeMessage;
   String? _imageUrl;
 
+  /// Shutdown announcement the guardians published, if any, for the banner
+  /// on a joinable preview.
+  BigInt? _expiryTimestamp;
+  String? _successorInvite;
+
   // Joinable preview loading state.
   bool _isLoadingMeta = false;
   Object? _loadError;
@@ -82,6 +87,27 @@ class _FederationInfoScreenState extends State<FederationInfoScreen> {
       _imageUrl = widget.imageUrl;
       _subscribePeers();
       _subscribeMetaUpdates();
+      // A preview opened from a scanned or pasted invite arrives with the
+      // federation already resolved and skips _loadMeta, so the shutdown
+      // notice has to be read here or it is never shown.
+      if (widget.joinable) _loadShutdownNotice();
+    }
+  }
+
+  /// Reads the guardians' shutdown announcement for a joinable preview whose
+  /// caller supplied the federation itself. Same cached meta the caller used.
+  Future<void> _loadShutdownNotice() async {
+    final inviteCode = widget.inviteCode;
+    if (inviteCode == null) return;
+    try {
+      final meta = await getFederationMeta(inviteCode: inviteCode);
+      if (!mounted) return;
+      setState(() {
+        _expiryTimestamp = meta.expiryTimestamp;
+        _successorInvite = meta.successorInvite;
+      });
+    } catch (e) {
+      AppLogger.instance.warn("Could not read federation meta: $e");
     }
   }
 
@@ -112,6 +138,8 @@ class _FederationInfoScreenState extends State<FederationInfoScreen> {
           _fed = meta.selector;
           _welcomeMessage = meta.welcome;
           _imageUrl = meta.picture;
+          _expiryTimestamp = meta.expiryTimestamp;
+          _successorInvite = meta.successorInvite;
         });
       } catch (e) {
         AppLogger.instance.warn("Could not reload federation meta: $e");
@@ -131,6 +159,8 @@ class _FederationInfoScreenState extends State<FederationInfoScreen> {
         _fed = meta.selector;
         _welcomeMessage = meta.welcome;
         _imageUrl = meta.picture;
+        _expiryTimestamp = meta.expiryTimestamp;
+        _successorInvite = meta.successorInvite;
         _isLoadingMeta = false;
       });
       _subscribePeers();
@@ -165,176 +195,11 @@ class _FederationInfoScreenState extends State<FederationInfoScreen> {
 
   // --- Leave federation logic ---
 
-  Future<void> _onLeavePressed() async {
-    final screenNavigator = Navigator.of(context);
-    final bitcoinDisplay = context.read<PreferencesProvider>().bitcoinDisplay;
-
-    // Fetch the balance up front so we can warn the user before they leave a
-    // federation that still holds funds. Failures here are non-fatal — we just
-    // fall back to the plain confirmation dialog.
-    BigInt? balanceMsats;
-    try {
-      balanceMsats = await balance(federationId: _fed!.federationId);
-    } catch (e) {
-      AppLogger.instance.warn(
-        "Could not fetch balance for leave confirmation: $e",
-      );
-    }
-    if (!mounted) return;
-
-    await showDialog(
-      context: context,
-      builder: (dialogContext) {
-        bool isLeaving = false;
-
-        return StatefulBuilder(
-          builder: (sbContext, setState) {
-            final theme = Theme.of(sbContext);
-            final hasBalance =
-                balanceMsats != null && balanceMsats > BigInt.zero;
-
-            return AlertDialog(
-              // Keep the dialog from stretching across wide screens (tablet,
-              // desktop, foldable) — a modal that spans the viewport reads as
-              // a full-screen takeover rather than a focused confirmation.
-              insetPadding: const EdgeInsets.symmetric(
-                horizontal: 40,
-                vertical: 24,
-              ),
-              title: Row(
-                children: [
-                  Icon(
-                    Icons.warning_amber_rounded,
-                    color: theme.colorScheme.error,
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(child: Text(sbContext.l10n.leaveFederation)),
-                ],
-              ),
-              content: ConstrainedBox(
-                constraints: const BoxConstraints(maxWidth: 420),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(sbContext.l10n.leaveFederationConfirm),
-                    if (hasBalance) ...[
-                      const SizedBox(height: 20),
-                      // Compact "balance at risk" row — the amount is what
-                      // matters, so lead with it. Kept intentionally quiet
-                      // (no filled background) so it feels like a fact about
-                      // the federation, not a second alarm.
-                      Row(
-                        crossAxisAlignment: CrossAxisAlignment.center,
-                        children: [
-                          Icon(
-                            Icons.account_balance_wallet_outlined,
-                            color: theme.colorScheme.onSurfaceVariant,
-                            size: 18,
-                          ),
-                          const SizedBox(width: 10),
-                          Text(
-                            sbContext.l10n.currentBalance,
-                            style: theme.textTheme.bodyMedium?.copyWith(
-                              color: theme.colorScheme.onSurfaceVariant,
-                            ),
-                          ),
-                          const Spacer(),
-                          Text(
-                            formatBalance(balanceMsats, false, bitcoinDisplay),
-                            style: theme.textTheme.bodyLarge?.copyWith(
-                              color: theme.colorScheme.error,
-                              fontWeight: FontWeight.w600,
-                              fontFeatures: const [
-                                FontFeature.tabularFigures(),
-                              ],
-                            ),
-                          ),
-                        ],
-                      ),
-                    ],
-                  ],
-                ),
-              ),
-              actions: [
-                TextButton(
-                  onPressed:
-                      isLeaving
-                          ? null
-                          : () => Navigator.of(dialogContext).pop(),
-                  child: Text(sbContext.l10n.cancel),
-                ),
-                TextButton(
-                  style: TextButton.styleFrom(
-                    foregroundColor: theme.colorScheme.error,
-                  ),
-                  onPressed:
-                      isLeaving
-                          ? null
-                          : () async {
-                            setState(() {
-                              isLeaving = true;
-                            });
-
-                            try {
-                              await leaveFederation(
-                                federationId: _fed!.federationId,
-                              );
-                              await stopNwcServiceForFederation(
-                                _fed!.federationId,
-                              );
-                              try {
-                                backupInviteCodes();
-                              } catch (e) {
-                                AppLogger.instance.error(
-                                  "Could not backup Nostr invite codes: $e",
-                                );
-                              }
-                              widget.onLeaveFederation();
-
-                              if (dialogContext.mounted) {
-                                Navigator.of(dialogContext).pop();
-                              }
-                              screenNavigator.popUntil(
-                                (route) => route.isFirst,
-                              );
-                            } catch (e) {
-                              AppLogger.instance.error(
-                                "Error leaving federation: $e",
-                              );
-                              ToastService().show(
-                                message: sbContext.l10n.leaveFederationError,
-                                duration: const Duration(seconds: 5),
-                                onTap: () {},
-                                icon: const Icon(Icons.error),
-                              );
-                              if (dialogContext.mounted) {
-                                Navigator.of(dialogContext).pop();
-                              }
-                            } finally {
-                              if (mounted) {
-                                setState(() {
-                                  isLeaving = false;
-                                });
-                              }
-                            }
-                          },
-                  child:
-                      isLeaving
-                          ? const SizedBox(
-                            height: 20,
-                            width: 20,
-                            child: CircularProgressIndicator(strokeWidth: 2),
-                          )
-                          : Text(sbContext.l10n.leaveFederation),
-                ),
-              ],
-            );
-          },
-        );
-      },
-    );
-  }
+  Future<void> _onLeavePressed() => showLeaveFederationDialog(
+    context,
+    fed: _fed!,
+    onLeaveFederation: widget.onLeaveFederation,
+  );
 
   // --- Guardian dashboard login logic ---
 
@@ -469,7 +334,13 @@ class _FederationInfoScreenState extends State<FederationInfoScreen> {
         AppLogger.instance.error("Could not backup Nostr invite codes: $e");
       }
 
-      await _claimLnAddress(fed);
+      // A federation with a shutdown date takes no new Lightning Address
+      // registrations. Decided from a fresh read of the joined federation's
+      // meta rather than from preview state, which depends on how the preview
+      // was opened and on whether its load had finished.
+      if (!await _isShuttingDown(fed)) {
+        await _claimLnAddress(fed);
+      }
 
       if (widget.ecash != null) {
         _redeemEcash(widget.ecash!);
@@ -494,6 +365,26 @@ class _FederationInfoScreenState extends State<FederationInfoScreen> {
           _isJoining = false;
         });
       }
+    }
+  }
+
+  /// Whether [fed]'s guardians have set a shutdown date, asked of them
+  /// directly in one round trip rather than read from the cache, which can be
+  /// weeks old for a federation previewed long before it was joined. When
+  /// they cannot be asked this errs on the side of not claiming: an address
+  /// registered on a federation that is closing is worse than one the user
+  /// claims by hand.
+  Future<bool> _isShuttingDown(FederationSelector fed) async {
+    try {
+      final expiry = await fetchFederationExpiry(
+        federationId: fed.federationId,
+      );
+      return expiry != null;
+    } catch (e) {
+      AppLogger.instance.warn(
+        "Could not ask the federation for its expiry: $e",
+      );
+      return true;
     }
   }
 
@@ -1128,6 +1019,22 @@ class _FederationInfoScreenState extends State<FederationInfoScreen> {
                               ),
                     ),
                   ),
+                  // Someone about to join should see this before anything
+                  // else. Joining stays possible: they may hold funds here
+                  // that they need to recover or move out.
+                  if (widget.joinable &&
+                      (_expiryTimestamp != null || _successorInvite != null))
+                    FederationExpiryBanner(
+                      expiryTimestamp: _expiryTimestamp,
+                      onTap: null,
+                      compact: false,
+                      note:
+                          _expiryTimestamp != null
+                              ? context.l10n.federationExpiryBannerJoinHint
+                              : context
+                                  .l10n
+                                  .federationExpiryBannerSuccessorJoinHint,
+                    ),
                   if (_welcomeMessage != null) ...[
                     const SizedBox(height: 8),
                     Text(
