@@ -288,7 +288,7 @@ class _EcashSendState extends State<EcashSend> {
     // redeems it first owns it, so it must not reach a screenshot, a screen
     // recording, or the app-switcher thumbnail.
     return SecureScreen(
-      child: Padding(
+      child: SingleChildScrollView(
         padding: const EdgeInsets.all(20),
         child: Column(
           mainAxisSize: MainAxisSize.min,
@@ -344,6 +344,37 @@ class _EcashSendState extends State<EcashSend> {
               },
             ),
             const SizedBox(height: 24),
+            // The token below is a bearer instrument, and the copy button hands
+            // it to a clipboard that other apps, input methods and sync services
+            // can read. State that plainly next to the control rather than after
+            // the fact, so the user knows before they tap.
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: Colors.orange.shade100,
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Foreground is brown.shade900 rather than an orange: on this
+                  // orange.shade100 background `Colors.orange` gives a contrast
+                  // ratio of 1.7:1, far below the 4.5:1 WCAG AA needs for body
+                  // text, and a warning nobody can comfortably read defeats the
+                  // point. Darker oranges are not enough either — shade900 only
+                  // reaches 3.0:1 — whereas this keeps the warm tone at 10.9:1.
+                  Icon(Icons.warning, color: Colors.brown.shade900, size: 20),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      context.l10n.ecashClipboardWarning,
+                      style: TextStyle(color: Colors.brown.shade900),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 12),
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
               decoration: BoxDecoration(

@@ -1321,6 +1321,9 @@
   "ecashCopiedToClipboard": "Ecash copied to clipboard",
   "@ecashCopiedToClipboard": {},
 
+  "ecashClipboardWarning": "Anyone who reads this token can spend it. Other apps can read your clipboard, so only paste it where you intend to send the funds.",
+  "@ecashClipboardWarning": {},
+
   "federationLabel": "Federation",
   "@federationLabel": {},
 
