@@ -1876,7 +1876,7 @@ impl TryFrom<nostr_sdk::Event> for PublicFederation {
         // drop announcements missing any of these: a federation with no network
         // tag also has no name to show, which is a poor Discover experience.
         let federation_id = Self::parse_federation_id(&tags)?;
-        let invite_codes = Self::parse_invite_codes(&tags)?;
+        let invite_codes = Self::parse_invite_codes(&tags, &federation_id)?;
         let (federation_name, about, picture) = Self::parse_content(event.content)?;
         let network = Self::parse_network(&tags)?;
 
@@ -1975,17 +1975,31 @@ impl PublicFederation {
         Ok(federation_id)
     }
 
-    fn parse_invite_codes(tags: &nostr_sdk::Tags) -> anyhow::Result<Vec<String>> {
+    /// Reads the invite code from the `u` tag and checks that it actually points
+    /// at `federation_id`, the federation the announcement claims to be (`d` tag).
+    ///
+    /// Discover previews the invite under the announcement's own name, so an
+    /// invite for a different federation would let an announcement borrow a
+    /// trusted federation's id and name while sending the user somewhere else.
+    fn parse_invite_codes(
+        tags: &nostr_sdk::Tags,
+        federation_id: &FederationId,
+    ) -> anyhow::Result<Vec<String>> {
         let u_tag = tags
             .find(nostr_sdk::TagKind::SingleLetter(
                 nostr_sdk::SingleLetterTag::lowercase(nostr_sdk::Alphabet::U),
             ))
             .ok_or(anyhow!("u_tag does not exist"))?;
-        let invite = u_tag
-            .content()
-            .ok_or(anyhow!("No content for u_tag"))?
-            .to_string();
-        Ok(vec![invite])
+        let invite = u_tag.content().ok_or(anyhow!("No content for u_tag"))?;
+        let invite_code = InviteCode::from_str(invite)?;
+        if invite_code.federation_id() != *federation_id {
+            bail!(
+                "u_tag invite code is for federation {}, but d_tag announces {}",
+                invite_code.federation_id(),
+                federation_id
+            );
+        }
+        Ok(vec![invite.to_string()])
     }
 
     fn parse_modules(tags: &nostr_sdk::Tags) -> anyhow::Result<Vec<String>> {
@@ -2054,7 +2068,7 @@ mod tests {
         NWC_DEFAULT_MAX_PAYMENT_MSATS, NWC_SUPPORTED_METHODS,
     };
     use bitcoin::Network;
-    use fedimint_core::config::FederationId;
+    use fedimint_core::{config::FederationId, invite_code::InviteCode, PeerId};
     use lightning_invoice::Bolt11Invoice;
     use std::time::{Duration, SystemTime};
 
@@ -2478,6 +2492,24 @@ mod tests {
             .expect("event signs")
     }
 
+    /// A real, parseable invite code that points at `federation_id`.
+    fn invite_for(federation_id: FederationId) -> String {
+        InviteCode::new(
+            "wss://foo.bar".parse().expect("valid url"),
+            PeerId::from(0),
+            federation_id,
+            None,
+        )
+        .to_string()
+    }
+
+    /// A federation id guaranteed to differ from `FederationId::dummy()`.
+    fn other_federation_id() -> FederationId {
+        let other: FederationId = "ab".repeat(32).parse().expect("valid federation id");
+        assert_ne!(other, FederationId::dummy());
+        other
+    }
+
     #[test]
     fn test_parse_network_accepts_the_nonstandard_mainnet_spelling() {
         // Announcers write "mainnet"; `Network::from_str` only knows "bitcoin".
@@ -2565,7 +2597,7 @@ mod tests {
         let event = announcement(
             vec![
                 nostr_sdk::Tag::identifier(FederationId::dummy().to_string()),
-                letter_tag(nostr_sdk::Alphabet::U, "fed11qgqrgvnhwden5te0v9k8q6rp9ekh2"),
+                letter_tag(nostr_sdk::Alphabet::U, &invite_for(FederationId::dummy())),
                 letter_tag(nostr_sdk::Alphabet::N, "mainnet"),
             ],
             "",
@@ -2677,35 +2709,46 @@ mod tests {
 
     #[test]
     fn test_parse_invite_codes_returns_the_u_tag() {
-        let invite = "fed11qgqrgvnhwden5te0v9k8q6rp9ekh2arfdeukuet595ui7";
-        let tags = nostr_sdk::Tags::from_list(vec![letter_tag(nostr_sdk::Alphabet::U, invite)]);
+        let federation_id = FederationId::dummy();
+        let invite = invite_for(federation_id);
+        let tags = nostr_sdk::Tags::from_list(vec![letter_tag(nostr_sdk::Alphabet::U, &invite)]);
         assert_eq!(
-            PublicFederation::parse_invite_codes(&tags).expect("parses"),
-            vec![invite.to_string()]
+            PublicFederation::parse_invite_codes(&tags, &federation_id).expect("parses"),
+            vec![invite]
         );
     }
 
     #[test]
-    fn test_parse_invite_codes_passes_the_tag_through_unvalidated() {
-        // Unlike the recovery path, which runs `InviteCode::from_str` before
-        // keeping a code, this one hands the raw tag content to the UI. A relay
-        // can therefore put an unjoinable string in front of the user; joining is
-        // where it fails. Pinned so the missing check is deliberate and visible.
+    fn test_parse_invite_codes_rejects_a_tag_that_is_not_an_invite_code() {
+        // Like the recovery path, only a parseable invite code is kept, so a relay
+        // cannot put an unjoinable string in front of the user.
         let tags = nostr_sdk::Tags::from_list(vec![letter_tag(
             nostr_sdk::Alphabet::U,
             "definitely-not-an-invite-code",
         )]);
-        assert_eq!(
-            PublicFederation::parse_invite_codes(&tags).expect("parses"),
-            vec!["definitely-not-an-invite-code".to_string()]
-        );
+        assert!(PublicFederation::parse_invite_codes(&tags, &FederationId::dummy()).is_err());
+    }
+
+    #[test]
+    fn test_parse_invite_codes_rejects_an_invite_for_a_different_federation() {
+        // An announcement can claim a trusted federation's id (`d`) and name while
+        // its invite (`u`) points somewhere else. Discover previews the invite
+        // under the announced name, so the two must agree.
+        let tags = nostr_sdk::Tags::from_list(vec![letter_tag(
+            nostr_sdk::Alphabet::U,
+            &invite_for(other_federation_id()),
+        )]);
+        assert!(PublicFederation::parse_invite_codes(&tags, &FederationId::dummy()).is_err());
     }
 
     #[test]
     fn test_parse_invite_codes_requires_a_u_tag_with_content() {
-        assert!(PublicFederation::parse_invite_codes(&nostr_sdk::Tags::new()).is_err());
+        let federation_id = FederationId::dummy();
+        assert!(
+            PublicFederation::parse_invite_codes(&nostr_sdk::Tags::new(), &federation_id).is_err()
+        );
         let empty = nostr_sdk::Tags::from_list(vec![nostr_sdk::Tag::parse(["u"]).expect("parses")]);
-        assert!(PublicFederation::parse_invite_codes(&empty).is_err());
+        assert!(PublicFederation::parse_invite_codes(&empty, &federation_id).is_err());
     }
 
     #[test]
@@ -2753,11 +2796,11 @@ mod tests {
     #[test]
     fn test_public_federation_parses_a_complete_announcement() {
         let federation_id = FederationId::dummy();
-        let invite = "fed11qgqrgvnhwden5te0v9k8q6rp9ekh2arfdeukuet595ui7";
+        let invite = invite_for(federation_id);
         let event = announcement(
             vec![
                 nostr_sdk::Tag::identifier(federation_id.to_string()),
-                letter_tag(nostr_sdk::Alphabet::U, invite),
+                letter_tag(nostr_sdk::Alphabet::U, &invite),
                 letter_tag(nostr_sdk::Alphabet::N, "mainnet"),
                 nostr_sdk::Tag::custom(
                     nostr_sdk::TagKind::custom("modules".to_string()),
@@ -2770,7 +2813,7 @@ mod tests {
         let federation = PublicFederation::try_from(event).expect("complete announcement parses");
         assert_eq!(federation.federation_id, federation_id);
         assert_eq!(federation.federation_name, "Complete Fed");
-        assert_eq!(federation.invite_codes, vec![invite.to_string()]);
+        assert_eq!(federation.invite_codes, vec![invite]);
         assert_eq!(federation.about.as_deref(), Some("everything set"));
         assert_eq!(
             federation.picture.as_deref(),
@@ -2793,7 +2836,7 @@ mod tests {
         let event = announcement(
             vec![
                 nostr_sdk::Tag::identifier(federation_id.to_string()),
-                letter_tag(nostr_sdk::Alphabet::U, "fed11qgqrgvnhwden5te0v9k8q6rp9ekh2"),
+                letter_tag(nostr_sdk::Alphabet::U, &invite_for(federation_id)),
                 letter_tag(nostr_sdk::Alphabet::N, "signet"),
             ],
             "Minimal Fed",
@@ -2810,9 +2853,9 @@ mod tests {
     #[test]
     fn test_public_federation_rejects_malformed_announcements_without_panicking() {
         let id = FederationId::dummy().to_string();
-        let invite = "fed11qgqrgvnhwden5te0v9k8q6rp9ekh2";
+        let invite = invite_for(FederationId::dummy());
         let d = || nostr_sdk::Tag::identifier(id.clone());
-        let u = || letter_tag(nostr_sdk::Alphabet::U, invite);
+        let u = || letter_tag(nostr_sdk::Alphabet::U, &invite);
         let n = || letter_tag(nostr_sdk::Alphabet::N, "mainnet");
 
         // Every one of these is something a hostile or merely broken relay can
@@ -2831,6 +2874,29 @@ mod tests {
                 announcement(vec![nostr_sdk::Tag::identifier(&id[..16]), u(), n()], "Fed"),
             ),
             ("no u tag", announcement(vec![d(), n()], "Fed")),
+            (
+                "u tag is not an invite code",
+                announcement(
+                    vec![
+                        d(),
+                        letter_tag(nostr_sdk::Alphabet::U, "definitely-not-an-invite-code"),
+                        n(),
+                    ],
+                    "Fed",
+                ),
+            ),
+            (
+                // A trusted federation's id and name, fronting someone else's invite.
+                "u tag invites to a different federation than the d tag",
+                announcement(
+                    vec![
+                        d(),
+                        letter_tag(nostr_sdk::Alphabet::U, &invite_for(other_federation_id())),
+                        n(),
+                    ],
+                    "Trusted Fed",
+                ),
+            ),
             ("no n tag", announcement(vec![d(), u()], "Fed")),
             (
                 "unknown network",
