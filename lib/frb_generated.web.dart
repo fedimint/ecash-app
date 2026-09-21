@@ -699,6 +699,10 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   );
 
   @protected
+  RustStreamSink<List<GuardianSessionStatus>>
+  dco_decode_StreamSink_list_guardian_session_status_Sse(dynamic raw);
+
+  @protected
   RustStreamSink<List<PeerStatus>> dco_decode_StreamSink_list_peer_status_Sse(
     dynamic raw,
   );
@@ -895,6 +899,9 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   GuardianModuleSummary dco_decode_guardian_module_summary(dynamic raw);
 
   @protected
+  GuardianSessionStatus dco_decode_guardian_session_status(dynamic raw);
+
+  @protected
   GuardianStatusSummary dco_decode_guardian_status_summary(dynamic raw);
 
   @protected
@@ -948,6 +955,11 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
 
   @protected
   List<GuardianModuleSummary> dco_decode_list_guardian_module_summary(
+    dynamic raw,
+  );
+
+  @protected
+  List<GuardianSessionStatus> dco_decode_list_guardian_session_status(
     dynamic raw,
   );
 
@@ -1795,6 +1807,12 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   );
 
   @protected
+  RustStreamSink<List<GuardianSessionStatus>>
+  sse_decode_StreamSink_list_guardian_session_status_Sse(
+    SseDeserializer deserializer,
+  );
+
+  @protected
   RustStreamSink<List<PeerStatus>> sse_decode_StreamSink_list_peer_status_Sse(
     SseDeserializer deserializer,
   );
@@ -2031,6 +2049,11 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   );
 
   @protected
+  GuardianSessionStatus sse_decode_guardian_session_status(
+    SseDeserializer deserializer,
+  );
+
+  @protected
   GuardianStatusSummary sse_decode_guardian_status_summary(
     SseDeserializer deserializer,
   );
@@ -2092,6 +2115,11 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
 
   @protected
   List<GuardianModuleSummary> sse_decode_list_guardian_module_summary(
+    SseDeserializer deserializer,
+  );
+
+  @protected
+  List<GuardianSessionStatus> sse_decode_list_guardian_session_status(
     SseDeserializer deserializer,
   );
 
@@ -3055,6 +3083,12 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   );
 
   @protected
+  void sse_encode_StreamSink_list_guardian_session_status_Sse(
+    RustStreamSink<List<GuardianSessionStatus>> self,
+    SseSerializer serializer,
+  );
+
+  @protected
   void sse_encode_StreamSink_list_peer_status_Sse(
     RustStreamSink<List<PeerStatus>> self,
     SseSerializer serializer,
@@ -3342,6 +3376,12 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   );
 
   @protected
+  void sse_encode_guardian_session_status(
+    GuardianSessionStatus self,
+    SseSerializer serializer,
+  );
+
+  @protected
   void sse_encode_guardian_status_summary(
     GuardianStatusSummary self,
     SseSerializer serializer,
@@ -3415,6 +3455,12 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   @protected
   void sse_encode_list_guardian_module_summary(
     List<GuardianModuleSummary> self,
+    SseSerializer serializer,
+  );
+
+  @protected
+  void sse_encode_list_guardian_session_status(
+    List<GuardianSessionStatus> self,
     SseSerializer serializer,
   );
 

@@ -43,7 +43,7 @@ flutter_rust_bridge::frb_generated_boilerplate!(
     default_rust_auto_opaque = RustAutoOpaqueMoi,
 );
 pub(crate) const FLUTTER_RUST_BRIDGE_CODEGEN_VERSION: &str = "2.9.0";
-pub(crate) const FLUTTER_RUST_BRIDGE_CODEGEN_CONTENT_HASH: i32 = 470711718;
+pub(crate) const FLUTTER_RUST_BRIDGE_CODEGEN_CONTENT_HASH: i32 = 1162915438;
 
 // Section: executor
 
@@ -15302,6 +15302,47 @@ fn wire__crate__subscribe_deposits_impl(
         },
     )
 }
+fn wire__crate__subscribe_guardian_sessions_impl(
+    port_: flutter_rust_bridge::for_generated::MessagePort,
+    ptr_: flutter_rust_bridge::for_generated::PlatformGeneralizedUint8ListPtr,
+    rust_vec_len_: i32,
+    data_len_: i32,
+) {
+    FLUTTER_RUST_BRIDGE_HANDLER.wrap_async::<flutter_rust_bridge::for_generated::SseCodec, _, _, _>(
+        flutter_rust_bridge::for_generated::TaskInfo {
+            debug_name: "subscribe_guardian_sessions",
+            port: Some(port_),
+            mode: flutter_rust_bridge::for_generated::FfiCallMode::Normal,
+        },
+        move || {
+            let message = unsafe {
+                flutter_rust_bridge::for_generated::Dart2RustMessageSse::from_wire(
+                    ptr_,
+                    rust_vec_len_,
+                    data_len_,
+                )
+            };
+            let mut deserializer =
+                flutter_rust_bridge::for_generated::SseDeserializer::new(message);
+            let api_sink = <StreamSink<
+                Vec<crate::multimint::GuardianSessionStatus>,
+                flutter_rust_bridge::for_generated::SseCodec,
+            >>::sse_decode(&mut deserializer);
+            let api_federation_id = <FederationId>::sse_decode(&mut deserializer);
+            deserializer.end();
+            move |context| async move {
+                transform_result_sse::<_, flutter_rust_bridge::for_generated::anyhow::Error>(
+                    (move || async move {
+                        let output_ok =
+                            crate::subscribe_guardian_sessions(api_sink, api_federation_id).await?;
+                        Ok(output_ok)
+                    })()
+                    .await,
+                )
+            }
+        },
+    )
+}
 fn wire__crate__subscribe_multimint_events_impl(
     port_: flutter_rust_bridge::for_generated::MessagePort,
     ptr_: flutter_rust_bridge::for_generated::PlatformGeneralizedUint8ListPtr,
@@ -16529,6 +16570,19 @@ impl SseDecode
 }
 
 impl SseDecode
+    for StreamSink<
+        Vec<crate::multimint::GuardianSessionStatus>,
+        flutter_rust_bridge::for_generated::SseCodec,
+    >
+{
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
+        let mut inner = <String>::sse_decode(deserializer);
+        return StreamSink::deserialize(inner);
+    }
+}
+
+impl SseDecode
     for StreamSink<Vec<crate::multimint::PeerStatus>, flutter_rust_bridge::for_generated::SseCodec>
 {
     // Codec=Sse (Serialization based), see doc to use other codecs
@@ -17054,6 +17108,26 @@ impl SseDecode for crate::multimint::GuardianModuleSummary {
     }
 }
 
+impl SseDecode for crate::multimint::GuardianSessionStatus {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
+        let mut var_peerId = <u16>::sse_decode(deserializer);
+        let mut var_sessionCount = <Option<u64>>::sse_decode(deserializer);
+        let mut var_firstSeenAt = <Option<u64>>::sse_decode(deserializer);
+        let mut var_fresh = <bool>::sse_decode(deserializer);
+        let mut var_sessionsBehind = <u64>::sse_decode(deserializer);
+        let mut var_isBehind = <bool>::sse_decode(deserializer);
+        return crate::multimint::GuardianSessionStatus {
+            peer_id: var_peerId,
+            session_count: var_sessionCount,
+            first_seen_at: var_firstSeenAt,
+            fresh: var_fresh,
+            sessions_behind: var_sessionsBehind,
+            is_behind: var_isBehind,
+        };
+    }
+}
+
 impl SseDecode for crate::multimint::GuardianStatusSummary {
     // Codec=Sse (Serialization based), see doc to use other codecs
     fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
@@ -17243,6 +17317,20 @@ impl SseDecode for Vec<crate::multimint::GuardianModuleSummary> {
         let mut ans_ = vec![];
         for idx_ in 0..len_ {
             ans_.push(<crate::multimint::GuardianModuleSummary>::sse_decode(
+                deserializer,
+            ));
+        }
+        return ans_;
+    }
+}
+
+impl SseDecode for Vec<crate::multimint::GuardianSessionStatus> {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
+        let mut len_ = <i32>::sse_decode(deserializer);
+        let mut ans_ = vec![];
+        for idx_ in 0..len_ {
+            ans_.push(<crate::multimint::GuardianSessionStatus>::sse_decode(
                 deserializer,
             ));
         }
@@ -18905,16 +18993,17 @@ fn pde_ffi_dispatcher_primary_impl(
         273 => wire__crate__set_require_pin_for_spending_impl(port, ptr, rust_vec_len, data_len),
         274 => wire__crate__set_show_msats_impl(port, ptr, rust_vec_len, data_len),
         275 => wire__crate__subscribe_deposits_impl(port, ptr, rust_vec_len, data_len),
-        276 => wire__crate__subscribe_multimint_events_impl(port, ptr, rust_vec_len, data_len),
-        277 => wire__crate__subscribe_peer_status_impl(port, ptr, rust_vec_len, data_len),
-        278 => wire__crate__subscribe_recovery_progress_impl(port, ptr, rust_vec_len, data_len),
-        279 => wire__crate__sync_contacts_impl(port, ptr, rust_vec_len, data_len),
-        280 => wire__crate__transactions_impl(port, ptr, rust_vec_len, data_len),
-        281 => wire__crate__verify_nip05_impl(port, ptr, rust_vec_len, data_len),
-        282 => wire__crate__verify_pin_impl(port, ptr, rust_vec_len, data_len),
-        283 => wire__crate__wallet_summary_impl(port, ptr, rust_vec_len, data_len),
-        284 => wire__crate__withdraw_to_address_impl(port, ptr, rust_vec_len, data_len),
-        285 => wire__crate__word_list_impl(port, ptr, rust_vec_len, data_len),
+        276 => wire__crate__subscribe_guardian_sessions_impl(port, ptr, rust_vec_len, data_len),
+        277 => wire__crate__subscribe_multimint_events_impl(port, ptr, rust_vec_len, data_len),
+        278 => wire__crate__subscribe_peer_status_impl(port, ptr, rust_vec_len, data_len),
+        279 => wire__crate__subscribe_recovery_progress_impl(port, ptr, rust_vec_len, data_len),
+        280 => wire__crate__sync_contacts_impl(port, ptr, rust_vec_len, data_len),
+        281 => wire__crate__transactions_impl(port, ptr, rust_vec_len, data_len),
+        282 => wire__crate__verify_nip05_impl(port, ptr, rust_vec_len, data_len),
+        283 => wire__crate__verify_pin_impl(port, ptr, rust_vec_len, data_len),
+        284 => wire__crate__wallet_summary_impl(port, ptr, rust_vec_len, data_len),
+        285 => wire__crate__withdraw_to_address_impl(port, ptr, rust_vec_len, data_len),
+        286 => wire__crate__word_list_impl(port, ptr, rust_vec_len, data_len),
         _ => unreachable!(),
     }
 }
@@ -20425,6 +20514,31 @@ impl flutter_rust_bridge::IntoIntoDart<crate::multimint::GuardianModuleSummary>
     }
 }
 // Codec=Dco (DartCObject based), see doc to use other codecs
+impl flutter_rust_bridge::IntoDart for crate::multimint::GuardianSessionStatus {
+    fn into_dart(self) -> flutter_rust_bridge::for_generated::DartAbi {
+        [
+            self.peer_id.into_into_dart().into_dart(),
+            self.session_count.into_into_dart().into_dart(),
+            self.first_seen_at.into_into_dart().into_dart(),
+            self.fresh.into_into_dart().into_dart(),
+            self.sessions_behind.into_into_dart().into_dart(),
+            self.is_behind.into_into_dart().into_dart(),
+        ]
+        .into_dart()
+    }
+}
+impl flutter_rust_bridge::for_generated::IntoDartExceptPrimitive
+    for crate::multimint::GuardianSessionStatus
+{
+}
+impl flutter_rust_bridge::IntoIntoDart<crate::multimint::GuardianSessionStatus>
+    for crate::multimint::GuardianSessionStatus
+{
+    fn into_into_dart(self) -> crate::multimint::GuardianSessionStatus {
+        self
+    }
+}
+// Codec=Dco (DartCObject based), see doc to use other codecs
 impl flutter_rust_bridge::IntoDart for crate::multimint::GuardianStatusSummary {
     fn into_dart(self) -> flutter_rust_bridge::for_generated::DartAbi {
         [
@@ -21826,6 +21940,18 @@ impl SseEncode
 }
 
 impl SseEncode
+    for StreamSink<
+        Vec<crate::multimint::GuardianSessionStatus>,
+        flutter_rust_bridge::for_generated::SseCodec,
+    >
+{
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
+        unimplemented!("")
+    }
+}
+
+impl SseEncode
     for StreamSink<Vec<crate::multimint::PeerStatus>, flutter_rust_bridge::for_generated::SseCodec>
 {
     // Codec=Sse (Serialization based), see doc to use other codecs
@@ -22242,6 +22368,18 @@ impl SseEncode for crate::multimint::GuardianModuleSummary {
     }
 }
 
+impl SseEncode for crate::multimint::GuardianSessionStatus {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
+        <u16>::sse_encode(self.peer_id, serializer);
+        <Option<u64>>::sse_encode(self.session_count, serializer);
+        <Option<u64>>::sse_encode(self.first_seen_at, serializer);
+        <bool>::sse_encode(self.fresh, serializer);
+        <u64>::sse_encode(self.sessions_behind, serializer);
+        <bool>::sse_encode(self.is_behind, serializer);
+    }
+}
+
 impl SseEncode for crate::multimint::GuardianStatusSummary {
     // Codec=Sse (Serialization based), see doc to use other codecs
     fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
@@ -22396,6 +22534,16 @@ impl SseEncode for Vec<crate::multimint::GuardianModuleSummary> {
         <i32>::sse_encode(self.len() as _, serializer);
         for item in self {
             <crate::multimint::GuardianModuleSummary>::sse_encode(item, serializer);
+        }
+    }
+}
+
+impl SseEncode for Vec<crate::multimint::GuardianSessionStatus> {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
+        <i32>::sse_encode(self.len() as _, serializer);
+        for item in self {
+            <crate::multimint::GuardianSessionStatus>::sse_encode(item, serializer);
         }
     }
 }

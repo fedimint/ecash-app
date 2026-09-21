@@ -622,6 +622,45 @@
   "disconnected": "Disconnected",
   "@disconnected": {},
 
+  "guardianSessionCount": "Session {count}",
+  "@guardianSessionCount": {
+    "placeholders": {
+      "count": {
+        "type": "String"
+      }
+    }
+  },
+
+  "guardianSessionAgeJustNow": "just now",
+  "@guardianSessionAgeJustNow": {},
+
+  "guardianSessionAgeMinutes": "{count} min ago",
+  "@guardianSessionAgeMinutes": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+
+  "guardianSessionAgeHours": "{count} h ago",
+  "@guardianSessionAgeHours": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+
+  "guardianSessionAgeDays": "{count} d ago",
+  "@guardianSessionAgeDays": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+
   "connectionDirect": "Direct",
   "@connectionDirect": {},
 

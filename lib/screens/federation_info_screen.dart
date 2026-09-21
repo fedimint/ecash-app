@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:ecashapp/extensions/build_context_l10n.dart';
+import 'package:ecashapp/generated/app_localizations.dart';
 import 'package:ecashapp/screens/guardian_dashboard.dart';
 import 'package:ecashapp/widgets/federation_utxo_list.dart';
 import 'package:ecashapp/lib.dart';
@@ -13,9 +14,47 @@ import 'package:ecashapp/widgets/gateways.dart';
 import 'package:ecashapp/widgets/leave_federation_dialog.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:intl/intl.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 
 enum _InfoSection { guardians, utxos, gateways }
+
+/// The session count a guardian last reported, labelled and grouped the way
+/// the locale does. Null while the guardian has never answered.
+String? formatGuardianSessionCount(
+  AppLocalizations l10n,
+  GuardianSessionStatus? status,
+) {
+  final sessionCount = status?.sessionCount;
+  if (sessionCount == null) return null;
+  return l10n.guardianSessionCount(
+    NumberFormat.decimalPattern(l10n.localeName).format(sessionCount.toInt()),
+  );
+}
+
+/// How long ago this wallet first saw the guardian report its current session
+/// count, in the largest unit that fits. Null while the guardian has never
+/// answered.
+///
+/// The age is what tells a guardian that is keeping up from one that is stuck,
+/// since a session outcome carries no time of its own.
+String? formatGuardianSessionAge(
+  AppLocalizations l10n,
+  GuardianSessionStatus? status, {
+  DateTime? now,
+}) {
+  final firstSeenAt = status?.firstSeenAt;
+  if (firstSeenAt == null) return null;
+  final age = (now ?? DateTime.now()).difference(
+    DateTime.fromMillisecondsSinceEpoch(firstSeenAt.toInt() * 1000),
+  );
+
+  // Also covers a negative age, which means the clock was set back since.
+  if (age.inMinutes < 1) return l10n.guardianSessionAgeJustNow;
+  if (age.inDays > 0) return l10n.guardianSessionAgeDays(age.inDays);
+  if (age.inHours > 0) return l10n.guardianSessionAgeHours(age.inHours);
+  return l10n.guardianSessionAgeMinutes(age.inMinutes);
+}
 
 class FederationInfoScreen extends StatefulWidget {
   /// The federation to display. For joinable previews this can be null: the
@@ -54,7 +93,13 @@ class _FederationInfoScreenState extends State<FederationInfoScreen> {
   double _animatedPercent = 0.0;
   StreamSubscription<List<PeerStatus>>? _peerUpdates;
   StreamSubscription<MultimintEvent>? _metaUpdates;
+  StreamSubscription<List<GuardianSessionStatus>>? _sessionUpdates;
   List<PeerStatus>? _peers;
+
+  /// Each guardian's consensus progress, by peer id. Replaced wholesale every
+  /// time the guardians are asked again, which is also what keeps the ages on
+  /// the rows current.
+  Map<int, GuardianSessionStatus> _sessions = {};
   _InfoSection _selectedSection = _InfoSection.guardians;
   bool _isJoining = false;
 
@@ -86,6 +131,7 @@ class _FederationInfoScreenState extends State<FederationInfoScreen> {
       _welcomeMessage = widget.welcomeMessage;
       _imageUrl = widget.imageUrl;
       _subscribePeers();
+      _subscribeSessions();
       _subscribeMetaUpdates();
       // A preview opened from a scanned or pasted invite arrives with the
       // federation already resolved and skips _loadMeta, so the shutdown
@@ -115,6 +161,7 @@ class _FederationInfoScreenState extends State<FederationInfoScreen> {
   void dispose() {
     _peerUpdates?.cancel();
     _metaUpdates?.cancel();
+    _sessionUpdates?.cancel();
     super.dispose();
   }
 
@@ -191,6 +238,27 @@ class _FederationInfoScreenState extends State<FederationInfoScreen> {
         _animatedPercent = totalCount > 0 ? onlineCount / totalCount : 0.0;
       });
     });
+  }
+
+  /// Follows the guardians' session counts for as long as the screen is open.
+  /// Joined federations only: the counts are persisted per federation, and a
+  /// preview has no entry to persist them under.
+  void _subscribeSessions() {
+    final fed = _fed;
+    if (fed == null || widget.joinable) return;
+    _sessionUpdates = subscribeGuardianSessions(
+      federationId: fed.federationId,
+    ).listen(
+      (List<GuardianSessionStatus> event) {
+        if (!mounted) return;
+        setState(() {
+          _sessions = {for (final status in event) status.peerId: status};
+        });
+      },
+      onError: (Object e) {
+        AppLogger.instance.warn("Could not follow guardian sessions: $e");
+      },
+    );
   }
 
   // --- Leave federation logic ---
@@ -630,6 +698,7 @@ class _FederationInfoScreenState extends State<FederationInfoScreen> {
         final isOnline = peer.online;
 
         final theme = Theme.of(context);
+        final sessionColumn = _sessionColumn(theme, _sessions[peer.peerId]);
         return ListTile(
           dense: true,
           contentPadding: EdgeInsets.zero,
@@ -645,10 +714,16 @@ class _FederationInfoScreenState extends State<FederationInfoScreen> {
           title: Row(
             children: [
               Expanded(child: Text(peer.name, overflow: TextOverflow.ellipsis)),
-              if (isOnline) ...[
-                _connectivityBadge(theme, peer.connectivity),
-                const Expanded(child: SizedBox.shrink()),
-              ],
+              if (isOnline) _connectivityBadge(theme, peer.connectivity),
+              // Centred in what is left of the row, which puts it halfway
+              // between the badge and the invite code buttons.
+              if (isOnline || sessionColumn != null)
+                Expanded(
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 4),
+                    child: Center(child: sessionColumn),
+                  ),
+                ),
             ],
           ),
           subtitle:
@@ -1095,6 +1170,48 @@ class _FederationInfoScreenState extends State<FederationInfoScreen> {
           ],
         ),
       ),
+    );
+  }
+
+  /// A guardian's session count with its age underneath, or null while the
+  /// guardian has never answered.
+  ///
+  /// The column is narrow on a phone. The count is left to wrap there, which
+  /// puts the number under the word; the age shrinks instead, since half an
+  /// age is worse than a small one.
+  Widget? _sessionColumn(ThemeData theme, GuardianSessionStatus? session) {
+    final l10n = context.l10n;
+    final count = formatGuardianSessionCount(l10n, session);
+    final age = formatGuardianSessionAge(l10n, session);
+    if (session == null || count == null || age == null) return null;
+
+    // Faded until the guardian has answered this round: what is on disk says
+    // where it was, not where it is.
+    final alpha = session.fresh ? 1.0 : 0.5;
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Text(
+          count,
+          maxLines: 2,
+          textAlign: TextAlign.center,
+          style: theme.textTheme.labelMedium?.copyWith(
+            color: theme.colorScheme.onSurface.withValues(alpha: alpha),
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+        FittedBox(
+          fit: BoxFit.scaleDown,
+          child: Text(
+            age,
+            maxLines: 1,
+            softWrap: false,
+            style: theme.textTheme.bodySmall?.copyWith(
+              color: Colors.grey.withValues(alpha: alpha),
+            ),
+          ),
+        ),
+      ],
     );
   }
 

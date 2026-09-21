@@ -172,6 +172,10 @@ const CLIENT_RELEASE_POLL_INTERVAL: Duration = Duration::from_millis(250);
 /// itself is tiny, so this only has to cover connecting, over Tor included; a
 /// guardian that needs longer is reported as not having answered this round.
 const GUARDIAN_SESSION_FETCH_TIMEOUT: Duration = Duration::from_secs(10);
+/// How often the guardians' session counts are requested again while the
+/// federation info screen is open. A session lasts about three minutes, so
+/// this places the moment a guardian advanced to within a fraction of one.
+const GUARDIAN_SESSION_POLL_INTERVAL: Duration = Duration::from_secs(30);
 /// How many sessions a guardian has to trail the most advanced one by before
 /// it is reported as behind.
 ///
@@ -1125,8 +1129,6 @@ async fn migrate_federation_meta_v3<Cap: Send>(
 /// the clock, a lower one included — a guardian restored from a backup reports
 /// fewer sessions than before, and its old timestamp says nothing about the
 /// count it reports now.
-// Unused until the guardian session stream lands.
-#[allow(dead_code)]
 async fn record_guardian_session<Cap: Send>(
     dbtx: &mut DatabaseTransaction<'_, Cap>,
     federation_id: FederationId,
@@ -1153,8 +1155,6 @@ async fn record_guardian_session<Cap: Send>(
 }
 
 /// Every guardian session recorded for `federation_id`, by peer id.
-// Unused until the guardian session stream lands.
-#[allow(dead_code)]
 async fn load_guardian_sessions<Cap: Send>(
     dbtx: &mut DatabaseTransaction<'_, Cap>,
     federation_id: FederationId,
@@ -1174,8 +1174,6 @@ async fn load_guardian_sessions<Cap: Send>(
 /// that disagrees. A guardian that errors or takes longer than
 /// [`GUARDIAN_SESSION_FETCH_TIMEOUT`] is simply absent from the result: failing
 /// to reach a guardian says nothing about its sessions.
-// Unused until the guardian session stream lands.
-#[allow(dead_code)]
 async fn fetch_guardian_session_counts(api: &DynGlobalApi) -> BTreeMap<u16, u64> {
     futures_util::future::join_all(api.all_peers().iter().map(|peer| async move {
         let session_count = timeout(
@@ -1205,8 +1203,6 @@ async fn fetch_guardian_session_counts(api: &DynGlobalApi) -> BTreeMap<u16, u64>
 /// guardian as behind merely for being unreachable, which its row already
 /// shows. With fewer than two fresh guardians there is nothing to compare and
 /// nobody is behind.
-// Unused until the guardian session stream lands.
-#[allow(dead_code)]
 fn guardian_session_statuses(
     peers: impl IntoIterator<Item = u16>,
     stored: &BTreeMap<u16, GuardianSession>,
@@ -2463,6 +2459,76 @@ impl Multimint {
         });
 
         Ok(mapped_stream.boxed())
+    }
+
+    /// The consensus progress of every guardian of a joined federation: what
+    /// is on disk straight away, then the result of a fresh round of requests
+    /// every [`GUARDIAN_SESSION_POLL_INTERVAL`] for as long as the stream is
+    /// polled.
+    ///
+    /// Every round is yielded, changed or not. Whoever drives the stream only
+    /// finds out that the UI has gone when handing it an item fails, and a
+    /// stalled federation is precisely one that never changes: yielding on
+    /// change alone would keep a closed screen requesting from those guardians
+    /// forever.
+    pub async fn subscribe_guardian_sessions(
+        &self,
+        federation_id: FederationId,
+    ) -> anyhow::Result<impl Stream<Item = Vec<GuardianSessionStatus>>> {
+        // Only the API handle is kept. A `ClientHandleArc` held for as long as
+        // the screen stays open would hold up the client shutdown that follows
+        // leaving the federation, which the user does from that same screen.
+        let api = self
+            .clients
+            .read()
+            .await
+            .get(&federation_id)
+            .ok_or(anyhow!("No federation exists"))?
+            .client
+            .api_clone();
+        let db = self.db.clone();
+        let peers: Vec<u16> = api
+            .all_peers()
+            .iter()
+            .map(|peer| peer.to_usize() as u16)
+            .collect();
+
+        Ok(async_stream::stream! {
+            let mut dbtx = db.begin_transaction_nc().await;
+            let stored = load_guardian_sessions(&mut dbtx, federation_id).await;
+            drop(dbtx);
+            yield guardian_session_statuses(peers.iter().copied(), &stored, &BTreeSet::new());
+
+            loop {
+                let fetched = fetch_guardian_session_counts(&api).await;
+                let now = SystemTime::now();
+
+                let mut dbtx = db.begin_transaction().await;
+                for (peer_id, session_count) in &fetched {
+                    record_guardian_session(
+                        &mut dbtx,
+                        federation_id,
+                        *peer_id,
+                        *session_count,
+                        now,
+                    )
+                    .await;
+                }
+                let stored = load_guardian_sessions(&mut dbtx, federation_id).await;
+                // A screen that is closed and reopened leaves its old stream
+                // running until its next yield, so two of them can write the
+                // same rows at once. Both saw the same counts, so whichever
+                // loses has nothing to add.
+                if let Err(e) = dbtx.commit_tx_result().await {
+                    info_to_flutter(format!("Could not persist guardian sessions: {e}")).await;
+                }
+
+                let fresh = fetched.keys().copied().collect();
+                yield guardian_session_statuses(peers.iter().copied(), &stored, &fresh);
+
+                tokio::time::sleep(GUARDIAN_SESSION_POLL_INTERVAL).await;
+            }
+        })
     }
 
     pub fn get_mnemonic(&self) -> Vec<String> {

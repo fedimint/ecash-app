@@ -759,6 +759,12 @@ Stream<List<PeerStatus>> subscribePeerStatus({
   federationId: federationId,
 );
 
+Stream<List<GuardianSessionStatus>> subscribeGuardianSessions({
+  required FederationId federationId,
+}) => RustLib.instance.api.crateSubscribeGuardianSessions(
+  federationId: federationId,
+);
+
 /// Verify a NIP-05 identifier and return the associated npub
 Future<String> verifyNip05({required String nip05Id}) =>
     RustLib.instance.api.crateVerifyNip05(nip05Id: nip05Id);
