@@ -1166,16 +1166,38 @@ async fn load_guardian_sessions<Cap: Send>(
         .await
 }
 
-/// Asks every guardian for its session count, all at once, and returns the
-/// counts of those that answered.
+/// Asks every guardian the client is connected to for its session count, all
+/// at once, and returns the counts of those that answered.
 ///
 /// Each guardian is asked on its own rather than through a consensus request,
 /// which would settle on the count most of them agree on and so hide the one
 /// that disagrees. A guardian that errors or takes longer than
 /// [`GUARDIAN_SESSION_FETCH_TIMEOUT`] is simply absent from the result: failing
 /// to reach a guardian says nothing about its sessions.
+///
+/// Guardians without a connection are not asked at all. A request to one
+/// would have to open the connection first, and fedimint's pool lets whichever
+/// request got there first lead that attempt, reconnect backoff of up to half
+/// a minute included, while every other request to the guardian waits on it.
+/// Giving up on such a request after [`GUARDIAN_SESSION_FETCH_TIMEOUT`] drops
+/// the attempt it was leading, and the requests waiting on it start over with
+/// a longer backoff, which is enough to push the cache task's meta stage, which
+/// asks the guardians one after another, past its own timeout. Reconnecting is
+/// left to the requests that need the connection; the guardian is picked up on
+/// the next round once one of them has succeeded.
 async fn fetch_guardian_session_counts(api: &DynGlobalApi) -> BTreeMap<u16, u64> {
-    futures_util::future::join_all(api.all_peers().iter().map(|peer| async move {
+    // The stream yields the current statuses as soon as it is polled.
+    let connected: Vec<_> = api
+        .connection_status_stream()
+        .next()
+        .await
+        .unwrap_or_default()
+        .into_iter()
+        .filter(|(_, status)| matches!(status, FedimintPeerStatus::Connected(_)))
+        .map(|(peer, _)| peer)
+        .collect();
+
+    futures_util::future::join_all(connected.iter().map(|peer| async move {
         let session_count = timeout(
             GUARDIAN_SESSION_FETCH_TIMEOUT,
             api.request_single_peer::<u64>(
@@ -1193,6 +1215,37 @@ async fn fetch_guardian_session_counts(api: &DynGlobalApi) -> BTreeMap<u16, u64>
     .into_iter()
     .flatten()
     .collect()
+}
+
+/// One round of asking the guardians for their session counts and persisting
+/// what they report. Returns the sessions now on disk and which guardians
+/// answered.
+///
+/// Both the cache task and an open federation info screen run this. Without
+/// the cache task, a session a guardian reached and then got stuck on while
+/// the screen was closed would only be dated from the next time it is opened.
+async fn refresh_guardian_sessions(
+    db: &Database,
+    api: &DynGlobalApi,
+    federation_id: FederationId,
+) -> (BTreeMap<u16, GuardianSession>, BTreeSet<u16>) {
+    let fetched = fetch_guardian_session_counts(api).await;
+    let now = SystemTime::now();
+
+    let mut dbtx = db.begin_transaction().await;
+    for (peer_id, session_count) in &fetched {
+        record_guardian_session(&mut dbtx, federation_id, *peer_id, *session_count, now).await;
+    }
+    let stored = load_guardian_sessions(&mut dbtx, federation_id).await;
+    // The cache task and an open screen write the same rows, and so do two
+    // streams while a screen that was closed and reopened still has its old
+    // one running. They all saw the same counts, so whichever loses the commit
+    // has nothing to add.
+    if let Err(e) = dbtx.commit_tx_result().await {
+        info_to_flutter(format!("Could not persist guardian sessions: {e}")).await;
+    }
+
+    (stored, fetched.into_keys().collect())
 }
 
 /// One status per guardian in `peers`, from the sessions on disk and the set of
@@ -1780,8 +1833,21 @@ impl Multimint {
                             // Bounded per federation: one unreachable guardian
                             // must not consume the whole cycle.
                             Self::run_cache_stage(
-                                "federation meta",
+                                &format!("federation meta for {federation_id}"),
                                 self_copy.cache_federation_meta(client.clone(), now),
+                            )
+                            .await;
+                            // Rides on the meta refresh's schedule: that stage
+                            // already asks every guardian for its version this
+                            // often, so one more small request each costs
+                            // little.
+                            Self::run_cache_stage(
+                                &format!("guardian sessions for {federation_id}"),
+                                refresh_guardian_sessions(
+                                    &self_copy.db,
+                                    &client.api_clone(),
+                                    federation_id,
+                                ),
                             )
                             .await;
                         }
@@ -2500,30 +2566,7 @@ impl Multimint {
             yield guardian_session_statuses(peers.iter().copied(), &stored, &BTreeSet::new());
 
             loop {
-                let fetched = fetch_guardian_session_counts(&api).await;
-                let now = SystemTime::now();
-
-                let mut dbtx = db.begin_transaction().await;
-                for (peer_id, session_count) in &fetched {
-                    record_guardian_session(
-                        &mut dbtx,
-                        federation_id,
-                        *peer_id,
-                        *session_count,
-                        now,
-                    )
-                    .await;
-                }
-                let stored = load_guardian_sessions(&mut dbtx, federation_id).await;
-                // A screen that is closed and reopened leaves its old stream
-                // running until its next yield, so two of them can write the
-                // same rows at once. Both saw the same counts, so whichever
-                // loses has nothing to add.
-                if let Err(e) = dbtx.commit_tx_result().await {
-                    info_to_flutter(format!("Could not persist guardian sessions: {e}")).await;
-                }
-
-                let fresh = fetched.keys().copied().collect();
+                let (stored, fresh) = refresh_guardian_sessions(&db, &api, federation_id).await;
                 yield guardian_session_statuses(peers.iter().copied(), &stored, &fresh);
 
                 tokio::time::sleep(GUARDIAN_SESSION_POLL_INTERVAL).await;

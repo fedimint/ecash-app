@@ -622,6 +622,33 @@
   "disconnected": "Disconnected",
   "@disconnected": {},
 
+  "consensusInSync": "{inSync} / {total} Guardians in sync · new session {age}",
+  "@consensusInSync": {
+    "placeholders": {
+      "inSync": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      },
+      "age": {
+        "type": "String"
+      }
+    }
+  },
+
+  "consensusStalled": "No new session for {duration}",
+  "@consensusStalled": {
+    "placeholders": {
+      "duration": {
+        "type": "String"
+      }
+    }
+  },
+
+  "consensusWaiting": "Waiting for guardians to report their session…",
+  "@consensusWaiting": {},
+
   "guardianSessionCount": "Session {count}",
   "@guardianSessionCount": {
     "placeholders": {
