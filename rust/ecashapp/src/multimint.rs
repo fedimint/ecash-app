@@ -36,7 +36,7 @@ use fedimint_core::{
         IDatabaseTransactionOpsCore, IDatabaseTransactionOpsCoreTyped,
     },
     encoding::{Decodable, Encodable},
-    endpoint_constants::CONSENSUS_ORD_LATENCY_ENDPOINT,
+    endpoint_constants::{CONSENSUS_ORD_LATENCY_ENDPOINT, SESSION_COUNT_ENDPOINT},
     envs::BitcoinRpcConfig,
     invite_code::InviteCode,
     module::{registry::ModuleDecoderRegistry, ApiAuth, ApiRequestErased},
@@ -168,6 +168,19 @@ const LEAVE_TASK_JOIN_TIMEOUT: Duration = Duration::from_secs(30);
 const CLIENT_RELEASE_TIMEOUT: Duration = Duration::from_secs(120);
 /// How often that wait re-checks for sole ownership of the client.
 const CLIENT_RELEASE_POLL_INTERVAL: Duration = Duration::from_millis(250);
+/// How long one guardian gets to answer a session count request. The request
+/// itself is tiny, so this only has to cover connecting, over Tor included; a
+/// guardian that needs longer is reported as not having answered this round.
+const GUARDIAN_SESSION_FETCH_TIMEOUT: Duration = Duration::from_secs(10);
+/// How many sessions a guardian has to trail the most advanced one by before
+/// it is reported as behind.
+///
+/// Guardians close a session within seconds of each other, not at the same
+/// instant, so a round of requests that straddles that moment sees a healthy
+/// guardian one session short. One is therefore noise. A guardian that is
+/// really stuck trails by two as soon as the others close their next session,
+/// a few minutes later.
+const GUARDIAN_SESSIONS_BEHIND_THRESHOLD: u64 = 2;
 /// A gateway routing fee at or above this takes 100% of the payment, which
 /// makes the fee inversion in [`gross_invoice_for_contract`] unsolvable.
 const MAX_GATEWAY_PPM: u64 = 1_000_000;
@@ -444,6 +457,30 @@ pub struct PeerStatus {
     /// the UI reflects guardian upgrades in real time (a guardian upgrade
     /// restarts fedimintd, which surfaces as a reconnect on the status stream).
     pub version: Option<String>,
+}
+
+/// A guardian's consensus progress, as shown on its row of the federation
+/// info screen.
+#[derive(Debug, Serialize, Clone, PartialEq, Eq)]
+pub struct GuardianSessionStatus {
+    pub peer_id: u16,
+    /// The last session count this guardian reported; `None` when it has never
+    /// answered.
+    pub session_count: Option<u64>,
+    /// Unix seconds at which this wallet first saw the guardian report
+    /// `session_count`. The session was produced at or before this, so an age
+    /// computed from it can understate a stall but never overstate one.
+    pub first_seen_at: Option<u64>,
+    /// Whether the guardian answered the latest round of requests. When it
+    /// did not, the fields above are what was last persisted, which says
+    /// nothing about where the guardian is now.
+    pub fresh: bool,
+    /// How far this guardian trails the most advanced one that answered the
+    /// same round. Always zero unless `fresh`.
+    pub sessions_behind: u64,
+    /// Whether `sessions_behind` is more than the spread between healthy
+    /// guardians explains. See [`GUARDIAN_SESSIONS_BEHIND_THRESHOLD`].
+    pub is_behind: bool,
 }
 
 #[derive(Debug, Serialize, Clone)]
@@ -1127,6 +1164,87 @@ async fn load_guardian_sessions<Cap: Send>(
         .map(|(key, session)| (key.peer_id, session))
         .collect()
         .await
+}
+
+/// Asks every guardian for its session count, all at once, and returns the
+/// counts of those that answered.
+///
+/// Each guardian is asked on its own rather than through a consensus request,
+/// which would settle on the count most of them agree on and so hide the one
+/// that disagrees. A guardian that errors or takes longer than
+/// [`GUARDIAN_SESSION_FETCH_TIMEOUT`] is simply absent from the result: failing
+/// to reach a guardian says nothing about its sessions.
+// Unused until the guardian session stream lands.
+#[allow(dead_code)]
+async fn fetch_guardian_session_counts(api: &DynGlobalApi) -> BTreeMap<u16, u64> {
+    futures_util::future::join_all(api.all_peers().iter().map(|peer| async move {
+        let session_count = timeout(
+            GUARDIAN_SESSION_FETCH_TIMEOUT,
+            api.request_single_peer::<u64>(
+                SESSION_COUNT_ENDPOINT.to_owned(),
+                ApiRequestErased::default(),
+                *peer,
+            ),
+        )
+        .await
+        .ok()?
+        .ok()?;
+        Some((peer.to_usize() as u16, session_count))
+    }))
+    .await
+    .into_iter()
+    .flatten()
+    .collect()
+}
+
+/// One status per guardian in `peers`, from the sessions on disk and the set of
+/// guardians that answered the latest round of requests.
+///
+/// Only guardians in `fresh` are compared with each other. A persisted count
+/// can be arbitrarily old, so measuring it against a live one would report a
+/// guardian as behind merely for being unreachable, which its row already
+/// shows. With fewer than two fresh guardians there is nothing to compare and
+/// nobody is behind.
+// Unused until the guardian session stream lands.
+#[allow(dead_code)]
+fn guardian_session_statuses(
+    peers: impl IntoIterator<Item = u16>,
+    stored: &BTreeMap<u16, GuardianSession>,
+    fresh: &BTreeSet<u16>,
+) -> Vec<GuardianSessionStatus> {
+    let fresh_count = |peer_id: &u16| {
+        stored
+            .get(peer_id)
+            .filter(|_| fresh.contains(peer_id))
+            .map(|session| session.session_count)
+    };
+    let most_advanced = fresh.iter().filter_map(fresh_count).max();
+
+    peers
+        .into_iter()
+        .map(|peer_id| {
+            let session = stored.get(&peer_id);
+            let sessions_behind = most_advanced
+                .zip(fresh_count(&peer_id))
+                .map(|(most_advanced, count)| most_advanced.saturating_sub(count))
+                .unwrap_or_default();
+            GuardianSessionStatus {
+                peer_id,
+                session_count: session.map(|session| session.session_count),
+                first_seen_at: session.map(|session| {
+                    session
+                        .first_seen_at
+                        .0
+                        .duration_since(UNIX_EPOCH)
+                        .unwrap_or_default()
+                        .as_secs()
+                }),
+                fresh: fresh_count(&peer_id).is_some(),
+                sessions_behind,
+                is_behind: sessions_behind >= GUARDIAN_SESSIONS_BEHIND_THRESHOLD,
+            }
+        })
+        .collect()
 }
 
 impl Multimint {
@@ -7383,7 +7501,7 @@ fn validate_receive_fee(receive_fee: &PaymentFee) -> anyhow::Result<()> {
 
 #[cfg(test)]
 mod tests {
-    use std::collections::BTreeMap;
+    use std::collections::{BTreeMap, BTreeSet};
     use std::str::FromStr;
     use std::time::{Duration, UNIX_EPOCH};
 
@@ -7405,10 +7523,11 @@ mod tests {
         FederationMetaKey, FederationMetaKeyPrefix, FederationMetaV1, GuardianSession, Timestamp,
     };
     use crate::multimint::{
-        aggregate_recovery_progress, gross_invoice_for_contract, load_guardian_sessions,
-        meta_fields_after_fetch, migrate_federation_meta_v3, record_guardian_session,
-        recovery_module_for_kind, FederationMeta, FederationSelector, Guardian, MetaFetch,
-        MetaFields, Multimint, RecoveryModule, MAX_GATEWAY_PPM,
+        aggregate_recovery_progress, gross_invoice_for_contract, guardian_session_statuses,
+        load_guardian_sessions, meta_fields_after_fetch, migrate_federation_meta_v3,
+        record_guardian_session, recovery_module_for_kind, FederationMeta, FederationSelector,
+        Guardian, GuardianSessionStatus, MetaFetch, MetaFields, Multimint, RecoveryModule,
+        MAX_GATEWAY_PPM,
     };
 
     /// A cached entry from before the guardians went quiet: shutdown announced.
@@ -7603,6 +7722,89 @@ mod tests {
         assert_eq!(
             load_guardian_sessions(&mut dbtx, federation_id).await,
             BTreeMap::from([(0, alpha), (1, beta)])
+        );
+    }
+
+    const SESSION_FIRST_SEEN_SECS: u64 = 1_764_000_000;
+
+    fn stored_sessions(counts: &[(u16, u64)]) -> BTreeMap<u16, GuardianSession> {
+        counts
+            .iter()
+            .map(|(peer_id, session_count)| {
+                let session = GuardianSession {
+                    session_count: *session_count,
+                    first_seen_at: Timestamp(
+                        UNIX_EPOCH + Duration::from_secs(SESSION_FIRST_SEEN_SECS),
+                    ),
+                };
+                (*peer_id, session)
+            })
+            .collect()
+    }
+
+    #[test]
+    fn guardian_is_behind_only_from_two_sessions() {
+        // A round of requests that straddles the end of a session sees a
+        // healthy guardian one short.
+        let stored = stored_sessions(&[(0, 100), (1, 100), (2, 99), (3, 98)]);
+        let statuses = guardian_session_statuses(0..4, &stored, &BTreeSet::from([0, 1, 2, 3]));
+
+        let behind: Vec<(u64, bool)> = statuses
+            .iter()
+            .map(|status| (status.sessions_behind, status.is_behind))
+            .collect();
+        assert_eq!(behind, [(0, false), (0, false), (1, false), (2, true)]);
+        assert!(statuses.iter().all(|status| status.fresh));
+        assert_eq!(statuses[3].session_count, Some(98));
+        assert_eq!(statuses[3].first_seen_at, Some(SESSION_FIRST_SEEN_SECS));
+    }
+
+    #[test]
+    fn guardians_that_did_not_answer_are_left_out_of_the_comparison() {
+        // Guardian 2 was last seen long ago and guardian 3 on some other
+        // occasion when it was ahead; neither answered this round.
+        let stored = stored_sessions(&[(0, 100), (1, 100), (2, 5), (3, 500)]);
+        let statuses = guardian_session_statuses(0..4, &stored, &BTreeSet::from([0, 1]));
+
+        assert!(
+            statuses.iter().all(|status| !status.is_behind),
+            "a stale count is neither behind nor the mark the others are measured against"
+        );
+        assert_eq!(
+            statuses[2],
+            GuardianSessionStatus {
+                peer_id: 2,
+                session_count: Some(5),
+                first_seen_at: Some(SESSION_FIRST_SEEN_SECS),
+                fresh: false,
+                sessions_behind: 0,
+                is_behind: false,
+            }
+        );
+
+        // The snapshot shown before the first round: nothing is fresh, so
+        // nothing is compared however far apart the persisted counts are.
+        let statuses = guardian_session_statuses(0..4, &stored, &BTreeSet::new());
+        assert!(statuses
+            .iter()
+            .all(|status| !status.fresh && !status.is_behind && status.sessions_behind == 0));
+    }
+
+    #[test]
+    fn a_guardian_never_seen_still_gets_a_row() {
+        let stored = stored_sessions(&[(0, 100)]);
+        let statuses = guardian_session_statuses(0..2, &stored, &BTreeSet::from([0]));
+
+        assert_eq!(
+            statuses[1],
+            GuardianSessionStatus {
+                peer_id: 1,
+                session_count: None,
+                first_seen_at: None,
+                fresh: false,
+                sessions_behind: 0,
+                is_behind: false,
+            }
         );
     }
 
