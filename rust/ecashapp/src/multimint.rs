@@ -6,7 +6,7 @@ use std::{
         atomic::{AtomicBool, Ordering},
         Arc,
     },
-    time::{Duration, UNIX_EPOCH},
+    time::{Duration, SystemTime, UNIX_EPOCH},
 };
 
 use anyhow::bail;
@@ -110,9 +110,9 @@ use crate::{
     db::{
         BitcoinDisplay, BitcoinDisplayKey, BtcPrice, BtcPriceKey, BtcPrices, BtcPricesKey,
         Connector, ContactSyncConfigKey, FederationBackupKey, FederationMetaKey,
-        FederationMetaKeyPrefix, FederationMetaV1, FiatCurrency, FiatCurrencyKey,
-        LightningAddressConfig, LightningAddressKey, LightningAddressKeyPrefix, SchemaVersionKey,
-        Timestamp,
+        FederationMetaKeyPrefix, FederationMetaV1, FiatCurrency, FiatCurrencyKey, GuardianSession,
+        GuardianSessionFederationPrefix, GuardianSessionKey, LightningAddressConfig,
+        LightningAddressKey, LightningAddressKeyPrefix, SchemaVersionKey, Timestamp,
     },
     error_to_flutter, get_nostr_client, info_to_flutter, payment_error_to_flutter,
     wallet::WalletHandler,
@@ -1077,6 +1077,56 @@ async fn migrate_federation_meta_v3<Cap: Send>(
         }
     }
     (migrated, dropped)
+}
+
+/// Persists the session count a guardian just reported and returns the record
+/// now on disk.
+///
+/// Seeing the same count again leaves `first_seen_at` alone: moving it forward
+/// would make a guardian that is stuck look as if it had just advanced, which
+/// is exactly the case this record exists to expose. Any other count restarts
+/// the clock, a lower one included — a guardian restored from a backup reports
+/// fewer sessions than before, and its old timestamp says nothing about the
+/// count it reports now.
+// Unused until the guardian session stream lands.
+#[allow(dead_code)]
+async fn record_guardian_session<Cap: Send>(
+    dbtx: &mut DatabaseTransaction<'_, Cap>,
+    federation_id: FederationId,
+    peer_id: u16,
+    session_count: u64,
+    now: SystemTime,
+) -> GuardianSession {
+    let key = GuardianSessionKey {
+        federation_id,
+        peer_id,
+    };
+    if let Some(session) = dbtx.get_value(&key).await {
+        if session.session_count == session_count {
+            return session;
+        }
+    }
+
+    let session = GuardianSession {
+        session_count,
+        first_seen_at: Timestamp(now),
+    };
+    dbtx.insert_entry(&key, &session).await;
+    session
+}
+
+/// Every guardian session recorded for `federation_id`, by peer id.
+// Unused until the guardian session stream lands.
+#[allow(dead_code)]
+async fn load_guardian_sessions<Cap: Send>(
+    dbtx: &mut DatabaseTransaction<'_, Cap>,
+    federation_id: FederationId,
+) -> BTreeMap<u16, GuardianSession> {
+    dbtx.find_by_prefix(&GuardianSessionFederationPrefix { federation_id })
+        .await
+        .map(|(key, session)| (key.peer_id, session))
+        .collect()
+        .await
 }
 
 impl Multimint {
@@ -7334,6 +7384,8 @@ fn validate_receive_fee(receive_fee: &PaymentFee) -> anyhow::Result<()> {
 #[cfg(test)]
 mod tests {
     use std::collections::BTreeMap;
+    use std::str::FromStr;
+    use std::time::{Duration, UNIX_EPOCH};
 
     use fedimint_client::module::module::recovery::RecoveryProgress;
     use fedimint_core::config::FederationId;
@@ -7349,11 +7401,14 @@ mod tests {
     use fedimint_lnv2_common::gateway_api::PaymentFee;
     use serde_json::json;
 
-    use crate::db::{FederationMetaKey, FederationMetaKeyPrefix, FederationMetaV1};
+    use crate::db::{
+        FederationMetaKey, FederationMetaKeyPrefix, FederationMetaV1, GuardianSession, Timestamp,
+    };
     use crate::multimint::{
-        aggregate_recovery_progress, gross_invoice_for_contract, meta_fields_after_fetch,
-        migrate_federation_meta_v3, recovery_module_for_kind, FederationMeta, FederationSelector,
-        Guardian, MetaFetch, MetaFields, Multimint, RecoveryModule, MAX_GATEWAY_PPM,
+        aggregate_recovery_progress, gross_invoice_for_contract, load_guardian_sessions,
+        meta_fields_after_fetch, migrate_federation_meta_v3, record_guardian_session,
+        recovery_module_for_kind, FederationMeta, FederationSelector, Guardian, MetaFetch,
+        MetaFields, Multimint, RecoveryModule, MAX_GATEWAY_PPM,
     };
 
     /// A cached entry from before the guardians went quiet: shutdown announced.
@@ -7473,6 +7528,82 @@ mod tests {
         // Entries already in the current layout are left as they are.
         let mut dbtx = db.begin_transaction().await;
         assert_eq!(migrate_federation_meta_v3(&mut dbtx).await, (0, 0));
+    }
+
+    #[tokio::test]
+    async fn guardian_session_clock_restarts_only_when_the_count_changes() {
+        let db = Database::new(MemDatabase::new(), ModuleDecoderRegistry::default());
+        let federation_id = FederationId::dummy();
+        let first_seen = UNIX_EPOCH + Duration::from_secs(1_764_000_000);
+        let hour_later = first_seen + Duration::from_secs(60 * 60);
+        let day_later = first_seen + Duration::from_secs(60 * 60 * 24);
+
+        let mut dbtx = db.begin_transaction().await;
+        let session = record_guardian_session(&mut dbtx, federation_id, 0, 100, first_seen).await;
+        assert_eq!(
+            session,
+            GuardianSession {
+                session_count: 100,
+                first_seen_at: Timestamp(first_seen),
+            }
+        );
+        dbtx.commit_tx().await;
+
+        // The same count an hour on: a stuck guardian keeps its original time.
+        let mut dbtx = db.begin_transaction().await;
+        let session = record_guardian_session(&mut dbtx, federation_id, 0, 100, hour_later).await;
+        assert_eq!(session.first_seen_at, Timestamp(first_seen));
+        dbtx.commit_tx().await;
+
+        let mut dbtx = db.begin_transaction().await;
+        let session = record_guardian_session(&mut dbtx, federation_id, 0, 101, hour_later).await;
+        assert_eq!(
+            session,
+            GuardianSession {
+                session_count: 101,
+                first_seen_at: Timestamp(hour_later),
+            }
+        );
+        dbtx.commit_tx().await;
+
+        // A guardian restored from a backup reports fewer sessions than before.
+        let mut dbtx = db.begin_transaction().await;
+        let session = record_guardian_session(&mut dbtx, federation_id, 0, 90, day_later).await;
+        assert_eq!(
+            session,
+            GuardianSession {
+                session_count: 90,
+                first_seen_at: Timestamp(day_later),
+            }
+        );
+        dbtx.commit_tx().await;
+
+        let mut dbtx = db.begin_transaction_nc().await;
+        assert_eq!(
+            load_guardian_sessions(&mut dbtx, federation_id).await,
+            BTreeMap::from([(0, session)])
+        );
+    }
+
+    #[tokio::test]
+    async fn guardian_sessions_are_kept_per_guardian_and_per_federation() {
+        let db = Database::new(MemDatabase::new(), ModuleDecoderRegistry::default());
+        let federation_id = FederationId::dummy();
+        let other_federation_id =
+            FederationId::from_str(&"11".repeat(32)).expect("valid federation id");
+        let now = UNIX_EPOCH + Duration::from_secs(1_764_000_000);
+
+        let mut dbtx = db.begin_transaction().await;
+        let alpha = record_guardian_session(&mut dbtx, federation_id, 0, 100, now).await;
+        let beta = record_guardian_session(&mut dbtx, federation_id, 1, 98, now).await;
+        record_guardian_session(&mut dbtx, other_federation_id, 0, 7, now).await;
+        dbtx.commit_tx().await;
+
+        let mut dbtx = db.begin_transaction_nc().await;
+        assert_eq!(
+            load_guardian_sessions(&mut dbtx, federation_id).await,
+            BTreeMap::from([(0, alpha), (1, beta)])
+        );
     }
 
     #[test]

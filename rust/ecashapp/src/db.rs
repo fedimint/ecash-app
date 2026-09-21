@@ -103,6 +103,7 @@ pub(crate) enum DbKeyPrefix {
     PinAttempts = 0x18,
     NwcLimits = 0x19,
     NwcSpendWindow = 0x1A,
+    GuardianSession = 0x1B,
 }
 
 #[derive(Debug, Clone, Encodable, Decodable, Eq, PartialEq, Hash, Ord, PartialOrd)]
@@ -608,6 +609,45 @@ impl_db_record!(
 impl_db_lookup!(
     key = WalletV2PendingDepositKey,
     query_prefix = WalletV2PendingDepositFederationPrefix,
+);
+
+/// `federation_id` is encoded first so `GuardianSessionFederationPrefix` is a
+/// valid key prefix for per-federation lookups.
+#[derive(Debug, Clone, Encodable, Decodable, Eq, PartialEq, Hash, Ord, PartialOrd)]
+pub(crate) struct GuardianSessionKey {
+    pub(crate) federation_id: FederationId,
+    pub(crate) peer_id: u16,
+}
+
+#[derive(Debug, Encodable, Decodable)]
+pub(crate) struct GuardianSessionFederationPrefix {
+    pub(crate) federation_id: FederationId,
+}
+
+/// The consensus session count a guardian last reported, and when this wallet
+/// first saw it report that count.
+///
+/// A session outcome carries no timestamp, so the count alone cannot say
+/// whether consensus is still advancing; a federation can have every guardian
+/// online and answering while producing no sessions at all. `first_seen_at`
+/// supplies the missing clock. It is an upper bound on when the session was
+/// actually produced, so the age shown to the user can understate how long a
+/// guardian has been stuck but never overstate it.
+#[derive(Debug, Clone, PartialEq, Eq, Encodable, Decodable)]
+pub(crate) struct GuardianSession {
+    pub(crate) session_count: u64,
+    pub(crate) first_seen_at: Timestamp,
+}
+
+impl_db_record!(
+    key = GuardianSessionKey,
+    value = GuardianSession,
+    db_prefix = DbKeyPrefix::GuardianSession,
+);
+
+impl_db_lookup!(
+    key = GuardianSessionKey,
+    query_prefix = GuardianSessionFederationPrefix,
 );
 
 #[cfg(test)]
