@@ -42,7 +42,7 @@ use fedimint_core::{
     module::{registry::ModuleDecoderRegistry, ApiAuth, ApiRequestErased},
     task::TaskGroup,
     util::SafeUrl,
-    Amount, NumPeers,
+    Amount, NumPeers, PeerId,
 };
 use fedimint_eventlog::Event;
 use fedimint_ln_client::{
@@ -1166,38 +1166,57 @@ async fn load_guardian_sessions<Cap: Send>(
         .await
 }
 
-/// Asks every guardian the client is connected to for its session count, all
-/// at once, and returns the counts of those that answered.
+/// Which guardians a round of session count requests goes to.
+///
+/// A request to a guardian without a connection has to open one first, and
+/// fedimint's pool lets whichever request got there first lead that attempt,
+/// reconnect backoff of up to half a minute included, while every other
+/// request to the guardian waits on it. Giving up on such a request after
+/// [`GUARDIAN_SESSION_FETCH_TIMEOUT`] drops the attempt it was leading, and the
+/// requests waiting on it start over with a longer backoff. On the joined
+/// client that is enough to push the cache task's meta stage, which asks the
+/// guardians one after another, past its own timeout.
+#[derive(Debug, Clone, Copy)]
+enum SessionPeers {
+    /// Only guardians with an open connection. For the joined client, which
+    /// other tasks share: reconnecting is left to the requests that need the
+    /// connection, and the guardian is picked up on the next round once one
+    /// of them has succeeded.
+    Connected,
+    /// Every guardian, opening connections as needed. For a preview client,
+    /// which nothing else uses, so no other request can be held up, and which
+    /// nothing else would connect.
+    All,
+}
+
+impl SessionPeers {
+    async fn resolve(self, api: &DynGlobalApi) -> Vec<PeerId> {
+        match self {
+            // The stream yields the current statuses as soon as it is polled.
+            Self::Connected => api
+                .connection_status_stream()
+                .next()
+                .await
+                .unwrap_or_default()
+                .into_iter()
+                .filter(|(_, status)| matches!(status, FedimintPeerStatus::Connected(_)))
+                .map(|(peer, _)| peer)
+                .collect(),
+            Self::All => api.all_peers().iter().copied().collect(),
+        }
+    }
+}
+
+/// Asks each of `peers` for its session count, all at once, and returns the
+/// counts of those that answered.
 ///
 /// Each guardian is asked on its own rather than through a consensus request,
 /// which would settle on the count most of them agree on and so hide the one
 /// that disagrees. A guardian that errors or takes longer than
 /// [`GUARDIAN_SESSION_FETCH_TIMEOUT`] is simply absent from the result: failing
 /// to reach a guardian says nothing about its sessions.
-///
-/// Guardians without a connection are not asked at all. A request to one
-/// would have to open the connection first, and fedimint's pool lets whichever
-/// request got there first lead that attempt, reconnect backoff of up to half
-/// a minute included, while every other request to the guardian waits on it.
-/// Giving up on such a request after [`GUARDIAN_SESSION_FETCH_TIMEOUT`] drops
-/// the attempt it was leading, and the requests waiting on it start over with
-/// a longer backoff, which is enough to push the cache task's meta stage, which
-/// asks the guardians one after another, past its own timeout. Reconnecting is
-/// left to the requests that need the connection; the guardian is picked up on
-/// the next round once one of them has succeeded.
-async fn fetch_guardian_session_counts(api: &DynGlobalApi) -> BTreeMap<u16, u64> {
-    // The stream yields the current statuses as soon as it is polled.
-    let connected: Vec<_> = api
-        .connection_status_stream()
-        .next()
-        .await
-        .unwrap_or_default()
-        .into_iter()
-        .filter(|(_, status)| matches!(status, FedimintPeerStatus::Connected(_)))
-        .map(|(peer, _)| peer)
-        .collect();
-
-    futures_util::future::join_all(connected.iter().map(|peer| async move {
+async fn fetch_guardian_session_counts(api: &DynGlobalApi, peers: &[PeerId]) -> BTreeMap<u16, u64> {
+    futures_util::future::join_all(peers.iter().map(|peer| async move {
         let session_count = timeout(
             GUARDIAN_SESSION_FETCH_TIMEOUT,
             api.request_single_peer::<u64>(
@@ -1228,8 +1247,9 @@ async fn refresh_guardian_sessions(
     db: &Database,
     api: &DynGlobalApi,
     federation_id: FederationId,
+    peers: SessionPeers,
 ) -> (BTreeMap<u16, GuardianSession>, BTreeSet<u16>) {
-    let fetched = fetch_guardian_session_counts(api).await;
+    let fetched = fetch_guardian_session_counts(api, &peers.resolve(api).await).await;
     let now = SystemTime::now();
 
     let mut dbtx = db.begin_transaction().await;
@@ -1847,6 +1867,7 @@ impl Multimint {
                                     &self_copy.db,
                                     &client.api_clone(),
                                     federation_id,
+                                    SessionPeers::Connected,
                                 ),
                             )
                             .await;
@@ -2527,10 +2548,16 @@ impl Multimint {
         Ok(mapped_stream.boxed())
     }
 
-    /// The consensus progress of every guardian of a joined federation: what
-    /// is on disk straight away, then the result of a fresh round of requests
-    /// every [`GUARDIAN_SESSION_POLL_INTERVAL`] for as long as the stream is
-    /// polled.
+    /// The consensus progress of every guardian of a federation: what is on
+    /// disk straight away, then the result of a fresh round of requests every
+    /// [`GUARDIAN_SESSION_POLL_INTERVAL`] for as long as the stream is polled.
+    ///
+    /// A joined federation is followed through its own client, and what the
+    /// guardians report is persisted. A federation given only by invite code
+    /// is followed through a preview client that lives as long as the stream,
+    /// with a database that does the same: the wallet keeps no record of
+    /// federations it has only looked at, so every count starts out freshly
+    /// seen and the ages only mean anything while the preview stays open.
     ///
     /// Every round is yielded, changed or not. Whoever drives the stream only
     /// finds out that the UI has gone when handing it an item fails, and a
@@ -2539,35 +2566,56 @@ impl Multimint {
     /// forever.
     pub async fn subscribe_guardian_sessions(
         &self,
-        federation_id: FederationId,
+        invite: Option<String>,
+        federation_id: Option<FederationId>,
     ) -> anyhow::Result<impl Stream<Item = Vec<GuardianSessionStatus>>> {
-        // Only the API handle is kept. A `ClientHandleArc` held for as long as
-        // the screen stays open would hold up the client shutdown that follows
-        // leaving the federation, which the user does from that same screen.
-        let api = self
+        let invite = invite
+            .map(|invite| InviteCode::from_str(&invite))
+            .transpose()?;
+        let federation_id = match (&invite, federation_id) {
+            (Some(invite), _) => invite.federation_id(),
+            (None, Some(federation_id)) => federation_id,
+            (None, None) => bail!("Invite code and federation ID cannot both be None"),
+        };
+
+        // For a joined federation only the API handle is kept. A
+        // `ClientHandleArc` held for as long as the screen stays open would
+        // hold up the client shutdown that follows leaving the federation,
+        // which the user does from that same screen.
+        let joined = self
             .clients
             .read()
             .await
             .get(&federation_id)
-            .ok_or(anyhow!("No federation exists"))?
-            .client
-            .api_clone();
-        let db = self.db.clone();
-        let peers: Vec<u16> = api
+            .map(|joined| joined.client.api_clone());
+        let (api, db, peers, preview_client) = match joined {
+            Some(api) => (api, self.db.clone(), SessionPeers::Connected, None),
+            None => {
+                let invite = invite.ok_or(anyhow!("No federation exists"))?;
+                let client = self.get_or_build_temp_client(invite).await?.0;
+                let db = Database::new(MemDatabase::new(), ModuleDecoderRegistry::default());
+                (client.api_clone(), db, SessionPeers::All, Some(client))
+            }
+        };
+        let peer_ids: Vec<u16> = api
             .all_peers()
             .iter()
             .map(|peer| peer.to_usize() as u16)
             .collect();
 
         Ok(async_stream::stream! {
+            // Dropped with the stream, which shuts the preview client down.
+            let _preview_client = preview_client;
+
             let mut dbtx = db.begin_transaction_nc().await;
             let stored = load_guardian_sessions(&mut dbtx, federation_id).await;
             drop(dbtx);
-            yield guardian_session_statuses(peers.iter().copied(), &stored, &BTreeSet::new());
+            yield guardian_session_statuses(peer_ids.iter().copied(), &stored, &BTreeSet::new());
 
             loop {
-                let (stored, fresh) = refresh_guardian_sessions(&db, &api, federation_id).await;
-                yield guardian_session_statuses(peers.iter().copied(), &stored, &fresh);
+                let (stored, fresh) =
+                    refresh_guardian_sessions(&db, &api, federation_id, peers).await;
+                yield guardian_session_statuses(peer_ids.iter().copied(), &stored, &fresh);
 
                 tokio::time::sleep(GUARDIAN_SESSION_POLL_INTERVAL).await;
             }

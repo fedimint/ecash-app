@@ -15328,13 +15328,18 @@ fn wire__crate__subscribe_guardian_sessions_impl(
                 Vec<crate::multimint::GuardianSessionStatus>,
                 flutter_rust_bridge::for_generated::SseCodec,
             >>::sse_decode(&mut deserializer);
-            let api_federation_id = <FederationId>::sse_decode(&mut deserializer);
+            let api_invite = <Option<String>>::sse_decode(&mut deserializer);
+            let api_federation_id = <Option<FederationId>>::sse_decode(&mut deserializer);
             deserializer.end();
             move |context| async move {
                 transform_result_sse::<_, flutter_rust_bridge::for_generated::anyhow::Error>(
                     (move || async move {
-                        let output_ok =
-                            crate::subscribe_guardian_sessions(api_sink, api_federation_id).await?;
+                        let output_ok = crate::subscribe_guardian_sessions(
+                            api_sink,
+                            api_invite,
+                            api_federation_id,
+                        )
+                        .await?;
                         Ok(output_ok)
                     })()
                     .await,

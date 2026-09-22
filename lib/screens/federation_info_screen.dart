@@ -315,6 +315,7 @@ class _FederationInfoScreenState extends State<FederationInfoScreen> {
         _isLoadingMeta = false;
       });
       _subscribePeers();
+      _subscribeSessions();
     } catch (e) {
       AppLogger.instance.warn("Error when retrieving federation meta: $e");
       if (!mounted) return;
@@ -345,12 +346,11 @@ class _FederationInfoScreenState extends State<FederationInfoScreen> {
   }
 
   /// Follows the guardians' session counts for as long as the screen is open.
-  /// Joined federations only: the counts are persisted per federation, and a
-  /// preview has no entry to persist them under.
   void _subscribeSessions() {
     final fed = _fed;
-    if (fed == null || widget.joinable) return;
+    if (fed == null) return;
     _sessionUpdates = subscribeGuardianSessions(
+      invite: widget.joinable ? widget.inviteCode : null,
       federationId: fed.federationId,
     ).listen(
       (List<GuardianSessionStatus> event) {

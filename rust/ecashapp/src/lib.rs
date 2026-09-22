@@ -1506,10 +1506,15 @@ pub async fn subscribe_peer_status(
 #[frb]
 pub async fn subscribe_guardian_sessions(
     sink: StreamSink<Vec<GuardianSessionStatus>>,
-    federation_id: FederationId,
+    invite: Option<String>,
+    federation_id: Option<FederationId>,
 ) -> anyhow::Result<()> {
     let multimint = get_multimint();
-    let mut stream = Box::pin(multimint.subscribe_guardian_sessions(federation_id).await?);
+    let mut stream = Box::pin(
+        multimint
+            .subscribe_guardian_sessions(invite, federation_id)
+            .await?,
+    );
 
     while let Some(sessions) = stream.next().await {
         if sink.add(sessions).is_err() {

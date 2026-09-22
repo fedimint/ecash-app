@@ -760,8 +760,10 @@ Stream<List<PeerStatus>> subscribePeerStatus({
 );
 
 Stream<List<GuardianSessionStatus>> subscribeGuardianSessions({
-  required FederationId federationId,
+  String? invite,
+  FederationId? federationId,
 }) => RustLib.instance.api.crateSubscribeGuardianSessions(
+  invite: invite,
   federationId: federationId,
 );
 

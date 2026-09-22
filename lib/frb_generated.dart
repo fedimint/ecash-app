@@ -1399,7 +1399,8 @@ abstract class RustLibApi extends BaseApi {
   });
 
   Stream<List<GuardianSessionStatus>> crateSubscribeGuardianSessions({
-    required FederationId federationId,
+    String? invite,
+    FederationId? federationId,
   });
 
   Stream<MultimintEvent> crateSubscribeMultimintEvents();
@@ -12189,7 +12190,8 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
 
   @override
   Stream<List<GuardianSessionStatus>> crateSubscribeGuardianSessions({
-    required FederationId federationId,
+    String? invite,
+    FederationId? federationId,
   }) {
     final sink = RustStreamSink<List<GuardianSessionStatus>>();
     unawaited(
@@ -12201,7 +12203,8 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
               sink,
               serializer,
             );
-            sse_encode_Auto_Owned_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerFederationId(
+            sse_encode_opt_String(invite, serializer);
+            sse_encode_opt_box_autoadd_Auto_Owned_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerFederationId(
               federationId,
               serializer,
             );
@@ -12217,7 +12220,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
             decodeErrorData: sse_decode_AnyhowException,
           ),
           constMeta: kCrateSubscribeGuardianSessionsConstMeta,
-          argValues: [sink, federationId],
+          argValues: [sink, invite, federationId],
           apiImpl: this,
         ),
       ),
@@ -12228,7 +12231,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   TaskConstMeta get kCrateSubscribeGuardianSessionsConstMeta =>
       const TaskConstMeta(
         debugName: "subscribe_guardian_sessions",
-        argNames: ["sink", "federationId"],
+        argNames: ["sink", "invite", "federationId"],
       );
 
   @override
