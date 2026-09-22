@@ -1,5 +1,20 @@
 # Changelog
 
+## [0.11.0]
+
+- iOS support - Ecash App now runs on iPhone, distributed through TestFlight
+- Upgraded to fedimint v0.12
+- lnurlw:// links now open directly in the app on Android and iOS
+- Nostr Wallet Connect is hidden on iOS, where no background listener can keep a pairing alive
+- Wallet data and logs are excluded from Android cloud backup and device-to-device transfer
+- Recovery progress is now reported correctly for federations with newer modules
+- Fixed a panic during recovery
+- Leaving a federation now shuts down its background tasks, including the NWC listener
+- LNURL server error responses are now detected instead of relying on the HTTP status alone
+- Faster startup and lower memory use with a long transaction history - the event log is no longer read in full
+- On-chain fee calculation is now overflow-safe
+- BTC Map now credits OpenStreetMap and the other map providers
+
 ## [0.10.0]
 
 - Guardian dashboard - federation health, audit, backup, and Lightning Gateway membership
