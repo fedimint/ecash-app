@@ -1,5 +1,10 @@
 #!/usr/bin/env bash
 
+# Must match MACOSX_DEPLOYMENT_TARGET in macos/Runner.xcodeproj and the Podfile
+# platform. `nix develop` exports 14.0, which would make the dylib refuse to load
+# on the macOS versions the app claims to support.
+export MACOSX_DEPLOYMENT_TARGET=12.0
+
 cargo build --release --manifest-path $ROOT/rust/ecashapp/Cargo.toml --target-dir $ROOT/rust/ecashapp/target
 
 # Rewrite Nix store library paths to system equivalents so the dylib works

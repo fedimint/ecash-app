@@ -4,7 +4,9 @@ set -e
 # Clean previous build artifacts
 rm -rf build/macos *.dmg
 
-# Build Rust library (works fine inside Nix)
+# Build Rust library (works fine inside Nix). The deployment target must match
+# macos/Runner.xcodeproj and the Podfile platform; `nix develop` exports 14.0.
+export MACOSX_DEPLOYMENT_TARGET=12.0
 cargo build --release \
   --manifest-path rust/ecashapp/Cargo.toml \
   --target-dir rust/ecashapp/target
