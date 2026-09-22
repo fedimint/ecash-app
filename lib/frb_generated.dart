@@ -69,7 +69,7 @@ class RustLib extends BaseEntrypoint<RustLibApi, RustLibApiImpl, RustLibWire> {
   String get codegenVersion => '2.9.0';
 
   @override
-  int get rustContentHash => 470711718;
+  int get rustContentHash => 1162915438;
 
   static const kDefaultExternalLibraryLoaderConfig =
       ExternalLibraryLoaderConfig(
@@ -1396,6 +1396,11 @@ abstract class RustLibApi extends BaseApi {
 
   Stream<DepositEventKind> crateSubscribeDeposits({
     required FederationId federationId,
+  });
+
+  Stream<List<GuardianSessionStatus>> crateSubscribeGuardianSessions({
+    String? invite,
+    FederationId? federationId,
   });
 
   Stream<MultimintEvent> crateSubscribeMultimintEvents();
@@ -12184,6 +12189,52 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   );
 
   @override
+  Stream<List<GuardianSessionStatus>> crateSubscribeGuardianSessions({
+    String? invite,
+    FederationId? federationId,
+  }) {
+    final sink = RustStreamSink<List<GuardianSessionStatus>>();
+    unawaited(
+      handler.executeNormal(
+        NormalTask(
+          callFfi: (port_) {
+            final serializer = SseSerializer(generalizedFrbRustBinding);
+            sse_encode_StreamSink_list_guardian_session_status_Sse(
+              sink,
+              serializer,
+            );
+            sse_encode_opt_String(invite, serializer);
+            sse_encode_opt_box_autoadd_Auto_Owned_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerFederationId(
+              federationId,
+              serializer,
+            );
+            pdeCallFfi(
+              generalizedFrbRustBinding,
+              serializer,
+              funcId: 276,
+              port: port_,
+            );
+          },
+          codec: SseCodec(
+            decodeSuccessData: sse_decode_unit,
+            decodeErrorData: sse_decode_AnyhowException,
+          ),
+          constMeta: kCrateSubscribeGuardianSessionsConstMeta,
+          argValues: [sink, invite, federationId],
+          apiImpl: this,
+        ),
+      ),
+    );
+    return sink.stream;
+  }
+
+  TaskConstMeta get kCrateSubscribeGuardianSessionsConstMeta =>
+      const TaskConstMeta(
+        debugName: "subscribe_guardian_sessions",
+        argNames: ["sink", "invite", "federationId"],
+      );
+
+  @override
   Stream<MultimintEvent> crateSubscribeMultimintEvents() {
     final sink = RustStreamSink<MultimintEvent>();
     unawaited(
@@ -12195,7 +12246,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
             pdeCallFfi(
               generalizedFrbRustBinding,
               serializer,
-              funcId: 276,
+              funcId: 277,
               port: port_,
             );
           },
@@ -12238,7 +12289,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
             pdeCallFfi(
               generalizedFrbRustBinding,
               serializer,
-              funcId: 277,
+              funcId: 278,
               port: port_,
             );
           },
@@ -12280,7 +12331,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
             pdeCallFfi(
               generalizedFrbRustBinding,
               serializer,
-              funcId: 278,
+              funcId: 279,
               port: port_,
             );
           },
@@ -12313,7 +12364,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 279,
+            funcId: 280,
             port: port_,
           );
         },
@@ -12352,7 +12403,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 280,
+            funcId: 281,
             port: port_,
           );
         },
@@ -12382,7 +12433,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 281,
+            funcId: 282,
             port: port_,
           );
         },
@@ -12410,7 +12461,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 282,
+            funcId: 283,
             port: port_,
           );
         },
@@ -12445,7 +12496,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 283,
+            funcId: 284,
             port: port_,
           );
         },
@@ -12491,7 +12542,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 284,
+            funcId: 285,
             port: port_,
           );
         },
@@ -12533,7 +12584,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 285,
+            funcId: 286,
             port: port_,
           );
         },
@@ -13672,6 +13723,13 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   }
 
   @protected
+  RustStreamSink<List<GuardianSessionStatus>>
+  dco_decode_StreamSink_list_guardian_session_status_Sse(dynamic raw) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    throw UnimplementedError();
+  }
+
+  @protected
   RustStreamSink<List<PeerStatus>> dco_decode_StreamSink_list_peer_status_Sse(
     dynamic raw,
   ) {
@@ -14259,6 +14317,22 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   }
 
   @protected
+  GuardianSessionStatus dco_decode_guardian_session_status(dynamic raw) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    final arr = raw as List<dynamic>;
+    if (arr.length != 6)
+      throw Exception('unexpected arr length: expect 6 but see ${arr.length}');
+    return GuardianSessionStatus(
+      peerId: dco_decode_u_16(arr[0]),
+      sessionCount: dco_decode_opt_box_autoadd_u_64(arr[1]),
+      firstSeenAt: dco_decode_opt_box_autoadd_u_64(arr[2]),
+      fresh: dco_decode_bool(arr[3]),
+      sessionsBehind: dco_decode_u_64(arr[4]),
+      isBehind: dco_decode_bool(arr[5]),
+    );
+  }
+
+  @protected
   GuardianStatusSummary dco_decode_guardian_status_summary(dynamic raw) {
     // Codec=Dco (DartCObject based), see doc to use other codecs
     final arr = raw as List<dynamic>;
@@ -14400,6 +14474,16 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
     // Codec=Dco (DartCObject based), see doc to use other codecs
     return (raw as List<dynamic>)
         .map(dco_decode_guardian_module_summary)
+        .toList();
+  }
+
+  @protected
+  List<GuardianSessionStatus> dco_decode_list_guardian_session_status(
+    dynamic raw,
+  ) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    return (raw as List<dynamic>)
+        .map(dco_decode_guardian_session_status)
         .toList();
   }
 
@@ -16475,6 +16559,15 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   }
 
   @protected
+  RustStreamSink<List<GuardianSessionStatus>>
+  sse_decode_StreamSink_list_guardian_session_status_Sse(
+    SseDeserializer deserializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    throw UnimplementedError('Unreachable ()');
+  }
+
+  @protected
   RustStreamSink<List<PeerStatus>> sse_decode_StreamSink_list_peer_status_Sse(
     SseDeserializer deserializer,
   ) {
@@ -17165,6 +17258,27 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   }
 
   @protected
+  GuardianSessionStatus sse_decode_guardian_session_status(
+    SseDeserializer deserializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    var var_peerId = sse_decode_u_16(deserializer);
+    var var_sessionCount = sse_decode_opt_box_autoadd_u_64(deserializer);
+    var var_firstSeenAt = sse_decode_opt_box_autoadd_u_64(deserializer);
+    var var_fresh = sse_decode_bool(deserializer);
+    var var_sessionsBehind = sse_decode_u_64(deserializer);
+    var var_isBehind = sse_decode_bool(deserializer);
+    return GuardianSessionStatus(
+      peerId: var_peerId,
+      sessionCount: var_sessionCount,
+      firstSeenAt: var_firstSeenAt,
+      fresh: var_fresh,
+      sessionsBehind: var_sessionsBehind,
+      isBehind: var_isBehind,
+    );
+  }
+
+  @protected
   GuardianStatusSummary sse_decode_guardian_status_summary(
     SseDeserializer deserializer,
   ) {
@@ -17367,6 +17481,20 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
     var ans_ = <GuardianModuleSummary>[];
     for (var idx_ = 0; idx_ < len_; ++idx_) {
       ans_.add(sse_decode_guardian_module_summary(deserializer));
+    }
+    return ans_;
+  }
+
+  @protected
+  List<GuardianSessionStatus> sse_decode_list_guardian_session_status(
+    SseDeserializer deserializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+
+    var len_ = sse_decode_i_32(deserializer);
+    var ans_ = <GuardianSessionStatus>[];
+    for (var idx_ = 0; idx_ < len_; ++idx_) {
+      ans_.add(sse_decode_guardian_session_status(deserializer));
     }
     return ans_;
   }
@@ -19722,6 +19850,23 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   }
 
   @protected
+  void sse_encode_StreamSink_list_guardian_session_status_Sse(
+    RustStreamSink<List<GuardianSessionStatus>> self,
+    SseSerializer serializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    sse_encode_String(
+      self.setupAndSerialize(
+        codec: SseCodec(
+          decodeSuccessData: sse_decode_list_guardian_session_status,
+          decodeErrorData: sse_decode_AnyhowException,
+        ),
+      ),
+      serializer,
+    );
+  }
+
+  @protected
   void sse_encode_StreamSink_list_peer_status_Sse(
     RustStreamSink<List<PeerStatus>> self,
     SseSerializer serializer,
@@ -20369,6 +20514,20 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   }
 
   @protected
+  void sse_encode_guardian_session_status(
+    GuardianSessionStatus self,
+    SseSerializer serializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    sse_encode_u_16(self.peerId, serializer);
+    sse_encode_opt_box_autoadd_u_64(self.sessionCount, serializer);
+    sse_encode_opt_box_autoadd_u_64(self.firstSeenAt, serializer);
+    sse_encode_bool(self.fresh, serializer);
+    sse_encode_u_64(self.sessionsBehind, serializer);
+    sse_encode_bool(self.isBehind, serializer);
+  }
+
+  @protected
   void sse_encode_guardian_status_summary(
     GuardianStatusSummary self,
     SseSerializer serializer,
@@ -20539,6 +20698,18 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
     sse_encode_i_32(self.length, serializer);
     for (final item in self) {
       sse_encode_guardian_module_summary(item, serializer);
+    }
+  }
+
+  @protected
+  void sse_encode_list_guardian_session_status(
+    List<GuardianSessionStatus> self,
+    SseSerializer serializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    sse_encode_i_32(self.length, serializer);
+    for (final item in self) {
+      sse_encode_guardian_session_status(item, serializer);
     }
   }
 

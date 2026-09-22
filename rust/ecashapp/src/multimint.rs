@@ -6,7 +6,7 @@ use std::{
         atomic::{AtomicBool, Ordering},
         Arc,
     },
-    time::{Duration, UNIX_EPOCH},
+    time::{Duration, SystemTime, UNIX_EPOCH},
 };
 
 use anyhow::bail;
@@ -36,13 +36,13 @@ use fedimint_core::{
         IDatabaseTransactionOpsCore, IDatabaseTransactionOpsCoreTyped,
     },
     encoding::{Decodable, Encodable},
-    endpoint_constants::CONSENSUS_ORD_LATENCY_ENDPOINT,
+    endpoint_constants::{CONSENSUS_ORD_LATENCY_ENDPOINT, SESSION_COUNT_ENDPOINT},
     envs::BitcoinRpcConfig,
     invite_code::InviteCode,
     module::{registry::ModuleDecoderRegistry, ApiAuth, ApiRequestErased},
     task::TaskGroup,
     util::SafeUrl,
-    Amount, NumPeers,
+    Amount, NumPeers, PeerId,
 };
 use fedimint_eventlog::Event;
 use fedimint_ln_client::{
@@ -110,9 +110,9 @@ use crate::{
     db::{
         BitcoinDisplay, BitcoinDisplayKey, BtcPrice, BtcPriceKey, BtcPrices, BtcPricesKey,
         Connector, ContactSyncConfigKey, FederationBackupKey, FederationMetaKey,
-        FederationMetaKeyPrefix, FederationMetaV1, FiatCurrency, FiatCurrencyKey,
-        LightningAddressConfig, LightningAddressKey, LightningAddressKeyPrefix, SchemaVersionKey,
-        Timestamp,
+        FederationMetaKeyPrefix, FederationMetaV1, FiatCurrency, FiatCurrencyKey, GuardianSession,
+        GuardianSessionFederationPrefix, GuardianSessionKey, LightningAddressConfig,
+        LightningAddressKey, LightningAddressKeyPrefix, SchemaVersionKey, Timestamp,
     },
     error_to_flutter, get_nostr_client, info_to_flutter, payment_error_to_flutter,
     wallet::WalletHandler,
@@ -168,6 +168,23 @@ const LEAVE_TASK_JOIN_TIMEOUT: Duration = Duration::from_secs(30);
 const CLIENT_RELEASE_TIMEOUT: Duration = Duration::from_secs(120);
 /// How often that wait re-checks for sole ownership of the client.
 const CLIENT_RELEASE_POLL_INTERVAL: Duration = Duration::from_millis(250);
+/// How long one guardian gets to answer a session count request. The request
+/// itself is tiny, so this only has to cover connecting, over Tor included; a
+/// guardian that needs longer is reported as not having answered this round.
+const GUARDIAN_SESSION_FETCH_TIMEOUT: Duration = Duration::from_secs(10);
+/// How often the guardians' session counts are requested again while the
+/// federation info screen is open. A session lasts about three minutes, so
+/// this places the moment a guardian advanced to within a fraction of one.
+const GUARDIAN_SESSION_POLL_INTERVAL: Duration = Duration::from_secs(30);
+/// How many sessions a guardian has to trail the most advanced one by before
+/// it is reported as behind.
+///
+/// Guardians close a session within seconds of each other, not at the same
+/// instant, so a round of requests that straddles that moment sees a healthy
+/// guardian one session short. One is therefore noise. A guardian that is
+/// really stuck trails by two as soon as the others close their next session,
+/// a few minutes later.
+const GUARDIAN_SESSIONS_BEHIND_THRESHOLD: u64 = 2;
 /// A gateway routing fee at or above this takes 100% of the payment, which
 /// makes the fee inversion in [`gross_invoice_for_contract`] unsolvable.
 const MAX_GATEWAY_PPM: u64 = 1_000_000;
@@ -444,6 +461,30 @@ pub struct PeerStatus {
     /// the UI reflects guardian upgrades in real time (a guardian upgrade
     /// restarts fedimintd, which surfaces as a reconnect on the status stream).
     pub version: Option<String>,
+}
+
+/// A guardian's consensus progress, as shown on its row of the federation
+/// info screen.
+#[derive(Debug, Serialize, Clone, PartialEq, Eq)]
+pub struct GuardianSessionStatus {
+    pub peer_id: u16,
+    /// The last session count this guardian reported; `None` when it has never
+    /// answered.
+    pub session_count: Option<u64>,
+    /// Unix seconds at which this wallet first saw the guardian report
+    /// `session_count`. The session was produced at or before this, so an age
+    /// computed from it can understate a stall but never overstate one.
+    pub first_seen_at: Option<u64>,
+    /// Whether the guardian answered the latest round of requests. When it
+    /// did not, the fields above are what was last persisted, which says
+    /// nothing about where the guardian is now.
+    pub fresh: bool,
+    /// How far this guardian trails the most advanced one that answered the
+    /// same round. Always zero unless `fresh`.
+    pub sessions_behind: u64,
+    /// Whether `sessions_behind` is more than the spread between healthy
+    /// guardians explains. See [`GUARDIAN_SESSIONS_BEHIND_THRESHOLD`].
+    pub is_behind: bool,
 }
 
 #[derive(Debug, Serialize, Clone)]
@@ -1079,6 +1120,202 @@ async fn migrate_federation_meta_v3<Cap: Send>(
     (migrated, dropped)
 }
 
+/// Persists the session count a guardian just reported and returns the record
+/// now on disk.
+///
+/// Seeing the same count again leaves `first_seen_at` alone: moving it forward
+/// would make a guardian that is stuck look as if it had just advanced, which
+/// is exactly the case this record exists to expose. Any other count restarts
+/// the clock, a lower one included — a guardian restored from a backup reports
+/// fewer sessions than before, and its old timestamp says nothing about the
+/// count it reports now.
+async fn record_guardian_session<Cap: Send>(
+    dbtx: &mut DatabaseTransaction<'_, Cap>,
+    federation_id: FederationId,
+    peer_id: u16,
+    session_count: u64,
+    now: SystemTime,
+) -> GuardianSession {
+    let key = GuardianSessionKey {
+        federation_id,
+        peer_id,
+    };
+    if let Some(session) = dbtx.get_value(&key).await {
+        if session.session_count == session_count {
+            return session;
+        }
+    }
+
+    let session = GuardianSession {
+        session_count,
+        first_seen_at: Timestamp(now),
+    };
+    dbtx.insert_entry(&key, &session).await;
+    session
+}
+
+/// Every guardian session recorded for `federation_id`, by peer id.
+async fn load_guardian_sessions<Cap: Send>(
+    dbtx: &mut DatabaseTransaction<'_, Cap>,
+    federation_id: FederationId,
+) -> BTreeMap<u16, GuardianSession> {
+    dbtx.find_by_prefix(&GuardianSessionFederationPrefix { federation_id })
+        .await
+        .map(|(key, session)| (key.peer_id, session))
+        .collect()
+        .await
+}
+
+/// Which guardians a round of session count requests goes to.
+///
+/// A request to a guardian without a connection has to open one first, and
+/// fedimint's pool lets whichever request got there first lead that attempt,
+/// reconnect backoff of up to half a minute included, while every other
+/// request to the guardian waits on it. Giving up on such a request after
+/// [`GUARDIAN_SESSION_FETCH_TIMEOUT`] drops the attempt it was leading, and the
+/// requests waiting on it start over with a longer backoff. On the joined
+/// client that is enough to push the cache task's meta stage, which asks the
+/// guardians one after another, past its own timeout.
+#[derive(Debug, Clone, Copy)]
+enum SessionPeers {
+    /// Only guardians with an open connection. For the joined client, which
+    /// other tasks share: reconnecting is left to the requests that need the
+    /// connection, and the guardian is picked up on the next round once one
+    /// of them has succeeded.
+    Connected,
+    /// Every guardian, opening connections as needed. For a preview client,
+    /// which nothing else uses, so no other request can be held up, and which
+    /// nothing else would connect.
+    All,
+}
+
+impl SessionPeers {
+    async fn resolve(self, api: &DynGlobalApi) -> Vec<PeerId> {
+        match self {
+            // The stream yields the current statuses as soon as it is polled.
+            Self::Connected => api
+                .connection_status_stream()
+                .next()
+                .await
+                .unwrap_or_default()
+                .into_iter()
+                .filter(|(_, status)| matches!(status, FedimintPeerStatus::Connected(_)))
+                .map(|(peer, _)| peer)
+                .collect(),
+            Self::All => api.all_peers().iter().copied().collect(),
+        }
+    }
+}
+
+/// Asks each of `peers` for its session count, all at once, and returns the
+/// counts of those that answered.
+///
+/// Each guardian is asked on its own rather than through a consensus request,
+/// which would settle on the count most of them agree on and so hide the one
+/// that disagrees. A guardian that errors or takes longer than
+/// [`GUARDIAN_SESSION_FETCH_TIMEOUT`] is simply absent from the result: failing
+/// to reach a guardian says nothing about its sessions.
+async fn fetch_guardian_session_counts(api: &DynGlobalApi, peers: &[PeerId]) -> BTreeMap<u16, u64> {
+    futures_util::future::join_all(peers.iter().map(|peer| async move {
+        let session_count = timeout(
+            GUARDIAN_SESSION_FETCH_TIMEOUT,
+            api.request_single_peer::<u64>(
+                SESSION_COUNT_ENDPOINT.to_owned(),
+                ApiRequestErased::default(),
+                *peer,
+            ),
+        )
+        .await
+        .ok()?
+        .ok()?;
+        Some((peer.to_usize() as u16, session_count))
+    }))
+    .await
+    .into_iter()
+    .flatten()
+    .collect()
+}
+
+/// One round of asking the guardians for their session counts and persisting
+/// what they report. Returns the sessions now on disk and which guardians
+/// answered.
+///
+/// Both the cache task and an open federation info screen run this. Without
+/// the cache task, a session a guardian reached and then got stuck on while
+/// the screen was closed would only be dated from the next time it is opened.
+async fn refresh_guardian_sessions(
+    db: &Database,
+    api: &DynGlobalApi,
+    federation_id: FederationId,
+    peers: SessionPeers,
+) -> (BTreeMap<u16, GuardianSession>, BTreeSet<u16>) {
+    let fetched = fetch_guardian_session_counts(api, &peers.resolve(api).await).await;
+    let now = SystemTime::now();
+
+    let mut dbtx = db.begin_transaction().await;
+    for (peer_id, session_count) in &fetched {
+        record_guardian_session(&mut dbtx, federation_id, *peer_id, *session_count, now).await;
+    }
+    let stored = load_guardian_sessions(&mut dbtx, federation_id).await;
+    // The cache task and an open screen write the same rows, and so do two
+    // streams while a screen that was closed and reopened still has its old
+    // one running. They all saw the same counts, so whichever loses the commit
+    // has nothing to add.
+    if let Err(e) = dbtx.commit_tx_result().await {
+        info_to_flutter(format!("Could not persist guardian sessions: {e}")).await;
+    }
+
+    (stored, fetched.into_keys().collect())
+}
+
+/// One status per guardian in `peers`, from the sessions on disk and the set of
+/// guardians that answered the latest round of requests.
+///
+/// Only guardians in `fresh` are compared with each other. A persisted count
+/// can be arbitrarily old, so measuring it against a live one would report a
+/// guardian as behind merely for being unreachable, which its row already
+/// shows. With fewer than two fresh guardians there is nothing to compare and
+/// nobody is behind.
+fn guardian_session_statuses(
+    peers: impl IntoIterator<Item = u16>,
+    stored: &BTreeMap<u16, GuardianSession>,
+    fresh: &BTreeSet<u16>,
+) -> Vec<GuardianSessionStatus> {
+    let fresh_count = |peer_id: &u16| {
+        stored
+            .get(peer_id)
+            .filter(|_| fresh.contains(peer_id))
+            .map(|session| session.session_count)
+    };
+    let most_advanced = fresh.iter().filter_map(fresh_count).max();
+
+    peers
+        .into_iter()
+        .map(|peer_id| {
+            let session = stored.get(&peer_id);
+            let sessions_behind = most_advanced
+                .zip(fresh_count(&peer_id))
+                .map(|(most_advanced, count)| most_advanced.saturating_sub(count))
+                .unwrap_or_default();
+            GuardianSessionStatus {
+                peer_id,
+                session_count: session.map(|session| session.session_count),
+                first_seen_at: session.map(|session| {
+                    session
+                        .first_seen_at
+                        .0
+                        .duration_since(UNIX_EPOCH)
+                        .unwrap_or_default()
+                        .as_secs()
+                }),
+                fresh: fresh_count(&peer_id).is_some(),
+                sessions_behind,
+                is_behind: sessions_behind >= GUARDIAN_SESSIONS_BEHIND_THRESHOLD,
+            }
+        })
+        .collect()
+}
+
 impl Multimint {
     pub async fn new(db: Database, creation_type: MultimintCreation) -> anyhow::Result<Self> {
         let start = Instant::now();
@@ -1616,8 +1853,22 @@ impl Multimint {
                             // Bounded per federation: one unreachable guardian
                             // must not consume the whole cycle.
                             Self::run_cache_stage(
-                                "federation meta",
+                                &format!("federation meta for {federation_id}"),
                                 self_copy.cache_federation_meta(client.clone(), now),
+                            )
+                            .await;
+                            // Rides on the meta refresh's schedule: that stage
+                            // already asks every guardian for its version this
+                            // often, so one more small request each costs
+                            // little.
+                            Self::run_cache_stage(
+                                &format!("guardian sessions for {federation_id}"),
+                                refresh_guardian_sessions(
+                                    &self_copy.db,
+                                    &client.api_clone(),
+                                    federation_id,
+                                    SessionPeers::Connected,
+                                ),
                             )
                             .await;
                         }
@@ -2295,6 +2546,80 @@ impl Multimint {
         });
 
         Ok(mapped_stream.boxed())
+    }
+
+    /// The consensus progress of every guardian of a federation: what is on
+    /// disk straight away, then the result of a fresh round of requests every
+    /// [`GUARDIAN_SESSION_POLL_INTERVAL`] for as long as the stream is polled.
+    ///
+    /// A joined federation is followed through its own client, and what the
+    /// guardians report is persisted. A federation given only by invite code
+    /// is followed through a preview client that lives as long as the stream,
+    /// with a database that does the same: the wallet keeps no record of
+    /// federations it has only looked at, so every count starts out freshly
+    /// seen and the ages only mean anything while the preview stays open.
+    ///
+    /// Every round is yielded, changed or not. Whoever drives the stream only
+    /// finds out that the UI has gone when handing it an item fails, and a
+    /// stalled federation is precisely one that never changes: yielding on
+    /// change alone would keep a closed screen requesting from those guardians
+    /// forever.
+    pub async fn subscribe_guardian_sessions(
+        &self,
+        invite: Option<String>,
+        federation_id: Option<FederationId>,
+    ) -> anyhow::Result<impl Stream<Item = Vec<GuardianSessionStatus>>> {
+        let invite = invite
+            .map(|invite| InviteCode::from_str(&invite))
+            .transpose()?;
+        let federation_id = match (&invite, federation_id) {
+            (Some(invite), _) => invite.federation_id(),
+            (None, Some(federation_id)) => federation_id,
+            (None, None) => bail!("Invite code and federation ID cannot both be None"),
+        };
+
+        // For a joined federation only the API handle is kept. A
+        // `ClientHandleArc` held for as long as the screen stays open would
+        // hold up the client shutdown that follows leaving the federation,
+        // which the user does from that same screen.
+        let joined = self
+            .clients
+            .read()
+            .await
+            .get(&federation_id)
+            .map(|joined| joined.client.api_clone());
+        let (api, db, peers, preview_client) = match joined {
+            Some(api) => (api, self.db.clone(), SessionPeers::Connected, None),
+            None => {
+                let invite = invite.ok_or(anyhow!("No federation exists"))?;
+                let client = self.get_or_build_temp_client(invite).await?.0;
+                let db = Database::new(MemDatabase::new(), ModuleDecoderRegistry::default());
+                (client.api_clone(), db, SessionPeers::All, Some(client))
+            }
+        };
+        let peer_ids: Vec<u16> = api
+            .all_peers()
+            .iter()
+            .map(|peer| peer.to_usize() as u16)
+            .collect();
+
+        Ok(async_stream::stream! {
+            // Dropped with the stream, which shuts the preview client down.
+            let _preview_client = preview_client;
+
+            let mut dbtx = db.begin_transaction_nc().await;
+            let stored = load_guardian_sessions(&mut dbtx, federation_id).await;
+            drop(dbtx);
+            yield guardian_session_statuses(peer_ids.iter().copied(), &stored, &BTreeSet::new());
+
+            loop {
+                let (stored, fresh) =
+                    refresh_guardian_sessions(&db, &api, federation_id, peers).await;
+                yield guardian_session_statuses(peer_ids.iter().copied(), &stored, &fresh);
+
+                tokio::time::sleep(GUARDIAN_SESSION_POLL_INTERVAL).await;
+            }
+        })
     }
 
     pub fn get_mnemonic(&self) -> Vec<String> {
@@ -7333,7 +7658,9 @@ fn validate_receive_fee(receive_fee: &PaymentFee) -> anyhow::Result<()> {
 
 #[cfg(test)]
 mod tests {
-    use std::collections::BTreeMap;
+    use std::collections::{BTreeMap, BTreeSet};
+    use std::str::FromStr;
+    use std::time::{Duration, UNIX_EPOCH};
 
     use fedimint_client::module::module::recovery::RecoveryProgress;
     use fedimint_core::config::FederationId;
@@ -7349,11 +7676,15 @@ mod tests {
     use fedimint_lnv2_common::gateway_api::PaymentFee;
     use serde_json::json;
 
-    use crate::db::{FederationMetaKey, FederationMetaKeyPrefix, FederationMetaV1};
+    use crate::db::{
+        FederationMetaKey, FederationMetaKeyPrefix, FederationMetaV1, GuardianSession, Timestamp,
+    };
     use crate::multimint::{
-        aggregate_recovery_progress, gross_invoice_for_contract, meta_fields_after_fetch,
-        migrate_federation_meta_v3, recovery_module_for_kind, FederationMeta, FederationSelector,
-        Guardian, MetaFetch, MetaFields, Multimint, RecoveryModule, MAX_GATEWAY_PPM,
+        aggregate_recovery_progress, gross_invoice_for_contract, guardian_session_statuses,
+        load_guardian_sessions, meta_fields_after_fetch, migrate_federation_meta_v3,
+        record_guardian_session, recovery_module_for_kind, FederationMeta, FederationSelector,
+        Guardian, GuardianSessionStatus, MetaFetch, MetaFields, Multimint, RecoveryModule,
+        MAX_GATEWAY_PPM,
     };
 
     /// A cached entry from before the guardians went quiet: shutdown announced.
@@ -7473,6 +7804,165 @@ mod tests {
         // Entries already in the current layout are left as they are.
         let mut dbtx = db.begin_transaction().await;
         assert_eq!(migrate_federation_meta_v3(&mut dbtx).await, (0, 0));
+    }
+
+    #[tokio::test]
+    async fn guardian_session_clock_restarts_only_when_the_count_changes() {
+        let db = Database::new(MemDatabase::new(), ModuleDecoderRegistry::default());
+        let federation_id = FederationId::dummy();
+        let first_seen = UNIX_EPOCH + Duration::from_secs(1_764_000_000);
+        let hour_later = first_seen + Duration::from_secs(60 * 60);
+        let day_later = first_seen + Duration::from_secs(60 * 60 * 24);
+
+        let mut dbtx = db.begin_transaction().await;
+        let session = record_guardian_session(&mut dbtx, federation_id, 0, 100, first_seen).await;
+        assert_eq!(
+            session,
+            GuardianSession {
+                session_count: 100,
+                first_seen_at: Timestamp(first_seen),
+            }
+        );
+        dbtx.commit_tx().await;
+
+        // The same count an hour on: a stuck guardian keeps its original time.
+        let mut dbtx = db.begin_transaction().await;
+        let session = record_guardian_session(&mut dbtx, federation_id, 0, 100, hour_later).await;
+        assert_eq!(session.first_seen_at, Timestamp(first_seen));
+        dbtx.commit_tx().await;
+
+        let mut dbtx = db.begin_transaction().await;
+        let session = record_guardian_session(&mut dbtx, federation_id, 0, 101, hour_later).await;
+        assert_eq!(
+            session,
+            GuardianSession {
+                session_count: 101,
+                first_seen_at: Timestamp(hour_later),
+            }
+        );
+        dbtx.commit_tx().await;
+
+        // A guardian restored from a backup reports fewer sessions than before.
+        let mut dbtx = db.begin_transaction().await;
+        let session = record_guardian_session(&mut dbtx, federation_id, 0, 90, day_later).await;
+        assert_eq!(
+            session,
+            GuardianSession {
+                session_count: 90,
+                first_seen_at: Timestamp(day_later),
+            }
+        );
+        dbtx.commit_tx().await;
+
+        let mut dbtx = db.begin_transaction_nc().await;
+        assert_eq!(
+            load_guardian_sessions(&mut dbtx, federation_id).await,
+            BTreeMap::from([(0, session)])
+        );
+    }
+
+    #[tokio::test]
+    async fn guardian_sessions_are_kept_per_guardian_and_per_federation() {
+        let db = Database::new(MemDatabase::new(), ModuleDecoderRegistry::default());
+        let federation_id = FederationId::dummy();
+        let other_federation_id =
+            FederationId::from_str(&"11".repeat(32)).expect("valid federation id");
+        let now = UNIX_EPOCH + Duration::from_secs(1_764_000_000);
+
+        let mut dbtx = db.begin_transaction().await;
+        let alpha = record_guardian_session(&mut dbtx, federation_id, 0, 100, now).await;
+        let beta = record_guardian_session(&mut dbtx, federation_id, 1, 98, now).await;
+        record_guardian_session(&mut dbtx, other_federation_id, 0, 7, now).await;
+        dbtx.commit_tx().await;
+
+        let mut dbtx = db.begin_transaction_nc().await;
+        assert_eq!(
+            load_guardian_sessions(&mut dbtx, federation_id).await,
+            BTreeMap::from([(0, alpha), (1, beta)])
+        );
+    }
+
+    const SESSION_FIRST_SEEN_SECS: u64 = 1_764_000_000;
+
+    fn stored_sessions(counts: &[(u16, u64)]) -> BTreeMap<u16, GuardianSession> {
+        counts
+            .iter()
+            .map(|(peer_id, session_count)| {
+                let session = GuardianSession {
+                    session_count: *session_count,
+                    first_seen_at: Timestamp(
+                        UNIX_EPOCH + Duration::from_secs(SESSION_FIRST_SEEN_SECS),
+                    ),
+                };
+                (*peer_id, session)
+            })
+            .collect()
+    }
+
+    #[test]
+    fn guardian_is_behind_only_from_two_sessions() {
+        // A round of requests that straddles the end of a session sees a
+        // healthy guardian one short.
+        let stored = stored_sessions(&[(0, 100), (1, 100), (2, 99), (3, 98)]);
+        let statuses = guardian_session_statuses(0..4, &stored, &BTreeSet::from([0, 1, 2, 3]));
+
+        let behind: Vec<(u64, bool)> = statuses
+            .iter()
+            .map(|status| (status.sessions_behind, status.is_behind))
+            .collect();
+        assert_eq!(behind, [(0, false), (0, false), (1, false), (2, true)]);
+        assert!(statuses.iter().all(|status| status.fresh));
+        assert_eq!(statuses[3].session_count, Some(98));
+        assert_eq!(statuses[3].first_seen_at, Some(SESSION_FIRST_SEEN_SECS));
+    }
+
+    #[test]
+    fn guardians_that_did_not_answer_are_left_out_of_the_comparison() {
+        // Guardian 2 was last seen long ago and guardian 3 on some other
+        // occasion when it was ahead; neither answered this round.
+        let stored = stored_sessions(&[(0, 100), (1, 100), (2, 5), (3, 500)]);
+        let statuses = guardian_session_statuses(0..4, &stored, &BTreeSet::from([0, 1]));
+
+        assert!(
+            statuses.iter().all(|status| !status.is_behind),
+            "a stale count is neither behind nor the mark the others are measured against"
+        );
+        assert_eq!(
+            statuses[2],
+            GuardianSessionStatus {
+                peer_id: 2,
+                session_count: Some(5),
+                first_seen_at: Some(SESSION_FIRST_SEEN_SECS),
+                fresh: false,
+                sessions_behind: 0,
+                is_behind: false,
+            }
+        );
+
+        // The snapshot shown before the first round: nothing is fresh, so
+        // nothing is compared however far apart the persisted counts are.
+        let statuses = guardian_session_statuses(0..4, &stored, &BTreeSet::new());
+        assert!(statuses
+            .iter()
+            .all(|status| !status.fresh && !status.is_behind && status.sessions_behind == 0));
+    }
+
+    #[test]
+    fn a_guardian_never_seen_still_gets_a_row() {
+        let stored = stored_sessions(&[(0, 100)]);
+        let statuses = guardian_session_statuses(0..2, &stored, &BTreeSet::from([0]));
+
+        assert_eq!(
+            statuses[1],
+            GuardianSessionStatus {
+                peer_id: 1,
+                session_count: None,
+                first_seen_at: None,
+                fresh: false,
+                sessions_behind: 0,
+                is_behind: false,
+            }
+        );
     }
 
     #[test]

@@ -31,10 +31,10 @@ use futures_util::StreamExt;
 use lnurl_client::LnurlWithdrawParams;
 use multimint::{
     EcashSendFees, FederationMeta, FederationSelector, GuardianAuditSummary,
-    GuardianBackupStatistics, GuardianMetaState, GuardianStatusSummary, LightningSendOutcome,
-    LogLevel, MaxWithdrawQuote, Multimint, MultimintCreation, MultimintEvent, OOBNotesWrapper,
-    PaymentPreviewWithGateways, PeginFeeQuote, ReceiveAmount, RecoveryModule, ReissueFees,
-    Transaction, Utxo, WithdrawFees, WithdrawFeesResponse,
+    GuardianBackupStatistics, GuardianMetaState, GuardianSessionStatus, GuardianStatusSummary,
+    LightningSendOutcome, LogLevel, MaxWithdrawQuote, Multimint, MultimintCreation, MultimintEvent,
+    OOBNotesWrapper, PaymentPreviewWithGateways, PeginFeeQuote, ReceiveAmount, RecoveryModule,
+    ReissueFees, Transaction, Utxo, WithdrawFees, WithdrawFeesResponse,
 };
 use nostr::{NWCConnectionInfo, NostrClient, PublicFederation};
 use serde::Serialize;
@@ -1496,6 +1496,28 @@ pub async fn subscribe_peer_status(
 
     while let Some(status) = stream.next().await {
         if sink.add(status).is_err() {
+            break;
+        }
+    }
+
+    Ok(())
+}
+
+#[frb]
+pub async fn subscribe_guardian_sessions(
+    sink: StreamSink<Vec<GuardianSessionStatus>>,
+    invite: Option<String>,
+    federation_id: Option<FederationId>,
+) -> anyhow::Result<()> {
+    let multimint = get_multimint();
+    let mut stream = Box::pin(
+        multimint
+            .subscribe_guardian_sessions(invite, federation_id)
+            .await?,
+    );
+
+    while let Some(sessions) = stream.next().await {
+        if sink.add(sessions).is_err() {
             break;
         }
     }
