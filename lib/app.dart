@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:io';
 
 import 'package:ecashapp/contacts/contacts_screen.dart';
 import 'package:ecashapp/deep_link_handler.dart';
@@ -172,7 +173,10 @@ class _MyAppState extends State<MyApp> {
         final err = event.field0.$2;
         showErrorToast(ctx, err);
       } else if (event is MultimintEvent_UpdateAvailable) {
-        if (!mounted) return;
+        // iOS builds ship only through the App Store, which handles updates
+        // itself, so the toast would point at a download that cannot be
+        // installed there.
+        if (!mounted || Platform.isIOS) return;
         final ctx = _navigatorKey.currentContext;
         final l10n = ctx?.l10n;
         final primary =
