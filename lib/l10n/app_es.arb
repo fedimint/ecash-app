@@ -591,6 +591,7 @@
   "lnurlWithdrawRequesting": "Solicitando retiro…",
   "lnurlWithdrawWaiting": "Esperando pago…",
   "lnurlWithdrawFailed": "Retiro fallido",
+  "lnurlWithdrawStillPending": "Seguimos esperando el pago. Aparecerá en tu saldo si llega.",
   "lnurlWithdrawCallbackError": "El servicio rechazó la solicitud: {reason}",
   "lnurlWithdrawFixedAmount": "Recibirás {amount}",
   "lnurlWithdrawAmountRange": "Elige el monto ({min} – {max})",
