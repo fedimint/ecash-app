@@ -7,6 +7,10 @@ import 'package:ecashapp/extensions/build_context_l10n.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
+/// The gateway's advertised routing fee in `base + ppm` form.
+String gatewayRoutingFeeText(FedimintGateway gw, BitcoinDisplay display) =>
+    '${formatBalance(gw.baseRoutingFee, true, display)} + ${gw.ppmRoutingFee} ppm';
+
 /// A list of selectable gateways.
 ///
 /// When [feesMsats] is provided, each tile displays the fee as an absolute
@@ -73,74 +77,96 @@ class GatewayPicker extends StatelessWidget {
             final feeText =
                 feesMsats != null
                     ? '${context.l10n.txDetailFee}: ${formatBalance(feesMsats![index], true, bitcoinDisplay)}'
-                    : '${formatBalance(gw.baseRoutingFee, true, bitcoinDisplay)} + ${gw.ppmRoutingFee} ppm';
+                    : gatewayRoutingFeeText(gw, bitcoinDisplay);
 
-            return ListTile(
-              contentPadding: const EdgeInsets.symmetric(
-                horizontal: 20,
-                vertical: 4,
-              ),
-              leading: Icon(
-                Icons.device_hub,
-                color:
-                    isSelected
-                        ? theme.colorScheme.primary
-                        : theme.colorScheme.onSurface.withOpacity(0.5),
-              ),
-              title: Row(
-                children: [
-                  Expanded(
-                    child: Text(
-                      gw.lightningAlias ?? gw.endpoint,
-                      style: theme.textTheme.bodyMedium?.copyWith(
-                        fontFamily: 'monospace',
-                        fontWeight:
-                            isSelected ? FontWeight.bold : FontWeight.normal,
-                      ),
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  ),
-                  Padding(
-                    padding: const EdgeInsets.only(left: 8),
-                    child: ProtocolBadge(isLnv2: gw.isLnv2),
-                  ),
-                ],
-              ),
-              subtitle: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  if (gw.lightningAlias != null)
-                    Text(
-                      gw.endpoint,
-                      style: theme.textTheme.bodySmall?.copyWith(
-                        color: theme.colorScheme.onSurface.withOpacity(0.4),
-                        fontFamily: 'monospace',
-                        fontSize: 11,
-                      ),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  Text(
-                    feeText,
-                    style: theme.textTheme.bodySmall?.copyWith(
-                      color: theme.colorScheme.onSurface.withOpacity(0.6),
-                    ),
-                  ),
-                ],
-              ),
-              trailing:
-                  isSelected
-                      ? Icon(
-                        Icons.check_circle,
-                        color: theme.colorScheme.primary,
-                      )
-                      : null,
+            return GatewayTile(
+              gateway: gw,
+              feeText: feeText,
+              isSelected: isSelected,
               onTap: onSelected == null ? null : () => onSelected!(index),
             );
           }),
           const SizedBox(height: 12),
         ],
       ),
+    );
+  }
+}
+
+/// A single selectable gateway row: alias (or endpoint), protocol badge, fee
+/// text, and a check mark when selected.
+class GatewayTile extends StatelessWidget {
+  final FedimintGateway gateway;
+  final String feeText;
+  final bool isSelected;
+  final VoidCallback? onTap;
+
+  const GatewayTile({
+    super.key,
+    required this.gateway,
+    required this.feeText,
+    required this.isSelected,
+    this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final gw = gateway;
+    return ListTile(
+      contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 4),
+      leading: Icon(
+        Icons.device_hub,
+        color:
+            isSelected
+                ? theme.colorScheme.primary
+                : theme.colorScheme.onSurface.withOpacity(0.5),
+      ),
+      title: Row(
+        children: [
+          Expanded(
+            child: Text(
+              gw.lightningAlias ?? gw.endpoint,
+              style: theme.textTheme.bodyMedium?.copyWith(
+                fontFamily: 'monospace',
+                fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+              ),
+              overflow: TextOverflow.ellipsis,
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.only(left: 8),
+            child: ProtocolBadge(isLnv2: gw.isLnv2),
+          ),
+        ],
+      ),
+      subtitle: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          if (gw.lightningAlias != null)
+            Text(
+              gw.endpoint,
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: theme.colorScheme.onSurface.withOpacity(0.4),
+                fontFamily: 'monospace',
+                fontSize: 11,
+              ),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
+          Text(
+            feeText,
+            style: theme.textTheme.bodySmall?.copyWith(
+              color: theme.colorScheme.onSurface.withOpacity(0.6),
+            ),
+          ),
+        ],
+      ),
+      trailing:
+          isSelected
+              ? Icon(Icons.check_circle, color: theme.colorScheme.primary)
+              : null,
+      onTap: onTap,
     );
   }
 }

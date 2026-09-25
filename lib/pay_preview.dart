@@ -111,6 +111,7 @@ class _PaymentPreviewWidgetState extends State<PaymentPreviewWidget> {
       context: context,
       federations: _compatibleFederations,
       title: context.l10n.selectFederationToPayFrom,
+      requireBalance: true,
     );
     if (picked == null || !mounted) return;
     final (newFed, recovering) = picked;
