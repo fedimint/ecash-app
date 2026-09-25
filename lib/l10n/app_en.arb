@@ -760,6 +760,15 @@
   "available": "Available",
   "@available": {},
 
+  "amountAvailable": "{amount} available",
+  "@amountAvailable": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+
   "alreadyRegistered": "Already registered",
   "@alreadyRegistered": {},
 
@@ -1458,6 +1467,9 @@
 
   "selectGateway": "Select Gateway",
   "@selectGateway": {},
+
+  "done": "Done",
+  "@done": {},
 
   "gateway": "Gateway",
   "@gateway": {},

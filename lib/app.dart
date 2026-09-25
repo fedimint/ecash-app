@@ -405,6 +405,8 @@ class _MyAppState extends State<MyApp> {
             deepLink.type == DeepLinkType.lightning
                 ? l10n.selectFederationToPayFrom
                 : l10n.selectFederation,
+        // Every deep link but an LNURLw withdraw spends from the federation.
+        requireBalance: deepLink.type != DeepLinkType.lnurlWithdraw,
       );
 
       if (selectedFed == null) {

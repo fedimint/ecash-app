@@ -28,6 +28,9 @@ class FederationCard extends StatelessWidget {
   /// Tap handler. When null the card is non-interactive and hides the chevron.
   final VoidCallback? onTap;
 
+  /// Optional extra line under the balance, e.g. the selected gateway.
+  final Widget? footer;
+
   final EdgeInsetsGeometry margin;
 
   const FederationCard({
@@ -37,7 +40,8 @@ class FederationCard extends StatelessWidget {
     required this.balanceMsats,
     this.isOverBalance = false,
     this.onTap,
-    this.margin = const EdgeInsets.fromLTRB(16, 16, 16, 12),
+    this.footer,
+    this.margin = const EdgeInsets.fromLTRB(16, 8, 16, 0),
   });
 
   @override
@@ -56,7 +60,7 @@ class FederationCard extends StatelessWidget {
           curve: Curves.easeInOut,
           constraints: const BoxConstraints(maxWidth: 400),
           margin: margin,
-          padding: const EdgeInsets.all(16),
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
           decoration: BoxDecoration(
             color: theme.colorScheme.surface,
             borderRadius: BorderRadius.circular(12),
@@ -86,10 +90,10 @@ class FederationCard extends StatelessWidget {
           child: Row(
             children: [
               ClipRRect(
-                borderRadius: BorderRadius.circular(28),
+                borderRadius: BorderRadius.circular(20),
                 child: SizedBox(
-                  width: 56,
-                  height: 56,
+                  width: 40,
+                  height: 40,
                   child:
                       hasPicture
                           ? Image.network(
@@ -123,16 +127,11 @@ class FederationCard extends StatelessWidget {
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                     ),
-                    const SizedBox(height: 6),
-                    Text(
-                      context.l10n.available,
-                      style: const TextStyle(fontSize: 11, color: Colors.grey),
-                    ),
                     const SizedBox(height: 2),
                     balanceMsats == null
                         ? const SizedBox(
-                          width: 16,
-                          height: 16,
+                          width: 14,
+                          height: 14,
                           child: CircularProgressIndicator(
                             strokeWidth: 2,
                             color: Colors.grey,
@@ -142,13 +141,20 @@ class FederationCard extends StatelessWidget {
                           duration: const Duration(milliseconds: 300),
                           curve: Curves.easeInOut,
                           style: TextStyle(
-                            fontSize: 14,
+                            fontSize: 13,
                             color: isOverBalance ? Colors.red : Colors.grey,
                           ),
                           child: Text(
-                            formatBalance(balanceMsats!, false, bitcoinDisplay),
+                            context.l10n.amountAvailable(
+                              formatBalance(
+                                balanceMsats!,
+                                false,
+                                bitcoinDisplay,
+                              ),
+                            ),
                           ),
                         ),
+                    if (footer != null) ...[const SizedBox(height: 4), footer!],
                   ],
                 ),
               ),

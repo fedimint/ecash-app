@@ -7,6 +7,7 @@ class CustomNumPad extends StatelessWidget {
   final VoidCallback? onLeftAction;
   final bool leftActionLoading;
   final Widget? leftWidget;
+  final double rowSpacing;
 
   const CustomNumPad({
     super.key,
@@ -15,6 +16,7 @@ class CustomNumPad extends StatelessWidget {
     this.onLeftAction,
     this.leftActionLoading = false,
     this.leftWidget,
+    this.rowSpacing = 8,
   });
 
   Widget _buildDigitRow(List<String> digits) {
@@ -97,11 +99,11 @@ class CustomNumPad extends StatelessWidget {
       mainAxisSize: MainAxisSize.min,
       children: [
         _buildDigitRow(['1', '2', '3']),
-        const SizedBox(height: 8),
+        SizedBox(height: rowSpacing),
         _buildDigitRow(['4', '5', '6']),
-        const SizedBox(height: 8),
+        SizedBox(height: rowSpacing),
         _buildDigitRow(['7', '8', '9']),
-        const SizedBox(height: 8),
+        SizedBox(height: rowSpacing),
         _buildBottomRow(),
       ],
     );

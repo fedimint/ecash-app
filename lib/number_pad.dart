@@ -20,8 +20,7 @@ import 'package:ecashapp/widgets/numpad/custom_numpad.dart';
 import 'package:ecashapp/widgets/numpad/numpad_button.dart';
 import 'package:ecashapp/widgets/federation_card.dart';
 import 'package:ecashapp/widgets/federation_picker.dart';
-import 'package:ecashapp/widgets/gateway_card.dart';
-import 'package:ecashapp/widgets/gateway_picker.dart';
+import 'package:ecashapp/widgets/gateway_summary_line.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 
@@ -183,11 +182,11 @@ class _NumberPadState extends State<NumberPad> {
   }
 
   Future<void> _fetchGateways() async {
+    final fed = _selectedFed;
     try {
-      final gateways = await listGateways(
-        federationId: _selectedFed.federationId,
-      );
-      if (!mounted) return;
+      final gateways = await listGateways(federationId: fed.federationId);
+      // The user may have switched federation (and gateways) meanwhile.
+      if (!mounted || !identical(fed, _selectedFed)) return;
       setState(() {
         _gateways = gateways;
         _selectedGatewayEndpoint =
@@ -197,7 +196,7 @@ class _NumberPadState extends State<NumberPad> {
       });
     } catch (e) {
       AppLogger.instance.error('Failed to fetch gateways: $e');
-      if (!mounted) return;
+      if (!mounted || !identical(fed, _selectedFed)) return;
       setState(() {
         _gateways = const [];
         _selectedGatewayEndpoint = null;
@@ -263,12 +262,19 @@ class _NumberPadState extends State<NumberPad> {
 
   Future<void> _onFederationCardTapped() async {
     final feds = _allFederations;
-    if (feds == null || feds.length <= 1) return;
+    if (feds == null || feds.isEmpty) return;
+
+    if (_needsGateways) {
+      await _pickFederationAndGateway(feds);
+      return;
+    }
+    if (feds.length <= 1) return;
 
     final selected = await showFederationPicker(
       context: context,
       federations: feds,
       title: context.l10n.selectMint,
+      requireBalance: !_isGeneratingLnInvoice(),
     );
 
     if (selected != null && mounted) {
@@ -287,6 +293,39 @@ class _NumberPadState extends State<NumberPad> {
       if (_needsGateways) {
         _fetchGateways();
       }
+    }
+  }
+
+  Future<void> _pickFederationAndGateway(
+    List<(FederationSelector, bool)> feds,
+  ) async {
+    final result = await showFederationGatewayPicker(
+      context: context,
+      federations: feds,
+      selectedFed: _selectedFed,
+      gateways: _gateways,
+      selectedGateway: _selectedGateway,
+      title: context.l10n.selectMint,
+      requireBalance: !_isGeneratingLnInvoice(),
+    );
+    if (result == null || !mounted) return;
+
+    final gateway = result.selectedGateway;
+    setState(() {
+      if (result.federationChanged) {
+        _selectedFed = result.federation;
+        _currentBalance = null;
+        _loadingBalance = true;
+        _federationMeta = null;
+        _withdrawalMode = WithdrawalMode.specificAmount;
+      }
+      _gateways = result.gateways;
+      _selectedGatewayEndpoint = gateway?.endpoint;
+      _selectedGatewayIsLnv2 = gateway?.isLnv2;
+    });
+    if (result.federationChanged) {
+      _fetchBalance();
+      _fetchFederationMeta();
     }
   }
 
@@ -328,7 +367,8 @@ class _NumberPadState extends State<NumberPad> {
 
   // Every Lightning flow selects a gateway — generating an invoice to receive,
   // an LNURLw withdraw, and (now) paying a Lightning Address / LNURL — so all of
-  // them prefetch the gateway list on open and show the gateway card.
+  // them prefetch the gateway list on open and pick it from the federation
+  // card's picker.
   bool get _needsGateways => _isGeneratingLnInvoice() || _isLnAddressSend;
 
   bool _isValidAmount() => isValidAmount(
@@ -350,6 +390,7 @@ class _NumberPadState extends State<NumberPad> {
     rawAmount: _rawAmount,
     loadingBalance: _loadingBalance,
     currentBalance: _currentBalance,
+    generatingLnInvoice: _isGeneratingLnInvoice(),
   );
 
   bool _canAddFiatDigit() => canAddFiatDigit(_displayedFiatInput);
@@ -803,16 +844,6 @@ class _NumberPadState extends State<NumberPad> {
   }
 
   Widget _buildFederationCard() {
-    // Hide card for lightning receives, but keep it for LNURLw withdraws where
-    // the user must be able to choose which federation receives the funds.
-    final isLightningReceive =
-        widget.paymentType == PaymentType.lightning &&
-        widget.lightningAddressOrLnurl == null;
-
-    if (isLightningReceive && !_isLnurlWithdraw) {
-      return const SizedBox.shrink();
-    }
-
     final hasMultipleFeds = (_allFederations?.length ?? 0) > 1;
 
     return FederationCard(
@@ -829,44 +860,20 @@ class _NumberPadState extends State<NumberPad> {
       // nothing about the figure being fetched — don't flag red under a
       // spinner.
       isOverBalance: !_loadingMax && _isAmountOverBalance(),
-      onTap: hasMultipleFeds ? _onFederationCardTapped : null,
+      // Lightning flows pick the gateway from the same sheet, so the card
+      // stays tappable even with a single federation.
+      onTap:
+          hasMultipleFeds || (_needsGateways && _allFederations != null)
+              ? _onFederationCardTapped
+              : null,
+      footer:
+          _needsGateways
+              ? GatewaySummaryLine(
+                gateways: _gateways,
+                selectedGateway: _selectedGateway,
+              )
+              : null,
     );
-  }
-
-  Widget _buildGatewayCard() {
-    if (!_needsGateways) {
-      return const SizedBox.shrink();
-    }
-
-    return GatewayCard(
-      gateways: _gateways,
-      selectedGateway: _selectedGateway,
-      onTap: _onGatewayCardTapped,
-    );
-  }
-
-  Future<void> _onGatewayCardTapped() async {
-    final gateways = _gateways;
-    if (gateways == null || gateways.isEmpty) return;
-
-    final currentIndex = gateways.indexWhere(
-      (g) =>
-          g.endpoint == _selectedGatewayEndpoint &&
-          g.isLnv2 == _selectedGatewayIsLnv2,
-    );
-    final pickedIndex = await showGatewayPickerSheet(
-      context,
-      gateways: gateways,
-      selectedIndex: currentIndex >= 0 ? currentIndex : 0,
-    );
-
-    if (pickedIndex != null && mounted) {
-      final picked = gateways[pickedIndex];
-      setState(() {
-        _selectedGatewayEndpoint = picked.endpoint;
-        _selectedGatewayIsLnv2 = picked.isLnv2;
-      });
-    }
   }
 
   @override
@@ -897,53 +904,60 @@ class _NumberPadState extends State<NumberPad> {
         body: Column(
           children: [
             _buildFederationCard(),
-            _buildGatewayCard(),
             Expanded(
               child: Center(
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    // Primary display (large) - shows what user is entering
-                    AnimatedSwitcher(
-                      duration: const Duration(milliseconds: 200),
-                      transitionBuilder: (child, animation) {
-                        return FadeTransition(
-                          opacity: animation,
-                          child: SlideTransition(
-                            position: Tween<Offset>(
-                              begin: const Offset(0, 0.2),
-                              end: Offset.zero,
-                            ).animate(animation),
-                            child: child,
-                          ),
-                        );
-                      },
-                      child: RichText(
-                        key: ValueKey<bool>(_isFiatInputMode),
-                        text: TextSpan(
-                          style: const TextStyle(color: Colors.white),
-                          children: [
-                            TextSpan(
-                              text:
-                                  _isFiatInputMode
-                                      ? formatFiatInput(
-                                        _displayedFiatInput ?? '0',
-                                        fiatCurrency,
-                                      )
-                                      : _formatAmount(
-                                        _rawAmount,
-                                        bitcoinDisplay,
-                                      ),
-                              style: const TextStyle(
-                                fontSize: 48,
-                                fontWeight: FontWeight.w700,
+                    // Primary display (large) - shows what user is entering.
+                    // The column gives it unbounded height, so FittedBox only
+                    // shrinks it when a long amount is wider than the screen.
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 24),
+                      child: FittedBox(
+                        fit: BoxFit.scaleDown,
+                        child: AnimatedSwitcher(
+                          duration: const Duration(milliseconds: 200),
+                          transitionBuilder: (child, animation) {
+                            return FadeTransition(
+                              opacity: animation,
+                              child: SlideTransition(
+                                position: Tween<Offset>(
+                                  begin: const Offset(0, 0.2),
+                                  end: Offset.zero,
+                                ).animate(animation),
+                                child: child,
                               ),
+                            );
+                          },
+                          child: RichText(
+                            key: ValueKey<bool>(_isFiatInputMode),
+                            text: TextSpan(
+                              style: const TextStyle(color: Colors.white),
+                              children: [
+                                TextSpan(
+                                  text:
+                                      _isFiatInputMode
+                                          ? formatFiatInput(
+                                            _displayedFiatInput ?? '0',
+                                            fiatCurrency,
+                                          )
+                                          : _formatAmount(
+                                            _rawAmount,
+                                            bitcoinDisplay,
+                                          ),
+                                  style: const TextStyle(
+                                    fontSize: 64,
+                                    fontWeight: FontWeight.w700,
+                                  ),
+                                ),
+                              ],
                             ),
-                          ],
+                          ),
                         ),
                       ),
                     ),
-                    const SizedBox(height: 16),
+                    const SizedBox(height: 8),
                     // Secondary display row with swap button (fixed position)
                     Row(
                       mainAxisAlignment: MainAxisAlignment.center,
@@ -1082,6 +1096,7 @@ class _NumberPadState extends State<NumberPad> {
               child: Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 16.0),
                 child: CustomNumPad(
+                  rowSpacing: 4,
                   onDigitPressed: (digit) {
                     setState(() {
                       if (_isFiatInputMode) {
