@@ -307,22 +307,28 @@ pub(crate) async fn submit_withdraw_invoice(
     invoice: &str,
 ) -> anyhow::Result<()> {
     let callback_url = build_withdraw_callback_url(callback, k1, invoice);
-    let resp: serde_json::Value = crate::net::http_client()
-        .get(&callback_url)
-        .send()
-        .await?
-        .json()
-        .await?;
+    let resp = fetch_json(&callback_url).await?;
+    check_withdraw_callback_response(&resp)
+}
 
-    if resp.get("status").and_then(|s| s.as_str()) == Some("ERROR") {
-        let reason = resp
-            .get("reason")
-            .and_then(|r| r.as_str())
-            .unwrap_or("unknown error");
-        bail!("LNURLw service rejected the request: {reason}");
+/// LUD-03: only an explicit `{"status":"OK"}` means the service took the invoice.
+///
+/// Anything else — `{}`, a proxy's `{"detail": ...}`, a rate limiter's body — must
+/// fail here, or the caller waits out its receive timeout for a payment nobody
+/// sent. Errors and non-2xx statuses are already rejected by [`fetch_json`].
+fn check_withdraw_callback_response(resp: &serde_json::Value) -> anyhow::Result<()> {
+    let status = resp.get("status").and_then(|s| s.as_str());
+    if status.is_some_and(|s| s.eq_ignore_ascii_case("ok")) {
+        return Ok(());
     }
 
-    Ok(())
+    // serde_json escapes control characters, so the excerpt cannot forge log lines.
+    let body = resp.to_string();
+    let excerpt = match body.char_indices().nth(REASON_MAX_LEN) {
+        Some((cutoff, _)) => format!("{}\u{2026}", &body[..cutoff]),
+        None => body,
+    };
+    bail!("LNURLw service did not confirm the withdraw: {excerpt}");
 }
 
 /// LUD-03: append k1 and pr to the callback URL, respecting existing query params.
@@ -429,6 +435,41 @@ mod tests {
     }
 
     // --- build_withdraw_callback_url ---
+
+    // --- check_withdraw_callback_response ---
+
+    #[test]
+    fn test_callback_response_ok_is_accepted() {
+        assert!(check_withdraw_callback_response(&json!({"status": "OK"})).is_ok());
+        assert!(check_withdraw_callback_response(&json!({"status": "ok"})).is_ok());
+    }
+
+    #[test]
+    fn test_callback_response_without_ok_status_is_rejected() {
+        for resp in [
+            json!({}),
+            json!({"detail": "Not Found"}),
+            json!({"error": "Rate limit exceeded"}),
+            json!({"status": "PENDING"}),
+            json!({"status": 1}),
+        ] {
+            let err = check_withdraw_callback_response(&resp).unwrap_err();
+            assert!(
+                err.to_string().contains("did not confirm"),
+                "{resp} should be rejected, got: {err}"
+            );
+        }
+    }
+
+    #[test]
+    fn test_callback_response_excerpt_is_capped() {
+        let resp = json!({"detail": "x".repeat(1000)});
+        let err = check_withdraw_callback_response(&resp)
+            .unwrap_err()
+            .to_string();
+        assert!(err.ends_with('\u{2026}'));
+        assert!(err.len() < 300);
+    }
 
     #[test]
     fn test_callback_url_no_existing_params() {

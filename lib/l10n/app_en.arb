@@ -2128,6 +2128,9 @@
   "lnurlWithdrawFailed": "Withdraw failed",
   "@lnurlWithdrawFailed": {},
 
+  "lnurlWithdrawStillPending": "Still waiting for payment. It will appear in your balance if it arrives.",
+  "@lnurlWithdrawStillPending": {},
+
   "lnurlWithdrawCallbackError": "Service rejected the request: {reason}",
   "@lnurlWithdrawCallbackError": {
     "placeholders": {
