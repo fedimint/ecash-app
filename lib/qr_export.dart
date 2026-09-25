@@ -51,6 +51,14 @@ String makeDataFrame({
   return base64Encode(combined);
 }
 
+/// Prefixes the payload with its length and an md5 digest.
+///
+/// The digest is error detection only — it catches a garbled or truncated
+/// transfer, which is the job it is here to do. It is not an integrity
+/// guarantee and must never be read as one: it travels inside the data it
+/// covers, so anyone altering the payload simply recomputes it. Changing the
+/// algorithm would not help; only a keyed MAC or a signature could, and that
+/// needs a key the two devices have no way to share over a camera.
 Uint8List wrapData(Uint8List data) {
   final lengthBuffer = _uint32ToBytes(data.length);
   final hash = md5.convert(data).bytes;

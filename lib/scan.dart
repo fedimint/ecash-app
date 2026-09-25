@@ -363,6 +363,11 @@ class _ScanQRPageState extends State<ScanQRPage> {
       final payload = merged.sublist(20, 20 + declaredLength);
       AppLogger.instance.info("Payload length: ${payload.length}");
 
+      // Error detection, not authentication. A mismatch means the frames did
+      // not reassemble cleanly; a match means only that — the digest is unkeyed
+      // and arrives alongside the payload it covers, so a crafted transfer
+      // carries a matching one. Nothing below may treat this as proof of
+      // origin; see `wrapData` in qr_export.dart for the sending half.
       final actualHash = md5.convert(payload).bytes;
       final isValid = const ListEquality().equals(actualHash, hashBytes);
 
