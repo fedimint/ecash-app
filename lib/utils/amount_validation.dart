@@ -62,12 +62,16 @@ bool isAmountOverBalance({
 /// Returns null if balance is loading or unavailable.
 /// Returns the full balance if no amount is entered.
 /// Clamps to zero if amount exceeds balance.
+/// Returns the full balance when generating a Lightning invoice, since the
+/// amount is being received, not spent.
 BigInt? getRemainingBalance({
   required String rawAmount,
   required bool loadingBalance,
   required BigInt? currentBalance,
+  required bool generatingLnInvoice,
 }) {
   if (loadingBalance || currentBalance == null) return null;
+  if (generatingLnInvoice) return currentBalance;
 
   final amountSats = BigInt.tryParse(rawAmount);
   if (amountSats == null) {

@@ -390,6 +390,7 @@ class _NumberPadState extends State<NumberPad> {
     rawAmount: _rawAmount,
     loadingBalance: _loadingBalance,
     currentBalance: _currentBalance,
+    generatingLnInvoice: _isGeneratingLnInvoice(),
   );
 
   bool _canAddFiatDigit() => canAddFiatDigit(_displayedFiatInput);

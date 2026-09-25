@@ -306,6 +306,7 @@ void main() {
           rawAmount: '100',
           loadingBalance: true,
           currentBalance: BigInt.from(1000000),
+          generatingLnInvoice: false,
         ),
         null,
       );
@@ -317,6 +318,7 @@ void main() {
           rawAmount: '100',
           loadingBalance: false,
           currentBalance: null,
+          generatingLnInvoice: false,
         ),
         null,
       );
@@ -328,6 +330,7 @@ void main() {
           rawAmount: '',
           loadingBalance: false,
           currentBalance: BigInt.from(1000000),
+          generatingLnInvoice: false,
         ),
         BigInt.from(1000000),
       );
@@ -339,6 +342,7 @@ void main() {
           rawAmount: 'abc',
           loadingBalance: false,
           currentBalance: BigInt.from(1000000),
+          generatingLnInvoice: false,
         ),
         BigInt.from(1000000),
       );
@@ -351,6 +355,7 @@ void main() {
           rawAmount: '100',
           loadingBalance: false,
           currentBalance: BigInt.from(1000000),
+          generatingLnInvoice: false,
         ),
         BigInt.from(900000),
       );
@@ -362,6 +367,7 @@ void main() {
           rawAmount: '1000',
           loadingBalance: false,
           currentBalance: BigInt.from(1000000),
+          generatingLnInvoice: false,
         ),
         BigInt.zero,
       );
@@ -373,8 +379,22 @@ void main() {
           rawAmount: '2000',
           loadingBalance: false,
           currentBalance: BigInt.from(1000000),
+          generatingLnInvoice: false,
         ),
         BigInt.zero,
+      );
+    });
+
+    test('returns full balance when generating a Lightning invoice', () {
+      // Receiving doesn't spend, so the typed amount isn't subtracted.
+      expect(
+        getRemainingBalance(
+          rawAmount: '100',
+          loadingBalance: false,
+          currentBalance: BigInt.from(1000000),
+          generatingLnInvoice: true,
+        ),
+        BigInt.from(1000000),
       );
     });
   });
