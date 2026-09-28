@@ -1639,6 +1639,36 @@
   "onchainSendTitle": "Onchain Send",
   "@onchainSendTitle": {},
 
+  "recoveryTitle": "Wallet Recovery",
+  "@recoveryTitle": {},
+
+  "txRecovered": "Recovered",
+  "@txRecovered": {},
+
+  "txDetailRecoveredAmount": "Recovered Amount",
+  "@txDetailRecoveredAmount": {},
+
+  "txDetailPaymentType": "Payment Type",
+  "@txDetailPaymentType": {},
+
+  "txRecoveredAmountUnknown": "Not reported",
+  "@txRecoveredAmountUnknown": {},
+
+  "recoveryCompleteWithAmount": "Recovered {amount} of {module}",
+  "@recoveryCompleteWithAmount": {
+    "placeholders": {
+      "amount": { "type": "String" },
+      "module": { "type": "String" }
+    }
+  },
+
+  "recoveryCompleteWithoutAmount": "{module} recovery complete",
+  "@recoveryCompleteWithoutAmount": {
+    "placeholders": {
+      "module": { "type": "String" }
+    }
+  },
+
   "checkClaimStatus": "Check Claim Status",
   "@checkClaimStatus": {},
 

@@ -19,6 +19,7 @@ use fedimint_client::{
     module::{
         module::{recovery::RecoveryProgress, ClientModule as _},
         oplog::OperationLogEntry,
+        ModuleRecoveryCompleted,
     },
     module_init::ClientModuleInitRegistry,
     secret::RootSecretStrategy,
@@ -112,7 +113,8 @@ use crate::{
         Connector, ContactSyncConfigKey, FederationBackupKey, FederationMetaKey,
         FederationMetaKeyPrefix, FederationMetaV1, FiatCurrency, FiatCurrencyKey, GuardianSession,
         GuardianSessionFederationPrefix, GuardianSessionKey, LightningAddressConfig,
-        LightningAddressKey, LightningAddressKeyPrefix, SchemaVersionKey, Timestamp,
+        LightningAddressKey, LightningAddressKeyPrefix, ModuleRecovery,
+        ModuleRecoveryFederationPrefix, ModuleRecoveryKey, SchemaVersionKey, Timestamp,
     },
     error_to_flutter, get_nostr_client, info_to_flutter, payment_error_to_flutter,
     wallet::WalletHandler,
@@ -124,6 +126,13 @@ use crate::{
 /// `MAX_INVOICE_EXPIRY_SECS` (`60 * 60 * 24`). Raising this breaks LNv2
 /// receives.
 const DEFAULT_EXPIRY_TIME_SECS: u32 = 86400;
+/// How many history rows one `transactions` call returns.
+///
+/// The Dart side treats a short page as the end of the history
+/// (`transactions_list.dart`), so this is a contract with the UI, not just a
+/// local batch size: returning more than this would make the list believe there
+/// is another page when there is not.
+const TRANSACTION_PAGE_SIZE: usize = 10;
 /// Well-known meta field: unix timestamp (seconds) after which the guardians
 /// will shut the federation down. See fedimint
 /// `docs/meta_fields/federation_expiry_timestamp.md`.
@@ -675,6 +684,27 @@ pub enum TransactionKind {
         oob_notes: String,
         fees: u64,
     },
+    /// A module's completed seed-phrase recovery, rather than a payment.
+    ///
+    /// Restoring from a seed phrase rebuilds the balance but not the operation
+    /// log, which is local state no seed can reconstruct, so without this row
+    /// the recovered funds appear in the wallet with nothing in the history to
+    /// account for them. Indexed out of fedimint's `ModuleRecoveryCompleted`
+    /// event by `spawn_recovery_event_indexer`; the persisted form is
+    /// `ModuleRecovery` in `db.rs`.
+    Recovery {
+        /// Which payment type's history this row belongs in.
+        module: RecoveryModule,
+        /// What the module reconstructed, in msats.
+        ///
+        /// `None` when the module does not track a total. Only the mint
+        /// modules do — they reissue notes of known denomination — while the
+        /// wallet module merely learns which on-chain outputs were its own and
+        /// cannot price them at recovery time. The enclosing
+        /// `Transaction::amount` is `0` in that case, so the UI has to read
+        /// this field rather than the headline amount to decide what to show.
+        amount_msats: Option<u64>,
+    },
 }
 
 #[derive(Debug, Serialize, Clone, Eq, PartialEq)]
@@ -879,6 +909,16 @@ pub enum MultimintEvent {
     Log(LogLevel, String),
     RecoveryDone(String),
     RecoveryProgress(String, RecoveryModule, u32, u32),
+    /// One module finished recovering, carrying what it recovered in msats
+    /// (`None` when the module tracks no total — see `TransactionKind::Recovery`).
+    ///
+    /// Distinct from `RecoveryDone`, which fires once per federation after
+    /// every module has finished *and* the recovery client has been replaced.
+    /// This fires per module, the moment that module's result is indexed, and
+    /// only the first time it is indexed — the backfill rescan that runs on
+    /// every client open stays silent. Federation id is a `String` for the
+    /// same bridge reason as `MetaUpdated`.
+    ModuleRecoveryComplete(String, RecoveryModule, Option<u64>),
     Ecash((FederationId, u64)),
     NostrRecovery(String, u16, Option<FederationSelector>),
     NostrRelayStatus(String, RelayStatusKind),
@@ -1464,6 +1504,7 @@ impl Multimint {
                 .await;
 
             self.spawn_lnv2_event_listener(&client_tasks, client.clone(), id.id);
+            self.spawn_recovery_event_indexer(&client_tasks, client.clone(), id.id);
             self.wallet_handler.spawn_v2_deposit_event_listener(
                 &client_tasks,
                 client.clone(),
@@ -1598,6 +1639,170 @@ impl Multimint {
                 }
             }
         });
+    }
+
+    /// Indexes fedimint's `ModuleRecoveryCompleted` events into our own
+    /// database, so a finished recovery can be rendered as a row in the
+    /// transaction history.
+    ///
+    /// Scans from the *start* of the event log, unlike
+    /// [`Self::spawn_lnv2_event_listener`] which starts at the tip, for two
+    /// reasons. The recovery events are written by the recovery client, which
+    /// `wait_for_recovery` retires and replaces — so by the time this task runs
+    /// against a live client they are already in the past — and starting at
+    /// zero also backfills wallets that recovered before this feature existed.
+    /// `ModuleRecoveryCompleted` is `EventPersistence::Persistent`, so it is
+    /// never trimmed out of the log and the backfill always finds it.
+    ///
+    /// Reading the ordered log rather than the recovery client's own in-memory
+    /// result is deliberate: events are written to an unordered log first and
+    /// moved across by a background ordering task, which drains whatever it
+    /// finds at startup. Reading inline at the end of `wait_for_recovery` would
+    /// race that task; reading the ordered log from a later client cannot.
+    ///
+    /// Re-indexing is harmless — `ModuleRecoveryKey` is keyed by module
+    /// instance, so a rescan overwrites its own row rather than adding a second
+    /// one — which is what lets this run unconditionally on every client open.
+    fn spawn_recovery_event_indexer(
+        &self,
+        tasks: &TaskGroup,
+        client: ClientHandleArc,
+        federation_id: FederationId,
+    ) {
+        let self_copy = self.clone();
+        let mut log_event_added_rx = client.log_event_added_rx();
+        tasks.spawn_cancellable("recovery event indexer", async move {
+            // `None` starts at the first entry in the log; from then on the
+            // cursor only moves forward, so the backfill is paid once per open
+            // and the follow loop reads only what is new.
+            let mut position = None;
+
+            loop {
+                // Drain everything already in the log before blocking, so the
+                // backfill completes even if no further event ever arrives.
+                loop {
+                    let batch = client.get_event_log(position, 100).await;
+                    if batch.is_empty() {
+                        break;
+                    }
+
+                    for entry in &batch {
+                        position = Some(entry.id().saturating_add(1));
+
+                        // `ModuleRecoveryCompleted::MODULE` is `None`, so this
+                        // event carries no module kind of its own and
+                        // `entry.module_kind()` cannot be used to filter it the
+                        // way the lnv2 listener filters its own events. The
+                        // kind lives in the payload instead.
+                        if entry.kind != ModuleRecoveryCompleted::KIND {
+                            continue;
+                        }
+
+                        let Some(event) = entry.to_event::<ModuleRecoveryCompleted>() else {
+                            error_to_flutter(format!(
+                                "Could not decode a module-recovery-completed event for {federation_id}"
+                            ))
+                            .await;
+                            continue;
+                        };
+
+                        self_copy
+                            .index_module_recovery(federation_id, &client, entry.ts_usecs, event)
+                            .await;
+                    }
+                }
+
+                if log_event_added_rx.changed().await.is_err() {
+                    break;
+                }
+            }
+        });
+    }
+
+    /// Persists one `ModuleRecoveryCompleted` event, announcing it on the event
+    /// bus only when it is new information.
+    ///
+    /// The announcement is gated on the stored row actually changing, because
+    /// the indexer rescans the whole log on every client open: without the gate
+    /// a recovery that finished months ago would re-announce itself — and so
+    /// re-toast — at every app launch. Comparing the record rather than merely
+    /// checking for a previous row keeps a genuine second recovery of the same
+    /// module (leave, rejoin, recover again) announceable.
+    async fn index_module_recovery(
+        &self,
+        federation_id: FederationId,
+        client: &ClientHandleArc,
+        ts_usecs: u64,
+        event: ModuleRecoveryCompleted,
+    ) {
+        // `kind` is `Option` for backwards compatibility with events persisted
+        // before fedimint carried it in the payload. Fall back to resolving the
+        // instance id against this federation's config, which is the only place
+        // the mapping exists: guardians assign instance ids per federation, so
+        // there is no fixed layout to assume (see `RecoveryModule`).
+        let kind = match event.kind {
+            Some(kind) => kind,
+            None => {
+                let resolved = client
+                    .config()
+                    .await
+                    .modules
+                    .get(&event.module_id)
+                    .map(|module| module.kind.clone());
+
+                let Some(kind) = resolved else {
+                    error_to_flutter(format!(
+                        "Recovery completed for unknown module instance {} in {federation_id}",
+                        event.module_id
+                    ))
+                    .await;
+                    return;
+                };
+                kind
+            }
+        };
+
+        // A module with no payment type of its own (`meta`) still recovers and
+        // still reports; there is simply no history for it to appear in.
+        let Some(recovery_module) = recovery_module_for_kind(&kind) else {
+            return;
+        };
+
+        let record = ModuleRecovery {
+            kind: kind.to_string(),
+            amount_msats: event.amount.map(|amount| amount.msats),
+            timestamp: Timestamp(UNIX_EPOCH + Duration::from_micros(ts_usecs)),
+        };
+
+        let mut dbtx = self.db.begin_transaction().await;
+        let previous = dbtx
+            .insert_entry(
+                &ModuleRecoveryKey {
+                    federation_id,
+                    module_id: event.module_id,
+                },
+                &record,
+            )
+            .await;
+        dbtx.commit_tx().await;
+
+        if previous.as_ref() == Some(&record) {
+            return;
+        }
+
+        info_to_flutter(format!(
+            "Indexed {kind} recovery for {federation_id}: {:?} msats",
+            record.amount_msats
+        ))
+        .await;
+
+        get_event_bus()
+            .publish(MultimintEvent::ModuleRecoveryComplete(
+                federation_id.to_string(),
+                recovery_module,
+                record.amount_msats,
+            ))
+            .await;
     }
 
     fn spawn_lnv2_event_listener(
@@ -2745,6 +2950,11 @@ impl Multimint {
             federation_id,
         );
         self.spawn_lnv2_event_listener(&client_tasks, client.clone(), federation_id);
+        // Unconditional, not gated on `recover`: the recovery events are
+        // written by the recovery client and read back from the *replacement*
+        // client this method opens once recovery has finished, which is a call
+        // with `recover == false`.
+        self.spawn_recovery_event_indexer(&client_tasks, client.clone(), federation_id);
 
         if recover {
             self.spawn_recovery_progress(tasks, &client_tasks, client);
@@ -2842,6 +3052,16 @@ impl Multimint {
 
         self.recovery_progress.write().await.remove(federation_id);
         self.wallet_handler.forget_federation(federation_id).await;
+
+        // The recovery rows are ours, not the client's, so nothing above
+        // reaches them. Dropping them keeps a later re-join from opening on a
+        // history that still claims a recovery the user has since left behind.
+        let mut dbtx = self.db.begin_transaction().await;
+        dbtx.remove_by_prefix(&ModuleRecoveryFederationPrefix {
+            federation_id: *federation_id,
+        })
+        .await;
+        dbtx.commit_tx().await;
 
         self.spawn_federation_teardown(*federation_id, joined);
     }
@@ -4387,6 +4607,84 @@ impl Multimint {
         .await;
     }
 
+    /// A federation's indexed recovery rows, as history entries, newest first.
+    ///
+    /// Filtered by the same module-kind vocabulary the caller uses for the
+    /// operation log (`"mint"`, `"mintv2"`, `"wallet"`), which is why
+    /// `ModuleRecovery` stores the kind as a string rather than as our own
+    /// `RecoveryModule`: the filter can be applied without consulting the
+    /// client config.
+    async fn recovery_transactions(
+        &self,
+        federation_id: &FederationId,
+        modules: &[String],
+    ) -> Vec<Transaction> {
+        let mut dbtx = self.db.begin_transaction_nc().await;
+        let mut rows: Vec<Transaction> = dbtx
+            .find_by_prefix(&ModuleRecoveryFederationPrefix {
+                federation_id: *federation_id,
+            })
+            .await
+            .filter_map(|(key, record)| async move {
+                if !modules.contains(&record.kind) {
+                    return None;
+                }
+
+                let module = recovery_module_for_kind(&ModuleKind::from(record.kind.clone()))?;
+                let timestamp = record
+                    .timestamp
+                    .0
+                    .duration_since(UNIX_EPOCH)
+                    .ok()?
+                    .as_millis() as u64;
+
+                Some(Transaction {
+                    kind: TransactionKind::Recovery {
+                        module,
+                        amount_msats: record.amount_msats,
+                    },
+                    // The headline amount a history row shows. A module that
+                    // reports no total renders as zero here; the UI reads
+                    // `amount_msats` to tell that apart from a genuine zero.
+                    amount: record.amount_msats.unwrap_or(0),
+                    timestamp,
+                    operation_id: Self::recovery_operation_id(federation_id, key.module_id),
+                })
+            })
+            .collect()
+            .await;
+
+        // Newest first, matching the operation log's own order.
+        rows.sort_by(|a, b| Self::history_order(b).cmp(&Self::history_order(a)));
+        rows
+    }
+
+    /// A stable, synthetic operation id for a recovery row.
+    ///
+    /// A recovery is not an operation and has no id of its own, but the history
+    /// cursor is a `(timestamp, operation_id)` pair that the UI feeds straight
+    /// back into `paginate_operations_rev`, so a recovery row has to carry
+    /// something 32 bytes wide that orders deterministically and never collides
+    /// with a real `OperationId`. A domain-separated hash gives both.
+    fn recovery_operation_id(federation_id: &FederationId, module_id: ModuleInstanceId) -> Vec<u8> {
+        use bitcoin::hashes::{sha256::Hash as Sha256Hash, Hash as _};
+
+        let mut preimage = b"ecashapp-module-recovery".to_vec();
+        preimage.append(&mut federation_id.consensus_encode_to_vec());
+        preimage.append(&mut module_id.consensus_encode_to_vec());
+        Sha256Hash::hash(&preimage).to_byte_array().to_vec()
+    }
+
+    /// The sort key a history row is ordered and paginated by.
+    ///
+    /// Mirrors `ChronologicalOperationLogKey`'s own ordering — creation time
+    /// first, then operation id — so that recovery rows and operation-log rows
+    /// interleave exactly the way fedimint's reverse pagination would have
+    /// ordered them.
+    fn history_order(tx: &Transaction) -> (u64, &[u8]) {
+        (tx.timestamp, &tx.operation_id)
+    }
+
     pub async fn transactions(
         &self,
         federation_id: &FederationId,
@@ -4414,6 +4712,11 @@ impl Multimint {
             .await
             .map(|config| format!("{}@{}", config.username, config.domain));
 
+        // Recovery rows live in our database, not the operation log, so they are
+        // loaded separately and merged into the page below.
+        let recovery_rows = self.recovery_transactions(federation_id, &modules).await;
+        let cursor = timestamp.zip(operation_id.clone());
+
         let mut collected = Vec::new();
         let mut next_key = timestamp.map(|timestamp| ChronologicalOperationLogKey {
             creation_time: UNIX_EPOCH + Duration::from_millis(timestamp),
@@ -4425,7 +4728,7 @@ impl Multimint {
             ),
         });
 
-        while collected.len() < 10 {
+        while collected.len() < TRANSACTION_PAGE_SIZE {
             let page = client
                 .operation_log()
                 .paginate_operations_rev(50, next_key)
@@ -4436,7 +4739,7 @@ impl Multimint {
             }
 
             for (key, op_log_val) in &page {
-                if collected.len() >= 10 {
+                if collected.len() >= TRANSACTION_PAGE_SIZE {
                     break;
                 }
 
@@ -5035,7 +5338,55 @@ impl Multimint {
             next_key = page.last().map(|(key, _)| *key);
         }
 
-        collected
+        Self::merge_recovery_rows(collected, recovery_rows, cursor)
+    }
+
+    /// Folds a federation's recovery rows into one page of operation-log rows.
+    ///
+    /// Two things make this more than a concatenation.
+    ///
+    /// A recovery row is *not* guaranteed to be older than every operation.
+    /// `mintv2` declares `RecoveryMode::Usable`, so ecash can be spent while
+    /// its recovery is still running, and such an operation predates the
+    /// recovery-completed event. Sorting rather than appending keeps the
+    /// history in true chronological order in that case.
+    ///
+    /// And the page has to stay a page. The UI's cursor is the last row it was
+    /// handed, which it feeds back as `(timestamp, operation_id)`, so the
+    /// merged page must be ordered the same way `paginate_operations_rev`
+    /// orders the log and must not exceed `TRANSACTION_PAGE_SIZE` — a longer
+    /// page would leave the UI believing there is more history than there is.
+    ///
+    /// Truncation cannot lose a row, because the cursor is the last row
+    /// returned: an operation dropped here is re-fetched on the next page, and
+    /// a recovery row dropped here still satisfies the cursor bound and is
+    /// offered again. Each row therefore surfaces exactly once.
+    fn merge_recovery_rows(
+        operations: Vec<Transaction>,
+        recoveries: Vec<Transaction>,
+        cursor: Option<(u64, Vec<u8>)>,
+    ) -> Vec<Transaction> {
+        if recoveries.is_empty() {
+            return operations;
+        }
+
+        let mut merged = operations;
+
+        // `paginate_operations_rev` returns the half-open range
+        // `[oldest, cursor)`, so a row equal to the cursor has already been
+        // shown. Applying the same strict bound to the recovery rows is what
+        // stops one the UI paged past — and so made the cursor — from being
+        // handed back a second time on the next page.
+        merged.extend(recoveries.into_iter().filter(|row| match &cursor {
+            Some((cursor_timestamp, cursor_operation_id)) => {
+                Self::history_order(row) < (*cursor_timestamp, cursor_operation_id.as_slice())
+            }
+            None => true,
+        }));
+
+        merged.sort_by(|a, b| Self::history_order(b).cmp(&Self::history_order(a)));
+        merged.truncate(TRANSACTION_PAGE_SIZE);
+        merged
     }
 
     /// LNv1 has two different operation send types: external (over the Lightning network) and internal (ecash swap)
@@ -7664,7 +8015,7 @@ mod tests {
 
     use fedimint_client::module::module::recovery::RecoveryProgress;
     use fedimint_core::config::FederationId;
-    use fedimint_core::core::ModuleKind;
+    use fedimint_core::core::{ModuleInstanceId, ModuleKind};
     use fedimint_core::db::mem_impl::MemDatabase;
     use fedimint_core::db::{
         Database, DatabaseKeyPrefix, IDatabaseTransactionOpsCore, IDatabaseTransactionOpsCoreTyped,
@@ -7684,7 +8035,7 @@ mod tests {
         load_guardian_sessions, meta_fields_after_fetch, migrate_federation_meta_v3,
         record_guardian_session, recovery_module_for_kind, FederationMeta, FederationSelector,
         Guardian, GuardianSessionStatus, MetaFetch, MetaFields, Multimint, RecoveryModule,
-        MAX_GATEWAY_PPM,
+        Transaction, TransactionKind, MAX_GATEWAY_PPM, TRANSACTION_PAGE_SIZE,
     };
 
     /// A cached entry from before the guardians went quiet: shutdown announced.
@@ -8199,5 +8550,159 @@ mod tests {
         assert_progress(result, 0, 0);
         assert!(result.is_none());
         assert!(!result.is_done());
+    }
+
+    /// Builds an operation-log-shaped history row. `operation_id` is the byte
+    /// the tie-break compares, which is all these tests need of it.
+    fn operation_row(timestamp: u64, operation_id: u8) -> Transaction {
+        Transaction {
+            kind: TransactionKind::EcashSend {
+                oob_notes: String::new(),
+                fees: 0,
+            },
+            amount: 1_000,
+            timestamp,
+            operation_id: vec![operation_id; 32],
+        }
+    }
+
+    fn recovery_row(timestamp: u64, module_id: ModuleInstanceId) -> Transaction {
+        Transaction {
+            kind: TransactionKind::Recovery {
+                module: RecoveryModule::Ecash,
+                amount_msats: Some(5_000),
+            },
+            amount: 5_000,
+            timestamp,
+            operation_id: Multimint::recovery_operation_id(&FederationId::dummy(), module_id),
+        }
+    }
+
+    fn is_recovery(tx: &Transaction) -> bool {
+        matches!(tx.kind, TransactionKind::Recovery { .. })
+    }
+
+    /// The common case: a recovery predates every operation, so it sorts to the
+    /// bottom of a reverse-chronological page.
+    #[test]
+    fn a_recovery_older_than_every_operation_lands_last() {
+        let operations = vec![operation_row(300, 1), operation_row(200, 2)];
+        let merged = Multimint::merge_recovery_rows(operations, vec![recovery_row(100, 0)], None);
+
+        assert_eq!(
+            merged.iter().map(|tx| tx.timestamp).collect::<Vec<_>>(),
+            vec![300, 200, 100],
+        );
+        assert!(is_recovery(merged.last().unwrap()));
+    }
+
+    /// `mintv2` recovers in `RecoveryMode::Usable`, so ecash can be spent while
+    /// the recovery is still running and the resulting operation is *older*
+    /// than the recovery-completed event. The row has to sort by its timestamp
+    /// rather than being pinned to the end of the list.
+    #[test]
+    fn a_recovery_sorts_by_time_among_operations_it_postdates() {
+        let operations = vec![operation_row(300, 1), operation_row(100, 2)];
+        let merged = Multimint::merge_recovery_rows(operations, vec![recovery_row(200, 0)], None);
+
+        assert_eq!(
+            merged.iter().map(|tx| tx.timestamp).collect::<Vec<_>>(),
+            vec![300, 200, 100],
+        );
+        assert!(is_recovery(&merged[1]));
+    }
+
+    /// The page size is a contract with the UI, which reads a short page as the
+    /// end of the history. Merging must not stretch a full page.
+    #[test]
+    fn merging_never_returns_more_than_one_page() {
+        let operations = (0..TRANSACTION_PAGE_SIZE)
+            .map(|i| operation_row(1_000 - i as u64, i as u8))
+            .collect::<Vec<_>>();
+
+        let merged =
+            Multimint::merge_recovery_rows(operations, vec![recovery_row(10_000, 0)], None);
+
+        assert_eq!(merged.len(), TRANSACTION_PAGE_SIZE);
+        // The recovery is the newest row here, so it displaces the oldest
+        // operation — which the next page re-fetches through the cursor.
+        assert!(is_recovery(&merged[0]));
+        assert_eq!(
+            merged.last().unwrap().timestamp,
+            1_000 - (TRANSACTION_PAGE_SIZE as u64 - 2)
+        );
+    }
+
+    /// Regression guard for the duplicate that a non-strict cursor bound would
+    /// produce: once a recovery row has been shown and handed back as the
+    /// cursor, the next page must not contain it again.
+    #[test]
+    fn a_recovery_used_as_the_cursor_is_not_returned_again() {
+        let row = recovery_row(100, 0);
+        let cursor = Some((row.timestamp, row.operation_id.clone()));
+
+        let merged = Multimint::merge_recovery_rows(vec![], vec![row], cursor);
+
+        assert!(merged.is_empty(), "the cursor row must not repeat");
+    }
+
+    /// A recovery truncated off the end of a full page has to come back on the
+    /// following one, or the row is lost for good.
+    #[test]
+    fn a_truncated_recovery_returns_on_the_next_page() {
+        let recovery = recovery_row(10, 0);
+
+        let first_page = (0..TRANSACTION_PAGE_SIZE)
+            .map(|i| operation_row(1_000 - i as u64, i as u8))
+            .collect::<Vec<_>>();
+        let merged = Multimint::merge_recovery_rows(first_page, vec![recovery.clone()], None);
+        assert!(
+            !merged.iter().any(is_recovery),
+            "the recovery is older than this page and should have been cut",
+        );
+
+        // The UI now pages on from the last row it was given.
+        let last = merged.last().unwrap();
+        let cursor = Some((last.timestamp, last.operation_id.clone()));
+        let second_page = Multimint::merge_recovery_rows(vec![], vec![recovery], cursor);
+
+        assert_eq!(second_page.len(), 1);
+        assert!(is_recovery(&second_page[0]));
+    }
+
+    /// The synthetic id stands in for an `OperationId`, so it has to be the
+    /// same width, stable across calls, and distinct per module — otherwise two
+    /// recovery rows in one federation would collide in the cursor ordering.
+    #[test]
+    fn recovery_operation_ids_are_stable_and_distinct_per_module() {
+        let federation_id = FederationId::dummy();
+
+        let mint = Multimint::recovery_operation_id(&federation_id, 1);
+        let wallet = Multimint::recovery_operation_id(&federation_id, 2);
+
+        assert_eq!(mint.len(), 32, "must be the width of an OperationId");
+        assert_eq!(
+            mint,
+            Multimint::recovery_operation_id(&federation_id, 1),
+            "must not change between calls",
+        );
+        assert_ne!(mint, wallet);
+    }
+
+    /// Every module that can report a recovery has to map onto a payment type,
+    /// or its row would be silently dropped on the way to the history.
+    #[test]
+    fn every_recovering_module_kind_maps_to_a_payment_type() {
+        for (kind, expected) in [
+            ("mint", RecoveryModule::Ecash),
+            ("mintv2", RecoveryModule::Ecash),
+            ("wallet", RecoveryModule::Onchain),
+        ] {
+            assert_eq!(
+                recovery_module_for_kind(&ModuleKind::from(kind)),
+                Some(expected),
+                "{kind} reports recoveries but has no payment type",
+            );
+        }
     }
 }

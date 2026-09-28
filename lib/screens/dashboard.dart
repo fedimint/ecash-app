@@ -179,6 +179,35 @@ class _DashboardState extends State<Dashboard> {
           _loadLightningAddress();
           _loadRecentTransactions();
         }
+      } else if (event is MultimintEvent_ModuleRecoveryComplete) {
+        final currFederationId = await federationIdToString(
+          federationId: widget.fed.federationId,
+        );
+        if (event.field0 != currFederationId) return;
+        if (!mounted) return;
+
+        // Published once per module, the first time its result is indexed, so
+        // this fires per payment type rather than once per federation the way
+        // `RecoveryDone` does. Reloading here — rather than waiting for
+        // `RecoveryDone` — is what puts the row in the history as soon as the
+        // module that produced it has finished.
+        final amountMsats = event.field2;
+        ToastService().show(
+          message:
+              amountMsats == null
+                  ? context.l10n.recoveryCompleteWithoutAmount(
+                    event.field1.label(context.l10n),
+                  )
+                  : context.l10n.recoveryCompleteWithAmount(
+                    formatBalance(amountMsats, false, BitcoinDisplay.sats),
+                    event.field1.label(context.l10n),
+                  ),
+          duration: const Duration(seconds: 5),
+          onTap: () {},
+          icon: const Icon(Icons.restore),
+        );
+        _loadBalance();
+        _loadRecentTransactions();
       } else if (event is MultimintEvent_Ecash) {
         final federationIdString = await federationIdToString(
           federationId: event.field0.$1,

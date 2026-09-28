@@ -1630,6 +1630,76 @@ as int,
 /// @nodoc
 
 
+class MultimintEvent_ModuleRecoveryComplete extends MultimintEvent {
+  const MultimintEvent_ModuleRecoveryComplete(this.field0, this.field1, [this.field2]): super._();
+  
+
+@override final  String field0;
+ final  RecoveryModule field1;
+ final  BigInt? field2;
+
+/// Create a copy of MultimintEvent
+/// with the given fields replaced by the non-null parameter values.
+@JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+$MultimintEvent_ModuleRecoveryCompleteCopyWith<MultimintEvent_ModuleRecoveryComplete> get copyWith => _$MultimintEvent_ModuleRecoveryCompleteCopyWithImpl<MultimintEvent_ModuleRecoveryComplete>(this, _$identity);
+
+
+
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is MultimintEvent_ModuleRecoveryComplete&&(identical(other.field0, field0) || other.field0 == field0)&&(identical(other.field1, field1) || other.field1 == field1)&&(identical(other.field2, field2) || other.field2 == field2));
+}
+
+
+@override
+int get hashCode => Object.hash(runtimeType,field0,field1,field2);
+
+@override
+String toString() {
+  return 'MultimintEvent.moduleRecoveryComplete(field0: $field0, field1: $field1, field2: $field2)';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class $MultimintEvent_ModuleRecoveryCompleteCopyWith<$Res> implements $MultimintEventCopyWith<$Res> {
+  factory $MultimintEvent_ModuleRecoveryCompleteCopyWith(MultimintEvent_ModuleRecoveryComplete value, $Res Function(MultimintEvent_ModuleRecoveryComplete) _then) = _$MultimintEvent_ModuleRecoveryCompleteCopyWithImpl;
+@useResult
+$Res call({
+ String field0, RecoveryModule field1, BigInt? field2
+});
+
+
+
+
+}
+/// @nodoc
+class _$MultimintEvent_ModuleRecoveryCompleteCopyWithImpl<$Res>
+    implements $MultimintEvent_ModuleRecoveryCompleteCopyWith<$Res> {
+  _$MultimintEvent_ModuleRecoveryCompleteCopyWithImpl(this._self, this._then);
+
+  final MultimintEvent_ModuleRecoveryComplete _self;
+  final $Res Function(MultimintEvent_ModuleRecoveryComplete) _then;
+
+/// Create a copy of MultimintEvent
+/// with the given fields replaced by the non-null parameter values.
+@pragma('vm:prefer-inline') $Res call({Object? field0 = null,Object? field1 = null,Object? field2 = freezed,}) {
+  return _then(MultimintEvent_ModuleRecoveryComplete(
+null == field0 ? _self.field0 : field0 // ignore: cast_nullable_to_non_nullable
+as String,null == field1 ? _self.field1 : field1 // ignore: cast_nullable_to_non_nullable
+as RecoveryModule,freezed == field2 ? _self.field2 : field2 // ignore: cast_nullable_to_non_nullable
+as BigInt?,
+  ));
+}
+
+
+}
+
+/// @nodoc
+
+
 class MultimintEvent_Ecash extends MultimintEvent {
   const MultimintEvent_Ecash(this.field0): super._();
   
@@ -2977,6 +3047,83 @@ class _$TransactionKind_EcashSendCopyWithImpl<$Res>
 oobNotes: null == oobNotes ? _self.oobNotes : oobNotes // ignore: cast_nullable_to_non_nullable
 as String,fees: null == fees ? _self.fees : fees // ignore: cast_nullable_to_non_nullable
 as BigInt,
+  ));
+}
+
+
+}
+
+/// @nodoc
+
+
+class TransactionKind_Recovery extends TransactionKind {
+  const TransactionKind_Recovery({required this.module, this.amountMsats}): super._();
+  
+
+/// Which payment type's history this row belongs in.
+ final  RecoveryModule module;
+/// What the module reconstructed, in msats.
+///
+/// `None` when the module does not track a total. Only the mint
+/// modules do — they reissue notes of known denomination — while the
+/// wallet module merely learns which on-chain outputs were its own and
+/// cannot price them at recovery time. The enclosing
+/// `Transaction::amount` is `0` in that case, so the UI has to read
+/// this field rather than the headline amount to decide what to show.
+ final  BigInt? amountMsats;
+
+/// Create a copy of TransactionKind
+/// with the given fields replaced by the non-null parameter values.
+@JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+$TransactionKind_RecoveryCopyWith<TransactionKind_Recovery> get copyWith => _$TransactionKind_RecoveryCopyWithImpl<TransactionKind_Recovery>(this, _$identity);
+
+
+
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is TransactionKind_Recovery&&(identical(other.module, module) || other.module == module)&&(identical(other.amountMsats, amountMsats) || other.amountMsats == amountMsats));
+}
+
+
+@override
+int get hashCode => Object.hash(runtimeType,module,amountMsats);
+
+@override
+String toString() {
+  return 'TransactionKind.recovery(module: $module, amountMsats: $amountMsats)';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class $TransactionKind_RecoveryCopyWith<$Res> implements $TransactionKindCopyWith<$Res> {
+  factory $TransactionKind_RecoveryCopyWith(TransactionKind_Recovery value, $Res Function(TransactionKind_Recovery) _then) = _$TransactionKind_RecoveryCopyWithImpl;
+@useResult
+$Res call({
+ RecoveryModule module, BigInt? amountMsats
+});
+
+
+
+
+}
+/// @nodoc
+class _$TransactionKind_RecoveryCopyWithImpl<$Res>
+    implements $TransactionKind_RecoveryCopyWith<$Res> {
+  _$TransactionKind_RecoveryCopyWithImpl(this._self, this._then);
+
+  final TransactionKind_Recovery _self;
+  final $Res Function(TransactionKind_Recovery) _then;
+
+/// Create a copy of TransactionKind
+/// with the given fields replaced by the non-null parameter values.
+@pragma('vm:prefer-inline') $Res call({Object? module = null,Object? amountMsats = freezed,}) {
+  return _then(TransactionKind_Recovery(
+module: null == module ? _self.module : module // ignore: cast_nullable_to_non_nullable
+as RecoveryModule,amountMsats: freezed == amountMsats ? _self.amountMsats : amountMsats // ignore: cast_nullable_to_non_nullable
+as BigInt?,
   ));
 }
 

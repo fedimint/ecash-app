@@ -11,9 +11,9 @@ import 'package:flutter_rust_bridge/flutter_rust_bridge_for_generated.dart';
 import 'package:freezed_annotation/freezed_annotation.dart' hide protected;
 part 'multimint.freezed.dart';
 
-// These functions are ignored because they are not marked as `pub`: `aggregate_recovery_progress`, `await_receive_lnv1`, `await_receive_lnv2`, `await_send_lnv1`, `await_send_lnv2`, `backup`, `build_client`, `cache_btc_price`, `cache_federation_meta`, `check_for_update`, `compute_send_fees`, `extract_recipient_pk_from_lnv2_lnurl`, `fetch_guardian_session_counts`, `finish_active_subscriptions`, `from_cached`, `from_json`, `from_peg_out_fees`, `get_client_database`, `get_client`, `get_ecash_amount_from_meta`, `get_expiry_timestamp`, `get_federation`, `get_lnv1_amount_from_meta`, `get_lnv1_receive_tx`, `get_lnv1_send_tx`, `get_lnv2_amount_from_meta`, `get_mintv2_receive_amount`, `get_or_build_temp_client`, `get_recurringd_federations`, `get_successor_invite`, `get_url`, `gross_invoice_for_contract`, `guardian_admin_api`, `guardian_bitcoin_status`, `guardian_lnv2_module_api`, `guardian_meta_consensus`, `guardian_meta_module_api`, `guardian_meta_submit`, `guardian_session_statuses`, `init_recovery_progress_cache`, `invoice_is_loopback`, `is_invalid_guardian_auth`, `is_newer_version`, `join_federation_inner`, `join_federation_on`, `list_gateways`, `lnv1_update_gateway_cache`, `lnv2_gateways`, `load_clients`, `load_guardian_sessions`, `meta_fields_after_fetch`, `migrate_federation_meta_v3`, `pay_lnv1`, `pay_lnv2`, `read_meta_msats`, `read_meta_string`, `read_meta_u64`, `read_meta_url`, `receive_lnv1`, `receive_lnv2`, `record_guardian_session`, `recovery_module_for_kind`, `refresh_guardian_sessions`, `register_federation`, `release_ln_address`, `remove_recovery_progress_cache`, `resolve`, `retire_recovery_client`, `run_cache_stage`, `run_migrations`, `send_federation_fee`, `shutdown_client`, `sign_challenge`, `skip_unrenderable`, `solve_gross_for_net`, `spawn_await_ecash_reissue`, `spawn_await_ecash_send`, `spawn_await_mintv2_receive`, `spawn_await_receive`, `spawn_await_recurringd_receive`, `spawn_await_send`, `spawn_await_withdraw`, `spawn_backfill_recipient_pk`, `spawn_cache_task`, `spawn_federation_teardown`, `spawn_lnv2_event_listener`, `spawn_recovery_progress`, `spawn_recurring_invoice_listener`, `update_recovery_progress_cache`, `validate_receive_fee`, `wait_for_recovery`, `wallet_network`
+// These functions are ignored because they are not marked as `pub`: `aggregate_recovery_progress`, `await_receive_lnv1`, `await_receive_lnv2`, `await_send_lnv1`, `await_send_lnv2`, `backup`, `build_client`, `cache_btc_price`, `cache_federation_meta`, `check_for_update`, `compute_send_fees`, `extract_recipient_pk_from_lnv2_lnurl`, `fetch_guardian_session_counts`, `finish_active_subscriptions`, `from_cached`, `from_json`, `from_peg_out_fees`, `get_client_database`, `get_client`, `get_ecash_amount_from_meta`, `get_expiry_timestamp`, `get_federation`, `get_lnv1_amount_from_meta`, `get_lnv1_receive_tx`, `get_lnv1_send_tx`, `get_lnv2_amount_from_meta`, `get_mintv2_receive_amount`, `get_or_build_temp_client`, `get_recurringd_federations`, `get_successor_invite`, `get_url`, `gross_invoice_for_contract`, `guardian_admin_api`, `guardian_bitcoin_status`, `guardian_lnv2_module_api`, `guardian_meta_consensus`, `guardian_meta_module_api`, `guardian_meta_submit`, `guardian_session_statuses`, `history_order`, `index_module_recovery`, `init_recovery_progress_cache`, `invoice_is_loopback`, `is_invalid_guardian_auth`, `is_newer_version`, `join_federation_inner`, `join_federation_on`, `list_gateways`, `lnv1_update_gateway_cache`, `lnv2_gateways`, `load_clients`, `load_guardian_sessions`, `merge_recovery_rows`, `meta_fields_after_fetch`, `migrate_federation_meta_v3`, `pay_lnv1`, `pay_lnv2`, `read_meta_msats`, `read_meta_string`, `read_meta_u64`, `read_meta_url`, `receive_lnv1`, `receive_lnv2`, `record_guardian_session`, `recovery_module_for_kind`, `recovery_operation_id`, `recovery_transactions`, `refresh_guardian_sessions`, `register_federation`, `release_ln_address`, `remove_recovery_progress_cache`, `resolve`, `retire_recovery_client`, `run_cache_stage`, `run_migrations`, `send_federation_fee`, `shutdown_client`, `sign_challenge`, `skip_unrenderable`, `solve_gross_for_net`, `spawn_await_ecash_reissue`, `spawn_await_ecash_send`, `spawn_await_mintv2_receive`, `spawn_await_receive`, `spawn_await_recurringd_receive`, `spawn_await_send`, `spawn_await_withdraw`, `spawn_backfill_recipient_pk`, `spawn_cache_task`, `spawn_federation_teardown`, `spawn_lnv2_event_listener`, `spawn_recovery_event_indexer`, `spawn_recovery_progress`, `spawn_recurring_invoice_listener`, `update_recovery_progress_cache`, `validate_receive_fee`, `wait_for_recovery`, `wallet_network`
 // These types are ignored because they are neither used by any `pub` functions nor (for structs and enums) marked `#[frb(unignore)]`: `ClientType`, `JoinedFederation`, `LNAddressRegisterRequest`, `LNAddressRemoveRequest`, `MetaFetch`, `MetaFields`, `OnChainWithdrawalMeta`, `SessionPeers`, `WrappedEcash`
-// These function are ignored because they are on traits that is not defined in current crate (put an empty `#[frb]` on it to unignore): `assert_receiver_is_total_eq`, `assert_receiver_is_total_eq`, `assert_receiver_is_total_eq`, `assert_receiver_is_total_eq`, `assert_receiver_is_total_eq`, `assert_receiver_is_total_eq`, `assert_receiver_is_total_eq`, `assert_receiver_is_total_eq`, `assert_receiver_is_total_eq`, `assert_receiver_is_total_eq`, `assert_receiver_is_total_eq`, `assert_receiver_is_total_eq`, `assert_receiver_is_total_eq`, `assert_receiver_is_total_eq`, `assert_receiver_is_total_eq`, `assert_receiver_is_total_eq`, `assert_receiver_is_total_eq`, `assert_receiver_is_total_eq`, `assert_receiver_is_total_eq`, `assert_receiver_is_total_eq`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `cmp`, `consensus_decode_partial_from_finite_reader`, `consensus_decode_partial_from_finite_reader`, `consensus_decode_partial_from_finite_reader`, `consensus_encode`, `consensus_encode`, `consensus_encode`, `eq`, `eq`, `eq`, `eq`, `eq`, `eq`, `eq`, `eq`, `eq`, `eq`, `eq`, `eq`, `eq`, `eq`, `eq`, `eq`, `eq`, `eq`, `eq`, `eq`, `eq`, `eq`, `eq`, `eq`, `eq`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `from`, `from`, `partial_cmp`
+// These function are ignored because they are on traits that is not defined in current crate (put an empty `#[frb]` on it to unignore): `assert_fields_are_eq`, `assert_fields_are_eq`, `assert_fields_are_eq`, `assert_fields_are_eq`, `assert_fields_are_eq`, `assert_fields_are_eq`, `assert_fields_are_eq`, `assert_fields_are_eq`, `assert_fields_are_eq`, `assert_fields_are_eq`, `assert_fields_are_eq`, `assert_fields_are_eq`, `assert_fields_are_eq`, `assert_fields_are_eq`, `assert_fields_are_eq`, `assert_fields_are_eq`, `assert_fields_are_eq`, `assert_fields_are_eq`, `assert_fields_are_eq`, `assert_fields_are_eq`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `cmp`, `consensus_decode_partial_from_finite_reader`, `consensus_decode_partial_from_finite_reader`, `consensus_decode_partial_from_finite_reader`, `consensus_encode`, `consensus_encode`, `consensus_encode`, `eq`, `eq`, `eq`, `eq`, `eq`, `eq`, `eq`, `eq`, `eq`, `eq`, `eq`, `eq`, `eq`, `eq`, `eq`, `eq`, `eq`, `eq`, `eq`, `eq`, `eq`, `eq`, `eq`, `eq`, `eq`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `from`, `from`, `partial_cmp`
 // These functions are ignored (category: IgnoreBecauseExplicitAttribute): `federation_network`
 // These functions are ignored (category: IgnoreBecauseOwnerTyShouldIgnore): `default`
 // These functions have error during generation (see debug logs or enable `stop_on_error: true` for more details): `subscribe_guardian_sessions`, `subscribe_peer_status`
@@ -1339,6 +1339,21 @@ sealed class MultimintEvent with _$MultimintEvent {
     int field2,
     int field3,
   ) = MultimintEvent_RecoveryProgress;
+
+  /// One module finished recovering, carrying what it recovered in msats
+  /// (`None` when the module tracks no total — see `TransactionKind::Recovery`).
+  ///
+  /// Distinct from `RecoveryDone`, which fires once per federation after
+  /// every module has finished *and* the recovery client has been replaced.
+  /// This fires per module, the moment that module's result is indexed, and
+  /// only the first time it is indexed — the backfill rescan that runs on
+  /// every client open stays silent. Federation id is a `String` for the
+  /// same bridge reason as `MetaUpdated`.
+  const factory MultimintEvent.moduleRecoveryComplete(
+    String field0,
+    RecoveryModule field1, [
+    BigInt? field2,
+  ]) = MultimintEvent_ModuleRecoveryComplete;
   const factory MultimintEvent.ecash((FederationId, BigInt) field0) =
       MultimintEvent_Ecash;
   const factory MultimintEvent.nostrRecovery(
@@ -1725,6 +1740,29 @@ sealed class TransactionKind with _$TransactionKind {
     required String oobNotes,
     required BigInt fees,
   }) = TransactionKind_EcashSend;
+
+  /// A module's completed seed-phrase recovery, rather than a payment.
+  ///
+  /// Restoring from a seed phrase rebuilds the balance but not the operation
+  /// log, which is local state no seed can reconstruct, so without this row
+  /// the recovered funds appear in the wallet with nothing in the history to
+  /// account for them. Indexed out of fedimint's `ModuleRecoveryCompleted`
+  /// event by `spawn_recovery_event_indexer`; the persisted form is
+  /// `ModuleRecovery` in `db.rs`.
+  const factory TransactionKind.recovery({
+    /// Which payment type's history this row belongs in.
+    required RecoveryModule module,
+
+    /// What the module reconstructed, in msats.
+    ///
+    /// `None` when the module does not track a total. Only the mint
+    /// modules do — they reissue notes of known denomination — while the
+    /// wallet module merely learns which on-chain outputs were its own and
+    /// cannot price them at recovery time. The enclosing
+    /// `Transaction::amount` is `0` in that case, so the UI has to read
+    /// this field rather than the headline amount to decide what to show.
+    BigInt? amountMsats,
+  }) = TransactionKind_Recovery;
 }
 
 class Utxo {

@@ -3,6 +3,7 @@ use std::time::SystemTime;
 use bitcoin::hashes::sha256;
 use fedimint_core::{
     config::{ClientConfig, FederationId},
+    core::ModuleInstanceId,
     encoding::{
         decode_legacy_system_time_from_finite_reader, encode_legacy_system_time, Decodable,
         DecodeError, Encodable,
@@ -104,6 +105,7 @@ pub(crate) enum DbKeyPrefix {
     NwcLimits = 0x19,
     NwcSpendWindow = 0x1A,
     GuardianSession = 0x1B,
+    ModuleRecovery = 0x1C,
 }
 
 #[derive(Debug, Clone, Encodable, Decodable, Eq, PartialEq, Hash, Ord, PartialOrd)]
@@ -648,6 +650,65 @@ impl_db_record!(
 impl_db_lookup!(
     key = GuardianSessionKey,
     query_prefix = GuardianSessionFederationPrefix,
+);
+
+/// One module's completed recovery, indexed out of the Fedimint client's
+/// event log so it can be rendered as a row in the transaction history.
+///
+/// A wallet restored from a seed phrase comes back with its balance but an
+/// empty operation log — past operations are local state the seed cannot
+/// reconstruct — so the money appears with no record of where it came from.
+/// Fedimint logs a `ModuleRecoveryCompleted` event per module when recovery
+/// finishes; indexing it here turns that into a durable, timestamped record
+/// the history screen can show.
+///
+/// Keyed on `(federation_id, module_id)` so re-indexing is idempotent: the
+/// indexer rescans the event log from the start on every client open (which is
+/// what backfills wallets recovered before this feature existed), and a rescan
+/// must overwrite the existing row rather than add a second one.
+///
+/// `federation_id` is encoded first so `ModuleRecoveryFederationPrefix` is a
+/// valid key prefix for per-federation lookups.
+#[derive(Debug, Clone, Encodable, Decodable, Eq, PartialEq, Hash, Ord, PartialOrd)]
+pub(crate) struct ModuleRecoveryKey {
+    pub(crate) federation_id: FederationId,
+    pub(crate) module_id: ModuleInstanceId,
+}
+
+#[derive(Debug, Encodable, Decodable)]
+pub(crate) struct ModuleRecoveryFederationPrefix {
+    pub(crate) federation_id: FederationId,
+}
+
+/// What a single module recovered.
+///
+/// `kind` is the Fedimint module kind as a string (`"mint"`, `"mintv2"`,
+/// `"wallet"`), stored in the same vocabulary the history screen already
+/// filters on, so a recovery row can be matched against the caller's module
+/// filter without consulting the client config.
+///
+/// `amount_msats` is `None` whenever the module does not track a total. Only
+/// the mint modules know the value of what they reconstruct — they reissue
+/// notes of known denomination — while the wallet module only discovers which
+/// on-chain outputs were its own and cannot price them at recovery time. The
+/// remaining modules (`ln`, `lnv2`, `walletv2`, `meta`) declare
+/// `RecoveryMode::None` and never recover at all, so they never appear here.
+#[derive(Debug, Clone, PartialEq, Eq, Encodable, Decodable)]
+pub(crate) struct ModuleRecovery {
+    pub(crate) kind: String,
+    pub(crate) amount_msats: Option<u64>,
+    pub(crate) timestamp: Timestamp,
+}
+
+impl_db_record!(
+    key = ModuleRecoveryKey,
+    value = ModuleRecovery,
+    db_prefix = DbKeyPrefix::ModuleRecovery,
+);
+
+impl_db_lookup!(
+    key = ModuleRecoveryKey,
+    query_prefix = ModuleRecoveryFederationPrefix,
 );
 
 #[cfg(test)]

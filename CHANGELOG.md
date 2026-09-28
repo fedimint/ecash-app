@@ -2,6 +2,7 @@
 
 ## [0.11.0]
 
+- Recovering a wallet now adds a transaction-history entry per module, showing how much ecash was recovered
 - iOS support - Ecash App now runs on iPhone, distributed through TestFlight
 - Upgraded to fedimint v0.12
 - lnurlw:// links now open directly in the app on Android and iOS

@@ -32,4 +32,6 @@ class TransactionDetailKeys {
   static const String inputFees = "Input Fees";
   static const String outputFees = "Output Fees";
   static const String dust = "Dust";
+  static const String recoveredAmount = 'Recovered Amount';
+  static const String paymentType = 'Payment Type';
 }

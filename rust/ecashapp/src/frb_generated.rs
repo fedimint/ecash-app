@@ -17624,10 +17624,18 @@ impl SseDecode for crate::multimint::MultimintEvent {
                 );
             }
             5 => {
+                let mut var_field0 = <String>::sse_decode(deserializer);
+                let mut var_field1 = <crate::multimint::RecoveryModule>::sse_decode(deserializer);
+                let mut var_field2 = <Option<u64>>::sse_decode(deserializer);
+                return crate::multimint::MultimintEvent::ModuleRecoveryComplete(
+                    var_field0, var_field1, var_field2,
+                );
+            }
+            6 => {
                 let mut var_field0 = <(FederationId, u64)>::sse_decode(deserializer);
                 return crate::multimint::MultimintEvent::Ecash(var_field0);
             }
-            6 => {
+            7 => {
                 let mut var_field0 = <String>::sse_decode(deserializer);
                 let mut var_field1 = <u16>::sse_decode(deserializer);
                 let mut var_field2 = <Option<FederationSelector>>::sse_decode(deserializer);
@@ -17635,30 +17643,30 @@ impl SseDecode for crate::multimint::MultimintEvent {
                     var_field0, var_field1, var_field2,
                 );
             }
-            7 => {
+            8 => {
                 let mut var_field0 = <String>::sse_decode(deserializer);
                 let mut var_field1 = <crate::multimint::RelayStatusKind>::sse_decode(deserializer);
                 return crate::multimint::MultimintEvent::NostrRelayStatus(var_field0, var_field1);
             }
-            8 => {
+            9 => {
                 let mut var_field0 =
                     <crate::multimint::NostrRecoveryPhase>::sse_decode(deserializer);
                 return crate::multimint::MultimintEvent::NostrRecoveryPhase(var_field0);
             }
-            9 => {
+            10 => {
                 let mut var_field0 =
                     <crate::multimint::ContactSyncEventKind>::sse_decode(deserializer);
                 return crate::multimint::MultimintEvent::ContactSync(var_field0);
             }
-            10 => {
+            11 => {
                 let mut var_field0 = <String>::sse_decode(deserializer);
                 return crate::multimint::MultimintEvent::UpdateAvailable(var_field0);
             }
-            11 => {
+            12 => {
                 let mut var_field0 = <String>::sse_decode(deserializer);
                 return crate::multimint::MultimintEvent::MetaUpdated(var_field0);
             }
-            12 => {
+            13 => {
                 let mut var_field0 =
                     <(FederationId, crate::app_error::EcashAppError)>::sse_decode(deserializer);
                 return crate::multimint::MultimintEvent::PaymentError(var_field0);
@@ -18371,6 +18379,14 @@ impl SseDecode for crate::multimint::TransactionKind {
                 return crate::multimint::TransactionKind::EcashSend {
                     oob_notes: var_oobNotes,
                     fees: var_fees,
+                };
+            }
+            7 => {
+                let mut var_module = <crate::multimint::RecoveryModule>::sse_decode(deserializer);
+                let mut var_amountMsats = <Option<u64>>::sse_decode(deserializer);
+                return crate::multimint::TransactionKind::Recovery {
+                    module: var_module,
+                    amount_msats: var_amountMsats,
                 };
             }
             _ => {
@@ -20781,36 +20797,43 @@ impl flutter_rust_bridge::IntoDart for crate::multimint::MultimintEvent {
                 field3.into_into_dart().into_dart(),
             ]
             .into_dart(),
+            crate::multimint::MultimintEvent::ModuleRecoveryComplete(field0, field1, field2) => [
+                5.into_dart(),
+                field0.into_into_dart().into_dart(),
+                field1.into_into_dart().into_dart(),
+                field2.into_into_dart().into_dart(),
+            ]
+            .into_dart(),
             crate::multimint::MultimintEvent::Ecash(field0) => {
-                [5.into_dart(), field0.into_into_dart().into_dart()].into_dart()
+                [6.into_dart(), field0.into_into_dart().into_dart()].into_dart()
             }
             crate::multimint::MultimintEvent::NostrRecovery(field0, field1, field2) => [
-                6.into_dart(),
+                7.into_dart(),
                 field0.into_into_dart().into_dart(),
                 field1.into_into_dart().into_dart(),
                 field2.into_into_dart().into_dart(),
             ]
             .into_dart(),
             crate::multimint::MultimintEvent::NostrRelayStatus(field0, field1) => [
-                7.into_dart(),
+                8.into_dart(),
                 field0.into_into_dart().into_dart(),
                 field1.into_into_dart().into_dart(),
             ]
             .into_dart(),
             crate::multimint::MultimintEvent::NostrRecoveryPhase(field0) => {
-                [8.into_dart(), field0.into_into_dart().into_dart()].into_dart()
-            }
-            crate::multimint::MultimintEvent::ContactSync(field0) => {
                 [9.into_dart(), field0.into_into_dart().into_dart()].into_dart()
             }
-            crate::multimint::MultimintEvent::UpdateAvailable(field0) => {
+            crate::multimint::MultimintEvent::ContactSync(field0) => {
                 [10.into_dart(), field0.into_into_dart().into_dart()].into_dart()
             }
-            crate::multimint::MultimintEvent::MetaUpdated(field0) => {
+            crate::multimint::MultimintEvent::UpdateAvailable(field0) => {
                 [11.into_dart(), field0.into_into_dart().into_dart()].into_dart()
             }
-            crate::multimint::MultimintEvent::PaymentError(field0) => {
+            crate::multimint::MultimintEvent::MetaUpdated(field0) => {
                 [12.into_dart(), field0.into_into_dart().into_dart()].into_dart()
+            }
+            crate::multimint::MultimintEvent::PaymentError(field0) => {
+                [13.into_dart(), field0.into_into_dart().into_dart()].into_dart()
             }
             _ => {
                 unimplemented!("");
@@ -21243,6 +21266,15 @@ impl flutter_rust_bridge::IntoDart for crate::multimint::TransactionKind {
                 6.into_dart(),
                 oob_notes.into_into_dart().into_dart(),
                 fees.into_into_dart().into_dart(),
+            ]
+            .into_dart(),
+            crate::multimint::TransactionKind::Recovery {
+                module,
+                amount_msats,
+            } => [
+                7.into_dart(),
+                module.into_into_dart().into_dart(),
+                amount_msats.into_into_dart().into_dart(),
             ]
             .into_dart(),
             _ => {
@@ -22792,39 +22824,45 @@ impl SseEncode for crate::multimint::MultimintEvent {
                 <u32>::sse_encode(field2, serializer);
                 <u32>::sse_encode(field3, serializer);
             }
-            crate::multimint::MultimintEvent::Ecash(field0) => {
+            crate::multimint::MultimintEvent::ModuleRecoveryComplete(field0, field1, field2) => {
                 <i32>::sse_encode(5, serializer);
+                <String>::sse_encode(field0, serializer);
+                <crate::multimint::RecoveryModule>::sse_encode(field1, serializer);
+                <Option<u64>>::sse_encode(field2, serializer);
+            }
+            crate::multimint::MultimintEvent::Ecash(field0) => {
+                <i32>::sse_encode(6, serializer);
                 <(FederationId, u64)>::sse_encode(field0, serializer);
             }
             crate::multimint::MultimintEvent::NostrRecovery(field0, field1, field2) => {
-                <i32>::sse_encode(6, serializer);
+                <i32>::sse_encode(7, serializer);
                 <String>::sse_encode(field0, serializer);
                 <u16>::sse_encode(field1, serializer);
                 <Option<FederationSelector>>::sse_encode(field2, serializer);
             }
             crate::multimint::MultimintEvent::NostrRelayStatus(field0, field1) => {
-                <i32>::sse_encode(7, serializer);
+                <i32>::sse_encode(8, serializer);
                 <String>::sse_encode(field0, serializer);
                 <crate::multimint::RelayStatusKind>::sse_encode(field1, serializer);
             }
             crate::multimint::MultimintEvent::NostrRecoveryPhase(field0) => {
-                <i32>::sse_encode(8, serializer);
+                <i32>::sse_encode(9, serializer);
                 <crate::multimint::NostrRecoveryPhase>::sse_encode(field0, serializer);
             }
             crate::multimint::MultimintEvent::ContactSync(field0) => {
-                <i32>::sse_encode(9, serializer);
+                <i32>::sse_encode(10, serializer);
                 <crate::multimint::ContactSyncEventKind>::sse_encode(field0, serializer);
             }
             crate::multimint::MultimintEvent::UpdateAvailable(field0) => {
-                <i32>::sse_encode(10, serializer);
-                <String>::sse_encode(field0, serializer);
-            }
-            crate::multimint::MultimintEvent::MetaUpdated(field0) => {
                 <i32>::sse_encode(11, serializer);
                 <String>::sse_encode(field0, serializer);
             }
-            crate::multimint::MultimintEvent::PaymentError(field0) => {
+            crate::multimint::MultimintEvent::MetaUpdated(field0) => {
                 <i32>::sse_encode(12, serializer);
+                <String>::sse_encode(field0, serializer);
+            }
+            crate::multimint::MultimintEvent::PaymentError(field0) => {
+                <i32>::sse_encode(13, serializer);
                 <(FederationId, crate::app_error::EcashAppError)>::sse_encode(field0, serializer);
             }
             _ => {
@@ -23453,6 +23491,14 @@ impl SseEncode for crate::multimint::TransactionKind {
                 <i32>::sse_encode(6, serializer);
                 <String>::sse_encode(oob_notes, serializer);
                 <u64>::sse_encode(fees, serializer);
+            }
+            crate::multimint::TransactionKind::Recovery {
+                module,
+                amount_msats,
+            } => {
+                <i32>::sse_encode(7, serializer);
+                <crate::multimint::RecoveryModule>::sse_encode(module, serializer);
+                <Option<u64>>::sse_encode(amount_msats, serializer);
             }
             _ => {
                 unimplemented!("");

@@ -6,6 +6,7 @@ import '../constants/transaction_keys.dart';
 import 'package:ecashapp/widgets/transaction_details.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:ecashapp/models.dart';
 import 'package:ecashapp/multimint.dart';
 import 'package:ecashapp/utils.dart';
 import 'package:provider/provider.dart';
@@ -324,6 +325,31 @@ class TransactionItem extends StatelessWidget {
           },
         );
         break;
+      case TransactionKind_Recovery(
+        module: final module,
+        amountMsats: final amountMsats,
+      ):
+        showAppModalBottomSheet(
+          context: context,
+          childBuilder: () async {
+            return TransactionDetails(
+              tx: tx,
+              details: {
+                TransactionDetailKeys.paymentType: module.label(context.l10n),
+                // A module that reports no total renders the headline amount as
+                // zero, which would read as "recovered nothing". Say so instead.
+                TransactionDetailKeys.recoveredAmount:
+                    amountMsats == null
+                        ? context.l10n.txRecoveredAmountUnknown
+                        : fmt(amountMsats),
+                TransactionDetailKeys.timestamp: formattedDate,
+              },
+              icon: icon,
+              fed: fed,
+            );
+          },
+        );
+        break;
     }
   }
 
@@ -332,14 +358,26 @@ class TransactionItem extends StatelessWidget {
     final bitcoinDisplay = context.select<PreferencesProvider, BitcoinDisplay>(
       (prefs) => prefs.bitcoinDisplay,
     );
+    // A recovery is not a payment in either direction: it restored funds that
+    // were already the user's. It is coloured like a receive (money is in the
+    // wallet) but titled and iconed as its own thing, so the row cannot be
+    // mistaken for an incoming payment.
+    final recovery =
+        tx.kind is TransactionKind_Recovery
+            ? tx.kind as TransactionKind_Recovery
+            : null;
     final isIncoming =
+        recovery != null ||
         tx.kind is TransactionKind_LightningReceive ||
         tx.kind is TransactionKind_OnchainReceive ||
         tx.kind is TransactionKind_EcashReceive ||
         tx.kind is TransactionKind_LightningRecurring;
     final date = DateTime.fromMillisecondsSinceEpoch(tx.timestamp.toInt());
     final formattedDate = DateFormat.yMMMd().add_jm().format(date);
-    final formattedAmount = formatBalance(tx.amount, false, bitcoinDisplay);
+    final formattedAmount =
+        recovery != null && recovery.amountMsats == null
+            ? '—'
+            : formatBalance(tx.amount, false, bitcoinDisplay);
 
     IconData moduleIcon;
     switch (tx.kind) {
@@ -355,6 +393,9 @@ class TransactionItem extends StatelessWidget {
       case TransactionKind_EcashReceive():
       case TransactionKind_EcashSend():
         moduleIcon = Icons.currency_bitcoin;
+        break;
+      case TransactionKind_Recovery():
+        moduleIcon = Icons.restore;
         break;
     }
 
@@ -384,7 +425,9 @@ class TransactionItem extends StatelessWidget {
           ),
         ),
         title: Text(
-          isIncoming ? context.l10n.txReceived : context.l10n.txSent,
+          recovery != null
+              ? context.l10n.txRecovered
+              : (isIncoming ? context.l10n.txReceived : context.l10n.txSent),
           style: Theme.of(context).textTheme.bodyMedium,
         ),
         subtitle: Text(

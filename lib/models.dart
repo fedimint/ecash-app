@@ -1,3 +1,4 @@
+import 'package:ecashapp/generated/app_localizations.dart';
 import 'package:ecashapp/multimint.dart';
 
 /// Defines the available payment methods in the app
@@ -15,5 +16,17 @@ extension PaymentTypeRecovery on PaymentType {
     PaymentType.lightning => RecoveryModule.lightning,
     PaymentType.onchain => RecoveryModule.onchain,
     PaymentType.ecash => RecoveryModule.ecash,
+  };
+}
+
+extension RecoveryModuleLabel on RecoveryModule {
+  /// The payment-type name shown to the user for this recovery group.
+  ///
+  /// Reuses the payment-type strings the rest of the UI already uses, so a
+  /// recovery row names its module the same way the tab that contains it does.
+  String label(AppLocalizations l10n) => switch (this) {
+    RecoveryModule.lightning => l10n.lightning,
+    RecoveryModule.onchain => l10n.onchain,
+    RecoveryModule.ecash => l10n.ecash,
   };
 }

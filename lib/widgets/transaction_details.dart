@@ -48,6 +48,8 @@ class _TransactionDetailsState extends State<TransactionDetails> {
         return context.l10n.onchainReceiveTitle;
       case TransactionKind_OnchainSend():
         return context.l10n.onchainSendTitle;
+      case TransactionKind_Recovery():
+        return context.l10n.recoveryTitle;
     }
   }
 

@@ -43,7 +43,7 @@ void main() {
     test('finds every declared constant', () {
       expect(
         keys.length,
-        28,
+        30,
         reason:
             'a key was added or removed — confirm localizedTxLabel handles it, '
             'then update this count',

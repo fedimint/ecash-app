@@ -14683,12 +14683,18 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           dco_decode_u_32(raw[4]),
         );
       case 5:
+        return MultimintEvent_ModuleRecoveryComplete(
+          dco_decode_String(raw[1]),
+          dco_decode_recovery_module(raw[2]),
+          dco_decode_opt_box_autoadd_u_64(raw[3]),
+        );
+      case 6:
         return MultimintEvent_Ecash(
           dco_decode_box_autoadd_record_auto_owned_rust_opaque_flutter_rust_bridgefor_generated_rust_auto_opaque_inner_federation_id_u_64(
             raw[1],
           ),
         );
-      case 6:
+      case 7:
         return MultimintEvent_NostrRecovery(
           dco_decode_String(raw[1]),
           dco_decode_u_16(raw[2]),
@@ -14696,24 +14702,24 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
             raw[3],
           ),
         );
-      case 7:
+      case 8:
         return MultimintEvent_NostrRelayStatus(
           dco_decode_String(raw[1]),
           dco_decode_relay_status_kind(raw[2]),
         );
-      case 8:
+      case 9:
         return MultimintEvent_NostrRecoveryPhase(
           dco_decode_box_autoadd_nostr_recovery_phase(raw[1]),
         );
-      case 9:
+      case 10:
         return MultimintEvent_ContactSync(
           dco_decode_box_autoadd_contact_sync_event_kind(raw[1]),
         );
-      case 10:
-        return MultimintEvent_UpdateAvailable(dco_decode_String(raw[1]));
       case 11:
-        return MultimintEvent_MetaUpdated(dco_decode_String(raw[1]));
+        return MultimintEvent_UpdateAvailable(dco_decode_String(raw[1]));
       case 12:
+        return MultimintEvent_MetaUpdated(dco_decode_String(raw[1]));
+      case 13:
         return MultimintEvent_PaymentError(
           dco_decode_box_autoadd_record_auto_owned_rust_opaque_flutter_rust_bridgefor_generated_rust_auto_opaque_inner_federation_id_ecash_app_error(
             raw[1],
@@ -15408,6 +15414,11 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
         return TransactionKind_EcashSend(
           oobNotes: dco_decode_String(raw[1]),
           fees: dco_decode_u_64(raw[2]),
+        );
+      case 7:
+        return TransactionKind_Recovery(
+          module: dco_decode_recovery_module(raw[1]),
+          amountMsats: dco_decode_opt_box_autoadd_u_64(raw[2]),
         );
       default:
         throw Exception("unreachable");
@@ -17780,12 +17791,21 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           var_field3,
         );
       case 5:
+        var var_field0 = sse_decode_String(deserializer);
+        var var_field1 = sse_decode_recovery_module(deserializer);
+        var var_field2 = sse_decode_opt_box_autoadd_u_64(deserializer);
+        return MultimintEvent_ModuleRecoveryComplete(
+          var_field0,
+          var_field1,
+          var_field2,
+        );
+      case 6:
         var var_field0 =
             sse_decode_box_autoadd_record_auto_owned_rust_opaque_flutter_rust_bridgefor_generated_rust_auto_opaque_inner_federation_id_u_64(
               deserializer,
             );
         return MultimintEvent_Ecash(var_field0);
-      case 6:
+      case 7:
         var var_field0 = sse_decode_String(deserializer);
         var var_field1 = sse_decode_u_16(deserializer);
         var var_field2 =
@@ -17793,27 +17813,27 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
               deserializer,
             );
         return MultimintEvent_NostrRecovery(var_field0, var_field1, var_field2);
-      case 7:
+      case 8:
         var var_field0 = sse_decode_String(deserializer);
         var var_field1 = sse_decode_relay_status_kind(deserializer);
         return MultimintEvent_NostrRelayStatus(var_field0, var_field1);
-      case 8:
+      case 9:
         var var_field0 = sse_decode_box_autoadd_nostr_recovery_phase(
           deserializer,
         );
         return MultimintEvent_NostrRecoveryPhase(var_field0);
-      case 9:
+      case 10:
         var var_field0 = sse_decode_box_autoadd_contact_sync_event_kind(
           deserializer,
         );
         return MultimintEvent_ContactSync(var_field0);
-      case 10:
-        var var_field0 = sse_decode_String(deserializer);
-        return MultimintEvent_UpdateAvailable(var_field0);
       case 11:
         var var_field0 = sse_decode_String(deserializer);
-        return MultimintEvent_MetaUpdated(var_field0);
+        return MultimintEvent_UpdateAvailable(var_field0);
       case 12:
+        var var_field0 = sse_decode_String(deserializer);
+        return MultimintEvent_MetaUpdated(var_field0);
+      case 13:
         var var_field0 =
             sse_decode_box_autoadd_record_auto_owned_rust_opaque_flutter_rust_bridgefor_generated_rust_auto_opaque_inner_federation_id_ecash_app_error(
               deserializer,
@@ -18587,6 +18607,13 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
         return TransactionKind_EcashSend(
           oobNotes: var_oobNotes,
           fees: var_fees,
+        );
+      case 7:
+        var var_module = sse_decode_recovery_module(deserializer);
+        var var_amountMsats = sse_decode_opt_box_autoadd_u_64(deserializer);
+        return TransactionKind_Recovery(
+          module: var_module,
+          amountMsats: var_amountMsats,
         );
       default:
         throw UnimplementedError('');
@@ -20963,8 +20990,17 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
         sse_encode_recovery_module(field1, serializer);
         sse_encode_u_32(field2, serializer);
         sse_encode_u_32(field3, serializer);
-      case MultimintEvent_Ecash(field0: final field0):
+      case MultimintEvent_ModuleRecoveryComplete(
+        field0: final field0,
+        field1: final field1,
+        field2: final field2,
+      ):
         sse_encode_i_32(5, serializer);
+        sse_encode_String(field0, serializer);
+        sse_encode_recovery_module(field1, serializer);
+        sse_encode_opt_box_autoadd_u_64(field2, serializer);
+      case MultimintEvent_Ecash(field0: final field0):
+        sse_encode_i_32(6, serializer);
         sse_encode_box_autoadd_record_auto_owned_rust_opaque_flutter_rust_bridgefor_generated_rust_auto_opaque_inner_federation_id_u_64(
           field0,
           serializer,
@@ -20974,7 +21010,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
         field1: final field1,
         field2: final field2,
       ):
-        sse_encode_i_32(6, serializer);
+        sse_encode_i_32(7, serializer);
         sse_encode_String(field0, serializer);
         sse_encode_u_16(field1, serializer);
         sse_encode_opt_box_autoadd_Auto_Owned_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerFederationSelector(
@@ -20985,23 +21021,23 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
         field0: final field0,
         field1: final field1,
       ):
-        sse_encode_i_32(7, serializer);
+        sse_encode_i_32(8, serializer);
         sse_encode_String(field0, serializer);
         sse_encode_relay_status_kind(field1, serializer);
       case MultimintEvent_NostrRecoveryPhase(field0: final field0):
-        sse_encode_i_32(8, serializer);
+        sse_encode_i_32(9, serializer);
         sse_encode_box_autoadd_nostr_recovery_phase(field0, serializer);
       case MultimintEvent_ContactSync(field0: final field0):
-        sse_encode_i_32(9, serializer);
+        sse_encode_i_32(10, serializer);
         sse_encode_box_autoadd_contact_sync_event_kind(field0, serializer);
       case MultimintEvent_UpdateAvailable(field0: final field0):
-        sse_encode_i_32(10, serializer);
-        sse_encode_String(field0, serializer);
-      case MultimintEvent_MetaUpdated(field0: final field0):
         sse_encode_i_32(11, serializer);
         sse_encode_String(field0, serializer);
-      case MultimintEvent_PaymentError(field0: final field0):
+      case MultimintEvent_MetaUpdated(field0: final field0):
         sse_encode_i_32(12, serializer);
+        sse_encode_String(field0, serializer);
+      case MultimintEvent_PaymentError(field0: final field0):
+        sse_encode_i_32(13, serializer);
         sse_encode_box_autoadd_record_auto_owned_rust_opaque_flutter_rust_bridgefor_generated_rust_auto_opaque_inner_federation_id_ecash_app_error(
           field0,
           serializer,
@@ -21729,6 +21765,13 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
         sse_encode_i_32(6, serializer);
         sse_encode_String(oobNotes, serializer);
         sse_encode_u_64(fees, serializer);
+      case TransactionKind_Recovery(
+        module: final module,
+        amountMsats: final amountMsats,
+      ):
+        sse_encode_i_32(7, serializer);
+        sse_encode_recovery_module(module, serializer);
+        sse_encode_opt_box_autoadd_u_64(amountMsats, serializer);
     }
   }
 

@@ -36,6 +36,8 @@ String localizedTxLabel(AppLocalizations l10n, String key) {
     TransactionDetailKeys.inputFees => l10n.txDetailInputFees,
     TransactionDetailKeys.outputFees => l10n.txDetailOutputFees,
     TransactionDetailKeys.dust => l10n.txDetailDust,
+    TransactionDetailKeys.recoveredAmount => l10n.txDetailRecoveredAmount,
+    TransactionDetailKeys.paymentType => l10n.txDetailPaymentType,
     _ => key,
   };
 }
