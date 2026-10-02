@@ -69,84 +69,52 @@ void main() {
     });
   });
 
-  group('summarizeConsensus', () {
-    GuardianSessionStatus guardian(
-      int sessionCount,
-      Duration ago, {
-      bool fresh = true,
-      bool isBehind = false,
-    }) {
+  group('guardianSyncState', () {
+    GuardianSessionStatus guardian({bool fresh = true, bool isBehind = false}) {
       return GuardianSessionStatus(
         peerId: 0,
-        sessionCount: BigInt.from(sessionCount),
-        firstSeenAt: BigInt.from(
-          now.subtract(ago).millisecondsSinceEpoch ~/ 1000,
-        ),
+        sessionCount: BigInt.from(100),
+        firstSeenAt: BigInt.from(now.millisecondsSinceEpoch ~/ 1000),
         fresh: fresh,
         sessionsBehind: BigInt.zero,
         isBehind: isBehind,
       );
     }
 
-    test('sorts guardians in sync first and unanswered ones last', () {
-      final summary = summarizeConsensus([
-        null,
-        guardian(98, const Duration(hours: 2), isBehind: true),
-        guardian(100, const Duration(minutes: 1)),
-        guardian(100, const Duration(days: 1), fresh: false),
-        guardian(99, const Duration(minutes: 4)),
-      ], now: now);
-
-      expect(summary.states, [
-        GuardianSyncState.inSync,
-        GuardianSyncState.inSync,
-        GuardianSyncState.behind,
-        GuardianSyncState.unknown,
-        GuardianSyncState.unknown,
-      ]);
-      expect(summary.inSync, 2);
-    });
-
-    test('dates the most advanced session from when it was first seen', () {
-      final summary = summarizeConsensus([
-        guardian(100, const Duration(minutes: 2)),
-        guardian(100, const Duration(minutes: 3)),
-        // Older, but on an earlier session, so it says nothing about the tip.
-        guardian(99, const Duration(hours: 5)),
-        // On the tip longest of all, but it did not answer this round.
-        guardian(100, const Duration(days: 1), fresh: false),
-      ], now: now);
-
-      expect(summary.tipAge, const Duration(minutes: 3));
-      expect(summary.isStalled, isFalse);
-    });
-
-    test('reports a stall however well the guardians agree', () {
-      final summary = summarizeConsensus([
-        guardian(100, const Duration(minutes: 47)),
-        guardian(100, const Duration(minutes: 47)),
-        guardian(100, const Duration(minutes: 47)),
-      ], now: now);
-
-      expect(summary.inSync, 3);
-      expect(summary.isStalled, isTrue);
+    test('is in sync while on the most recent sessions', () {
       expect(
-        summarizeConsensus([
-          guardian(100, consensusStalledAfter - const Duration(seconds: 1)),
-        ], now: now).isStalled,
-        isFalse,
+        guardianSyncState(online: true, session: guardian()),
+        GuardianSyncState.inSync,
       );
     });
 
-    test('knows nothing until a guardian has answered', () {
-      final summary = summarizeConsensus([
-        null,
-        guardian(100, const Duration(hours: 1), fresh: false),
-      ], now: now);
+    test('is behind when trailing the others', () {
+      expect(
+        guardianSyncState(online: true, session: guardian(isBehind: true)),
+        GuardianSyncState.behind,
+      );
+    });
 
-      expect(summary.tipAge, isNull);
-      expect(summary.isStalled, isFalse);
-      expect(summary.inSync, 0);
+    test('is down when unreachable, whatever it last reported', () {
+      expect(
+        guardianSyncState(online: false, session: guardian()),
+        GuardianSyncState.down,
+      );
+      expect(
+        guardianSyncState(online: false, session: null),
+        GuardianSyncState.down,
+      );
+    });
+
+    test('is unknown while reachable but not reporting this round', () {
+      expect(
+        guardianSyncState(online: true, session: null),
+        GuardianSyncState.unknown,
+      );
+      expect(
+        guardianSyncState(online: true, session: guardian(fresh: false)),
+        GuardianSyncState.unknown,
+      );
     });
   });
 

@@ -61,24 +61,10 @@ String formatSessionAge(AppLocalizations l10n, Duration age) {
   return l10n.guardianSessionAgeMinutes(age.inMinutes);
 }
 
-String _formatLongDuration(AppLocalizations l10n, Duration duration) {
-  if (duration.inDays > 0) return l10n.federationExpiryInDays(duration.inDays);
-  if (duration.inHours > 0) {
-    return l10n.federationExpiryInHours(duration.inHours);
-  }
-  return l10n.federationExpiryInMinutes(duration.inMinutes);
-}
-
 DateTime _fromUnixSeconds(BigInt seconds) =>
     DateTime.fromMillisecondsSinceEpoch(seconds.toInt() * 1000);
 
-/// How long the most advanced session may go without a successor before
-/// consensus is reported as stalled. A session lasts about three minutes;
-/// the margin is for federations configured with longer ones and for the
-/// half minute between two rounds of requests.
-const consensusStalledAfter = Duration(minutes: 10);
-
-/// Where a guardian stands relative to the others.
+/// Where a guardian stands in consensus relative to the others.
 enum GuardianSyncState {
   /// Answered, and is on the most advanced session or the one before it.
   inSync,
@@ -87,77 +73,23 @@ enum GuardianSyncState {
   /// between healthy guardians explains.
   behind,
 
-  /// Did not answer the latest round of requests, so nothing is known about
-  /// where it is now.
+  /// Cannot be reached at all.
+  down,
+
+  /// Reachable, but has not reported its session this round, so nothing is
+  /// known about where it is now.
   unknown,
 }
 
-/// What the guardians' sessions say about consensus as a whole.
-class ConsensusSummary {
-  const ConsensusSummary({required this.states, required this.tipAge});
-
-  /// One per guardian, those in sync first and those that did not answer
-  /// last, so the bar fills towards its threshold marker like the one for
-  /// connectivity does.
-  final List<GuardianSyncState> states;
-
-  /// How long ago this wallet first saw the most advanced session. Null while
-  /// no guardian has answered.
-  final Duration? tipAge;
-
-  int get inSync =>
-      states.where((state) => state == GuardianSyncState.inSync).length;
-
-  /// Whether the guardians, however well they agree, have stopped producing
-  /// sessions.
-  bool get isStalled {
-    final tipAge = this.tipAge;
-    return tipAge != null && tipAge >= consensusStalledAfter;
-  }
-}
-
-ConsensusSummary summarizeConsensus(
-  Iterable<GuardianSessionStatus?> guardians, {
-  DateTime? now,
+GuardianSyncState guardianSyncState({
+  required bool online,
+  required GuardianSessionStatus? session,
 }) {
-  final states = [
-    for (final guardian in guardians)
-      if (guardian == null || !guardian.fresh || guardian.sessionCount == null)
-        GuardianSyncState.unknown
-      else if (guardian.isBehind)
-        GuardianSyncState.behind
-      else
-        GuardianSyncState.inSync,
-  ]..sort((a, b) => a.index.compareTo(b.index));
-
-  // The most advanced session, and the earliest any guardian was seen on it:
-  // that is when the federation last moved, as far as this wallet can tell.
-  BigInt? tip;
-  BigInt? tipFirstSeenAt;
-  for (final guardian in guardians) {
-    final count = guardian?.sessionCount;
-    final firstSeenAt = guardian?.firstSeenAt;
-    if (guardian == null || !guardian.fresh) continue;
-    if (count == null || firstSeenAt == null) continue;
-    if (tip == null || count > tip) {
-      tip = count;
-      tipFirstSeenAt = firstSeenAt;
-    } else if (count == tip && firstSeenAt < tipFirstSeenAt!) {
-      tipFirstSeenAt = firstSeenAt;
-    }
+  if (!online) return GuardianSyncState.down;
+  if (session == null || !session.fresh || session.sessionCount == null) {
+    return GuardianSyncState.unknown;
   }
-
-  final Duration? tipAge;
-  if (tipFirstSeenAt == null) {
-    tipAge = null;
-  } else {
-    final age = (now ?? DateTime.now()).difference(
-      _fromUnixSeconds(tipFirstSeenAt),
-    );
-    tipAge = age.isNegative ? Duration.zero : age;
-  }
-
-  return ConsensusSummary(states: states, tipAge: tipAge);
+  return session.isBehind ? GuardianSyncState.behind : GuardianSyncState.inSync;
 }
 
 class FederationInfoScreen extends StatefulWidget {
@@ -659,99 +591,8 @@ class _FederationInfoScreenState extends State<FederationInfoScreen> {
     );
   }
 
-  /// Whether the guardians are working together, as a twin of the bar above:
-  /// one segment per guardian, and the same marker for how many of them
-  /// consensus needs.
-  ///
-  /// Agreement alone would not do. A federation whose guardians all sit on the
-  /// same session while producing no new ones agrees perfectly, so once the
-  /// most advanced session has gone [consensusStalledAfter] without a
-  /// successor the bar reports that instead, whatever the guardians agree on.
-  Widget _buildConsensusBar({
-    required ThemeData theme,
-    required int threshold,
-  }) {
-    final peers = _peers;
-    if (peers == null || peers.isEmpty || _sessions.isEmpty) {
-      return const SizedBox.shrink();
-    }
-
-    final l10n = context.l10n;
-    final summary = summarizeConsensus(
-      peers.map((peer) => _sessions[peer.peerId]),
-    );
-    final tipAge = summary.tipAge;
-
-    final Color color;
-    final String label;
-    if (tipAge == null) {
-      color = Colors.grey;
-      label = l10n.consensusWaiting;
-    } else if (summary.isStalled) {
-      color = Colors.red;
-      label = l10n.consensusStalled(_formatLongDuration(l10n, tipAge));
-    } else {
-      color =
-          summary.inSync == peers.length
-              ? Colors.green
-              : summary.inSync >= threshold
-              ? Colors.amber
-              : Colors.red;
-      label = l10n.consensusInSync(
-        summary.inSync,
-        peers.length,
-        formatSessionAge(l10n, tipAge),
-      );
-    }
-
-    // The segments keep their own colours rather than taking the bar's, or a
-    // guardian that is behind would look the same as the ones keeping up.
-    Color segmentColor(GuardianSyncState state) => switch (state) {
-      GuardianSyncState.inSync => summary.isStalled ? Colors.red : Colors.green,
-      GuardianSyncState.behind => Colors.amber,
-      GuardianSyncState.unknown => theme.colorScheme.surfaceContainerHighest
-          .withValues(alpha: 0.3),
-    };
-
-    // The lock under the bar above hangs below its own box, so the gap has to
-    // clear it.
-    return Padding(
-      padding: const EdgeInsets.only(top: 16),
-      child: _buildThresholdBar(
-        theme: theme,
-        label: label,
-        color: color,
-        totalCount: peers.length,
-        threshold: threshold,
-        fill: _consensusSegments(summary, segmentColor),
-      ),
-    );
-  }
-
-  Widget _consensusSegments(
-    ConsensusSummary summary,
-    Color Function(GuardianSyncState) segmentColor,
-  ) {
-    return SizedBox(
-      height: 10,
-      child: Row(
-        children: [
-          for (final (index, state) in summary.states.indexed)
-            Expanded(
-              child: AnimatedContainer(
-                duration: const Duration(milliseconds: 400),
-                margin: EdgeInsets.only(left: index == 0 ? 0 : 2),
-                color: segmentColor(state),
-              ),
-            ),
-        ],
-      ),
-    );
-  }
-
-  /// The frame the guardian bars share: a label, a bordered bar around [fill],
-  /// and a marker with a lock under it at the share of guardians that make up
-  /// the threshold.
+  /// A label, a bordered bar around [fill], and a marker with a lock under it
+  /// at the share of guardians that make up the threshold.
   Widget _buildThresholdBar({
     required ThemeData theme,
     required String label,
@@ -910,192 +751,222 @@ class _FederationInfoScreenState extends State<FederationInfoScreen> {
         final isOnline = peer.online;
 
         final theme = Theme.of(context);
-        final sessionColumn = _sessionColumn(theme, _sessions[peer.peerId]);
-        return ListTile(
-          dense: true,
-          contentPadding: EdgeInsets.zero,
-          onTap:
-              !widget.joinable && isOnline
-                  ? () => _onGuardianTapped(peer)
-                  : null,
-          leading: Icon(
-            Icons.circle,
-            color: isOnline ? Colors.green : Colors.red,
-            size: 12,
+        final session = _sessions[peer.peerId];
+        final sessionColumn = _sessionColumn(theme, session);
+        final syncColor = _syncColor(
+          theme,
+          guardianSyncState(online: isOnline, session: session),
+        );
+        // The outline is the guardian's place in consensus, the dot only
+        // whether this wallet can reach it: a guardian can be reachable and
+        // still be stuck on an old session.
+        return AnimatedContainer(
+          duration: const Duration(milliseconds: 400),
+          margin: const EdgeInsets.symmetric(vertical: 4),
+          padding: const EdgeInsets.symmetric(horizontal: 8),
+          decoration: BoxDecoration(
+            color: syncColor.withValues(alpha: 0.06),
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: syncColor, width: 1.5),
           ),
-          title: Row(
-            children: [
-              Expanded(child: Text(peer.name, overflow: TextOverflow.ellipsis)),
-              if (isOnline) _connectivityBadge(theme, peer.connectivity),
-              // Centred in what is left of the row, which puts it halfway
-              // between the badge and the invite code buttons.
-              if (isOnline || sessionColumn != null)
+          child: ListTile(
+            dense: true,
+            contentPadding: EdgeInsets.zero,
+            onTap:
+                !widget.joinable && isOnline
+                    ? () => _onGuardianTapped(peer)
+                    : null,
+            leading: Icon(
+              Icons.circle,
+              color: isOnline ? Colors.green : Colors.red,
+              size: 12,
+            ),
+            title: Row(
+              children: [
                 Expanded(
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 4),
-                    child: Center(child: sessionColumn),
-                  ),
+                  child: Text(peer.name, overflow: TextOverflow.ellipsis),
                 ),
-            ],
-          ),
-          subtitle:
-              isOnline
-                  ? Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        context.l10n.versionLabel(peer.version ?? ''),
-                        style: theme.textTheme.bodySmall?.copyWith(
-                          color: Colors.grey,
+                if (isOnline) _connectivityBadge(theme, peer.connectivity),
+                // Centred in what is left of the row, which puts it halfway
+                // between the badge and the invite code buttons.
+                if (isOnline || sessionColumn != null)
+                  Expanded(
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 4),
+                      child: Center(child: sessionColumn),
+                    ),
+                  ),
+              ],
+            ),
+            subtitle:
+                isOnline
+                    ? Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          context.l10n.versionLabel(peer.version ?? ''),
+                          style: theme.textTheme.bodySmall?.copyWith(
+                            color: Colors.grey,
+                          ),
                         ),
-                      ),
-                      Text(
-                        peer.url,
-                        style: theme.textTheme.bodySmall?.copyWith(
-                          color: Colors.grey,
+                        Text(
+                          peer.url,
+                          style: theme.textTheme.bodySmall?.copyWith(
+                            color: Colors.grey,
+                          ),
                         ),
-                      ),
-                    ],
-                  )
-                  : Text(context.l10n.disconnected),
-          trailing:
-              !widget.joinable && isFederationOnline
-                  ? Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      IconButton(
-                        tooltip: context.l10n.copyInviteCode,
-                        icon: const Icon(Icons.copy, size: 20),
-                        onPressed: () async {
-                          try {
-                            final inviteCode = await getInviteCode(
-                              federationId: _fed!.federationId,
-                              peer: peer.peerId,
-                            );
-                            if (!context.mounted) return;
-                            await Clipboard.setData(
-                              ClipboardData(text: inviteCode),
-                            );
-                            ToastService().show(
-                              message: context.l10n.inviteCodeCopied(peer.name),
-                              duration: const Duration(seconds: 5),
-                              onTap: () {},
-                              icon: Icon(Icons.check),
-                            );
-                          } catch (e) {
-                            AppLogger.instance.error(
-                              "Error getting invite code: $e",
-                            );
-                            ToastService().show(
-                              message: context.l10n.couldNotGetInviteCode,
-                              duration: const Duration(seconds: 5),
-                              onTap: () {},
-                              icon: Icon(Icons.error),
-                            );
-                          }
-                        },
-                      ),
-                      IconButton(
-                        tooltip: context.l10n.viewInviteCode,
-                        icon: const Icon(Icons.qr_code, size: 20),
-                        onPressed: () async {
-                          try {
-                            final inviteCode = await getInviteCode(
-                              federationId: _fed!.federationId,
-                              peer: peer.peerId,
-                            );
-                            if (!context.mounted) return;
-                            showDialog(
-                              context: context,
-                              builder:
-                                  (context) => AlertDialog(
-                                    title: Center(
-                                      child: Text(
-                                        context.l10n.inviteCode,
-                                        textAlign: TextAlign.center,
+                      ],
+                    )
+                    : Text(context.l10n.disconnected),
+            trailing:
+                !widget.joinable && isFederationOnline
+                    ? Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        IconButton(
+                          tooltip: context.l10n.copyInviteCode,
+                          icon: const Icon(Icons.copy, size: 20),
+                          onPressed: () async {
+                            try {
+                              final inviteCode = await getInviteCode(
+                                federationId: _fed!.federationId,
+                                peer: peer.peerId,
+                              );
+                              if (!context.mounted) return;
+                              await Clipboard.setData(
+                                ClipboardData(text: inviteCode),
+                              );
+                              ToastService().show(
+                                message: context.l10n.inviteCodeCopied(
+                                  peer.name,
+                                ),
+                                duration: const Duration(seconds: 5),
+                                onTap: () {},
+                                icon: Icon(Icons.check),
+                              );
+                            } catch (e) {
+                              AppLogger.instance.error(
+                                "Error getting invite code: $e",
+                              );
+                              ToastService().show(
+                                message: context.l10n.couldNotGetInviteCode,
+                                duration: const Duration(seconds: 5),
+                                onTap: () {},
+                                icon: Icon(Icons.error),
+                              );
+                            }
+                          },
+                        ),
+                        IconButton(
+                          tooltip: context.l10n.viewInviteCode,
+                          icon: const Icon(Icons.qr_code, size: 20),
+                          onPressed: () async {
+                            try {
+                              final inviteCode = await getInviteCode(
+                                federationId: _fed!.federationId,
+                                peer: peer.peerId,
+                              );
+                              if (!context.mounted) return;
+                              showDialog(
+                                context: context,
+                                builder:
+                                    (context) => AlertDialog(
+                                      title: Center(
+                                        child: Text(
+                                          context.l10n.inviteCode,
+                                          textAlign: TextAlign.center,
+                                        ),
                                       ),
-                                    ),
-                                    content: AspectRatio(
-                                      aspectRatio: 1,
-                                      child: GestureDetector(
-                                        onTap: () {
-                                          showDialog(
-                                            context: context,
-                                            builder:
-                                                (_) => Dialog(
-                                                  backgroundColor:
-                                                      Colors.transparent,
-                                                  insetPadding: EdgeInsets.zero,
-                                                  child: GestureDetector(
-                                                    onTap:
-                                                        () =>
-                                                            Navigator.of(
-                                                              context,
-                                                              rootNavigator:
-                                                                  true,
-                                                            ).pop(),
-                                                    child: Container(
-                                                      width: double.infinity,
-                                                      height: double.infinity,
-                                                      color: Colors.black
-                                                          .withValues(
-                                                            alpha: 0.9,
-                                                          ),
-                                                      child: Center(
-                                                        child: QrImageView(
-                                                          data: inviteCode,
-                                                          version:
-                                                              QrVersions.auto,
-                                                          backgroundColor:
-                                                              Colors.white,
-                                                          size:
-                                                              MediaQuery.of(
+                                      content: AspectRatio(
+                                        aspectRatio: 1,
+                                        child: GestureDetector(
+                                          onTap: () {
+                                            showDialog(
+                                              context: context,
+                                              builder:
+                                                  (_) => Dialog(
+                                                    backgroundColor:
+                                                        Colors.transparent,
+                                                    insetPadding:
+                                                        EdgeInsets.zero,
+                                                    child: GestureDetector(
+                                                      onTap:
+                                                          () =>
+                                                              Navigator.of(
                                                                 context,
-                                                              ).size.width *
-                                                              0.9,
+                                                                rootNavigator:
+                                                                    true,
+                                                              ).pop(),
+                                                      child: Container(
+                                                        width: double.infinity,
+                                                        height: double.infinity,
+                                                        color: Colors.black
+                                                            .withValues(
+                                                              alpha: 0.9,
+                                                            ),
+                                                        child: Center(
+                                                          child: QrImageView(
+                                                            data: inviteCode,
+                                                            version:
+                                                                QrVersions.auto,
+                                                            backgroundColor:
+                                                                Colors.white,
+                                                            size:
+                                                                MediaQuery.of(
+                                                                  context,
+                                                                ).size.width *
+                                                                0.9,
+                                                          ),
                                                         ),
                                                       ),
                                                     ),
                                                   ),
-                                                ),
-                                          );
-                                        },
-                                        child: QrImageView(
-                                          data: inviteCode,
-                                          version: QrVersions.auto,
-                                          backgroundColor: Colors.white,
+                                            );
+                                          },
+                                          child: QrImageView(
+                                            data: inviteCode,
+                                            version: QrVersions.auto,
+                                            backgroundColor: Colors.white,
+                                          ),
                                         ),
                                       ),
+                                      actions: [
+                                        TextButton(
+                                          onPressed:
+                                              () => Navigator.of(context).pop(),
+                                          child: Text(context.l10n.close),
+                                        ),
+                                      ],
                                     ),
-                                    actions: [
-                                      TextButton(
-                                        onPressed:
-                                            () => Navigator.of(context).pop(),
-                                        child: Text(context.l10n.close),
-                                      ),
-                                    ],
-                                  ),
-                            );
-                          } catch (e) {
-                            AppLogger.instance.error(
-                              "Error getting invite code: $e",
-                            );
-                            ToastService().show(
-                              message: context.l10n.couldNotGetInviteCode,
-                              duration: const Duration(seconds: 5),
-                              onTap: () {},
-                              icon: Icon(Icons.error),
-                            );
-                          }
-                        },
-                      ),
-                    ],
-                  )
-                  : null,
+                              );
+                            } catch (e) {
+                              AppLogger.instance.error(
+                                "Error getting invite code: $e",
+                              );
+                              ToastService().show(
+                                message: context.l10n.couldNotGetInviteCode,
+                                duration: const Duration(seconds: 5),
+                                onTap: () {},
+                                icon: Icon(Icons.error),
+                              );
+                            }
+                          },
+                        ),
+                      ],
+                    )
+                    : null,
+          ),
         );
       },
     );
   }
+
+  Color _syncColor(ThemeData theme, GuardianSyncState state) => switch (state) {
+    GuardianSyncState.inSync => Colors.green,
+    GuardianSyncState.behind => Colors.amber,
+    GuardianSyncState.down => Colors.red,
+    GuardianSyncState.unknown => theme.colorScheme.outlineVariant,
+  };
 
   Widget _buildSelectedContent(bool isFederationOnline) {
     switch (_selectedSection) {
@@ -1364,7 +1235,6 @@ class _FederationInfoScreenState extends State<FederationInfoScreen> {
                     totalCount: totalGuardians,
                     threshold: thresh,
                   ),
-                  _buildConsensusBar(theme: theme, threshold: thresh),
                   const SizedBox(height: 16),
                   _buildSectionChips(theme),
                   const SizedBox(height: 8),
