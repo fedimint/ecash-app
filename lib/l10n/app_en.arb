@@ -661,6 +661,63 @@
     }
   },
 
+  "guardianStateInSync": "In sync",
+  "@guardianStateInSync": {},
+
+  "guardianStateBehind": "Behind",
+  "@guardianStateBehind": {},
+
+  "guardianStateUnknown": "No report",
+  "@guardianStateUnknown": {},
+
+  "guardianStateInSyncDetail": "Keeping up with the other guardians",
+  "@guardianStateInSyncDetail": {},
+
+  "guardianStateBehindDetail": "Falling behind the other guardians",
+  "@guardianStateBehindDetail": {},
+
+  "guardianStateDownDetail": "This wallet cannot reach the guardian",
+  "@guardianStateDownDetail": {},
+
+  "guardianStateUnknownDetail": "Reachable, but has not reported its session yet",
+  "@guardianStateUnknownDetail": {},
+
+  "guardianConsensusSection": "Consensus",
+  "@guardianConsensusSection": {},
+
+  "guardianConnectionSection": "Connection",
+  "@guardianConnectionSection": {},
+
+  "guardianSessionLabel": "Session",
+  "@guardianSessionLabel": {},
+
+  "guardianFirstSeenLabel": "First seen",
+  "@guardianFirstSeenLabel": {},
+
+  "guardianSessionsBehindLabel": "Sessions behind",
+  "@guardianSessionsBehindLabel": {},
+
+  "guardianStatusLabel": "Status",
+  "@guardianStatusLabel": {},
+
+  "guardianOnline": "Online",
+  "@guardianOnline": {},
+
+  "guardianConnectionTypeLabel": "Connection type",
+  "@guardianConnectionTypeLabel": {},
+
+  "guardianVersionLabel": "Version",
+  "@guardianVersionLabel": {},
+
+  "guardianUrlLabel": "URL",
+  "@guardianUrlLabel": {},
+
+  "guardianOpenDashboard": "Open Guardian Dashboard",
+  "@guardianOpenDashboard": {},
+
+  "guardianOfflineLoginHint": "The dashboard is available while the guardian is online",
+  "@guardianOfflineLoginHint": {},
+
   "connectionDirect": "Direct",
   "@connectionDirect": {},
 

@@ -1,8 +1,7 @@
 import 'dart:async';
 
 import 'package:ecashapp/extensions/build_context_l10n.dart';
-import 'package:ecashapp/generated/app_localizations.dart';
-import 'package:ecashapp/screens/guardian_dashboard.dart';
+import 'package:ecashapp/screens/guardian_screen.dart';
 import 'package:ecashapp/widgets/federation_utxo_list.dart';
 import 'package:ecashapp/lib.dart';
 import 'package:ecashapp/multimint.dart';
@@ -13,84 +12,8 @@ import 'package:ecashapp/widgets/federation_expiry_banner.dart';
 import 'package:ecashapp/widgets/gateways.dart';
 import 'package:ecashapp/widgets/leave_federation_dialog.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
-import 'package:intl/intl.dart';
-import 'package:qr_flutter/qr_flutter.dart';
 
 enum _InfoSection { guardians, utxos, gateways }
-
-/// The session count a guardian last reported, labelled and grouped the way
-/// the locale does. Null while the guardian has never answered.
-String? formatGuardianSessionCount(
-  AppLocalizations l10n,
-  GuardianSessionStatus? status,
-) {
-  final sessionCount = status?.sessionCount;
-  if (sessionCount == null) return null;
-  return l10n.guardianSessionCount(
-    NumberFormat.decimalPattern(l10n.localeName).format(sessionCount.toInt()),
-  );
-}
-
-/// How long ago this wallet first saw the guardian report its current session
-/// count, in the largest unit that fits. Null while the guardian has never
-/// answered.
-///
-/// The age is what tells a guardian that is keeping up from one that is stuck,
-/// since a session outcome carries no time of its own.
-String? formatGuardianSessionAge(
-  AppLocalizations l10n,
-  GuardianSessionStatus? status, {
-  DateTime? now,
-}) {
-  final firstSeenAt = status?.firstSeenAt;
-  if (firstSeenAt == null) return null;
-  return formatSessionAge(
-    l10n,
-    (now ?? DateTime.now()).difference(_fromUnixSeconds(firstSeenAt)),
-  );
-}
-
-/// How long ago a session was first seen, abbreviated, in the largest unit
-/// that fits.
-String formatSessionAge(AppLocalizations l10n, Duration age) {
-  // Also covers a negative age, which means the clock was set back since.
-  if (age.inMinutes < 1) return l10n.guardianSessionAgeJustNow;
-  if (age.inDays > 0) return l10n.guardianSessionAgeDays(age.inDays);
-  if (age.inHours > 0) return l10n.guardianSessionAgeHours(age.inHours);
-  return l10n.guardianSessionAgeMinutes(age.inMinutes);
-}
-
-DateTime _fromUnixSeconds(BigInt seconds) =>
-    DateTime.fromMillisecondsSinceEpoch(seconds.toInt() * 1000);
-
-/// Where a guardian stands in consensus relative to the others.
-enum GuardianSyncState {
-  /// Answered, and is on the most advanced session or the one before it.
-  inSync,
-
-  /// Answered, but trails the most advanced guardian by more than the spread
-  /// between healthy guardians explains.
-  behind,
-
-  /// Cannot be reached at all.
-  down,
-
-  /// Reachable, but has not reported its session this round, so nothing is
-  /// known about where it is now.
-  unknown,
-}
-
-GuardianSyncState guardianSyncState({
-  required bool online,
-  required GuardianSessionStatus? session,
-}) {
-  if (!online) return GuardianSyncState.down;
-  if (session == null || !session.fresh || session.sessionCount == null) {
-    return GuardianSyncState.unknown;
-  }
-  return session.isBehind ? GuardianSyncState.behind : GuardianSyncState.inSync;
-}
 
 class FederationInfoScreen extends StatefulWidget {
   /// The federation to display. For joinable previews this can be null: the
@@ -130,12 +53,16 @@ class _FederationInfoScreenState extends State<FederationInfoScreen> {
   StreamSubscription<List<PeerStatus>>? _peerUpdates;
   StreamSubscription<MultimintEvent>? _metaUpdates;
   StreamSubscription<List<GuardianSessionStatus>>? _sessionUpdates;
-  List<PeerStatus>? _peers;
+
+  /// Notifiers rather than plain fields so an open [GuardianScreen] follows
+  /// the same updates as this screen.
+  final ValueNotifier<List<PeerStatus>?> _peers = ValueNotifier(null);
 
   /// Each guardian's consensus progress, by peer id. Replaced wholesale every
   /// time the guardians are asked again, which is also what keeps the ages on
   /// the rows current.
-  Map<int, GuardianSessionStatus> _sessions = {};
+  final ValueNotifier<Map<int, GuardianSessionStatus>> _sessions =
+      ValueNotifier(const {});
   _InfoSection _selectedSection = _InfoSection.guardians;
   bool _isJoining = false;
 
@@ -198,6 +125,8 @@ class _FederationInfoScreenState extends State<FederationInfoScreen> {
     _peerUpdates?.cancel();
     _metaUpdates?.cancel();
     _sessionUpdates?.cancel();
+    _peers.dispose();
+    _sessions.dispose();
     super.dispose();
   }
 
@@ -271,7 +200,7 @@ class _FederationInfoScreenState extends State<FederationInfoScreen> {
 
       if (!mounted) return;
       setState(() {
-        _peers = event;
+        _peers.value = event;
         _animatedPercent = totalCount > 0 ? onlineCount / totalCount : 0.0;
       });
     });
@@ -288,7 +217,7 @@ class _FederationInfoScreenState extends State<FederationInfoScreen> {
       (List<GuardianSessionStatus> event) {
         if (!mounted) return;
         setState(() {
-          _sessions = {for (final status in event) status.peerId: status};
+          _sessions.value = {for (final status in event) status.peerId: status};
         });
       },
       onError: (Object e) {
@@ -304,111 +233,6 @@ class _FederationInfoScreenState extends State<FederationInfoScreen> {
     fed: _fed!,
     onLeaveFederation: widget.onLeaveFederation,
   );
-
-  // --- Guardian dashboard login logic ---
-
-  Future<void> _onGuardianTapped(PeerStatus peer) async {
-    final passwordController = TextEditingController();
-
-    await showDialog(
-      context: context,
-      builder: (dialogContext) {
-        bool isVerifying = false;
-        String? errorText;
-
-        return StatefulBuilder(
-          builder: (sbContext, setState) {
-            Future<void> submit() async {
-              final password = passwordController.text;
-              if (password.isEmpty || isVerifying) return;
-              setState(() {
-                isVerifying = true;
-                errorText = null;
-              });
-
-              try {
-                final ok = await guardianLogin(
-                  federationId: _fed!.federationId,
-                  peer: peer.peerId,
-                  password: password,
-                );
-                if (!sbContext.mounted) return;
-                if (!ok) {
-                  setState(() {
-                    isVerifying = false;
-                    errorText = sbContext.l10n.guardianInvalidPassword;
-                  });
-                  return;
-                }
-                Navigator.of(dialogContext).pop();
-                if (!mounted) return;
-                Navigator.of(context).push(
-                  MaterialPageRoute(
-                    builder:
-                        (_) => GuardianDashboardScreen(
-                          fed: _fed!,
-                          peer: peer,
-                          password: password,
-                        ),
-                  ),
-                );
-              } catch (e) {
-                AppLogger.instance.error("Guardian login failed: $e");
-                if (!sbContext.mounted) return;
-                setState(() {
-                  isVerifying = false;
-                  errorText = sbContext.l10n.guardianLoginFailed;
-                });
-              }
-            }
-
-            return AlertDialog(
-              title: Text(sbContext.l10n.guardianDashboardTitle),
-              content: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(sbContext.l10n.guardianLoginPrompt(peer.name)),
-                  const SizedBox(height: 12),
-                  TextField(
-                    controller: passwordController,
-                    obscureText: true,
-                    autofocus: true,
-                    enabled: !isVerifying,
-                    decoration: InputDecoration(
-                      labelText: sbContext.l10n.guardianPasswordLabel,
-                      errorText: errorText,
-                    ),
-                    onSubmitted: (_) => submit(),
-                  ),
-                ],
-              ),
-              actions: [
-                TextButton(
-                  onPressed:
-                      isVerifying
-                          ? null
-                          : () => Navigator.of(dialogContext).pop(),
-                  child: Text(sbContext.l10n.cancel),
-                ),
-                TextButton(
-                  onPressed: isVerifying ? null : submit,
-                  child:
-                      isVerifying
-                          ? const SizedBox(
-                            height: 20,
-                            width: 20,
-                            child: CircularProgressIndicator(strokeWidth: 2),
-                          )
-                          : Text(sbContext.l10n.logIn),
-                ),
-              ],
-            );
-          },
-        );
-      },
-    );
-  }
 
   // --- Join federation logic ---
 
@@ -738,240 +562,102 @@ class _FederationInfoScreenState extends State<FederationInfoScreen> {
     );
   }
 
-  Widget _buildGuardianList(bool isFederationOnline) {
-    if (_peers == null || _peers!.isEmpty) {
+  Widget _buildGuardianList() {
+    final peers = _peers.value;
+    if (peers == null || peers.isEmpty) {
       return Center(child: Text(context.l10n.loading));
     }
 
-    return ListView.builder(
-      padding: const EdgeInsets.only(top: 8),
-      itemCount: _peers!.length,
-      itemBuilder: (context, index) {
-        final peer = _peers![index];
-        final isOnline = peer.online;
-
-        final theme = Theme.of(context);
-        final session = _sessions[peer.peerId];
-        final sessionColumn = _sessionColumn(theme, session);
-        final syncColor = _syncColor(
-          theme,
-          guardianSyncState(online: isOnline, session: session),
-        );
-        // The outline is the guardian's place in consensus, the dot only
-        // whether this wallet can reach it: a guardian can be reachable and
-        // still be stuck on an old session.
-        return AnimatedContainer(
-          duration: const Duration(milliseconds: 400),
-          margin: const EdgeInsets.symmetric(vertical: 4),
-          padding: const EdgeInsets.symmetric(horizontal: 8),
-          decoration: BoxDecoration(
-            color: syncColor.withValues(alpha: 0.06),
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: syncColor, width: 1.5),
-          ),
-          child: ListTile(
-            dense: true,
-            contentPadding: EdgeInsets.zero,
-            onTap:
-                !widget.joinable && isOnline
-                    ? () => _onGuardianTapped(peer)
-                    : null,
-            leading: Icon(
-              Icons.circle,
-              color: isOnline ? Colors.green : Colors.red,
-              size: 12,
-            ),
-            title: Row(
-              children: [
-                Expanded(
-                  child: Text(peer.name, overflow: TextOverflow.ellipsis),
-                ),
-                if (isOnline) _connectivityBadge(theme, peer.connectivity),
-                // Centred in what is left of the row, which puts it halfway
-                // between the badge and the invite code buttons.
-                if (isOnline || sessionColumn != null)
-                  Expanded(
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 4),
-                      child: Center(child: sessionColumn),
-                    ),
-                  ),
-              ],
-            ),
-            subtitle:
-                isOnline
-                    ? Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          context.l10n.versionLabel(peer.version ?? ''),
-                          style: theme.textTheme.bodySmall?.copyWith(
-                            color: Colors.grey,
-                          ),
-                        ),
-                        Text(
-                          peer.url,
-                          style: theme.textTheme.bodySmall?.copyWith(
-                            color: Colors.grey,
-                          ),
-                        ),
-                      ],
-                    )
-                    : Text(context.l10n.disconnected),
-            trailing:
-                !widget.joinable && isFederationOnline
-                    ? Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        IconButton(
-                          tooltip: context.l10n.copyInviteCode,
-                          icon: const Icon(Icons.copy, size: 20),
-                          onPressed: () async {
-                            try {
-                              final inviteCode = await getInviteCode(
-                                federationId: _fed!.federationId,
-                                peer: peer.peerId,
-                              );
-                              if (!context.mounted) return;
-                              await Clipboard.setData(
-                                ClipboardData(text: inviteCode),
-                              );
-                              ToastService().show(
-                                message: context.l10n.inviteCodeCopied(
-                                  peer.name,
-                                ),
-                                duration: const Duration(seconds: 5),
-                                onTap: () {},
-                                icon: Icon(Icons.check),
-                              );
-                            } catch (e) {
-                              AppLogger.instance.error(
-                                "Error getting invite code: $e",
-                              );
-                              ToastService().show(
-                                message: context.l10n.couldNotGetInviteCode,
-                                duration: const Duration(seconds: 5),
-                                onTap: () {},
-                                icon: Icon(Icons.error),
-                              );
-                            }
-                          },
-                        ),
-                        IconButton(
-                          tooltip: context.l10n.viewInviteCode,
-                          icon: const Icon(Icons.qr_code, size: 20),
-                          onPressed: () async {
-                            try {
-                              final inviteCode = await getInviteCode(
-                                federationId: _fed!.federationId,
-                                peer: peer.peerId,
-                              );
-                              if (!context.mounted) return;
-                              showDialog(
-                                context: context,
-                                builder:
-                                    (context) => AlertDialog(
-                                      title: Center(
-                                        child: Text(
-                                          context.l10n.inviteCode,
-                                          textAlign: TextAlign.center,
-                                        ),
-                                      ),
-                                      content: AspectRatio(
-                                        aspectRatio: 1,
-                                        child: GestureDetector(
-                                          onTap: () {
-                                            showDialog(
-                                              context: context,
-                                              builder:
-                                                  (_) => Dialog(
-                                                    backgroundColor:
-                                                        Colors.transparent,
-                                                    insetPadding:
-                                                        EdgeInsets.zero,
-                                                    child: GestureDetector(
-                                                      onTap:
-                                                          () =>
-                                                              Navigator.of(
-                                                                context,
-                                                                rootNavigator:
-                                                                    true,
-                                                              ).pop(),
-                                                      child: Container(
-                                                        width: double.infinity,
-                                                        height: double.infinity,
-                                                        color: Colors.black
-                                                            .withValues(
-                                                              alpha: 0.9,
-                                                            ),
-                                                        child: Center(
-                                                          child: QrImageView(
-                                                            data: inviteCode,
-                                                            version:
-                                                                QrVersions.auto,
-                                                            backgroundColor:
-                                                                Colors.white,
-                                                            size:
-                                                                MediaQuery.of(
-                                                                  context,
-                                                                ).size.width *
-                                                                0.9,
-                                                          ),
-                                                        ),
-                                                      ),
-                                                    ),
-                                                  ),
-                                            );
-                                          },
-                                          child: QrImageView(
-                                            data: inviteCode,
-                                            version: QrVersions.auto,
-                                            backgroundColor: Colors.white,
-                                          ),
-                                        ),
-                                      ),
-                                      actions: [
-                                        TextButton(
-                                          onPressed:
-                                              () => Navigator.of(context).pop(),
-                                          child: Text(context.l10n.close),
-                                        ),
-                                      ],
-                                    ),
-                              );
-                            } catch (e) {
-                              AppLogger.instance.error(
-                                "Error getting invite code: $e",
-                              );
-                              ToastService().show(
-                                message: context.l10n.couldNotGetInviteCode,
-                                duration: const Duration(seconds: 5),
-                                onTap: () {},
-                                icon: Icon(Icons.error),
-                              );
-                            }
-                          },
-                        ),
-                      ],
-                    )
-                    : null,
-          ),
-        );
-      },
+    return ListView.separated(
+      padding: const EdgeInsets.symmetric(vertical: 8),
+      itemCount: peers.length,
+      separatorBuilder: (_, _) => const SizedBox(height: 8),
+      itemBuilder: (context, index) => _buildGuardianRow(peers[index]),
     );
   }
 
-  Color _syncColor(ThemeData theme, GuardianSyncState state) => switch (state) {
-    GuardianSyncState.inSync => Colors.green,
-    GuardianSyncState.behind => Colors.amber,
-    GuardianSyncState.down => Colors.red,
-    GuardianSyncState.unknown => theme.colorScheme.outlineVariant,
-  };
+  /// One guardian at a glance: whether it can be reached (the dot on the
+  /// avatar), its place in consensus (the pill), and the session it last
+  /// reported. Everything else is on the [GuardianScreen] it opens.
+  Widget _buildGuardianRow(PeerStatus peer) {
+    final theme = Theme.of(context);
+    final l10n = context.l10n;
+    final session = _sessions.value[peer.peerId];
+    final state = guardianSyncState(online: peer.online, session: session);
+    final count = formatGuardianSessionCount(l10n, session);
+    final age = formatGuardianSessionAge(l10n, session);
+    // Faded until the guardian has answered this round: what is on disk says
+    // where it was, not where it is.
+    final alpha = session?.fresh == true ? 1.0 : 0.5;
+
+    return Material(
+      color: const Color(0xFF1A1A1A),
+      borderRadius: BorderRadius.circular(12),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(12),
+        onTap: () => _openGuardian(peer),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+          child: Row(
+            children: [
+              GuardianAvatar(name: peer.name, online: peer.online),
+              const SizedBox(width: 14),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      peer.name,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: theme.textTheme.bodyLarge?.copyWith(
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    if (count != null && age != null) ...[
+                      const SizedBox(height: 2),
+                      Text(
+                        '$count · $age', // i18n-ignore
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: Colors.grey.withValues(alpha: alpha),
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+              const SizedBox(width: 8),
+              GuardianPill.sync(l10n, theme, state),
+              const SizedBox(width: 4),
+              const Icon(Icons.chevron_right, color: Colors.grey),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  void _openGuardian(PeerStatus peer) {
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder:
+            (_) => GuardianScreen(
+              fed: _fed!,
+              peer: peer,
+              peers: _peers,
+              sessions: _sessions,
+              joinable: widget.joinable,
+            ),
+      ),
+    );
+  }
 
   Widget _buildSelectedContent(bool isFederationOnline) {
     switch (_selectedSection) {
       case _InfoSection.guardians:
-        return _buildGuardianList(isFederationOnline);
+        return _buildGuardianList();
       case _InfoSection.utxos:
         return FederationUtxoList(
           invite: widget.joinable ? widget.inviteCode : null,
@@ -1094,9 +780,9 @@ class _FederationInfoScreenState extends State<FederationInfoScreen> {
       return _buildLoadingOrError(theme);
     }
 
-    final totalGuardians = _peers?.length ?? 0;
+    final totalGuardians = _peers.value?.length ?? 0;
     final thresh = threshold(totalGuardians);
-    final onlineGuardians = _peers?.where((p) => p.online).toList() ?? [];
+    final onlineGuardians = _peers.value?.where((p) => p.online).toList() ?? [];
     final isFederationOnline =
         totalGuardians > 0 && onlineGuardians.length >= thresh;
 
@@ -1254,87 +940,5 @@ class _FederationInfoScreenState extends State<FederationInfoScreen> {
         ),
       ),
     );
-  }
-
-  /// A guardian's session count with its age underneath, or null while the
-  /// guardian has never answered.
-  ///
-  /// The column is narrow on a phone. The count is left to wrap there, which
-  /// puts the number under the word; the age shrinks instead, since half an
-  /// age is worse than a small one.
-  Widget? _sessionColumn(ThemeData theme, GuardianSessionStatus? session) {
-    final l10n = context.l10n;
-    final count = formatGuardianSessionCount(l10n, session);
-    final age = formatGuardianSessionAge(l10n, session);
-    if (session == null || count == null || age == null) return null;
-
-    // Faded until the guardian has answered this round: what is on disk says
-    // where it was, not where it is.
-    final alpha = session.fresh ? 1.0 : 0.5;
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Text(
-          count,
-          maxLines: 2,
-          textAlign: TextAlign.center,
-          style: theme.textTheme.labelMedium?.copyWith(
-            color: theme.colorScheme.onSurface.withValues(alpha: alpha),
-            fontWeight: FontWeight.w600,
-          ),
-        ),
-        FittedBox(
-          fit: BoxFit.scaleDown,
-          child: Text(
-            age,
-            maxLines: 1,
-            softWrap: false,
-            style: theme.textTheme.bodySmall?.copyWith(
-              color: Colors.grey.withValues(alpha: alpha),
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _connectivityBadge(ThemeData theme, PeerConnectivity c) {
-    final color = switch (c) {
-      PeerConnectivity.direct => Colors.green,
-      PeerConnectivity.relay => Colors.amber,
-      PeerConnectivity.mixed => Colors.teal,
-      PeerConnectivity.tor => Colors.deepPurple,
-      PeerConnectivity.unknown => Colors.grey,
-    };
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-      decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.15),
-        borderRadius: BorderRadius.circular(999),
-        border: Border.all(color: color.withValues(alpha: 0.5), width: 1),
-      ),
-      child: Text(
-        _connectivityLabel(context, c),
-        style: theme.textTheme.labelSmall?.copyWith(
-          color: color,
-          fontWeight: FontWeight.w600,
-        ),
-      ),
-    );
-  }
-
-  String _connectivityLabel(BuildContext context, PeerConnectivity c) {
-    switch (c) {
-      case PeerConnectivity.direct:
-        return context.l10n.connectionDirect;
-      case PeerConnectivity.relay:
-        return context.l10n.connectionRelay;
-      case PeerConnectivity.mixed:
-        return context.l10n.connectionMixed;
-      case PeerConnectivity.tor:
-        return context.l10n.connectionTor;
-      case PeerConnectivity.unknown:
-        return context.l10n.connectionUnknown;
-    }
   }
 }
