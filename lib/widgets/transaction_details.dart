@@ -117,7 +117,7 @@ class _TransactionDetailsState extends State<TransactionDetails> {
             amount: amount,
           );
         },
-        heightFactor: 0.33,
+        fitContent: true,
       );
       invoicePaidToastVisible.value = true;
     }
