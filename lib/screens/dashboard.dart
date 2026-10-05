@@ -415,6 +415,11 @@ class _DashboardState extends State<Dashboard> {
     });
   }
 
+  /// Pull-to-refresh. Prices are left out so the fiat figure doesn't flash its
+  /// loading state on every pull.
+  Future<void> _refresh() =>
+      Future.wait([_loadBalance(), _loadRecentTransactions()]);
+
   void _onSendPressed() async {
     if (_selectedPaymentType == PaymentType.lightning) {
       await Navigator.push(
@@ -640,164 +645,173 @@ class _DashboardState extends State<Dashboard> {
                     SizedBox(height: bottomInset),
                   ],
                 )
-                : NotificationListener<ScrollNotification>(
-                  onNotification: _handleScrollNotification,
-                  child: CustomScrollView(
-                    controller: _scrollController,
-                    slivers: [
-                      SliverPersistentHeader(
-                        pinned: true,
-                        delegate: _DashboardBalanceHeader(
-                          minExtent: _headerMinExtent + bannerExtent,
-                          maxExtent: _headerMaxExtent + bannerExtent,
-                          expiryTimestamp: _expiryTimestamp,
-                          successorInvite: _successorInvite,
-                          bannerExtent: bannerExtent,
-                          onShutdownTap: _openShutdownDetails,
-                          balanceMsats: balanceMsats,
-                          isLoading: isLoadingBalance,
-                          recovering: recovering,
-                          btcPrices: _btcPrices,
-                          isLoadingPrices: _isLoadingPrices,
-                          pricesFailed: _pricesFailed,
-                          lnAddressConfig: _lnAddressConfig,
-                          onLnAddressTap:
-                              _lnAddressConfig != null
-                                  ? () => showLightningAddressDialog(
-                                    context,
-                                    _lnAddressConfig!.username,
-                                    _lnAddressConfig!.domain,
-                                    _lnAddressConfig!.lnurl,
-                                  )
-                                  : null,
-                          onWalletTap: _openMyWallet,
-                          backgroundColor:
-                              Theme.of(context).scaffoldBackgroundColor,
+                : RefreshIndicator(
+                  onRefresh: _refresh,
+                  child: NotificationListener<ScrollNotification>(
+                    onNotification: _handleScrollNotification,
+                    child: CustomScrollView(
+                      controller: _scrollController,
+                      // Lets the pull-to-refresh work when the list is too
+                      // short to scroll.
+                      physics: const AlwaysScrollableScrollPhysics(),
+                      slivers: [
+                        SliverPersistentHeader(
+                          pinned: true,
+                          delegate: _DashboardBalanceHeader(
+                            minExtent: _headerMinExtent + bannerExtent,
+                            maxExtent: _headerMaxExtent + bannerExtent,
+                            expiryTimestamp: _expiryTimestamp,
+                            successorInvite: _successorInvite,
+                            bannerExtent: bannerExtent,
+                            onShutdownTap: _openShutdownDetails,
+                            balanceMsats: balanceMsats,
+                            isLoading: isLoadingBalance,
+                            recovering: recovering,
+                            btcPrices: _btcPrices,
+                            isLoadingPrices: _isLoadingPrices,
+                            pricesFailed: _pricesFailed,
+                            lnAddressConfig: _lnAddressConfig,
+                            onLnAddressTap:
+                                _lnAddressConfig != null
+                                    ? () => showLightningAddressDialog(
+                                      context,
+                                      _lnAddressConfig!.username,
+                                      _lnAddressConfig!.domain,
+                                      _lnAddressConfig!.lnurl,
+                                    )
+                                    : null,
+                            onWalletTap: _openMyWallet,
+                            backgroundColor:
+                                Theme.of(context).scaffoldBackgroundColor,
+                          ),
                         ),
-                      ),
-                      if (widget.fed.network != null &&
-                          widget.fed.network!.toLowerCase() != 'bitcoin')
-                        SliverToBoxAdapter(
-                          child: AnimatedBuilder(
-                            animation: _scrollController,
-                            builder: (context, child) {
-                              const range = _headerMaxExtent - _headerMinExtent;
-                              final offset =
-                                  _scrollController.hasClients
-                                      ? _scrollController.offset
-                                      : 0.0;
-                              final t = (offset / range).clamp(0.0, 1.0);
-                              final opacity = (1.0 - t * 2.0).clamp(0.0, 1.0);
-                              return ClipRect(
-                                child: Align(
-                                  alignment: Alignment.topCenter,
-                                  heightFactor: 1.0 - t,
-                                  child: Opacity(
-                                    opacity: opacity,
-                                    child: child,
+                        if (widget.fed.network != null &&
+                            widget.fed.network!.toLowerCase() != 'bitcoin')
+                          SliverToBoxAdapter(
+                            child: AnimatedBuilder(
+                              animation: _scrollController,
+                              builder: (context, child) {
+                                const range =
+                                    _headerMaxExtent - _headerMinExtent;
+                                final offset =
+                                    _scrollController.hasClients
+                                        ? _scrollController.offset
+                                        : 0.0;
+                                final t = (offset / range).clamp(0.0, 1.0);
+                                final opacity = (1.0 - t * 2.0).clamp(0.0, 1.0);
+                                return ClipRect(
+                                  child: Align(
+                                    alignment: Alignment.topCenter,
+                                    heightFactor: 1.0 - t,
+                                    child: Opacity(
+                                      opacity: opacity,
+                                      child: child,
+                                    ),
                                   ),
+                                );
+                              },
+                              child: Padding(
+                                padding: const EdgeInsets.only(top: 4.0),
+                                child: Text(
+                                  context.l10n.testNetworkMessage,
+                                  style: Theme.of(
+                                    context,
+                                  ).textTheme.bodySmall?.copyWith(
+                                    color:
+                                        Theme.of(context).colorScheme.secondary,
+                                    fontStyle: FontStyle.italic,
+                                  ),
+                                  textAlign: TextAlign.center,
                                 ),
-                              );
-                            },
-                            child: Padding(
-                              padding: const EdgeInsets.only(top: 4.0),
-                              child: Text(
-                                context.l10n.testNetworkMessage,
-                                style: Theme.of(
-                                  context,
-                                ).textTheme.bodySmall?.copyWith(
-                                  color:
-                                      Theme.of(context).colorScheme.secondary,
-                                  fontStyle: FontStyle.italic,
-                                ),
-                                textAlign: TextAlign.center,
                               ),
                             ),
                           ),
-                        ),
-                      SliverToBoxAdapter(
-                        child: Padding(
-                          padding: const EdgeInsets.only(top: 8.0),
-                          child: Row(
-                            children: [
-                              Text(
-                                context.l10n.recentActivity,
-                                style: Theme.of(context).textTheme.titleSmall
-                                    ?.copyWith(color: Colors.grey),
-                              ),
-                              const Spacer(),
-                              TextButton(
-                                onPressed: _openAllTransactions,
-                                child: Row(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    Text(
-                                      context.l10n.viewAll,
-                                      style: TextStyle(
+                        SliverToBoxAdapter(
+                          child: Padding(
+                            padding: const EdgeInsets.only(top: 8.0),
+                            child: Row(
+                              children: [
+                                Text(
+                                  context.l10n.recentActivity,
+                                  style: Theme.of(context).textTheme.titleSmall
+                                      ?.copyWith(color: Colors.grey),
+                                ),
+                                const Spacer(),
+                                TextButton(
+                                  onPressed: _openAllTransactions,
+                                  child: Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      Text(
+                                        context.l10n.viewAll,
+                                        style: TextStyle(
+                                          color:
+                                              Theme.of(
+                                                context,
+                                              ).colorScheme.primary,
+                                          fontSize: 13,
+                                        ),
+                                      ),
+                                      const SizedBox(width: 2),
+                                      Icon(
+                                        Icons.chevron_right,
+                                        size: 18,
                                         color:
                                             Theme.of(
                                               context,
                                             ).colorScheme.primary,
-                                        fontSize: 13,
                                       ),
-                                    ),
-                                    const SizedBox(width: 2),
-                                    Icon(
-                                      Icons.chevron_right,
-                                      size: 18,
-                                      color:
-                                          Theme.of(context).colorScheme.primary,
-                                    ),
-                                  ],
+                                    ],
+                                  ),
                                 ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
-                      const SliverToBoxAdapter(child: SizedBox(height: 8)),
-                      if (_isLoadingTransactions && _pendingDeposits.isEmpty)
-                        const SliverToBoxAdapter(
-                          child: Padding(
-                            padding: EdgeInsets.symmetric(vertical: 32),
-                            child: Center(child: CircularProgressIndicator()),
-                          ),
-                        )
-                      else if (_recentTransactions.isEmpty &&
-                          _pendingDeposits.isEmpty)
-                        SliverPadding(
-                          padding: EdgeInsets.only(bottom: bottomInset),
-                          sliver: SliverToBoxAdapter(
-                            child: EmptyTransactionsState(
-                              paymentType: _selectedPaymentType,
-                              onReceivePressed: _onReceivePressed,
+                              ],
                             ),
                           ),
-                        )
-                      else
-                        SliverList(
-                          delegate: SliverChildBuilderDelegate(
-                            (context, index) {
-                              if (index < _pendingDeposits.length) {
-                                return PendingDepositItem(
-                                  event: _pendingDeposits[index],
-                                  fed: widget.fed,
-                                );
-                              }
-                              final tx =
-                                  _recentTransactions[index -
-                                      _pendingDeposits.length];
-                              return TransactionItem(tx: tx, fed: widget.fed);
-                            },
-                            childCount:
-                                _pendingDeposits.length +
-                                _recentTransactions.length,
-                          ),
                         ),
-                      SliverToBoxAdapter(
-                        child: SizedBox(height: bottomInset + 8),
-                      ),
-                    ],
+                        const SliverToBoxAdapter(child: SizedBox(height: 8)),
+                        if (_isLoadingTransactions && _pendingDeposits.isEmpty)
+                          const SliverToBoxAdapter(
+                            child: Padding(
+                              padding: EdgeInsets.symmetric(vertical: 32),
+                              child: Center(child: CircularProgressIndicator()),
+                            ),
+                          )
+                        else if (_recentTransactions.isEmpty &&
+                            _pendingDeposits.isEmpty)
+                          SliverPadding(
+                            padding: EdgeInsets.only(bottom: bottomInset),
+                            sliver: SliverToBoxAdapter(
+                              child: EmptyTransactionsState(
+                                paymentType: _selectedPaymentType,
+                                onReceivePressed: _onReceivePressed,
+                              ),
+                            ),
+                          )
+                        else
+                          SliverList(
+                            delegate: SliverChildBuilderDelegate(
+                              (context, index) {
+                                if (index < _pendingDeposits.length) {
+                                  return PendingDepositItem(
+                                    event: _pendingDeposits[index],
+                                    fed: widget.fed,
+                                  );
+                                }
+                                final tx =
+                                    _recentTransactions[index -
+                                        _pendingDeposits.length];
+                                return TransactionItem(tx: tx, fed: widget.fed);
+                              },
+                              childCount:
+                                  _pendingDeposits.length +
+                                  _recentTransactions.length,
+                            ),
+                          ),
+                        SliverToBoxAdapter(
+                          child: SizedBox(height: bottomInset + 8),
+                        ),
+                      ],
+                    ),
                   ),
                 ),
       ),
