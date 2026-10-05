@@ -324,6 +324,22 @@ class TransactionItem extends StatelessWidget {
           },
         );
         break;
+      case TransactionKind_Recovery():
+        showAppModalBottomSheet(
+          context: context,
+          childBuilder: () async {
+            return TransactionDetails(
+              tx: tx,
+              details: {
+                TransactionDetailKeys.amount: formattedAmount,
+                TransactionDetailKeys.timestamp: formattedDate,
+              },
+              icon: icon,
+              fed: fed,
+            );
+          },
+        );
+        break;
     }
   }
 
@@ -332,7 +348,9 @@ class TransactionItem extends StatelessWidget {
     final bitcoinDisplay = context.select<PreferencesProvider, BitcoinDisplay>(
       (prefs) => prefs.bitcoinDisplay,
     );
+    final isRecovery = tx.kind is TransactionKind_Recovery;
     final isIncoming =
+        isRecovery ||
         tx.kind is TransactionKind_LightningReceive ||
         tx.kind is TransactionKind_OnchainReceive ||
         tx.kind is TransactionKind_EcashReceive ||
@@ -355,6 +373,9 @@ class TransactionItem extends StatelessWidget {
       case TransactionKind_EcashReceive():
       case TransactionKind_EcashSend():
         moduleIcon = Icons.currency_bitcoin;
+        break;
+      case TransactionKind_Recovery():
+        moduleIcon = Icons.restore;
         break;
     }
 
@@ -384,7 +405,9 @@ class TransactionItem extends StatelessWidget {
           ),
         ),
         title: Text(
-          isIncoming ? context.l10n.txReceived : context.l10n.txSent,
+          isRecovery
+              ? context.l10n.txRecovered
+              : (isIncoming ? context.l10n.txReceived : context.l10n.txSent),
           style: Theme.of(context).textTheme.bodyMedium,
         ),
         subtitle: Text(

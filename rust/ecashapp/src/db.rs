@@ -104,6 +104,7 @@ pub(crate) enum DbKeyPrefix {
     NwcLimits = 0x19,
     NwcSpendWindow = 0x1A,
     GuardianSession = 0x1B,
+    FederationRecovery = 0x1C,
 }
 
 #[derive(Debug, Clone, Encodable, Decodable, Eq, PartialEq, Hash, Ord, PartialOrd)]
@@ -648,6 +649,29 @@ impl_db_record!(
 impl_db_lookup!(
     key = GuardianSessionKey,
     query_prefix = GuardianSessionFederationPrefix,
+);
+
+#[derive(Debug, Clone, Encodable, Decodable, Eq, PartialEq, Hash, Ord, PartialOrd)]
+pub(crate) struct FederationRecoveryKey {
+    pub(crate) federation_id: FederationId,
+}
+
+/// What a seed-phrase recovery restored in one federation, shown as a row in
+/// its ecash history.
+///
+/// Recovery rebuilds the balance but not the operation log, so without this
+/// record the recovered funds would sit in the wallet with nothing in the
+/// history to account for them.
+#[derive(Debug, Clone, PartialEq, Eq, Encodable, Decodable)]
+pub(crate) struct FederationRecovery {
+    pub(crate) amount_msats: u64,
+    pub(crate) recovered_at: Timestamp,
+}
+
+impl_db_record!(
+    key = FederationRecoveryKey,
+    value = FederationRecovery,
+    db_prefix = DbKeyPrefix::FederationRecovery,
 );
 
 #[cfg(test)]

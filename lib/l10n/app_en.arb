@@ -1639,6 +1639,9 @@
   "onchainSendTitle": "Onchain Send",
   "@onchainSendTitle": {},
 
+  "ecashRecoveryTitle": "Ecash Recovery",
+  "@ecashRecoveryTitle": {},
+
   "checkClaimStatus": "Check Claim Status",
   "@checkClaimStatus": {},
 
@@ -1851,6 +1854,9 @@
 
   "txReceived": "Received",
   "@txReceived": {},
+
+  "txRecovered": "Recovered",
+  "@txRecovered": {},
 
   "testNetworkMessage": "This is a test network and is not worth anything.",
   "@testNetworkMessage": {},

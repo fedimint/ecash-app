@@ -18373,6 +18373,9 @@ impl SseDecode for crate::multimint::TransactionKind {
                     fees: var_fees,
                 };
             }
+            7 => {
+                return crate::multimint::TransactionKind::Recovery;
+            }
             _ => {
                 unimplemented!("");
             }
@@ -21245,6 +21248,7 @@ impl flutter_rust_bridge::IntoDart for crate::multimint::TransactionKind {
                 fees.into_into_dart().into_dart(),
             ]
             .into_dart(),
+            crate::multimint::TransactionKind::Recovery => [7.into_dart()].into_dart(),
             _ => {
                 unimplemented!("");
             }
@@ -23453,6 +23457,9 @@ impl SseEncode for crate::multimint::TransactionKind {
                 <i32>::sse_encode(6, serializer);
                 <String>::sse_encode(oob_notes, serializer);
                 <u64>::sse_encode(fees, serializer);
+            }
+            crate::multimint::TransactionKind::Recovery => {
+                <i32>::sse_encode(7, serializer);
             }
             _ => {
                 unimplemented!("");

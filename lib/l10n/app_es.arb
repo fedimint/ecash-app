@@ -461,6 +461,7 @@
   "ecashSendTitle": "Envío Ecash",
   "onchainReceiveTitle": "Recepción en cadena",
   "onchainSendTitle": "Envío en cadena",
+  "ecashRecoveryTitle": "Recuperación Ecash",
   "checkClaimStatus": "Verificar estado de reclamo",
   "redeemEcash": "Canjear Ecash",
   "ecashHasBeenClaimed": "Este Ecash ha sido reclamado",
@@ -520,6 +521,7 @@
 
   "txSent": "Enviado",
   "txReceived": "Recibido",
+  "txRecovered": "Recuperado",
   "testNetworkMessage": "Esta es una red de prueba y no tiene valor.",
   "yourRecoveryPhrase": "Tu frase de recuperación",
   "seedPhraseAckWarning": "Por favor, confirma que has escrito tu frase semilla manteniendo presionado el botón de abajo",

@@ -110,9 +110,10 @@ use crate::{
     db::{
         BitcoinDisplay, BitcoinDisplayKey, BtcPrice, BtcPriceKey, BtcPrices, BtcPricesKey,
         Connector, ContactSyncConfigKey, FederationBackupKey, FederationMetaKey,
-        FederationMetaKeyPrefix, FederationMetaV1, FiatCurrency, FiatCurrencyKey, GuardianSession,
-        GuardianSessionFederationPrefix, GuardianSessionKey, LightningAddressConfig,
-        LightningAddressKey, LightningAddressKeyPrefix, SchemaVersionKey, Timestamp,
+        FederationMetaKeyPrefix, FederationMetaV1, FederationRecovery, FederationRecoveryKey,
+        FiatCurrency, FiatCurrencyKey, GuardianSession, GuardianSessionFederationPrefix,
+        GuardianSessionKey, LightningAddressConfig, LightningAddressKey, LightningAddressKeyPrefix,
+        SchemaVersionKey, Timestamp,
     },
     error_to_flutter, get_nostr_client, info_to_flutter, payment_error_to_flutter,
     wallet::WalletHandler,
@@ -124,6 +125,9 @@ use crate::{
 /// `MAX_INVOICE_EXPIRY_SECS` (`60 * 60 * 24`). Raising this breaks LNv2
 /// receives.
 const DEFAULT_EXPIRY_TIME_SECS: u32 = 86400;
+/// How many operations one `transactions` call collects. The Dart side treats
+/// a page shorter than this as the end of the history.
+const TRANSACTION_PAGE_SIZE: usize = 10;
 /// Well-known meta field: unix timestamp (seconds) after which the guardians
 /// will shut the federation down. See fedimint
 /// `docs/meta_fields/federation_expiry_timestamp.md`.
@@ -675,6 +679,10 @@ pub enum TransactionKind {
         oob_notes: String,
         fees: u64,
     },
+    /// Ecash restored by a seed-phrase recovery, recorded once per federation
+    /// by `wait_for_recovery`. Not a payment, so it carries nothing beyond the
+    /// amount and time.
+    Recovery,
 }
 
 #[derive(Debug, Serialize, Clone, Eq, PartialEq)]
@@ -2040,9 +2048,19 @@ impl Multimint {
                 return;
             }
         };
-        let Ok(response) = client.get(url).send().await else {
-            error_to_flutter("BTC Price GET returned error").await;
-            return;
+        let response = match client.get(url).send().await {
+            Ok(response) => response,
+            Err(e) => {
+                // No response arrived (DNS, connect, TLS or timeout), so there is
+                // no status code; the cause is in the error's source chain,
+                // which `reqwest`'s own `Display` leaves out.
+                error_to_flutter(format!(
+                    "BTC price request failed: {:#}",
+                    anyhow::Error::from(e)
+                ))
+                .await;
+                return;
+            }
         };
 
         if response.status().is_success() {
@@ -3223,6 +3241,29 @@ impl Multimint {
             .clone();
         info_to_flutter("Waiting for all active state machines...").await;
         new_client.wait_for_all_active_state_machines().await?;
+
+        // Every recovery passes through here once it has finished, and the
+        // balance at this point is exactly what it restored: the state machines
+        // above have settled, and the app offers no payments until
+        // `RecoveryDone` below. Nothing restored means nothing to show.
+        match new_client.get_balance_for_btc().await {
+            Ok(balance) if balance.msats > 0 => {
+                let mut dbtx = self.db.begin_transaction().await;
+                dbtx.insert_entry(
+                    &FederationRecoveryKey { federation_id },
+                    &FederationRecovery {
+                        amount_msats: balance.msats,
+                        recovered_at: Timestamp(SystemTime::now()),
+                    },
+                )
+                .await;
+                dbtx.commit_tx().await;
+            }
+            Ok(_) => {}
+            Err(e) => {
+                error_to_flutter(format!("Could not record the recovered balance: {e}")).await;
+            }
+        }
 
         // Attempt to recover Lightning Address before publishing RecoveryDone,
         // so the UI can display the recovered address when it handles the event.
@@ -4425,7 +4466,7 @@ impl Multimint {
             ),
         });
 
-        while collected.len() < 10 {
+        while collected.len() < TRANSACTION_PAGE_SIZE {
             let page = client
                 .operation_log()
                 .paginate_operations_rev(50, next_key)
@@ -4436,7 +4477,7 @@ impl Multimint {
             }
 
             for (key, op_log_val) in &page {
-                if collected.len() >= 10 {
+                if collected.len() >= TRANSACTION_PAGE_SIZE {
                     break;
                 }
 
@@ -5035,7 +5076,68 @@ impl Multimint {
             next_key = page.last().map(|(key, _)| *key);
         }
 
+        let shows_ecash = [fedimint_mint_common::KIND, fedimint_mintv2_common::KIND]
+            .iter()
+            .any(|kind| modules.contains(&kind.to_string()));
+        if shows_ecash {
+            let recovery = self
+                .db
+                .begin_transaction_nc()
+                .await
+                .get_value(&FederationRecoveryKey {
+                    federation_id: *federation_id,
+                })
+                .await;
+            if let Some(recovery) = recovery {
+                let recovery = Transaction {
+                    kind: TransactionKind::Recovery,
+                    amount: recovery.amount_msats,
+                    timestamp: recovery
+                        .recovered_at
+                        .0
+                        .duration_since(UNIX_EPOCH)
+                        .expect("Cannot be before unix epoch")
+                        .as_millis() as u64,
+                    // Not an operation, but the UI hands the last row back as
+                    // the cursor, which has to parse as an `OperationId`.
+                    operation_id: vec![0; 32],
+                };
+                Self::insert_recovery_row(&mut collected, recovery, timestamp);
+            }
+        }
+
         collected
+    }
+
+    /// Slots a federation's recovery row into one page of its history.
+    ///
+    /// A page spans everything older than the cursor and, once it holds a full
+    /// page of operations, no older than its last one. The recovery row goes on
+    /// the page whose span contains it, so it shows up exactly once however far
+    /// the user scrolls. It sorts ahead of operations from the same millisecond,
+    /// which keeps a real operation as the last row, and so as the next cursor,
+    /// whenever the page has one there.
+    fn insert_recovery_row(
+        page: &mut Vec<Transaction>,
+        recovery: Transaction,
+        cursor: Option<u64>,
+    ) {
+        if cursor.is_some_and(|cursor| recovery.timestamp >= cursor) {
+            return;
+        }
+        if page.len() >= TRANSACTION_PAGE_SIZE
+            && page
+                .last()
+                .is_some_and(|oldest| recovery.timestamp < oldest.timestamp)
+        {
+            return;
+        }
+
+        let position = page
+            .iter()
+            .position(|tx| tx.timestamp <= recovery.timestamp)
+            .unwrap_or(page.len());
+        page.insert(position, recovery);
     }
 
     /// LNv1 has two different operation send types: external (over the Lightning network) and internal (ecash swap)
@@ -7684,7 +7786,7 @@ mod tests {
         load_guardian_sessions, meta_fields_after_fetch, migrate_federation_meta_v3,
         record_guardian_session, recovery_module_for_kind, FederationMeta, FederationSelector,
         Guardian, GuardianSessionStatus, MetaFetch, MetaFields, Multimint, RecoveryModule,
-        MAX_GATEWAY_PPM,
+        Transaction, TransactionKind, MAX_GATEWAY_PPM, TRANSACTION_PAGE_SIZE,
     };
 
     /// A cached entry from before the guardians went quiet: shutdown announced.
@@ -8199,5 +8301,103 @@ mod tests {
         assert_progress(result, 0, 0);
         assert!(result.is_none());
         assert!(!result.is_done());
+    }
+
+    fn history_row(kind: TransactionKind, timestamp: u64) -> Transaction {
+        Transaction {
+            kind,
+            amount: 1_000,
+            timestamp,
+            operation_id: vec![0; 32],
+        }
+    }
+
+    fn operation(timestamp: u64) -> Transaction {
+        history_row(
+            TransactionKind::EcashSend {
+                oob_notes: String::new(),
+                fees: 0,
+            },
+            timestamp,
+        )
+    }
+
+    /// Pages through `operations` (newest first) the way the UI does, feeding
+    /// each page's last row back as the cursor until a short page ends it.
+    fn page_through(operations: &[u64], recovered_at: u64) -> Vec<Vec<Transaction>> {
+        let mut pages = Vec::new();
+        let mut cursor = None;
+        loop {
+            let mut page: Vec<Transaction> = operations
+                .iter()
+                .filter(|&&timestamp| cursor.is_none_or(|cursor| timestamp < cursor))
+                .take(TRANSACTION_PAGE_SIZE)
+                .map(|&timestamp| operation(timestamp))
+                .collect();
+            Multimint::insert_recovery_row(
+                &mut page,
+                history_row(TransactionKind::Recovery, recovered_at),
+                cursor,
+            );
+
+            let done = page.len() < TRANSACTION_PAGE_SIZE;
+            cursor = page.last().map(|tx| tx.timestamp);
+            pages.push(page);
+            if done {
+                return pages;
+            }
+        }
+    }
+
+    fn is_recovery(tx: &Transaction) -> bool {
+        matches!(tx.kind, TransactionKind::Recovery)
+    }
+
+    fn recovery_count(pages: &[Vec<Transaction>]) -> usize {
+        pages.iter().flatten().filter(|tx| is_recovery(tx)).count()
+    }
+
+    #[test]
+    fn a_recovery_with_no_operations_is_the_whole_history() {
+        let pages = page_through(&[], 50);
+
+        assert_eq!(pages.len(), 1);
+        assert_eq!(recovery_count(&pages), 1);
+    }
+
+    #[test]
+    fn a_recovery_older_than_every_operation_comes_last() {
+        let operations: Vec<u64> = (100..125).rev().collect();
+        let pages = page_through(&operations, 50);
+
+        assert_eq!(recovery_count(&pages), 1);
+        assert!(is_recovery(pages.last().unwrap().last().unwrap()));
+    }
+
+    #[test]
+    fn a_recovery_on_a_full_page_slots_in_by_time_and_is_not_repeated() {
+        let operations: Vec<u64> = (100..125).rev().collect();
+        let pages = page_through(&operations, 117);
+
+        assert_eq!(recovery_count(&pages), 1);
+        assert_eq!(
+            pages[0].iter().map(|tx| tx.timestamp).collect::<Vec<_>>(),
+            vec![124, 123, 122, 121, 120, 119, 118, 117, 117, 116, 115]
+        );
+        // Ahead of the operation from the same millisecond, not behind it.
+        assert!(is_recovery(&pages[0][7]));
+        assert_eq!(pages[1][0].timestamp, 114);
+    }
+
+    #[test]
+    fn a_recovery_that_fills_the_last_page_is_not_repeated() {
+        // Nine operations plus the recovery make a full page, so the UI asks
+        // for another with the recovery row itself as the cursor.
+        let operations: Vec<u64> = (100..109).rev().collect();
+        let pages = page_through(&operations, 50);
+
+        assert_eq!(pages.len(), 2);
+        assert!(pages[1].is_empty());
+        assert_eq!(recovery_count(&pages), 1);
     }
 }
