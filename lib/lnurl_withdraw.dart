@@ -86,7 +86,7 @@ class _LnurlWithdrawWaitingState extends State<LnurlWithdrawWaiting> {
       await awaitReceive(
         federationId: widget.fed.federationId,
         operationId: opId,
-      ).timeout(const Duration(minutes: 5));
+      ).timeout(const Duration(minutes: 1));
       if (!mounted) return;
       await Navigator.push(
         context,
@@ -101,11 +101,14 @@ class _LnurlWithdrawWaitingState extends State<LnurlWithdrawWaiting> {
       );
       await Future.delayed(const Duration(seconds: 4));
     } on TimeoutException {
-      AppLogger.instance.error(
-        'LNURLw await_receive timed out after 5 minutes',
-      );
+      // Not a failure: the receive keeps running in Rust, so a late payment
+      // still lands in the balance.
+      AppLogger.instance.error('LNURLw await_receive timed out after 1 minute');
       if (!mounted) return;
-      _showError();
+      _showToast(
+        context.l10n.lnurlWithdrawStillPending,
+        const Icon(Icons.schedule),
+      );
     } catch (e) {
       AppLogger.instance.error('LNURLw await_receive failed: $e');
       if (!mounted) return;
@@ -117,12 +120,15 @@ class _LnurlWithdrawWaitingState extends State<LnurlWithdrawWaiting> {
     }
   }
 
-  void _showError() {
+  void _showError() =>
+      _showToast(context.l10n.lnurlWithdrawFailed, const Icon(Icons.error));
+
+  void _showToast(String message, Icon icon) {
     ToastService().show(
-      message: context.l10n.lnurlWithdrawFailed,
+      message: message,
       duration: const Duration(seconds: 5),
       onTap: () {},
-      icon: const Icon(Icons.error),
+      icon: icon,
     );
   }
 
