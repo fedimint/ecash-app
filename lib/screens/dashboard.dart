@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:math';
 import 'dart:ui';
 
 import 'package:ecashapp/db.dart';
@@ -83,8 +84,12 @@ class _DashboardState extends State<Dashboard> {
   bool _isLoadingTransactions = true;
 
   final ScrollController _scrollController = ScrollController();
-  static const double _headerMaxExtent = 210.0;
   static const double _headerMinExtent = 64.0;
+
+  /// At rest the balance gets this share of the visible screen, with the
+  /// first transactions peeking below it.
+  static const double _headerExpandedFraction = 0.6;
+  static const double _headerMinExpandedExtent = 210.0;
   bool _isUserDragScroll = false;
 
   final Map<String, DepositEventKind> _depositMap = {};
@@ -204,6 +209,16 @@ class _DashboardState extends State<Dashboard> {
     super.dispose();
   }
 
+  /// Header height at rest, excluding the shutdown banner. The body runs
+  /// under the nav bar, so the fraction applies to the part left visible.
+  double _expandedExtent(double viewportHeight) => max(
+    _headerMinExpandedExtent,
+    (viewportHeight - GlassNavBar.bodyInset(context)) * _headerExpandedFraction,
+  );
+
+  double _collapseRange(double viewportHeight) =>
+      _expandedExtent(viewportHeight) - _headerMinExtent;
+
   bool _handleScrollNotification(ScrollNotification notification) {
     if (notification is ScrollStartNotification) {
       _isUserDragScroll = notification.dragDetails != null;
@@ -213,8 +228,8 @@ class _DashboardState extends State<Dashboard> {
     if (!_isUserDragScroll) return false;
     _isUserDragScroll = false;
     if (!_scrollController.hasClients) return false;
-    const collapseRange = _headerMaxExtent - _headerMinExtent;
     final position = _scrollController.position;
+    final collapseRange = _collapseRange(position.viewportDimension);
     if (position.maxScrollExtent < collapseRange) return false;
     final offset = position.pixels;
     if (offset <= 0 || offset >= collapseRange) return false;
@@ -647,171 +662,207 @@ class _DashboardState extends State<Dashboard> {
                 )
                 : RefreshIndicator(
                   onRefresh: _refresh,
-                  child: NotificationListener<ScrollNotification>(
-                    onNotification: _handleScrollNotification,
-                    child: CustomScrollView(
-                      controller: _scrollController,
-                      // Lets the pull-to-refresh work when the list is too
-                      // short to scroll.
-                      physics: const AlwaysScrollableScrollPhysics(),
-                      slivers: [
-                        SliverPersistentHeader(
-                          pinned: true,
-                          delegate: _DashboardBalanceHeader(
-                            minExtent: _headerMinExtent + bannerExtent,
-                            maxExtent: _headerMaxExtent + bannerExtent,
-                            expiryTimestamp: _expiryTimestamp,
-                            successorInvite: _successorInvite,
-                            bannerExtent: bannerExtent,
-                            onShutdownTap: _openShutdownDetails,
-                            balanceMsats: balanceMsats,
-                            isLoading: isLoadingBalance,
-                            recovering: recovering,
-                            btcPrices: _btcPrices,
-                            isLoadingPrices: _isLoadingPrices,
-                            pricesFailed: _pricesFailed,
-                            lnAddressConfig: _lnAddressConfig,
-                            onLnAddressTap:
-                                _lnAddressConfig != null
-                                    ? () => showLightningAddressDialog(
-                                      context,
-                                      _lnAddressConfig!.username,
-                                      _lnAddressConfig!.domain,
-                                      _lnAddressConfig!.lnurl,
-                                    )
-                                    : null,
-                            onWalletTap: _openMyWallet,
-                            backgroundColor:
-                                Theme.of(context).scaffoldBackgroundColor,
-                          ),
-                        ),
-                        if (widget.fed.network != null &&
-                            widget.fed.network!.toLowerCase() != 'bitcoin')
-                          SliverToBoxAdapter(
-                            child: AnimatedBuilder(
-                              animation: _scrollController,
-                              builder: (context, child) {
-                                const range =
-                                    _headerMaxExtent - _headerMinExtent;
-                                final offset =
-                                    _scrollController.hasClients
-                                        ? _scrollController.offset
-                                        : 0.0;
-                                final t = (offset / range).clamp(0.0, 1.0);
-                                final opacity = (1.0 - t * 2.0).clamp(0.0, 1.0);
-                                return ClipRect(
-                                  child: Align(
-                                    alignment: Alignment.topCenter,
-                                    heightFactor: 1.0 - t,
-                                    child: Opacity(
-                                      opacity: opacity,
-                                      child: child,
-                                    ),
-                                  ),
-                                );
-                              },
-                              child: Padding(
-                                padding: const EdgeInsets.only(top: 4.0),
-                                child: Text(
-                                  context.l10n.testNetworkMessage,
-                                  style: Theme.of(
-                                    context,
-                                  ).textTheme.bodySmall?.copyWith(
-                                    color:
-                                        Theme.of(context).colorScheme.secondary,
-                                    fontStyle: FontStyle.italic,
-                                  ),
-                                  textAlign: TextAlign.center,
-                                ),
+                  child: LayoutBuilder(
+                    builder: (context, constraints) {
+                      final viewportHeight = constraints.maxHeight;
+                      final collapseRange = _collapseRange(viewportHeight);
+                      return NotificationListener<ScrollNotification>(
+                        onNotification: _handleScrollNotification,
+                        child: CustomScrollView(
+                          controller: _scrollController,
+                          // Lets the pull-to-refresh work when the list is too
+                          // short to scroll.
+                          physics: const AlwaysScrollableScrollPhysics(),
+                          slivers: [
+                            SliverPersistentHeader(
+                              pinned: true,
+                              delegate: _DashboardBalanceHeader(
+                                minExtent: _headerMinExtent + bannerExtent,
+                                maxExtent:
+                                    _expandedExtent(viewportHeight) +
+                                    bannerExtent,
+                                expiryTimestamp: _expiryTimestamp,
+                                successorInvite: _successorInvite,
+                                bannerExtent: bannerExtent,
+                                onShutdownTap: _openShutdownDetails,
+                                balanceMsats: balanceMsats,
+                                isLoading: isLoadingBalance,
+                                recovering: recovering,
+                                btcPrices: _btcPrices,
+                                isLoadingPrices: _isLoadingPrices,
+                                pricesFailed: _pricesFailed,
+                                lnAddressConfig: _lnAddressConfig,
+                                onLnAddressTap:
+                                    _lnAddressConfig != null
+                                        ? () => showLightningAddressDialog(
+                                          context,
+                                          _lnAddressConfig!.username,
+                                          _lnAddressConfig!.domain,
+                                          _lnAddressConfig!.lnurl,
+                                        )
+                                        : null,
+                                onWalletTap: _openMyWallet,
+                                backgroundColor:
+                                    Theme.of(context).scaffoldBackgroundColor,
                               ),
                             ),
-                          ),
-                        SliverToBoxAdapter(
-                          child: Padding(
-                            padding: const EdgeInsets.only(top: 8.0),
-                            child: Row(
-                              children: [
-                                Text(
-                                  context.l10n.recentActivity,
-                                  style: Theme.of(context).textTheme.titleSmall
-                                      ?.copyWith(color: Colors.grey),
-                                ),
-                                const Spacer(),
-                                TextButton(
-                                  onPressed: _openAllTransactions,
-                                  child: Row(
-                                    mainAxisSize: MainAxisSize.min,
-                                    children: [
-                                      Text(
-                                        context.l10n.viewAll,
-                                        style: TextStyle(
-                                          color:
-                                              Theme.of(
-                                                context,
-                                              ).colorScheme.primary,
-                                          fontSize: 13,
+                            if (widget.fed.network != null &&
+                                widget.fed.network!.toLowerCase() != 'bitcoin')
+                              SliverToBoxAdapter(
+                                child: AnimatedBuilder(
+                                  animation: _scrollController,
+                                  builder: (context, child) {
+                                    final offset =
+                                        _scrollController.hasClients
+                                            ? _scrollController.offset
+                                            : 0.0;
+                                    final t = (offset / collapseRange).clamp(
+                                      0.0,
+                                      1.0,
+                                    );
+                                    final opacity = (1.0 - t * 2.0).clamp(
+                                      0.0,
+                                      1.0,
+                                    );
+                                    return ClipRect(
+                                      child: Align(
+                                        alignment: Alignment.topCenter,
+                                        heightFactor: 1.0 - t,
+                                        child: Opacity(
+                                          opacity: opacity,
+                                          child: child,
                                         ),
                                       ),
-                                      const SizedBox(width: 2),
-                                      Icon(
-                                        Icons.chevron_right,
-                                        size: 18,
+                                    );
+                                  },
+                                  child: Padding(
+                                    padding: const EdgeInsets.only(top: 4.0),
+                                    child: Text(
+                                      context.l10n.testNetworkMessage,
+                                      style: Theme.of(
+                                        context,
+                                      ).textTheme.bodySmall?.copyWith(
                                         color:
                                             Theme.of(
                                               context,
-                                            ).colorScheme.primary,
+                                            ).colorScheme.secondary,
+                                        fontStyle: FontStyle.italic,
                                       ),
-                                    ],
+                                      textAlign: TextAlign.center,
+                                    ),
                                   ),
                                 ),
-                              ],
-                            ),
-                          ),
-                        ),
-                        const SliverToBoxAdapter(child: SizedBox(height: 8)),
-                        if (_isLoadingTransactions && _pendingDeposits.isEmpty)
-                          const SliverToBoxAdapter(
-                            child: Padding(
-                              padding: EdgeInsets.symmetric(vertical: 32),
-                              child: Center(child: CircularProgressIndicator()),
-                            ),
-                          )
-                        else if (_recentTransactions.isEmpty &&
-                            _pendingDeposits.isEmpty)
-                          SliverPadding(
-                            padding: EdgeInsets.only(bottom: bottomInset),
-                            sliver: SliverToBoxAdapter(
-                              child: EmptyTransactionsState(
-                                paymentType: _selectedPaymentType,
-                                onReceivePressed: _onReceivePressed,
+                              ),
+                            SliverToBoxAdapter(
+                              child: Padding(
+                                padding: const EdgeInsets.only(top: 8.0),
+                                child: Row(
+                                  children: [
+                                    Text(
+                                      context.l10n.recentActivity,
+                                      style: Theme.of(context)
+                                          .textTheme
+                                          .titleSmall
+                                          ?.copyWith(color: Colors.grey),
+                                    ),
+                                    const Spacer(),
+                                    TextButton(
+                                      onPressed: _openAllTransactions,
+                                      child: Row(
+                                        mainAxisSize: MainAxisSize.min,
+                                        children: [
+                                          Text(
+                                            context.l10n.viewAll,
+                                            style: TextStyle(
+                                              color:
+                                                  Theme.of(
+                                                    context,
+                                                  ).colorScheme.primary,
+                                              fontSize: 13,
+                                            ),
+                                          ),
+                                          const SizedBox(width: 2),
+                                          Icon(
+                                            Icons.chevron_right,
+                                            size: 18,
+                                            color:
+                                                Theme.of(
+                                                  context,
+                                                ).colorScheme.primary,
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  ],
+                                ),
                               ),
                             ),
-                          )
-                        else
-                          SliverList(
-                            delegate: SliverChildBuilderDelegate(
-                              (context, index) {
-                                if (index < _pendingDeposits.length) {
-                                  return PendingDepositItem(
-                                    event: _pendingDeposits[index],
-                                    fed: widget.fed,
-                                  );
-                                }
-                                final tx =
-                                    _recentTransactions[index -
-                                        _pendingDeposits.length];
-                                return TransactionItem(tx: tx, fed: widget.fed);
-                              },
-                              childCount:
-                                  _pendingDeposits.length +
-                                  _recentTransactions.length,
+                            const SliverToBoxAdapter(
+                              child: SizedBox(height: 8),
                             ),
-                          ),
-                        SliverToBoxAdapter(
-                          child: SizedBox(height: bottomInset + 8),
+                            if (_isLoadingTransactions &&
+                                _pendingDeposits.isEmpty)
+                              const SliverToBoxAdapter(
+                                child: Padding(
+                                  padding: EdgeInsets.symmetric(vertical: 32),
+                                  child: Center(
+                                    child: CircularProgressIndicator(),
+                                  ),
+                                ),
+                              )
+                            else if (_recentTransactions.isEmpty &&
+                                _pendingDeposits.isEmpty)
+                              SliverPadding(
+                                padding: EdgeInsets.only(bottom: bottomInset),
+                                sliver: SliverToBoxAdapter(
+                                  child: EmptyTransactionsState(
+                                    paymentType: _selectedPaymentType,
+                                    onReceivePressed: _onReceivePressed,
+                                  ),
+                                ),
+                              )
+                            else
+                              SliverList(
+                                delegate: SliverChildBuilderDelegate(
+                                  (context, index) {
+                                    if (index < _pendingDeposits.length) {
+                                      return PendingDepositItem(
+                                        event: _pendingDeposits[index],
+                                        fed: widget.fed,
+                                      );
+                                    }
+                                    final tx =
+                                        _recentTransactions[index -
+                                            _pendingDeposits.length];
+                                    return TransactionItem(
+                                      tx: tx,
+                                      fed: widget.fed,
+                                    );
+                                  },
+                                  childCount:
+                                      _pendingDeposits.length +
+                                      _recentTransactions.length,
+                                ),
+                              ),
+                            // Pads short lists so the header can still collapse
+                            // fully and the snap logic has room to work.
+                            SliverLayoutBuilder(
+                              builder:
+                                  (context, constraints) => SliverToBoxAdapter(
+                                    child: SizedBox(
+                                      height: max(
+                                        bottomInset + 8,
+                                        viewportHeight +
+                                            collapseRange -
+                                            constraints.precedingScrollExtent,
+                                      ),
+                                    ),
+                                  ),
+                            ),
+                          ],
                         ),
-                      ],
-                    ),
+                      );
+                    },
                   ),
                 ),
       ),
