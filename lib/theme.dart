@@ -55,6 +55,9 @@ Future<T?> showAppModalBottomSheet<T>({
   required Future<Widget> Function() childBuilder,
   double? heightFactor,
   String? errorMessage,
+  // Size the sheet to its content, capped at [heightFactor] of the screen
+  // (default 0.9), instead of a fixed fraction.
+  bool fitContent = false,
 }) {
   final childFuture = childBuilder();
   return showModalBottomSheet<T>(
@@ -65,10 +68,23 @@ Future<T?> showAppModalBottomSheet<T>({
       borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
     ),
     builder: (context) {
+      Widget sized(Widget child) =>
+          fitContent
+              ? ConstrainedBox(
+                constraints: BoxConstraints(
+                  maxHeight:
+                      MediaQuery.sizeOf(context).height * (heightFactor ?? 0.9),
+                ),
+                child: child,
+              )
+              : FractionallySizedBox(
+                heightFactor: heightFactor ?? 0.8,
+                child: child,
+              );
+
       return SafeArea(
-        child: FractionallySizedBox(
-          heightFactor: heightFactor ?? 0.8,
-          child: Padding(
+        child: sized(
+          Padding(
             padding: EdgeInsets.only(
               bottom: MediaQuery.of(context).viewInsets.bottom,
             ),
@@ -86,12 +102,14 @@ Future<T?> showAppModalBottomSheet<T>({
                   ),
                 ),
                 // Async content
-                Expanded(
+                Flexible(
+                  fit: fitContent ? FlexFit.loose : FlexFit.tight,
                   child: FutureBuilder<Widget>(
                     future: childFuture,
                     builder: (context, snapshot) {
                       if (snapshot.connectionState == ConnectionState.waiting) {
                         return const Center(
+                          heightFactor: 1,
                           child: Padding(
                             padding: EdgeInsets.all(24.0),
                             child: CircularProgressIndicator(),

@@ -433,6 +433,7 @@ class _EcashRedeemPromptState extends State<EcashRedeemPrompt> {
             ],
           ],
         ],
+        const SizedBox(height: 16),
       ],
     );
   }
