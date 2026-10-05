@@ -2983,4 +2983,36 @@ as BigInt,
 
 }
 
+/// @nodoc
+
+
+class TransactionKind_Recovery extends TransactionKind {
+  const TransactionKind_Recovery(): super._();
+  
+
+
+
+
+
+
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is TransactionKind_Recovery);
+}
+
+
+@override
+int get hashCode => runtimeType.hashCode;
+
+@override
+String toString() {
+  return 'TransactionKind.recovery()';
+}
+
+
+}
+
+
+
+
 // dart format on

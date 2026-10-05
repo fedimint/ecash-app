@@ -15409,6 +15409,8 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           oobNotes: dco_decode_String(raw[1]),
           fees: dco_decode_u_64(raw[2]),
         );
+      case 7:
+        return TransactionKind_Recovery();
       default:
         throw Exception("unreachable");
     }
@@ -18588,6 +18590,8 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           oobNotes: var_oobNotes,
           fees: var_fees,
         );
+      case 7:
+        return TransactionKind_Recovery();
       default:
         throw UnimplementedError('');
     }
@@ -21729,6 +21733,8 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
         sse_encode_i_32(6, serializer);
         sse_encode_String(oobNotes, serializer);
         sse_encode_u_64(fees, serializer);
+      case TransactionKind_Recovery():
+        sse_encode_i_32(7, serializer);
     }
   }
 
