@@ -154,6 +154,37 @@ void main() {
           '100 000 000 sats',
         );
       });
+
+      test('does not wrap amounts beyond 64 bits', () {
+        // Previously formatted via toInt(), which truncates to 64 bits.
+        expect(
+          formatBalance(
+            BigInt.parse('10000000000000000000000'),
+            false,
+            BitcoinDisplay.sats,
+          ),
+          '10 000 000 000 000 000 000 sats',
+        );
+        expect(
+          formatBalance(
+            BigInt.parse('9223372036854775809'),
+            true,
+            BitcoinDisplay.sats,
+          ),
+          '9 223 372 036 854 775.809 sats',
+        );
+      });
+
+      test('keeps the sign on negative values', () {
+        expect(
+          formatBalance(BigInt.from(-1234567), false, BitcoinDisplay.sats),
+          '-1 234 sats',
+        );
+        expect(
+          formatBalance(BigInt.from(-1234567), true, BitcoinDisplay.sats),
+          '-1 234.567 sats',
+        );
+      });
     });
   });
 
@@ -164,12 +195,12 @@ void main() {
 
     test('calculates USD correctly with symbol before', () {
       // At $50,000/BTC, 100,000 sats = $50
-      expect(calculateFiatValue(50000.0, 100000, FiatCurrency.usd), '\$50.00');
+      expect(calculateFiatValue(50000, 100000, FiatCurrency.usd), '\$50.00');
       // At $50,000/BTC, 1 sat = $0.0005
-      expect(calculateFiatValue(50000.0, 1, FiatCurrency.usd), '\$0.00');
+      expect(calculateFiatValue(50000, 1, FiatCurrency.usd), '\$0.00');
       // At $50,000/BTC, 10,000,000 sats = $5,000
       expect(
-        calculateFiatValue(50000.0, 10000000, FiatCurrency.usd),
+        calculateFiatValue(50000, 10000000, FiatCurrency.usd),
         '\$5,000.00',
       );
     });
@@ -177,87 +208,130 @@ void main() {
     test('groups thousands with commas', () {
       // At $50,000/BTC, 1 BTC = $50,000
       expect(
-        calculateFiatValue(50000.0, 100000000, FiatCurrency.usd),
+        calculateFiatValue(50000, 100000000, FiatCurrency.usd),
         '\$50,000.00',
       );
       // At $50,000/BTC, 2,000 BTC = $100,000,000
       expect(
-        calculateFiatValue(50000.0, 200000000000, FiatCurrency.usd),
+        calculateFiatValue(50000, 200000000000, FiatCurrency.usd),
         '\$100,000,000.00',
       );
       // Grouping also applies when the symbol trails the amount
       expect(
-        calculateFiatValue(45000.0, 100000000, FiatCurrency.eur),
+        calculateFiatValue(45000, 100000000, FiatCurrency.eur),
         '45,000.00€',
       );
       // Below 1000 stays ungrouped
-      expect(
-        calculateFiatValue(50000.0, 1000000, FiatCurrency.usd),
-        '\$500.00',
-      );
+      expect(calculateFiatValue(50000, 1000000, FiatCurrency.usd), '\$500.00');
     });
 
     test('calculates EUR correctly with symbol after', () {
       // At €45,000/BTC, 100,000 sats = €45
-      expect(calculateFiatValue(45000.0, 100000, FiatCurrency.eur), '45.00€');
+      expect(calculateFiatValue(45000, 100000, FiatCurrency.eur), '45.00€');
     });
 
     test('calculates GBP correctly with symbol before', () {
-      expect(calculateFiatValue(40000.0, 100000, FiatCurrency.gbp), '£40.00');
+      expect(calculateFiatValue(40000, 100000, FiatCurrency.gbp), '£40.00');
     });
 
     test('calculates CAD correctly with C\$ prefix', () {
-      expect(calculateFiatValue(60000.0, 100000, FiatCurrency.cad), 'C\$60.00');
+      expect(calculateFiatValue(60000, 100000, FiatCurrency.cad), 'C\$60.00');
     });
 
     test('calculates CHF correctly with CHF prefix', () {
-      expect(
-        calculateFiatValue(55000.0, 100000, FiatCurrency.chf),
-        'CHF 55.00',
-      );
+      expect(calculateFiatValue(55000, 100000, FiatCurrency.chf), 'CHF 55.00');
     });
 
     test('calculates AUD correctly with A\$ prefix', () {
-      expect(calculateFiatValue(70000.0, 100000, FiatCurrency.aud), 'A\$70.00');
+      expect(calculateFiatValue(70000, 100000, FiatCurrency.aud), 'A\$70.00');
     });
 
     test('calculates JPY correctly with ¥ prefix', () {
       expect(
-        calculateFiatValue(7000000.0, 100000, FiatCurrency.jpy),
+        calculateFiatValue(7000000, 100000, FiatCurrency.jpy),
         '¥7,000.00',
       );
     });
 
     test('handles zero sats', () {
-      expect(calculateFiatValue(50000.0, 0, FiatCurrency.usd), '\$0.00');
+      expect(calculateFiatValue(50000, 0, FiatCurrency.usd), '\$0.00');
     });
   });
 
   group('calculateSatsFromFiat', () {
     test('returns 0 when btcPrice is null', () {
-      expect(calculateSatsFromFiat(null, 100.0), 0);
+      expect(calculateSatsFromFiat(null, 10000), 0);
     });
 
     test('returns 0 when btcPrice is 0', () {
-      expect(calculateSatsFromFiat(0.0, 100.0), 0);
+      expect(calculateSatsFromFiat(0, 10000), 0);
     });
 
     test('calculates sats correctly', () {
       // At $50,000/BTC, $50 = 100,000 sats
-      expect(calculateSatsFromFiat(50000.0, 50.0), 100000);
+      expect(calculateSatsFromFiat(50000, 5000), 100000);
       // At $50,000/BTC, $1 = 2,000 sats
-      expect(calculateSatsFromFiat(50000.0, 1.0), 2000);
+      expect(calculateSatsFromFiat(50000, 100), 2000);
       // At $100,000/BTC, $100 = 100,000 sats
-      expect(calculateSatsFromFiat(100000.0, 100.0), 100000);
+      expect(calculateSatsFromFiat(100000, 10000), 100000);
     });
 
     test('rounds to nearest sat', () {
       // At $50,000/BTC, $0.01 = 20 sats
-      expect(calculateSatsFromFiat(50000.0, 0.01), 20);
+      expect(calculateSatsFromFiat(50000, 1), 20);
     });
 
     test('handles zero fiat amount', () {
-      expect(calculateSatsFromFiat(50000.0, 0.0), 0);
+      expect(calculateSatsFromFiat(50000, 0), 0);
+    });
+
+    test('rounds half up without floating point', () {
+      // At $30,000/BTC, $0.01 = 33.3 sats
+      expect(calculateSatsFromFiat(30000, 1), 33);
+      // At $60,000/BTC, $0.01 = 16.7 sats
+      expect(calculateSatsFromFiat(60000, 1), 17);
+    });
+  });
+
+  group('fiatCentsFromSats', () {
+    test('rounds half up to the nearest cent', () {
+      // At $50,000/BTC, 1 sat = 0.05¢, 9 sats = 0.45¢, 10 sats = 0.5¢
+      expect(fiatCentsFromSats(50000, 1), 0);
+      expect(fiatCentsFromSats(50000, 9), 0);
+      expect(fiatCentsFromSats(50000, 10), 1);
+      expect(fiatCentsFromSats(50000, 100000), 5000);
+    });
+
+    test('does not overflow at the total supply', () {
+      // price × sats × 100 is ~3e24 here, far beyond int64.
+      expect(fiatCentsFromSats(15000000, 2100000000000000), 31500000000000000);
+      expect(
+        calculateFiatValue(15000000, 2100000000000000, FiatCurrency.jpy),
+        '¥315,000,000,000,000.00',
+      );
+    });
+  });
+
+  group('parseFiatCents', () {
+    test('parses whole and partial input', () {
+      expect(parseFiatCents(null), 0);
+      expect(parseFiatCents(''), 0);
+      expect(parseFiatCents('12'), 1200);
+      expect(parseFiatCents('12.'), 1200);
+      expect(parseFiatCents('12.5'), 1250);
+      expect(parseFiatCents('12.34'), 1234);
+      expect(parseFiatCents('.5'), 50);
+      expect(parseFiatCents('0.07'), 7);
+    });
+  });
+
+  group('fiatCentsToInput', () {
+    test('drops only an all-zero fraction', () {
+      expect(fiatCentsToInput(0), '0');
+      expect(fiatCentsToInput(1200), '12');
+      expect(fiatCentsToInput(1230), '12.30');
+      expect(fiatCentsToInput(1234), '12.34');
+      expect(fiatCentsToInput(5), '0.05');
     });
   });
 
