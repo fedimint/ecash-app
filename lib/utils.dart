@@ -6,7 +6,6 @@ import 'package:ecashapp/lib.dart';
 import 'package:ecashapp/multimint.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:intl/intl.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:url_launcher/url_launcher.dart';
 
@@ -183,27 +182,22 @@ String formatBalance(
     };
   }
 
+  // Formatted straight from the BigInt: going through int or double would
+  // wrap or round large amounts.
+  final sign = msats.isNegative ? '-' : '';
+  final abs = msats.abs();
+  var formatted = _groupDigits(abs.toSats.toString(), ' ');
   if (showMsats) {
-    final btcAmount = msats.toDouble() / 1000;
-    final formatter = NumberFormat('#,##0.000', 'en_US');
-    var formatted = formatter.format(btcAmount).replaceAll(',', ' ');
-    return switch (setting) {
-      BitcoinDisplay.bip177 => '₿$formatted',
-      BitcoinDisplay.sats => '$formatted sats',
-      BitcoinDisplay.nothing => formatted,
-      BitcoinDisplay.symbol => '$formatted丰',
-    };
-  } else {
-    final sats = msats.toSats;
-    final formatter = NumberFormat('#,##0', 'en_US');
-    var formatted = formatter.format(sats.toInt()).replaceAll(',', ' ');
-    return switch (setting) {
-      BitcoinDisplay.bip177 => '₿$formatted',
-      BitcoinDisplay.sats => '$formatted sats',
-      BitcoinDisplay.nothing => formatted,
-      BitcoinDisplay.symbol => '$formatted丰',
-    };
+    final remainder = (abs % BigInt.from(1000)).toString().padLeft(3, '0');
+    formatted = '$formatted.$remainder';
   }
+  formatted = '$sign$formatted';
+  return switch (setting) {
+    BitcoinDisplay.bip177 => '₿$formatted',
+    BitcoinDisplay.sats => '$formatted sats',
+    BitcoinDisplay.nothing => formatted,
+    BitcoinDisplay.symbol => '$formatted丰',
+  };
 }
 
 String getAbbreviatedText(String text) {
@@ -211,51 +205,84 @@ String getAbbreviatedText(String text) {
   return '${text.substring(0, 7)}...${text.substring(text.length - 7)}';
 }
 
-String calculateFiatValue(
-  double? btcPrice,
-  int sats,
-  FiatCurrency fiatCurrency,
-) {
+String calculateFiatValue(int? btcPrice, int sats, FiatCurrency fiatCurrency) {
   if (btcPrice == null) return '';
 
   // btcPrice is fetched from mempool.space API for the specific currency
-  final fiatValue = (btcPrice * sats) / 100000000;
+  final cents = fiatCentsFromSats(btcPrice, sats);
+  final (symbol, symbolPosition) = _fiatSymbol(fiatCurrency);
 
-  // Get currency symbol and format
-  final (symbol, symbolPosition) = switch (fiatCurrency) {
-    FiatCurrency.usd => ('\$', 'before'),
-    FiatCurrency.eur => ('€', 'after'),
-    FiatCurrency.gbp => ('£', 'before'),
-    FiatCurrency.cad => ('C\$', 'before'),
-    FiatCurrency.chf => ('CHF ', 'before'),
-    FiatCurrency.aud => ('A\$', 'before'),
-    FiatCurrency.jpy => ('¥', 'before'),
-  };
-
-  final formattedValue = NumberFormat('#,##0.00', 'en_US').format(fiatValue);
+  final whole = _groupDigits((cents ~/ 100).toString(), ',');
+  final fraction = (cents % 100).toString().padLeft(2, '0');
+  final formattedValue = '$whole.$fraction';
   return symbolPosition == 'before'
       ? '$symbol$formattedValue'
       : '$formattedValue$symbol';
 }
 
-/// Groups a run of digits with a comma every three places, so fiat amounts
-/// read as easily as the space-grouped sats amounts from [formatBalance].
-String _groupDigits(String digits) {
+(String, String) _fiatSymbol(FiatCurrency fiatCurrency) =>
+    switch (fiatCurrency) {
+      FiatCurrency.usd => ('\$', 'before'),
+      FiatCurrency.eur => ('€', 'after'),
+      FiatCurrency.gbp => ('£', 'before'),
+      FiatCurrency.cad => ('C\$', 'before'),
+      FiatCurrency.chf => ('CHF ', 'before'),
+      FiatCurrency.aud => ('A\$', 'before'),
+      FiatCurrency.jpy => ('¥', 'before'),
+    };
+
+/// Groups a run of digits with [separator] every three places: a space for
+/// sats in [formatBalance], a comma for fiat amounts.
+String _groupDigits(String digits, String separator) {
   final buffer = StringBuffer();
   for (var i = 0; i < digits.length; i++) {
-    if (i > 0 && (digits.length - i) % 3 == 0) buffer.write(',');
+    if (i > 0 && (digits.length - i) % 3 == 0) buffer.write(separator);
     buffer.write(digits[i]);
   }
   return buffer.toString();
 }
 
-/// Converts a fiat amount to satoshis based on the current BTC price.
+final _satsPerBtc = BigInt.from(100000000);
+
+/// Converts sats to fiat cents at [btcPrice] (whole fiat units per BTC),
+/// rounding half up. Integer arithmetic throughout so the fiat shown always
+/// corresponds to the sats sent; BigInt because price × sats overflows int64
+/// near the total supply.
+int fiatCentsFromSats(int btcPrice, int sats) {
+  final numerator =
+      BigInt.from(btcPrice) * BigInt.from(sats) * BigInt.from(100);
+  return ((numerator + _satsPerBtc ~/ BigInt.two) ~/ _satsPerBtc).toInt();
+}
+
+/// Converts fiat cents to satoshis at [btcPrice], rounding half up.
 /// Returns 0 if btcPrice is null or zero to avoid division errors.
-///
-/// Formula: sats = (fiatValue * 100000000) / btcPrice
-int calculateSatsFromFiat(double? btcPrice, double fiatAmount) {
+int calculateSatsFromFiat(int? btcPrice, int fiatCents) {
   if (btcPrice == null || btcPrice == 0) return 0;
-  return ((fiatAmount * 100000000) / btcPrice).round();
+  final price = BigInt.from(btcPrice);
+  // sats = cents / 100 * 1e8 / price
+  final numerator = BigInt.from(fiatCents) * BigInt.from(1000000);
+  return ((numerator + price ~/ BigInt.two) ~/ price).toInt();
+}
+
+/// Parses the number pad's raw fiat input ("12", "12.", "12.5", ".5") into
+/// cents without going through double. Digits past the second decimal place
+/// are ignored; the number pad never produces them.
+int parseFiatCents(String? input) {
+  if (input == null || input.isEmpty) return 0;
+  final parts = input.split('.');
+  final whole = parts[0].isEmpty ? 0 : int.tryParse(parts[0]) ?? 0;
+  final fractionDigits =
+      parts.length > 1 ? parts[1].padRight(2, '0').substring(0, 2) : '00';
+  return whole * 100 + (int.tryParse(fractionDigits) ?? 0);
+}
+
+/// Renders cents as editable number pad input: "12.34", "12.30", or "12"
+/// when there are no cents, so the user can keep typing.
+String fiatCentsToInput(int cents) {
+  final whole = cents ~/ 100;
+  final fraction = cents % 100;
+  if (fraction == 0) return '$whole';
+  return '$whole.${fraction.toString().padLeft(2, '0')}';
 }
 
 /// Formats a raw fiat input string for display with currency symbol.
@@ -263,15 +290,7 @@ int calculateSatsFromFiat(double? btcPrice, double fiatAmount) {
 String formatFiatInput(String rawFiatInput, FiatCurrency fiatCurrency) {
   if (rawFiatInput.isEmpty) rawFiatInput = '0';
 
-  final (symbol, symbolPosition) = switch (fiatCurrency) {
-    FiatCurrency.usd => ('\$', 'before'),
-    FiatCurrency.eur => ('€', 'after'),
-    FiatCurrency.gbp => ('£', 'before'),
-    FiatCurrency.cad => ('C\$', 'before'),
-    FiatCurrency.chf => ('CHF ', 'before'),
-    FiatCurrency.aud => ('A\$', 'before'),
-    FiatCurrency.jpy => ('¥', 'before'),
-  };
+  final (symbol, symbolPosition) = _fiatSymbol(fiatCurrency);
 
   // Handle partial decimal input (user typed "12." or "12.5")
   String formattedValue;
@@ -280,9 +299,9 @@ String formatFiatInput(String rawFiatInput, FiatCurrency fiatCurrency) {
     final intPart = parts[0].isEmpty ? '0' : parts[0];
     final decPart = parts.length > 1 ? parts[1] : '';
     // Group the integer part, but show decimals as-is during typing
-    formattedValue = '${_groupDigits(intPart)}.$decPart';
+    formattedValue = '${_groupDigits(intPart, ',')}.$decPart';
   } else {
-    formattedValue = _groupDigits(rawFiatInput);
+    formattedValue = _groupDigits(rawFiatInput, ',');
   }
 
   return symbolPosition == 'before'
@@ -290,7 +309,7 @@ String formatFiatInput(String rawFiatInput, FiatCurrency fiatCurrency) {
       : '$formattedValue$symbol';
 }
 
-Future<Map<FiatCurrency, double>> fetchAllBtcPrices() async {
+Future<Map<FiatCurrency, int>> fetchAllBtcPrices() async {
   try {
     final pricesList = await getAllBtcPrices();
     if (pricesList == null) {
@@ -299,9 +318,9 @@ Future<Map<FiatCurrency, double>> fetchAllBtcPrices() async {
     }
 
     // Convert List of tuples to Map
-    final result = <FiatCurrency, double>{};
+    final result = <FiatCurrency, int>{};
     for (final entry in pricesList) {
-      result[entry.$1] = entry.$2.toDouble();
+      result[entry.$1] = entry.$2.toInt();
     }
     return result;
   } catch (e) {

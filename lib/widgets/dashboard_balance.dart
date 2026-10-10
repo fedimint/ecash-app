@@ -11,7 +11,7 @@ class DashboardBalance extends StatelessWidget {
   final BigInt? balanceMsats;
   final bool isLoading;
   final bool recovering;
-  final Map<FiatCurrency, double> btcPrices;
+  final Map<FiatCurrency, int> btcPrices;
   final bool isLoadingPrices;
   final bool pricesFailed;
   final LightningAddressConfig? lnAddressConfig;

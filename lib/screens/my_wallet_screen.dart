@@ -30,7 +30,7 @@ class MyWalletScreen extends StatefulWidget {
 class _MyWalletScreenState extends State<MyWalletScreen> {
   BigInt? _balanceMsats;
   bool _isLoadingBalance = true;
-  Map<FiatCurrency, double> _btcPrices = {};
+  Map<FiatCurrency, int> _btcPrices = {};
   bool _isLoadingPrices = true;
 
   // Summary data

@@ -63,7 +63,7 @@ class _DashboardState extends State<Dashboard> {
   /// tab's bar.
   final Map<PaymentType, double> _recoveryProgress = {};
   PaymentType _selectedPaymentType = PaymentType.lightning;
-  Map<FiatCurrency, double> _btcPrices = {};
+  Map<FiatCurrency, int> _btcPrices = {};
   bool _isLoadingPrices = false;
   bool _pricesFailed = false;
   VoidCallback? _pendingAction;
@@ -898,7 +898,7 @@ class _DashboardBalanceHeader extends SliverPersistentHeaderDelegate {
   final BigInt? balanceMsats;
   final bool isLoading;
   final bool recovering;
-  final Map<FiatCurrency, double> btcPrices;
+  final Map<FiatCurrency, int> btcPrices;
   final bool isLoadingPrices;
   final bool pricesFailed;
   final LightningAddressConfig? lnAddressConfig;

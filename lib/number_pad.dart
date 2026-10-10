@@ -48,7 +48,7 @@ Future<void> openLnurlWithdraw({
   );
 
   LnurlWithdrawParams params;
-  Map<FiatCurrency, double> btcPrices;
+  Map<FiatCurrency, int> btcPrices;
   try {
     params = await fetchLnurlWithdraw(url: url);
     btcPrices = await fetchAllBtcPrices();
@@ -85,7 +85,7 @@ enum WithdrawalMode { specificAmount, maxBalance }
 class NumberPad extends StatefulWidget {
   final FederationSelector fed;
   final PaymentType paymentType;
-  final Map<FiatCurrency, double> btcPrices;
+  final Map<FiatCurrency, int> btcPrices;
   final VoidCallback? onWithdrawCompleted;
   final String? bitcoinAddress;
   final String? lightningAddressOrLnurl;
@@ -395,6 +395,51 @@ class _NumberPadState extends State<NumberPad> {
 
   bool _canAddFiatDigit() => canAddFiatDigit(_displayedFiatInput);
 
+  int _satsFromFiatInput(String? fiatInput) => calculateSatsFromFiat(
+    widget.btcPrices[context.read<PreferencesProvider>().fiatCurrency],
+    parseFiatCents(fiatInput),
+  );
+
+  void _appendDigit(String digit) {
+    if (_isFiatInputMode) {
+      // Don't allow more than 2 decimal places
+      if (!_canAddFiatDigit()) return;
+      // Replace leading zero instead of appending
+      final next =
+          _displayedFiatInput == '0'
+              ? digit
+              : (_displayedFiatInput ?? '') + digit;
+      final sats = _satsFromFiatInput(next);
+      if (sats > maxAmountSats) return;
+      // Clear preserved sats since user is now editing
+      _preservedSatsBeforeFiatEdit = null;
+      _displayedFiatInput = next;
+      _rawAmount = sats.toString();
+    } else {
+      if (!canAddSatsDigit(_rawAmount, digit)) return;
+      _rawAmount += digit;
+    }
+    _withdrawalMode = WithdrawalMode.specificAmount;
+  }
+
+  void _deleteDigit() {
+    if (_isFiatInputMode) {
+      if (_displayedFiatInput != null && _displayedFiatInput!.isNotEmpty) {
+        _displayedFiatInput = _displayedFiatInput!.substring(
+          0,
+          _displayedFiatInput!.length - 1,
+        );
+        _preservedSatsBeforeFiatEdit = null;
+        _rawAmount = _satsFromFiatInput(_displayedFiatInput).toString();
+      }
+    } else {
+      if (_rawAmount.isNotEmpty) {
+        _rawAmount = _rawAmount.substring(0, _rawAmount.length - 1);
+      }
+    }
+    _withdrawalMode = WithdrawalMode.specificAmount;
+  }
+
   void _onSwapCurrency() {
     final fiatCurrency = context.read<PreferencesProvider>().fiatCurrency;
     final btcPrice = widget.btcPrices[fiatCurrency];
@@ -427,14 +472,10 @@ class _NumberPadState extends State<NumberPad> {
         _preservedSatsBeforeFiatEdit = _rawAmount;
         // Calculate and display the fiat equivalent
         final sats = int.tryParse(_rawAmount) ?? 0;
-        final fiatValue = (btcPrice * sats) / 100000000;
         // Store as raw fiat input (just the number, formatted on display)
-        // Only strip .00 to allow typing, but keep meaningful decimals
-        String fiatStr = fiatValue.toStringAsFixed(2);
-        if (fiatStr.endsWith('.00')) {
-          fiatStr = fiatStr.substring(0, fiatStr.length - 3); // Remove .00 only
-        }
-        _displayedFiatInput = fiatStr;
+        _displayedFiatInput = fiatCentsToInput(
+          fiatCentsFromSats(btcPrice, sats),
+        );
         _isFiatInputMode = true;
       }
     });
@@ -781,30 +822,7 @@ class _NumberPadState extends State<NumberPad> {
         digit = '9';
       }
       if (key == LogicalKeyboardKey.backspace) {
-        setState(() {
-          if (_isFiatInputMode) {
-            if (_displayedFiatInput != null &&
-                _displayedFiatInput!.isNotEmpty) {
-              _displayedFiatInput = _displayedFiatInput!.substring(
-                0,
-                _displayedFiatInput!.length - 1,
-              );
-              _preservedSatsBeforeFiatEdit = null;
-              final fiatValue =
-                  double.tryParse(_displayedFiatInput ?? '0') ?? 0;
-              final fiatCurrency =
-                  context.read<PreferencesProvider>().fiatCurrency;
-              final btcPrice = widget.btcPrices[fiatCurrency];
-              _rawAmount =
-                  calculateSatsFromFiat(btcPrice, fiatValue).toString();
-            }
-          } else {
-            if (_rawAmount.isNotEmpty) {
-              _rawAmount = _rawAmount.substring(0, _rawAmount.length - 1);
-            }
-          }
-          _withdrawalMode = WithdrawalMode.specificAmount;
-        });
+        setState(_deleteDigit);
       }
       // Handle decimal point for fiat mode via keyboard
       if (_isFiatInputMode &&
@@ -818,27 +836,7 @@ class _NumberPadState extends State<NumberPad> {
         });
       }
       if (digit != '') {
-        setState(() {
-          if (_isFiatInputMode) {
-            // Don't allow more than 2 decimal places
-            if (!_canAddFiatDigit()) return;
-            _preservedSatsBeforeFiatEdit = null;
-            // Replace leading zero instead of appending
-            if (_displayedFiatInput == '0') {
-              _displayedFiatInput = digit;
-            } else {
-              _displayedFiatInput = (_displayedFiatInput ?? '') + digit;
-            }
-            final fiatValue = double.tryParse(_displayedFiatInput ?? '0') ?? 0;
-            final fiatCurrency =
-                context.read<PreferencesProvider>().fiatCurrency;
-            final btcPrice = widget.btcPrices[fiatCurrency];
-            _rawAmount = calculateSatsFromFiat(btcPrice, fiatValue).toString();
-          } else {
-            _rawAmount += digit;
-          }
-          _withdrawalMode = WithdrawalMode.specificAmount;
-        });
+        setState(() => _appendDigit(digit));
       }
     }
   }
@@ -1097,71 +1095,9 @@ class _NumberPadState extends State<NumberPad> {
                 padding: const EdgeInsets.symmetric(horizontal: 16.0),
                 child: CustomNumPad(
                   rowSpacing: 4,
-                  onDigitPressed: (digit) {
-                    setState(() {
-                      if (_isFiatInputMode) {
-                        // Don't allow more than 2 decimal places
-                        if (!_canAddFiatDigit()) return;
-
-                        // Clear preserved sats since user is now editing
-                        _preservedSatsBeforeFiatEdit = null;
-
-                        // Replace leading zero instead of appending
-                        if (_displayedFiatInput == '0') {
-                          _displayedFiatInput = digit.toString();
-                        } else {
-                          _displayedFiatInput =
-                              (_displayedFiatInput ?? '') + digit.toString();
-                        }
-
-                        // Convert to sats
-                        final fiatValue =
-                            double.tryParse(_displayedFiatInput ?? '0') ?? 0;
-                        final fiatCurrency =
-                            context.read<PreferencesProvider>().fiatCurrency;
-                        final btcPrice = widget.btcPrices[fiatCurrency];
-                        final sats = calculateSatsFromFiat(btcPrice, fiatValue);
-                        _rawAmount = sats.toString();
-                      } else {
-                        // In bitcoin mode (existing behavior)
-                        _rawAmount += digit.toString();
-                      }
-                      _withdrawalMode = WithdrawalMode.specificAmount;
-                    });
-                  },
-                  onBackspace: () {
-                    setState(() {
-                      if (_isFiatInputMode) {
-                        if (_displayedFiatInput != null &&
-                            _displayedFiatInput!.isNotEmpty) {
-                          _displayedFiatInput = _displayedFiatInput!.substring(
-                            0,
-                            _displayedFiatInput!.length - 1,
-                          );
-                          _preservedSatsBeforeFiatEdit = null;
-                          // Recalculate sats
-                          final fiatValue =
-                              double.tryParse(_displayedFiatInput ?? '0') ?? 0;
-                          final fiatCurrency =
-                              context.read<PreferencesProvider>().fiatCurrency;
-                          final btcPrice = widget.btcPrices[fiatCurrency];
-                          _rawAmount =
-                              calculateSatsFromFiat(
-                                btcPrice,
-                                fiatValue,
-                              ).toString();
-                        }
-                      } else {
-                        if (_rawAmount.isNotEmpty) {
-                          _rawAmount = _rawAmount.substring(
-                            0,
-                            _rawAmount.length - 1,
-                          );
-                        }
-                      }
-                      _withdrawalMode = WithdrawalMode.specificAmount;
-                    });
-                  },
+                  onDigitPressed:
+                      (digit) => setState(() => _appendDigit('$digit')),
+                  onBackspace: () => setState(_deleteDigit),
                   leftWidget:
                       _isFiatInputMode
                           ? NumPadButton(
