@@ -428,4 +428,17 @@ void main() {
       expect(canAddFiatDigit('12.567'), false);
     });
   });
+
+  group('canAddSatsDigit', () {
+    test('allows digits up to the total supply', () {
+      expect(canAddSatsDigit('', '1'), true);
+      expect(canAddSatsDigit('210000000000000', '0'), true);
+    });
+
+    test('rejects digits past the total supply', () {
+      expect(canAddSatsDigit('210000000000000', '1'), false);
+      expect(canAddSatsDigit('2100000000000000', '0'), false);
+      expect(canAddSatsDigit('999999999999999', '9'), false);
+    });
+  });
 }

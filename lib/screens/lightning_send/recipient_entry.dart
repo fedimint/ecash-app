@@ -15,7 +15,7 @@ import 'package:flutter/material.dart';
 
 class RecipientEntry extends StatefulWidget {
   final FederationSelector fed;
-  final Map<FiatCurrency, double> btcPrices;
+  final Map<FiatCurrency, int> btcPrices;
   final String? prefilledRecipient;
 
   const RecipientEntry({

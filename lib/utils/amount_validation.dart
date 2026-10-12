@@ -92,3 +92,15 @@ bool canAddFiatDigit(String? displayedFiatInput) {
   final parts = displayedFiatInput.split('.');
   return parts.length < 2 || parts[1].length < 2;
 }
+
+/// The largest amount the number pad accepts: the 21M BTC total supply.
+/// Nothing above it is a meaningful amount, and capping input keeps every
+/// value comfortably within int64.
+const maxAmountSats = 2100000000000000;
+
+/// Returns true if appending [digit] keeps the sats input within
+/// [maxAmountSats].
+bool canAddSatsDigit(String rawAmount, String digit) {
+  final next = BigInt.tryParse(rawAmount + digit);
+  return next != null && next <= BigInt.from(maxAmountSats);
+}

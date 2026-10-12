@@ -284,11 +284,11 @@ class _ContactsScreenState extends State<ContactsScreen>
     }
 
     // Get BTC prices for the number pad
-    final btcPrices = <FiatCurrency, double>{};
+    final btcPrices = <FiatCurrency, int>{};
     final prices = await getAllBtcPrices();
     if (prices != null) {
       for (final (currency, price) in prices) {
-        btcPrices[currency] = price.toDouble();
+        btcPrices[currency] = price.toInt();
       }
     }
 
