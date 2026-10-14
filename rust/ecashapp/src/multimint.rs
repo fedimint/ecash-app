@@ -1862,7 +1862,7 @@ impl Multimint {
                             // must not consume the whole cycle.
                             Self::run_cache_stage(
                                 &format!("federation meta for {federation_id}"),
-                                self_copy.cache_federation_meta(client.clone(), now),
+                                self_copy.cache_federation_meta(client.clone(), now, true),
                             )
                             .await;
                             // Rides on the meta refresh's schedule: that stage
@@ -2137,6 +2137,9 @@ impl Multimint {
         invite: Option<String>,
         federation_id: Option<FederationId>,
     ) -> anyhow::Result<FederationMeta> {
+        // Only a preview (by invite) skips guardian versions; its guardian list
+        // gets them from `subscribe_peer_status` instead.
+        let fetch_versions = federation_id.is_some();
         let (client, federation_id) = match federation_id {
             Some(federation_id) => {
                 let clients = self.clients.read().await;
@@ -2166,12 +2169,22 @@ impl Multimint {
 
         let mut dbtx = self.db.begin_transaction().await;
         if let Some(cached_meta) = dbtx.get_value(&FederationMetaKey { federation_id }).await {
-            return Ok(cached_meta);
+            // A joined federation's row is kept current by the cache task. A
+            // previewed one is never refreshed, so an old row would show
+            // whatever name and welcome the guardians had announced back then;
+            // only reuse it if it was fetched moments ago (e.g. the screen
+            // re-reading what the scan that opened it just cached).
+            let fresh = UNIX_EPOCH + Duration::from_millis(cached_meta.last_updated)
+                + Duration::from_secs(CACHE_UPDATE_INTERVAL_SECS)
+                >= std::time::SystemTime::now();
+            if fetch_versions || fresh {
+                return Ok(cached_meta);
+            }
         }
 
         // Federation either has not been cached yet, or is a new federation
         Ok(self
-            .cache_federation_meta(client, std::time::SystemTime::now())
+            .cache_federation_meta(client, std::time::SystemTime::now(), fetch_versions)
             .await)
     }
 
@@ -2228,7 +2241,7 @@ impl Multimint {
             .client
             .clone();
         Ok(self
-            .cache_federation_meta(client, std::time::SystemTime::now())
+            .cache_federation_meta(client, std::time::SystemTime::now(), true)
             .await)
     }
 
@@ -2279,10 +2292,15 @@ impl Multimint {
         None
     }
 
+    /// With `fetch_versions` off, no guardian is asked for its version and
+    /// the cached ones (if any) are kept. A preview has no use for versions,
+    /// and asking every guardian is the slow part: each request waits out a
+    /// fresh connection, and an offline guardian its connect timeout.
     async fn cache_federation_meta(
         &self,
         client: ClientHandleArc,
         now: std::time::SystemTime,
+        fetch_versions: bool,
     ) -> FederationMeta {
         let federation_id = client.federation_id();
 
@@ -2309,7 +2327,11 @@ impl Multimint {
         let mut guardians = Vec::new();
         for (peer_id, endpoint) in peers {
             let pid = peer_id.to_usize() as u16;
-            let fetched_version = client.api().fedimintd_version(*peer_id).await.ok();
+            let fetched_version = if fetch_versions {
+                client.api().fedimintd_version(*peer_id).await.ok()
+            } else {
+                None
+            };
             let version = match &fetched_version {
                 Some(v) => {
                     let cached = cached_versions.get(&pid).and_then(|c| c.as_ref());
@@ -2321,7 +2343,7 @@ impl Multimint {
                         fetched_version
                     }
                 }
-                // API returned None (guardian offline), preserve cached version
+                // Guardian offline or not asked, preserve cached version
                 None => cached_versions.get(&pid).cloned().flatten(),
             };
             guardians.push(Guardian {
