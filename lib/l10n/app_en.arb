@@ -1846,9 +1846,6 @@
   "txConfirmedClaimingEcash": "Tx confirmed, claiming ecash",
   "@txConfirmedClaimingEcash": {},
 
-  "couldNotGetFederationMetadataScan": "Sorry! Could not get federation metadata",
-  "@couldNotGetFederationMetadataScan": {},
-
   "txSent": "Sent",
   "@txSent": {},
 

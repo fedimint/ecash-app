@@ -421,46 +421,22 @@ class _ScanQRPageState extends State<ScanQRPage> {
       switch (action) {
         case ParsedText_InviteCode(:final field0):
           if (widget.paymentType == null) {
-            final overlay = OverlayEntry(
-              builder:
-                  (_) => Container(
-                    color: Colors.black54,
-                    child: const Center(child: CircularProgressIndicator()),
-                  ),
+            // Open the preview straight away: it downloads the federation's
+            // metadata itself behind a loading state, with a back button and a
+            // Retry if the guardians can't be reached.
+            final fed = await Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder:
+                    (_) => FederationInfoScreen(
+                      inviteCode: field0,
+                      joinable: true,
+                      onLeaveFederation: () {},
+                    ),
+              ),
             );
-            try {
-              Overlay.of(context).insert(overlay);
-              final meta = await getFederationMeta(inviteCode: field0);
-              overlay.remove();
-              if (!context.mounted) return false;
-              final fed = await Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder:
-                      (_) => FederationInfoScreen(
-                        fed: meta.selector,
-                        inviteCode: field0,
-                        welcomeMessage: meta.welcome,
-                        imageUrl: meta.picture,
-                        joinable: true,
-                        onLeaveFederation: () {},
-                      ),
-                ),
-              );
-              if (fed != null && context.mounted) {
-                Navigator.pop(context, fed);
-              }
-            } catch (e) {
-              overlay.remove();
-              AppLogger.instance.warn(
-                "Error when retrieving federation meta: $e",
-              );
-              ToastService().show(
-                message: context.l10n.couldNotGetFederationMetadataScan,
-                duration: const Duration(seconds: 5),
-                onTap: () {},
-                icon: Icon(Icons.error),
-              );
+            if (fed != null && context.mounted) {
+              Navigator.pop(context, fed);
             }
           }
           break;
@@ -573,47 +549,23 @@ class _ScanQRPageState extends State<ScanQRPage> {
           break;
         case ParsedText_InviteCodeWithEcash(:final field0, :final field1):
           if (widget.paymentType == null) {
-            final overlay = OverlayEntry(
-              builder:
-                  (_) => Container(
-                    color: Colors.black54,
-                    child: const Center(child: CircularProgressIndicator()),
-                  ),
+            // Open the preview straight away: it downloads the federation's
+            // metadata itself behind a loading state, with a back button and a
+            // Retry if the guardians can't be reached.
+            final fed = await Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder:
+                    (_) => FederationInfoScreen(
+                      inviteCode: field0,
+                      joinable: true,
+                      ecash: field1,
+                      onLeaveFederation: () {},
+                    ),
+              ),
             );
-            try {
-              Overlay.of(context).insert(overlay);
-              final meta = await getFederationMeta(inviteCode: field0);
-              overlay.remove();
-              if (!context.mounted) return false;
-              final fed = await Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder:
-                      (_) => FederationInfoScreen(
-                        fed: meta.selector,
-                        inviteCode: field0,
-                        welcomeMessage: meta.welcome,
-                        imageUrl: meta.picture,
-                        joinable: true,
-                        ecash: field1,
-                        onLeaveFederation: () {},
-                      ),
-                ),
-              );
-              if (fed != null && context.mounted) {
-                Navigator.pop(context, fed);
-              }
-            } catch (e) {
-              overlay.remove();
-              AppLogger.instance.warn(
-                "Error when retrieving federation meta: $e",
-              );
-              ToastService().show(
-                message: context.l10n.couldNotGetFederationMetadataScan,
-                duration: const Duration(seconds: 5),
-                onTap: () {},
-                icon: Icon(Icons.error),
-              );
+            if (fed != null && context.mounted) {
+              Navigator.pop(context, fed);
             }
           }
           break;

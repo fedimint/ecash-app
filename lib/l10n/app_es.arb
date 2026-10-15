@@ -517,7 +517,6 @@
   "txInMempool": "Tx en mempool",
   "txInBlockRemainingConfs": "Tx en bloque {blockHeight}. Confirmaciones restantes: {needed}",
   "txConfirmedClaimingEcash": "Tx confirmada, reclamando ecash",
-  "couldNotGetFederationMetadataScan": "¡Lo siento! No se pudieron obtener los metadatos de la federación",
 
   "txSent": "Enviado",
   "txReceived": "Recibido",
