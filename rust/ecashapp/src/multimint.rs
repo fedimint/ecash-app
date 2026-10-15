@@ -7222,7 +7222,8 @@ impl Multimint {
                         client.get_first_module::<fedimint_lnv2_client::LightningClientModule>()
                     {
                         // Try generating LNURL to extract pk
-                        let dummy_gateway = SafeUrl::parse("https://dummy.gateway").unwrap();
+                        let dummy_gateway = SafeUrl::parse("https://dummy.gateway")
+                            .expect("hard-coded URL is valid");
                         if let Ok(lnurl) = lnv2
                             .generate_lnurl(config.recurringd_api.clone(), Some(dummy_gateway))
                             .await

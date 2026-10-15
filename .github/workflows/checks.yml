@@ -19,6 +19,19 @@ jobs:
       - name: Check translations
         run: ./scripts/check-translations.sh
 
+  ast-grep:
+    name: ast-grep Lints
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      # Runs through the flake's small `lint` shell, so CI uses exactly the
+      # ast-grep that flake.lock pins for `nix develop`.
+      - uses: cachix/install-nix-action@v31
+
+      - name: Run ast-grep rules and their tests
+        run: nix develop .#lint --command just lint-ast-grep
+
   checks:
     runs-on: ubuntu-latest
     steps:

@@ -43,7 +43,9 @@ declared from `foo.rs` with `#[cfg(test)] mod tests;`. Don't add inline
 `mod tests { ... }` blocks to source files.
 
 The same workflows also gate `cargo fmt --check`, `cargo clippy -- -D warnings`,
-`dart format --set-exit-if-changed lib/`, and `./scripts/check-translations.sh`.
+`dart format --set-exit-if-changed lib/`, `./scripts/check-translations.sh`, and
+the ast-grep rules in `.config/ast-grep/rules/` (`just lint-ast-grep`).
+Clippy also rejects `.unwrap()` outside tests; use `.expect("why it can't fail")`.
 Together these are much faster than a platform build, so prefer them for
 verifying a change.
 

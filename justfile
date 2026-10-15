@@ -53,6 +53,10 @@ test-rust:
 
 test-all: test test-rust
 
+# Structural Rust lints (rules in .config/ast-grep/rules), plus the rules' own tests
+lint-ast-grep:
+  cd $ROOT && ast-grep scan && ast-grep test --skip-snapshot-tests
+
 # Check translations/i18n for issues (missing keys, placeholders, hardcoded strings)
 lint-translations:
   $ROOT/scripts/check-translations.sh
