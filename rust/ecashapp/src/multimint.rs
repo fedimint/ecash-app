@@ -92,7 +92,7 @@ use fedimint_walletv2_client::{
 use fedimint_walletv2_common::endpoint_constants::{
     CONSENSUS_BLOCK_COUNT_ENDPOINT, CONSENSUS_FEERATE_ENDPOINT,
 };
-use futures_util::{stream, Stream, StreamExt};
+use futures_util::{Stream, StreamExt};
 use lightning_invoice::{Bolt11Invoice, Description};
 use reqwest::StatusCode;
 use serde::{Deserialize, Serialize};
@@ -179,6 +179,15 @@ const GUARDIAN_SESSION_FETCH_TIMEOUT: Duration = Duration::from_secs(10);
 /// How often the guardians' session counts are requested again while the
 /// federation info screen is open. A session lasts about three minutes, so
 /// this places the moment a guardian advanced to within a fraction of one.
+/// How long a preview client stays cached after it was last asked for and
+/// nothing else holds it. It only has to cover the gaps between the calls a
+/// preview screen makes as it opens; once the screen is up, its streams hold
+/// the client and keep the entry.
+const PREVIEW_CLIENT_TTL: Duration = Duration::from_secs(60);
+/// How long the federation preview waits for every guardian to report in
+/// before showing its guardian list (or session counts) with the stragglers
+/// still missing.
+const PREVIEW_PEER_STATUS_GRACE: Duration = Duration::from_secs(2);
 const GUARDIAN_SESSION_POLL_INTERVAL: Duration = Duration::from_secs(30);
 /// How many sessions a guardian has to trail the most advanced one by before
 /// it is reported as behind.
@@ -405,6 +414,17 @@ pub struct Multimint {
     recurringd_invoices: Arc<RwLock<BTreeSet<OperationId>>>,
     update_notified: Arc<AtomicBool>,
     wallet_handler: WalletHandler,
+    /// Temporary clients for federations being previewed by invite code. See
+    /// [`Self::get_or_build_temp_client`].
+    preview_clients: Arc<std::sync::Mutex<BTreeMap<FederationId, PreviewClient>>>,
+}
+
+/// A cached preview client. The cell is shared so that callers arriving while
+/// the client is still being built wait for that build instead of starting
+/// their own.
+struct PreviewClient {
+    client: Arc<tokio::sync::OnceCell<ClientHandleArc>>,
+    last_used: Instant,
 }
 
 #[derive(Debug, Serialize, Encodable, Decodable, Clone)]
@@ -1192,8 +1212,8 @@ enum SessionPeers {
     /// of them has succeeded.
     Connected,
     /// Every guardian, opening connections as needed. For a preview client,
-    /// which nothing else uses, so no other request can be held up, and which
-    /// nothing else would connect.
+    /// which only the preview screen uses, so no wallet request can be held
+    /// up, and which nothing else would connect.
     All,
 }
 
@@ -1224,24 +1244,37 @@ impl SessionPeers {
 /// [`GUARDIAN_SESSION_FETCH_TIMEOUT`] is simply absent from the result: failing
 /// to reach a guardian says nothing about its sessions.
 async fn fetch_guardian_session_counts(api: &DynGlobalApi, peers: &[PeerId]) -> BTreeMap<u16, u64> {
-    futures_util::future::join_all(peers.iter().map(|peer| async move {
-        let session_count = timeout(
-            GUARDIAN_SESSION_FETCH_TIMEOUT,
-            api.request_single_peer::<u64>(
-                SESSION_COUNT_ENDPOINT.to_owned(),
-                ApiRequestErased::default(),
-                *peer,
-            ),
-        )
+    guardian_session_count_requests(api, peers)
+        .filter_map(std::future::ready)
+        .collect()
         .await
-        .ok()?
-        .ok()?;
-        Some((peer.to_usize() as u16, session_count))
-    }))
-    .await
-    .into_iter()
-    .flatten()
-    .collect()
+}
+
+/// The requests behind [`fetch_guardian_session_counts`], yielding each answer
+/// as it arrives, for a caller that wants to act on some before the slowest.
+fn guardian_session_count_requests<'a>(
+    api: &'a DynGlobalApi,
+    peers: &'a [PeerId],
+) -> futures_util::stream::FuturesUnordered<
+    impl std::future::Future<Output = Option<(u16, u64)>> + 'a,
+> {
+    peers
+        .iter()
+        .map(|peer| async move {
+            let session_count = timeout(
+                GUARDIAN_SESSION_FETCH_TIMEOUT,
+                api.request_single_peer::<u64>(
+                    SESSION_COUNT_ENDPOINT.to_owned(),
+                    ApiRequestErased::default(),
+                    *peer,
+                ),
+            )
+            .await
+            .ok()?
+            .ok()?;
+            Some((peer.to_usize() as u16, session_count))
+        })
+        .collect()
 }
 
 /// One round of asking the guardians for their session counts and persisting
@@ -1258,10 +1291,21 @@ async fn refresh_guardian_sessions(
     peers: SessionPeers,
 ) -> (BTreeMap<u16, GuardianSession>, BTreeSet<u16>) {
     let fetched = fetch_guardian_session_counts(api, &peers.resolve(api).await).await;
+    let stored = persist_guardian_sessions(db, federation_id, &fetched).await;
+    (stored, fetched.into_keys().collect())
+}
+
+/// Records the session counts in `fetched` and returns every session now on
+/// disk for `federation_id`.
+async fn persist_guardian_sessions(
+    db: &Database,
+    federation_id: FederationId,
+    fetched: &BTreeMap<u16, u64>,
+) -> BTreeMap<u16, GuardianSession> {
     let now = SystemTime::now();
 
     let mut dbtx = db.begin_transaction().await;
-    for (peer_id, session_count) in &fetched {
+    for (peer_id, session_count) in fetched {
         record_guardian_session(&mut dbtx, federation_id, *peer_id, *session_count, now).await;
     }
     let stored = load_guardian_sessions(&mut dbtx, federation_id).await;
@@ -1273,7 +1317,7 @@ async fn refresh_guardian_sessions(
         info_to_flutter(format!("Could not persist guardian sessions: {e}")).await;
     }
 
-    (stored, fetched.into_keys().collect())
+    stored
 }
 
 /// One status per guardian in `peers`, from the sessions on disk and the set of
@@ -1381,6 +1425,7 @@ impl Multimint {
             recurringd_invoices: Arc::new(RwLock::new(BTreeSet::new())),
             update_notified: Arc::new(AtomicBool::new(false)),
             wallet_handler: wallet_handler.clone(),
+            preview_clients: Arc::new(std::sync::Mutex::new(BTreeMap::new())),
         };
 
         multimint.load_clients().await?;
@@ -1761,18 +1806,92 @@ impl Multimint {
             // one passed here is never used — hence the app-wide group rather
             // than a subgroup, which this preview-heavy path would otherwise
             // mint (and leave registered with the parent) on every call.
-            _ => {
-                self.build_client(
-                    &federation_id,
-                    &invite_code,
-                    ClientType::Temporary,
-                    &self.task_group,
-                )
+            //
+            // One preview screen asks for the meta, the guardian list and the
+            // session counts, and building a client downloads the whole config
+            // from the guardians (seconds, for a large federation), so they
+            // all share one.
+            _ => self
+                .preview_client_cell(federation_id)
+                .get_or_try_init(|| {
+                    self.build_client(
+                        &federation_id,
+                        &invite_code,
+                        ClientType::Temporary,
+                        &self.task_group,
+                    )
+                })
                 .await?
-            }
+                .clone(),
         };
 
         Ok((client, federation_id))
+    }
+
+    /// The cache entry for `federation_id`'s preview client, created if there is
+    /// none. A new entry is evicted once [`PREVIEW_CLIENT_TTL`] passes without
+    /// it being asked for and nothing else holds the client, so it lasts as
+    /// long as an open preview screen's streams do and the join from that
+    /// screen can reuse its config (see [`Self::build_client`]).
+    fn preview_client_cell(
+        &self,
+        federation_id: FederationId,
+    ) -> Arc<tokio::sync::OnceCell<ClientHandleArc>> {
+        let mut previews = self
+            .preview_clients
+            .lock()
+            .expect("preview clients lock poisoned");
+        if let Some(entry) = previews.get_mut(&federation_id) {
+            entry.last_used = Instant::now();
+            return entry.client.clone();
+        }
+        let cell = Arc::new(tokio::sync::OnceCell::new());
+        previews.insert(
+            federation_id,
+            PreviewClient {
+                client: cell.clone(),
+                last_used: Instant::now(),
+            },
+        );
+        drop(previews);
+
+        let previews = self.preview_clients.clone();
+        let ours = Arc::downgrade(&cell);
+        self.task_group
+            .spawn_cancellable("preview client eviction", async move {
+                loop {
+                    let deadline = {
+                        let mut previews = previews.lock().expect("preview clients lock poisoned");
+                        // Gone already (a join removed it), or replaced by a
+                        // newer entry with its own eviction task.
+                        let Some(entry) = previews.get(&federation_id).filter(|entry| {
+                            std::ptr::eq(Arc::as_ptr(&entry.client), ours.as_ptr())
+                        }) else {
+                            return;
+                        };
+                        let now = Instant::now();
+                        let deadline = entry.last_used + PREVIEW_CLIENT_TTL;
+                        // Someone besides the cache still holds the client: a
+                        // preview screen that is open, whose Join should find
+                        // the config here however long it was looked at.
+                        let in_use = entry
+                            .client
+                            .get()
+                            .is_some_and(|client| Arc::strong_count(client) > 1);
+                        if deadline > now {
+                            deadline
+                        } else if in_use {
+                            now + PREVIEW_CLIENT_TTL
+                        } else {
+                            previews.remove(&federation_id);
+                            return;
+                        }
+                    };
+                    tokio::time::sleep_until(deadline).await;
+                }
+            });
+
+        cell
     }
 
     /// Run one stage of the cache task under [`CACHE_TASK_STAGE_TIMEOUT_SECS`],
@@ -2174,7 +2293,8 @@ impl Multimint {
             // whatever name and welcome the guardians had announced back then;
             // only reuse it if it was fetched moments ago (e.g. the screen
             // re-reading what the scan that opened it just cached).
-            let fresh = UNIX_EPOCH + Duration::from_millis(cached_meta.last_updated)
+            let fresh = UNIX_EPOCH
+                + Duration::from_millis(cached_meta.last_updated)
                 + Duration::from_secs(CACHE_UPDATE_INTERVAL_SECS)
                 >= std::time::SystemTime::now();
             if fetch_versions || fresh {
@@ -2415,6 +2535,7 @@ impl Multimint {
         let mut dbtx = self.db.begin_transaction().await;
         // Keep the persisted config name in sync so the federation list (which
         // reads FederationConfig) reflects guardian-driven name changes too.
+        let mut config_renamed = false;
         if let Some(mut fed_config) = dbtx
             .get_value(&FederationConfigKey { id: federation_id })
             .await
@@ -2423,6 +2544,7 @@ impl Multimint {
                 fed_config.federation_name = federation_name;
                 dbtx.insert_entry(&FederationConfigKey { id: federation_id }, &fed_config)
                     .await;
+                config_renamed = true;
             }
         }
         dbtx.insert_entry(&FederationMetaKey { federation_id }, &federation_meta)
@@ -2443,6 +2565,10 @@ impl Multimint {
             }
             None => true,
         };
+        // The federation list reads the name from FederationConfig, which can
+        // disagree with an unchanged meta, e.g. one cached by a preview before
+        // the federation was joined under its config name.
+        let changed = changed || config_renamed;
 
         // The same rule for the log: a refresh that found nothing new is the
         // common case on this timer and not worth a line.
@@ -2508,28 +2634,76 @@ impl Multimint {
         // If the invite code is available, that means we have not joined the federation yet. We cannot use the `connection_stream_status`
         // because the client will go out of scope and end the stream. So instead, we just lookup the federation's online status by querying
         // the fedimintd version.
+        //
+        // Every guardian is asked at once, but the list is not held back for
+        // the slowest: an offline guardian only fails once its connection
+        // attempt times out, which used to keep the whole list on "Loading".
+        // It is shown as soon as everyone has answered or after
+        // `PREVIEW_PEER_STATUS_GRACE`, with anyone still pending as offline,
+        // and updated as the rest answer or give up.
         if invite.is_some() {
-            let peer_statuses =
-                futures_util::future::join_all(peers.iter().map(|(peer_id, (name, url))| {
+            let mut statuses: Vec<PeerStatus> = peers
+                .iter()
+                .map(|(peer_id, (name, url))| PeerStatus {
+                    peer_id: *peer_id,
+                    name: name.clone(),
+                    online: false,
+                    connectivity: PeerConnectivity::Unknown,
+                    url: url.clone(),
+                    version: None,
+                })
+                .collect();
+            let mut pending: futures_util::stream::FuturesUnordered<_> = peers
+                .keys()
+                .map(|peer_id| {
                     let client = client.clone();
+                    let peer_id = *peer_id;
                     async move {
-                        let fetched_version =
-                            client.api().fedimintd_version((*peer_id).into()).await.ok();
-                        PeerStatus {
-                            peer_id: *peer_id,
-                            name: name.clone(),
-                            online: fetched_version.is_some(),
-                            // The preview path calls fedimintd_version directly rather than
-                            // going through the pooled connection, so the hop is always direct.
-                            connectivity: PeerConnectivity::Direct,
-                            url: url.clone(),
-                            version: fetched_version,
+                        let version = timeout(
+                            GUARDIAN_SESSION_FETCH_TIMEOUT,
+                            client.api().fedimintd_version(peer_id.into()),
+                        )
+                        .await
+                        .ok()
+                        .and_then(Result::ok);
+                        (peer_id, version)
+                    }
+                })
+                .collect();
+
+            return Ok(async_stream::stream! {
+                let grace = tokio::time::sleep(PREVIEW_PEER_STATUS_GRACE);
+                tokio::pin!(grace);
+                let mut shown = false;
+                loop {
+                    // `None` from the select means the grace period ran out.
+                    let reply = tokio::select! {
+                        reply = pending.next() => match reply {
+                            Some(reply) => Some(reply),
+                            None => break,
+                        },
+                        () = &mut grace, if !shown => None,
+                    };
+                    if let Some((peer_id, version)) = reply {
+                        if let Some(status) = statuses.iter_mut().find(|s| s.peer_id == peer_id) {
+                            status.online = version.is_some();
+                            // The preview calls fedimintd_version directly rather
+                            // than going through the pooled connection, so the
+                            // hop is always direct.
+                            if version.is_some() {
+                                status.connectivity = PeerConnectivity::Direct;
+                            }
+                            status.version = version;
+                        }
+                        if !shown && !pending.is_empty() {
+                            continue;
                         }
                     }
-                }))
-                .await;
-
-            return Ok(stream::once(async { peer_statuses }).boxed());
+                    shown = true;
+                    yield statuses.clone();
+                }
+            }
+            .boxed());
         }
 
         // Get the connection status stream from the client
@@ -2642,9 +2816,12 @@ impl Multimint {
             .iter()
             .map(|peer| peer.to_usize() as u16)
             .collect();
+        let preview = preview_client.is_some();
 
         Ok(async_stream::stream! {
-            // Dropped with the stream, which shuts the preview client down.
+            // Held for as long as the stream, which keeps the shared preview
+            // client up while the screen is open even once its cache entry has
+            // been evicted.
             let _preview_client = preview_client;
 
             let mut dbtx = db.begin_transaction_nc().await;
@@ -2653,6 +2830,46 @@ impl Multimint {
             yield guardian_session_statuses(peer_ids.iter().copied(), &stored, &BTreeSet::new());
 
             loop {
+                if preview {
+                    // A preview asks every guardian, so an offline one would
+                    // hold the round up for the whole request timeout. Show
+                    // what is in after `PREVIEW_PEER_STATUS_GRACE` and let the
+                    // end of the round fill in the rest. The slow requests are
+                    // left running rather than retried: dropping one would
+                    // drop the connection attempt it leads (see `SessionPeers`).
+                    let round_peers = peers.resolve(&api).await;
+                    let mut requests = guardian_session_count_requests(&api, &round_peers);
+                    let mut fetched = BTreeMap::new();
+                    let grace = tokio::time::sleep(PREVIEW_PEER_STATUS_GRACE);
+                    tokio::pin!(grace);
+                    let mut shown_early = false;
+                    loop {
+                        let show_now = tokio::select! {
+                            reply = requests.next() => match reply {
+                                Some(reply) => {
+                                    fetched.extend(reply);
+                                    false
+                                }
+                                None => break,
+                            },
+                            () = &mut grace, if !shown_early => true,
+                        };
+                        if show_now {
+                            shown_early = true;
+                            let stored = persist_guardian_sessions(&db, federation_id, &fetched).await;
+                            let fresh = fetched.keys().copied().collect();
+                            yield guardian_session_statuses(peer_ids.iter().copied(), &stored, &fresh);
+                        }
+                    }
+                    drop(requests);
+                    let stored = persist_guardian_sessions(&db, federation_id, &fetched).await;
+                    let fresh = fetched.into_keys().collect();
+                    yield guardian_session_statuses(peer_ids.iter().copied(), &stored, &fresh);
+
+                    tokio::time::sleep(GUARDIAN_SESSION_POLL_INTERVAL).await;
+                    continue;
+                }
+
                 let (stored, fresh) =
                     refresh_guardian_sessions(&db, &api, federation_id, peers).await;
                 yield guardian_session_statuses(peer_ids.iter().copied(), &stored, &fresh);
@@ -2718,6 +2935,13 @@ impl Multimint {
             return result;
         }
 
+        // The federation now has a client of its own, which is what a preview
+        // gets from here on.
+        self.preview_clients
+            .lock()
+            .expect("preview clients lock poisoned")
+            .remove(&federation_id);
+
         // Mirror of the stop in `leave_federation`. The pairing row outlives a
         // leave on purpose, so a federation joined with one still on file needs
         // its listener started again.
@@ -2761,11 +2985,26 @@ impl Multimint {
             .await?;
 
         let client_config = client.config().await;
-        let federation_name = client_config
-            .global
-            .federation_name()
-            .expect("No federation name")
-            .to_owned();
+        // Prefer the name the guardians set in the meta module, as cached by
+        // the preview this join was started from, so that joining does not
+        // rename the federation back to what its config says. Without a cached
+        // meta the config name stands until the cache task fetches one.
+        let cached_meta_name = self
+            .db
+            .begin_transaction_nc()
+            .await
+            .get_value(&FederationMetaKey { federation_id })
+            .await
+            .map(|meta| meta.selector.federation_name)
+            .filter(|name| !name.is_empty());
+        let federation_name = match cached_meta_name {
+            Some(name) => name,
+            None => client_config
+                .global
+                .federation_name()
+                .expect("No federation name")
+                .to_owned(),
+        };
 
         let network = Self::wallet_network(&client);
 
@@ -3020,11 +3259,41 @@ impl Multimint {
         let mut client_builder = Client::builder().await?;
         client_builder.with_module_inits(self.modules.clone());
 
+        // A join usually follows a preview of the same federation, which has
+        // already downloaded the config and checked it against a threshold of
+        // guardians. Downloading it again would cost the user several seconds.
+        let previewed = match client_type {
+            ClientType::Temporary => None,
+            _ => self
+                .preview_clients
+                .lock()
+                .expect("preview clients lock poisoned")
+                .get(federation_id)
+                .and_then(|entry| entry.client.get().cloned()),
+        };
+        let previewed_config = match previewed {
+            Some(previewed) => Some(previewed.config().await),
+            None => None,
+        };
+
         let client = match client_type {
             ClientType::Recovery => {
-                let client_preview = client_builder
-                    .preview(connectors.clone(), invite_code)
-                    .await?;
+                let client_preview = match previewed_config {
+                    Some(config) => {
+                        client_builder
+                            .preview_with_existing_config(
+                                connectors.clone(),
+                                config,
+                                invite_code.api_secret(),
+                            )
+                            .await?
+                    }
+                    None => {
+                        client_builder
+                            .preview(connectors.clone(), invite_code)
+                            .await?
+                    }
+                };
                 #[allow(deprecated)]
                 let backup = client_preview
                     .download_backup_from_federation(
@@ -3062,16 +3331,38 @@ impl Multimint {
                         )
                         .await
                 } else {
-                    info_to_flutter("Client is not initialized, downloading invite code...").await;
-                    let preview = match timeout(
-                        Duration::from_secs(60),
-                        client_builder.preview(connectors.clone(), invite_code),
-                    )
-                    .await
-                    {
-                        Ok(preview) => preview,
-                        Err(error) => {
-                            return Err(anyhow!("Timed out getting federation preview: {error}"))
+                    let preview = match previewed_config {
+                        Some(config) => {
+                            info_to_flutter(
+                                "Client is not initialized, using the previewed config...",
+                            )
+                            .await;
+                            client_builder
+                                .preview_with_existing_config(
+                                    connectors.clone(),
+                                    config,
+                                    invite_code.api_secret(),
+                                )
+                                .await
+                        }
+                        None => {
+                            info_to_flutter(
+                                "Client is not initialized, downloading invite code...",
+                            )
+                            .await;
+                            match timeout(
+                                Duration::from_secs(60),
+                                client_builder.preview(connectors.clone(), invite_code),
+                            )
+                            .await
+                            {
+                                Ok(preview) => preview,
+                                Err(error) => {
+                                    return Err(anyhow!(
+                                        "Timed out getting federation preview: {error}"
+                                    ))
+                                }
+                            }
                         }
                     };
                     preview?
