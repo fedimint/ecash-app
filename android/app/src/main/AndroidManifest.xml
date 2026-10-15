@@ -12,6 +12,14 @@
     <uses-feature android:name="android.hardware.nfc" android:required="false" tools:replace="android:required" />
     <uses-feature android:name="android.hardware.nfc.hce" android:required="false" tools:replace="android:required" />
 
+    <!-- BLE "tap to send" ecash: advertise (peripheral) + scan/connect (central),
+         no bonding. neverForLocation avoids pulling in location on Android 12+. -->
+    <uses-permission android:name="android.permission.BLUETOOTH_ADVERTISE" android:usesPermissionFlags="neverForLocation" tools:targetApi="s" />
+    <uses-permission android:name="android.permission.BLUETOOTH_CONNECT" />
+    <uses-permission android:name="android.permission.BLUETOOTH_SCAN" android:usesPermissionFlags="neverForLocation" tools:targetApi="s" />
+    <!-- Tap transfers are disabled below Android 12; no legacy BLE/location permissions. -->
+    <uses-feature android:name="android.hardware.bluetooth_le" android:required="false" />
+
     <application
         android:label="Ecash App"
         android:name="${applicationName}"

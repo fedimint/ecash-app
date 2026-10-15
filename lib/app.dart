@@ -20,6 +20,7 @@ import 'package:ecashapp/providers/preferences_provider.dart';
 import 'package:ecashapp/scan.dart';
 import 'package:ecashapp/setttings.dart';
 import 'package:ecashapp/sidebar.dart';
+import 'package:ecashapp/tap_transfer/tap_receive.dart';
 import 'package:ecashapp/theme.dart';
 import 'package:ecashapp/toast.dart';
 import 'package:ecashapp/utils.dart';
@@ -44,7 +45,7 @@ class MyApp extends StatefulWidget {
   State<MyApp> createState() => _MyAppState();
 }
 
-class _MyAppState extends State<MyApp> {
+class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
   late List<(FederationSelector, bool)> _feds;
   int _refreshTrigger = 0;
   FederationSelector? _selectedFederation;
@@ -74,6 +75,12 @@ class _MyAppState extends State<MyApp> {
   void initState() {
     super.initState();
     _feds = widget.initialFederations;
+
+    // Passive "tap to receive" on Android 12+. BLE permissions are requested
+    // only after a tap. See tap_receive.dart.
+    WidgetsBinding.instance.addObserver(this);
+    TapReceive.instance.onEcash = _handleReceivedTapEcash;
+    TapReceive.instance.arm();
 
     if (_feds.isNotEmpty) {
       _selectedFederation = _feds.first.$1;
@@ -345,12 +352,44 @@ class _MyAppState extends State<MyApp> {
 
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    TapReceive.instance.onEcash = null;
+    TapReceive.instance.disarm();
     _subscription.cancel();
     _deepLinkSubscription?.cancel();
     _peerStatusSubscription?.cancel();
     _peerStatus.dispose();
     _recoveryTimer?.cancel();
     super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    switch (state) {
+      case AppLifecycleState.resumed:
+        TapReceive.instance.arm();
+      // Not on `inactive`: the Nearby-devices permission dialog TapReceive shows
+      // mid-tap only makes the app inactive, and disarming would drop the
+      // rendezvous the sender is about to advertise.
+      case AppLifecycleState.paused:
+      case AppLifecycleState.detached:
+        TapReceive.instance.disarm();
+      case AppLifecycleState.inactive:
+      case AppLifecycleState.hidden:
+        break;
+    }
+  }
+
+  /// Passive receiver got a tapped ecash token: present the same redeem UI the
+  /// QR scanner uses (no silent auto-reissue). Suppress the funds-received toast
+  /// while the redeem sheet is up, matching the scan flow.
+  Future<void> _handleReceivedTapEcash(String ecash) async {
+    final ctx = _navigatorKey.currentContext;
+    if (ctx == null) return;
+    invoicePaidToastVisible.value = false;
+    final joined = await presentReceivedEcash(ctx, ecash);
+    invoicePaidToastVisible.value = true;
+    if (joined != null && mounted) _onJoinPressed(joined.$1, joined.$2);
   }
 
   void _checkPendingDeepLink() {

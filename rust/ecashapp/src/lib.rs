@@ -15,6 +15,7 @@ mod net;
 mod nostr;
 mod parse;
 mod pin;
+mod tap_transfer;
 mod wallet;
 mod words;
 use bitcoin::key::rand::rngs::OsRng;

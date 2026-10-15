@@ -1456,6 +1456,24 @@
   "ecashCopiedToClipboard": "Ecash copied to clipboard",
   "@ecashCopiedToClipboard": {},
 
+  "tapToSendHint": "Or tap the recipient's phone",
+  "@tapToSendHint": {},
+
+  "tapConnecting": "Connecting…",
+  "@tapConnecting": {},
+
+  "tapSending": "Sending…",
+  "@tapSending": {},
+
+  "tapSendFailed": "Tap-to-send failed — use the QR code",
+  "@tapSendFailed": {},
+
+  "tapToReceivePermissionDenied": "Allow Nearby devices to receive ecash by tap, or use the QR code",
+  "@tapToReceivePermissionDenied": {},
+
+  "tapToReceiveBluetoothOff": "Turn on Bluetooth to receive ecash by tap, or use the QR code",
+  "@tapToReceiveBluetoothOff": {},
+
   "federationLabel": "Federation",
   "@federationLabel": {},
 
