@@ -163,8 +163,18 @@ Key concepts:
 - `just test-rust` - Rust unit tests, runs `cargo test` in `rust/ecashapp`
 - `just test-all` - Both suites
 
-Dart tests live in `test/`. Rust tests live in `#[cfg(test)]` modules alongside the
-code they cover (`lib.rs`, `multimint.rs`, `pin.rs`, `db.rs`, `parse.rs`).
+Dart tests live in `test/`. Rust unit tests live in a separate file per module:
+tests for `src/foo.rs` go in `src/foo/tests.rs`, declared at the end of `foo.rs` with
+
+```rust
+#[cfg(test)]
+mod tests;
+```
+
+`tests.rs` is still a child module, so `use super::*;` reaches private items as before.
+**Never write inline `mod tests { ... }` blocks** in a source file. When adding tests to
+a module that has none yet, create `src/<module>/tests.rs` and add the declaration above.
+For a `mod.rs` module (e.g. `src/wallet/mod.rs`), the file is `src/wallet/tests.rs`.
 
 CI runs the Flutter tests on every PR (`.github/workflows/test.yml`), and the Rust
 tests plus `cargo fmt --check`, `cargo clippy -- -D warnings`, `dart format`, and the
