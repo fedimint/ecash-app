@@ -8,6 +8,7 @@ import 'package:ecashapp/lib.dart';
 import 'package:ecashapp/multimint.dart';
 import 'package:ecashapp/nfc_hce.dart';
 import 'package:ecashapp/tap_transfer/tap_receive.dart';
+import 'package:ecashapp/tap_transfer/tap_lifecycle.dart';
 import 'package:ecashapp/providers/preferences_provider.dart';
 import 'package:ecashapp/success.dart';
 import 'package:ecashapp/toast.dart';
@@ -55,6 +56,12 @@ class _RequestState extends State<Request>
   late Duration _remaining;
   Timer? _timer;
   bool _nfcBroadcasting = false;
+  late final Future<void> _receiverPaused;
+  late final TapLifecycle _nfcLifecycle = TapLifecycle(
+    start: _startNfcBroadcast,
+    stop: _stopNfcBroadcast,
+    onError: (e, _) => AppLogger.instance.warn('NFC HCE lifecycle: $e'),
+  );
 
   @override
   void initState() {
@@ -66,16 +73,15 @@ class _RequestState extends State<Request>
     WidgetsBinding.instance.addObserver(this);
     // The Lightning-invoice HCE and the passive receiver both drive the single
     // HCE service, so pause the receiver while this screen owns the tag.
-    TapReceive.instance.pause();
-    _startNfcBroadcast();
+    _receiverPaused = TapReceive.instance.pause();
+    _nfcLifecycle.arm();
   }
 
   @override
   void dispose() {
     _timer?.cancel();
     WidgetsBinding.instance.removeObserver(this);
-    InvoiceNfcBroadcaster.stop();
-    TapReceive.instance.resume();
+    unawaited(_releaseNfc());
     super.dispose();
   }
 
@@ -85,25 +91,36 @@ class _RequestState extends State<Request>
       case AppLifecycleState.paused:
       case AppLifecycleState.inactive:
       case AppLifecycleState.hidden:
-        if (_nfcBroadcasting) {
-          InvoiceNfcBroadcaster.stop();
-          if (mounted) setState(() => _nfcBroadcasting = false);
-        }
+        _nfcLifecycle.disarm();
         break;
       case AppLifecycleState.resumed:
-        if (!_nfcBroadcasting) _startNfcBroadcast();
+        _nfcLifecycle.arm();
         break;
       case AppLifecycleState.detached:
         break;
     }
   }
 
-  Future<void> _startNfcBroadcast() async {
+  Future<void> _releaseNfc() async {
+    await _nfcLifecycle.disarm();
+    await _receiverPaused;
+    await TapReceive.instance.resume();
+  }
+
+  Future<void> _stopNfcBroadcast() async {
+    if (!_nfcBroadcasting) return;
+    await InvoiceNfcBroadcaster.stop();
+    _nfcBroadcasting = false;
+  }
+
+  Future<void> _startNfcBroadcast(bool Function() isCurrent) async {
+    await _receiverPaused;
+    if (!mounted || !isCurrent()) return;
     if (!await InvoiceNfcBroadcaster.isAvailable()) return;
-    if (!mounted) return;
+    if (!mounted || !isCurrent()) return;
     try {
+      _nfcBroadcasting = true;
       await InvoiceNfcBroadcaster.start(widget.invoice);
-      if (mounted) setState(() => _nfcBroadcasting = true);
     } catch (e) {
       AppLogger.instance.warn("NFC HCE start failed: $e");
     }

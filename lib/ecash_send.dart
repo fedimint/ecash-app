@@ -62,13 +62,15 @@ class _EcashSendState extends State<EcashSend> {
   bool _tapAvailable = false;
   bool _tapSending = false;
   String? _tapStatus;
+  late final Future<void> _receiverPaused;
+  Future<void> _tapSetup = Future.value();
 
   @override
   void initState() {
     super.initState();
     // The send screen needs exclusive NFC/BLE (reader mode + outgoing GATT), so
     // pause the passive receiver while it's open.
-    TapReceive.instance.pause();
+    _receiverPaused = TapReceive.instance.pause();
     _loadQuote();
   }
 
@@ -133,7 +135,7 @@ class _EcashSendState extends State<EcashSend> {
         _fragmentStream = _createFrameStream(encoder, legacyFrames);
         _generating = false;
       });
-      unawaited(_armTap());
+      _tapSetup = _armTap();
     } catch (e) {
       AppLogger.instance.error("Could not send Ecash: $e");
       if (mounted) showErrorToast(context, e);
@@ -176,27 +178,41 @@ class _EcashSendState extends State<EcashSend> {
 
   @override
   void dispose() {
-    _tapBleSub?.cancel();
-    _tapNfcSub?.cancel();
-    if (_tapAvailable) {
-      TapNfc.stopReader();
-      BleTap.stop();
-    }
-    TapReceive.instance.resume();
+    unawaited(_releaseTap());
     super.dispose();
+  }
+
+  Future<void> _releaseTap() async {
+    try {
+      await _receiverPaused;
+      await _tapSetup;
+      await _tapBleSub?.cancel();
+      await _tapNfcSub?.cancel();
+      if (_tapAvailable) {
+        await TapNfc.stopReader();
+        await BleTap.finish();
+      }
+    } catch (e) {
+      AppLogger.instance.warn('Tap send: cleanup failed: $e');
+    } finally {
+      await TapReceive.instance.resume();
+    }
   }
 
   /// Arm NFC reader mode on the QR screen so a receiver can tap to pull the
   /// ecash over BLE. Additive: the QR remains the primary/fallback path. Only
   /// enabled when BLE is present and enabled.
   Future<void> _armTap() async {
-    if (!await BleTap.isAvailable()) return;
-    if (!mounted) return;
-    _tapBleSub = BleTap.events().listen(_onTapBleEvent);
-    _tapNfcSub = TapNfc.reads().listen(_onTapRendezvous);
-    setState(() => _tapAvailable = true);
     try {
+      await _receiverPaused;
+      if (!mounted || !await BleTap.isAvailable()) return;
+      if (!mounted) return;
+      _tapBleSub = BleTap.events().listen(_onTapBleEvent);
+      _tapNfcSub = TapNfc.reads().listen(_onTapRendezvous);
+      // Also records that disposal must release the reader if startup fails.
+      _tapAvailable = true;
       await TapNfc.startReader();
+      if (mounted) setState(() {});
     } catch (e) {
       AppLogger.instance.warn("Tap send: could not start NFC reader: $e");
     }
@@ -206,18 +222,20 @@ class _EcashSendState extends State<EcashSend> {
   /// pubkey and stream them over BLE. BLE permission is requested here — only
   /// once a real tap happens — rather than up front.
   Future<void> _onTapRendezvous(TapRendezvous r) async {
-    if (_tapSending || _notes == null) return;
+    if (!mounted || _tapSending || _notes == null) return;
     _tapSending = true;
     AppLogger.instance.info(
       "tap: read rendezvous uuid=${r.uuid} pubkey=${r.pubkey.length}B",
     );
-    await TapNfc.stopReader();
-    if (!await BleTap.requestPermissions()) {
-      _tapSending = false;
-      if (mounted) await TapNfc.startReader();
-      return;
-    }
     try {
+      await TapNfc.stopReader();
+      if (!mounted) return;
+      if (!await BleTap.requestPermissions()) {
+        _tapSending = false;
+        if (mounted) await TapNfc.startReader();
+        return;
+      }
+      if (!mounted) return;
       final blob = encryptEcashForTap(
         ecash: _notes!.toString(),
         recipientPubkey: r.pubkey,

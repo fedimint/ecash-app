@@ -76,8 +76,8 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
     super.initState();
     _feds = widget.initialFederations;
 
-    // Passive "tap to receive" — armed while the app is foregrounded and BLE
-    // permissions are already granted (never prompts). See tap_receive.dart.
+    // Passive "tap to receive" on Android 12+. BLE permissions are requested
+    // only after a tap. See tap_receive.dart.
     WidgetsBinding.instance.addObserver(this);
     TapReceive.instance.onEcash = _handleReceivedTapEcash;
     TapReceive.instance.arm();

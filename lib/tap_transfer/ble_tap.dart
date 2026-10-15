@@ -4,11 +4,6 @@ import 'dart:io';
 import 'package:flutter/services.dart';
 import 'package:permission_handler/permission_handler.dart';
 
-/// Tap-to-send needs NFC reader mode, HCE and a BLE GATT server, which only the
-/// Android side implements. Every entry point checks this before touching the
-/// native channels, which don't exist on other platforms.
-bool get tapTransferSupported => Platform.isAndroid;
-
 /// BLE permissions both roles need: the sender advertises and serves GATT, the
 /// receiver scans and connects.
 const _blePermissions = [
@@ -45,7 +40,9 @@ class BleTapEvent {
       '${data != null ? ' ${data!.length}B' : ''})';
 }
 
-/// Thin Dart wrapper over the native `ecashapp/ble_tap` channels (Android only).
+/// Thin Dart wrapper over the native `ecashapp/ble_tap` channels (Android 12+).
+/// Check [isSupported] before enabling either role. Older devices can still
+/// use the wallet and QR transfers.
 ///
 /// See android/app/src/main/kotlin/app/ecash/BleTapController.kt. This is the
 /// Phase 2 transport: it moves an already-encrypted blob between two phones over
@@ -55,6 +52,11 @@ class BleTap {
   static const MethodChannel _method = MethodChannel('ecashapp/ble_tap');
   static const EventChannel _events = EventChannel('ecashapp/ble_tap/events');
 
+  static Future<bool> isSupported() async {
+    if (!Platform.isAndroid) return false;
+    return (await _method.invokeMethod<bool>('isSupported')) ?? false;
+  }
+
   /// Broadcast stream of controller events. Safe to listen to before starting.
   static Stream<BleTapEvent> events() => _events.receiveBroadcastStream().map(
     (e) => BleTapEvent.fromMap(e as Map<dynamic, dynamic>),
@@ -63,11 +65,12 @@ class BleTap {
   /// Whether BLE is present and enabled on this device. Always false off
   /// Android.
   static Future<bool> isAvailable() async {
-    if (!tapTransferSupported) return false;
+    if (!await isSupported()) return false;
     return (await _method.invokeMethod<bool>('isAvailable')) ?? false;
   }
 
   static Future<bool> permissionsGranted() async {
+    if (!await isSupported()) return false;
     for (final p in _blePermissions) {
       if (!await p.isGranted) return false;
     }
@@ -75,6 +78,7 @@ class BleTap {
   }
 
   static Future<bool> requestPermissions() async {
+    if (!await isSupported()) return false;
     final statuses = await _blePermissions.request();
     return statuses.values.every((s) => s.isGranted);
   }
@@ -99,4 +103,8 @@ class BleTap {
 
   /// Tear down whichever role is active and release BLE resources.
   static Future<void> stop() => _method.invokeMethod<void>('stop');
+
+  /// Wait for a completed transfer's disconnect/linger before releasing BLE.
+  /// An incomplete transfer is cancelled immediately.
+  static Future<void> finish() => _method.invokeMethod<void>('finish');
 }

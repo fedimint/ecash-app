@@ -45,6 +45,7 @@ class MainActivity : FlutterActivity() {
     private var nfcTapEventSink: EventChannel.EventSink? = null
     private var hceEventSink: EventChannel.EventSink? = null
     private var readerModeActive = false
+    private var activityResumed = false
 
     override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
         super.configureFlutterEngine(flutterEngine)
@@ -148,14 +149,20 @@ class MainActivity : FlutterActivity() {
         MethodChannel(flutterEngine.dartExecutor.binaryMessenger, "ecashapp/ble_tap")
             .setMethodCallHandler { call, result ->
                 when (call.method) {
+                    "isSupported" -> result.success(ble.isSupported())
                     "isAvailable" -> result.success(ble.isAvailable())
                     "startReceiving" -> {
                         val uuid = call.argument<String>("uuid")
                         if (uuid == null) {
                             result.error("missing_uuid", "uuid required", null)
                         } else {
-                            ble.startReceiving(uuid)
-                            result.success(null)
+                            try {
+                                ble.startReceiving(uuid)
+                                result.success(null)
+                            } catch (e: Exception) {
+                                ble.stop()
+                                result.error("ble_receive", e.message, null)
+                            }
                         }
                     }
                     "startSending" -> {
@@ -164,14 +171,20 @@ class MainActivity : FlutterActivity() {
                         if (uuid == null || blob == null) {
                             result.error("missing_args", "uuid and blob required", null)
                         } else {
-                            ble.startSending(uuid, blob)
-                            result.success(null)
+                            try {
+                                ble.startSending(uuid, blob)
+                                result.success(null)
+                            } catch (e: Exception) {
+                                ble.stop()
+                                result.error("ble_send", e.message, null)
+                            }
                         }
                     }
                     "stop" -> {
                         ble.stop()
                         result.success(null)
                     }
+                    "finish" -> ble.finish { result.success(null) }
                     else -> result.notImplemented()
                 }
             }
@@ -196,21 +209,25 @@ class MainActivity : FlutterActivity() {
                 when (call.method) {
                     "startReader" -> {
                         val adapter = nfcAdapter
-                        if (adapter == null) {
+                        if (!ble.isSupported() || adapter == null || !adapter.isEnabled) {
                             result.error("no_nfc", "NFC unavailable", null)
                         } else {
                             readerModeActive = true
-                            adapter.disableForegroundDispatch(this)
-                            enableReaderModeInternal(adapter)
+                            if (activityResumed) {
+                                adapter.disableForegroundDispatch(this)
+                                enableReaderModeInternal(adapter)
+                            }
                             result.success(null)
                         }
                     }
                     "stopReader" -> {
                         readerModeActive = false
                         nfcAdapter?.disableReaderMode(this)
-                        nfcAdapter?.enableForegroundDispatch(
-                            this, nfcPendingIntent, nfcIntentFilters, null,
-                        )
+                        if (activityResumed) {
+                            nfcAdapter?.enableForegroundDispatch(
+                                this, nfcPendingIntent, nfcIntentFilters, null,
+                            )
+                        }
                         result.success(null)
                     }
                     else -> result.notImplemented()
@@ -219,6 +236,7 @@ class MainActivity : FlutterActivity() {
     }
 
     override fun onDestroy() {
+        EcashHceService.onTagRead = null
         bleController?.stop()
         super.onDestroy()
     }
@@ -257,6 +275,7 @@ class MainActivity : FlutterActivity() {
 
     override fun onResume() {
         super.onResume()
+        activityResumed = true
         val adapter = nfcAdapter ?: return
         if (readerModeActive) {
             enableReaderModeInternal(adapter)
@@ -266,6 +285,7 @@ class MainActivity : FlutterActivity() {
     }
 
     override fun onPause() {
+        activityResumed = false
         super.onPause()
         val adapter = nfcAdapter ?: return
         if (readerModeActive) {

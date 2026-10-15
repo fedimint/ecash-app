@@ -24,6 +24,7 @@ import android.bluetooth.le.ScanResult
 import android.bluetooth.le.ScanSettings
 import android.content.Context
 import android.content.pm.PackageManager
+import android.nfc.NfcAdapter
 import android.os.Build
 import android.os.Handler
 import android.os.Looper
@@ -154,6 +155,21 @@ class BleTapController(
     }
 
     private val main = Handler(Looper.getMainLooper())
+    // Only the main thread owns transport state. Every callback captures the
+    // session that created it, so a closed connection cannot affect a retry.
+    private var sessionId = 0L
+    private val finishWaiters = mutableListOf<() -> Unit>()
+
+    private fun inSession(session: Long, action: () -> Unit) {
+        main.post {
+            if (session != sessionId) return@post
+            try {
+                action()
+            } catch (e: Exception) {
+                sendError(e.message ?: "Bluetooth operation failed")
+            }
+        }
+    }
     private val manager: BluetoothManager? =
         context.getSystemService(Context.BLUETOOTH_SERVICE) as? BluetoothManager
     private val adapter: BluetoothAdapter? get() = manager?.adapter
@@ -205,11 +221,16 @@ class BleTapController(
     private val inbox = ByteArrayOutputStream()
     private var assembled = false
 
+    fun isSupported(): Boolean =
+        Build.VERSION.SDK_INT >= Build.VERSION_CODES.S &&
+            context.packageManager.hasSystemFeature(PackageManager.FEATURE_BLUETOOTH_LE) &&
+            context.packageManager.hasSystemFeature(PackageManager.FEATURE_NFC)
+
     fun isAvailable(): Boolean {
         return try {
+            if (!isSupported()) return false
             val a = adapter ?: return false
-            if (!context.packageManager.hasSystemFeature(PackageManager.FEATURE_BLUETOOTH_LE)) return false
-            a.isEnabled
+            a.isEnabled && NfcAdapter.getDefaultAdapter(context)?.isEnabled == true
         } catch (e: SecurityException) {
             false
         }
@@ -220,6 +241,7 @@ class BleTapController(
     /** Advertise [uuidString] and push [blob] to the first central that connects. */
     fun startSending(uuidString: String, blob: ByteArray) {
         stopInternal()
+        if (!isSupported()) return sendError("tap transfers require Android 12+ with NFC and BLE")
         val a = adapter ?: return sendError("bluetooth unavailable")
         val adv = a.bluetoothLeAdvertiser
             ?: return sendError("BLE advertising is not supported on this device")
@@ -229,7 +251,7 @@ class BleTapController(
         advertiser = adv
         pendingBlob = blob
 
-        val server = manager?.openGattServer(context, serverCallback)
+        val server = manager?.openGattServer(context, serverCallback(sessionId))
             ?: return sendError("could not open GATT server")
         gattServer = server
 
@@ -280,12 +302,13 @@ class BleTapController(
             .setIncludeDeviceName(false)
             .addServiceUuid(ParcelUuid(uuid))
             .build()
+        val session = sessionId
         val cb = object : AdvertiseCallback() {
-            override fun onStartSuccess(settingsInEffect: AdvertiseSettings?) {
+            override fun onStartSuccess(settingsInEffect: AdvertiseSettings?) = inSession(session) {
                 logd("advertising started")
             }
 
-            override fun onStartFailure(errorCode: Int) {
+            override fun onStartFailure(errorCode: Int) = inSession(session) {
                 sendError("advertise failed: $errorCode")
             }
         }
@@ -294,9 +317,9 @@ class BleTapController(
         sendStatus("advertising")
     }
 
-    private val serverCallback = object : BluetoothGattServerCallback() {
-        override fun onServiceAdded(status: Int, service: BluetoothGattService) {
-            if (service.uuid != serviceUuid) return
+    private fun serverCallback(session: Long) = object : BluetoothGattServerCallback() {
+        override fun onServiceAdded(status: Int, service: BluetoothGattService) = inSession(session) {
+            if (service.uuid != serviceUuid) return@inSession
             if (status == BluetoothGatt.GATT_SUCCESS) {
                 startAdvertisingInternal()
             } else {
@@ -304,10 +327,14 @@ class BleTapController(
             }
         }
 
-        override fun onConnectionStateChange(device: BluetoothDevice, status: Int, newState: Int) {
+        override fun onConnectionStateChange(device: BluetoothDevice, status: Int, newState: Int) = inSession(session) {
             logd("server conn newState=$newState status=$status allSent=$allSent")
             when (newState) {
                 BluetoothProfile.STATE_CONNECTED -> {
+                    if (connectedCentral != null) {
+                        if (connectedCentral != device) gattServer?.cancelConnection(device)
+                        return@inSession
+                    }
                     connectedCentral = device
                     // Some stacks corrupt an active connection while still
                     // advertising, and we only ever serve one central.
@@ -316,7 +343,7 @@ class BleTapController(
                     main.postDelayed(pushSettle, PUSH_SETTLE_MS)
                 }
                 BluetoothProfile.STATE_DISCONNECTED -> {
-                    if (device != connectedCentral) return
+                    if (device != connectedCentral) return@inSession
                     connectedCentral = null
                     // The receiver disconnects once it has the whole payload -
                     // that is the delivery signal, since acknowledging it in-band
@@ -327,13 +354,13 @@ class BleTapController(
                         reportDelivered("central disconnected after full payload")
                     } else if (pushing) {
                         sendError("receiver disconnected mid-transfer (status=$status)")
-                        stopInternal()
                     }
                 }
             }
         }
 
-        override fun onMtuChanged(device: BluetoothDevice, mtu: Int) {
+        override fun onMtuChanged(device: BluetoothDevice, mtu: Int) = inSession(session) {
+            if (device != connectedCentral) return@inSession
             logd("server mtu=$mtu")
             this@BleTapController.mtu = mtu
             // Do not push from here: the central negotiates the MTU *before* it
@@ -352,9 +379,10 @@ class BleTapController(
             requestId: Int,
             offset: Int,
             characteristic: BluetoothGattCharacteristic,
-        ) {
+        ) = inSession(session) {
+            if (device != connectedCentral) return@inSession
             gattServer?.sendResponse(device, requestId, BluetoothGatt.GATT_SUCCESS, offset, ByteArray(0))
-            if (characteristic.uuid != CHAR_PAYLOAD_UUID) return
+            if (characteristic.uuid != CHAR_PAYLOAD_UUID) return@inSession
             // Fast path: a central that can still issue reads is telling us it is
             // ready, so skip the settle. Android 17 centrals never get here.
             logd("receiver read the payload characteristic: ready, starting push")
@@ -365,11 +393,11 @@ class BleTapController(
             }
         }
 
-        override fun onNotificationSent(device: BluetoothDevice, status: Int) {
+        override fun onNotificationSent(device: BluetoothDevice, status: Int) = inSession(session) {
+            if (device != connectedCentral || !pushing) return@inSession
             if (status != BluetoothGatt.GATT_SUCCESS) {
                 sendError("notification failed: $status")
-                stopInternal()
-                return
+                return@inSession
             }
             pushNext()
         }
@@ -459,7 +487,6 @@ class BleTapController(
         val ok = notifyChunk(server, device, ch, chunk)
         if (!ok) {
             sendError("could not queue notification")
-            stopInternal()
         }
     }
 
@@ -495,6 +522,7 @@ class BleTapController(
     /** Scan for [uuidString], connect, and receive the pushed payload. */
     fun startReceiving(uuidString: String) {
         stopInternal()
+        if (!isSupported()) return sendError("tap transfers require Android 12+ with NFC and BLE")
         val a = adapter ?: return sendError("bluetooth unavailable")
         val s = a.bluetoothLeScanner ?: return sendError("BLE scanning not supported")
         val uuid = parseUuid(uuidString) ?: return sendError("invalid rendezvous uuid")
@@ -506,14 +534,16 @@ class BleTapController(
         val settings = ScanSettings.Builder()
             .setScanMode(ScanSettings.SCAN_MODE_LOW_LATENCY)
             .build()
+        val session = sessionId
         val cb = object : ScanCallback() {
-            override fun onScanResult(callbackType: Int, result: ScanResult) {
+            override fun onScanResult(callbackType: Int, result: ScanResult) = inSession(session) {
+                if (scanCallback !== this) return@inSession
                 scanner?.stopScan(this)
                 scanCallback = null
                 connectTo(result.device)
             }
 
-            override fun onScanFailed(errorCode: Int) {
+            override fun onScanFailed(errorCode: Int) = inSession(session) {
                 sendError("scan failed: $errorCode")
             }
         }
@@ -526,24 +556,22 @@ class BleTapController(
 
     private fun connectTo(device: BluetoothDevice) {
         sendStatus("connecting")
-        gatt = device.connectGatt(context, false, gattCallback, BluetoothDevice.TRANSPORT_LE)
+        gatt = device.connectGatt(context, false, gattCallback(sessionId), BluetoothDevice.TRANSPORT_LE)
     }
 
-    private val gattCallback = object : BluetoothGattCallback() {
-        override fun onConnectionStateChange(g: BluetoothGatt, status: Int, newState: Int) {
+    private fun gattCallback(session: Long) = object : BluetoothGattCallback() {
+        override fun onConnectionStateChange(g: BluetoothGatt, status: Int, newState: Int) = inSession(session) {
+            if (g !== gatt) return@inSession
             logd("client conn newState=$newState status=$status assembled=$assembled")
             when (newState) {
                 BluetoothProfile.STATE_CONNECTED -> {
                     sendStatus("connected")
-                    // Issue GATT operations from the main thread rather than the
-                    // binder callback thread they arrived on.
-                    main.post { gatt?.requestMtu(517) }
+                    if (!g.requestMtu(517)) sendError("could not request MTU")
                 }
                 BluetoothProfile.STATE_DISCONNECTED -> {
                     if (assembled) {
                         // Our own terminate completing; safe to release now.
-                        main.removeCallbacks(closeFallback)
-                        main.post { stopInternal() }
+                        stopInternal()
                     } else {
                         sendError("sender disconnected before the payload arrived")
                     }
@@ -551,45 +579,41 @@ class BleTapController(
             }
         }
 
-        override fun onMtuChanged(g: BluetoothGatt, mtu: Int, status: Int) {
+        override fun onMtuChanged(g: BluetoothGatt, mtu: Int, status: Int) = inSession(session) {
+            if (g !== gatt) return@inSession
             this@BleTapController.mtu = if (status == BluetoothGatt.GATT_SUCCESS) mtu else DEFAULT_MTU
             logd("client mtu=$mtu status=$status using=${this@BleTapController.mtu}")
-            main.post { gatt?.discoverServices() }
+            if (!g.discoverServices()) sendError("could not discover services")
         }
 
-        override fun onServicesDiscovered(g: BluetoothGatt, status: Int) {
-            val uuid = serviceUuid ?: return sendError("no rendezvous uuid")
-            val service = g.getService(uuid) ?: return sendError("rendezvous service not found")
+        override fun onServicesDiscovered(g: BluetoothGatt, status: Int) = inSession(session) {
+            if (g !== gatt) return@inSession
+            if (status != BluetoothGatt.GATT_SUCCESS) return@inSession sendError("service discovery failed: $status")
+            val uuid = serviceUuid ?: return@inSession sendError("no rendezvous uuid")
+            val service = g.getService(uuid) ?: return@inSession sendError("rendezvous service not found")
             val ch = service.getCharacteristic(CHAR_PAYLOAD_UUID)
-                ?: return sendError("payload characteristic not found")
-            // Local registration only - this generates no ATT traffic. We
-            // deliberately do NOT write the CCCD: that is a client write, the one
-            // operation that is broken on Android 17, and the sender notifies
-            // unconditionally so no subscription is needed.
+                ?: return@inSession sendError("payload characteristic not found")
+            // Local registration only: Android 17 cannot write the CCCD, so the
+            // sender notifies unconditionally. All GATT calls run on main.
             val ok = g.setCharacteristicNotification(ch, true)
             logd("services discovered status=$status setNotification=$ok")
-            if (!ok) return sendError("could not register for notifications")
+            if (!ok) return@inSession sendError("could not register for notifications")
             sendStatus("receiving")
-            // Announce readiness. Only once this read lands does the sender start
-            // pushing, so no chunk can arrive before we are listening.
-            main.post {
-                val gg = gatt ?: return@post
-                val issued = gg.readCharacteristic(ch)
-                logd("readiness read issued=$issued")
-                if (!issued) sendError("could not signal readiness to the sender")
-            }
+            val issued = g.readCharacteristic(ch)
+            logd("readiness read issued=$issued")
+            if (!issued) sendError("could not signal readiness to the sender")
         }
 
         override fun onCharacteristicChanged(
             g: BluetoothGatt,
             characteristic: BluetoothGattCharacteristic,
             value: ByteArray,
-        ) {
-            if (characteristic.uuid != CHAR_PAYLOAD_UUID) return
+        ) = inSession(session) {
+            if (g !== gatt || characteristic.uuid != CHAR_PAYLOAD_UUID) return@inSession
             handleInbound(value)
         }
 
-        // Pre-33 notification callback; the 3-arg overload above supersedes it.
+        // Android 12/12L callback: snapshot the mutable value before posting.
         @Suppress("DEPRECATION")
         override fun onCharacteristicChanged(
             g: BluetoothGatt,
@@ -597,7 +621,10 @@ class BleTapController(
         ) {
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) return
             if (characteristic.uuid != CHAR_PAYLOAD_UUID) return
-            handleInbound(characteristic.value ?: return)
+            val value = characteristic.value?.clone() ?: return
+            inSession(session) {
+                if (g === gatt) handleInbound(value)
+            }
         }
     }
 
@@ -645,10 +672,8 @@ class BleTapController(
                     // callback close us. Calling close() straight after disconnect()
                     // suppresses the terminate and the sender only notices ~4s later
                     // on supervision timeout, by which point it has retransmitted.
-                    main.post {
-                        gatt?.disconnect()
-                        main.postDelayed(closeFallback, CLOSE_FALLBACK_MS)
-                    }
+                    gatt?.disconnect()
+                    main.postDelayed(closeFallback, CLOSE_FALLBACK_MS)
                 }
             }
             else -> logd("unknown frame tag=${value[0]}, ignoring")
@@ -662,6 +687,13 @@ class BleTapController(
         sendStatus("stopped")
     }
 
+    /** Complete successful delivery without bypassing disconnect/linger. */
+    fun finish(onFinished: () -> Unit) {
+        finishWaiters.add(onFinished)
+        if (!delivered && !assembled) stopInternal()
+        // Otherwise the existing linger or disconnect fallback calls stopInternal.
+    }
+
     private fun stopAdvertising() {
         try {
             advertiseCallback?.let { advertiser?.stopAdvertising(it) }
@@ -672,6 +704,7 @@ class BleTapController(
     }
 
     private fun stopInternal() {
+        sessionId++
         main.removeCallbacks(transferTimeout)
         main.removeCallbacks(pushSettle)
         main.removeCallbacks(pushRetry)
@@ -718,12 +751,14 @@ class BleTapController(
         assembled = false
         resetInbox()
         mtu = DEFAULT_MTU
+        val waiters = finishWaiters.toList()
+        finishWaiters.clear()
+        waiters.forEach { it() }
     }
 
     private fun onTransferTimeout() {
         logd("transfer timed out pushing=$pushing allSent=$allSent queued=${sendQueue.size} assembled=$assembled")
         sendError("tap transfer timed out")
-        stopInternal()
     }
 
     private fun resetInbox() {
@@ -738,7 +773,7 @@ class BleTapController(
         null
     }
 
-    private fun send(map: Map<String, Any?>) = main.post { emit(map) }
+    private fun send(map: Map<String, Any?>) = emit(map)
     private fun sendStatus(state: String) = send(mapOf("event" to "status", "state" to state))
 
     /** Log to logcat only (adb logcat -s BleTap). The native BLE trace stays out
@@ -749,9 +784,7 @@ class BleTapController(
     private fun sendReceived(blob: ByteArray) = send(mapOf("event" to "received", "data" to blob))
     private fun sendError(message: String) {
         Log.w(TAG, message)
-        main.removeCallbacks(transferTimeout)
-        main.removeCallbacks(pushSettle)
-        main.removeCallbacks(pushRetry)
+        stopInternal()
         send(mapOf("event" to "error", "message" to message))
     }
 }

@@ -9,6 +9,7 @@ import 'package:ecashapp/redeem_ecash.dart';
 import 'package:ecashapp/screens/federation_info_screen.dart';
 import 'package:ecashapp/tap_transfer/ble_tap.dart';
 import 'package:ecashapp/tap_transfer/tap_nfc.dart';
+import 'package:ecashapp/tap_transfer/tap_lifecycle.dart';
 import 'package:ecashapp/tap_transfer.dart';
 import 'package:ecashapp/theme.dart';
 import 'package:ecashapp/toast.dart';
@@ -17,7 +18,7 @@ import 'package:flutter/material.dart';
 
 /// App-global passive receiver for "tap to send" ecash.
 ///
-/// Always on for Android. While armed — app foregrounded and no send/invoice
+/// Always on for Android 12+. While armed — app foregrounded and no send/invoice
 /// screen holding NFC/BLE — it keeps a fresh rendezvous published over NFC
 /// (HCE), which costs nothing until a sender taps. Only then does it touch BLE:
 /// it asks for the Nearby-devices permission if it hasn't been granted yet, and
@@ -38,7 +39,11 @@ class TapReceive {
   StreamSubscription<BleTapEvent>? _sub;
   StreamSubscription<void>? _tagSub;
   bool _armed = false;
-  int _pauseCount = 0;
+  late final TapLifecycle _lifecycle = TapLifecycle(
+    start: _arm,
+    stop: _disarm,
+    onError: (e, _) => AppLogger.instance.warn('tap receive lifecycle: $e'),
+  );
 
   /// UUID of the rendezvous currently published over NFC.
   String? _uuid;
@@ -47,14 +52,19 @@ class TapReceive {
   /// tag read arriving twice for one tap doesn't restart it.
   bool _scanning = false;
 
-  bool get _paused => _pauseCount > 0;
-
   /// Arm if possible. No-op if already armed, paused, or without NFC/HCE.
   /// Bluetooth state and permissions are only checked once a tap happens.
-  Future<void> arm() async {
-    if (_armed || _paused || !tapTransferSupported) return;
+  Future<void> arm() => _lifecycle.arm();
+  Future<void> disarm() => _lifecycle.disarm();
+  Future<void> pause() => _lifecycle.pause();
+  Future<void> resume() => _lifecycle.resume();
+
+  Future<void> _arm(bool Function() isCurrent) async {
+    if (_armed) return;
     try {
+      if (!await BleTap.isSupported() || !isCurrent()) return;
       if (!await InvoiceNfcBroadcaster.isAvailable()) return;
+      if (!isCurrent()) return;
       _armed = true;
       _sub ??= BleTap.events().listen(
         _onEvent,
@@ -64,26 +74,32 @@ class TapReceive {
         (_) => _onTagRead(),
         onError: (e) => AppLogger.instance.warn("tap receive hce stream: $e"),
       );
-      await _rotate();
+      await _rotateNow(isCurrent);
       AppLogger.instance.info("tap receive: armed");
     } catch (e) {
-      _armed = false;
+      await _disarm();
       AppLogger.instance.warn("tap receive: arm failed: $e");
     }
   }
 
-  Future<void> disarm() async {
+  Future<void> _disarm() async {
     if (!_armed) return;
     _armed = false;
-    try {
-      await _sub?.cancel();
-      _sub = null;
-      await _tagSub?.cancel();
-      _tagSub = null;
-      await TapNfc.stopPublish();
-      await BleTap.stop();
-    } catch (e) {
-      AppLogger.instance.warn("tap receive: disarm error: $e");
+    final sub = _sub;
+    final tagSub = _tagSub;
+    _sub = null;
+    _tagSub = null;
+    for (final cleanup in <Future<void> Function()>[
+      () async => sub?.cancel(),
+      () async => tagSub?.cancel(),
+      TapNfc.stopPublish,
+      BleTap.stop,
+    ]) {
+      try {
+        await cleanup();
+      } catch (e) {
+        AppLogger.instance.warn("tap receive: disarm error: $e");
+      }
     }
     _recipient?.dispose();
     _recipient = null;
@@ -92,24 +108,26 @@ class TapReceive {
     AppLogger.instance.info("tap receive: disarmed");
   }
 
-  Future<void> pause() async {
-    _pauseCount++;
-    await disarm();
-  }
+  Future<void> _rotate() => _lifecycle.run((isCurrent) async {
+    try {
+      await _rotateNow(isCurrent);
+    } catch (e) {
+      await _disarm();
+      AppLogger.instance.warn('tap receive: rotation failed: $e');
+    }
+  });
 
-  Future<void> resume() async {
-    if (_pauseCount > 0) _pauseCount--;
-    if (_pauseCount == 0) await arm();
-  }
-
-  Future<void> _rotate() async {
+  Future<void> _rotateNow(bool Function() isCurrent) async {
+    // Native owns graceful disconnect. Do not close GATT while its delivery
+    // signal is still in flight, or publish another rendezvous until it ends.
+    await BleTap.finish();
+    if (!isCurrent()) return;
     _recipient?.dispose();
     final recipient = TapRecipient();
     _recipient = recipient;
     final uuid = TapNfc.randomUuid();
     _uuid = uuid;
     _scanning = false;
-    await BleTap.stop();
     await TapNfc.publish(
       TapRendezvous(pubkey: recipient.publicKey(), uuid: uuid),
     );
@@ -123,32 +141,42 @@ class TapReceive {
   /// if this is the first tap: the sender keeps advertising while the user
   /// answers the dialog.
   Future<void> _onTagRead() async {
-    if (!_armed || _paused || _scanning) return;
+    if (!_armed || !_lifecycle.enabled || _scanning) return;
     final uuid = _uuid;
     if (uuid == null) return;
+    bool isCurrent() => _armed && _lifecycle.enabled && _uuid == uuid;
     // Also guards the permission dialog, since one tap can fire several reads.
     _scanning = true;
     try {
-      if (!await BleTap.permissionsGranted() &&
-          !await BleTap.requestPermissions()) {
+      var granted = await BleTap.permissionsGranted();
+      if (!isCurrent()) return;
+      if (!granted) granted = await BleTap.requestPermissions();
+      if (!isCurrent()) return;
+      if (!granted) {
         _scanning = false;
         _showTapUnavailable((l10n) => l10n.tapToReceivePermissionDenied);
         return;
       }
-      if (!await BleTap.isAvailable()) {
+      final available = await BleTap.isAvailable();
+      if (!isCurrent()) return;
+      if (!available) {
         _scanning = false;
         _showTapUnavailable((l10n) => l10n.tapToReceiveBluetoothOff);
         return;
       }
       // Disarmed (or rotated) while the dialog was up: this rendezvous is gone.
-      if (!_armed || _uuid != uuid) {
-        _scanning = false;
-        return;
-      }
-      AppLogger.instance.info("tap receive: tag read, scanning for sender");
-      await BleTap.startReceiving(uuid);
+      await _lifecycle.run((isCurrent) async {
+        if (!_armed || _uuid != uuid || !isCurrent()) return;
+        AppLogger.instance.info("tap receive: tag read, scanning for sender");
+        try {
+          await BleTap.startReceiving(uuid);
+        } catch (e) {
+          if (_uuid == uuid) _scanning = false;
+          rethrow;
+        }
+      });
     } catch (e) {
-      _scanning = false;
+      if (isCurrent()) _scanning = false;
       AppLogger.instance.warn("tap receive: could not start scan: $e");
     }
   }
@@ -165,6 +193,7 @@ class TapReceive {
   }
 
   void _onEvent(BleTapEvent e) {
+    if (!_armed || !_lifecycle.enabled) return;
     if (e.event == 'error') {
       // Previously dropped, which made every transport failure look like silence.
       _scanning = false;
