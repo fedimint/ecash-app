@@ -115,3 +115,7 @@ secp256k1 = { opt-level = 3 }
 secp256k1-sys = { opt-level = 3 }
 argon2 = { opt-level = 3 }
 blake2 = { opt-level = 3 }
+
+[lints.clippy]
+# Use `.expect("why this can't fail")` instead. Tests may still unwrap (clippy.toml).
+unwrap_used = "warn"
