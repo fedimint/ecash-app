@@ -32,7 +32,7 @@ use flutter_rust_bridge::frb;
 use hkdf::Hkdf;
 use sha2::Sha256;
 
-use crate::app_error::{EcashAppError, EcashAppResult};
+use crate::app_error::EcashAppError;
 
 use anyhow::{anyhow, bail};
 
@@ -140,9 +140,14 @@ pub(crate) fn decrypt(blob: &[u8], recipient_secret: &SecretKey) -> anyhow::Resu
 /// Encrypt an ecash string for a tap-transfer recipient's public key.
 ///
 /// `recipient_pubkey` is the 33-byte compressed key received over NFC. The
-/// returned blob is delivered to the receiver over BLE.
-pub(crate) fn encrypt_ecash(ecash: &str, recipient_pubkey: &[u8]) -> EcashAppResult<Vec<u8>> {
-    let recipient = PublicKey::from_slice(recipient_pubkey)
+/// returned blob is delivered to the receiver over BLE and decrypted with
+/// [`TapRecipient::decrypt`].
+#[frb(sync)]
+pub fn encrypt_ecash_for_tap(
+    ecash: String,
+    recipient_pubkey: Vec<u8>,
+) -> Result<Vec<u8>, EcashAppError> {
+    let recipient = PublicKey::from_slice(&recipient_pubkey)
         .map_err(|_| EcashAppError::other("tap transfer: invalid recipient public key"))?;
     encrypt(ecash.as_bytes(), &recipient).map_err(EcashAppError::from)
 }
@@ -176,7 +181,7 @@ impl TapRecipient {
         self.public_key.serialize().to_vec()
     }
 
-    /// Decrypt a blob produced by [`encrypt_ecash`], returning the original
+    /// Decrypt a blob produced by [`encrypt_ecash_for_tap`], returning the original
     /// ecash string ready to pass to `reissue_ecash`.
     #[frb(sync)]
     pub fn decrypt(&self, blob: Vec<u8>) -> Result<String, EcashAppError> {
@@ -269,7 +274,7 @@ mod tests {
     #[test]
     fn recipient_decrypts_encrypt_ecash() {
         let recipient = TapRecipient::new();
-        let blob = encrypt_ecash("fed1testtoken", &recipient.public_key()).unwrap();
+        let blob = encrypt_ecash_for_tap("fed1testtoken".into(), recipient.public_key()).unwrap();
         assert_eq!(recipient.decrypt(blob).unwrap(), "fed1testtoken");
     }
 }

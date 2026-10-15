@@ -36,15 +36,6 @@ class TapNfc {
   static const String _scheme = 'ecashtap:';
   static const int _rendezvousLen = 1 + 33 + 16; // version + pubkey + uuid
 
-  /// Whether NFC + HCE is available (receiver publish path).
-  static Future<bool> hceAvailable() async {
-    try {
-      return (await _hce.invokeMethod<bool>('isAvailable')) ?? false;
-    } catch (_) {
-      return false;
-    }
-  }
-
   /// Receiver: serve [rendezvous] over HCE until [stopPublish].
   static Future<void> publish(TapRendezvous rendezvous) =>
       _hce.invokeMethod('start', {'payload': _scheme + _encode(rendezvous)});

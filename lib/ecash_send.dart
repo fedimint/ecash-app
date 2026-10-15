@@ -9,6 +9,7 @@ import 'package:ecashapp/fountain.dart';
 import 'package:ecashapp/qr_export.dart';
 import 'package:ecashapp/lib.dart';
 import 'package:ecashapp/multimint.dart';
+import 'package:ecashapp/tap_transfer.dart';
 import 'package:ecashapp/tap_transfer/ble_tap.dart';
 import 'package:ecashapp/tap_transfer/tap_nfc.dart';
 import 'package:ecashapp/tap_transfer/tap_receive.dart';
@@ -19,7 +20,6 @@ import 'package:ecashapp/extensions/build_context_l10n.dart';
 import 'package:ecashapp/widgets/secure_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:permission_handler/permission_handler.dart';
 import 'package:provider/provider.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 
@@ -178,8 +178,10 @@ class _EcashSendState extends State<EcashSend> {
   void dispose() {
     _tapBleSub?.cancel();
     _tapNfcSub?.cancel();
-    TapNfc.stopReader();
-    BleTap.stop();
+    if (_tapAvailable) {
+      TapNfc.stopReader();
+      BleTap.stop();
+    }
     TapReceive.instance.resume();
     super.dispose();
   }
@@ -210,7 +212,7 @@ class _EcashSendState extends State<EcashSend> {
       "tap: read rendezvous uuid=${r.uuid} pubkey=${r.pubkey.length}B",
     );
     await TapNfc.stopReader();
-    if (!await _ensureBlePermissions()) {
+    if (!await BleTap.requestPermissions()) {
       _tapSending = false;
       if (mounted) await TapNfc.startReader();
       return;
@@ -286,17 +288,6 @@ class _EcashSendState extends State<EcashSend> {
       onTap: () {},
       icon: Icon(Icons.currency_bitcoin),
     );
-  }
-
-  Future<bool> _ensureBlePermissions() async {
-    final statuses =
-        await [
-          Permission.bluetoothScan,
-          Permission.bluetoothConnect,
-          // The sender advertises the rendezvous now: it is the GATT peripheral.
-          Permission.bluetoothAdvertise,
-        ].request();
-    return statuses.values.every((s) => s.isGranted);
   }
 
   Widget _buildTapStatus(ThemeData theme) {

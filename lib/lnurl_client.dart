@@ -6,7 +6,7 @@
 import 'frb_generated.dart';
 import 'package:flutter_rust_bridge/flutter_rust_bridge_for_generated.dart';
 
-// These functions are ignored because they are not marked as `pub`: `build_withdraw_callback_url`, `fetch_invoice`, `fetch_json`, `fetch_pay_params`, `fetch_withdraw_params`, `is_lnurl_or_address`, `parse_withdraw_response`, `service_reason`, `submit_withdraw_invoice`, `verify_invoice`, `withdraw_uri_to_http`
+// These functions are ignored because they are not marked as `pub`: `build_withdraw_callback_url`, `check_withdraw_callback_response`, `fetch_invoice`, `fetch_json`, `fetch_pay_params`, `fetch_withdraw_params`, `is_lnurl_or_address`, `parse_withdraw_response`, `service_reason`, `submit_withdraw_invoice`, `verify_invoice`, `withdraw_uri_to_http`
 // These function are ignored because they are on traits that is not defined in current crate (put an empty `#[frb]` on it to unignore): `fmt`
 
 /// Parameters returned by a LNURLw (LNURL Withdraw) endpoint.

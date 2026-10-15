@@ -379,8 +379,9 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
     final ctx = _navigatorKey.currentContext;
     if (ctx == null) return;
     invoicePaidToastVisible.value = false;
-    await presentReceivedEcash(ctx, ecash);
+    final joined = await presentReceivedEcash(ctx, ecash);
     invoicePaidToastVisible.value = true;
+    if (joined != null && mounted) _onJoinPressed(joined.$1, joined.$2);
   }
 
   void _checkPendingDeepLink() {

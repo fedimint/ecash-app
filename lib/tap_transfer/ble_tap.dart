@@ -1,6 +1,21 @@
 import 'dart:async';
+import 'dart:io';
 
 import 'package:flutter/services.dart';
+import 'package:permission_handler/permission_handler.dart';
+
+/// Tap-to-send needs NFC reader mode, HCE and a BLE GATT server, which only the
+/// Android side implements. Every entry point checks this before touching the
+/// native channels, which don't exist on other platforms.
+bool get tapTransferSupported => Platform.isAndroid;
+
+/// BLE permissions both roles need: the sender advertises and serves GATT, the
+/// receiver scans and connects.
+const _blePermissions = [
+  Permission.bluetoothScan,
+  Permission.bluetoothConnect,
+  Permission.bluetoothAdvertise,
+];
 
 /// An event streamed from the native BLE tap-transfer controller.
 ///
@@ -45,9 +60,24 @@ class BleTap {
     (e) => BleTapEvent.fromMap(e as Map<dynamic, dynamic>),
   );
 
-  /// Whether BLE is present and enabled on this device.
-  static Future<bool> isAvailable() async =>
-      (await _method.invokeMethod<bool>('isAvailable')) ?? false;
+  /// Whether BLE is present and enabled on this device. Always false off
+  /// Android.
+  static Future<bool> isAvailable() async {
+    if (!tapTransferSupported) return false;
+    return (await _method.invokeMethod<bool>('isAvailable')) ?? false;
+  }
+
+  static Future<bool> permissionsGranted() async {
+    for (final p in _blePermissions) {
+      if (!await p.isGranted) return false;
+    }
+    return true;
+  }
+
+  static Future<bool> requestPermissions() async {
+    final statuses = await _blePermissions.request();
+    return statuses.values.every((s) => s.isGranted);
+  }
 
   /// Sender: advertise the per-session rendezvous [serviceUuid] (learned over
   /// NFC) and push [blob] — already encrypted for the pubkey that came with it —

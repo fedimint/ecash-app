@@ -7,11 +7,24 @@ import 'app_error.dart';
 import 'frb_generated.dart';
 import 'package:flutter_rust_bridge/flutter_rust_bridge_for_generated.dart';
 
-// These functions are ignored because they are not marked as `pub`: `decrypt`, `derive_key`, `encrypt_ecash`, `encrypt`
+// These functions are ignored because they are not marked as `pub`: `decrypt`, `derive_key`, `encrypt`
+
+/// Encrypt an ecash string for a tap-transfer recipient's public key.
+///
+/// `recipient_pubkey` is the 33-byte compressed key received over NFC. The
+/// returned blob is delivered to the receiver over BLE and decrypted with
+/// [`TapRecipient::decrypt`].
+Uint8List encryptEcashForTap({
+  required String ecash,
+  required List<int> recipientPubkey,
+}) => RustLib.instance.api.crateTapTransferEncryptEcashForTap(
+  ecash: ecash,
+  recipientPubkey: recipientPubkey,
+);
 
 // Rust type: RustOpaqueMoi<flutter_rust_bridge::for_generated::RustAutoOpaqueInner<TapRecipient>>
 abstract class TapRecipient implements RustOpaqueInterface {
-  /// Decrypt a blob produced by [`encrypt_ecash`], returning the original
+  /// Decrypt a blob produced by [`encrypt_ecash_for_tap`], returning the original
   /// ecash string ready to pass to `reissue_ecash`.
   String decrypt({required List<int> blob});
 

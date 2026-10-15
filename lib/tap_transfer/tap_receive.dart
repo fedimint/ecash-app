@@ -2,6 +2,8 @@ import 'dart:async';
 
 import 'package:ecashapp/extensions/build_context_l10n.dart';
 import 'package:ecashapp/lib.dart';
+import 'package:ecashapp/multimint.dart';
+import 'package:ecashapp/nfc_hce.dart';
 import 'package:ecashapp/redeem_ecash.dart';
 import 'package:ecashapp/screens/federation_info_screen.dart';
 import 'package:ecashapp/tap_transfer/ble_tap.dart';
@@ -11,7 +13,6 @@ import 'package:ecashapp/theme.dart';
 import 'package:ecashapp/toast.dart';
 import 'package:ecashapp/utils.dart';
 import 'package:flutter/material.dart';
-import 'package:permission_handler/permission_handler.dart';
 
 /// App-global passive receiver for "tap to send" ecash (Phase 4b).
 ///
@@ -51,12 +52,12 @@ class TapReceive {
   /// feature switches on silently once the user has granted them (e.g. via a
   /// tap-send).
   Future<void> arm() async {
-    if (_armed || _paused) return;
+    if (_armed || _paused || !tapTransferSupported) return;
     try {
       if (!await getTapReceiveEnabled()) return;
       if (!await BleTap.isAvailable()) return;
-      if (!await TapNfc.hceAvailable()) return;
-      if (!await _permissionsGranted()) return;
+      if (!await InvoiceNfcBroadcaster.isAvailable()) return;
+      if (!await BleTap.permissionsGranted()) return;
       _armed = true;
       _sub ??= BleTap.events().listen(
         _onEvent,
@@ -160,48 +161,47 @@ class TapReceive {
     // Fresh rendezvous + key for the next transfer.
     _rotate();
   }
-
-  Future<bool> _permissionsGranted() async {
-    final scan = await Permission.bluetoothScan.status;
-    final connect = await Permission.bluetoothConnect.status;
-    final advertise = await Permission.bluetoothAdvertise.status;
-    return scan.isGranted && connect.isGranted && advertise.isGranted;
-  }
-
-  /// Prompt for the BLE permissions the receiver needs. Called from the Settings
-  /// toggle (the one place we're allowed to prompt), not from [arm].
-  Future<bool> requestPermissions() async {
-    final statuses =
-        await [
-          Permission.bluetoothScan,
-          Permission.bluetoothConnect,
-          Permission.bluetoothAdvertise,
-        ].request();
-    return statuses.values.every((s) => s.isGranted);
-  }
 }
 
 /// Route a received ecash string through the same path the QR scanner uses: the
 /// redeem bottom sheet for a known federation, the join flow for an invite-code
 /// ecash, or an error for ecash with no resolvable federation.
-Future<void> presentReceivedEcash(BuildContext context, String ecash) async {
+///
+/// Returns the federation joined (and whether it is recovering) when the ecash
+/// came with an invite code and the user joined, so the caller can select it.
+Future<(FederationSelector, bool)?> presentReceivedEcash(
+  BuildContext context,
+  String ecash,
+) async {
   try {
     final (action, fed) = await parsedScannedText(text: ecash);
-    if (!context.mounted) return;
+    if (!context.mounted) return null;
     switch (action) {
       case ParsedText_Ecash(:final field0):
-        if (fed == null) return;
+        if (fed == null) return null;
         await showAppModalBottomSheet(
           context: context,
-          heightFactor: 0.5,
           childBuilder:
               () async =>
                   EcashRedeemPrompt(fed: fed, ecash: ecash, amount: field0),
+          fitContent: true,
         );
         break;
       case ParsedText_InviteCodeWithEcash(:final field0, :final field1):
-        await _presentJoin(context, field0, field1);
-        break;
+        // The preview downloads the federation's metadata itself, like the
+        // scanner's join flow.
+        return Navigator.push<(FederationSelector, bool)>(
+          context,
+          MaterialPageRoute(
+            builder:
+                (_) => FederationInfoScreen(
+                  inviteCode: field0,
+                  joinable: true,
+                  ecash: field1,
+                  onLeaveFederation: () {},
+                ),
+          ),
+        );
       case ParsedText_EcashNoFederation():
         ToastService().show(
           message: context.l10n.validEcashNoFederation,
@@ -216,40 +216,5 @@ Future<void> presentReceivedEcash(BuildContext context, String ecash) async {
   } catch (e) {
     AppLogger.instance.warn("tap receive: could not present ecash: $e");
   }
-}
-
-Future<void> _presentJoin(
-  BuildContext context,
-  String inviteCode,
-  String ecash,
-) async {
-  try {
-    final meta = await getFederationMeta(inviteCode: inviteCode);
-    if (!context.mounted) return;
-    await Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder:
-            (_) => FederationInfoScreen(
-              fed: meta.selector,
-              inviteCode: inviteCode,
-              welcomeMessage: meta.welcome,
-              imageUrl: meta.picture,
-              joinable: true,
-              ecash: ecash,
-              onLeaveFederation: () {},
-            ),
-      ),
-    );
-  } catch (e) {
-    AppLogger.instance.warn("tap receive: federation meta failed: $e");
-    if (context.mounted) {
-      ToastService().show(
-        message: context.l10n.couldNotGetFederationMetadataScan,
-        duration: const Duration(seconds: 5),
-        onTap: () {},
-        icon: const Icon(Icons.error),
-      );
-    }
-  }
+  return null;
 }
