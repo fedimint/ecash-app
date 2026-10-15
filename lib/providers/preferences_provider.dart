@@ -7,13 +7,11 @@ class PreferencesProvider extends ChangeNotifier {
   BitcoinDisplay _bitcoinDisplay = BitcoinDisplay.bip177;
   FiatCurrency _fiatCurrency = FiatCurrency.usd;
   bool _showMsats = false;
-  bool _tapReceiveEnabled = false;
   bool _isLoading = true;
 
   BitcoinDisplay get bitcoinDisplay => _bitcoinDisplay;
   FiatCurrency get fiatCurrency => _fiatCurrency;
   bool get showMsats => _showMsats;
-  bool get tapReceiveEnabled => _tapReceiveEnabled;
   bool get isLoading => _isLoading;
 
   PreferencesProvider() {
@@ -25,7 +23,6 @@ class PreferencesProvider extends ChangeNotifier {
       _bitcoinDisplay = await rust_lib.getBitcoinDisplay();
       _fiatCurrency = await rust_lib.getFiatCurrency();
       _showMsats = await rust_lib.getShowMsats();
-      _tapReceiveEnabled = await rust_lib.getTapReceiveEnabled();
       _isLoading = false;
       notifyListeners();
     } catch (e) {
@@ -62,16 +59,6 @@ class PreferencesProvider extends ChangeNotifier {
       await rust_lib.setShowMsats(showMsats: value);
     } catch (e) {
       AppLogger.instance.error('Failed to save show msats preference: $e');
-    }
-  }
-
-  Future<void> setTapReceiveEnabled(bool value) async {
-    _tapReceiveEnabled = value;
-    notifyListeners();
-    try {
-      await rust_lib.setTapReceiveEnabled(enabled: value);
-    } catch (e) {
-      AppLogger.instance.error('Failed to save tap receive preference: $e');
     }
   }
 }

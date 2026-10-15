@@ -1468,14 +1468,11 @@
   "tapSendFailed": "Tap-to-send failed — use the QR code",
   "@tapSendFailed": {},
 
-  "tapToReceiveTitle": "Tap to receive",
-  "@tapToReceiveTitle": {},
-
-  "tapToReceiveSubtitle": "Let others tap your phone to send you ecash",
-  "@tapToReceiveSubtitle": {},
-
-  "tapToReceivePermissionDenied": "Bluetooth permission is required for tap to receive",
+  "tapToReceivePermissionDenied": "Allow Nearby devices to receive ecash by tap, or use the QR code",
   "@tapToReceivePermissionDenied": {},
+
+  "tapToReceiveBluetoothOff": "Turn on Bluetooth to receive ecash by tap, or use the QR code",
+  "@tapToReceiveBluetoothOff": {},
 
   "federationLabel": "Federation",
   "@federationLabel": {},

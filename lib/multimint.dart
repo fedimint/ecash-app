@@ -296,8 +296,6 @@ abstract class Multimint implements RustOpaqueInterface {
 
   Future<bool> getShowMsats();
 
-  Future<bool> getTapReceiveEnabled();
-
   /// Returns false when the gateway was already whitelisted.
   Future<bool> guardianAddGateway({
     required FederationId federationId,
@@ -551,8 +549,6 @@ abstract class Multimint implements RustOpaqueInterface {
   Future<void> setFiatCurrency({required FiatCurrency fiatCurrency});
 
   Future<void> setShowMsats({required bool showMsats});
-
-  Future<void> setTapReceiveEnabled({required bool enabled});
 
   Future<List<Transaction>> transactions({
     required FederationId federationId,

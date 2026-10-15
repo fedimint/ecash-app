@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:ecashapp/extensions/build_context_l10n.dart';
+import 'package:ecashapp/generated/app_localizations.dart';
 import 'package:ecashapp/lib.dart';
 import 'package:ecashapp/multimint.dart';
 import 'package:ecashapp/nfc_hce.dart';
@@ -14,12 +15,13 @@ import 'package:ecashapp/toast.dart';
 import 'package:ecashapp/utils.dart';
 import 'package:flutter/material.dart';
 
-/// App-global passive receiver for "tap to send" ecash (Phase 4b).
+/// App-global passive receiver for "tap to send" ecash.
 ///
-/// While armed — app foregrounded, BLE permissions already granted, and no
-/// send/invoice screen holding NFC/BLE — it keeps a fresh rendezvous published
-/// over NFC (HCE) and advertised over BLE, listening for an incoming encrypted
-/// blob. On receipt it decrypts and hands the ecash string to [onEcash] (wired
+/// Always on for Android. While armed — app foregrounded and no send/invoice
+/// screen holding NFC/BLE — it keeps a fresh rendezvous published over NFC
+/// (HCE), which costs nothing until a sender taps. Only then does it touch BLE:
+/// it asks for the Nearby-devices permission if it hasn't been granted yet, and
+/// scans for the sender's advertisement to collect the encrypted blob. On receipt it decrypts and hands the ecash string to [onEcash] (wired
 /// in app.dart to the redeem bottom sheet). Nothing is auto-reissued.
 ///
 /// Arm/disarm follow the app lifecycle; [pause]/[resume] are a nesting-safe way
@@ -47,17 +49,12 @@ class TapReceive {
 
   bool get _paused => _pauseCount > 0;
 
-  /// Arm if possible. No-op if already armed, paused, unsupported, or if BLE
-  /// permissions aren't already granted — we never prompt from here, so the
-  /// feature switches on silently once the user has granted them (e.g. via a
-  /// tap-send).
+  /// Arm if possible. No-op if already armed, paused, or without NFC/HCE.
+  /// Bluetooth state and permissions are only checked once a tap happens.
   Future<void> arm() async {
     if (_armed || _paused || !tapTransferSupported) return;
     try {
-      if (!await getTapReceiveEnabled()) return;
-      if (!await BleTap.isAvailable()) return;
       if (!await InvoiceNfcBroadcaster.isAvailable()) return;
-      if (!await BleTap.permissionsGranted()) return;
       _armed = true;
       _sub ??= BleTap.events().listen(
         _onEvent,
@@ -122,19 +119,49 @@ class TapReceive {
   }
 
   /// A reader just pulled our rendezvous off the NFC tag, so the sender is about
-  /// to advertise it. Start scanning for it.
+  /// to advertise it. Start scanning for it, first asking for the BLE permission
+  /// if this is the first tap: the sender keeps advertising while the user
+  /// answers the dialog.
   Future<void> _onTagRead() async {
     if (!_armed || _paused || _scanning) return;
     final uuid = _uuid;
     if (uuid == null) return;
+    // Also guards the permission dialog, since one tap can fire several reads.
     _scanning = true;
-    AppLogger.instance.info("tap receive: tag read, scanning for sender");
     try {
+      if (!await BleTap.permissionsGranted() &&
+          !await BleTap.requestPermissions()) {
+        _scanning = false;
+        _showTapUnavailable((l10n) => l10n.tapToReceivePermissionDenied);
+        return;
+      }
+      if (!await BleTap.isAvailable()) {
+        _scanning = false;
+        _showTapUnavailable((l10n) => l10n.tapToReceiveBluetoothOff);
+        return;
+      }
+      // Disarmed (or rotated) while the dialog was up: this rendezvous is gone.
+      if (!_armed || _uuid != uuid) {
+        _scanning = false;
+        return;
+      }
+      AppLogger.instance.info("tap receive: tag read, scanning for sender");
       await BleTap.startReceiving(uuid);
     } catch (e) {
       _scanning = false;
       AppLogger.instance.warn("tap receive: could not start scan: $e");
     }
+  }
+
+  void _showTapUnavailable(String Function(AppLocalizations) message) {
+    final context = ToastService().navigatorKey.currentContext;
+    if (context == null) return;
+    ToastService().show(
+      message: message(context.l10n),
+      duration: const Duration(seconds: 4),
+      onTap: () {},
+      icon: const Icon(Icons.error),
+    );
   }
 
   void _onEvent(BleTapEvent e) {

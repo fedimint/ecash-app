@@ -365,10 +365,18 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
 
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
-    if (state == AppLifecycleState.resumed) {
-      TapReceive.instance.arm();
-    } else {
-      TapReceive.instance.disarm();
+    switch (state) {
+      case AppLifecycleState.resumed:
+        TapReceive.instance.arm();
+      // Not on `inactive`: the Nearby-devices permission dialog TapReceive shows
+      // mid-tap only makes the app inactive, and disarming would drop the
+      // rendezvous the sender is about to advertise.
+      case AppLifecycleState.paused:
+      case AppLifecycleState.detached:
+        TapReceive.instance.disarm();
+      case AppLifecycleState.inactive:
+      case AppLifecycleState.hidden:
+        break;
     }
   }
 
