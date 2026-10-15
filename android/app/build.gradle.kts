@@ -17,7 +17,7 @@ if (hasSigningConfig) {
 }
 
 android {
-    namespace = "org.fedimint.app.master"
+    namespace = "org.fedimint.app"
     compileSdk = flutter.compileSdkVersion
     ndkVersion = "27.3.13750724"
 
@@ -31,7 +31,7 @@ android {
     }
 
     defaultConfig {
-        applicationId = "org.fedimint.app.master"
+        applicationId = "org.fedimint.app"
         minSdk = flutter.minSdkVersion
         targetSdk = flutter.targetSdkVersion
         versionCode = flutter.versionCode

@@ -1,4 +1,4 @@
-package org.fedimint.app.master
+package org.fedimint.app
 
 import android.annotation.SuppressLint
 import android.bluetooth.BluetoothAdapter
