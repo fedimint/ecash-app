@@ -20,3 +20,17 @@ and then try committing again.
        exit 1;
      }
 
+# Structural Rust lints (no inline modules, …); CI runs the same scan. Skipped
+# with a warning outside `nix develop`, where ast-grep may not be installed.
+if command -v ast-grep > /dev/null; then
+  ast-grep scan \
+    || {
+         echo >&2 "
+✖  ast-grep found rule violations (rules in .config/ast-grep/rules/).
+Fix them and try committing again.
+";
+         exit 1;
+       }
+else
+  echo >&2 "warning: ast-grep not found, skipping Rust lints (run inside \`nix develop\`)"
+fi

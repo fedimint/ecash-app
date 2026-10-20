@@ -157,18 +157,89 @@ Key concepts:
 - Federation invite codes backed up to Nostr relays
 - Recovery progress tracked per federation
 
+## Rust Coding Style
+
+Adapted from fedimint's
+[coding-style skill](https://github.com/fedimint/fedimint/blob/master/.agents/skills/fedimint-coding-style/SKILL.md)
+and [reviewer guide](https://github.com/fedimint/fedimint/blob/master/.github/agents/review.md),
+keeping only what applies to a client wallet.
+
+### Rules (enforced)
+
+- **No inline modules.** Every `mod name { ... }` is an error in CI, including
+  `#[cfg(test)] mod tests { ... }`; use a standalone file (see Testing below). The rule
+  lives in `.config/ast-grep/rules/no-inline-modules.yml`; run it with `just lint-ast-grep`.
+  `frb_generated.rs` is exempt. The pre-commit hook runs the same scan, and CI runs it
+  through the flake's small `lint` shell (`nix develop .#lint -c just lint-ast-grep`), so
+  add new lint tools to `lintTools` in `flake.nix` rather than installing them in CI.
+- **No `.unwrap()` outside tests.** Clippy's `unwrap_used` is on (`Cargo.toml`), and
+  `clippy.toml` allows it in tests. Use `.expect("…")` with a message saying *why* it
+  cannot fail, or propagate with `?` / `.context("…")?`.
+
+### Conventions
+
+- Follow the surrounding code's patterns before inventing new ones, and reuse existing
+  helpers — e.g. `fedimint_core::util::retry` with a backoff and a capped attempt count
+  instead of a hand-written retry loop.
+- Group related parameters into a small struct rather than passing a long list of
+  arguments.
+- File layout: `mod` declarations, then `use`s, then items; the test module declaration
+  goes at the end of the file.
+- Prefer `let … else { return …; }` over nested `if let`/`else`, and exhaustive matches
+  over `_ =>` on enums that may grow.
+- Prefer meaningful types: enums over `bool` parameters, never `Option<bool>`, and
+  `Duration` rather than raw `u64` seconds for timeouts and intervals.
+- Borrow rather than `.clone()` unless ownership transfer is intentional.
+- Name magic numbers as constants; add a one-line comment when the value needs justifying.
+- Comments explain *why* (hidden constraints, invariants, a check that looks removable),
+  not what the code does.
+
+### Review checklist
+
+When writing or reviewing Rust changes, check for:
+
+- **Crash and cancellation safety.** The app can be killed, or a future dropped, at any
+  `.await`. Related DB writes belong in one database transaction; flag an `.await`
+  between two writes that must happen together. Use `dbtx.on_commit(...)` for side
+  effects that should only happen if the transaction commits. Ask: if the app dies right
+  here, are funds or notes still accounted for, and does the operation resume correctly?
+- **Idempotency.** Cleanup and retry paths (leaving a federation, re-registering a
+  Lightning Address, resuming an operation on restart) must succeed when the work is
+  already done, not panic or error.
+- **No silent failures.** A bare `.ok()` or `let _ =` on a `Result` hides problems; at
+  minimum log the error with `info_to_flutter` / `error_to_flutter` and why it is safe
+  to continue.
+- **Concurrency.** Don't hold a mutex guard across `.await`; check lock ordering when
+  taking more than one lock. Collecting a stream of futures doesn't run them
+  concurrently — use `join_all`/`try_join_all`/`FuturesUnordered` when parallelism is
+  intended. Avoid unbounded channels or queues.
+- **Money.** Amount and fee arithmetic must not overflow or silently round; be deliberate
+  about msat vs sat. `unwrap_or_default()` on a fee or amount silently zeroes it — use `?`.
+- **Secrets.** Never log mnemonics, keys, NWC secrets, or full URLs that may carry
+  credentials (use `SafeUrl`).
+
 ## Testing
 
 - `just test` - Flutter/Dart unit tests (`test/*.dart`), runs `flutter test`
 - `just test-rust` - Rust unit tests, runs `cargo test` in `rust/ecashapp`
 - `just test-all` - Both suites
 
-Dart tests live in `test/`. Rust tests live in `#[cfg(test)]` modules alongside the
-code they cover (`lib.rs`, `multimint.rs`, `pin.rs`, `db.rs`, `parse.rs`).
+Dart tests live in `test/`. Rust unit tests live in a separate file per module:
+tests for `src/foo.rs` go in `src/foo/tests.rs`, declared at the end of `foo.rs` with
+
+```rust
+#[cfg(test)]
+mod tests;
+```
+
+`tests.rs` is still a child module, so `use super::*;` reaches private items as before.
+**Never write inline `mod tests { ... }` blocks** in a source file. When adding tests to
+a module that has none yet, create `src/<module>/tests.rs` and add the declaration above.
+For a `mod.rs` module (e.g. `src/wallet/mod.rs`), the file is `src/wallet/tests.rs`.
 
 CI runs the Flutter tests on every PR (`.github/workflows/test.yml`), and the Rust
-tests plus `cargo fmt --check`, `cargo clippy -- -D warnings`, `dart format`, and the
-translation checks in `.github/workflows/checks.yml`.
+tests plus `cargo fmt --check`, `cargo clippy -- -D warnings`, `dart format`, the
+ast-grep lints, and the translation checks in `.github/workflows/checks.yml`.
 
 iOS is covered by `.github/workflows/ios-build.yml`: the debug configuration on
 pull requests touching `ios/`, `rust/`, `lib/` or the pubspec, and the release
@@ -187,8 +258,12 @@ After making code changes, run the fast checks instead:
 ```bash
 just test
 just test-rust
+just lint-ast-grep
 just lint-translations
 ```
+
+For Rust changes, also run `cargo fmt --check` and `cargo clippy -- -D warnings` in
+`rust/ecashapp`, as CI does.
 
 Then tell the user to verify the Android build themselves:
 
@@ -198,6 +273,16 @@ just build-debug-android
 
 Report what was changed and what was already verified, so the user knows what the
 build still needs to confirm.
+
+## Pull Requests
+
+Run the checks above before opening or updating a PR. Structure the description as:
+
+- **Summary** — one paragraph on what the change does.
+- **Details** — why it's needed, how it works, and the key design decisions.
+- **Reviewing** (optional) — what reviewers should think hardest about.
+- **Testing** (optional) — tests added, existing coverage, and manual test steps
+  (including anything the user still needs to verify on a device).
 
 ## Code Generation
 

@@ -40,14 +40,22 @@
           # For some reason flutter_rust_bridge unit tests are failing
           doCheck = false;
         };
+
+        # Linters CI runs through `nix develop .#lint` (see checks.yml). Kept
+        # small so CI doesn't download the full cross-compilation shell.
+        lintTools = [
+          pkgs.ast-grep
+          pkgs.just
+        ];
       in
       {
         devShells = {
           # You can expose all or specific shells from the original flake
           default = devShells.cross.overrideAttrs (old: {
-            nativeBuildInputs = old.nativeBuildInputs or [ ] ++ [
+            # lintTools go first so they shadow the fedimint shell's copies
+            # (e.g. its newer ast-grep) and match what CI runs.
+            nativeBuildInputs = lintTools ++ old.nativeBuildInputs or [ ] ++ [
               pkgs.flutter
-              pkgs.just
               pkgs.zlib
               flutter_rust_bridge_codegen
               pkgs.cargo-expand
@@ -79,6 +87,10 @@
                             fi
               	    '';
           });
+
+          lint = pkgs.mkShell {
+            packages = lintTools;
+          };
         };
       }
     );
