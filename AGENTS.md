@@ -159,8 +159,10 @@ Key concepts:
 
 ## Rust Coding Style
 
-Adapted from fedimint's coding-style skill and reviewer guide (`../fedimint/.agents/skills/`,
-`../fedimint/.github/agents/review.md`), keeping only what applies to a client wallet.
+Adapted from fedimint's
+[coding-style skill](https://github.com/fedimint/fedimint/blob/master/.agents/skills/fedimint-coding-style/SKILL.md)
+and [reviewer guide](https://github.com/fedimint/fedimint/blob/master/.github/agents/review.md),
+keeping only what applies to a client wallet.
 
 ### Rules (enforced)
 
