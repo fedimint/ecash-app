@@ -1,5 +1,28 @@
 # Changelog
 
+## [0.12.0]
+
+- Tap to send ecash on Android 12+ - an NFC tap starts an encrypted Bluetooth Low Energy transfer. Receiving is always on while the app is open, and Bluetooth permission is requested on first tap
+- Federation shutdown support - a banner and expiration screen when a federation announces it is shutting down, with a one-tap join of its successor federation. New receives and Lightning Address registrations are blocked on expiring federations
+- Guardian screen with each guardian's session count and a consensus status bar, also shown in the federation preview
+- Redesigned Federation Info screen
+- Faster federation preview - opens immediately while it loads, offers Retry when guardians are unreachable, and reuses the downloaded config when you join
+- Recovered funds now appear as an entry in the transaction history
+- Gateway selection moved into the federation picker on the amount screen
+- Remove a Lightning Address from settings
+- Floating glass navigation bar on the dashboard that scales with system text size
+- Pull to refresh on the dashboard, and the balance fills more of the screen at rest
+- Portrait orientation is now locked on Android and iOS
+- Fixed On-chain "Max" sweeps ignoring federation fees (Wallet V1 and V2)
+- Fixed receive amounts being capped at your current balance when creating a Lightning invoice
+- Lossless amount formatting and integer fiat math (no more rounding drift)
+- Stricter LNURL-withdraw callback validation and timeout handling
+- Federation announcements whose invite code doesn't match the announced federation are now rejected
+- Federation picture URLs keep their query string and fragment
+- Ecash redeem sheet now sizes to its content
+- Update-available toast disabled on iOS
+- macOS minimum version raised to 12.0
+
 ## [0.11.0]
 
 - iOS support - Ecash App now runs on iPhone, distributed through TestFlight
