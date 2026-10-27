@@ -1,0 +1,61 @@
+name: Deploy Website
+# Rebuild ecash.love once a stable release has all of its downloads. The site
+# (fedimint/ecash-app-site) resolves the latest non-prerelease assets at build
+# time, so it only needs a fresh build, triggered via a Vercel deploy hook.
+on:
+  workflow_run:
+    workflows: ["Android Release", "Linux Release", "macOS Release"]
+    types: [completed]
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Release tag to check (e.g. v0.12.0)'
+        required: true
+permissions:
+  contents: read
+concurrency:
+  group: deploy-site
+  cancel-in-progress: false
+jobs:
+  deploy:
+    # Only tag pushes of stable versions (vX.Y.Z, no -rc/-alpha suffix)
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      (github.event.workflow_run.event == 'push' &&
+       github.event.workflow_run.conclusion == 'success')
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check release is stable and complete
+        id: check
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ inputs.tag || github.event.workflow_run.head_branch }}
+        run: |
+          if ! [[ "$TAG" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "$TAG is not a stable release tag, skipping"
+            exit 0
+          fi
+          release=$(gh release view "$TAG" -R "$GITHUB_REPOSITORY" --json isPrerelease,isDraft,assets)
+          if [ "$(jq -r '.isPrerelease or .isDraft' <<<"$release")" = "true" ]; then
+            echo "$TAG is a draft or prerelease, skipping"
+            exit 0
+          fi
+          # Each release workflow uploads its own asset; deploy only after the last one
+          for ext in .apk .AppImage .dmg; do
+            if ! jq -e --arg ext "$ext" '.assets | any(.name | endswith($ext))' <<<"$release" >/dev/null; then
+              echo "$TAG has no $ext asset yet, waiting for the remaining release workflows"
+              exit 0
+            fi
+          done
+          echo "deploy=true" >> "$GITHUB_OUTPUT"
+
+      - name: Trigger Vercel deploy hook
+        if: steps.check.outputs.deploy == 'true'
+        env:
+          DEPLOY_HOOK: ${{ secrets.VERCEL_DEPLOY_HOOK_URL }}
+        run: |
+          if [ -z "$DEPLOY_HOOK" ]; then
+            echo "::error::VERCEL_DEPLOY_HOOK_URL secret is not set"
+            exit 1
+          fi
+          curl -fsS -X POST "$DEPLOY_HOOK"
