@@ -52,22 +52,21 @@
         ],
         "nixpkgs": [
           "fedimint",
-          "flakebox",
-          "nixpkgs"
+          "nixpkgs-unstable"
         ]
       },
       "locked": {
-        "lastModified": 1774654405,
-        "narHash": "sha256-71jT3XLRInSfbXiBgucWwEufe79N3i5FgAAJ1jCiQWg=",
+        "lastModified": 1777323731,
+        "narHash": "sha256-5ti0yx4BnNGDJvnaM/wgqOtzPQGc+Kz6eISQFEU+P3Y=",
         "owner": "tadfisher",
         "repo": "android-nixpkgs",
-        "rev": "0afc63ee6baf0914918169427744cc09ee651ebc",
+        "rev": "baa55e5463fec6f3b15222e89e9a2e4594d9bd42",
         "type": "github"
       },
       "original": {
         "owner": "tadfisher",
         "repo": "android-nixpkgs",
-        "rev": "0afc63ee6baf0914918169427744cc09ee651ebc",
+        "rev": "baa55e5463fec6f3b15222e89e9a2e4594d9bd42",
         "type": "github"
       }
     },

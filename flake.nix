@@ -1,6 +1,23 @@
 {
   inputs = {
     fedimint.url = "github:fedimint/fedimint?ref=v0.12.0";
+
+    # Google re-published platform-tools_r37.0.0-darwin.zip in place, so the sha1
+    # pinned by the android-nixpkgs that fedimint -> flakebox locks no longer
+    # matches and `nix develop` cannot even evaluate on macOS. This rev is the
+    # first with the corrected hash; it still ships cmdline-tools v20, because
+    # v21+ replaces sdkmanager with an `android` CLI that writes into its own
+    # package directory and so fails to build in the read-only Nix store.
+    # Remove this override once fedimint's flakebox pins a rev newer than 0afc63e.
+    fedimint.inputs.flakebox.inputs.android-nixpkgs.url =
+      "github:tadfisher/android-nixpkgs/baa55e5463fec6f3b15222e89e9a2e4594d9bd42";
+    # Pinning the url above replaces the whole input node, dropping the `follows`
+    # flakebox had set; restate them so this does not pull in a second nixpkgs.
+    fedimint.inputs.flakebox.inputs.android-nixpkgs.inputs.nixpkgs.follows =
+      "fedimint/nixpkgs-unstable";
+    fedimint.inputs.flakebox.inputs.android-nixpkgs.inputs.flake-utils.follows =
+      "fedimint/flakebox/flake-utils";
+
     flake-utils.url = "github:numtide/flake-utils";
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-25.11";
   };
