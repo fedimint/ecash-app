@@ -35,12 +35,13 @@ if [ "${ECASHAPP_IOS_CLEAN_ENV:-}" != "1" ]; then
   if [ -d "${DEVELOPER_DIR:-}/Platforms/iPhoneOS.platform" ]; then
     developer_dir="$DEVELOPER_DIR"
   fi
+  # Homebrew's rustup is keg-only, so its cargo isn't in /opt/homebrew/bin.
   exec /usr/bin/env -i \
     ECASHAPP_IOS_CLEAN_ENV=1 \
     HOME="$HOME" \
     USER="${USER:-$(id -un)}" \
     TERM="${TERM:-dumb}" \
-    PATH="/usr/bin:/bin:/usr/sbin:/sbin:${HOME}/.cargo/bin:/opt/homebrew/bin:/usr/local/bin" \
+    PATH="/usr/bin:/bin:/usr/sbin:/sbin:${HOME}/.cargo/bin:/opt/homebrew/opt/rustup/bin:/opt/homebrew/bin:/usr/local/bin" \
     DEVELOPER_DIR="$developer_dir" \
     ${IOS_DEVICE_ID:+IOS_DEVICE_ID="$IOS_DEVICE_ID"} \
     ${IOS_RUST_PROFILE:+IOS_RUST_PROFILE="$IOS_RUST_PROFILE"} \
