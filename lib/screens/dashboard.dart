@@ -601,13 +601,14 @@ class _DashboardState extends State<Dashboard> {
                 backgroundColor: Theme.of(context).colorScheme.primary,
                 foregroundColor: Colors.white,
                 onClose: () async {
-                  if (_pendingAction != null) {
-                    await Future.delayed(const Duration(milliseconds: 200));
-                    WidgetsBinding.instance.addPostFrameCallback((_) {
-                      _pendingAction!();
-                      _pendingAction = null;
-                    });
-                  }
+                  final action = _pendingAction;
+                  if (action == null) return;
+                  _pendingAction = null;
+                  // Let the dial finish closing first. Don't defer to a
+                  // post-frame callback: with system animations off no frame
+                  // follows, so the action would wait for the user's next tap.
+                  await Future.delayed(const Duration(milliseconds: 200));
+                  if (mounted) action();
                 },
                 children: [
                   SpeedDialChild(
