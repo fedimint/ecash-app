@@ -28,6 +28,11 @@ cp linux/runner/org.fedimint.app.desktop AppDir/usr/share/applications/
 cp linux/appstream/org.fedimint.app.appdata.xml AppDir/usr/share/metainfo/
 ln -sf ecashapp AppDir/AppRun
 
-# Package AppImage
+# Validate AppStream metadata offline. appimagetool's built-in validation also
+# checks that every <url> is reachable, which makes the build fail whenever a
+# site rejects CI runners (e.g. ecash.love returning 403 to GitHub Actions IPs).
+appstreamcli validate-tree --no-net AppDir
+
+# Package AppImage (--no-appstream: already validated above, without network)
 VERSION=$(grep "^version:" pubspec.yaml | cut -d" " -f2)
-ARCH=x86_64 appimagetool AppDir "ecash-app-${VERSION}-x86_64.AppImage"
+ARCH=x86_64 appimagetool --no-appstream AppDir "ecash-app-${VERSION}-x86_64.AppImage"
