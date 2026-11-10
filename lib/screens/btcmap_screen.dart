@@ -146,6 +146,10 @@ class _BtcMapScreenState extends State<BtcMapScreen> {
   bool _zoomTooLow = true;
   List<BtcMapPlace> _places = const [];
 
+  /// The user's latest known position, or null if it can't be determined.
+  LatLng? _userLocation;
+  StreamSubscription<Position>? _positionSub;
+
   /// The loaded vector style, or null while loading. [_styleError] is set if
   /// loading failed.
   Style? _style;
@@ -164,6 +168,7 @@ class _BtcMapScreenState extends State<BtcMapScreen> {
   @override
   void dispose() {
     _debounce?.cancel();
+    _positionSub?.cancel();
     super.dispose();
   }
 
@@ -193,10 +198,15 @@ class _BtcMapScreenState extends State<BtcMapScreen> {
   Future<void> _locateUser({bool manual = false}) async {
     if (_locating) return;
     setState(() => _locating = true);
-    final location = await _currentLocation();
+    // While tracking, _userLocation is fresher than the last known position.
+    final location = _userLocation ?? await _currentLocation();
     if (!mounted) return;
-    setState(() => _locating = false);
+    setState(() {
+      _locating = false;
+      _userLocation = location;
+    });
     if (location != null) {
+      _startTrackingLocation();
       if (_mapReady) _mapController.move(location, _seededZoom);
     } else if (manual) {
       ToastService().show(
@@ -206,6 +216,33 @@ class _BtcMapScreenState extends State<BtcMapScreen> {
         icon: const Icon(Icons.location_off),
       );
     }
+  }
+
+  /// Keeps the location dot current without moving the camera. Call only once
+  /// location permission is granted.
+  void _startTrackingLocation() {
+    if (_positionSub != null) return;
+    _positionSub = Geolocator.getPositionStream(
+      locationSettings: const LocationSettings(
+        accuracy: LocationAccuracy.medium,
+        distanceFilter: 10,
+      ),
+    ).listen(
+      (position) {
+        if (!mounted) return;
+        setState(() {
+          _userLocation = LatLng(position.latitude, position.longitude);
+        });
+      },
+      onError: (Object _) {
+        // Location was turned off or revoked. Drop the now-stale dot; the
+        // location button can start tracking again.
+        _positionSub?.cancel();
+        _positionSub = null;
+        if (!mounted) return;
+        setState(() => _userLocation = null);
+      },
+    );
   }
 
   /// Resolves the device's current location, requesting permission if needed.
@@ -486,6 +523,18 @@ class _BtcMapScreenState extends State<BtcMapScreen> {
               maximumZoom: 18,
             ),
             MarkerLayer(markers: _buildMarkers()),
+            if (_userLocation != null)
+              MarkerLayer(
+                markers: [
+                  Marker(
+                    point: _userLocation!,
+                    width: 20,
+                    height: 20,
+                    // Places under the dot must stay tappable.
+                    child: const IgnorePointer(child: _UserLocationDot()),
+                  ),
+                ],
+              ),
           ],
         ),
         if (_zoomTooLow) _HintBanner(text: context.l10n.btcMapZoomInHint),
@@ -537,6 +586,25 @@ class _BtcMapMarker extends StatelessWidget {
         Icons.currency_bitcoin,
         color: Colors.white,
         size: size * 0.6,
+      ),
+    );
+  }
+}
+
+/// A blue dot marking the user's current location.
+class _UserLocationDot extends StatelessWidget {
+  const _UserLocationDot();
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.blue,
+        shape: BoxShape.circle,
+        border: Border.all(color: Colors.white, width: 3),
+        boxShadow: const [
+          BoxShadow(color: Colors.black38, blurRadius: 4, offset: Offset(0, 2)),
+        ],
       ),
     );
   }
